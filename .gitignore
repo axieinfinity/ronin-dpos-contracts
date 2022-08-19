@@ -1,0 +1,12 @@
+artifacts/
+cache/
+node_modules/
+src/types/
+src/web3-types/
+dist/
+yarn-error.log
+.env
+.idea
+
+refs/
+.vscode
