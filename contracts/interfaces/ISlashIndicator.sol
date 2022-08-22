@@ -3,22 +3,20 @@
 pragma solidity ^0.8.9;
 
 interface ISlashIndicator {
-
-  struct Indicator {	
+  struct Indicator {
     /// @dev The block height that the indicator get updated, make sure this update once each block
-    uint256 height; 
-    
-    /// @dev Number of missed block the validator, should not be get decreased to keep track the 
-    /// misbehavior records the validator. 
+    uint256 height;
+    /// @dev Number of missed block the validator, should not be get decreased to keep track the
+    /// misbehavior records the validator.
     uint256 counter;
   }
 
   /**
    * @notice Slash for inavailability
    *
-   * @dev Increase the counter of validator with valAddr. If the counter passes the threshold, call 
+   * @dev Increase the counter of validator with valAddr. If the counter passes the threshold, call
    * the function from Validators.sol
-   * 
+   *
    * Requirements:
    * - Only coinbase can call this method
    *
@@ -40,10 +38,9 @@ interface ISlashIndicator {
    *
    * Requirements:
    * - Only coinbase can call this method
-   * 
+   *
    */
-  function slashDoubleSign (address valAddr, bytes calldata evidence) external;
-
+  function slashDoubleSign(address valAddr, bytes calldata evidence) external;
 
   ///
   /// QUERY FUNCTIONS
@@ -54,4 +51,3 @@ interface ISlashIndicator {
    */
   function getSlashIndicator(address validator) external view returns (uint256 height, uint256 counter);
 }
-
