@@ -72,7 +72,7 @@ contract Staking is IStaking, Initializable {
   function stake(address _consensusAddress, uint256 _amount) external payable {
     require(msg.value == _amount, "Transfer RON failed");
 
-    ValidatorInfo storage currValidator = EnumerableMapValidatorInfo._getValidator(_consensusAddress);
+    ValidatorInfo storage currValidator = _getValidator(_consensusAddress);
     currValidator.staked += _amount;
     currValidator.stakedDiff += int256(_amount);
     currValidator.lastStakingBlock = block.number;
@@ -111,7 +111,7 @@ contract Staking is IStaking, Initializable {
     emit Delegated(msg.sender, _validatorAddr, _amount);
   }
 
-  function undelegate(address _validatorAddr, uint256 _amount) external payable {
+  function undelegate(address _validatorAddr, uint256 _amount) external {
     DelegatorInfo storage _currDelegator = delegators[msg.sender];
     require (_currDelegator.delegatedOfValidator[_validatorAddr] >= _amount, "Invalid undelegating amount");
 
