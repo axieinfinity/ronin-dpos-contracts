@@ -11,7 +11,7 @@ library QuickSort {
     uint256[] memory arr,
     int256 left,
     int256 right
-  ) view private returns (uint256[] memory) {
+  ) private view returns (uint256[] memory) {
     int256 i = left;
     int256 j = right;
     if (i == j) return arr;
