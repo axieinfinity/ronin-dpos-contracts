@@ -3,62 +3,67 @@
 pragma solidity ^0.8.9;
 
 interface IStaking {
-  struct ValidatorInfo {
+  struct ValidatorCandidate {
+    /// @dev Address that stakes for the validator, each consensus address has only one staking address.
+    address stakingAddr;
     /// @dev Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
-    address consensusAddress;
-    /// @dev Address that stakes for the validator, each consensus address has only one staking address
-    address stakingAddress;
+    address consensusAddr;
     /// @dev Address that receives mining fee of the validator
-    address payable feeAddress;
-    /// @dev Total reward amount
-    uint256 totalReward;
+    address payable treasuryAddr;
     /// @dev The percentile of reward that validators can be received, the rest goes to the delegators
     uint256 commissionRate;
-    /// @dev The amount of staked coin in the previous epoch
-    uint256 staked;
-    /// @dev The difference between the amount of staked coin in the previous epoch and the current epoch
-    int256 stakedDiff;
-    /// @dev Sum of staked amount from validator and delegators
-    uint256 balance;
-    /// @dev Last staking block number, used for calculating time condition of unstaking
-    uint256 lastStakingBlock;
+    /// @dev The RON amount from the validator.
+    uint256 stakedAmount;
+    /// @dev The RON amount from the delegator.
+    uint256 delegatedAmount;
     /// @dev For upgrability purpose
     uint256[20] ____gap;
   }
 
-  struct DelegatorInfo {
-    /// @dev Total amount of delegated token
-    uint256 balance;
-    uint256 totalReward;
-    uint256 pendingReward;
-    /// @dev Delegating amount of delegator for each validator (validator consensus address => amount)
-    mapping(address => uint256) delegatedOfValidator;
-    /// @dev For upgrability purpose
-    uint256[20] ____gap;
-  }
+  /// @dev TODO: add comment for these events
+  event ValidatorProposed(
+    address indexed consensusAddr,
+    address indexed candidateIdx,
+    uint256 amount,
+    ValidatorCandidate _info
+  );
+  event Staked(address indexed validator, uint256 amount);
+  event Unstaked(address indexed validator, uint256 amount);
+  event Delegated(address indexed delegator, address indexed validator, uint256 amount);
+  event Undelegated(address indexed delegator, address indexed validator, uint256 amount);
+
+  // TODO: write comment for this fn.
+  // TODO: write setter for this fn.
+  function minValidatorBalance() external view returns (uint256);
 
   /**
-   * @notice First proposing a validator with information, require to stake at least `MINIMUM_STAKING` amount
+   * @dev Proposes a validator with detailed information.
+   *
+   * Requirements:
+   * - The `msg.value` is at least `MINIMUM_STAKING` amount.
+   * - TODO: update the requirements.
+   *
+   * Emits the `ValidatorProposed` event.
    *
    * @return index The index of new validator in the validator list
+   *
    */
   function proposeValidator(
-    address consensusAddress,
-    address payable feeAddress,
-    uint256 commissionRate,
-    uint256 amount
+    address _consensusAddr,
+    address payable _treasuryAddr,
+    uint256 _commissionRate
   ) external payable returns (uint256 index);
 
   /**
    * @notice Stake as validator.
    */
-  function stake(address consensusAddress, uint256 amount) external payable;
+  function stake(uint256 amount) external payable;
 
   /**
    * @notice Unstake as validator. Need to wait `UNSTAKING_ON_HOLD_BLOCKS_NUM` blocks.
    * @dev The remain balance must either be greater than `MINIMUM_STAKING` value or equal to zero.
    */
-  function unstake(address consensusAddress, uint256 amount) external;
+  function unstake(address consensusAddr, uint256 amount) external;
 
   /**
    * @notice Stake as delegator	for a validator

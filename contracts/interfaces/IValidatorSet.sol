@@ -11,7 +11,7 @@ interface IValidatorSet {
     /// @dev Address of the validator that produces block, e.g. block.coinbase
     address consensusAddress;
     /// @dev Address that receives mining fee of the validator
-    address payable feeAddress;
+    address payable treasuryAddr;
     /// @dev Total reward amount
     uint256 totalAmount;
     /// @dev Remaining time being in jail (not able to produce block)
