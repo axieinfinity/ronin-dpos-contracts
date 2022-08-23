@@ -12,7 +12,7 @@ interface IStaking {
     address payable feeAddress;
     /// @dev Total reward amount
     uint256 totalReward;
-    /// @dev The percentile of reward that delegators can be received
+    /// @dev The percentile of reward that validators can be received, the rest goes to the delegators
     uint256 commissionRate;
     /// @dev The amount of staked coin in the previous epoch
     uint256 staked;
