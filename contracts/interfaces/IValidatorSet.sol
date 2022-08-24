@@ -9,15 +9,11 @@ pragma solidity ^0.8.9;
 interface IValidatorSet {
   struct Validator {
     /// @dev Address of the validator that produces block, e.g. block.coinbase
-    address consensusAddress;
-    /// @dev Address that receives mining fee of the validator
-    address payable treasuryAddr;
-    /// @dev Total reward amount
-    uint256 totalAmount;
-    /// @dev Remaining time being in jail (not able to produce block)
-    uint256 jailTime;
-    /// @dev
-    uint256 reward;
+    address consensusAddr;
+    /// @dev Address of treasury of the validator, used for double-checking validator information
+    address treasuryAddr;
+    /// @dev State if the validator is in jail
+    bool jailed;
     /// @dev For upgrability purpose
     /// @custom:note Consider leave or keep this attribute
     uint256[20] ___gap;
