@@ -86,12 +86,23 @@ interface IStaking {
   /**
    * @notice Update set of validators
    *
-   * @dev Add stake and stake_diff for each validator. Obtain currentValidatorSet based on validators
+   * @dev Sorting the validators by their current balance, then pick the top N validators to be
+   * assigned to the new set. The result is returned to the `ValidatorSet` contract.
    *
    * Requirements:
    * - Only validator and `ValidatorSet` contract can call this function
+   * 
+   * @return newValidatorSet Validator set for the new epoch
    */
-  function updateValidatorSet() external;
+  function updateValidatorSet() external returns (ValidatorCandidate[] memory newValidatorSet);
+
+  /**
+   * @dev Handle deposit request. Update validators' reward balance and delegators' balance.
+   *
+   * Requirements:
+   * - Only `ValidatorSet` contract cann call this function
+   */
+  function onDeposit() external payable;
 
   /**
    * @notice Distribute reward
