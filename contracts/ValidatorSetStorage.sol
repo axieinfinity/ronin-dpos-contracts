@@ -26,7 +26,7 @@ abstract contract ValidatorSetStorage is IValidatorSet {
     internal
   {
     address _newValAddr = _incomingValidator.consensusAddr;
-    uint256 _index = _setValidator(_newValAddr, _incomingValidator);
+    uint256 _index = _setValidator(_incomingValidator, false);
 
     (address _oldValAddr, ) = currentValidatorIndexesMap.at(_miningIndex);
     if (_oldValAddr != _newValAddr) {
@@ -35,12 +35,12 @@ abstract contract ValidatorSetStorage is IValidatorSet {
     }
   }
 
-  function _setValidator(address _valAddr, IStaking.ValidatorCandidate memory _incomingValidator)
+  function _setValidator(IStaking.ValidatorCandidate memory _incomingValidator, bool _forced)
     internal
     returns (uint256)
   {
-    (bool _success, Validator storage _currentValidator) = _tryGetValidator(_valAddr);
-    if (_success) {
+    (bool _success, Validator storage _currentValidator) = _tryGetValidator(_incomingValidator.consensusAddr);
+    if (_success && _forced) {
       return __setExistedValidator(_incomingValidator, _currentValidator);
     }
     return __setUnexistentValidator(_incomingValidator);
