@@ -28,7 +28,7 @@ abstract contract ValidatorSetStorage is IValidatorSet {
     address _newValAddr = _incomingValidator.consensusAddr;
     uint256 _index = _setValidator(_newValAddr, _incomingValidator);
 
-    (address _oldValAddr,) = currentValidatorIndexesMap.at(_miningIndex);
+    (address _oldValAddr, ) = currentValidatorIndexesMap.at(_miningIndex);
     if (_oldValAddr != _newValAddr) {
       currentValidatorIndexesMap.remove(_oldValAddr);
       currentValidatorIndexesMap.set(_newValAddr, _index);
@@ -46,25 +46,9 @@ abstract contract ValidatorSetStorage is IValidatorSet {
     return __setUnexistentValidator(_incomingValidator);
   }
 
-  function __setExistedValidator(
-    IStaking.ValidatorCandidate memory _incomingValidator,
-    Validator storage _currentValidator
-  ) internal returns (uint256) {
-    _currentValidator.consensusAddr = _incomingValidator.consensusAddr;
-    _currentValidator.treasuryAddr = _incomingValidator.treasuryAddr;
-
-    return validatorSetMap[_currentValidator.consensusAddr];
-  }
-
-  function __setUnexistentValidator(IStaking.ValidatorCandidate memory _incomingValidator) internal returns (uint256) {
-    uint256 index = validatorSet.length;
-
-    validatorSetMap[_incomingValidator.consensusAddr] = index;
-    Validator storage _v = validatorSet.push();
-    _v.consensusAddr = _incomingValidator.consensusAddr;
-    _v.treasuryAddr = _incomingValidator.treasuryAddr;
-
-    return index;
+  function _removeValidatorAtMiningIndex(uint256 _miningIndex) internal {
+    (address _oldValAddr, ) = currentValidatorIndexesMap.at(_miningIndex);
+    currentValidatorIndexesMap.remove(_oldValAddr);
   }
 
   function _getValidatorAtMiningIndex(uint256 _miningIndex) internal view returns (Validator storage) {
@@ -90,5 +74,26 @@ abstract contract ValidatorSetStorage is IValidatorSet {
 
   function _isSameValidator(IStaking.ValidatorCandidate memory _v1, Validator memory _v2) internal pure returns (bool) {
     return _v1.consensusAddr == _v2.consensusAddr && _v1.treasuryAddr == _v2.treasuryAddr;
+  }
+
+  function __setExistedValidator(
+    IStaking.ValidatorCandidate memory _incomingValidator,
+    Validator storage _currentValidator
+  ) private returns (uint256) {
+    _currentValidator.consensusAddr = _incomingValidator.consensusAddr;
+    _currentValidator.treasuryAddr = _incomingValidator.treasuryAddr;
+
+    return validatorSetMap[_currentValidator.consensusAddr];
+  }
+
+  function __setUnexistentValidator(IStaking.ValidatorCandidate memory _incomingValidator) private returns (uint256) {
+    uint256 index = validatorSet.length;
+
+    validatorSetMap[_incomingValidator.consensusAddr] = index;
+    Validator storage _v = validatorSet.push();
+    _v.consensusAddr = _incomingValidator.consensusAddr;
+    _v.treasuryAddr = _incomingValidator.treasuryAddr;
+
+    return index;
   }
 }

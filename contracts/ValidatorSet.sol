@@ -56,25 +56,18 @@ contract ValidatorSet is ValidatorSetStorage {
     epochLength = INIT_EPOCH_LENGTH;
   }
 
-  function getValidators() external view returns (address[] memory) {
-    uint256 size = currentValidatorIndexesMap.length();
-    address[] memory validatorAddresses = new address[](size);
-    for (uint256 i = 0; i < size; i++) {
-      Validator memory _v = _getValidatorAtMiningIndex(i);
-      validatorAddresses[i] = _v.consensusAddr;
-    }
-    return validatorAddresses;
-  }
-
   function updateValidators() external onlyValidator atEpochEnding returns (address[] memory) {
     // 1. fetch new validator set from staking contract
-    IStaking.ValidatorCandidate[] memory upcommingValidatorSet = stakingContract.updateValidatorSet();
+    IStaking.ValidatorCandidate[] memory _upcommingValidatorSet = stakingContract.updateValidatorSet();
 
     // 2. update last updated
     lastUpdated = block.number;
 
-    // 3. update new validator list
-    // TODO:
+    // 3. update new validator set  
+    _doUpdateState(_upcommingValidatorSet);
+    
+    // 4. return new validator set
+    return getValidators();
   }
 
   function getLastUpdated() external view returns (uint256 height) {
@@ -92,7 +85,7 @@ contract ValidatorSet is ValidatorSetStorage {
       if (_validator.jailed) {
         emit DeprecatedDeposit(_valAddr, _value);
       } else {
-        stakingContract.onDeposit(_valAddr, _value);
+        stakingContract.onDeposit();
       }
     }
 
@@ -114,45 +107,14 @@ contract ValidatorSet is ValidatorSetStorage {
     revert("Unimplemented");
   }
 
-  ///
-  /// INTERNAL FUNCTIONS
-  ///
-
-  function doUpdateState(IStaking.ValidatorCandidate[] memory _incomingValidatorSet) private {
-    uint256 n = currentValidatorIndexesMap.length();
-    uint256 m = _incomingValidatorSet.length;
-    uint256 k = n < m ? n : m;
-
-    // // keep the validators that already in the exact order
-    // for (uint256 i = 0; i < k; ++i) {
-    //   Validator memory _oldValidator = validatorSet[currentValidatorIndexesMap.at(i)];
-    //   if (_oldValidator.consensusAddr != _incomingValidatorSet[i].consensusAddr) {
-    //     currentValidatorIndexesMap.set(_oldValidator.consensusAddr, 0);
-    //   }
-    // }
-
-    // // in case the current set is longer, delete trailing members in the current set
-    // if (n > m) {
-    //   for (uint256 i = m; i < n; ++i) {
-    //     Validator memory _oldValidator = validatorSet[currentValidatorIndexesMap.at(i)];
-    //     currentValidatorIndexesMap.set(_oldValidator.consensusAddr, 0);
-    //   }
-    // }
-
-    // // update the set by traversing each index
-    // for (uint256 i = 0; i < k; ++i) {
-    //   if (!_isSameValidator(_incomingValidatorSet[i], currentValidatorSet[i])) {
-    //     currentValidatorSetMap[_incomingValidatorSet[i].consensusAddr] = i;
-    //     _updateValidatorIndex(_incomingValidatorSet[i], currentValidatorSet[i]);
-    //   }
-    // }
-
-    // // update the set by appending to the current set
-    // if (m > n) {
-    //   for (uint256 i = n; i < m; ++i) {
-    //     _addOneValidator(_incomingValidatorSet[i]);
-    //   }
-    // }
+  function getValidators() public view returns (address[] memory) {
+    uint256 size = currentValidatorIndexesMap.length();
+    address[] memory validatorAddresses = new address[](size);
+    for (uint256 i = 0; i < size; i++) {
+      Validator memory _v = _getValidatorAtMiningIndex(i);
+      validatorAddresses[i] = _v.consensusAddr;
+    }
+    return validatorAddresses;
   }
 
   function isValidator(address _addr) public view returns (bool) {
@@ -161,5 +123,46 @@ contract ValidatorSet is ValidatorSetStorage {
 
   function isCurrentValidator(address _addr) public view returns (bool) {
     return currentValidatorIndexesMap.contains(_addr);
+  }
+
+  ///
+  /// INTERNAL FUNCTIONS
+  ///
+
+  function _doUpdateState(IStaking.ValidatorCandidate[] memory _incomingValidatorSet) private {
+    uint256 n = currentValidatorIndexesMap.length();
+    uint256 m = _incomingValidatorSet.length;
+    uint256 k = n < m ? n : m;
+
+    // keep the validators that already in the exact order and update wrong validators
+    // incoming set:  [ ========= ]
+    // current set:   [ =====     ]
+    // updating part:   ^^^^^
+    for (uint256 i = 0; i < k; ++i) {
+      Validator memory _oldValidator = _getValidatorAtMiningIndex(i); 
+      if (!_isSameValidator(_incomingValidatorSet[i], _oldValidator)) {
+        _setValidatorAtMiningIndex(i, _incomingValidatorSet[i]);
+      }
+    }
+
+    // in case the incoming set is longer, update the set by appending to the current set
+    // incoming set:  [ ========= ]
+    // current set:   [ =====     ]
+    // updating part:        ^^^^
+    if (m > n) {
+      for (uint256 i = n; i < m; ++i) {
+        _setValidatorAtMiningIndex(i, _incomingValidatorSet[i]);
+      }
+    }
+
+    // in case the current set is longer, delete trailing members in the current set
+    // incoming set:  [ ===       ]
+    // current set:   [ ========= ]
+    // updating part:      ^^^^^^
+    if (n > m) {
+      for (uint256 i = m; i < n; ++i) {
+        _removeValidatorAtMiningIndex(i);
+      }
+    }
   }
 }
