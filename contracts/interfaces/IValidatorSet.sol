@@ -74,6 +74,16 @@ interface IValidatorSet {
   function getValidators() external view returns (address[] memory);
 
   /**
+   * @notice Check if an address is a validator
+   */
+  function isValidator(address validator) external view returns (bool);
+
+  /**
+   * @notice Check if an address is a validator not being in jail
+   */
+  function isWorkingValidator(address validator) external view returns (bool);
+
+  /**
    * @notice Check if an address is in the validator list of the current epoch
    */
   function isCurrentValidator(address validator) external view returns (bool);

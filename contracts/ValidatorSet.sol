@@ -121,6 +121,11 @@ contract ValidatorSet is ValidatorSetStorage {
     return validatorSetMap[_addr] > 0;
   }
 
+  function isWorkingValidator(address _addr) public view returns (bool) {
+    Validator memory _v = _getValidator(_addr);
+    return (!_v.jailed);
+  }
+
   function isCurrentValidator(address _addr) public view returns (bool) {
     return currentValidatorIndexesMap.contains(_addr);
   }
