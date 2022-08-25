@@ -14,12 +14,12 @@ import "./ValidatorSetStorage.sol";
 contract ValidatorSet is ValidatorSetStorage {
   using EnumerableMap for EnumerableMap.AddressToUintMap;
 
-  uint256 public constant INIT_NUM_OF_CABINETS = 21;
-  uint256 public constant INIT_EPOCH_LENGTH = 200;
+  uint256 private constant INIT_NUM_OF_CABINETS = 21;
+  uint256 private constant INIT_EPOCH_LENGTH = 200;
 
-  uint256 numOfCabinets;
-  uint256 epochLength;
-  uint256 lastUpdated;
+  uint256 public numOfCabinets;
+  uint256 public epochLength;
+  uint256 public lastUpdated;
 
   IStaking stakingContract;
 
@@ -105,6 +105,14 @@ contract ValidatorSet is ValidatorSetStorage {
 
   /// TODO:
   function slashDoubleSign(address validator) external {
+    revert("Unimplemented");
+  }
+
+  function updateNumOfCabinets(uint256 _numOfCabinets) external onlyCoinbase {
+    revert("Unimplemented");
+  }
+
+  function updateEpochLength(uint256 _epochLength) external onlyCoinbase {
     revert("Unimplemented");
   }
 
