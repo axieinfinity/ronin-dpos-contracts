@@ -19,8 +19,14 @@ abstract contract ValidatorSetStorage is IValidatorSet {
   mapping(address => uint256) public validatorSetMap;
   /// @dev Enumerable map of indexes of the current validator set, e.g. the array [3, 4, 1] tells
   /// the sequence of validators to mine block in the next epoch will be at the 3-, 4- and 1-index,
-  /// One can query the mining order of an arbitrary address by this enumerable map.
+  /// One can query the mining order of an arbitrary address by this enumerable map. This array is
+  /// indexed from 0, but its content is non-zero value, due to reserved 0-slot in `validatorSet`.
   EnumerableMap.AddressToUintMap internal currentValidatorIndexesMap;
+
+  constructor () {
+    // Add empty validator at 0-slot for the set map
+    validatorSet.push();
+  }
 
   function _setValidatorAtMiningIndex(uint256 _miningIndex, IStaking.ValidatorCandidate memory _incomingValidator)
     internal
