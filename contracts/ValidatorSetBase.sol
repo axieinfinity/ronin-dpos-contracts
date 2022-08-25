@@ -10,7 +10,7 @@ import "./interfaces/IStaking.sol";
  * @title Set of validators in current epoch
  * @notice This contract maintains set of validator in the current epoch of Ronin network
  */
-abstract contract ValidatorSetStorage is IValidatorSet {
+abstract contract ValidatorSetBase is IValidatorSet {
   using EnumerableMap for EnumerableMap.AddressToUintMap;
 
   /// @dev Array of all validators. The element at 0-slot is reserved for unknown validator.

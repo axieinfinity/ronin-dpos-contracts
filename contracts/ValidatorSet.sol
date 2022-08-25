@@ -5,13 +5,13 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "./interfaces/IValidatorSet.sol";
 import "./interfaces/IStaking.sol";
-import "./ValidatorSetStorage.sol";
+import "./ValidatorSetBase.sol";
 
 /**
  * @title Set of validators in current epoch
  * @notice This contract maintains set of validator in the current epoch of Ronin network
  */
-contract ValidatorSet is ValidatorSetStorage {
+contract ValidatorSet is ValidatorSetBase {
   using EnumerableMap for EnumerableMap.AddressToUintMap;
 
   uint256 private constant INIT_NUM_OF_CABINETS = 21;
