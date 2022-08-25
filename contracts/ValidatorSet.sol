@@ -59,6 +59,7 @@ contract ValidatorSet is ValidatorSetStorage {
   function updateValidators() external onlyValidator atEpochEnding returns (address[] memory) {
     // 1. fetch new validator set from staking contract
     IStaking.ValidatorCandidate[] memory _upcommingValidatorSet = stakingContract.updateValidatorSet();
+    require(_upcommingValidatorSet.length <= numOfCabinets, "Exceeds maximum validators per epoch");
 
     // 2. update last updated
     lastUpdated = block.number;
