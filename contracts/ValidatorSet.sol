@@ -65,7 +65,8 @@ contract ValidatorSet is ValidatorSetStorage {
 
     // 3. update new validator set  
     _doUpdateState(_upcommingValidatorSet);
-    
+    emit ValidatorSetUpdated();
+
     // 4. return new validator set
     return getValidators();
   }
