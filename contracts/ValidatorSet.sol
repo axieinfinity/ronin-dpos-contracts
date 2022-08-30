@@ -6,13 +6,13 @@ import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "./interfaces/ISlashIndicator.sol";
 import "./interfaces/IStaking.sol";
 import "./interfaces/IValidatorSet.sol";
-import "./ValidatorSetBase.sol";
+import "./ValidatorSetCore.sol";
 
 /**
  * @title Set of validators in current epoch
  * @notice This contract maintains set of validator in the current epoch of Ronin network
  */
-contract ValidatorSet is ValidatorSetBase {
+contract ValidatorSet is ValidatorSetCore {
   using EnumerableMap for EnumerableMap.AddressToUintMap;
 
   uint256 private constant INIT_NUM_OF_CABINETS = 21;
@@ -33,22 +33,22 @@ contract ValidatorSet is ValidatorSetBase {
   event DeprecatedDeposit(address indexed validator, uint256 amount);
 
   modifier onlyCoinbase() {
-    require(tx.origin == block.coinbase, "Only coinbase");
+    require(tx.origin == block.coinbase, "Validators: Only coinbase");
     _;
   }
 
   modifier onlyValidator() {
-    require(isValidator(msg.sender), "Only validator");
+    require(isValidator(msg.sender), "Validators: Only validator");
     _;
   }
 
   modifier noEmptyDeposit() {
-    require(msg.value > 0, "No empty deposit");
+    require(msg.value > 0, "Validators: No empty deposit");
     _;
   }
 
   modifier atEpochEnding() {
-    require((block.number + 1) % epochLength == 0, "Only at the end of the epoch");
+    require((block.number + 1) % epochLength == 0, "Validators: Only at the end of the epoch");
     _;
   }
 
@@ -62,7 +62,7 @@ contract ValidatorSet is ValidatorSetBase {
   function updateValidators() external onlyValidator atEpochEnding returns (address[] memory) {
     // 1. fetch new validator set from staking contract
     IStaking.ValidatorCandidate[] memory _upcommingValidatorSet = stakingContract.updateValidatorSet();
-    require(_upcommingValidatorSet.length <= numOfCabinets, "Exceeds maximum validators per epoch");
+    require(_upcommingValidatorSet.length <= numOfCabinets, "Validators: Exceeds maximum validators per epoch");
 
     // 2. update last updated
     lastUpdated = block.number;

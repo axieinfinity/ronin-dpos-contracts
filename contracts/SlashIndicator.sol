@@ -36,23 +36,23 @@ contract SlashIndicator is ISlashIndicator {
   event ResetIndicators();
   
   modifier onlyCoinbase() {
-    require(msg.sender == block.coinbase, "Only coinbase");
+    require(msg.sender == block.coinbase, "Slash: Only coinbase");
     _;
   }
 
   modifier onlyValidatorContract() {
-    require(msg.sender == address(validatorSetContract), "Only validator set contract");
+    require(msg.sender == address(validatorSetContract), "Slash: Only validator set contract");
     _;
   }
 
   modifier oncePerBlock() {
-    require(block.number > previousHeight, "Cannot slash twice in one block");
+    require(block.number > previousHeight, "Slash: Cannot slash twice in one block");
     _;
     previousHeight = block.number;
   }
 
   modifier onlyInitialized() {
-    require(initialized, "Contract is not initialized");
+    require(initialized, "Slash: Contract is not initialized");
     _;
   }
 
@@ -62,7 +62,7 @@ contract SlashIndicator is ISlashIndicator {
   }
 
   function initialize(IValidatorSet _validatorSetContract, IStaking _stakingContract) external {
-    require(!initialized, "Contract is already initialized");
+    require(!initialized, "Slash: Contract is already initialized");
 
     initialized = true;
     validatorSetContract = _validatorSetContract;
@@ -81,7 +81,7 @@ contract SlashIndicator is ISlashIndicator {
    */
   function slash(address _validatorAddr) external onlyInitialized onlyCoinbase oncePerBlock {
     // Check if the to be slashed validator is in the current epoch 
-    require(validatorSetContract.isCurrentValidator(_validatorAddr), "Cannot slash validator not in current epoch");
+    require(validatorSetContract.isCurrentValidator(_validatorAddr), "Slash: Cannot slash validator not in current epoch");
 
     Indicator storage indicator = indicators[_validatorAddr];
     
