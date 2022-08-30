@@ -2,6 +2,7 @@ import '@typechain/hardhat';
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import 'hardhat-deploy';
+import 'hardhat-gas-reporter';
 
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, NetworkUserConfig, SolcUserConfig } from 'hardhat/types';
@@ -10,7 +11,7 @@ dotenv.config();
 
 const DEFAULT_MNEMONIC = 'title spike pink garlic hamster sorry few damage silver mushroom clever window';
 
-const { TESTNET_PK, TESTNET_URL, MAINNET_PK, MAINNET_URL } = process.env;
+const { REPORT_GAS, TESTNET_PK, TESTNET_URL, MAINNET_PK, MAINNET_URL } = process.env;
 
 if (!TESTNET_PK) {
   console.warn('TESTNET_PK is unset. Using DEFAULT_MNEMONIC');
@@ -67,6 +68,9 @@ const config: HardhatUserConfig = {
     'ronin-testnet': testnet,
     'ronin-mainnet': mainnet,
   },
+  gasReporter: {
+    enabled: REPORT_GAS ? true : false
+  }
 };
 
 export default config;
