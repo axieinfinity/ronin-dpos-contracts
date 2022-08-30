@@ -69,7 +69,8 @@ const config: HardhatUserConfig = {
     'ronin-mainnet': mainnet,
   },
   gasReporter: {
-    enabled: REPORT_GAS ? true : false
+    enabled: REPORT_GAS ? true : false,
+    showTimeSpent: true
   }
 };
 
