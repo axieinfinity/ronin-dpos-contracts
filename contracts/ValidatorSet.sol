@@ -12,7 +12,7 @@ import "./ValidatorSetCore.sol";
  * @title Set of validators in current epoch
  * @notice This contract maintains set of validator in the current epoch of Ronin network
  */
-contract ValidatorSet is ValidatorSetCore {
+contract ValidatorSet is IValidatorSet, ValidatorSetCore {
   using EnumerableMap for EnumerableMap.AddressToUintMap;
 
   uint256 private constant INIT_NUM_OF_CABINETS = 21;

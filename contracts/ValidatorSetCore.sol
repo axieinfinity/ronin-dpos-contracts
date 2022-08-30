@@ -10,11 +10,11 @@ import "./interfaces/IStaking.sol";
  * @title Set of validators in current epoch
  * @notice This contract maintains set of validator in the current epoch of Ronin network
  */
-abstract contract ValidatorSetCore is IValidatorSet {
+abstract contract ValidatorSetCore {
   using EnumerableMap for EnumerableMap.AddressToUintMap;
 
   /// @dev Array of all validators. The element at 0-slot is reserved for unknown validator.
-  Validator[] public validatorSet;
+  IValidatorSet.Validator[] public validatorSet;
   /// @dev Map of array of all validator
   mapping(address => uint256) public validatorSetMap;
   /// @dev Enumerable map of indexes of the current validator set, e.g. the array [3, 4, 1] tells
@@ -23,7 +23,7 @@ abstract contract ValidatorSetCore is IValidatorSet {
   /// indexed from 0, but its content is non-zero value, due to reserved 0-slot in `validatorSet`.
   EnumerableMap.AddressToUintMap internal currentValidatorIndexesMap;
 
-  constructor () {
+  constructor() {
     // Add empty validator at 0-slot for the set map
     validatorSet.push();
   }
@@ -45,7 +45,9 @@ abstract contract ValidatorSetCore is IValidatorSet {
     internal
     returns (uint256)
   {
-    (bool _success, Validator storage _currentValidator) = _tryGetValidator(_incomingValidator.consensusAddr);
+    (bool _success, IValidatorSet.Validator storage _currentValidator) = _tryGetValidator(
+      _incomingValidator.consensusAddr
+    );
     if (_success && _forced) {
       return __setExistedValidator(_incomingValidator, _currentValidator);
     }
@@ -57,34 +59,38 @@ abstract contract ValidatorSetCore is IValidatorSet {
     currentValidatorIndexesMap.remove(_oldValAddr);
   }
 
-  function _getValidatorAtMiningIndex(uint256 _miningIndex) internal view returns (Validator storage) {
+  function _getValidatorAtMiningIndex(uint256 _miningIndex) internal view returns (IValidatorSet.Validator storage) {
     (, uint256 _index) = currentValidatorIndexesMap.at(_miningIndex);
     require(_index != 0, string(abi.encodePacked("Nonexistent validator at index ", _miningIndex)));
     return validatorSet[_index];
   }
 
-  function _getValidator(address _valAddr) internal view returns (Validator storage) {
-    (bool _success, Validator storage _v) = _tryGetValidator(_valAddr);
+  function _getValidator(address _valAddr) internal view returns (IValidatorSet.Validator storage) {
+    (bool _success, IValidatorSet.Validator storage _v) = _tryGetValidator(_valAddr);
     require(_success, string(abi.encodePacked("Nonexistent validator ", _valAddr)));
     return _v;
   }
 
-  function _tryGetValidator(address _valAddr) internal view returns (bool, Validator storage) {
+  function _tryGetValidator(address _valAddr) internal view returns (bool, IValidatorSet.Validator storage) {
     uint256 _index = validatorSetMap[_valAddr];
-    Validator storage _v = validatorSet[_index];
+    IValidatorSet.Validator storage _v = validatorSet[_index];
     if (_index == 0) {
       return (false, _v);
     }
     return (true, _v);
   }
 
-  function _isSameValidator(IStaking.ValidatorCandidate memory _v1, Validator memory _v2) internal pure returns (bool) {
+  function _isSameValidator(IStaking.ValidatorCandidate memory _v1, IValidatorSet.Validator memory _v2)
+    internal
+    pure
+    returns (bool)
+  {
     return _v1.consensusAddr == _v2.consensusAddr && _v1.treasuryAddr == _v2.treasuryAddr;
   }
 
   function __setExistedValidator(
     IStaking.ValidatorCandidate memory _incomingValidator,
-    Validator storage _currentValidator
+    IValidatorSet.Validator storage _currentValidator
   ) private returns (uint256) {
     _currentValidator.consensusAddr = _incomingValidator.consensusAddr;
     _currentValidator.treasuryAddr = _incomingValidator.treasuryAddr;
@@ -96,7 +102,7 @@ abstract contract ValidatorSetCore is IValidatorSet {
     uint256 index = validatorSet.length;
 
     validatorSetMap[_incomingValidator.consensusAddr] = index;
-    Validator storage _v = validatorSet.push();
+    IValidatorSet.Validator storage _v = validatorSet.push();
     _v.consensusAddr = _incomingValidator.consensusAddr;
     _v.treasuryAddr = _incomingValidator.treasuryAddr;
 
