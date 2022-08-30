@@ -234,7 +234,7 @@ abstract contract Staking is IStaking, Initializable {
    *
    * Requirements:
    * - Only validator and `ValidatorSet` contract can call this function
-   * 
+   *
    * @return newValidatorSet Validator set for the new epoch
    */
   function updateValidatorSet() external returns (ValidatorCandidate[] memory newValidatorSet) {
@@ -263,7 +263,7 @@ abstract contract Staking is IStaking, Initializable {
 
   function getCurrentValidatorSet() public view returns (ValidatorCandidate[] memory currentValidatorSet_) {
     uint _length = currentValidatorIndexes.length;
-    currentValidatorSet_ = new ValidatorCandidate[](currentValidatorIndexes.length); 
+    currentValidatorSet_ = new ValidatorCandidate[](currentValidatorIndexes.length);
     for (uint i = 0; i < _length; i++) {
       currentValidatorSet_[i] = validatorCandidates[currentValidatorIndexes[i]];
     }
