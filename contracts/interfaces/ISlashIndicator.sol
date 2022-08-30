@@ -6,9 +6,10 @@ interface ISlashIndicator {
   struct Indicator {
     /// @dev The block height that the indicator get updated, make sure this update once each block
     uint256 height;
-    /// @dev Number of missed block the validator, should not be get decreased to keep track the
-    /// misbehavior records the validator.
-    uint256 counter;
+    /// @dev Number of missed block the validator, reset everyday or once reaching the fenoly threshold
+    uint128 counter;
+    /// @dev Tracking the misbehavior records the validator
+    uint128 historicalCounter;
   }
 
   /**
@@ -27,9 +28,9 @@ interface ISlashIndicator {
    * @dev Reset the counter of the validator everyday
    *
    * Requirements:
-   * - Only validator can call this method
+   * - Only validator contract can call this method
    */
-  function resetCounter() external;
+  function resetCounters() external;
 
   /**
    * @notice Slash for double signing
@@ -49,5 +50,10 @@ interface ISlashIndicator {
   /**
    * @notice Get slash indicator of a validator
    */
-  function getSlashIndicator(address validator) external view returns (uint256 height, uint256 counter);
+  function getSlashIndicator(address validator) external view returns (Indicator memory);
+
+  /**
+   * @notice Get slash threshold
+   */
+  function getSlashThresholds() external view returns (uint256 misdemeanorThreshold, uint256 felonyThreshold);
 }
