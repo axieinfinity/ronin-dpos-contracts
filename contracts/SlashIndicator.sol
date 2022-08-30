@@ -19,6 +19,7 @@ contract SlashIndicator is ISlashIndicator {
   uint256 public constant FELONY_THRESHOLD = 150;
 
   /// State of the contract
+  bool public initialized;
   address[] public validators;
   mapping(address => Indicator) public indicators;
   uint256 public previousHeight;
@@ -50,10 +51,20 @@ contract SlashIndicator is ISlashIndicator {
     previousHeight = block.number;
   }
 
-  constructor (IValidatorSet _validatorSetContract, IStaking _stakingContract) {
+  modifier onlyInitialized() {
+    require(initialized, "Contract is not initialized");
+    _;
+  }
+
+  constructor () {
     misdemeanorThreshold = MISDEMEANOR_THRESHOLD;
     felonyThreshold = FELONY_THRESHOLD;
+  }
 
+  function initialize(IValidatorSet _validatorSetContract, IStaking _stakingContract) external {
+    require(!initialized, "Contract is already initialized");
+
+    initialized = true;
     validatorSetContract = _validatorSetContract;
     stakingContract = _stakingContract;
   }
@@ -68,7 +79,7 @@ contract SlashIndicator is ISlashIndicator {
    * - Only coinbase can call this method
    *
    */
-  function slash(address _validatorAddr) external onlyCoinbase oncePerBlock {
+  function slash(address _validatorAddr) external onlyInitialized onlyCoinbase oncePerBlock {
     // Check if the to be slashed validator is in the current epoch 
     require(validatorSetContract.isCurrentValidator(_validatorAddr), "Cannot slash validator not in current epoch");
 
@@ -103,7 +114,7 @@ contract SlashIndicator is ISlashIndicator {
    * Requirements:
    * - Only validator contract can call this method
    */
-  function resetCounters() external onlyValidatorContract {
+  function resetCounters() external onlyInitialized onlyValidatorContract {
     if (validators.length == 0) {
       return;
     }
@@ -125,7 +136,7 @@ contract SlashIndicator is ISlashIndicator {
    * - Only coinbase can call this method
    *
    */
-  function slashDoubleSign(address valAddr, bytes calldata evidence) external onlyCoinbase {
+  function slashDoubleSign(address valAddr, bytes calldata evidence) external onlyInitialized onlyCoinbase {
     revert("Not implemented");
   }
 

@@ -3,8 +3,9 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "./interfaces/IValidatorSet.sol";
+import "./interfaces/ISlashIndicator.sol";
 import "./interfaces/IStaking.sol";
+import "./interfaces/IValidatorSet.sol";
 import "./ValidatorSetBase.sol";
 
 /**
@@ -22,6 +23,7 @@ contract ValidatorSet is ValidatorSetBase {
   uint256 public lastUpdated;
 
   IStaking stakingContract;
+  ISlashIndicator slashContract;
 
   event ValidatorSetUpdated();
   event ValidatorJailed(address indexed validator);
@@ -50,8 +52,9 @@ contract ValidatorSet is ValidatorSetBase {
     _;
   }
 
-  constructor(IStaking _stakingContract) {
+  constructor(IStaking _stakingContract, ISlashIndicator _slashContract) {
     stakingContract = _stakingContract;
+    slashContract = _slashContract;
     numOfCabinets = INIT_NUM_OF_CABINETS;
     epochLength = INIT_EPOCH_LENGTH;
   }
