@@ -9,6 +9,15 @@ import "../ValidatorSetCore.sol";
  * @notice This contract maintains set of validator in the current epoch of Ronin network
  */
 contract MockValidatorSetCore is ValidatorSetCore {
+
+  function isInCurrentValidatorSet(address _addr) external view returns (bool) {
+    return _isInCurrentValidatorSet(_addr);
+  }
+
+  function getCurrentValidatorSetSize() external view returns (uint256) {
+    return _getCurrentValidatorSetSize();
+  }
+
   function setValidatorAtMiningIndex(uint256 _miningIndex, IStaking.ValidatorCandidate memory _incomingValidator)
     external
   {
@@ -22,8 +31,8 @@ contract MockValidatorSetCore is ValidatorSetCore {
     return _setValidator(_incomingValidator, _forced);
   }
 
-  function removeValidatorAtMiningIndex(uint256 _miningIndex) external {
-    _removeValidatorAtMiningIndex(_miningIndex);
+  function popValidatorFromMiningIndex() external {
+    _popValidatorFromMiningIndex();
   }
 
   function getValidatorAtMiningIndex(uint256 _miningIndex) external view returns (IValidatorSet.Validator memory) {

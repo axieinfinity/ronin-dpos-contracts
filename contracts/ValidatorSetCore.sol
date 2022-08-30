@@ -16,35 +16,44 @@ abstract contract ValidatorSetCore {
   /// @dev Array of all validators. The element at 0-slot is reserved for unknown validator.
   IValidatorSet.Validator[] public validatorSet;
   /// @dev Map of array of all validators
-  mapping(address => uint256) public validatorSetMap;
-  /// @dev Enumerable map of indexes of the current validator set, e.g. the array [3, 4, 1] tells
+  mapping(address => uint) public validatorSetMap;
+  /// @dev Enumerable map of indexes of the current validator set, e.g. the array [0, 3, 4, 1] tells
   /// the sequence of validators to mine block in the next epoch will be at the 3-, 4- and 1-index,
   /// One can query the mining order of an arbitrary address by this enumerable map. This array is
-  /// indexed from 0, but its content is non-zero value, due to reserved 0-slot in `validatorSet`.
-  EnumerableMap.AddressToUintMap internal currentValidatorIndexesMap;
+  /// indexed from 1, and its content is non-zero value, due to reserved 0-slot in `validatorSet`.
+  uint[] internal currentValidatorIndexes;
+  mapping(address => uint) currentValidatorIndexesMap;
 
   constructor() {
     // Add empty validator at 0-slot for the set map
     validatorSet.push();
+    currentValidatorIndexes.push();
   }
 
-  function _setValidatorAtMiningIndex(uint256 _miningIndex, IStaking.ValidatorCandidate memory _incomingValidator)
+  function _isInCurrentValidatorSet(address _addr) internal view returns (bool) {
+    return (currentValidatorIndexesMap[_addr] != 0);
+  }
+
+  function _getCurrentValidatorSetSize() internal view returns (uint) {
+    return currentValidatorIndexes.length - 1;
+  }
+
+  function _setValidatorAtMiningIndex(uint _miningIndex, IStaking.ValidatorCandidate memory _incomingValidator)
     internal
   {
+    require(_miningIndex > 0, "Validator: Cannot set at 0-index of mining set");
+    uint _length = currentValidatorIndexes.length;
+    require(_miningIndex <= _length, "Validator: Cannot set at out-of-bound mining set");
+
     address _newValAddr = _incomingValidator.consensusAddr;
-    uint256 _index = _setValidator(_incomingValidator, false);
-    uint256 _indexesLength = currentValidatorIndexesMap.length();
+    uint _incomingIndex = _setValidator(_incomingValidator, false);
 
-
-    require(_miningIndex <= _indexesLength, "Cannot set mining index greater than current indexes array length");
-    if (_miningIndex < _indexesLength) {
-      (address _oldValAddr, ) = currentValidatorIndexesMap.at(_miningIndex);
-      if (_oldValAddr != _newValAddr) {
-        currentValidatorIndexesMap.remove(_oldValAddr);
-      }
+    currentValidatorIndexesMap[_newValAddr] = _miningIndex;
+    if (_miningIndex < _length) {
+      currentValidatorIndexes[_miningIndex] = _incomingIndex;
+    } else {
+      currentValidatorIndexes.push(_incomingIndex);
     }
-
-    currentValidatorIndexesMap.set(_newValAddr, _index);
   }
 
   /**
@@ -52,9 +61,9 @@ abstract contract ValidatorSetCore {
    */
   function _setValidator(IStaking.ValidatorCandidate memory _incomingValidator, bool _forcedIfExist)
     internal
-    returns (uint256 validatorIndex_)
+    returns (uint validatorIndex_)
   {
-    (bool _success, IValidatorSet.Validator storage _currentValidator, uint256 _actualIndex) = _tryGetValidator(
+    (bool _success, IValidatorSet.Validator storage _currentValidator, uint _actualIndex) = _tryGetValidator(
       _incomingValidator.consensusAddr
     );
 
@@ -69,21 +78,25 @@ abstract contract ValidatorSetCore {
     }
   }
 
-  function _removeValidatorAtMiningIndex(uint256 _miningIndex) internal {
-    (address _oldValAddr, ) = currentValidatorIndexesMap.at(_miningIndex);
-    currentValidatorIndexesMap.remove(_oldValAddr);
+  function _popValidatorFromMiningIndex() internal {
+    uint _length = currentValidatorIndexes.length - 1;
+    require(_length > 1, "Validator: Cannot remove the last element"); 
+
+    IValidatorSet.Validator storage _lastValidatorInEpoch = validatorSet[currentValidatorIndexes[_length]]; 
+    currentValidatorIndexesMap[_lastValidatorInEpoch.consensusAddr] = 0;
+    currentValidatorIndexes.pop();
   }
 
-  function _getValidatorAtMiningIndex(uint256 _miningIndex) internal view returns (IValidatorSet.Validator storage) {
-    require(_miningIndex < currentValidatorIndexesMap.length(), "No validator exists at queried mining index");
-    (, uint256 _index) = currentValidatorIndexesMap.at(_miningIndex);
-    require(_index != 0, "No validator exists at mining index 0");
-    return validatorSet[_index];
+  function _getValidatorAtMiningIndex(uint _miningIndex) internal view returns (IValidatorSet.Validator storage) {
+    require(_miningIndex < currentValidatorIndexes.length, "Validator: No validator exists at queried mining index");
+    uint _actualIndex = currentValidatorIndexes[_miningIndex];
+    require(_actualIndex != 0, "Validator: No validator exists at mining index 0");
+    return validatorSet[_actualIndex];
   }
 
   function _getValidator(address _valAddr) internal view returns (IValidatorSet.Validator storage) {
     (bool _success, IValidatorSet.Validator storage _v, ) = _tryGetValidator(_valAddr);
-    require(_success, string(abi.encodePacked("Nonexistent validator ", _valAddr)));
+    require(_success, string(abi.encodePacked("Validator: Nonexistent validator ", _valAddr)));
     return _v;
   }
 
@@ -93,15 +106,15 @@ abstract contract ValidatorSetCore {
     returns (
       bool,
       IValidatorSet.Validator storage,
-      uint256
+      uint
     )
   {
-    uint256 _index = validatorSetMap[_valAddr];
-    IValidatorSet.Validator storage _v = validatorSet[_index];
-    if (_index == 0) {
+    uint _actualIndex = validatorSetMap[_valAddr];
+    IValidatorSet.Validator storage _v = validatorSet[_actualIndex];
+    if (_actualIndex == 0) {
       return (false, _v, 0);
     }
-    return (true, _v, _index);
+    return (true, _v, _actualIndex);
   }
 
   function _isSameValidator(IStaking.ValidatorCandidate memory _v1, IValidatorSet.Validator memory _v2)
@@ -115,21 +128,21 @@ abstract contract ValidatorSetCore {
   function __setExistedValidator(
     IStaking.ValidatorCandidate memory _incomingValidator,
     IValidatorSet.Validator storage _currentValidator
-  ) private returns (uint256) {
+  ) private returns (uint) {
     _currentValidator.consensusAddr = _incomingValidator.consensusAddr;
     _currentValidator.treasuryAddr = _incomingValidator.treasuryAddr;
 
     return validatorSetMap[_currentValidator.consensusAddr];
   }
 
-  function __setUnexistentValidator(IStaking.ValidatorCandidate memory _incomingValidator) private returns (uint256) {
-    uint256 index = validatorSet.length;
+  function __setUnexistentValidator(IStaking.ValidatorCandidate memory _incomingValidator) private returns (uint) {
+    uint _actualIndex = validatorSet.length;
 
-    validatorSetMap[_incomingValidator.consensusAddr] = index;
+    validatorSetMap[_incomingValidator.consensusAddr] = _actualIndex;
     IValidatorSet.Validator storage _v = validatorSet.push();
     _v.consensusAddr = _incomingValidator.consensusAddr;
     _v.treasuryAddr = _incomingValidator.treasuryAddr;
 
-    return index;
+    return _actualIndex;
   }
 }

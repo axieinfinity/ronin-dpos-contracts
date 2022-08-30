@@ -63,6 +63,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       accounts: {
         mnemonic: DEFAULT_MNEMONIC,
+        count: 100
       },
     },
     'ronin-testnet': testnet,

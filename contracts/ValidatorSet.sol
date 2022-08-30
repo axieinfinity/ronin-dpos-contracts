@@ -85,7 +85,7 @@ contract ValidatorSet is IValidatorSet, ValidatorSetCore {
     Validator storage _validator = _getValidator(_valAddr);
 
     // 1. check if validator is in current epoch
-    if (currentValidatorIndexesMap.contains(_valAddr)) {
+    if (_isInCurrentValidatorSet(_valAddr)) {
       // 2. check if validator is in jail
       if (_validator.jailed) {
         emit DeprecatedDeposit(_valAddr, _value);
@@ -121,7 +121,7 @@ contract ValidatorSet is IValidatorSet, ValidatorSetCore {
   }
 
   function getValidators() public view returns (address[] memory) {
-    uint256 size = currentValidatorIndexesMap.length();
+    uint256 size = _getCurrentValidatorSetSize();
     address[] memory validatorAddresses = new address[](size);
     for (uint256 i = 0; i < size; i++) {
       Validator memory _v = _getValidatorAtMiningIndex(i);
@@ -140,7 +140,7 @@ contract ValidatorSet is IValidatorSet, ValidatorSetCore {
   }
 
   function isCurrentValidator(address _addr) public view returns (bool) {
-    return currentValidatorIndexesMap.contains(_addr);
+    return _isInCurrentValidatorSet(_addr);
   }
 
   ///
@@ -148,7 +148,7 @@ contract ValidatorSet is IValidatorSet, ValidatorSetCore {
   ///
 
   function _doUpdateState(IStaking.ValidatorCandidate[] memory _incomingValidatorSet) private {
-    uint256 n = currentValidatorIndexesMap.length();
+    uint256 n = _getCurrentValidatorSetSize();
     uint256 m = _incomingValidatorSet.length;
     uint256 k = n < m ? n : m;
 
@@ -179,7 +179,7 @@ contract ValidatorSet is IValidatorSet, ValidatorSetCore {
     // updating part:      ^^^^^^
     if (n > m) {
       for (uint256 i = m; i < n; ++i) {
-        _removeValidatorAtMiningIndex(i);
+        _popValidatorFromMiningIndex();
       }
     }
   }
