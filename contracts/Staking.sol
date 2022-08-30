@@ -4,6 +4,8 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./interfaces/IStaking.sol";
+import "./interfaces/IValidatorSet.sol";
+import "./libraries/Sorting.sol";
 
 abstract contract Staking is IStaking, Initializable {
   /// TODO: expose fn to get validator info by validator address.
@@ -27,6 +29,17 @@ abstract contract Staking is IStaking, Initializable {
   // TODO: expose this fn in the interface
   /// @dev Configuration of minimum balance for being a validator
   uint256 public minValidatorBalance;
+
+  uint256[] internal currentValidatorIndexes;
+
+  IValidatorSet validatorSetContract;
+
+  uint256 public numOfCabinets;
+
+  modifier onlyValidatorSetContract() {
+    require(msg.sender == address(validatorSetContract), "Only validator set contract");
+    _;
+  }
 
   constructor() {
     _disableInitializers();
@@ -211,5 +224,50 @@ abstract contract Staking is IStaking, Initializable {
     uint256 _idx = _validatorIndexes[_consensusAddr];
     require(_idx > 0, "Staking: query for nonexistent candidate");
     _candidate = validatorCandidates[_idx];
+  }
+
+  /**
+   * @notice Update set of validators
+   *
+   * @dev Sorting the validators by their current balance, then pick the top N validators to be
+   * assigned to the new set. The result is returned to the `ValidatorSet` contract.
+   *
+   * Requirements:
+   * - Only validator and `ValidatorSet` contract can call this function
+   * 
+   * @return newValidatorSet Validator set for the new epoch
+   */
+  function updateValidatorSet() external returns (ValidatorCandidate[] memory newValidatorSet) {
+    uint _length = validatorCandidates.length;
+    Sorting.Node[] memory _nodes = new Sorting.Node[](_length);
+    Sorting.Node[] memory _sortedNodes = new Sorting.Node[](_length);
+
+    for (uint i = 0; i < _length; i++) {
+      ValidatorCandidate memory _validator = validatorCandidates[i];
+
+      _nodes[i].key = i;
+      _nodes[i].value = _validator.stakedAmount + _validator.delegatedAmount;
+    }
+
+    delete currentValidatorIndexes;
+    _sortedNodes = Sorting.sortNodes(_nodes);
+
+    /// TODO: pick M validators which are governance
+    uint _currentSetSize = _length < numOfCabinets ? _length : numOfCabinets;
+    for (uint i = 0; i < _currentSetSize; i++) {
+      currentValidatorIndexes.push(_sortedNodes[i].value);
+    }
+
+    return getCurrentValidatorSet();
+  }
+
+  function getCurrentValidatorSet() public view returns (ValidatorCandidate[] memory currentValidatorSet_) {
+    uint _length = currentValidatorIndexes.length;
+    currentValidatorSet_ = new ValidatorCandidate[](currentValidatorIndexes.length); 
+    for (uint i = 0; i < _length; i++) {
+      currentValidatorSet_[i] = validatorCandidates[currentValidatorIndexes[i]];
+    }
+
+    return currentValidatorSet_;
   }
 }

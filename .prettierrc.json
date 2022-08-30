@@ -3,7 +3,7 @@
   "tabWidth": 2,
   "useTabs": false,
   "bracketSpacing": true,
-  "explicitTypes": "always",
+  "explicitTypes": "preserve",
   "overrides": [
     {
       "files": "*.sol",

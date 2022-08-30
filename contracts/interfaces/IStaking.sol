@@ -16,6 +16,8 @@ interface IStaking {
     uint256 stakedAmount;
     /// @dev The RON amount from the delegator.
     uint256 delegatedAmount;
+    /// @dev Mark the validator is a governance node
+    bool governing;
     /// @dev For upgrability purpose
     uint256[20] ____gap;
   }
@@ -87,8 +89,12 @@ interface IStaking {
    * @notice Update set of validators
    *
    * @dev Sorting the validators by their current balance, then pick the top N validators to be
-   * assigned to the new set. The result is returned to the `ValidatorSet` contract.
-   *
+   * assigned to the new set. The result is returned to the `ValidatorSet` contract. There will be
+   * a threshold of M validator must be come from the governance. In case this threshold is set, 
+   * M slots are reversed for the governing validator. The total of validators is configured in the
+   * `numOfCabinets` variable. If the actual number of validator candidates is not met, all of the
+   * candidates will become the validators.
+   * 
    * Requirements:
    * - Only validator and `ValidatorSet` contract can call this function
    * 
@@ -96,6 +102,13 @@ interface IStaking {
    */
   function updateValidatorSet() external returns (ValidatorCandidate[] memory newValidatorSet);
 
+  /**
+   * @notice Get current validator set. Number of current validator is set in `numOfCabinets`. 
+   * 
+   * @dev If the actual number of candidates is lower, all of the candidates are returned
+   */
+  function getCurrentValidatorSet() external returns (ValidatorCandidate[] memory currentValidatorSet);
+  
   /**
    * @dev Handle deposit request. Update validators' reward balance and delegators' balance.
    *
