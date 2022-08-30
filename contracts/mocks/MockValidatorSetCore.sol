@@ -8,7 +8,7 @@ import "../ValidatorSetCore.sol";
  * @title Set of validators in current epoch
  * @notice This contract maintains set of validator in the current epoch of Ronin network
  */
-contract ValidatorSetCoreMock is ValidatorSetCore {
+contract MockValidatorSetCore is ValidatorSetCore {
   function setValidatorAtMiningIndex(uint256 _miningIndex, IStaking.ValidatorCandidate memory _incomingValidator)
     external
   {
@@ -34,7 +34,7 @@ contract ValidatorSetCoreMock is ValidatorSetCore {
     return _getValidator(_valAddr);
   }
 
-  function tryGetValidator(address _valAddr) external view returns (bool, IValidatorSet.Validator memory) {
+  function tryGetValidator(address _valAddr) external view returns (bool, IValidatorSet.Validator memory, uint256) {
     return _tryGetValidator(_valAddr);
   }
 

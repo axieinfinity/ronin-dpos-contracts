@@ -15,7 +15,7 @@ abstract contract ValidatorSetCore {
 
   /// @dev Array of all validators. The element at 0-slot is reserved for unknown validator.
   IValidatorSet.Validator[] public validatorSet;
-  /// @dev Map of array of all validator
+  /// @dev Map of array of all validators
   mapping(address => uint256) public validatorSetMap;
   /// @dev Enumerable map of indexes of the current validator set, e.g. the array [3, 4, 1] tells
   /// the sequence of validators to mine block in the next epoch will be at the 3-, 4- and 1-index,
@@ -33,25 +33,40 @@ abstract contract ValidatorSetCore {
   {
     address _newValAddr = _incomingValidator.consensusAddr;
     uint256 _index = _setValidator(_incomingValidator, false);
+    uint256 _indexesLength = currentValidatorIndexesMap.length();
 
-    (address _oldValAddr, ) = currentValidatorIndexesMap.at(_miningIndex);
-    if (_oldValAddr != _newValAddr) {
-      currentValidatorIndexesMap.remove(_oldValAddr);
-      currentValidatorIndexesMap.set(_newValAddr, _index);
+
+    require(_miningIndex <= _indexesLength, "Cannot set mining index greater than current indexes array length");
+    if (_miningIndex < _indexesLength) {
+      (address _oldValAddr, ) = currentValidatorIndexesMap.at(_miningIndex);
+      if (_oldValAddr != _newValAddr) {
+        currentValidatorIndexesMap.remove(_oldValAddr);
+      }
     }
+
+    currentValidatorIndexesMap.set(_newValAddr, _index);
   }
 
-  function _setValidator(IStaking.ValidatorCandidate memory _incomingValidator, bool _forced)
+  /**
+   * @return validatorIndex_ Actual index of the validator in the `validatorSet`
+   */
+  function _setValidator(IStaking.ValidatorCandidate memory _incomingValidator, bool _forcedIfExist)
     internal
-    returns (uint256)
+    returns (uint256 validatorIndex_)
   {
-    (bool _success, IValidatorSet.Validator storage _currentValidator) = _tryGetValidator(
+    (bool _success, IValidatorSet.Validator storage _currentValidator, uint256 _actualIndex) = _tryGetValidator(
       _incomingValidator.consensusAddr
     );
-    if (_success && _forced) {
-      return __setExistedValidator(_incomingValidator, _currentValidator);
+
+    if (!_success) {
+      return __setUnexistentValidator(_incomingValidator);
+    } else {
+      if (_forcedIfExist) {
+        return __setExistedValidator(_incomingValidator, _currentValidator);
+      } else {
+        return _actualIndex;
+      }
     }
-    return __setUnexistentValidator(_incomingValidator);
   }
 
   function _removeValidatorAtMiningIndex(uint256 _miningIndex) internal {
@@ -60,24 +75,33 @@ abstract contract ValidatorSetCore {
   }
 
   function _getValidatorAtMiningIndex(uint256 _miningIndex) internal view returns (IValidatorSet.Validator storage) {
+    require(_miningIndex < currentValidatorIndexesMap.length(), "No validator exists at queried mining index");
     (, uint256 _index) = currentValidatorIndexesMap.at(_miningIndex);
-    require(_index != 0, string(abi.encodePacked("Nonexistent validator at index ", _miningIndex)));
+    require(_index != 0, "No validator exists at mining index 0");
     return validatorSet[_index];
   }
 
   function _getValidator(address _valAddr) internal view returns (IValidatorSet.Validator storage) {
-    (bool _success, IValidatorSet.Validator storage _v) = _tryGetValidator(_valAddr);
+    (bool _success, IValidatorSet.Validator storage _v, ) = _tryGetValidator(_valAddr);
     require(_success, string(abi.encodePacked("Nonexistent validator ", _valAddr)));
     return _v;
   }
 
-  function _tryGetValidator(address _valAddr) internal view returns (bool, IValidatorSet.Validator storage) {
+  function _tryGetValidator(address _valAddr)
+    internal
+    view
+    returns (
+      bool,
+      IValidatorSet.Validator storage,
+      uint256
+    )
+  {
     uint256 _index = validatorSetMap[_valAddr];
     IValidatorSet.Validator storage _v = validatorSet[_index];
     if (_index == 0) {
-      return (false, _v);
+      return (false, _v, 0);
     }
-    return (true, _v);
+    return (true, _v, _index);
   }
 
   function _isSameValidator(IStaking.ValidatorCandidate memory _v1, IValidatorSet.Validator memory _v2)
