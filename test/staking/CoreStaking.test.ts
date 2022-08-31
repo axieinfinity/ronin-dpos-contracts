@@ -19,8 +19,8 @@ const local = {
   claimableRewardForB: BigNumber.from(0),
   recordReward: async function (reward: BigNumberish) {
     const totalStaked = await manager.totalBalance();
-    const stakingAmountA = await manager.getCurrentBalance(userA.address);
-    const stakingAmountB = await manager.getCurrentBalance(userB.address);
+    const stakingAmountA = await manager.balanceOf(userA.address);
+    const stakingAmountB = await manager.balanceOf(userB.address);
     this.accumulatedRewardForA = this.accumulatedRewardForA.add(
       BigNumber.from(reward).mul(stakingAmountA).div(totalStaked)
     );
@@ -54,7 +54,7 @@ const local = {
 
 const expectLocalCalculationRight = async () => {
   {
-    const userReward = await manager.getUserReward(userA.address);
+    const userReward = await manager.getTotalReward(userA.address);
     expect(
       userReward.sub(local.accumulatedRewardForA).abs().lte(EPS),
       `invalid user reward for A expected=${local.accumulatedRewardForA.toString()} actual=${userReward}`
@@ -66,7 +66,7 @@ const expectLocalCalculationRight = async () => {
     ).to.be.true;
   }
   {
-    const userReward = await manager.getUserReward(userB.address);
+    const userReward = await manager.getTotalReward(userB.address);
     expect(
       userReward.sub(local.accumulatedRewardForB).abs().lte(EPS),
       `invalid user reward for B expected=${local.accumulatedRewardForB.toString()} actual=${userReward}`
@@ -80,191 +80,234 @@ const expectLocalCalculationRight = async () => {
 };
 
 describe('Core Staking test', () => {
-  describe('Total reward calculation', async () => {
-    before(async () => {
-      [deployer, userA, userB] = await ethers.getSigners();
-      manager = await new MockManager__factory(deployer).deploy();
-      await network.provider.send('evm_setAutomine', [false]);
-      local.reset();
-    });
+  before(async () => {
+    [deployer, userA, userB] = await ethers.getSigners();
+    manager = await new MockManager__factory(deployer).deploy();
+    await network.provider.send('evm_setAutomine', [false]);
+    local.reset();
+  });
 
-    it('Should be able to stake/unstake and get right total reward for a successful epoch', async () => {
-      await manager.stake(userA.address, 100);
-      await manager.stake(userB.address, 100);
-      await network.provider.send('evm_mine');
+  it('Should be able to stake/unstake and get right total reward for a successful epoch', async () => {
+    await manager.stake(userA.address, 100);
+    await manager.stake(userB.address, 100);
+    await network.provider.send('evm_mine');
 
-      await manager.recordReward(1000);
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
 
-      await manager.recordReward(1000);
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await network.provider.send('evm_mine');
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
 
-      await manager.stake(userA.address, 200);
-      await network.provider.send('evm_mine');
-      await expectLocalCalculationRight();
+    await manager.stake(userA.address, 200);
+    await network.provider.send('evm_mine');
+    await expectLocalCalculationRight();
 
-      await manager.recordReward(1000);
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
 
-      await manager.unstake(userA.address, 200);
-      await manager.recordReward(1000);
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
+    await manager.unstake(userA.address, 200);
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
 
-      await manager.stake(userA.address, 200);
-      await network.provider.send('evm_mine');
-      await local.recordReward(0);
-      await expectLocalCalculationRight();
+    await manager.stake(userA.address, 200);
+    await network.provider.send('evm_mine');
+    await local.recordReward(0);
+    await expectLocalCalculationRight();
 
-      await manager.commitRewardPool();
-      await manager.endEpoch();
-      await network.provider.send('evm_mine');
-      local.commitRewardPool();
-      await expectLocalCalculationRight();
-    });
+    await manager.commitRewardPool();
+    await manager.endEpoch();
+    await network.provider.send('evm_mine');
+    local.commitRewardPool();
+    await expectLocalCalculationRight();
+  });
 
-    it('Should be able to stake/unstake and get right total reward for a slashed epoch', async () => {
-      await manager.stake(userA.address, 100);
-      await network.provider.send('evm_mine');
-      await expectLocalCalculationRight();
-      await local.recordReward(0);
+  it('Should be able to stake/unstake and get right total reward for a slashed epoch', async () => {
+    await manager.stake(userA.address, 100);
+    await network.provider.send('evm_mine');
+    await expectLocalCalculationRight();
+    await local.recordReward(0);
 
-      await manager.recordReward(1000);
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
 
-      await manager.recordReward(1000);
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
 
-      await manager.stake(userA.address, 300);
-      await manager.recordReward(1000);
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
+    await manager.stake(userA.address, 300);
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
 
-      await manager.slash();
-      await network.provider.send('evm_mine');
-      local.slash();
-      await expectLocalCalculationRight();
+    await manager.slash();
+    await network.provider.send('evm_mine');
+    local.slash();
+    await expectLocalCalculationRight();
 
-      await manager.recordReward(0);
-      await network.provider.send('evm_mine');
-      await local.recordReward(0);
-      await expectLocalCalculationRight();
+    await manager.recordReward(0);
+    await network.provider.send('evm_mine');
+    await local.recordReward(0);
+    await expectLocalCalculationRight();
 
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
+    await network.provider.send('evm_mine');
+    await network.provider.send('evm_mine');
+    await network.provider.send('evm_mine');
+    await network.provider.send('evm_mine');
 
-      await manager.unstake(userA.address, 300);
-      await network.provider.send('evm_mine');
-      await manager.unstake(userA.address, 100);
-      await network.provider.send('evm_mine');
-      await expectLocalCalculationRight();
+    await manager.unstake(userA.address, 300);
+    await network.provider.send('evm_mine');
+    await manager.unstake(userA.address, 100);
+    await network.provider.send('evm_mine');
+    await expectLocalCalculationRight();
 
-      await manager.commitRewardPool();
-      await manager.endEpoch();
-      await network.provider.send('evm_mine');
-      await expectLocalCalculationRight();
-    });
+    await manager.commitRewardPool();
+    await manager.endEpoch();
+    await network.provider.send('evm_mine');
+    await expectLocalCalculationRight();
+  });
 
-    it('Should be able to stake/unstake/claim and get right total reward for a slashed epoch again', async () => {
-      await manager.stake(userA.address, 100);
-      await network.provider.send('evm_mine');
-      await local.recordReward(0);
-      await expectLocalCalculationRight();
+  it('Should be able to stake/unstake/claim and get right total reward for a slashed epoch again', async () => {
+    await manager.stake(userA.address, 100);
+    await network.provider.send('evm_mine');
+    await local.recordReward(0);
+    await expectLocalCalculationRight();
 
-      await manager.claimReward(userA.address);
-      await manager.recordReward(1000);
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      local.claimRewardForA();
-      await expectLocalCalculationRight();
+    await manager.claimReward(userA.address);
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    local.claimRewardForA();
+    await expectLocalCalculationRight();
 
-      await manager.recordReward(1000);
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
 
-      await manager.stake(userA.address, 300);
-      await manager.recordReward(1000);
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
+    await manager.stake(userA.address, 300);
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
 
-      await manager.slash();
-      await network.provider.send('evm_mine');
-      local.slash();
-      await expectLocalCalculationRight();
+    await manager.slash();
+    await network.provider.send('evm_mine');
+    local.slash();
+    await expectLocalCalculationRight();
 
-      await manager.recordReward(0);
-      await network.provider.send('evm_mine');
-      await local.recordReward(0);
-      await expectLocalCalculationRight();
+    await manager.recordReward(0);
+    await network.provider.send('evm_mine');
+    await local.recordReward(0);
+    await expectLocalCalculationRight();
 
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
+    await network.provider.send('evm_mine');
+    await network.provider.send('evm_mine');
+    await network.provider.send('evm_mine');
+    await network.provider.send('evm_mine');
 
-      await manager.unstake(userA.address, 300);
-      await network.provider.send('evm_mine');
-      await manager.unstake(userA.address, 100);
-      await network.provider.send('evm_mine');
-      await expectLocalCalculationRight();
+    await manager.unstake(userA.address, 300);
+    await network.provider.send('evm_mine');
+    await manager.unstake(userA.address, 100);
+    await network.provider.send('evm_mine');
+    await expectLocalCalculationRight();
 
-      await manager.claimReward(userB.address);
-      await manager.commitRewardPool();
-      await manager.endEpoch();
-      await network.provider.send('evm_mine');
-      local.claimRewardForB();
-      await expectLocalCalculationRight();
-    });
+    await manager.claimReward(userB.address);
+    await manager.commitRewardPool();
+    await manager.endEpoch();
+    await network.provider.send('evm_mine');
+    local.claimRewardForB();
+    await expectLocalCalculationRight();
+  });
 
-    it('Should be able to get right claimable reward for the committed epoch', async () => {
-      await manager.recordReward(1000);
-      await manager.commitRewardPool();
-      await manager.endEpoch();
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      local.commitRewardPool();
-      await expectLocalCalculationRight();
-      console.log(local);
-      console.log('=================');
+  it('Should be able to get right claimable reward for the committed epoch', async () => {
+    await manager.recordReward(1000);
+    await manager.commitRewardPool();
+    await manager.endEpoch();
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    local.commitRewardPool();
+    await expectLocalCalculationRight();
 
-      await manager.claimReward(userA.address);
-      await manager.recordReward(1000);
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      local.claimRewardForA();
-      console.log(local, await ethers.provider.getBlockNumber());
-      await expectLocalCalculationRight();
-      console.log('=================');
+    await manager.claimReward(userA.address);
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    local.claimRewardForA();
+    await expectLocalCalculationRight();
 
-      await manager.claimReward(userA.address);
-      await network.provider.send('evm_mine');
-      local.claimRewardForA();
-      console.log(local, await ethers.provider.getBlockNumber());
-      await expectLocalCalculationRight();
-      console.log('=================');
+    await manager.claimReward(userA.address);
+    await network.provider.send('evm_mine');
+    local.claimRewardForA();
+    console.log(local, await ethers.provider.getBlockNumber());
+    await expectLocalCalculationRight();
 
-      await manager.claimReward(userB.address);
-      await network.provider.send('evm_mine');
-      local.claimRewardForB();
-      await expectLocalCalculationRight();
-    });
+    await manager.claimReward(userB.address);
+    await manager.commitRewardPool();
+    await manager.endEpoch();
+    await network.provider.send('evm_mine');
+    local.claimRewardForB();
+    local.commitRewardPool();
+    await expectLocalCalculationRight();
+  });
+
+  it('Should be able to get right claimable reward test', async () => {
+    console.log(0, local);
+    await manager.stake(userA.address, 100);
+    await network.provider.send('evm_mine');
+
+    console.log(1, local);
+    await manager.stake(userA.address, 300);
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
+
+    console.log(2, local);
+    await manager.stake(userB.address, 200);
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
+
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
+
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
+
+    await manager.unstake(userB.address, 200);
+    await manager.unstake(userA.address, 400);
+    await manager.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await expectLocalCalculationRight();
+
+    console.log(3, local);
+    await manager.claimReward(userA.address);
+    await manager.claimReward(userB.address);
+    await network.provider.send('evm_mine');
+    local.claimRewardForA();
+    local.claimRewardForB();
+    await expectLocalCalculationRight();
+
+    console.log(4, local);
   });
 });

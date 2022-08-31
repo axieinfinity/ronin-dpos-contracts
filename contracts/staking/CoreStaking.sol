@@ -2,96 +2,183 @@
 
 pragma solidity ^0.8.9;
 
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 abstract contract CoreStaking {
-  struct UserRewardInfo {
-    uint256 debited; // +
-    uint256 credited; // -
+  struct PendingRewardFields {
+    // Recorded reward amount.
+    uint256 debited;
+    // The amount rewards that user have already earned.
+    uint256 credited;
+    // Last block number that the info updated.
     uint256 lastSyncBlock;
   }
 
-  struct UserRewardInfoSnapshot {
+  struct SettledRewardFields {
+    // The balance at the commit time.
     uint256 balance;
-    uint256 debited; // +
-    /// @dev Accumulated of the amount rewards per share (one unit staking).
+    // Recorded reward amount.
+    uint256 debited;
+    // Accumulated of the amount rewards per share (one unit staking).
     uint256 accumulatedRps;
   }
 
-  struct StakingPool {
+  struct PendingPool {
+    // Last block number that the info updated.
     uint256 lastSyncBlock;
-    /// @dev Accumulated of the amount rewards per share (one unit staking).
+    // Accumulated of the amount rewards per share (one unit staking).
     uint256 accumulatedRps;
   }
 
-  struct StakingPoolSnapshot {
+  struct SettledPool {
+    // Last block number that the info updated.
     uint256 lastSyncBlock;
-    /// @dev Accumulated of the amount rewards per share (one unit staking).
+    // Accumulated of the amount rewards per share (one unit staking).
     uint256 accumulatedRps;
   }
 
-  mapping(address => UserRewardInfoSnapshot) internal _sUserReward;
-  mapping(address => UserRewardInfo) internal _userReward;
+  /// @dev Mapping from the user address => settled reward info of the user
+  mapping(address => SettledRewardFields) internal _sUserReward;
+  /// @dev Mapping from the user address => pending reward info of the user
+  mapping(address => PendingRewardFields) internal _pUserReward;
 
-  function _syncUserInfo(address _user, uint256 _newBalance) internal {
-    UserRewardInfo storage _reward = _getUserRewardInfo(_user);
-    StakingPoolSnapshot memory _sPool = _getStakingPoolSnapshot();
+  /**
+   * @dev Syncs the user reward.
+   *
+   * Emits the `` event and the `` event.
+   *
+   * @notice The method should be called whenever the user's balance changes.
+   *
+   * TODO: add test to stake/unstake many times in block.
+   * TODO: add events.
+   *
+   */
+  function _syncUserReward(address _user, uint256 _newBalance) internal {
+    PendingRewardFields storage _reward = _getPendingRewardFields(_user);
+    SettledPool memory _sPool = _getSettledPool();
 
-    uint256 _lastUserReward = getUserReward(_user);
-    // Syncs the user reward snapshot once the last sync is committed (snapshotted).
+    // Syncs the reward once the last sync is settled.
     if (_reward.lastSyncBlock <= _sPool.lastSyncBlock) {
-      UserRewardInfoSnapshot storage _sReward = _getUserRewardInfoSnapshot(_user);
-      console.log("Synced for", _user, _lastUserReward, _sPool.accumulatedRps);
-      _sReward.balance = getCurrentBalance(_user);
-      _sReward.debited = _lastUserReward;
+      SettledRewardFields storage _sReward = _getSettledRewardFields(_user);
+      uint256 _claimableReward = getClaimableReward(_user);
+      // console.log("Synced for", _user, _claimableReward, _sPool.accumulatedRps);
+      _sReward.balance = balanceOf(_user);
+      _sReward.debited = _claimableReward;
       _sReward.accumulatedRps = _sPool.accumulatedRps;
     }
 
-    StakingPool memory _pool = _getStakingPool();
-    _reward.debited = _lastUserReward;
+    PendingPool memory _pool = _getPendingPool();
+    _reward.debited = getTotalReward(_user);
     _reward.credited = (_newBalance * _pool.accumulatedRps) / 1e18;
     _reward.lastSyncBlock = block.number;
   }
 
-  function getUserReward(address _user) public view returns (uint256) {
-    UserRewardInfo memory _reward = _getUserRewardInfo(_user);
-    StakingPool memory _pool = _getStakingPool();
+  /**
+   * @dev Returns the total reward.
+   */
+  function getTotalReward(address _user) public view returns (uint256) {
+    PendingRewardFields memory _reward = _getPendingRewardFields(_user);
+    PendingPool memory _pool = _getPendingPool();
 
-    uint256 _balance = getCurrentBalance(_user);
+    uint256 _balance = balanceOf(_user);
     if (_slashed(_pool, _blockNumberToEpoch(_reward.lastSyncBlock))) {
-      UserRewardInfoSnapshot memory _sReward = _getUserRewardInfoSnapshot(_user);
-      return _getUserRewardOnSlashed(_sReward, _pool.accumulatedRps, _balance);
+      SettledRewardFields memory _sReward = _getSettledRewardFields(_user);
+      uint256 _credited = (_sReward.accumulatedRps * _balance) / 1e18;
+      return (_balance * _pool.accumulatedRps) / 1e18 + _sReward.debited - _credited;
     }
 
-    console.log("getUserReward:\t", _balance, _pool.accumulatedRps, _reward.debited);
-    console.log("getUserReward:\t", _reward.credited);
+    // console.log("_getUserReward:\t", _balance, _pool.accumulatedRps, _reward.debited);
+    // console.log("_getUserReward:\t", _reward.credited);
     return (_balance * _pool.accumulatedRps) / 1e18 + _reward.debited - _reward.credited;
   }
 
-  function _getUserRewardOnSlashed(
-    UserRewardInfoSnapshot memory _sReward,
-    uint256 _accumulatedRps,
-    uint256 _balance
-  ) internal pure returns (uint256) {
-    uint256 _credited = (_sReward.accumulatedRps * _balance) / 1e18;
-    return (_balance * _accumulatedRps) / 1e18 + _sReward.debited - _credited;
+  function getClaimableReward(address _user) public view returns (uint256) {
+    PendingRewardFields memory _reward = _getPendingRewardFields(_user);
+    SettledRewardFields memory _sReward = _getSettledRewardFields(_user);
+    SettledPool memory _sPool = _getSettledPool();
+
+    // console.log("-> getClaimableReward", _user, _reward.lastSyncBlock, _sPool.lastSyncBlock);
+    if (_reward.lastSyncBlock <= _sPool.lastSyncBlock) {
+      // console.log("\t-> sync");
+      uint256 _currentBalance = balanceOf(_user);
+      _sReward.debited = (_currentBalance * _sPool.accumulatedRps) / 1e18 + _reward.debited - _reward.credited;
+      _sReward.balance = _currentBalance;
+      _sReward.accumulatedRps = _sPool.accumulatedRps;
+    }
+
+    uint256 _balance = _sReward.balance;
+    uint256 _credited = (_balance * _sReward.accumulatedRps) / 1e18;
+    // console.log("\t", _balance, _sReward.accumulatedRps, _sPool.accumulatedRps);
+    // console.log("\t", _sReward.debited);
+    return (_balance * _sPool.accumulatedRps) / 1e18 + _sReward.debited - _credited;
   }
 
-  function _getUserRewardInfo(address _user) internal view virtual returns (UserRewardInfo storage) {
-    return _userReward[_user];
+  /**
+   * @dev Returns the pending reward.
+   */
+  function getPendingReward(address _user) external view returns (uint256 _amount) {
+    _amount = getTotalReward(_user) - getClaimableReward(_user);
   }
 
-  function _getUserRewardInfoSnapshot(address _user) internal view virtual returns (UserRewardInfoSnapshot storage) {
+  /**
+   * @dev Claims the settled reward for a specific user.
+   */
+  function _claimReward(address _user) public returns (uint256 _amount) {
+    // uint256 _balance = balanceOf(_user);
+    _amount = getClaimableReward(_user);
+    SettledPool memory _sPool = _getSettledPool();
+    // PendingPool memory _pool = _getStakingPool();
+    // console.log("User", _user, "claimed", _amount);
+
+    PendingRewardFields storage _reward = _getPendingRewardFields(_user);
+    // console.log("claimReward: \t => (+)=", _reward.debited, _reward.debited);
+    // console.log("claimReward: \t => (-)=", _reward.credited, _reward.credited + _amount);
+    // _reward.debited = 0;
+    _reward.credited += _amount;
+    _reward.lastSyncBlock = block.number;
+    // console.log("claimReward: \t", _balance, _sPool.accumulatedRps);
+
+    SettledRewardFields storage _sReward = _getSettledRewardFields(_user);
+    _sReward.debited = 0;
+    _sReward.accumulatedRps = _sPool.accumulatedRps;
+  }
+
+  /**
+   * @dev Returns the pending pool.
+   */
+  function _getPendingPool() internal view virtual returns (PendingPool memory) {}
+
+  /**
+   * @dev Returns settled pool.
+   */
+  function _getSettledPool() internal view virtual returns (SettledPool memory) {}
+
+  /**
+   * @dev Returns the pending reward info of a specific user.
+   */
+  function _getPendingRewardFields(address _user) internal view virtual returns (PendingRewardFields storage) {
+    return _pUserReward[_user];
+  }
+
+  /**
+   * @dev Returns the settled reward info of a specific user.
+   */
+  function _getSettledRewardFields(address _user) internal view virtual returns (SettledRewardFields storage) {
     return _sUserReward[_user];
   }
 
-  function _slashed(StakingPool memory, uint256) internal view virtual returns (bool) {}
+  /**
+   * @dev Returns whether the pool is slashed in the epoch `_epoch`.
+   */
+  function _slashed(PendingPool memory, uint256 _epoch) internal view virtual returns (bool);
 
-  function _blockNumberToEpoch(uint256) internal view virtual returns (uint256) {}
+  /**
+   * @dev Returns the epoch from the block number.
+   */
+  function _blockNumberToEpoch(uint256) internal view virtual returns (uint256);
 
-  function _getStakingPool() internal view virtual returns (StakingPool memory) {}
-
-  function _getStakingPoolSnapshot() internal view virtual returns (StakingPoolSnapshot memory) {}
-
-  function getCurrentBalance(address) public view virtual returns (uint256) {}
+  /**
+   * @dev Returns the staking amount of the user.
+   */
+  function balanceOf(address) public view virtual returns (uint256);
 }

@@ -15,8 +15,8 @@ contract MockManager is CoreStaking {
 
   uint256 public totalBalance;
 
-  StakingPool public pool;
-  StakingPoolSnapshot public poolSnapshot;
+  PendingPool public pool;
+  SettledPool public sPool;
 
   constructor() {
     _epoches.push(0);
@@ -29,7 +29,7 @@ contract MockManager is CoreStaking {
   function stake(address _user, uint256 _amount) external {
     uint256 _balance = _stakingBalance[_user];
     uint256 _newBalance = _balance + _amount;
-    _syncUserInfo(_user, _newBalance);
+    _syncUserReward(_user, _newBalance);
     _stakingBalance[_user] = _newBalance;
     totalBalance += _amount;
   }
@@ -37,7 +37,7 @@ contract MockManager is CoreStaking {
   function unstake(address _user, uint256 _amount) external {
     uint256 _balance = _stakingBalance[_user];
     uint256 _newBalance = _balance - _amount;
-    _syncUserInfo(_user, _newBalance);
+    _syncUserReward(_user, _newBalance);
     _stakingBalance[_user] = _newBalance;
     totalBalance -= _amount;
   }
@@ -47,7 +47,7 @@ contract MockManager is CoreStaking {
   }
 
   function commitRewardPool() public {
-    StakingPoolSnapshot storage _sPool = poolSnapshot;
+    SettledPool storage _sPool = sPool;
     _sPool.accumulatedRps = pool.accumulatedRps;
     _sPool.lastSyncBlock = block.number;
   }
@@ -59,15 +59,15 @@ contract MockManager is CoreStaking {
 
   function increaseAndSyncSnapshot(uint256 _amount) external {
     increaseAccumulatedRps(_amount);
-    poolSnapshot.accumulatedRps = pool.accumulatedRps;
-    poolSnapshot.lastSyncBlock = block.number;
+    sPool.accumulatedRps = pool.accumulatedRps;
+    sPool.lastSyncBlock = block.number;
   }
 
   function slash() external {
     uint256 _epoch = getEpoch();
     console.log("Slash block=", block.number, "at epoch=", _epoch);
     _epochSlashed[_epoch] = true;
-    pool.accumulatedRps = poolSnapshot.accumulatedRps;
+    pool.accumulatedRps = sPool.accumulatedRps;
     pool.lastSyncBlock = block.number;
   }
 
@@ -76,44 +76,26 @@ contract MockManager is CoreStaking {
   }
 
   function claimReward(address _user) public returns (uint256 _amount) {
-    uint256 _balance = getCurrentBalance(_user);
+    uint256 _balance = balanceOf(_user);
     _amount = getClaimableReward(_user);
-    StakingPoolSnapshot memory _sPool = _getStakingPoolSnapshot();
+    SettledPool memory _sPool = _getSettledPool();
+    // PendingPool memory _pool = _getStakingPool();
     console.log("User", _user, "claimed", _amount);
 
-    UserRewardInfo storage _reward = _getUserRewardInfo(_user);
-    console.log("claimReward: \t =>", _reward.debited);
-    _reward.debited = 0;
-    _reward.credited = (_balance * _sPool.accumulatedRps) / 1e18;
+    PendingRewardFields storage _reward = _getPendingRewardFields(_user);
+    console.log("claimReward: \t => (+)=", _reward.debited, _reward.debited);
+    console.log("claimReward: \t => (-)=", _reward.credited, _reward.credited + _amount);
+    // _reward.debited = 0;
+    _reward.credited += _amount;
     _reward.lastSyncBlock = block.number;
     console.log("claimReward: \t", _balance, _sPool.accumulatedRps);
 
-    UserRewardInfoSnapshot storage _sReward = _getUserRewardInfoSnapshot(_user);
+    SettledRewardFields storage _sReward = _getSettledRewardFields(_user);
     _sReward.debited = 0;
     _sReward.accumulatedRps = _sPool.accumulatedRps;
   }
 
-  function getClaimableReward(address _user) public view returns (uint256) {
-    UserRewardInfo memory _reward = _getUserRewardInfo(_user);
-    UserRewardInfoSnapshot memory _sReward = _getUserRewardInfoSnapshot(_user);
-    StakingPoolSnapshot memory _sPool = _getStakingPoolSnapshot();
-
-    console.log("-> getClaimableReward", _reward.lastSyncBlock, _sPool.lastSyncBlock);
-    if (_reward.lastSyncBlock <= _sPool.lastSyncBlock) {
-      console.log("\t-> sync");
-      _sReward.debited = (getCurrentBalance(_user) * _sPool.accumulatedRps) / 1e18 + _reward.debited - _reward.credited;
-      _sReward.balance = getCurrentBalance(_user);
-      _sReward.accumulatedRps = _sPool.accumulatedRps;
-    }
-
-    uint256 _balance = _sReward.balance;
-    uint256 _credited = (_balance * _sReward.accumulatedRps) / 1e18;
-    console.log("\t", _balance, _sReward.accumulatedRps, _sPool.accumulatedRps);
-    console.log("\t", _sReward.debited);
-    return (_balance * _sPool.accumulatedRps) / 1e18 + _sReward.debited - _credited;
-  }
-
-  function _slashed(StakingPool memory, uint256 _epoch) internal view override returns (bool) {
+  function _slashed(PendingPool memory, uint256 _epoch) internal view override returns (bool) {
     return _epochSlashed[_epoch];
   }
 
@@ -125,15 +107,15 @@ contract MockManager is CoreStaking {
     }
   }
 
-  function _getStakingPool() internal view override returns (StakingPool memory) {
+  function _getPendingPool() internal view override returns (PendingPool memory) {
     return pool;
   }
 
-  function _getStakingPoolSnapshot() internal view override returns (StakingPoolSnapshot memory) {
-    return poolSnapshot;
+  function _getSettledPool() internal view override returns (SettledPool memory) {
+    return sPool;
   }
 
-  function getCurrentBalance(address _user) public view override returns (uint256) {
+  function balanceOf(address _user) public view override returns (uint256) {
     return _stakingBalance[_user];
   }
 }
