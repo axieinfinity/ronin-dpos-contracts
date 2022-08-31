@@ -2,12 +2,8 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-import {
-  MockValidatorSetCore,
-  MockValidatorSetCore__factory,
-} from '../../src/types';
+import { MockValidatorSetCore, MockValidatorSetCore__factory } from '../../src/types';
 import { ValidatorCandidateStruct } from '../../src/types/ValidatorSetCoreMock';
-import { randomSigners } from '../../src/utils';
 
 let validatorsCore: MockValidatorSetCore;
 
@@ -18,7 +14,11 @@ let stakingAddrs: SignerWithAddress[];
 let consensusAddrs: SignerWithAddress[];
 let treasuryAddrs: SignerWithAddress[];
 
-const generateCandidate = (stakingAddr: string, consensusAddr: string, treasuryAddr: string): ValidatorCandidateStruct => {
+const generateCandidate = (
+  stakingAddr: string,
+  consensusAddr: string,
+  treasuryAddr: string
+): ValidatorCandidateStruct => {
   return {
     stakingAddr: stakingAddr,
     consensusAddr: consensusAddr,
@@ -37,17 +37,19 @@ describe('Validator set core tests', () => {
       before(async () => {
         [admin, ...signers] = await ethers.getSigners();
         validatorsCore = await new MockValidatorSetCore__factory(admin).deploy();
-        
+
         candidates = [];
         stakingAddrs = [];
         consensusAddrs = [];
         treasuryAddrs = [];
 
         for (let i = 0; i < 7; i++) {
-          candidates.push(generateCandidate(signers[3*i].address, signers[3*i+1].address, signers[3*i+2].address));
-          stakingAddrs.push(signers[3*i]);
-          consensusAddrs.push(signers[3*i + 1]);
-          treasuryAddrs.push(signers[3*i + 2]);
+          candidates.push(
+            generateCandidate(signers[3 * i].address, signers[3 * i + 1].address, signers[3 * i + 2].address)
+          );
+          stakingAddrs.push(signers[3 * i]);
+          consensusAddrs.push(signers[3 * i + 1]);
+          treasuryAddrs.push(signers[3 * i + 2]);
         }
       });
 
@@ -70,7 +72,7 @@ describe('Validator set core tests', () => {
         await validatorsCore.setValidator(candidates[1], true);
         let validator = await validatorsCore.getValidator(consensusAddrs[1].address);
         expect(candidates[1].consensusAddr).eq(validator.consensusAddr);
-        expect(treasuryAddrs[5].address).eq(validator.treasuryAddr); 
+        expect(treasuryAddrs[5].address).eq(validator.treasuryAddr);
       });
 
       it('Should fail to query in mining validator set', async () => {
@@ -128,7 +130,9 @@ describe('Validator set core tests', () => {
         validatorsCore = await new MockValidatorSetCore__factory(admin).deploy();
 
         for (let i = 0; i < 33; i++) {
-          candidates.push(generateCandidate(signers[3*i].address, signers[3*i+1].address, signers[3*i+2].address));
+          candidates.push(
+            generateCandidate(signers[3 * i].address, signers[3 * i + 1].address, signers[3 * i + 2].address)
+          );
         }
       });
 
@@ -149,17 +153,15 @@ describe('Validator set core tests', () => {
       });
 
       it('Should be able to swap 10 existed validators', async () => {
-        let swapTable = [...Array(10).keys()]
-          .map(x => ++x)
-          .sort(() => .5 - Math.random());
-       
-        console.log(swapTable)
-        
+        let swapTable = [...Array(10).keys()].map((x) => ++x).sort(() => 0.5 - Math.random());
+
+        console.log(swapTable);
+
         for (let i = 1; i <= 10; i++) {
-          console.log(">>> Swap index", i, "to", swapTable[i-1]);
-          await validatorsCore.setValidatorAtMiningIndex(i, candidates[swapTable[i-1]]);
+          console.log('>>> Swap index', i, 'to', swapTable[i - 1]);
+          await validatorsCore.setValidatorAtMiningIndex(i, candidates[swapTable[i - 1]]);
           let _validator = await validatorsCore.getValidatorAtMiningIndex(i);
-          expect(_validator.consensusAddr).eq(candidates[swapTable[i-1]].consensusAddr);
+          expect(_validator.consensusAddr).eq(candidates[swapTable[i - 1]].consensusAddr);
         }
       });
 
@@ -180,17 +182,15 @@ describe('Validator set core tests', () => {
       });
 
       it('Should be able to swap 21 existed validators', async () => {
-        let swapTable = [...Array(21).keys()]
-          .map(x => ++x)
-          .sort(() => .5 - Math.random());
-       
-        console.log(swapTable)
-        
+        let swapTable = [...Array(21).keys()].map((x) => ++x).sort(() => 0.5 - Math.random());
+
+        console.log(swapTable);
+
         for (let i = 1; i <= 21; i++) {
-          console.log(">>> Swap index", i, "to", swapTable[i-1]);
-          await validatorsCore.setValidatorAtMiningIndex(i, candidates[swapTable[i-1]]);
+          console.log('>>> Swap index', i, 'to', swapTable[i - 1]);
+          await validatorsCore.setValidatorAtMiningIndex(i, candidates[swapTable[i - 1]]);
           let _validator = await validatorsCore.getValidatorAtMiningIndex(i);
-          expect(_validator.consensusAddr).eq(candidates[swapTable[i-1]].consensusAddr);
+          expect(_validator.consensusAddr).eq(candidates[swapTable[i - 1]].consensusAddr);
         }
       });
     });
