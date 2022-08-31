@@ -7,7 +7,7 @@ import "./interfaces/IStaking.sol";
 import "./interfaces/IValidatorSet.sol";
 import "./libraries/Sorting.sol";
 
-abstract contract Staking is IStaking, Initializable {
+contract Staking is IStaking, Initializable {
   /// TODO: expose fn to get validator info by validator address.
   /// @dev Mapping from consensus address => validator index in `validatorCandidates`.
   mapping(address => uint256) internal _validatorIndexes;
@@ -163,6 +163,26 @@ abstract contract Staking is IStaking, Initializable {
     external
     returns (uint256 _amount)
   {
+    revert("Unimplemented");
+  }
+
+  function onDeposit() external payable override {
+    revert("Unimplemented");
+  }
+
+  function allocateReward(address valAddr, uint256 amount) external override {
+    revert("Unimplemented");
+  }
+
+  function receiveReward(address valAddr) external payable override {
+    revert("Unimplemented");
+  }
+
+  function claimReward(uint256 amount) external override {
+    revert("Unimplemented");
+  }
+
+  function slash(address valAddr, uint256 amount) external override {
     revert("Unimplemented");
   }
 

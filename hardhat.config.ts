@@ -57,7 +57,7 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
-    trezor: 'trezor://0x0000000000000000000000000000000000000000',
+    // trezor: 'trezor://0x0000000000000000000000000000000000000000',
   },
   networks: {
     hardhat: {

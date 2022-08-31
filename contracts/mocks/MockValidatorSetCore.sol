@@ -3,6 +3,7 @@
 pragma solidity ^0.8.9;
 
 import "../ValidatorSetCore.sol";
+import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 /**
  * @title Set of validators in current epoch
