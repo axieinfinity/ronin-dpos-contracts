@@ -6,12 +6,10 @@ import "../interfaces/IValidatorSet.sol";
 import "../interfaces/IStaking.sol";
 
 contract MockSwapStorage {
-  /// @dev Array of all validators. 
+  /// @dev Array of all validators.
   IStaking.ValidatorCandidate[] public validatorSet;
 
-  function pushValidator(IStaking.ValidatorCandidate memory _incomingValidator)
-    external
-  {
+  function pushValidator(IStaking.ValidatorCandidate memory _incomingValidator) external {
     validatorSet.push(_incomingValidator);
   }
 
@@ -19,7 +17,7 @@ contract MockSwapStorage {
     require(_index < validatorSet.length, "Access out-of-bound");
 
     IStaking.ValidatorCandidate storage _validator = validatorSet[_index];
-    _validator.stakingAddr = _incomingValidator.stakingAddr;
+    _validator.candidateAdmin = _incomingValidator.candidateAdmin;
     _validator.consensusAddr = _incomingValidator.consensusAddr;
     _validator.treasuryAddr = _incomingValidator.treasuryAddr;
     _validator.commissionRate = _incomingValidator.commissionRate;
@@ -29,10 +27,10 @@ contract MockSwapStorage {
   }
 
   function swapValidators(uint256 _i, uint256 _j) external {
-    require(_i < validatorSet.length, "Access left element out-of-bound"); 
-    require(_j < validatorSet.length, "Access right element out-of-bound"); 
-    IStaking.ValidatorCandidate memory _tmp = validatorSet[_i]; 
+    require(_i < validatorSet.length, "Access left element out-of-bound");
+    require(_j < validatorSet.length, "Access right element out-of-bound");
+    IStaking.ValidatorCandidate memory _tmp = validatorSet[_i];
     _setValidatorAt(_i, validatorSet[_j]);
     _setValidatorAt(_j, _tmp);
-  } 
+  }
 }

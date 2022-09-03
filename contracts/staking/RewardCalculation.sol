@@ -6,7 +6,7 @@ pragma solidity ^0.8.9;
  * @title RewardCalculation contract
  * @dev This contract mainly contains to calculate reward for staking contract.
  *
- * TODO: optimize gas cost when emitting SettledRewardUpdated and PendingRewardUpdated in the method `_claimReward`;
+ * TODO(Thor): optimize gas cost when emitting SettledRewardUpdated and PendingRewardUpdated in the method `_claimReward`;
  *
  */
 abstract contract RewardCalculation {
@@ -24,6 +24,8 @@ abstract contract RewardCalculation {
   );
   /// @dev Emitted when the fields to calculate pending reward for the user is updated.
   event PendingRewardUpdated(address poolAddress, address user, uint256 debited, uint256 credited);
+  /// @dev Emitted when the user claimed their reward
+  event RewardClaimed(address poolAddress, address user, uint256 amount);
 
   struct PendingRewardFields {
     // Recorded reward amount.
@@ -173,6 +175,7 @@ abstract contract RewardCalculation {
    */
   function _claimReward(address _poolAddr, address _user) public returns (uint256 _amount) {
     _amount = getClaimableReward(_poolAddr, _user);
+    emit RewardClaimed(_poolAddr, _user, _amount);
     SettledPool memory _sPool = _settledPool[_poolAddr];
 
     PendingRewardFields storage _reward = _pUserReward[_poolAddr][_user];

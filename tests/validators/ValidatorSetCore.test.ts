@@ -15,12 +15,12 @@ let consensusAddrs: SignerWithAddress[];
 let treasuryAddrs: SignerWithAddress[];
 
 const generateCandidate = (
-  stakingAddr: string,
+  candidateAdmin: string,
   consensusAddr: string,
   treasuryAddr: string
 ): ValidatorCandidateStruct => {
   return {
-    stakingAddr: stakingAddr,
+    candidateAdmin: candidateAdmin,
     consensusAddr: consensusAddr,
     treasuryAddr: treasuryAddr,
     commissionRate: 0,

@@ -61,13 +61,13 @@ contract ValidatorSet is IValidatorSet, ValidatorSetCore {
 
   function updateValidators() external onlyValidator atEpochEnding returns (address[] memory) {
     // 1. fetch new validator set from staking contract
-    IStaking.ValidatorCandidate[] memory _upcommingValidatorSet = stakingContract.updateValidatorSet();
+    IStaking.ValidatorCandidate[] memory _upcommingValidatorSet; // = stakingContract.updateValidatorSet();
     require(_upcommingValidatorSet.length <= numOfCabinets, "Validators: Exceeds maximum validators per epoch");
 
     // 2. update last updated
     lastUpdated = block.number;
 
-    // 3. update new validator set  
+    // 3. update new validator set
     _doUpdateState(_upcommingValidatorSet);
     emit ValidatorSetUpdated();
 
@@ -90,7 +90,7 @@ contract ValidatorSet is IValidatorSet, ValidatorSetCore {
       if (_validator.jailed) {
         emit DeprecatedDeposit(_valAddr, _value);
       } else {
-        stakingContract.onDeposit();
+        stakingContract.recordReward(_valAddr, _value);
       }
     }
 
@@ -157,7 +157,7 @@ contract ValidatorSet is IValidatorSet, ValidatorSetCore {
     // current set:   [ =====     ]
     // updating part:   ^^^^^
     for (uint256 i = 0; i < k; ++i) {
-      Validator memory _oldValidator = _getValidatorAtMiningIndex(i); 
+      Validator memory _oldValidator = _getValidatorAtMiningIndex(i);
       if (!_isSameValidator(_incomingValidatorSet[i], _oldValidator)) {
         _setValidatorAtMiningIndex(i, _incomingValidatorSet[i]);
       }

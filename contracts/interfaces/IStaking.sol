@@ -4,11 +4,11 @@ pragma solidity ^0.8.9;
 
 interface IStaking {
   struct ValidatorCandidate {
-    /// @dev Address that stakes for the validator, each consensus address has only one staking address.
-    address stakingAddr;
+    /// @dev The candidate admin that stakes for the validator.
+    address candidateAdmin;
     /// @dev Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
     address consensusAddr;
-    /// @dev Address that receives mining fee of the validator
+    /// @dev Address that receives mining reward of the validator
     address payable treasuryAddr;
     /// @dev The percentile of reward that validators can be received, the rest goes to the delegators
     uint256 commissionRate;
@@ -34,119 +34,230 @@ interface IStaking {
   event Delegated(address indexed delegator, address indexed validator, uint256 amount);
   event Undelegated(address indexed delegator, address indexed validator, uint256 amount);
 
-  // TODO: write comment for this fn.
-  // TODO: write setter for this fn.
+  event GovernanceAdminContractUpdated(address);
+  event MinValidatorBalanceUpdated(uint256 threshold);
+  event MaxValidatorCandidateUpdated(uint256 threshold);
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                             FUNCTIONS FOR GOVERNANCE                              //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Returns the governance admin contract address.
+   */
+  function governanceAdminContract() external view returns (address);
+
+  /**
+   * @dev Returns the minimum threshold for being a validator candidate.
+   */
   function minValidatorBalance() external view returns (uint256);
 
   /**
-   * @dev Proposes a validator with detailed information.
+   * @dev Sets the minimum threshold for being a validator candidate.
    *
    * Requirements:
-   * - The `msg.value` is at least `MINIMUM_STAKING` amount.
-   * - TODO: update the requirements.
+   * - The method caller is governance admin.
+   *
+   * Emits the `MinValidatorBalanceUpdated` event.
+   *
+   */
+  function setMinValidatorBalance(uint256) external;
+
+  /**
+   * @dev Returns the maximum number of validator candidate.
+   */
+  function maxValidatorCandidate() external view returns (uint256);
+
+  /**
+   * @dev Sets the maximum number of validator candidate.
+   *
+   * Requirements:
+   * - The method caller is governance admin.
+   *
+   * Emits the `MaxValidatorCandidateUpdated` event.
+   *
+   */
+  function setMaxValidatorCandidate(uint256) external;
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                              FUNCTIONS FOR VALIDATOR                              //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Returns the validator candidate list.
+   */
+  function getValidatorCandidates() external view returns (ValidatorCandidate[] memory candidates);
+
+  /**
+   * @dev Records the amount of reward `_reward` for the pending pool `_poolAddr`.
+   *
+   * Requirements:
+   * - The method caller is validator contract.
+   *
+   * Emits the `PendingPoolUpdated` event.
+   *
+   * @notice This method should not be called after the pool is slashed.
+   *
+   */
+  function recordReward(address _consensusAddr, uint256 _reward) external;
+
+  /**
+   * @dev Settles the pending pool and allocates rewards for the validator.
+   *
+   * Requirements:
+   * - The method caller is validator contract.
+   *
+   * Emits the `SettledPoolUpdated` event.
+   *
+   */
+  function settleRewardPool(address _consensusAddr) external;
+
+  /**
+   * @dev Handles when the validator pool is slashed.
+   *
+   * Requirements:
+   * - The method caller is validator contract.
+   *
+   * Emits the `PendingPoolUpdated` event.
+   *
+   */
+  function onValidatorSlashed(address _consensusAddr) external;
+
+  /**
+   * @dev Deducts from staking amount of the validator `_consensusAddr` for `_amount`.
+   *
+   * Requirements:
+   * - The method caller is validator contract.
+   *
+   * Emits the event `Unstaked` and `Undelegated` event.
+   *
+   */
+  function deductStakingAmount(address _consensusAddr, uint256 _amount) external;
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                          FUNCTIONS FOR VALIDATOR CANDIDATE                        //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Proposes a candidate to become a valdiator.
+   *
+   * Requirements:
+   * - The validator length is not exceeded the total validator threshold `maxValidatorCandidate`.
+   * - The amount is larger than or equal to the minimum validator balance `minValidatorBalance()`.
    *
    * Emits the `ValidatorProposed` event.
    *
-   * @return index The index of new validator in the validator list
+   * @return _candidateIdx The index of the candidate in the validator candidate list.
    *
    */
   function proposeValidator(
     address _consensusAddr,
     address payable _treasuryAddr,
     uint256 _commissionRate
-  ) external payable returns (uint256 index);
+  ) external payable returns (uint256 _candidateIdx);
 
   /**
-   * @notice Stake as validator.
-   */
-  function stake(uint256 amount) external payable;
-
-  /**
-   * @notice Unstake as validator. Need to wait `UNSTAKING_ON_HOLD_BLOCKS_NUM` blocks.
-   * @dev The remain balance must either be greater than `MINIMUM_STAKING` value or equal to zero.
-   */
-  function unstake(address consensusAddr, uint256 amount) external;
-
-  /**
-   * @notice Stake as delegator	for a validator
-   *
-   * @dev Each delegator can stake token to many validators. Upon each delegation, the following
-   * actions are done:
-   * - Update staking balance of delegator for corresponding validator
-   * - Update staking balance of delegator
-   * - Not update `balance` of validator
-   * - Update `stakedDiff` of validator to record and update into `balance` at the end of each
-   * epoch in `updateValidatorSet()`
-   */
-  function delegate(address validatorAddress, uint256 amount) external payable;
-
-  /**
-   * @notice Unstake as delegator	for a validator
-   */
-  function undelegate(address user, uint256 amount) external;
-
-  /**
-   * @notice Update set of validators
-   *
-   * @dev Sorting the validators by their current balance, then pick the top N validators to be
-   * assigned to the new set. The result is returned to the `ValidatorSet` contract. There will be
-   * a threshold of M validator must be come from the governance. In case this threshold is set, 
-   * M slots are reversed for the governing validator. The total of validators is configured in the
-   * `numOfCabinets` variable. If the actual number of validator candidates is not met, all of the
-   * candidates will become the validators.
-   * 
-   * Requirements:
-   * - Only validator and `ValidatorSet` contract can call this function
-   * 
-   * @return newValidatorSet Validator set for the new epoch
-   */
-  function updateValidatorSet() external returns (ValidatorCandidate[] memory newValidatorSet);
-
-  /**
-   * @notice Get current validator set. Number of current validator is set in `numOfCabinets`. 
-   * 
-   * @dev If the actual number of candidates is lower, all of the candidates are returned
-   */
-  function getCurrentValidatorSet() external returns (ValidatorCandidate[] memory currentValidatorSet);
-  
-  /**
-   * @dev Handle deposit request. Update validators' reward balance and delegators' balance.
+   * @dev Self-delegates to the validator candidate `_consensusAddr`.
    *
    * Requirements:
-   * - Only `ValidatorSet` contract cann call this function
+   * - The candidate `_consensusAddr` is already existent.
+   * - The method caller is the candidate admin.
+   * - The `msg.value` is larger than 0.
+   *
+   * Emits the `Staked` event and the `Delegated` event.
+   *
    */
-  function onDeposit() external payable;
+  function stake(address _consensusAddr) external payable;
 
   /**
-   * @notice Distribute reward
-   *
-   * @dev Allocate reward based on staked coins of delegators pendingReward.
+   * @dev Unstakes from the validator candidate `_consensusAddr` for `_amount`.
    *
    * Requirements:
-   * - Only validator can call this function
-   */
-  function allocateReward(address valAddr, uint256 amount) external;
-
-  /**
-   * @notice Distribute reward
+   * - The candidate `_consensusAddr` is already existent.
+   * - The method caller is the candidate admin.
    *
-   * @dev	Get the reward from Validator.sol contract. Update pendingReward to claimableReward.
+   * Emits the `Unstaked` event and the `Undelegated` event.
    *
-   * Requirements:
-   * - Only validator can call this function
    */
-  function receiveReward(address valAddr) external payable;
+  function unstake(address _consensusAddr, uint256 _amount) external;
 
   /**
-   * @notice Delegators call this method to claim their pending rewards
-   */
-  function claimReward(uint256 amount) external;
-
-  /**
-   * @notice Reduce amount stake from the validator.
+   * @dev Renounces being a validator candidate and takes back the delegated/staked amount.
    *
    * Requirements:
-   * - Only validators or Validator contract can call this function
+   * - The candidate `_consensusAddr` is already existent.
+   * - The method caller is the candidate admin.
+   *
    */
-  function slash(address valAddr, uint256 amount) external;
+  function renounce(address consensusAddr) external;
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                             FUNCTIONS FOR DELEGATOR                               //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Stakes for a validator candidate `_consensusAddr`.
+   *
+   * Requirements:
+   * - The method caller is not the candidate admin.
+   *
+   * Emits the `Delegated` event.
+   *
+   */
+  function delegate(address _consensusAddr) external payable;
+
+  /**
+   * @dev Unstakes from a validator candidate `_consensusAddr` for `_amount`.
+   *
+   * Requirements:
+   * - The method caller is not the candidate admin.
+   *
+   * Emits the `Undelegated` event.
+   *
+   */
+  function undelegate(address _consensusAddr, uint256 _amount) external;
+
+  /**
+   * @dev Unstakes an amount of RON from the `_consensusAddrSrc` and stake for `_consensusAddrDst`.
+   *
+   * Requirements:
+   * - The method caller is not the candidate admin.
+   *
+   * Emits the `Undelegated` event and the `Delegated` event.
+   *
+   */
+  function redelegate(
+    address _consensusAddrSrc,
+    address _consensusAddrDst,
+    uint256 _amount
+  ) external;
+
+  /**
+   * @dev Returns the pending reward and the claimable reward of the user `_user`.
+   */
+  function getRewards(address _user, address[] calldata _poolAddrList)
+    external
+    view
+    returns (uint256[] memory _pendings, uint256[] memory _claimables);
+
+  /**
+   * @dev Claims the reward of method caller.
+   *
+   * Emits the `RewardClaimed` event.
+   *
+   */
+  function claimRewards(address[] calldata _consensusAddrList) external returns (uint256 _amount);
+
+  /**
+   * @dev Claims all pending rewards and delegates them to the consensus address.
+   *
+   * Requirements:
+   * - The method caller is not the candidate admin.
+   *
+   * Emits the `RewardClaimed` event and the `Delegated` event.
+   *
+   */
+  function delegateRewards(address[] calldata _consensusAddrList, address _consensusAddrDst)
+    external
+    returns (uint256 _amount);
 }
