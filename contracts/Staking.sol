@@ -73,8 +73,8 @@ contract Staking is IStaking, Initializable {
     require(_amount >= minValidatorBalance, "Staking: insuficient amount");
     require(_treasuryAddr != address(0), "Staking: invalid treasury address");
 
-    ValidatorCandidate storage _candidate = validatorCandidates.push();
     _candidateIdx = validatorCandidates.length;
+    ValidatorCandidate storage _candidate = validatorCandidates.push();
     _validatorIndexes[_consensusAddr] = _candidateIdx;
     _candidate.consensusAddr = _consensusAddr;
     _candidate.stakingAddr = _stakingAddr;
@@ -102,13 +102,14 @@ contract Staking is IStaking, Initializable {
    */
   function unstake(address _consensusAddr, uint256 _amount) external {
     ValidatorCandidate storage _candidate = _getCandidate(_consensusAddr);
-    require(_candidate.stakingAddr == msg.sender, "Staking: invalid staking address");
-    require(_amount < _candidate.stakedAmount, "Staking: insufficient staked amount");
+    require(_candidate.stakingAddr == msg.sender, "Staking: caller must be staking address");
+    uint256 _maxUnstake = _candidate.stakedAmount - minValidatorBalance; 
+    require(_amount <= _maxUnstake, "Staking: invalid staked amount left");
 
-    uint256 remainAmount = _candidate.stakedAmount - _amount;
-    require(remainAmount >= minValidatorBalance, "Staking: invalid staked amount left");
+    _candidate.stakedAmount -= _amount;
+    (bool _success, ) = msg.sender.call{value: _amount}("");
+    require(_success, "Staking: transfer unstaking failed");
 
-    _candidate.stakedAmount = _amount;
     emit Unstaked(_consensusAddr, _amount);
   }
 
