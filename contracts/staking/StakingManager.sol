@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.9;
 
+import "hardhat/console.sol";
 import "../interfaces/IStaking.sol";
 import "./RewardCalculation.sol";
 
@@ -10,7 +11,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   mapping(address => mapping(address => uint256)) internal _delegatedAmount;
 
   modifier noEmptyValue() {
-    require(msg.value > 0, "DPoStaking: query for empty value");
+    require(msg.value > 0, "StakingManager: query for empty value");
     _;
   }
 
@@ -54,7 +55,10 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     uint256 _amount = msg.value;
     address _stakingAddr = msg.sender;
     _candidateIdx = _proposeValidator(_consensusAddr, _treasuryAddr, _commissionRate, _amount, _stakingAddr);
+    console.log("_proposeValidator: done");
+    console.log("_stake: bf", _candidateIdx);
     _stake(_consensusAddr, _stakingAddr, _amount);
+    console.log("_stake: af");
   }
 
   /**
@@ -71,7 +75,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     address _delegator = msg.sender;
     _unstake(_consensusAddr, _delegator, _amount);
     // TODO(Thor): replace by `call` and use reentrancy gruard
-    require(payable(msg.sender).send(_amount), "DPoStaking: could not transfer RON");
+    require(payable(msg.sender).send(_amount), "StakingManager: could not transfer RON");
   }
 
   /**
@@ -91,7 +95,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
    *
    * Emits the `ValidatorProposed` event.
    *
-   * @return _candidateIdx The index of the candidate in the validator candidate list.
+   * @return _candidateIdx The bitwise negative of candidate index.
    *
    */
   function _proposeValidator(
@@ -102,12 +106,14 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     address _candidateOwner
   ) internal returns (uint256 _candidateIdx) {
     uint256 _length = _getValidatorCandidateLength();
-    require(_length < maxValidatorCandidate(), "DPoStaking: query for exceeded validator array length");
-    require(_getCandidateIndexes(_consensusAddr) == 0, "DPoStaking: query for existed candidate");
-    require(_amount > minValidatorBalance(), "DPoStaking: insuficient amount");
-    require(_treasuryAddr.send(0), "DPoStaking: invalid treasury address"); // TODO(Thor): replace by `call` and use reentrancy gruard
+    require(_length < maxValidatorCandidate(), "StakingManager: query for exceeded validator array length");
+    require(_getCandidateIndex(_consensusAddr) == 0, "StakingManager: query for existed candidate");
+    require(_amount >= minValidatorBalance(), "StakingManager: insufficient amount");
+    // TODO(Thor): replace by `call` and use reentrancy gruard
+    require(_treasuryAddr.send(0), "StakingManager: invalid treasury address");
 
     _candidateIdx = ~_length;
+    _setCandidateIndex(_consensusAddr, _candidateIdx);
     ValidatorCandidate memory _candidate = _createValidatorCandidate(
       _consensusAddr,
       _candidateOwner,
@@ -133,7 +139,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     uint256 _amount
   ) internal {
     ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
-    require(_candidate.candidateAdmin == _user, "Staking: invalid staking address");
+    require(_candidate.candidateAdmin == _user, "StakingManager: invalid staking address");
 
     _candidate.stakedAmount += _amount;
     emit Staked(_poolAddr, _amount);
@@ -156,11 +162,11 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     uint256 _amount
   ) internal {
     ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
-    require(_candidate.candidateAdmin == _user, "Staking: invalid staking address");
-    require(_amount < _candidate.stakedAmount, "Staking: insufficient staked amount");
+    require(_candidate.candidateAdmin == _user, "StakingManager: invalid staking address");
+    require(_amount < _candidate.stakedAmount, "StakingManager: insufficient staked amount");
 
     uint256 remainAmount = _candidate.stakedAmount - _amount;
-    require(remainAmount >= minValidatorBalance(), "Staking: invalid staked amount left");
+    require(remainAmount >= minValidatorBalance(), "StakingManager: invalid staked amount left");
 
     _candidate.stakedAmount = _amount;
     emit Unstaked(_poolAddr, _amount);
@@ -176,7 +182,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
    * @inheritdoc IStaking
    */
   function delegate(address _consensusAddr) external payable noEmptyValue notCandidateOwner(_consensusAddr) {
-    _delegate(msg.sender, _consensusAddr, msg.value);
+    _delegate(_consensusAddr, msg.sender, msg.value);
   }
 
   /**
@@ -184,9 +190,9 @@ abstract contract StakingManager is IStaking, RewardCalculation {
    */
   function undelegate(address _consensusAddr, uint256 _amount) external notCandidateOwner(_consensusAddr) {
     address payable _delegator = payable(msg.sender);
-    _undelegate(_delegator, _consensusAddr, _amount);
+    _undelegate(_consensusAddr, _delegator, _amount);
     // TODO(Thor): replace by `call` and use reentrancy gruard
-    require(_delegator.send(_amount), "DPoStaking: could not transfer RON");
+    require(_delegator.send(_amount), "StakingManager: could not transfer RON");
   }
 
   /**
@@ -227,7 +233,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   function claimRewards(address[] calldata _consensusAddrList) external returns (uint256 _amount) {
     _amount = _claimRewards(msg.sender, _consensusAddrList);
     // TODO(Thor): replace by `call` and use reentrancy gruard
-    require(payable(msg.sender).send(_amount), "DPoStaking: could not transfer RON");
+    require(payable(msg.sender).send(_amount), "StakingManager: could not transfer RON");
   }
 
   /**
@@ -259,6 +265,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     uint256 _amount
   ) internal {
     uint256 _newBalance = _delegatedAmount[_poolAddr][_user] + _amount;
+    console.log("_delegate", _poolAddr, _user, _newBalance);
     _syncUserReward(_poolAddr, _user, _newBalance);
 
     ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
@@ -290,7 +297,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     address _poolAddrDst
   ) internal returns (uint256 _amount) {
     _amount = _claimRewards(_user, _poolAddrList);
-    _delegate(_user, _poolAddrDst, _amount);
+    _delegate(_poolAddrDst, _user, _amount);
   }
 
   /**
@@ -309,7 +316,9 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     address _user,
     uint256 _amount
   ) internal {
-    require(_delegatedAmount[_poolAddr][_user] >= _amount, "Staking: insufficient amount to undelegate");
+    console.log("_undelegate", _poolAddr, _user);
+    console.log("_undelegate", _delegatedAmount[_poolAddr][_user], _amount);
+    require(_delegatedAmount[_poolAddr][_user] >= _amount, "StakingManager: insufficient amount to undelegate");
 
     uint256 _newBalance = _delegatedAmount[_poolAddr][_user] - _amount;
     _syncUserReward(_poolAddr, _user, _newBalance);
@@ -340,7 +349,12 @@ abstract contract StakingManager is IStaking, RewardCalculation {
    * - The candidate is already existed.
    *
    */
-  function _getCandidateIndexes(address _consensusAddr) internal view virtual returns (uint256);
+  function _getCandidateIndex(address _consensusAddr) internal view virtual returns (uint256);
+
+  /**
+   * @dev Sets the candidate index.
+   */
+  function _setCandidateIndex(address _consensusAddr, uint256 _candidateIdx) internal virtual;
 
   /**
    * @dev Returns the current validator length.

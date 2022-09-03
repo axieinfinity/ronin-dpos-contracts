@@ -10,7 +10,8 @@ interface IStaking {
     address consensusAddr;
     /// @dev Address that receives mining reward of the validator
     address payable treasuryAddr;
-    /// @dev The percentile of reward that validators can be received, the rest goes to the delegators
+    /// @dev The percentile of reward that validators can be received, the rest goes to the delegators.
+    /// Values in range [0; 100_00] stands for 0-100%
     uint256 commissionRate;
     /// @dev The RON amount from the validator.
     uint256 stakedAmount;
@@ -34,6 +35,7 @@ interface IStaking {
   event Delegated(address indexed delegator, address indexed validator, uint256 amount);
   event Undelegated(address indexed delegator, address indexed validator, uint256 amount);
 
+  event ValidatorContractUpdated(address);
   event GovernanceAdminContractUpdated(address);
   event MinValidatorBalanceUpdated(uint256 threshold);
   event MaxValidatorCandidateUpdated(uint256 threshold);

@@ -92,4 +92,19 @@ interface IValidatorSet {
    * @notice Return last block height when the set of validators is updated
    */
   function getLastUpdated() external view returns (uint256 height);
+
+  /**
+   * @dev Returns the number of epochs in a period.
+   */
+  function numberOfEpochsInPeriod() external view returns (uint256 _numberOfEpochs);
+
+  /**
+   * @dev Returns the number of blocks in a epoch.
+   */
+  function numberOfBlocksInEpoch() external view returns (uint256 _numberOfBlocks);
+
+  /**
+   * @dev Returns the period index from the block number.
+   */
+  function periodOf(uint256 _block) external view returns (uint256);
 }

@@ -15,26 +15,29 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /// @dev Maximum number of validator.
   uint256 internal _maxValidatorCandidate;
   /// @dev Governance admin contract address.
-  address internal _governanceAdminContract; /// TODO(Thor): add setter.
+  address internal _governanceAdminContract; // TODO(Thor): add setter.
+  /// @dev Validator contract address.
+  address internal _validatorContract; // Change type to address for testing purpose
 
   uint256[] internal currentValidatorIndexes; // TODO(Bao): leave comments for this variable
-  IValidatorSet validatorSetContract; // TODO(Bao): leave comments for this variable
   uint256 public numOfCabinets; // TODO(Bao): leave comments for this variable
   /// @dev Configuration of number of blocks that validator has to wait before unstaking, counted from staking time
   uint256 public unstakingOnHoldBlocksNum; // TODO(Bao): expose this fn in the interface
 
   /// @dev Mapping from consensus address => bitwise negation of validator index in `validatorCandidates`.
-  mapping(address => uint256) internal _candidateIndexes;
+  mapping(address => uint256) internal _candidateIndex;
   /// @dev The validator candidate array.
   ValidatorCandidate[] public validatorCandidates;
+  /// @dev Mapping from consensus address => period index => indicating the period is slashed or not.
+  mapping(address => mapping(uint256 => bool)) internal _periodSlashed;
 
   modifier onlyGovernanceAdminContract() {
-    require(msg.sender == _governanceAdminContract, "DPoStaking: unauthorized caller");
+    require(msg.sender == _governanceAdminContract, "DPoStaking: method caller is not governance admin contract");
     _;
   }
 
   modifier onlyValidatorContract() {
-    require(msg.sender == address(validatorSetContract), "DPoStaking: unauthorized caller");
+    require(msg.sender == _validatorContract, "DPoStaking: method caller is not the validator contract");
     _;
   }
 
@@ -47,11 +50,13 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
    */
   function initialize(
     uint256 _unstakingOnHoldBlocksNum,
+    address __validatorContract,
     address __governanceAdminContract,
     uint256 __maxValidatorCandidate,
     uint256 __minValidatorBalance
   ) external initializer {
     unstakingOnHoldBlocksNum = _unstakingOnHoldBlocksNum;
+    _setValidatorContract(__validatorContract);
     _setGovernanceAdminContractAddress(__governanceAdminContract);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setMinValidatorBalance(__minValidatorBalance);
@@ -111,7 +116,9 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
    * @inheritdoc IStaking
    */
   function recordReward(address _consensusAddr, uint256 _reward) external onlyValidatorContract {
+    console.log("*** =>>>>>>> recordReward", _consensusAddr, _reward);
     _recordReward(_consensusAddr, _reward);
+    console.log("*** =>>>>>>> recordReward", _pendingPool[_consensusAddr].accumulatedRps);
   }
 
   /**
@@ -125,6 +132,8 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
    * @inheritdoc IStaking
    */
   function onValidatorSlashed(address _consensusAddr) external {
+    uint256 _period = _periodOf(block.number);
+    _periodSlashed[_consensusAddr][_period] = true;
     _onSlashed(_consensusAddr);
   }
 
@@ -150,16 +159,24 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
     override
     returns (ValidatorCandidate storage _candidate)
   {
-    uint256 _idx = ~_candidateIndexes[_consensusAddr];
+    uint256 _idx = _candidateIndex[_consensusAddr];
+    console.log("_getCandidate:", _consensusAddr, _idx, ~_idx);
     require(_idx > 0, "DPoStaking: query for nonexistent candidate");
-    _candidate = validatorCandidates[_idx];
+    _candidate = validatorCandidates[~_idx];
   }
 
   /**
    * @inheritdoc StakingManager
    */
-  function _getCandidateIndexes(address _consensusAddr) internal view override returns (uint256) {
-    return _candidateIndexes[_consensusAddr];
+  function _getCandidateIndex(address _consensusAddr) internal view override returns (uint256) {
+    return _candidateIndex[_consensusAddr];
+  }
+
+  /**
+   * @inheritdoc StakingManager
+   */
+  function _setCandidateIndex(address _consensusAddr, uint256 _candidateIdx) internal override {
+    _candidateIndex[_consensusAddr] = _candidateIdx;
   }
 
   /**
@@ -178,6 +195,17 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   function _setGovernanceAdminContractAddress(address _newAddr) internal {
     _governanceAdminContract = _newAddr;
     emit GovernanceAdminContractUpdated(_newAddr);
+  }
+
+  /**
+   * @dev Sets the governance admin contract address.
+   *
+   * Emits the `ValidatorContractUpdated` event.
+   *
+   */
+  function _setValidatorContract(address _newValidatorContract) internal {
+    _validatorContract = _newValidatorContract;
+    emit ValidatorContractUpdated(_newValidatorContract);
   }
 
   /**
@@ -205,9 +233,19 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
     emit MaxValidatorCandidateUpdated(_threshold);
   }
 
-  function _slashed(address _poolAddr, uint256 _period) internal view virtual override returns (bool) {}
+  /**
+   * @inheritdoc RewardCalculation
+   */
+  function _slashed(address _poolAddr, uint256 _period) internal view virtual override returns (bool) {
+    return _periodSlashed[_poolAddr][_period];
+  }
 
-  function _periodOf(uint256 _block) internal view virtual override returns (uint256) {}
+  /**
+   * @inheritdoc RewardCalculation
+   */
+  function _periodOf(uint256 _block) internal view virtual override returns (uint256) {
+    return IValidatorSet(_validatorContract).periodOf(_block);
+  }
 
   /**
    * @inheritdoc StakingManager

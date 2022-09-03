@@ -25,6 +25,9 @@ contract ValidatorSet is IValidatorSet, ValidatorSetCore {
   IStaking stakingContract;
   ISlashIndicator slashContract;
 
+  uint256 public numberOfEpochsInPeriod = 0;
+  uint256 public numberOfBlocksInEpoch = 0;
+
   event ValidatorSetUpdated();
   event ValidatorJailed(address indexed validator);
   /// @dev Event for each time the validators deposit mining reward
@@ -182,5 +185,9 @@ contract ValidatorSet is IValidatorSet, ValidatorSetCore {
         _popValidatorFromMiningIndex();
       }
     }
+  }
+
+  function periodOf(uint256 _block) external view override returns (uint256) {
+    return _block / numberOfEpochsInPeriod / numberOfBlocksInEpoch + 1;
   }
 }

@@ -63,7 +63,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       accounts: {
         mnemonic: DEFAULT_MNEMONIC,
-        count: 100
+        count: 10,
       },
     },
     'ronin-testnet': testnet,
@@ -71,8 +71,8 @@ const config: HardhatUserConfig = {
   },
   gasReporter: {
     enabled: REPORT_GAS ? true : false,
-    showTimeSpent: true
-  }
+    showTimeSpent: true,
+  },
 };
 
 export default config;
