@@ -17,8 +17,12 @@ contract Staking is IStaking, Initializable {
   /// array is kept synced with the array in the `Staking` contract.
   ValidatorCandidate[] public validatorCandidates;
 
+  /// @dev Index of validators that are mining in the current epoch. Get updated each epoch.
+  /// Element at 0-index always is `0`.
+  uint256[] internal _currentValidatorIndexes;
+
   /// @dev Index of validators that are on renounce
-  uint256[] internal _pendingRenoucingValidatorIndexes;
+  uint256[] internal _pendingRenouncingValidatorIndexes;
 
   /// @dev Mapping from delegator address => consensus address => delegated amount.
   mapping(address => mapping(address => uint256)) delegatedAmount;
@@ -36,15 +40,15 @@ contract Staking is IStaking, Initializable {
   /// @dev Configuration of minimum balance for being a validator
   uint256 public minValidatorBalance;
 
-  uint256[] internal currentValidatorIndexes;
+  /// @dev Number of maximum working validator in one epoch
+  uint256 public numOfCabinets;
 
-  IValidatorSet validatorSetContract;
+  /// @dev Validator contract address
+  IValidatorSet public validatorSetContract;
 
   /// @dev Helper global flag which is set to true on at least one validator balance changes, and
   /// is reset to false per epoch. This help reduces redundant sortings.
-  bool stateChanged;
-
-  uint256 public numOfCabinets;
+  bool internal _globalBalanceChanged;
 
   modifier onlyValidatorSetContract() {
     require(msg.sender == address(validatorSetContract), "Only validator set contract");
@@ -59,7 +63,8 @@ contract Staking is IStaking, Initializable {
    * @dev Initializes the contract storage.
    */
   function initialize() external initializer {
-    /// TODO: bring this constant variable to params.
+    /// TODO: bring these constant variable to params.
+    numOfCabinets = 21;
     totalValidatorThreshold = 50;
     unstakingOnHoldBlocksNum = 28800; // 28800 blocks ~= 1 day
     minValidatorBalance = 3 * 1e6 * 1e18; // 3m RON
@@ -72,9 +77,14 @@ contract Staking is IStaking, Initializable {
   ///////////////////////////////////////////////////////////////////////////////////////
 
   // TODO: restrict to only govenance
-  function setValidatorSetContract (IValidatorSet _validatorSetContract) external {
+  function setValidatorSetContract(IValidatorSet _validatorSetContract) external {
     validatorSetContract = _validatorSetContract;
-  } 
+  }
+
+  // TODO: restrict to only govenance
+  function setNumOfCabinets(uint256 _numOfCabinets) external {
+    numOfCabinets = _numOfCabinets;
+  }
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                             FUNCTIONS FOR VALIDATORS                              //
@@ -100,6 +110,7 @@ contract Staking is IStaking, Initializable {
       /// renounced validator joins as a validator again
       (, _candidate) = _getDeprecatedCandidate(_consensusAddr);
       require(_candidate.state == ValidatorState.RENOUNCED, "Staking: cannot propose an existed candidate");
+      _candidate.state = ValidatorState.ACTIVE;
     } else {
       /// totally new validator joins
       _candidateIdx = validatorCandidates.length;
@@ -112,6 +123,8 @@ contract Staking is IStaking, Initializable {
     _candidate.treasuryAddr = _treasuryAddr;
     _candidate.commissionRate = _commissionRate;
     _candidate.stakedAmount = _amount;
+
+    _globalBalanceChanged = true;
 
     emit ValidatorProposed(_consensusAddr, _stakingAddr, _amount, _candidate);
   }
@@ -128,6 +141,9 @@ contract Staking is IStaking, Initializable {
     require(_candidate.candidateAdmin == msg.sender, "Staking: invalid staking address");
 
     _candidate.stakedAmount += _amount;
+
+    _globalBalanceChanged = true;
+
     emit Staked(_consensusAddr, _amount);
   }
 
@@ -143,6 +159,8 @@ contract Staking is IStaking, Initializable {
     _candidate.stakedAmount -= _amount;
     _transferRON(msg.sender, _amount);
 
+    _globalBalanceChanged = true;
+
     emit Unstaked(_consensusAddr, _amount);
   }
 
@@ -154,12 +172,12 @@ contract Staking is IStaking, Initializable {
    * 1. This method:
    *    - Set `ValidatorState` of validator to `ON_REQUESTING_RENOUNCE`;
    *    - Push the validator to a pending list;
-   *    - Trigger the `stateChanged` flag.
+   *    - Trigger the `_globalBalanceChanged` flag.
    *
    * 2. The `updateValidatorSet` method:
    *    - Set `ValidatorState` of validator to `ON_CONFIRMED_RENOUNCE`;
    *    - Set the balance-to-sort of the validator to `0`;
-   *    - Reset the `stateChanged`s flag.
+   *    - Reset the `_globalBalanceChanged`s flag.
    *
    * 3. The `finalizeRenouncingValidator` method:
    *    - Remove validator from pending list
@@ -179,9 +197,10 @@ contract Staking is IStaking, Initializable {
     console.log("[*] requestRenouncingValidator");
     console.log("[ ] \t index", _index);
 
-    stateChanged = true;
     _candidate.state = ValidatorState.ON_REQUESTING_RENOUNCE;
-    _pendingRenoucingValidatorIndexes.push(_index);
+    _pendingRenouncingValidatorIndexes.push(_index);
+
+    _globalBalanceChanged = true;
 
     emit ValidatorRenounceRequested(_consensusAddr, _candidate.stakedAmount);
   }
@@ -204,13 +223,13 @@ contract Staking is IStaking, Initializable {
     );
 
     bool _found;
-    uint _length = _pendingRenoucingValidatorIndexes.length;
+    uint _length = _pendingRenouncingValidatorIndexes.length;
     uint _amount = _candidate.stakedAmount;
     for (uint i; i < _length; ++i) {
-      if (_index == _pendingRenoucingValidatorIndexes[i]) {
+      if (_index == _pendingRenouncingValidatorIndexes[i]) {
         _found = true;
-        _pendingRenoucingValidatorIndexes[i] = _pendingRenoucingValidatorIndexes[_length - 1];
-        _pendingRenoucingValidatorIndexes.pop();
+        _pendingRenouncingValidatorIndexes[i] = _pendingRenouncingValidatorIndexes[_length - 1];
+        _pendingRenouncingValidatorIndexes.pop();
         break;
       }
     }
@@ -387,18 +406,18 @@ contract Staking is IStaking, Initializable {
   {
     /// checking global state, skipping sorting if unchanged
     console.log("[*] updateValidatorSet");
-    if (!stateChanged) {
+    if (!_globalBalanceChanged) {
       console.log("[ ] \t skipped");
       return getCurrentValidatorSet();
     }
 
     console.log("[ ] \t sorted");
-    stateChanged = false;
+    _globalBalanceChanged = false;
 
     /// update renouncing status
-    for (uint i = 0; i < _pendingRenoucingValidatorIndexes.length; ++i) {
-      console.log("[ ] \t updating renouncing", i, _pendingRenoucingValidatorIndexes[i]);
-      ValidatorCandidate storage _renouncingValidator = validatorCandidates[_pendingRenoucingValidatorIndexes[i]];
+    for (uint i = 0; i < _pendingRenouncingValidatorIndexes.length; ++i) {
+      console.log("[ ] \t updating renouncing", i, _pendingRenouncingValidatorIndexes[i]);
+      ValidatorCandidate storage _renouncingValidator = validatorCandidates[_pendingRenouncingValidatorIndexes[i]];
       _renouncingValidator.state = ValidatorState.ON_CONFIRMED_RENOUNCE;
     }
 
@@ -407,6 +426,7 @@ contract Staking is IStaking, Initializable {
     Sorting.Node[] memory _nodes = new Sorting.Node[](_length);
     Sorting.Node[] memory _sortedNodes = new Sorting.Node[](_length);
 
+    console.log("[ ] \t prepare data");
     for (uint i = 0; i < _length; i++) {
       ValidatorCandidate memory _validator = validatorCandidates[i];
 
@@ -414,33 +434,47 @@ contract Staking is IStaking, Initializable {
       _nodes[i].value = (_validator.state == ValidatorState.ACTIVE)
         ? _validator.stakedAmount + _validator.delegatedAmount
         : 0;
+
+      console.log("[ ] \t\t key, value", _nodes[i].key, _nodes[i].value);
     }
 
-    delete currentValidatorIndexes;
+    delete _currentValidatorIndexes;
     _sortedNodes = Sorting.sortNodes(_nodes);
 
     /// TODO: pick M validators which are governance
-    uint _currentSetSize = _length < numOfCabinets ? _length : numOfCabinets;
+    uint _currentSetSize = (_length < numOfCabinets) ? _length : numOfCabinets;
+    console.log("[ ] \t after sort");
+    console.log("[ ] \t\t _currentSetSize", _currentSetSize);
     for (uint i = 0; i < _currentSetSize; i++) {
-      currentValidatorIndexes.push(_sortedNodes[i].value);
+      console.log("[ ] \t\t key, value", _sortedNodes[i].key, _sortedNodes[i].value);
+      _currentValidatorIndexes.push(_sortedNodes[i].key);
     }
 
     return getCurrentValidatorSet();
   }
 
+
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                             FUNCTIONS FOR QUERYING                                //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
   function getCurrentValidatorSet() public view returns (ValidatorCandidate[] memory currentValidatorSet_) {
-    uint _length = currentValidatorIndexes.length;
+    console.log("[*] getPendingRenouncingValidatorIndexes");
+    uint _length = _currentValidatorIndexes.length;
     currentValidatorSet_ = new ValidatorCandidate[](_length);
     for (uint i = 0; i < _length; i++) {
-      currentValidatorSet_[i] = validatorCandidates[currentValidatorIndexes[i]];
+      console.log("[ ] \t _i, _currentIndexes[i]", i, _currentValidatorIndexes[i]); 
+      currentValidatorSet_[i] = validatorCandidates[_currentValidatorIndexes[i]];
     }
   }
 
-  function getPendingRenoucingValidatorIndexes() public view returns (uint[] memory pendingRenouncingIndexes_) {
-    uint _length = _pendingRenoucingValidatorIndexes.length;
+
+  function getPendingRenouncingValidatorIndexes() public view returns (uint[] memory pendingRenouncingIndexes_) {
+    uint _length = _pendingRenouncingValidatorIndexes.length;
     pendingRenouncingIndexes_ = new uint[](_length);
     for (uint i = 0; i < _length; i++) {
-      pendingRenouncingIndexes_[i] = _pendingRenoucingValidatorIndexes[i];
+      pendingRenouncingIndexes_[i] = _pendingRenouncingValidatorIndexes[i];
     }
   }
 
