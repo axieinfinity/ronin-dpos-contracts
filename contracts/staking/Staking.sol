@@ -14,11 +14,12 @@ contract Staking is IStaking, Initializable {
   mapping(address => uint256) internal _validatorIndexes;
   /// TODO: expose fn returns the whole validator array.
   /// @dev Validator array. The order of the validator is assured not to be changed, since this
-  /// array is kept synced with the array in the `Staking` contract.
+  /// array is kept synced with the array in the `Staking` contract. The element at 0-index is
+  /// always an empty validator.
   ValidatorCandidate[] public validatorCandidates;
 
   /// @dev Index of validators that are mining in the current epoch. Get updated each epoch.
-  /// Element at 0-index always is `0`.
+  /// Element at 0-index is always `0`.
   uint256[] internal _currentValidatorIndexes;
 
   /// @dev Index of validators that are on renounce
@@ -422,12 +423,14 @@ contract Staking is IStaking, Initializable {
     }
 
     /// prepare sorting data
+    /// TODO(bao): only take active validators to sort
     uint _length = validatorCandidates.length;
     Sorting.Node[] memory _nodes = new Sorting.Node[](_length);
     Sorting.Node[] memory _sortedNodes = new Sorting.Node[](_length);
 
     console.log("[ ] \t prepare data");
-    for (uint i = 0; i < _length; i++) {
+    _nodes[0] = Sorting.Node(0, type(uint256).max);
+    for (uint i = 1; i < _length; i++) {
       ValidatorCandidate memory _validator = validatorCandidates[i];
 
       _nodes[i].key = i;
@@ -441,7 +444,7 @@ contract Staking is IStaking, Initializable {
     delete _currentValidatorIndexes;
     _sortedNodes = Sorting.sortNodes(_nodes);
 
-    /// TODO: pick M validators which are governance
+    /// TODO(bao): pick M validators which are governance
     uint _currentSetSize = (_length < numOfCabinets) ? _length : numOfCabinets;
     console.log("[ ] \t after sort");
     console.log("[ ] \t\t _currentSetSize", _currentSetSize);

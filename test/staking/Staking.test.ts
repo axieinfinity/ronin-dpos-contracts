@@ -5,6 +5,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Staking, Staking__factory } from '../../src/types';
 import { ValidatorCandidateStruct } from '../../src/types/IStaking';
 import { BigNumber } from 'ethers';
+import { DEFAULT_ADDRESS } from '../../src/utils';
 
 let stakingContract: Staking;
 
@@ -308,13 +309,15 @@ describe('Staking test', () => {
           }
 
           await stakingContract.connect(admin).updateValidatorSet();
-          let currentSet = await stakingContract.getCurrentValidatorSet();
+          let currentSet = (await stakingContract.getCurrentValidatorSet()).map((x) => x.consensusAddr);
+          let expectingSet = [DEFAULT_ADDRESS].concat([5, 4, 3, 2, 1, 0].map((i) => consensusAddrs[i].address));
           console.log(
             '>>> currentSet',
-            currentSet.map((x) => {
+            (await stakingContract.getCurrentValidatorSet()).map((x) => {
               return { consensusAddrs: x.consensusAddr, amount: x.stakedAmount };
             })
           );
+          await expect(expectingSet).eql(currentSet);
         });
 
         describe('Renounce 2 in 6 validator', async () => {
@@ -337,13 +340,15 @@ describe('Staking test', () => {
 
           it('Should be update validators list success', async () => {
             await stakingContract.connect(admin).updateValidatorSet();
-            let currentSet = await stakingContract.getCurrentValidatorSet();
+            let currentSet = (await stakingContract.getCurrentValidatorSet()).map((x) => x.consensusAddr);
+            let expectingSet = [DEFAULT_ADDRESS].concat([5, 2, 1, 0].map((i) => consensusAddrs[i].address));
             console.log(
               '>>> currentSet',
-              currentSet.map((x) => {
+              (await stakingContract.getCurrentValidatorSet()).map((x) => {
                 return { consensusAddrs: x.consensusAddr, amount: x.stakedAmount };
               })
             );
+            await expect(expectingSet).eql(currentSet);
           });
         });
       });
