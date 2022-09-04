@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../ValidatorSetCore.sol";
+import "../validator/ValidatorSetCore.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 /**

@@ -3,9 +3,9 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "./interfaces/ISlashIndicator.sol";
-import "./interfaces/IStaking.sol";
-import "./interfaces/IValidatorSet.sol";
+import "../interfaces/ISlashIndicator.sol";
+import "../interfaces/IStaking.sol";
+import "../interfaces/IValidatorSet.sol";
 import "./ValidatorSetCore.sol";
 
 /**

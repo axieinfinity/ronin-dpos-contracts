@@ -3,8 +3,8 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "./interfaces/IValidatorSet.sol";
-import "./interfaces/IStaking.sol";
+import "../interfaces/IValidatorSet.sol";
+import "../interfaces/IStaking.sol";
 
 /**
  * @title Set of validators in current epoch
@@ -13,20 +13,28 @@ import "./interfaces/IStaking.sol";
 abstract contract ValidatorSetCore {
   using EnumerableMap for EnumerableMap.AddressToUintMap;
 
-  /// @dev Array of all validators. The element at 0-slot is reserved for unknown validator.
+  /// @dev Array of all validators.
+  ///
+  /// The element at 0-slot is reserved for unknown validator. Index of each validator must be
+  /// immutable, since this array is synced per each epoch from the Staking contract.
   IValidatorSet.Validator[] public validatorSet;
+
   /// @dev Map of array of all validators
   mapping(address => uint) public validatorSetMap;
-  /// @dev Enumerable map of indexes of the current validator set, e.g. the array [0, 3, 4, 1] tells
-  /// the sequence of validators to mine block in the next epoch will be at the 3-, 4- and 1-index,
-  /// One can query the mining order of an arbitrary address by this enumerable map. This array is
-  /// indexed from 1, and its content is non-zero value, due to reserved 0-slot in `validatorSet`.
+
+  /// @dev Enumerable map of indexes of the current validator set.
+  ///
+  /// The array of [0, 3, 4, 1] means the sequence of validators to mine block in the next epoch
+  /// will be at the 3-, 4- and 1-index, first element (0-index) is ignored. One can query the
+  /// mining order of an arbitrary address by this enumerable map. This array is indexed from 1,
+  /// and it contains non-zero value, due to reserved 0-slot in the `validatorSet` array.
   uint[] internal currentValidatorIndexes;
   mapping(address => uint) currentValidatorIndexesMap;
 
   constructor() {
     // Add empty validator at 0-slot for the set map
     validatorSet.push();
+    // Add reserved 0-index for the current validator set
     currentValidatorIndexes.push();
   }
 
@@ -80,9 +88,9 @@ abstract contract ValidatorSetCore {
 
   function _popValidatorFromMiningIndex() internal {
     uint _length = currentValidatorIndexes.length - 1;
-    require(_length > 1, "Validator: Cannot remove the last element"); 
+    require(_length > 1, "Validator: Cannot remove the last element");
 
-    IValidatorSet.Validator storage _lastValidatorInEpoch = validatorSet[currentValidatorIndexes[_length]]; 
+    IValidatorSet.Validator storage _lastValidatorInEpoch = validatorSet[currentValidatorIndexes[_length]];
     currentValidatorIndexesMap[_lastValidatorInEpoch.consensusAddr] = 0;
     currentValidatorIndexes.pop();
   }
