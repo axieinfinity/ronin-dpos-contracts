@@ -18,7 +18,7 @@ contract Staking is IStaking, Initializable {
   ValidatorCandidate[] public validatorCandidates;
 
   /// @dev Index of validators that are on renounce
-  uint256[] public pendingRenoucingValidatorIndexes;
+  uint256[] internal _pendingRenoucingValidatorIndexes;
 
   /// @dev Mapping from delegator address => consensus address => delegated amount.
   mapping(address => mapping(address => uint256)) delegatedAmount;
@@ -66,6 +66,19 @@ contract Staking is IStaking, Initializable {
     /// Add empty validator at 0-index
     validatorCandidates.push();
   }
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                             FUNCTIONS FOR GOVERNANCE                              //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  // TODO: restrict to only govenance
+  function setValidatorSetContract (IValidatorSet _validatorSetContract) external {
+    validatorSetContract = _validatorSetContract;
+  } 
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                             FUNCTIONS FOR VALIDATORS                              //
+  ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * @dev See {IStaking-proposeValidator}.
@@ -134,16 +147,17 @@ contract Staking is IStaking, Initializable {
   }
 
   /**
-   * @notice Allow validator sends renouncing request. The request gets affected when the epoch ends
+   * @notice Allow validator sends renouncing request. The request gets affected when the epoch ends.
    *
    * @dev The following procedure must be done in multiple methods in order to finish the renounce.
    *
    * 1. This method:
-   *    - Set `ValidatorState` of validator to `ON_RENOUNCE`;
+   *    - Set `ValidatorState` of validator to `ON_REQUESTING_RENOUNCE`;
    *    - Push the validator to a pending list;
    *    - Trigger the `stateChanged` flag.
    *
    * 2. The `updateValidatorSet` method:
+   *    - Set `ValidatorState` of validator to `ON_CONFIRMED_RENOUNCE`;
    *    - Set the balance-to-sort of the validator to `0`;
    *    - Reset the `stateChanged`s flag.
    *
@@ -162,26 +176,41 @@ contract Staking is IStaking, Initializable {
     (uint256 _index, ValidatorCandidate storage _candidate) = _getCandidate(_consensusAddr);
     require(_candidate.candidateAdmin == msg.sender, "Staking: caller must be staking address");
 
+    console.log("[*] requestRenouncingValidator");
+    console.log("[ ] \t index", _index);
+
     stateChanged = true;
-    _candidate.state = ValidatorState.ON_RENOUNCE;
-    pendingRenoucingValidatorIndexes.push(_index);
+    _candidate.state = ValidatorState.ON_REQUESTING_RENOUNCE;
+    _pendingRenoucingValidatorIndexes.push(_index);
 
     emit ValidatorRenounceRequested(_consensusAddr, _candidate.stakedAmount);
   }
 
+  /**
+   * @notice Allow validator finalizes renouncing request.
+   *
+   * @dev For the logic of this method, refer to {IStaking-requestRenouncingValidator}
+   *
+   * Requirements:
+   * - The validator must be exist
+   * - The validator must submitted renouncing request, and be `ON_CONFIRMED_RENOUNCE` state
+   */
   function finalizeRenouncingValidator(address _consensusAddr) external {
     (uint256 _index, ValidatorCandidate storage _candidate) = _getDeprecatedCandidate(_consensusAddr);
     require(_candidate.candidateAdmin == msg.sender, "Staking: caller must be staking address");
-    require(_candidate.state == ValidatorState.ON_RENOUNCE, "Staking: validator state is not ON_RENOUNCE");
+    require(
+      _candidate.state == ValidatorState.ON_CONFIRMED_RENOUNCE,
+      "Staking: validator state is not ON_CONFIRMED_RENOUNCE"
+    );
 
     bool _found;
-    uint _length = pendingRenoucingValidatorIndexes.length;
+    uint _length = _pendingRenoucingValidatorIndexes.length;
     uint _amount = _candidate.stakedAmount;
     for (uint i; i < _length; ++i) {
-      if (_index == pendingRenoucingValidatorIndexes[i]) {
+      if (_index == _pendingRenoucingValidatorIndexes[i]) {
         _found = true;
-        pendingRenoucingValidatorIndexes[i] = pendingRenoucingValidatorIndexes[_length - 1];
-        pendingRenoucingValidatorIndexes.pop();
+        _pendingRenoucingValidatorIndexes[i] = _pendingRenoucingValidatorIndexes[_length - 1];
+        _pendingRenoucingValidatorIndexes.pop();
         break;
       }
     }
@@ -347,20 +376,33 @@ contract Staking is IStaking, Initializable {
    * assigned to the new set. The result is returned to the `ValidatorSet` contract.
    *
    * Requirements:
-   * - Only validator and `ValidatorSet` contract can call this function
+   * - Only `ValidatorSet` contract can call this function
    *
    * @return newValidatorSet Validator set for the new epoch
    */
-  function updateValidatorSet() external returns (ValidatorCandidate[] memory newValidatorSet) {
+  function updateValidatorSet()
+    external
+    onlyValidatorSetContract
+    returns (ValidatorCandidate[] memory newValidatorSet)
+  {
+    /// checking global state, skipping sorting if unchanged
     console.log("[*] updateValidatorSet");
     if (!stateChanged) {
-      console.log("[ ]   skipped");
+      console.log("[ ] \t skipped");
       return getCurrentValidatorSet();
     }
 
-    console.log("[ ]   sorted");
+    console.log("[ ] \t sorted");
     stateChanged = false;
 
+    /// update renouncing status
+    for (uint i = 0; i < _pendingRenoucingValidatorIndexes.length; ++i) {
+      console.log("[ ] \t updating renouncing", i, _pendingRenoucingValidatorIndexes[i]);
+      ValidatorCandidate storage _renouncingValidator = validatorCandidates[_pendingRenoucingValidatorIndexes[i]];
+      _renouncingValidator.state = ValidatorState.ON_CONFIRMED_RENOUNCE;
+    }
+
+    /// prepare sorting data
     uint _length = validatorCandidates.length;
     Sorting.Node[] memory _nodes = new Sorting.Node[](_length);
     Sorting.Node[] memory _sortedNodes = new Sorting.Node[](_length);
@@ -388,12 +430,18 @@ contract Staking is IStaking, Initializable {
 
   function getCurrentValidatorSet() public view returns (ValidatorCandidate[] memory currentValidatorSet_) {
     uint _length = currentValidatorIndexes.length;
-    currentValidatorSet_ = new ValidatorCandidate[](currentValidatorIndexes.length);
+    currentValidatorSet_ = new ValidatorCandidate[](_length);
     for (uint i = 0; i < _length; i++) {
       currentValidatorSet_[i] = validatorCandidates[currentValidatorIndexes[i]];
     }
+  }
 
-    return currentValidatorSet_;
+  function getPendingRenoucingValidatorIndexes() public view returns (uint[] memory pendingRenouncingIndexes_) {
+    uint _length = _pendingRenoucingValidatorIndexes.length;
+    pendingRenouncingIndexes_ = new uint[](_length);
+    for (uint i = 0; i < _length; i++) {
+      pendingRenouncingIndexes_[i] = _pendingRenoucingValidatorIndexes[i];
+    }
   }
 
   function governanceAdminContract() external view override returns (address) {}

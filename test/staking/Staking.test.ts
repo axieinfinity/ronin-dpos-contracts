@@ -32,7 +32,7 @@ const generateCandidate = (
   };
 };
 
-describe('PoS Staking test', () => {
+describe('Staking test', () => {
   let unstakingOnHoldBlocksNum: BigNumber;
   let minValidatorBalance: BigNumber;
 
@@ -50,6 +50,9 @@ describe('PoS Staking test', () => {
 
       unstakingOnHoldBlocksNum = await stakingContract.unstakingOnHoldBlocksNum();
       minValidatorBalance = await stakingContract.minValidatorBalance();
+
+      console.log('Set validator set contract...');
+      await stakingContract.setValidatorSetContract(admin.address);
 
       console.log('Init addresses...');
       for (let i = 0; i < 10; i++) {
@@ -206,7 +209,15 @@ describe('PoS Staking test', () => {
           await expect(tx).to.revertedWith('Staking: caller must be staking address');
         });
 
+        it('Should not be able to finalize renounce - renounce is not confirmed', async () => {
+          let tx = stakingContract.connect(stakingAddrs[0]).finalizeRenouncingValidator(consensusAddrs[0].address);
+          await expect(tx).to.revertedWith('Staking: validator state is not ON_CONFIRMED_RENOUNCE');
+        });
+
         it('Should be able to finalize the renounce', async () => {
+          expect(await stakingContract.getPendingRenoucingValidatorIndexes()).to.eql([BigNumber.from(1)]);
+          await stakingContract.connect(admin).updateValidatorSet();
+
           let tx;
           let incValue = minValidatorBalance.add(ethers.utils.parseEther('1'));
           let decValue = BigNumber.from(0).sub(incValue);
@@ -216,11 +227,13 @@ describe('PoS Staking test', () => {
           await expect(tx)
             .to.emit(stakingContract, 'ValidatorRenounceFinalized')
             .withArgs(consensusAddrs[0].address, incValue);
+
+          expect(await stakingContract.getPendingRenoucingValidatorIndexes()).to.eql([]);
         });
 
         it('Should not be able to finalize renounce twice', async () => {
           let tx = stakingContract.connect(stakingAddrs[0]).finalizeRenouncingValidator(consensusAddrs[0].address);
-          await expect(tx).to.revertedWith('Staking: validator state is not ON_RENOUNCE');
+          await expect(tx).to.revertedWith('Staking: validator state is not ON_CONFIRMED_RENOUNCE');
         });
 
         it('Should not be able to stake for a renounced validator', async () => {
@@ -239,6 +252,6 @@ describe('PoS Staking test', () => {
 
     describe('Delegator functions', async () => {});
 
-    describe('Updating validator fucntions', async () => {});
+    describe('Updating validator functions', async () => {});
   });
 });

@@ -5,7 +5,8 @@ pragma solidity ^0.8.9;
 interface IStaking {
   enum ValidatorState {
     ACTIVE,
-    ON_RENOUNCE,
+    ON_REQUESTING_RENOUNCE,
+    ON_CONFIRMED_RENOUNCE,
     RENOUNCED
   }
 
