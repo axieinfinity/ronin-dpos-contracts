@@ -3,6 +3,12 @@
 pragma solidity ^0.8.9;
 
 interface IStaking {
+  enum ValidatorState {
+    ACTIVE,
+    ON_RENOUNCE,
+    RENOUNCED
+  }
+
   struct ValidatorCandidate {
     /// @dev The candidate admin that stakes for the validator.
     address candidateAdmin;
@@ -19,6 +25,8 @@ interface IStaking {
     uint256 delegatedAmount;
     /// @dev Mark the validator is a governance node
     bool governing;
+    /// @dev State of the validator
+    ValidatorState state;
     /// @dev For upgrability purpose
     uint256[20] ____gap;
   }
@@ -32,6 +40,8 @@ interface IStaking {
   );
   event Staked(address indexed validator, uint256 amount);
   event Unstaked(address indexed validator, uint256 amount);
+  event ValidatorRenounceRequested(address indexed consensusAddr, uint256 amount);
+  event ValidatorRenounceFinalized(address indexed consensusAddr, uint256 amount);
   event Delegated(address indexed delegator, address indexed validator, uint256 amount);
   event Undelegated(address indexed delegator, address indexed validator, uint256 amount);
 

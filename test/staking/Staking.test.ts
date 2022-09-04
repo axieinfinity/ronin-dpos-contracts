@@ -4,7 +4,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import { Staking, Staking__factory } from '../../src/types';
 import { ValidatorCandidateStruct } from '../../src/types/ValidatorSetCoreMock';
-import { BigNumber, BigNumberish } from 'ethers';
+import { BigNumber } from 'ethers';
 
 let stakingContract: Staking;
 
@@ -73,64 +73,172 @@ describe('PoS Staking test', () => {
     });
 
     describe('Validator functions', async () => {
-      it('Should be able to propose 1 validator', async () => {
-        let tx = await stakingContract
-          .connect(stakingAddrs[0])
-          .proposeValidator(consensusAddrs[0].address, treasuryAddrs[0].address, 0, {
-            value: minValidatorBalance.toString(),
-          });
-        expect(await tx)
-          .to.emit(stakingContract, 'ValidatorProposed')
-          .withArgs(consensusAddrs[0].address, stakingAddrs[0].address, minValidatorBalance, candidates[0]);
-      });
-
-      it('Should not be able to propose 1 validator - insufficient fund', async () => {
-        let tx = stakingContract
-          .connect(stakingAddrs[1])
-          .proposeValidator(consensusAddrs[1].address, treasuryAddrs[1].address, 0, {
-            value: minValidatorBalance.sub(1).toString(),
-          });
-        await expect(tx).to.revertedWith('Staking: insuficient amount');
-      });
-
-      it('Should not be able to propose 1 validator - duplicated validator', async () => {
-        let tx = stakingContract
-          .connect(stakingAddrs[0])
-          .proposeValidator(consensusAddrs[0].address, treasuryAddrs[0].address, 0, {
-            value: minValidatorBalance.toString(),
-          });
-        await expect(tx).to.revertedWith('Staking: query for existed candidate');
-      });
-
-      it('Should be able to stake for a validator', async () => {
-        let stakingValue = ethers.utils.parseEther('1.0');
-        let tx = stakingContract.connect(stakingAddrs[0]).stake(consensusAddrs[0].address, {
-          value: stakingValue,
+      describe('Proposing', async () => {
+        it('Should be able to propose 1 validator', async () => {
+          let tx = await stakingContract
+            .connect(stakingAddrs[0])
+            .proposeValidator(consensusAddrs[0].address, treasuryAddrs[0].address, 0, {
+              value: minValidatorBalance.toString(),
+            });
+          expect(await tx)
+            .to.emit(stakingContract, 'ValidatorProposed')
+            .withArgs(consensusAddrs[0].address, stakingAddrs[0].address, minValidatorBalance, candidates[0]);
         });
-        await expect(tx).to.emit(stakingContract, 'Staked').withArgs(consensusAddrs[0].address, stakingValue);
+
+        it('Should not be able to propose 1 validator - insufficient fund', async () => {
+          let tx = stakingContract
+            .connect(stakingAddrs[1])
+            .proposeValidator(consensusAddrs[1].address, treasuryAddrs[1].address, 0, {
+              value: minValidatorBalance.sub(1).toString(),
+            });
+          await expect(tx).to.revertedWith('Staking: insuficient amount');
+        });
+
+        it('Should not be able to propose 1 validator - duplicated validator', async () => {
+          let tx = stakingContract
+            .connect(stakingAddrs[0])
+            .proposeValidator(consensusAddrs[0].address, treasuryAddrs[0].address, 0, {
+              value: minValidatorBalance.toString(),
+            });
+          await expect(tx).to.revertedWith('Staking: cannot propose an existed candidate');
+        });
       });
 
-      it('Should not be able to unstake - exceeds minimum balance', async () => {
-        let unstakingValue = ethers.utils.parseEther('1.1');
-        let tx = stakingContract.connect(stakingAddrs[0]).unstake(consensusAddrs[0].address, unstakingValue);
-        await expect(tx).to.revertedWith('Staking: invalid staked amount left');
+      describe('Staking', async () => {
+        it('Should be able to stake for a validator', async () => {
+          let stakingValue = ethers.utils.parseEther('1.0');
+          let tx = stakingContract.connect(stakingAddrs[0]).stake(consensusAddrs[0].address, {
+            value: stakingValue,
+          });
+          await expect(tx).to.emit(stakingContract, 'Staked').withArgs(consensusAddrs[0].address, stakingValue);
+        });
+
+        it('Should not be able to stake for an unexistent validator', async () => {
+          let stakingValue = ethers.utils.parseEther('1.0');
+          let tx = stakingContract.connect(stakingAddrs[0]).stake(consensusAddrs[1].address, {
+            value: stakingValue,
+          });
+          await expect(tx).to.revertedWith('Staking: query for nonexistent candidate');
+        });
       });
 
-      it('Should not be able to unstake - caller is not staking address', async () => {
-        let unstakingValue = ethers.utils.parseEther('1.0');
-        let tx = stakingContract.connect(stakingAddrs[1]).unstake(consensusAddrs[0].address, unstakingValue);
-        await expect(tx).to.revertedWith('Staking: caller must be staking address');
+      describe('Unstaking', async () => {
+        it('Should not be able to unstake - exceeds minimum balance', async () => {
+          let unstakingValue = ethers.utils.parseEther('1.1');
+          let tx = stakingContract.connect(stakingAddrs[0]).unstake(consensusAddrs[0].address, unstakingValue);
+          await expect(tx).to.revertedWith('Staking: invalid staked amount left');
+        });
+
+        it('Should not be able to unstake - caller is not staking address', async () => {
+          let unstakingValue = ethers.utils.parseEther('1.0');
+          let tx = stakingContract.connect(stakingAddrs[1]).unstake(consensusAddrs[0].address, unstakingValue);
+          await expect(tx).to.revertedWith('Staking: caller must be staking address');
+        });
+
+        it('Should be able to unstake', async () => {
+          let tx;
+          let unstakingValue = ethers.utils.parseEther('1.0');
+          let descresingValue = ethers.utils.parseEther('-1.0');
+          await expect(
+            () => (tx = stakingContract.connect(stakingAddrs[0]).unstake(consensusAddrs[0].address, unstakingValue))
+          ).to.changeEtherBalances([stakingAddrs[0], stakingContract], [unstakingValue, descresingValue]);
+          await expect(tx).to.emit(stakingContract, 'Unstaked').withArgs(consensusAddrs[0].address, unstakingValue);
+        });
+
+        it('Should not be able to unstake - exceeds minimum balance 2', async () => {
+          let unstakingValue = 1;
+          let tx = stakingContract.connect(stakingAddrs[0]).unstake(consensusAddrs[0].address, unstakingValue);
+          await expect(tx).to.revertedWith('Staking: invalid staked amount left');
+        });
       });
 
-      it('Should be able to unstake', async () => {
-        let unstakingValue = ethers.utils.parseEther('1.0');
-        let tx = stakingContract.connect(stakingAddrs[0]).unstake(consensusAddrs[0].address, unstakingValue);
-        await expect(tx).to.emit(stakingContract, 'Unstaked').withArgs(consensusAddrs[0].address, unstakingValue);
+      describe('Requesting renounce', async () => {
+        it('Should not be able to request renounce validator - caller is not staking address', async () => {
+          let tx = stakingContract.connect(stakingAddrs[1]).requestRenouncingValidator(consensusAddrs[0].address);
+          await expect(tx).to.revertedWith('Staking: caller must be staking address');
+        });
+
+        it('Should be able to request renounce validator', async () => {
+          let stakingValue = ethers.utils.parseEther('1.0');
+          await stakingContract.connect(stakingAddrs[0]).stake(consensusAddrs[0].address, {
+            value: stakingValue,
+          });
+
+          let tx = stakingContract.connect(stakingAddrs[0]).requestRenouncingValidator(consensusAddrs[0].address);
+          await expect(tx)
+            .to.emit(stakingContract, 'ValidatorRenounceRequested')
+            .withArgs(consensusAddrs[0].address, minValidatorBalance.add(stakingValue));
+        });
+
+        it('Should not be able to request renounce validator twice', async () => {
+          let tx = stakingContract.connect(stakingAddrs[0]).requestRenouncingValidator(consensusAddrs[0].address);
+          await expect(tx).to.revertedWith('Staking: query for deprecated candidate');
+        });
+
+        it('Should not be able to propose the validator that is on renounce', async () => {
+          let tx = stakingContract
+            .connect(stakingAddrs[0])
+            .proposeValidator(consensusAddrs[0].address, treasuryAddrs[0].address, 0, {
+              value: minValidatorBalance.toString(),
+            });
+          await expect(tx).to.revertedWith('Staking: cannot propose an existed candidate');
+        });
+
+        it('Should not be able to stake for the validator that is on renounce', async () => {
+          let stakingValue = ethers.utils.parseEther('1.0');
+          let tx = stakingContract.connect(stakingAddrs[0]).stake(consensusAddrs[0].address, {
+            value: stakingValue,
+          });
+
+          await expect(tx).to.revertedWith('Staking: query for deprecated candidate');
+        });
+
+        it('Should not be able to unstake for the validator that is on renounce', async () => {
+          let unstakingValue = ethers.utils.parseEther('1.0');
+          let tx = stakingContract.connect(stakingAddrs[1]).unstake(consensusAddrs[0].address, unstakingValue);
+          await expect(tx).to.revertedWith('Staking: query for deprecated candidate');
+        });
+      });
+
+      describe('Finalize renounce', async () => {
+        it('Should not be able to finalize the renounce - caller is not staking address', async () => {
+          let tx = stakingContract.connect(stakingAddrs[1]).finalizeRenouncingValidator(consensusAddrs[0].address);
+          await expect(tx).to.revertedWith('Staking: caller must be staking address');
+        });
+
+        it('Should be able to finalize the renounce', async () => {
+          let tx;
+          let incValue = minValidatorBalance.add(ethers.utils.parseEther('1'));
+          let decValue = BigNumber.from(0).sub(incValue);
+          await expect(
+            () => (tx = stakingContract.connect(stakingAddrs[0]).finalizeRenouncingValidator(consensusAddrs[0].address))
+          ).to.changeEtherBalances([stakingAddrs[0], stakingContract], [incValue, decValue]);
+          await expect(tx)
+            .to.emit(stakingContract, 'ValidatorRenounceFinalized')
+            .withArgs(consensusAddrs[0].address, incValue);
+        });
+
+        it('Should not be able to finalize renounce twice', async () => {
+          let tx = stakingContract.connect(stakingAddrs[0]).finalizeRenouncingValidator(consensusAddrs[0].address);
+          await expect(tx).to.revertedWith('Staking: validator state is not ON_RENOUNCE');
+        });
+
+        it('Should not be able to stake for a renounced validator', async () => {
+          let stakingValue = ethers.utils.parseEther('1.0');
+          let tx = stakingContract.connect(stakingAddrs[0]).stake(consensusAddrs[0].address, {
+            value: stakingValue,
+          });
+          await expect(tx).to.revertedWith('Staking: query for deprecated candidate');
+        });
+      });
+
+      describe('Propose and renounce multiple validator', async () => {
+        // TODO:
       });
     });
 
     describe('Delegator functions', async () => {});
 
-    describe('Internal fucntions', async () => {});
+    describe('Updating validator fucntions', async () => {});
   });
 });
