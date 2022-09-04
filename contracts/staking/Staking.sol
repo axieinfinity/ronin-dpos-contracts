@@ -16,7 +16,7 @@ contract Staking is IStaking, Initializable {
   /// @dev Validator array. The order of the validator is assured not to be changed, since this
   /// array is kept synced with the array in the `Staking` contract.
   ValidatorCandidate[] public validatorCandidates;
-  
+
   /// @dev Index of validators that are on renounce
   uint256[] public pendingRenoucingValidatorIndexes;
 
@@ -83,17 +83,19 @@ contract Staking is IStaking, Initializable {
     require(_treasuryAddr != address(0), "Staking: invalid treasury address");
 
     ValidatorCandidate storage _candidate;
-    if (_validatorIndexes[_consensusAddr] > 0) { /// renounced validator joins as a validator again
+    if (_validatorIndexes[_consensusAddr] > 0) {
+      /// renounced validator joins as a validator again
       (, _candidate) = _getDeprecatedCandidate(_consensusAddr);
       require(_candidate.state == ValidatorState.RENOUNCED, "Staking: cannot propose an existed candidate");
-    } else { /// totally new validator joins
+    } else {
+      /// totally new validator joins
       _candidateIdx = validatorCandidates.length;
       _candidate = validatorCandidates.push();
       _validatorIndexes[_consensusAddr] = _candidateIdx;
       _candidate.consensusAddr = _consensusAddr;
     }
 
-    _candidate.stakingAddr = _stakingAddr;
+    _candidate.candidateAdmin = _stakingAddr;
     _candidate.treasuryAddr = _treasuryAddr;
     _candidate.commissionRate = _commissionRate;
     _candidate.stakedAmount = _amount;
@@ -108,9 +110,9 @@ contract Staking is IStaking, Initializable {
     uint256 _amount = msg.value;
     (, ValidatorCandidate storage _candidate) = _getCandidate(_consensusAddr);
     console.log("[*] Staking");
-    console.log("[ ] \t stake address:\t", _candidate.stakingAddr);
+    console.log("[ ] \t stake address:\t", _candidate.candidateAdmin);
     console.log("[ ] \t consensus address:\t", _candidate.consensusAddr);
-    require(_candidate.stakingAddr == msg.sender, "Staking: invalid staking address");
+    require(_candidate.candidateAdmin == msg.sender, "Staking: invalid staking address");
 
     _candidate.stakedAmount += _amount;
     emit Staked(_consensusAddr, _amount);
@@ -121,7 +123,7 @@ contract Staking is IStaking, Initializable {
    */
   function unstake(address _consensusAddr, uint256 _amount) external {
     (, ValidatorCandidate storage _candidate) = _getCandidate(_consensusAddr);
-    require(_candidate.stakingAddr == msg.sender, "Staking: caller must be staking address");
+    require(_candidate.candidateAdmin == msg.sender, "Staking: caller must be staking address");
     uint256 _maxUnstake = _candidate.stakedAmount - minValidatorBalance;
     require(_amount <= _maxUnstake, "Staking: invalid staked amount left");
 
@@ -133,32 +135,32 @@ contract Staking is IStaking, Initializable {
 
   /**
    * @notice Allow validator sends renouncing request. The request gets affected when the epoch ends
-   * 
+   *
    * @dev The following procedure must be done in multiple methods in order to finish the renounce.
-   * 
+   *
    * 1. This method:
-   *    - Set `ValidatorState` of validator to `ON_RENOUNCE`; 
+   *    - Set `ValidatorState` of validator to `ON_RENOUNCE`;
    *    - Push the validator to a pending list;
    *    - Trigger the `stateChanged` flag.
-   * 
+   *
    * 2. The `updateValidatorSet` method:
    *    - Set the balance-to-sort of the validator to `0`;
    *    - Reset the `stateChanged`s flag.
-   * 
+   *
    * 3. The `finalizeRenouncingValidator` method:
    *    - Remove validator from pending list
    *    - Set `ValidatorState` of validator to `RENOUNCED`;
    *    - Set `stakedAmount` of validator to `0`;
    *    - Transfer the staked to the respective staking address.
-   * 
+   *
    * Requirements:
    * - The validator must be exist
    * - The validator must be in `ACTIVE` state
-   * 
+   *
    */
   function requestRenouncingValidator(address _consensusAddr) external {
     (uint256 _index, ValidatorCandidate storage _candidate) = _getCandidate(_consensusAddr);
-    require(_candidate.stakingAddr == msg.sender, "Staking: caller must be staking address");
+    require(_candidate.candidateAdmin == msg.sender, "Staking: caller must be staking address");
 
     stateChanged = true;
     _candidate.state = ValidatorState.ON_RENOUNCE;
@@ -169,7 +171,7 @@ contract Staking is IStaking, Initializable {
 
   function finalizeRenouncingValidator(address _consensusAddr) external {
     (uint256 _index, ValidatorCandidate storage _candidate) = _getDeprecatedCandidate(_consensusAddr);
-    require(_candidate.stakingAddr == msg.sender, "Staking: caller must be staking address");
+    require(_candidate.candidateAdmin == msg.sender, "Staking: caller must be staking address");
     require(_candidate.state == ValidatorState.ON_RENOUNCE, "Staking: validator state is not ON_RENOUNCE");
 
     bool _found;
@@ -244,26 +246,6 @@ contract Staking is IStaking, Initializable {
     external
     returns (uint256 _amount)
   {
-    revert("Unimplemented");
-  }
-
-  function onDeposit() external payable override {
-    revert("Unimplemented");
-  }
-
-  function allocateReward(address valAddr, uint256 amount) external override {
-    revert("Unimplemented");
-  }
-
-  function receiveReward(address valAddr) external payable override {
-    revert("Unimplemented");
-  }
-
-  function claimReward(uint256 amount) external override {
-    revert("Unimplemented");
-  }
-
-  function slash(address valAddr, uint256 amount) external override {
     revert("Unimplemented");
   }
 
@@ -355,7 +337,7 @@ contract Staking is IStaking, Initializable {
     // Using `call` to remove 2300 gas stipend
     // https://consensys.net/diligence/blog/2019/09/stop-using-soliditys-transfer-now/
     (bool _success, ) = _to.call{ value: _amount }("");
-    require(_success, "Staking: transfer RON failed"); 
+    require(_success, "Staking: transfer RON failed");
   }
 
   /**
@@ -413,4 +395,33 @@ contract Staking is IStaking, Initializable {
 
     return currentValidatorSet_;
   }
+
+  function governanceAdminContract() external view override returns (address) {}
+
+  function setMinValidatorBalance(uint256) external override {}
+
+  function maxValidatorCandidate() external view override returns (uint256) {}
+
+  function setMaxValidatorCandidate(uint256) external override {}
+
+  function getValidatorCandidates() external view override returns (ValidatorCandidate[] memory candidates) {}
+
+  function recordReward(address _consensusAddr, uint256 _reward) external override {}
+
+  function settleRewardPool(address _consensusAddr) external override {}
+
+  function onValidatorSlashed(address _consensusAddr) external override {}
+
+  function deductStakingAmount(address _consensusAddr, uint256 _amount) external override {}
+
+  function renounce(address consensusAddr) external override {}
+
+  function getRewards(address _user, address[] calldata _poolAddrList)
+    external
+    view
+    override
+    returns (uint256[] memory _pendings, uint256[] memory _claimables)
+  {}
+
+  function claimRewards(address[] calldata _consensusAddrList) external override returns (uint256 _amount) {}
 }
