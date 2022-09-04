@@ -10,3 +10,4 @@ yarn-error.log
 
 refs/
 .vscode
+remix-compiler.config.js
