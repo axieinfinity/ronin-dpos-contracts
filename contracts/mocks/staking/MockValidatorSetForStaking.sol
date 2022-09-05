@@ -10,6 +10,9 @@ contract MockValidatorSetForStaking is IValidatorSet {
 
   uint256 public numberOfEpochsInPeriod;
   uint256 public numberOfBlocksInEpoch;
+  /// @dev Mapping from period number => slashed
+  mapping(uint256 => bool) internal _periodSlashed;
+  uint256[] internal _periods;
 
   constructor(
     IStaking _stakingContract,
@@ -22,7 +25,7 @@ contract MockValidatorSetForStaking is IValidatorSet {
   }
 
   function depositReward() external payable override {
-    stakingContract.recordReward(msg.sender, msg.value);
+    stakingContract.recordReward{ value: msg.value }(msg.sender, msg.value);
   }
 
   function settledReward(address[] memory _validatorList) external {
@@ -44,8 +47,16 @@ contract MockValidatorSetForStaking is IValidatorSet {
     stakingContract.onRewardDropped(_validator);
   }
 
-  function periodOf(uint256 _block) external view override returns (uint256) {
-    return _block / numberOfBlocksInEpoch / numberOfEpochsInPeriod + 1;
+  function endPeriod() external {
+    _periods.push(block.number);
+  }
+
+  function periodOf(uint256 _block) external view override returns (uint256 _period) {
+    for (uint256 _i; _i < _periods.length; _i++) {
+      if (_block >= _periods[_i]) {
+        _period = _i + 1;
+      }
+    }
   }
 
   function updateValidators() external override returns (address[] memory) {}

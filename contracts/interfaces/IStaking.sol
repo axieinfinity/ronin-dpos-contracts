@@ -117,7 +117,7 @@ interface IStaking {
    * @notice This method should not be called after the pending pool is dropped.
    *
    */
-  function recordReward(address _consensusAddr, uint256 _reward) external;
+  function recordReward(address _consensusAddr, uint256 _reward) external payable;
 
   /**
    * @dev Settles the pending pool and allocates rewards for the validator.

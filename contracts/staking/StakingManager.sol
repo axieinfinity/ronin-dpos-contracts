@@ -32,8 +32,8 @@ abstract contract StakingManager is IStaking, RewardCalculation {
    * @inheritdoc RewardCalculation
    */
   function totalBalance(address _poolAddr) public view override returns (uint256) {
-    ValidatorCandidate memory _candidate = _getCandidate(_poolAddr);
-    return _candidate.stakedAmount + _candidate.delegatedAmount;
+    ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
+    return _candidate.delegatedAmount;
   }
 
   function minValidatorBalance() public view virtual returns (uint256);
@@ -325,7 +325,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
 
     ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
     _candidate.delegatedAmount -= _amount;
-    _delegatedAmount[_poolAddr][_user] = _amount;
+    _delegatedAmount[_poolAddr][_user] = _newBalance;
     emit Undelegated(_user, _poolAddr, _amount);
   }
 

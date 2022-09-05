@@ -124,16 +124,22 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
     _candidates = new address[](_length);
     _weights = new uint256[](_length);
     for (uint256 _i; _i < _length; _i++) {
-      _candidates[_i] = validatorCandidates[_i].consensusAddr;
-      _weights[_i] = validatorCandidates[_i].delegatedAmount;
+      ValidatorCandidate storage _candidate = validatorCandidates[_i];
+      _candidates[_i] = _candidate.consensusAddr;
+      _weights[_i] = _candidate.delegatedAmount;
     }
   }
 
   /**
    * @inheritdoc IStaking
    */
-  function recordReward(address _consensusAddr, uint256 _reward) external onlyValidatorContract {
-    console.log("*** =>>>>>>> recordReward", _consensusAddr, _reward);
+  function recordReward(address _consensusAddr, uint256 _reward) external payable onlyValidatorContract {
+    console.log(
+      "*** =>>>>>>> recordReward",
+      _reward,
+      _pendingPool[_consensusAddr].accumulatedRps,
+      totalBalance(_consensusAddr)
+    );
     _recordReward(_consensusAddr, _reward);
     console.log("*** =>>>>>>> recordReward", _pendingPool[_consensusAddr].accumulatedRps);
   }
@@ -158,7 +164,7 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
    * @inheritdoc IStaking
    */
   function deductStakingAmount(address _consensusAddr, uint256 _amount) external onlyValidatorContract {
-    ValidatorCandidate memory _candidate = _getCandidate(_consensusAddr);
+    ValidatorCandidate storage _candidate = _getCandidate(_consensusAddr);
     _unstake(_consensusAddr, _candidate.candidateAdmin, _amount);
     _undelegate(_consensusAddr, _candidate.candidateAdmin, _amount);
   }
@@ -167,7 +173,7 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
    * @inheritdoc IStaking
    */
   function commissionRateOf(address _consensusAddr) external view returns (uint256 _rate) {
-    ValidatorCandidate memory _candidate = _getCandidate(_consensusAddr);
+    ValidatorCandidate storage _candidate = _getCandidate(_consensusAddr);
     return _candidate.commissionRate;
   }
 
@@ -175,7 +181,7 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
    * @inheritdoc IStaking
    */
   function treasuryAddressOf(address _consensusAddr) external view returns (address) {
-    ValidatorCandidate memory _candidate = _getCandidate(_consensusAddr);
+    ValidatorCandidate storage _candidate = _getCandidate(_consensusAddr);
     return _candidate.treasuryAddr;
   }
 
