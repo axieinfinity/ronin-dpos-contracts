@@ -11,10 +11,10 @@ let stakingContract: Staking;
 
 let signers: SignerWithAddress[];
 let admin: SignerWithAddress;
-let candidates: ValidatorCandidateStruct[];
-let stakingAddrs: SignerWithAddress[];
-let consensusAddrs: SignerWithAddress[];
-let treasuryAddrs: SignerWithAddress[];
+let candidates: ValidatorCandidateStruct[] = [];
+let stakingAddrs: SignerWithAddress[] = [];
+let consensusAddrs: SignerWithAddress[] = [];
+let treasuryAddrs: SignerWithAddress[] = [];
 
 enum ValidatorStateEnum {
   ACTIVE = 0,
@@ -61,44 +61,42 @@ describe('Staking test', () => {
   let unstakingOnHoldBlocksNum: BigNumber;
   let minValidatorBalance: BigNumber;
 
+  before(async () => {
+    [admin, ...signers] = await ethers.getSigners();
+
+    console.log('Init addresses for 21 candidates...');
+    for (let i = 0; i < 21; i++) {
+      candidates.push(
+        generateCandidate(signers[3 * i].address, signers[3 * i + 1].address, signers[3 * i + 2].address)
+      );
+      stakingAddrs.push(signers[3 * i]);
+      consensusAddrs.push(signers[3 * i + 1]);
+      treasuryAddrs.push(signers[3 * i + 2]);
+
+      console.log(
+        i,
+        signers[3 * i].address,
+        signers[3 * i + 1].address,
+        signers[3 * i + 2].address,
+        (await ethers.provider.getBalance(signers[3 * i].address)).toString(),
+        (await ethers.provider.getBalance(signers[3 * i + 1].address)).toString(),
+        (await ethers.provider.getBalance(signers[3 * i + 2].address)).toString()
+      );
+    }
+  });
+
   describe('Single flow', async () => {
     describe('Validator functions', async () => {
       before(async () => {
-        [admin, ...signers] = await ethers.getSigners();
         await deployments.fixture('StakingContract');
         const stakingProxyDeployment = await deployments.get('StakingProxy');
         stakingContract = Staking__factory.connect(stakingProxyDeployment.address, admin);
-
-        candidates = [];
-        stakingAddrs = [];
-        consensusAddrs = [];
-        treasuryAddrs = [];
 
         unstakingOnHoldBlocksNum = await stakingContract.unstakingOnHoldBlocksNum();
         minValidatorBalance = await stakingContract.minValidatorBalance();
 
         console.log('Set validator set contract...');
         await stakingContract.setValidatorSetContract(admin.address);
-
-        console.log('Init addresses for 10 candidates...');
-        for (let i = 0; i < 10; i++) {
-          candidates.push(
-            generateCandidate(signers[3 * i].address, signers[3 * i + 1].address, signers[3 * i + 2].address)
-          );
-          stakingAddrs.push(signers[3 * i]);
-          consensusAddrs.push(signers[3 * i + 1]);
-          treasuryAddrs.push(signers[3 * i + 2]);
-
-          console.log(
-            i,
-            signers[3 * i].address,
-            signers[3 * i + 1].address,
-            signers[3 * i + 2].address,
-            (await ethers.provider.getBalance(signers[3 * i].address)).toString(),
-            (await ethers.provider.getBalance(signers[3 * i + 1].address)).toString(),
-            (await ethers.provider.getBalance(signers[3 * i + 2].address)).toString()
-          );
-        }
       });
 
       describe('Proposing', async () => {
@@ -348,44 +346,39 @@ describe('Staking test', () => {
 
     describe('Updating validator functions', async () => {
       beforeEach(async () => {
-        [admin, ...signers] = await ethers.getSigners();
         await deployments.fixture('StakingContract');
         const stakingProxyDeployment = await deployments.get('StakingProxy');
         stakingContract = Staking__factory.connect(stakingProxyDeployment.address, admin);
-
-        candidates = [];
-        stakingAddrs = [];
-        consensusAddrs = [];
-        treasuryAddrs = [];
 
         unstakingOnHoldBlocksNum = await stakingContract.unstakingOnHoldBlocksNum();
         minValidatorBalance = await stakingContract.minValidatorBalance();
 
         console.log('Set validator set contract...');
         await stakingContract.setValidatorSetContract(admin.address);
-
-        console.log('Init addresses for 21 candidates...');
-        for (let i = 0; i < 21; i++) {
-          candidates.push(
-            generateCandidate(signers[3 * i].address, signers[3 * i + 1].address, signers[3 * i + 2].address)
-          );
-          stakingAddrs.push(signers[3 * i]);
-          consensusAddrs.push(signers[3 * i + 1]);
-          treasuryAddrs.push(signers[3 * i + 2]);
-
-          console.log(
-            i,
-            signers[3 * i].address,
-            signers[3 * i + 1].address,
-            signers[3 * i + 2].address,
-            (await ethers.provider.getBalance(signers[3 * i].address)).toString(),
-            (await ethers.provider.getBalance(signers[3 * i + 1].address)).toString(),
-            (await ethers.provider.getBalance(signers[3 * i + 2].address)).toString()
-          );
-        }
       });
 
-      it('Should 21 validator in increasing order sorted', async () => {
+      it('Should sort 21 validator in descreasing order', async () => {
+        // balance: [3M+20, 3M+19, 3M+18, 3M+17, 3M+16, 3M+15, ...]
+        for (let i = 0; i < 21; ++i) {
+          let topupValue = minValidatorBalance.add(ethers.utils.parseEther((20 - i).toString()));
+          let tx = await stakingContract
+            .connect(stakingAddrs[i])
+            .proposeValidator(consensusAddrs[i].address, treasuryAddrs[i].address, i * 100, {
+              value: topupValue,
+            });
+          expect(await tx)
+            .to.emit(stakingContract, 'ValidatorProposed')
+            .withArgs(consensusAddrs[i].address, stakingAddrs[i].address, topupValue, candidates[i]);
+        }
+
+        await stakingContract.connect(admin).updateValidatorSet();
+        let currentSet = await stakingContract.getCurrentValidatorSet();
+        let expectingSet = [DEFAULT_ADDRESS].concat([...Array(21).keys()].map((i) => consensusAddrs[i].address));
+        console.log('>>> currentSet', currentSet);
+        await expect(expectingSet).eql(currentSet);
+      });
+
+      it('Should sort 21 validator in increasing order', async () => {
         // balance: [3M, 3M+1, 3M+2, 3M+3, 3M+4, 3M+5, ...]
         for (let i = 0; i < 21; ++i) {
           let topupValue = minValidatorBalance.add(ethers.utils.parseEther(i.toString()));
@@ -408,8 +401,7 @@ describe('Staking test', () => {
         await expect(expectingSet).eql(currentSet);
       });
 
-      it('Should 21 validator in mixed order sorted', async () => {
-        // balance: [3M, 3M+1, 3M+2, 3M+3, 3M+4, 3M+5, ...]
+      it('Should sort 21 validator in mixed order', async () => {
         let balances = [];
         for (let i = 0; i < 21; ++i) {
           balances.push({
@@ -444,8 +436,7 @@ describe('Staking test', () => {
         await expect(expectingSet).eql(currentSet);
       });
 
-      it('Should second sort for 21 validator ignored', async () => {
-        // balance: [3M, 3M+1, 3M+2, 3M+3, 3M+4, 3M+5, ...]
+      it('Should ignore the second sort for 21 validator', async () => {
         let balances = [];
         for (let i = 0; i < 21; ++i) {
           balances.push({
@@ -486,8 +477,7 @@ describe('Staking test', () => {
         await expect(expectingSet).eql(currentSet);
       });
 
-      it('Should second and third sort for 21 validator ignored', async () => {
-        // balance: [3M, 3M+1, 3M+2, 3M+3, 3M+4, 3M+5, ...]
+      it('Should ignore the second and third sort for 21 validator', async () => {
         let balances = [];
         for (let i = 0; i < 21; ++i) {
           balances.push({
