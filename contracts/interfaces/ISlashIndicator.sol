@@ -3,6 +3,13 @@
 pragma solidity ^0.8.9;
 
 interface ISlashIndicator {
+  enum SlashType {
+    UNKNOWN,
+    MISDEMAENOR,
+    FELONY,
+    DOUBLE_SIGNING
+  }
+
   struct Indicator {
     /// @dev The block height that the indicator get updated, make sure this update once each block
     uint256 height;
@@ -31,6 +38,8 @@ interface ISlashIndicator {
    * - Only validator contract can call this method
    */
   function resetCounters() external;
+
+  function resetCounter(address) external;
 
   /**
    * @notice Slash for double signing

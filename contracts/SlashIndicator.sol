@@ -7,13 +7,6 @@ import "./interfaces/IStaking.sol";
 import "./interfaces/IValidatorSet.sol";
 
 contract SlashIndicator is ISlashIndicator {
-  enum SlashType {
-    UNKNOWN,
-    MISDEMAENOR,
-    FELONY,
-    DOUBLE_SIGNING
-  }
-
   /// Init configuration
   uint256 public constant MISDEMEANOR_THRESHOLD = 50;
   uint256 public constant FELONY_THRESHOLD = 150;
@@ -34,7 +27,7 @@ contract SlashIndicator is ISlashIndicator {
 
   event SlashedValidator(address indexed validator, SlashType slashType);
   event ResetIndicators();
-  
+
   modifier onlyCoinbase() {
     require(msg.sender == block.coinbase, "Slash: Only coinbase");
     _;
@@ -56,7 +49,7 @@ contract SlashIndicator is ISlashIndicator {
     _;
   }
 
-  constructor () {
+  constructor() {
     misdemeanorThreshold = MISDEMEANOR_THRESHOLD;
     felonyThreshold = FELONY_THRESHOLD;
   }
@@ -80,11 +73,14 @@ contract SlashIndicator is ISlashIndicator {
    *
    */
   function slash(address _validatorAddr) external onlyInitialized onlyCoinbase oncePerBlock {
-    // Check if the to be slashed validator is in the current epoch 
-    require(validatorSetContract.isCurrentValidator(_validatorAddr), "Slash: Cannot slash validator not in current epoch");
+    // Check if the to be slashed validator is in the current epoch
+    require(
+      validatorSetContract.isCurrentValidator(_validatorAddr),
+      "Slash: Cannot slash validator not in current epoch"
+    );
 
     Indicator storage indicator = indicators[_validatorAddr];
-    
+
     // Add the validator to the list if they are not exist yet
     if (indicator.historicalCounter == 0) {
       indicator.historicalCounter = 1;
@@ -94,7 +90,7 @@ contract SlashIndicator is ISlashIndicator {
       indicator.historicalCounter++;
       indicator.counter++;
     }
-    
+
     indicator.height = block.number;
 
     // Slash the validator as either the fenoly or the misdemeanor
@@ -145,7 +141,7 @@ contract SlashIndicator is ISlashIndicator {
    */
   function getSlashIndicator(address validator) external view returns (Indicator memory) {
     Indicator memory _indicator = indicators[validator];
-    return _indicator; 
+    return _indicator;
   }
 
   /**
@@ -158,4 +154,6 @@ contract SlashIndicator is ISlashIndicator {
   function getSlashThresholds() external view returns (uint256, uint256) {
     return (misdemeanorThreshold, felonyThreshold);
   }
+
+  function resetCounter(address) external override {}
 }
