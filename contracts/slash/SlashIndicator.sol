@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-import "./interfaces/ISlashIndicator.sol";
-import "./interfaces/IStaking.sol";
-import "./interfaces/IValidatorSet.sol";
+import "../interfaces/ISlashIndicator.sol";
+import "../interfaces/IStaking.sol";
+import "../interfaces/IValidatorSet.sol";
 
 contract SlashIndicator is ISlashIndicator {
   /// Init configuration
@@ -26,6 +26,7 @@ contract SlashIndicator is ISlashIndicator {
   IStaking public stakingContract;
 
   event SlashedValidator(address indexed validator, SlashType slashType);
+  event ResetIndicator(address indexed validator);
   event ResetIndicators();
 
   modifier onlyCoinbase() {
@@ -72,7 +73,7 @@ contract SlashIndicator is ISlashIndicator {
    * - Only coinbase can call this method
    *
    */
-  function slash(address _validatorAddr) external onlyInitialized onlyCoinbase oncePerBlock {
+  function slash(address _validatorAddr) external override onlyInitialized onlyCoinbase oncePerBlock {
     // Check if the to be slashed validator is in the current epoch
     require(
       validatorSetContract.isCurrentValidator(_validatorAddr),
@@ -81,17 +82,8 @@ contract SlashIndicator is ISlashIndicator {
 
     Indicator storage indicator = indicators[_validatorAddr];
 
-    // Add the validator to the list if they are not exist yet
-    if (indicator.historicalCounter == 0) {
-      indicator.historicalCounter = 1;
-      indicator.counter = 1;
-      validators.push(_validatorAddr);
-    } else {
-      indicator.historicalCounter++;
-      indicator.counter++;
-    }
-
-    indicator.height = block.number;
+    indicator.counter++;
+    indicator.lastSyncedBlock = block.number;
 
     // Slash the validator as either the fenoly or the misdemeanor
     if (indicator.counter == felonyThreshold) {
@@ -110,17 +102,21 @@ contract SlashIndicator is ISlashIndicator {
    * Requirements:
    * - Only validator contract can call this method
    */
-  function resetCounters() external onlyInitialized onlyValidatorContract {
-    if (validators.length == 0) {
+  function resetCounters(address[] calldata _validatorAddrs) external override onlyInitialized onlyValidatorContract {
+    if (_validatorAddrs.length == 0) {
       return;
     }
 
-    for (uint i = 0; i < validators.length; i++) {
-      Indicator storage _indicator = indicators[validators[i]];
-      _indicator.counter = 0;
+    for (uint i = 0; i < _validatorAddrs.length; i++) {
+      _resetCounter(_validatorAddrs[i]);
     }
 
     emit ResetIndicators();
+  }
+
+  function resetCounter(address _validatorAddr) external override onlyInitialized onlyValidatorContract {
+    _resetCounter(_validatorAddr);
+    emit ResetIndicator(_validatorAddr);
   }
 
   /**
@@ -132,28 +128,25 @@ contract SlashIndicator is ISlashIndicator {
    * - Only coinbase can call this method
    *
    */
-  function slashDoubleSign(address valAddr, bytes calldata evidence) external onlyInitialized onlyCoinbase {
+  function slashDoubleSign(address valAddr, bytes calldata evidence) external override onlyInitialized onlyCoinbase {
     revert("Not implemented");
   }
 
   /**
    * @notice Get slash indicator of a validator
    */
-  function getSlashIndicator(address validator) external view returns (Indicator memory) {
+  function getSlashIndicator(address validator) external view override returns (Indicator memory) {
     Indicator memory _indicator = indicators[validator];
     return _indicator;
   }
 
-  /**
-   * @notice Get all validators which have slash information
-   */
-  function getSlashValidators() external view returns (address[] memory) {
-    return validators;
-  }
-
-  function getSlashThresholds() external view returns (uint256, uint256) {
+  function getSlashThresholds() external view override returns (uint256, uint256) {
     return (misdemeanorThreshold, felonyThreshold);
   }
 
-  function resetCounter(address) external override {}
+  function _resetCounter(address _validatorAddr) private {
+    Indicator storage _indicator = indicators[_validatorAddr];
+    _indicator.counter = 0;
+    _indicator.lastSyncedBlock = block.number;
+  }
 }

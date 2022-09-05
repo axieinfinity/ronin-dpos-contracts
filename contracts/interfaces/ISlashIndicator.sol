@@ -12,11 +12,9 @@ interface ISlashIndicator {
 
   struct Indicator {
     /// @dev The block height that the indicator get updated, make sure this update once each block
-    uint256 height;
+    uint256 lastSyncedBlock;
     /// @dev Number of missed block the validator, reset everyday or once reaching the fenoly threshold
     uint128 counter;
-    /// @dev Tracking the misbehavior records the validator
-    uint128 historicalCounter;
   }
 
   /**
@@ -32,14 +30,20 @@ interface ISlashIndicator {
   function slash(address valAddr) external;
 
   /**
-   * @dev Reset the counter of the validator everyday
+   * @dev Reset the counter of the validator at the end of every period
    *
    * Requirements:
    * - Only validator contract can call this method
    */
-  function resetCounters() external;
-
   function resetCounter(address) external;
+
+  /**
+   * @dev Reset the counter of all validators at the end of every period
+   *
+   * Requirements:
+   * - Only validator contract can call this method
+   */
+  function resetCounters(address[] calldata) external;
 
   /**
    * @notice Slash for double signing
