@@ -428,15 +428,14 @@ contract Staking is IStaking, Initializable {
     console.log("[ ] \t prepare data");
     _nodes[0] = Sorting.Node(0, type(uint256).max);
     for (uint i = 1; i < _length; i++) {
+      ValidatorCandidate storage _candidate = validatorCandidates[i];
       _nodes[i].key = i;
-      if (validatorCandidates[i].state == ValidatorState.ACTIVE) {
-        _nodes[i].value = validatorCandidates[i].stakedAmount + validatorCandidates[i].delegatedAmount;
+      if (_candidate.state == ValidatorState.ACTIVE) {
+        _nodes[i].value = _candidate.stakedAmount + _candidate.delegatedAmount;
         _numOfActiveNodes++;
       }
       console.log("[ ] \t\t key, value \t\t", _nodes[i].key, "\t", _nodes[i].value);
     }
-
-    delete _currentValidatorIndexes;
 
     console.log("[ ] \t 3. gas left", gasleft());
     /// do sort
@@ -448,6 +447,7 @@ contract Staking is IStaking, Initializable {
     uint _currentSetSize = (_numOfActiveNodes < numOfCabinets) ? (_numOfActiveNodes + 1) : (numOfCabinets + 1);
     console.log("[ ] \t after sort");
     console.log("[ ] \t\t _currentSetSize", _currentSetSize);
+    delete _currentValidatorIndexes;
     for (uint i = 0; i < _currentSetSize; i++) {
       console.log("[ ] \t\t key, value \t\t", _sortedNodes[i].key, "\t", _sortedNodes[i].value);
       _currentValidatorIndexes.push(_sortedNodes[i].key);
