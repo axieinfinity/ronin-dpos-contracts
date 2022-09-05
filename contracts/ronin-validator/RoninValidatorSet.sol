@@ -234,7 +234,12 @@ contract RoninValidatorSet is IRoninValidatorSet {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function getValidators() external view override returns (address[] memory) {}
+  function getValidators() external view override returns (address[] memory _validatorList) {
+    _validatorList = new address[](validatorCount);
+    for (uint _i = 0; _i < _validatorList.length; _i++) {
+      _validatorList[_i] = _validator[_i];
+    }
+  }
 
   /**
    * @inheritdoc IRoninValidatorSet
