@@ -400,11 +400,8 @@ contract Staking is IStaking, Initializable {
    *
    * @return newValidatorSet Validator set for the new epoch
    */
-  function updateValidatorSet()
-    external
-    onlyValidatorSetContract
-    returns (ValidatorCandidate[] memory newValidatorSet)
-  {
+  function updateValidatorSet() external onlyValidatorSetContract returns (address[] memory newValidatorSet) {
+    console.log("[ ] \t 1. gas left", gasleft());
     /// checking global state, skipping sorting if unchanged
     console.log("[*] updateValidatorSet");
     if (!_globalBalanceChanged) {
@@ -423,55 +420,58 @@ contract Staking is IStaking, Initializable {
     }
 
     /// prepare sorting data
-    /// TODO(bao): only take active validators to sort
     uint _length = validatorCandidates.length;
+    uint _numOfActiveNodes = 0;
     Sorting.Node[] memory _nodes = new Sorting.Node[](_length);
     Sorting.Node[] memory _sortedNodes = new Sorting.Node[](_length);
 
     console.log("[ ] \t prepare data");
     _nodes[0] = Sorting.Node(0, type(uint256).max);
     for (uint i = 1; i < _length; i++) {
-      ValidatorCandidate memory _validator = validatorCandidates[i];
-
       _nodes[i].key = i;
-      _nodes[i].value = (_validator.state == ValidatorState.ACTIVE)
-        ? _validator.stakedAmount + _validator.delegatedAmount
-        : 0;
-
-      console.log("[ ] \t\t key, value", _nodes[i].key, _nodes[i].value);
+      if (validatorCandidates[i].state == ValidatorState.ACTIVE) {
+        _nodes[i].value = validatorCandidates[i].stakedAmount + validatorCandidates[i].delegatedAmount;
+        _numOfActiveNodes++;
+      }
+      console.log("[ ] \t\t key, value \t\t", _nodes[i].key, "\t", _nodes[i].value);
     }
 
     delete _currentValidatorIndexes;
+
+    console.log("[ ] \t 3. gas left", gasleft());
+    /// do sort
     _sortedNodes = Sorting.sortNodes(_nodes);
 
+    console.log("[ ] \t 4. gas left", gasleft());
+
     /// TODO(bao): pick M validators which are governance
-    uint _currentSetSize = (_length < numOfCabinets) ? _length : numOfCabinets;
+    uint _currentSetSize = (_numOfActiveNodes < numOfCabinets) ? (_numOfActiveNodes + 1) : (numOfCabinets + 1);
     console.log("[ ] \t after sort");
     console.log("[ ] \t\t _currentSetSize", _currentSetSize);
     for (uint i = 0; i < _currentSetSize; i++) {
-      console.log("[ ] \t\t key, value", _sortedNodes[i].key, _sortedNodes[i].value);
+      console.log("[ ] \t\t key, value \t\t", _sortedNodes[i].key, "\t", _sortedNodes[i].value);
       _currentValidatorIndexes.push(_sortedNodes[i].key);
     }
 
+    console.log("[ ] \t 5. gas left", gasleft());
+
     return getCurrentValidatorSet();
   }
-
-
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                             FUNCTIONS FOR QUERYING                                //
   ///////////////////////////////////////////////////////////////////////////////////////
 
-  function getCurrentValidatorSet() public view returns (ValidatorCandidate[] memory currentValidatorSet_) {
+  function getCurrentValidatorSet() public view returns (address[] memory currentValidatorSet_) {
     console.log("[*] getPendingRenouncingValidatorIndexes");
     uint _length = _currentValidatorIndexes.length;
-    currentValidatorSet_ = new ValidatorCandidate[](_length);
+    currentValidatorSet_ = new address[](_length);
     for (uint i = 0; i < _length; i++) {
-      console.log("[ ] \t _i, _currentIndexes[i]", i, _currentValidatorIndexes[i]); 
-      currentValidatorSet_[i] = validatorCandidates[_currentValidatorIndexes[i]];
+      console.log("[ ] \t _i, _currentIndexes[i]", i, _currentValidatorIndexes[i]);
+      currentValidatorSet_[i] = validatorCandidates[_currentValidatorIndexes[i]].consensusAddr;
     }
+    return currentValidatorSet_;
   }
-
 
   function getPendingRenouncingValidatorIndexes() public view returns (uint[] memory pendingRenouncingIndexes_) {
     uint _length = _pendingRenouncingValidatorIndexes.length;

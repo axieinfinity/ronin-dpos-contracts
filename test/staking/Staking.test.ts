@@ -62,45 +62,45 @@ describe('Staking test', () => {
   let minValidatorBalance: BigNumber;
 
   describe('Single flow', async () => {
-    before(async () => {
-      [admin, ...signers] = await ethers.getSigners();
-      await deployments.fixture('StakingContract');
-      const stakingProxyDeployment = await deployments.get('StakingProxy');
-      stakingContract = Staking__factory.connect(stakingProxyDeployment.address, admin);
-
-      candidates = [];
-      stakingAddrs = [];
-      consensusAddrs = [];
-      treasuryAddrs = [];
-
-      unstakingOnHoldBlocksNum = await stakingContract.unstakingOnHoldBlocksNum();
-      minValidatorBalance = await stakingContract.minValidatorBalance();
-
-      console.log('Set validator set contract...');
-      await stakingContract.setValidatorSetContract(admin.address);
-
-      console.log('Init addresses for 10 candidates...');
-      for (let i = 0; i < 10; i++) {
-        candidates.push(
-          generateCandidate(signers[3 * i].address, signers[3 * i + 1].address, signers[3 * i + 2].address)
-        );
-        stakingAddrs.push(signers[3 * i]);
-        consensusAddrs.push(signers[3 * i + 1]);
-        treasuryAddrs.push(signers[3 * i + 2]);
-
-        console.log(
-          i,
-          signers[3 * i].address,
-          signers[3 * i + 1].address,
-          signers[3 * i + 2].address,
-          (await ethers.provider.getBalance(signers[3 * i].address)).toString(),
-          (await ethers.provider.getBalance(signers[3 * i + 1].address)).toString(),
-          (await ethers.provider.getBalance(signers[3 * i + 2].address)).toString()
-        );
-      }
-    });
-
     describe('Validator functions', async () => {
+      before(async () => {
+        [admin, ...signers] = await ethers.getSigners();
+        await deployments.fixture('StakingContract');
+        const stakingProxyDeployment = await deployments.get('StakingProxy');
+        stakingContract = Staking__factory.connect(stakingProxyDeployment.address, admin);
+
+        candidates = [];
+        stakingAddrs = [];
+        consensusAddrs = [];
+        treasuryAddrs = [];
+
+        unstakingOnHoldBlocksNum = await stakingContract.unstakingOnHoldBlocksNum();
+        minValidatorBalance = await stakingContract.minValidatorBalance();
+
+        console.log('Set validator set contract...');
+        await stakingContract.setValidatorSetContract(admin.address);
+
+        console.log('Init addresses for 10 candidates...');
+        for (let i = 0; i < 10; i++) {
+          candidates.push(
+            generateCandidate(signers[3 * i].address, signers[3 * i + 1].address, signers[3 * i + 2].address)
+          );
+          stakingAddrs.push(signers[3 * i]);
+          consensusAddrs.push(signers[3 * i + 1]);
+          treasuryAddrs.push(signers[3 * i + 2]);
+
+          console.log(
+            i,
+            signers[3 * i].address,
+            signers[3 * i + 1].address,
+            signers[3 * i + 2].address,
+            (await ethers.provider.getBalance(signers[3 * i].address)).toString(),
+            (await ethers.provider.getBalance(signers[3 * i + 1].address)).toString(),
+            (await ethers.provider.getBalance(signers[3 * i + 2].address)).toString()
+          );
+        }
+      });
+
       describe('Proposing', async () => {
         it('Should be able to propose 1 validator', async () => {
           let tx = await stakingContract
@@ -309,14 +309,9 @@ describe('Staking test', () => {
           }
 
           await stakingContract.connect(admin).updateValidatorSet();
-          let currentSet = (await stakingContract.getCurrentValidatorSet()).map((x) => x.consensusAddr);
+          let currentSet = await stakingContract.getCurrentValidatorSet();
           let expectingSet = [DEFAULT_ADDRESS].concat([5, 4, 3, 2, 1, 0].map((i) => consensusAddrs[i].address));
-          console.log(
-            '>>> currentSet',
-            (await stakingContract.getCurrentValidatorSet()).map((x) => {
-              return { consensusAddrs: x.consensusAddr, amount: x.stakedAmount };
-            })
-          );
+          console.log('>>> currentSet', currentSet);
           await expect(expectingSet).eql(currentSet);
         });
 
@@ -340,14 +335,9 @@ describe('Staking test', () => {
 
           it('Should be update validators list success', async () => {
             await stakingContract.connect(admin).updateValidatorSet();
-            let currentSet = (await stakingContract.getCurrentValidatorSet()).map((x) => x.consensusAddr);
+            let currentSet = await stakingContract.getCurrentValidatorSet();
             let expectingSet = [DEFAULT_ADDRESS].concat([5, 2, 1, 0].map((i) => consensusAddrs[i].address));
-            console.log(
-              '>>> currentSet',
-              (await stakingContract.getCurrentValidatorSet()).map((x) => {
-                return { consensusAddrs: x.consensusAddr, amount: x.stakedAmount };
-              })
-            );
+            console.log('>>> currentSet', currentSet);
             await expect(expectingSet).eql(currentSet);
           });
         });
@@ -356,6 +346,193 @@ describe('Staking test', () => {
 
     describe('Delegator functions', async () => {});
 
-    describe('Updating validator functions', async () => {});
+    describe('Updating validator functions', async () => {
+      beforeEach(async () => {
+        [admin, ...signers] = await ethers.getSigners();
+        await deployments.fixture('StakingContract');
+        const stakingProxyDeployment = await deployments.get('StakingProxy');
+        stakingContract = Staking__factory.connect(stakingProxyDeployment.address, admin);
+
+        candidates = [];
+        stakingAddrs = [];
+        consensusAddrs = [];
+        treasuryAddrs = [];
+
+        unstakingOnHoldBlocksNum = await stakingContract.unstakingOnHoldBlocksNum();
+        minValidatorBalance = await stakingContract.minValidatorBalance();
+
+        console.log('Set validator set contract...');
+        await stakingContract.setValidatorSetContract(admin.address);
+
+        console.log('Init addresses for 21 candidates...');
+        for (let i = 0; i < 21; i++) {
+          candidates.push(
+            generateCandidate(signers[3 * i].address, signers[3 * i + 1].address, signers[3 * i + 2].address)
+          );
+          stakingAddrs.push(signers[3 * i]);
+          consensusAddrs.push(signers[3 * i + 1]);
+          treasuryAddrs.push(signers[3 * i + 2]);
+
+          console.log(
+            i,
+            signers[3 * i].address,
+            signers[3 * i + 1].address,
+            signers[3 * i + 2].address,
+            (await ethers.provider.getBalance(signers[3 * i].address)).toString(),
+            (await ethers.provider.getBalance(signers[3 * i + 1].address)).toString(),
+            (await ethers.provider.getBalance(signers[3 * i + 2].address)).toString()
+          );
+        }
+      });
+
+      it('Should 21 validator in increasing order sorted', async () => {
+        // balance: [3M, 3M+1, 3M+2, 3M+3, 3M+4, 3M+5, ...]
+        for (let i = 0; i < 21; ++i) {
+          let topupValue = minValidatorBalance.add(ethers.utils.parseEther(i.toString()));
+          let tx = await stakingContract
+            .connect(stakingAddrs[i])
+            .proposeValidator(consensusAddrs[i].address, treasuryAddrs[i].address, i * 100, {
+              value: topupValue,
+            });
+          expect(await tx)
+            .to.emit(stakingContract, 'ValidatorProposed')
+            .withArgs(consensusAddrs[i].address, stakingAddrs[i].address, topupValue, candidates[i]);
+        }
+
+        await stakingContract.connect(admin).updateValidatorSet();
+        let currentSet = await stakingContract.getCurrentValidatorSet();
+        let expectingSet = [DEFAULT_ADDRESS].concat(
+          Array.from({ length: 21 }, (_, j) => 20 - j).map((i) => consensusAddrs[i].address)
+        );
+        console.log('>>> currentSet', currentSet);
+        await expect(expectingSet).eql(currentSet);
+      });
+
+      it('Should 21 validator in mixed order sorted', async () => {
+        // balance: [3M, 3M+1, 3M+2, 3M+3, 3M+4, 3M+5, ...]
+        let balances = [];
+        for (let i = 0; i < 21; ++i) {
+          balances.push({
+            key: i,
+            value: Math.floor(Math.random() * 1000),
+          });
+        }
+
+        for (let j = 0; j < 21; ++j) {
+          let i = balances[j].key;
+          let topupValue = minValidatorBalance.add(ethers.utils.parseEther(balances[j].value.toString()));
+          let tx = await stakingContract
+            .connect(stakingAddrs[i])
+            .proposeValidator(consensusAddrs[i].address, treasuryAddrs[i].address, i * 100, {
+              value: topupValue,
+            });
+          expect(await tx)
+            .to.emit(stakingContract, 'ValidatorProposed')
+            .withArgs(consensusAddrs[i].address, stakingAddrs[i].address, topupValue, candidates[i]);
+        }
+
+        balances.sort((a, b) => (a.value < b.value ? 1 : a.value == b.value ? (a.key < b.key ? 1 : -1) : -1));
+        console.log(
+          '>>> balances index after sort',
+          balances.map((e) => e.key + 1)
+        );
+
+        await stakingContract.connect(admin).updateValidatorSet();
+        let currentSet = await stakingContract.getCurrentValidatorSet();
+        let expectingSet = [DEFAULT_ADDRESS].concat(balances.map((e) => consensusAddrs[e.key].address));
+        console.log('>>> currentSet', currentSet);
+        await expect(expectingSet).eql(currentSet);
+      });
+
+      it('Should second sort for 21 validator ignored', async () => {
+        // balance: [3M, 3M+1, 3M+2, 3M+3, 3M+4, 3M+5, ...]
+        let balances = [];
+        for (let i = 0; i < 21; ++i) {
+          balances.push({
+            key: i,
+            value: Math.floor(Math.random() * 1000),
+          });
+        }
+
+        for (let j = 0; j < 21; ++j) {
+          let i = balances[j].key;
+          let topupValue = minValidatorBalance.add(ethers.utils.parseEther(balances[j].value.toString()));
+          let tx = await stakingContract
+            .connect(stakingAddrs[i])
+            .proposeValidator(consensusAddrs[i].address, treasuryAddrs[i].address, i * 100, {
+              value: topupValue,
+            });
+          expect(await tx)
+            .to.emit(stakingContract, 'ValidatorProposed')
+            .withArgs(consensusAddrs[i].address, stakingAddrs[i].address, topupValue, candidates[i]);
+        }
+
+        balances.sort((a, b) => (a.value < b.value ? 1 : a.value == b.value ? (a.key < b.key ? 1 : -1) : -1));
+        console.log(
+          '>>> balances index after sort',
+          balances.map((e) => e.key + 1)
+        );
+
+        // first sort
+        await stakingContract.connect(admin).updateValidatorSet();
+        let currentSet = await stakingContract.getCurrentValidatorSet();
+        let expectingSet = [DEFAULT_ADDRESS].concat(balances.map((e) => consensusAddrs[e.key].address));
+        await expect(expectingSet).eql(currentSet);
+
+        // second sort
+        await stakingContract.connect(admin).updateValidatorSet();
+        currentSet = await stakingContract.getCurrentValidatorSet();
+        expectingSet = [DEFAULT_ADDRESS].concat(balances.map((e) => consensusAddrs[e.key].address));
+        await expect(expectingSet).eql(currentSet);
+      });
+
+      it('Should second and third sort for 21 validator ignored', async () => {
+        // balance: [3M, 3M+1, 3M+2, 3M+3, 3M+4, 3M+5, ...]
+        let balances = [];
+        for (let i = 0; i < 21; ++i) {
+          balances.push({
+            key: i,
+            value: Math.floor(Math.random() * 1000),
+          });
+        }
+
+        for (let j = 0; j < 21; ++j) {
+          let i = balances[j].key;
+          let topupValue = minValidatorBalance.add(ethers.utils.parseEther(balances[j].value.toString()));
+          let tx = await stakingContract
+            .connect(stakingAddrs[i])
+            .proposeValidator(consensusAddrs[i].address, treasuryAddrs[i].address, i * 100, {
+              value: topupValue,
+            });
+          expect(await tx)
+            .to.emit(stakingContract, 'ValidatorProposed')
+            .withArgs(consensusAddrs[i].address, stakingAddrs[i].address, topupValue, candidates[i]);
+        }
+
+        balances.sort((a, b) => (a.value < b.value ? 1 : a.value == b.value ? (a.key < b.key ? 1 : -1) : -1));
+        console.log(
+          '>>> balances index after sort',
+          balances.map((e) => e.key + 1)
+        );
+
+        // first sort
+        await stakingContract.connect(admin).updateValidatorSet();
+        let currentSet = await stakingContract.getCurrentValidatorSet();
+        let expectingSet = [DEFAULT_ADDRESS].concat(balances.map((e) => consensusAddrs[e.key].address));
+        await expect(expectingSet).eql(currentSet);
+
+        // second sort
+        await stakingContract.connect(admin).updateValidatorSet();
+        currentSet = await stakingContract.getCurrentValidatorSet();
+        expectingSet = [DEFAULT_ADDRESS].concat(balances.map((e) => consensusAddrs[e.key].address));
+        await expect(expectingSet).eql(currentSet);
+
+        // third sort
+        await stakingContract.connect(admin).updateValidatorSet();
+        currentSet = await stakingContract.getCurrentValidatorSet();
+        expectingSet = [DEFAULT_ADDRESS].concat(balances.map((e) => consensusAddrs[e.key].address));
+        await expect(expectingSet).eql(currentSet);
+      });
+    });
   });
 });
