@@ -17,6 +17,21 @@ library Sorting {
     return _quickSortNodes(nodes, int(0), int(nodes.length - 1));
   }
 
+  function sort(address[] memory _keys, uint256[] memory _values) public pure returns (address[] memory) {
+    require(_keys.length > 0 && _values.length == _keys.length, "Sorting: invalid array length");
+    Node[] memory _nodes = new Node[](_keys.length);
+    for (uint256 _i; _i < _nodes.length; _i++) {
+      _nodes[_i] = Node(uint256(uint160(_keys[_i])), _values[_i]);
+    }
+    _quickSortNodes(_nodes, int(0), int(_nodes.length - 1));
+
+    for (uint256 _i; _i < _nodes.length; _i++) {
+      _keys[_i] = address(uint160(_nodes[_i].key)); // Casting?
+    }
+
+    return _keys;
+  }
+
   function _quickSort(
     uint[] memory arr,
     int left,
