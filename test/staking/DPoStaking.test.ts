@@ -15,6 +15,7 @@ let deployer: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
 let userA: SignerWithAddress;
 let userB: SignerWithAddress;
+let governanceAdmin: SignerWithAddress;
 let validatorContract: MockValidatorSetForStaking;
 let stakingContract: DPoStaking;
 let validatorCandidates: SignerWithAddress[];
@@ -86,12 +87,12 @@ const expectLocalCalculationRight = async () => {
   }
 };
 
-const minValidatorBalance = BigNumber.from(0);
+const minValidatorBalance = BigNumber.from(2);
 
 describe('DPoStaking test', () => {
   before(async () => {
-    [deployer, proxyAdmin, userA, userB, ...validatorCandidates] = await ethers.getSigners();
-    validatorCandidates = validatorCandidates.slice(0, 2);
+    [deployer, proxyAdmin, userA, userB, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
+    validatorCandidates = validatorCandidates.slice(0, 3);
     const nonce = await deployer.getTransactionCount();
     const proxyContractAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 2 });
     validatorContract = await new MockValidatorSetForStaking__factory(deployer).deploy(proxyContractAddress, 10, 2);
@@ -102,15 +103,13 @@ describe('DPoStaking test', () => {
       logicContract.interface.encodeFunctionData('initialize', [
         28800,
         validatorContract.address,
-        ethers.constants.AddressZero,
+        governanceAdmin.address,
         50,
         minValidatorBalance,
       ])
     );
     stakingContract = DPoStaking__factory.connect(proxyContract.address, deployer);
     expect(proxyContractAddress.toLowerCase()).eq(proxyContract.address.toLowerCase());
-    poolAddr = validatorCandidates[0];
-    otherPoolAddr = validatorCandidates[1];
   });
 
   describe('Validator candidate test', () => {
@@ -121,7 +120,7 @@ describe('DPoStaking test', () => {
     });
 
     it('Should be able to propose validator with sufficient amount', async () => {
-      for (let i = 0; i < validatorCandidates.length; i++) {
+      for (let i = 1; i < validatorCandidates.length; i++) {
         const candidate = validatorCandidates[i];
         await stakingContract.connect(candidate).proposeValidator(
           candidate.address,
@@ -130,21 +129,77 @@ describe('DPoStaking test', () => {
           { value: minValidatorBalance }
         );
       }
-      await network.provider.send('evm_setAutomine', [false]);
+
+      poolAddr = validatorCandidates[1];
+      otherPoolAddr = validatorCandidates[2];
+      expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance);
     });
 
-    it('Should not be able to call stake/unstake when the method is not the candidate owner', async () => {});
+    it('Should not be able to stake with empty value', async () => {
+      await expect(stakingContract.stake(poolAddr.address, { value: 0 })).revertedWith(
+        'StakingManager: query for empty value'
+      );
+    });
 
-    it('Should be able to stake/unstake as a validator', async () => {});
+    it('Should not be able to call stake/unstake when the method is not the candidate admin', async () => {
+      await expect(stakingContract.stake(poolAddr.address, { value: 1 })).revertedWith(
+        'StakingManager: user is not the candidate admin'
+      );
+      await expect(stakingContract.unstake(poolAddr.address, 1)).revertedWith(
+        'StakingManager: user is not the candidate admin'
+      );
+    });
 
-    it('Should be not able to unstake with the balance left is not larger than the minimum balance threshold', async () => {});
+    it('Should be able to stake/unstake as a validator', async () => {
+      await stakingContract.connect(poolAddr).stake(poolAddr.address, { value: 1 });
+      expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance.add(1));
+    });
+
+    it('Should be not able to unstake with the balance left is not larger than the minimum balance threshold', async () => {
+      await expect(stakingContract.connect(poolAddr).unstake(poolAddr.address, 2)).revertedWith(
+        'StakingManager: invalid staked amount left'
+      );
+    });
   });
 
   describe('Delegator test', () => {
-    // TODO
+    it('Should not be able to delegate with empty value', async () => {
+      await expect(stakingContract.delegate(otherPoolAddr.address)).revertedWith(
+        'StakingManager: query for empty value'
+      );
+    });
+
+    it('Should not be able to delegate/undelegate when the method caller is the candidate owner', async () => {
+      await expect(stakingContract.connect(poolAddr).delegate(poolAddr.address, { value: 1 })).revertedWith(
+        'StakingManager: method caller is the candidate admin'
+      );
+      await expect(stakingContract.connect(poolAddr).undelegate(poolAddr.address, 1)).revertedWith(
+        'StakingManager: method caller is the candidate admin'
+      );
+    });
+
+    it('Should be able to delegate/undelegate', async () => {
+      await stakingContract.connect(userA).delegate(otherPoolAddr.address, { value: 1 });
+      await stakingContract.connect(userB).delegate(otherPoolAddr.address, { value: 1 });
+      expect(await stakingContract.totalBalance(otherPoolAddr.address)).eq(minValidatorBalance.add(2));
+      await stakingContract.connect(userA).undelegate(otherPoolAddr.address, 1);
+      expect(await stakingContract.totalBalance(otherPoolAddr.address)).eq(minValidatorBalance.add(1));
+    });
   });
 
   describe('Reward Calculation test', () => {
+    before(async () => {
+      poolAddr = validatorCandidates[0];
+      await stakingContract.connect(governanceAdmin).setMinValidatorBalance(0);
+      await stakingContract.connect(poolAddr).proposeValidator(poolAddr.address, poolAddr.address, 0, { value: 0 });
+
+      await network.provider.send('evm_setAutomine', [false]);
+    });
+
+    after(async () => {
+      await network.provider.send('evm_setAutomine', [true]);
+    });
+
     it('Should work properly with staking actions occurring sequentially for a normal period', async () => {
       await stakingContract.connect(userA).delegate(poolAddr.address, { value: 100 });
       await stakingContract.connect(userB).delegate(poolAddr.address, { value: 100 });
@@ -171,13 +226,11 @@ describe('DPoStaking test', () => {
       await network.provider.send('evm_mine');
       await local.recordReward(1000);
       await expectLocalCalculationRight();
-      console.log(local);
 
       await stakingContract.connect(userA).undelegate(poolAddr.address, 200);
       await validatorContract.connect(poolAddr).depositReward({ value: 1000 });
       await network.provider.send('evm_mine');
       await local.recordReward(1000);
-      console.log(local);
       await expectLocalCalculationRight();
 
       await stakingContract.connect(userA).delegate(poolAddr.address, { value: 200 });

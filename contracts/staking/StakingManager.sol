@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.9;
 
-import "hardhat/console.sol";
 import "../interfaces/IStaking.sol";
 import "./RewardCalculation.sol";
 
@@ -17,7 +16,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
 
   modifier notCandidateOwner(address _consensusAddr) {
     ValidatorCandidate memory _candidate = _getCandidate(_consensusAddr);
-    require(msg.sender != _candidate.candidateAdmin, "StakingManager: use unstake method instead");
+    require(msg.sender != _candidate.candidateAdmin, "StakingManager: method caller is the candidate admin");
     _;
   }
 
@@ -55,10 +54,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     uint256 _amount = msg.value;
     address _stakingAddr = msg.sender;
     _candidateIdx = _proposeValidator(_consensusAddr, _treasuryAddr, _commissionRate, _amount, _stakingAddr);
-    console.log("_proposeValidator: done");
-    console.log("_stake: bf", _candidateIdx);
     _stake(_consensusAddr, _stakingAddr, _amount);
-    console.log("_stake: af");
   }
 
   /**
@@ -139,7 +135,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     uint256 _amount
   ) internal {
     ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
-    require(_candidate.candidateAdmin == _user, "StakingManager: invalid staking address");
+    require(_candidate.candidateAdmin == _user, "StakingManager: user is not the candidate admin");
 
     _candidate.stakedAmount += _amount;
     emit Staked(_poolAddr, _amount);
@@ -162,13 +158,13 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     uint256 _amount
   ) internal {
     ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
-    require(_candidate.candidateAdmin == _user, "StakingManager: invalid staking address");
+    require(_candidate.candidateAdmin == _user, "StakingManager: user is not the candidate admin");
     require(_amount < _candidate.stakedAmount, "StakingManager: insufficient staked amount");
 
     uint256 remainAmount = _candidate.stakedAmount - _amount;
     require(remainAmount >= minValidatorBalance(), "StakingManager: invalid staked amount left");
 
-    _candidate.stakedAmount = _amount;
+    _candidate.stakedAmount -= _amount;
     emit Unstaked(_poolAddr, _amount);
 
     _undelegate(_poolAddr, _user, _amount);
@@ -265,13 +261,39 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     uint256 _amount
   ) internal {
     uint256 _newBalance = _delegatedAmount[_poolAddr][_user] + _amount;
-    console.log("_delegate", _poolAddr, _user, _newBalance);
     _syncUserReward(_poolAddr, _user, _newBalance);
 
     ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
     _candidate.delegatedAmount += _amount;
     _delegatedAmount[_poolAddr][_user] = _newBalance;
     emit Delegated(_user, _poolAddr, _amount);
+  }
+
+  /**
+   * @dev Undelegates from a validator address.
+   *
+   * Requirements:
+   * - The validator is an existed candidate.
+   * - The delegated amount is larger than or equal to the undelegated amount.
+   *
+   * Emits the `Undelegated` event.
+   *
+   * @notice Consider transferring back the amount of RON after calling this function.
+   */
+  function _undelegate(
+    address _poolAddr,
+    address _user,
+    uint256 _amount
+  ) internal {
+    require(_delegatedAmount[_poolAddr][_user] >= _amount, "StakingManager: insufficient amount to undelegate");
+
+    uint256 _newBalance = _delegatedAmount[_poolAddr][_user] - _amount;
+    _syncUserReward(_poolAddr, _user, _newBalance);
+
+    ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
+    _candidate.delegatedAmount -= _amount;
+    _delegatedAmount[_poolAddr][_user] = _newBalance;
+    emit Undelegated(_user, _poolAddr, _amount);
   }
 
   /**
@@ -298,35 +320,6 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   ) internal returns (uint256 _amount) {
     _amount = _claimRewards(_user, _poolAddrList);
     _delegate(_poolAddrDst, _user, _amount);
-  }
-
-  /**
-   * @dev Undelegates from a validator address.
-   *
-   * Requirements:
-   * - The validator is an existed candidate.
-   * - The delegated amount is larger than or equal to the undelegated amount.
-   *
-   * Emits the `Undelegated` event.
-   *
-   * @notice Consider transferring back the amount of RON after calling this function.
-   */
-  function _undelegate(
-    address _poolAddr,
-    address _user,
-    uint256 _amount
-  ) internal {
-    console.log("_undelegate", _poolAddr, _user);
-    console.log("_undelegate", _delegatedAmount[_poolAddr][_user], _amount);
-    require(_delegatedAmount[_poolAddr][_user] >= _amount, "StakingManager: insufficient amount to undelegate");
-
-    uint256 _newBalance = _delegatedAmount[_poolAddr][_user] - _amount;
-    _syncUserReward(_poolAddr, _user, _newBalance);
-
-    ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
-    _candidate.delegatedAmount -= _amount;
-    _delegatedAmount[_poolAddr][_user] = _newBalance;
-    emit Undelegated(_user, _poolAddr, _amount);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////

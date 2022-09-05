@@ -134,14 +134,7 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
    * @inheritdoc IStaking
    */
   function recordReward(address _consensusAddr, uint256 _reward) external payable onlyValidatorContract {
-    console.log(
-      "*** =>>>>>>> recordReward",
-      _reward,
-      _pendingPool[_consensusAddr].accumulatedRps,
-      totalBalance(_consensusAddr)
-    );
     _recordReward(_consensusAddr, _reward);
-    console.log("*** =>>>>>>> recordReward", _pendingPool[_consensusAddr].accumulatedRps);
   }
 
   /**
@@ -199,7 +192,6 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
     returns (ValidatorCandidate storage _candidate)
   {
     uint256 _idx = _candidateIndex[_consensusAddr];
-    console.log("_getCandidate:", _consensusAddr, _idx, ~_idx);
     require(_idx > 0, "DPoStaking: query for nonexistent candidate");
     _candidate = validatorCandidates[~_idx];
   }
