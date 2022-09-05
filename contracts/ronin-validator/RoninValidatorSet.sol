@@ -16,8 +16,6 @@ contract RoninValidatorSet is IRoninValidatorSet {
   address internal _slashIndicatorContract; // Change type to address for testing purpose
   /// @dev Staking contract address.
   address internal _stakingContract; // Change type to address for testing purpose
-  /// @dev The maximum number of validator.
-  uint256 internal _maxValidatorNumber;
 
   /// @dev The total of validators
   uint256 public validatorCount;
@@ -25,6 +23,8 @@ contract RoninValidatorSet is IRoninValidatorSet {
   mapping(uint256 => address) internal _validator;
   /// @dev Mapping from validator address => bool
   mapping(address => bool) internal _validatorMap;
+  /// @dev The maximum number of validator.
+  uint256 internal _maxValidatorNumber;
 
   /// @dev Returns the number of epochs in a period
   uint256 internal _numberOfBlocksInEpoch;
@@ -37,8 +37,10 @@ contract RoninValidatorSet is IRoninValidatorSet {
   mapping(uint256 => mapping(address => bool)) internal _noPendingReward;
   /// @dev Mapping from validator address => the last block that the validator is jailed
   mapping(address => uint256) internal _jailedUntil;
-  /// @dev Mapping from valdiator address => incoming reward amount
-  mapping(address => uint256) internal _pendingReward;
+  /// @dev Mapping from validator address => pending reward from producing block
+  mapping(address => uint256) internal _miningReward;
+  /// @dev Mapping from validator address => pending reward from delegating
+  mapping(address => uint256) internal _delegatingReward;
 
   /// @dev The amount of RON to slash felony.
   uint256 public slashFelonyAmount;
@@ -72,27 +74,20 @@ contract RoninValidatorSet is IRoninValidatorSet {
       return;
     }
 
-    if (_jailed(_validatorAddr)) {
+    if (_jailed(_validatorAddr) || _noPendingReward[periodOf(block.number)][_validatorAddr]) {
       // TODO(Thor): emit the deprecated reward event
       return;
     }
 
     IStaking _staking = IStaking(_stakingContract);
-    // Assumes the staking contract returns the rate value in range [0; 100_00]
     uint256 _rate = _staking.commissionRateOf(_validatorAddr);
-    uint256 _mintingReward = (_rate * _reward) / 100_00;
+    uint256 _miningAmount = (_rate * _reward) / 100_00;
+    uint256 _delegatingAmount = _reward - _miningAmount;
 
-    uint256 _amount = _reward - _mintingReward;
-    IStaking(_stakingContract).recordReward(_validatorAddr, _reward - _mintingReward);
-    // (1): We assume that we don't take back the reward recored for the delegator in the current epoch
-    // even when the validator is slashed. Therefore, we transfer we the RON amount to staking contract.
-    // TODO(Thor): use `call` to transfer reward with reentrancy gruard
-    require(payable(_stakingContract).send(_amount), "RoninValidatorSet: could not transfer RON");
-
-    if (!_noPendingReward[periodOf(block.number)][_validatorAddr]) {
-      _pendingReward[_validatorAddr] += _mintingReward;
-      // TODO(Thor): emit event
-    }
+    _miningReward[_validatorAddr] += _miningAmount;
+    _delegatingReward[_validatorAddr] += _delegatingAmount;
+    IStaking(_stakingContract).recordRewardForDelegators(_validatorAddr, _delegatingAmount);
+    // TODO(Thor): emit event
   }
 
   /**
@@ -103,21 +98,25 @@ contract RoninValidatorSet is IRoninValidatorSet {
       IStaking _staking = IStaking(_stakingContract);
       ISlashIndicator _slashIndicator = ISlashIndicator(_slashIndicatorContract);
 
+      address _validatorAddr;
+      uint256 _miningAmount;
+      uint256 _delegatingAmount;
       for (uint _i = 0; _i < validatorCount; _i++) {
-        address _validatorAddr = _validator[_i];
-        // Same reason with (1), then we do not filter the slashed validator.
-        _staking.settleRewardPool(_validatorAddr);
+        _validatorAddr = _validator[_i];
         _slashIndicator.resetCounter(_validatorAddr);
-
-        uint256 _rewardAmount = _pendingReward[_validatorAddr];
+        _miningAmount = _miningReward[_validatorAddr];
+        _delegatingAmount = _delegatingReward[_validatorAddr];
         if (!_jailed(_validatorAddr) && !_noPendingReward[periodOf(block.number)][_validatorAddr]) {
           // TODO(Thor): use `call` to transfer reward with reentrancy gruard
           require(
-            payable(_staking.treasuryAddressOf(_validatorAddr)).send(_rewardAmount),
+            payable(_staking.treasuryAddressOf(_validatorAddr)).send(_miningAmount),
             "RoninValidatorSet: could not transfer RON"
           );
+          require(payable(address(_staking)).send(_delegatingAmount), "RoninValidatorSet: could not transfer RON");
+
+          _staking.settleRewardPoolForDelegators(_validatorAddr);
         }
-        _pendingReward[_validatorAddr] = 0;
+        _miningReward[_validatorAddr] = 0;
       }
     }
     _updateValidatorSet();
@@ -160,13 +159,9 @@ contract RoninValidatorSet is IRoninValidatorSet {
    */
   function slashMisdemeanor(address _validatorAddr) public override {
     _noPendingReward[periodOf(block.number)][_validatorAddr] = true;
-    _pendingReward[_validatorAddr] = 0;
-    // We assume that current slashing won't effect to the recorded reward of the staking pool
-    // So we do not call the method `onRewardDropped` to the staking contract:
-    // ```
-    // IStaking(_stakingContract).onRewardDropped(_validatorAddr);
-    //```
-    // TODO(Thor): emit event
+    _miningReward[_validatorAddr] = 0;
+    _delegatingReward[_validatorAddr] = 0;
+    IStaking(_stakingContract).sinkPendingReward(_validatorAddr);
   }
 
   /**

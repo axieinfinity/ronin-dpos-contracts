@@ -83,7 +83,7 @@ interface IRoninValidatorSet {
   function jailed(address[] memory) external view returns (bool[] memory);
 
   /**
-   * @dev Returns whether the incoming reward of the validators are dropped during the period.
+   * @dev Returns whether the incoming reward of the validators are sinked during the period.
    */
   function noPendingReward(address[] memory, uint256 _period) external view returns (bool[] memory);
 

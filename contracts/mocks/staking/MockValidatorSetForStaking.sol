@@ -25,26 +25,26 @@ contract MockValidatorSetForStaking is IValidatorSet {
   }
 
   function depositReward() external payable override {
-    stakingContract.recordReward{ value: msg.value }(msg.sender, msg.value);
+    stakingContract.recordRewardForDelegators{ value: msg.value }(msg.sender, msg.value);
   }
 
   function settledReward(address[] memory _validatorList) external {
     for (uint _i = 0; _i < _validatorList.length; _i++) {
-      stakingContract.settleRewardPool(_validatorList[_i]);
+      stakingContract.settleRewardPoolForDelegators(_validatorList[_i]);
     }
   }
 
   function slashMisdemeanor(address _validator) external override {
-    stakingContract.onRewardDropped(_validator);
+    stakingContract.sinkPendingReward(_validator);
   }
 
   function slashFelony(address _validator) external override {
-    stakingContract.onRewardDropped(_validator);
+    stakingContract.sinkPendingReward(_validator);
     stakingContract.deductStakingAmount(_validator, 1);
   }
 
   function slashDoubleSign(address _validator) external override {
-    stakingContract.onRewardDropped(_validator);
+    stakingContract.sinkPendingReward(_validator);
   }
 
   function endPeriod() external {

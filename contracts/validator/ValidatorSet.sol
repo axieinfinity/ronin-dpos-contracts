@@ -93,7 +93,7 @@ contract ValidatorSet is IValidatorSet, ValidatorSetCore {
       if (_validator.jailed) {
         emit DeprecatedDeposit(_valAddr, _value);
       } else {
-        stakingContract.recordReward(_valAddr, _value);
+        stakingContract.recordRewardForDelegators(_valAddr, _value);
       }
     }
 

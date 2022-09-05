@@ -101,7 +101,6 @@ describe('DPoStaking test', () => {
       logicContract.address,
       proxyAdmin.address,
       logicContract.interface.encodeFunctionData('initialize', [
-        28800,
         validatorContract.address,
         governanceAdmin.address,
         50,
@@ -132,7 +131,7 @@ describe('DPoStaking test', () => {
 
       poolAddr = validatorCandidates[1];
       otherPoolAddr = validatorCandidates[2];
-      expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance);
+      expect(await stakingContract.callStatic.totalBalance(poolAddr.address)).eq(minValidatorBalance);
     });
 
     it('Should not be able to stake with empty value', async () => {

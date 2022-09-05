@@ -93,12 +93,12 @@ describe('Core Staking test', () => {
     await stakingContract.stake(userB.address, 100);
     await network.provider.send('evm_mine');
 
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await network.provider.send('evm_mine');
     await network.provider.send('evm_mine');
@@ -109,13 +109,13 @@ describe('Core Staking test', () => {
     await network.provider.send('evm_mine');
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
 
     await stakingContract.unstake(userA.address, 200);
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
@@ -138,18 +138,18 @@ describe('Core Staking test', () => {
     await expectLocalCalculationRight();
     await local.recordReward(0);
 
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
 
     await stakingContract.stake(userA.address, 300);
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
@@ -159,7 +159,7 @@ describe('Core Staking test', () => {
     local.slash();
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(0);
+    await stakingContract.recordRewardForDelegators(0);
     await network.provider.send('evm_mine');
     await local.recordReward(0);
     await expectLocalCalculationRight();
@@ -188,19 +188,19 @@ describe('Core Staking test', () => {
     await expectLocalCalculationRight();
 
     await stakingContract.claimReward(userA.address);
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     local.claimRewardForA();
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
 
     await stakingContract.stake(userA.address, 300);
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
@@ -210,7 +210,7 @@ describe('Core Staking test', () => {
     local.slash();
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(0);
+    await stakingContract.recordRewardForDelegators(0);
     await network.provider.send('evm_mine');
     await local.recordReward(0);
     await expectLocalCalculationRight();
@@ -235,7 +235,7 @@ describe('Core Staking test', () => {
   });
 
   it('Should be able to calculate right reward after claiming', async () => {
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await stakingContract.commitRewardPool();
     await stakingContract.endPeriod();
     await network.provider.send('evm_mine');
@@ -244,7 +244,7 @@ describe('Core Staking test', () => {
     await expectLocalCalculationRight();
 
     await stakingContract.claimReward(userA.address);
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     local.claimRewardForA();
@@ -269,30 +269,30 @@ describe('Core Staking test', () => {
     await network.provider.send('evm_mine');
 
     await stakingContract.stake(userA.address, 300);
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
 
     await stakingContract.stake(userB.address, 200);
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
 
     await stakingContract.unstake(userB.address, 200);
     await stakingContract.unstake(userA.address, 400);
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
@@ -336,7 +336,7 @@ describe('Core Staking test', () => {
     await stakingContract.unstake(userA.address, 100);
     await stakingContract.stake(userA.address, 100);
     await stakingContract.unstake(userB.address, 200);
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await stakingContract.commitRewardPool();
     await stakingContract.endPeriod();
     await network.provider.send('evm_mine');
@@ -344,7 +344,7 @@ describe('Core Staking test', () => {
     local.commitRewardPool();
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
@@ -359,7 +359,7 @@ describe('Core Staking test', () => {
     await network.provider.send('evm_mine');
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await stakingContract.commitRewardPool();
     await stakingContract.endPeriod();
     await network.provider.send('evm_mine');
@@ -367,7 +367,7 @@ describe('Core Staking test', () => {
     local.commitRewardPool();
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    await stakingContract.recordRewardForDelegators(1000);
     await stakingContract.commitRewardPool();
     await stakingContract.endPeriod();
     await network.provider.send('evm_mine');

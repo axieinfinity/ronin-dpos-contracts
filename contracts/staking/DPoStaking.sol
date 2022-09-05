@@ -19,17 +19,12 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /// @dev Validator contract address.
   address internal _validatorContract; // Change type to address for testing purpose
 
-  uint256[] internal currentValidatorIndexes; // TODO(Bao): leave comments for this variable
-  uint256 public numOfCabinets; // TODO(Bao): leave comments for this variable
-  /// @dev Configuration of number of blocks that validator has to wait before unstaking, counted from staking time
-  uint256 public unstakingOnHoldBlocksNum; // TODO(Bao): expose this fn in the interface
-
   /// @dev Mapping from consensus address => bitwise negation of validator index in `validatorCandidates`.
   mapping(address => uint256) internal _candidateIndex;
   /// @dev The validator candidate array.
   ValidatorCandidate[] public validatorCandidates;
-  /// @dev Mapping from consensus address => period index => indicating the pending reward in the period is dropped or not.
-  mapping(address => mapping(uint256 => bool)) internal _pRewardDropped;
+  /// @dev Mapping from consensus address => period index => indicating the pending reward in the period is sinked or not.
+  mapping(address => mapping(uint256 => bool)) internal _pRewardSinked;
 
   modifier onlyGovernanceAdminContract() {
     require(msg.sender == _governanceAdminContract, "DPoStaking: method caller is not governance admin contract");
@@ -53,13 +48,11 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
    * @dev Initializes the contract storage.
    */
   function initialize(
-    uint256 _unstakingOnHoldBlocksNum,
     address __validatorContract,
     address __governanceAdminContract,
     uint256 __maxValidatorCandidate,
     uint256 __minValidatorBalance
   ) external initializer {
-    unstakingOnHoldBlocksNum = _unstakingOnHoldBlocksNum;
     _setValidatorContract(__validatorContract);
     _setGovernanceAdminContractAddress(__governanceAdminContract);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
@@ -133,24 +126,24 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function recordReward(address _consensusAddr, uint256 _reward) external payable onlyValidatorContract {
-    _recordReward(_consensusAddr, _reward);
+  function recordRewardForDelegators(address _consensusAddr, uint256 _reward) external payable onlyValidatorContract {
+    _recordRewardForDelegators(_consensusAddr, _reward);
   }
 
   /**
    * @inheritdoc IStaking
    */
-  function settleRewardPool(address _consensusAddr) external onlyValidatorContract {
+  function settleRewardPoolForDelegators(address _consensusAddr) external onlyValidatorContract {
     _onPoolSettled(_consensusAddr);
   }
 
   /**
    * @inheritdoc IStaking
    */
-  function onRewardDropped(address _consensusAddr) external {
+  function sinkPendingReward(address _consensusAddr) external {
     uint256 _period = _periodOf(block.number);
-    _pRewardDropped[_consensusAddr][_period] = true;
-    _onRewardDropped(_consensusAddr);
+    _pRewardSinked[_consensusAddr][_period] = true;
+    _sinkPendingReward(_consensusAddr);
   }
 
   /**
@@ -267,8 +260,8 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc RewardCalculation
    */
-  function _rewardDropped(address _poolAddr, uint256 _period) internal view virtual override returns (bool) {
-    return _pRewardDropped[_poolAddr][_period];
+  function _rewardSinked(address _poolAddr, uint256 _period) internal view virtual override returns (bool) {
+    return _pRewardSinked[_poolAddr][_period];
   }
 
   /**

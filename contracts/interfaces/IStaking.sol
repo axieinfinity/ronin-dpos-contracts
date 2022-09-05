@@ -114,13 +114,13 @@ interface IStaking {
    *
    * Emits the `PendingPoolUpdated` event.
    *
-   * @notice This method should not be called after the pending pool is dropped.
+   * @notice This method should not be called after the pending pool is sinked.
    *
    */
-  function recordReward(address _consensusAddr, uint256 _reward) external payable;
+  function recordRewardForDelegators(address _consensusAddr, uint256 _reward) external payable;
 
   /**
-   * @dev Settles the pending pool and allocates rewards for the validator.
+   * @dev Settles the pending pool and allocates rewards for the pool `_consensusAddr`.
    *
    * Requirements:
    * - The method caller is validator contract.
@@ -128,10 +128,10 @@ interface IStaking {
    * Emits the `SettledPoolUpdated` event.
    *
    */
-  function settleRewardPool(address _consensusAddr) external;
+  function settleRewardPoolForDelegators(address _consensusAddr) external;
 
   /**
-   * @dev Handles when the pending reward pool of the validator is dropped.
+   * @dev Handles when the pending reward pool of the validator is sinked.
    *
    * Requirements:
    * - The method caller is validator contract.
@@ -139,7 +139,7 @@ interface IStaking {
    * Emits the `PendingPoolUpdated` event.
    *
    */
-  function onRewardDropped(address _consensusAddr) external;
+  function sinkPendingReward(address _consensusAddr) external;
 
   /**
    * @dev Deducts from staking amount of the validator `_consensusAddr` for `_amount`.
