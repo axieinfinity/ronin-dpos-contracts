@@ -3,7 +3,7 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import { MockValidatorSetCore, MockValidatorSetCore__factory } from '../../src/types';
-import { ValidatorCandidateStruct } from '../../src/types/ValidatorSetCoreMock';
+import { ValidatorCandidateStruct } from '../../src/types/IStaking';
 
 let validatorsCore: MockValidatorSetCore;
 
@@ -27,6 +27,7 @@ const generateCandidate = (
     stakedAmount: 0,
     delegatedAmount: 0,
     governing: false,
+    state: 0,
     ____gap: Array.apply(null, Array(20)).map((_) => 0),
   };
 };
