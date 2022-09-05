@@ -42,7 +42,7 @@ contract MockStaking is RewardCalculation {
   function slash() external {
     uint256 _period = getPeriod();
     _periodSlashed[_period] = true;
-    _onSlashed(poolAddr);
+    _onRewardDropped(poolAddr);
   }
 
   function recordReward(uint256 _rewardAmount) external {
@@ -73,7 +73,7 @@ contract MockStaking is RewardCalculation {
     return _totalBalance;
   }
 
-  function _slashed(address, uint256 _period) internal view override returns (bool) {
+  function _rewardDropped(address, uint256 _period) internal view override returns (bool) {
     return _periodSlashed[_period];
   }
 

@@ -32,16 +32,16 @@ contract MockValidatorSetForStaking is IValidatorSet {
   }
 
   function slashMisdemeanor(address _validator) external override {
-    stakingContract.onValidatorSlashed(_validator);
+    stakingContract.onRewardDropped(_validator);
   }
 
   function slashFelony(address _validator) external override {
-    stakingContract.onValidatorSlashed(_validator);
+    stakingContract.onRewardDropped(_validator);
     stakingContract.deductStakingAmount(_validator, 1);
   }
 
   function slashDoubleSign(address _validator) external override {
-    stakingContract.onValidatorSlashed(_validator);
+    stakingContract.onRewardDropped(_validator);
   }
 
   function periodOf(uint256 _block) external view override returns (uint256) {

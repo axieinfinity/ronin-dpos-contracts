@@ -80,7 +80,7 @@ abstract contract RewardCalculation {
     PendingPool memory _pool = _pendingPool[_poolAddr];
 
     uint256 _balance = balanceOf(_poolAddr, _user);
-    if (_slashed(_poolAddr, _periodOf(_reward.lastSyncBlock))) {
+    if (_rewardDropped(_poolAddr, _periodOf(_reward.lastSyncBlock))) {
       SettledRewardFields memory _sReward = _sUserReward[_poolAddr][_user];
       uint256 _credited = (_sReward.accumulatedRps * _balance) / 1e18;
       return (_balance * _pool.accumulatedRps) / 1e18 + _sReward.debited - _credited;
@@ -194,7 +194,7 @@ abstract contract RewardCalculation {
    *
    * Emits the `PendingPoolUpdated` event.
    *
-   * @notice This method should not be called after the pool is slashed.
+   * @notice This method should not be called after the pending pool is dropped.
    *
    */
   function _recordReward(address _poolAddr, uint256 _reward) internal {
@@ -206,14 +206,14 @@ abstract contract RewardCalculation {
   }
 
   /**
-   * @dev Handles when the pool `_poolAddr` is slashed.
+   * @dev Handles when the pool `_poolAddr` is dropped.
    *
    * Emits the `PendingPoolUpdated` event.
    *
-   * @notice This method should be called when the pool is slashed.
+   * @notice This method should be called when the pool is dropped.
    *
    */
-  function _onSlashed(address _poolAddr) internal {
+  function _onRewardDropped(address _poolAddr) internal {
     uint256 _accumulatedRps = _settledPool[_poolAddr].accumulatedRps;
     PendingPool storage _pool = _pendingPool[_poolAddr];
     _pool.accumulatedRps = _accumulatedRps;
@@ -240,7 +240,7 @@ abstract contract RewardCalculation {
   /**
    * @dev Returns whether the pool is slashed in the period `_period`.
    */
-  function _slashed(address _poolAddr, uint256 _period) internal view virtual returns (bool);
+  function _rewardDropped(address _poolAddr, uint256 _period) internal view virtual returns (bool);
 
   /**
    * @dev Returns the period from the block number.

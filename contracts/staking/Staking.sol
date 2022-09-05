@@ -495,7 +495,7 @@ contract Staking is IStaking, Initializable {
 
   function settleRewardPool(address _consensusAddr) external override {}
 
-  function onValidatorSlashed(address _consensusAddr) external override {}
+  function onRewardDropped(address _consensusAddr) external override {}
 
   function deductStakingAmount(address _consensusAddr, uint256 _amount) external override {}
 
@@ -509,4 +509,15 @@ contract Staking is IStaking, Initializable {
   {}
 
   function claimRewards(address[] calldata _consensusAddrList) external override returns (uint256 _amount) {}
+
+  function getCandidateWeights()
+    external
+    view
+    override
+    returns (address[] memory _candidates, uint256[] memory _weights)
+  {}
+
+  function commissionRateOf(address _consensusAddr) external view override returns (uint256 _rate) {}
+
+  function treasuryAddressOf(address _consensusAddr) external view override returns (address) {}
 }

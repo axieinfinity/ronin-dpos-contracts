@@ -102,6 +102,11 @@ interface IStaking {
   function getValidatorCandidates() external view returns (ValidatorCandidate[] memory candidates);
 
   /**
+   * @dev Returns the validator candidate weights.
+   */
+  function getCandidateWeights() external view returns (address[] memory _candidates, uint256[] memory _weights);
+
+  /**
    * @dev Records the amount of reward `_reward` for the pending pool `_poolAddr`.
    *
    * Requirements:
@@ -109,7 +114,7 @@ interface IStaking {
    *
    * Emits the `PendingPoolUpdated` event.
    *
-   * @notice This method should not be called after the pool is slashed.
+   * @notice This method should not be called after the pending pool is dropped.
    *
    */
   function recordReward(address _consensusAddr, uint256 _reward) external;
@@ -126,7 +131,7 @@ interface IStaking {
   function settleRewardPool(address _consensusAddr) external;
 
   /**
-   * @dev Handles when the validator pool is slashed.
+   * @dev Handles when the pending reward pool of the validator is dropped.
    *
    * Requirements:
    * - The method caller is validator contract.
@@ -134,7 +139,7 @@ interface IStaking {
    * Emits the `PendingPoolUpdated` event.
    *
    */
-  function onValidatorSlashed(address _consensusAddr) external;
+  function onRewardDropped(address _consensusAddr) external;
 
   /**
    * @dev Deducts from staking amount of the validator `_consensusAddr` for `_amount`.
@@ -146,6 +151,26 @@ interface IStaking {
    *
    */
   function deductStakingAmount(address _consensusAddr, uint256 _amount) external;
+
+  /**
+   * @dev Returns the commission rate of the validator candidate `_consensusAddr`.
+   *
+   * Values in [0; 100_00] stands for 0-100%.
+   *
+   * Requirements:
+   * - The validator candidate is already existed.
+   *
+   */
+  function commissionRateOf(address _consensusAddr) external view returns (uint256 _rate);
+
+  /**
+   * @dev Returns the treasury address of the validator candidate `_consensusAddr`.
+   *
+   * Requirements:
+   * - The validator candidate is already existed.
+   *
+   */
+  function treasuryAddressOf(address _consensusAddr) external view returns (address);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                          FUNCTIONS FOR VALIDATOR CANDIDATE                        //

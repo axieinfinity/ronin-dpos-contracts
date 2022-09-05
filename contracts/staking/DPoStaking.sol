@@ -28,8 +28,8 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   mapping(address => uint256) internal _candidateIndex;
   /// @dev The validator candidate array.
   ValidatorCandidate[] public validatorCandidates;
-  /// @dev Mapping from consensus address => period index => indicating the period is slashed or not.
-  mapping(address => mapping(uint256 => bool)) internal _periodSlashed;
+  /// @dev Mapping from consensus address => period index => indicating the pending reward in the period is dropped or not.
+  mapping(address => mapping(uint256 => bool)) internal _pRewardDropped;
 
   modifier onlyGovernanceAdminContract() {
     require(msg.sender == _governanceAdminContract, "DPoStaking: method caller is not governance admin contract");
@@ -44,6 +44,10 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   constructor() {
     _disableInitializers();
   }
+
+  receive() external payable onlyValidatorContract {}
+
+  fallback() external payable onlyValidatorContract {}
 
   /**
    * @dev Initializes the contract storage.
@@ -115,6 +119,19 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
+  function getCandidateWeights() external view returns (address[] memory _candidates, uint256[] memory _weights) {
+    uint256 _length = validatorCandidates.length;
+    _candidates = new address[](_length);
+    _weights = new uint256[](_length);
+    for (uint256 _i; _i < _length; _i++) {
+      _candidates[_i] = validatorCandidates[_i].consensusAddr;
+      _weights[_i] = validatorCandidates[_i].delegatedAmount;
+    }
+  }
+
+  /**
+   * @inheritdoc IStaking
+   */
   function recordReward(address _consensusAddr, uint256 _reward) external onlyValidatorContract {
     console.log("*** =>>>>>>> recordReward", _consensusAddr, _reward);
     _recordReward(_consensusAddr, _reward);
@@ -131,10 +148,10 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function onValidatorSlashed(address _consensusAddr) external {
+  function onRewardDropped(address _consensusAddr) external {
     uint256 _period = _periodOf(block.number);
-    _periodSlashed[_consensusAddr][_period] = true;
-    _onSlashed(_consensusAddr);
+    _pRewardDropped[_consensusAddr][_period] = true;
+    _onRewardDropped(_consensusAddr);
   }
 
   /**
@@ -144,6 +161,22 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
     ValidatorCandidate memory _candidate = _getCandidate(_consensusAddr);
     _unstake(_consensusAddr, _candidate.candidateAdmin, _amount);
     _undelegate(_consensusAddr, _candidate.candidateAdmin, _amount);
+  }
+
+  /**
+   * @inheritdoc IStaking
+   */
+  function commissionRateOf(address _consensusAddr) external view returns (uint256 _rate) {
+    ValidatorCandidate memory _candidate = _getCandidate(_consensusAddr);
+    return _candidate.commissionRate;
+  }
+
+  /**
+   * @inheritdoc IStaking
+   */
+  function treasuryAddressOf(address _consensusAddr) external view returns (address) {
+    ValidatorCandidate memory _candidate = _getCandidate(_consensusAddr);
+    return _candidate.treasuryAddr;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -236,8 +269,8 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc RewardCalculation
    */
-  function _slashed(address _poolAddr, uint256 _period) internal view virtual override returns (bool) {
-    return _periodSlashed[_poolAddr][_period];
+  function _rewardDropped(address _poolAddr, uint256 _period) internal view virtual override returns (bool) {
+    return _pRewardDropped[_poolAddr][_period];
   }
 
   /**
