@@ -64,7 +64,7 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: DEFAULT_MNEMONIC,
         count: 100,
-        accountsBalance: '1000000000000000000000000000' // 1B RON
+        accountsBalance: '1000000000000000000000000000', // 1B RON
       },
     },
     'ronin-testnet': testnet,

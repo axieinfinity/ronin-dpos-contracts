@@ -45,8 +45,8 @@ contract MockStaking is RewardCalculation {
     _sinkPendingReward(poolAddr);
   }
 
-  function recordRewardForDelegators(uint256 _rewardAmount) external {
-    _recordRewardForDelegators(poolAddr, _rewardAmount);
+  function recordReward(uint256 _rewardAmount) external {
+    _recordReward(poolAddr, _rewardAmount);
   }
 
   function commitRewardPool() external {
@@ -54,7 +54,7 @@ contract MockStaking is RewardCalculation {
   }
 
   function increaseAccumulatedRps(uint256 _amount) external {
-    _recordRewardForDelegators(poolAddr, _amount);
+    _recordReward(poolAddr, _amount);
   }
 
   function getPeriod() public view returns (uint256) {

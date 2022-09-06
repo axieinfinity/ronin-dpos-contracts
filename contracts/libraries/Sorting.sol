@@ -18,7 +18,11 @@ library Sorting {
   }
 
   function sort(address[] memory _keys, uint256[] memory _values) internal pure returns (address[] memory) {
-    require(_keys.length > 0 && _values.length == _keys.length, "Sorting: invalid array length");
+    require(_values.length == _keys.length, "Sorting: invalid array length");
+    if (_keys.length == 0) {
+      return _keys;
+    }
+
     Node[] memory _nodes = new Node[](_keys.length);
     for (uint256 _i; _i < _nodes.length; _i++) {
       _nodes[_i] = Node(uint256(uint160(_keys[_i])), _values[_i]);

@@ -4,7 +4,6 @@ import { LiteralNetwork, Network } from '../addresses';
 interface DPoStakingConf {
   [network: LiteralNetwork]:
     | {
-        unstakingOnHoldBlocksNum: BigNumberish;
         validatorContract: BigNumberish;
         governanceAdminContract: BigNumberish;
         maxValidatorCandidate: BigNumberish;

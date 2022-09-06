@@ -126,15 +126,24 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function recordRewardForDelegators(address _consensusAddr, uint256 _reward) external payable onlyValidatorContract {
-    _recordRewardForDelegators(_consensusAddr, _reward);
+  function recordReward(address _consensusAddr, uint256 _reward) external payable onlyValidatorContract {
+    _recordReward(_consensusAddr, _reward);
   }
 
   /**
    * @inheritdoc IStaking
    */
-  function settleRewardPoolForDelegators(address _consensusAddr) external onlyValidatorContract {
+  function settleRewardPool(address _consensusAddr) external onlyValidatorContract {
     _onPoolSettled(_consensusAddr);
+  }
+
+  /**
+   * @inheritdoc IStaking
+   */
+  function settleMultipleRewardPools(address[] calldata _consensusAddrs) external onlyValidatorContract {
+    for (uint _i = 0; _i < _consensusAddrs.length; _i++) {
+      _onPoolSettled(_consensusAddrs[_i]);
+    }
   }
 
   /**

@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
  * @notice This contract maintains set of validator in the current epoch of Ronin network
  */
 contract MockValidatorSetCore is ValidatorSetCore {
-
   function isInCurrentValidatorSet(address _addr) external view returns (bool) {
     return _isInCurrentValidatorSet(_addr);
   }
@@ -44,7 +43,15 @@ contract MockValidatorSetCore is ValidatorSetCore {
     return _getValidator(_valAddr);
   }
 
-  function tryGetValidator(address _valAddr) external view returns (bool, IValidatorSet.Validator memory, uint256) {
+  function tryGetValidator(address _valAddr)
+    external
+    view
+    returns (
+      bool,
+      IValidatorSet.Validator memory,
+      uint256
+    )
+  {
     return _tryGetValidator(_valAddr);
   }
 

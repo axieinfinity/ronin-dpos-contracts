@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.9;
 
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../interfaces/ISlashIndicator.sol";
@@ -118,7 +119,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
 
     _miningReward[_validatorAddr] += _miningAmount;
     _delegatingReward[_validatorAddr] += _delegatingAmount;
-    IStaking(_stakingContract).recordRewardForDelegators(_validatorAddr, _delegatingAmount);
+    IStaking(_stakingContract).recordReward(_validatorAddr, _delegatingAmount);
     // TODO(Thor): emit event
   }
 
@@ -126,41 +127,57 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    * @inheritdoc IRoninValidatorSet
    */
   function wrapUpEpoch() external payable override onlyCoinbase whenEpochEnding {
+    console.log("0", gasleft());
     IStaking _staking = IStaking(_stakingContract);
-    ISlashIndicator _slashIndicator = ISlashIndicator(_slashIndicatorContract);
 
     address _validatorAddr;
-    for (uint _i = 0; _i < validatorCount; _i++) {
-      _validatorAddr = _validator[_i];
-      _slashIndicator.resetCounter(_validatorAddr);
+    uint256 _delegatingAmount;
+    uint256 _period = periodOf(block.number);
+    bool _periodEnding = periodEndingAt(block.number);
 
-      if (!_jailed(_validatorAddr) && !_noPendingReward[periodOf(block.number)][_validatorAddr]) {
-        if (periodEndingAt(block.number)) {
-          uint256 _miningAmount = _miningReward[_validatorAddr];
-          _miningReward[_validatorAddr] = 0;
-          if (_miningAmount > 0) {
-            // TODO(Thor): use `call` to transfer reward with reentrancy gruard
-            require(
-              payable(_staking.treasuryAddressOf(_validatorAddr)).send(_miningAmount),
-              "RoninValidatorSet: could not transfer RON"
-            );
-          }
-        }
+    console.log("1", gasleft());
+    address[] memory _validators = getValidators();
+    for (uint _i = 0; _i < _validators.length; _i++) {
+      _validatorAddr = _validators[_i];
 
-        uint256 _delegatingAmount = _delegatingReward[_validatorAddr];
-        _delegatingReward[_validatorAddr] = 0;
-        if (_delegatingAmount > 0) {
-          // TODO(Thor): use `call` to transfer reward with reentrancy gruard
-          require(payable(address(_staking)).send(_delegatingAmount), "RoninValidatorSet: could not transfer RON");
-        }
-        _staking.settleRewardPoolForDelegators(_validatorAddr);
-        _miningReward[_validatorAddr] = 0;
-        _delegatingReward[_validatorAddr] = 0;
+      if (_jailed(_validatorAddr) || _noPendingReward[_period][_validatorAddr]) {
+        continue;
       }
-      // TODO: emit event
+
+      if (_periodEnding) {
+        uint256 _miningAmount = _miningReward[_validatorAddr];
+        _miningReward[_validatorAddr] = 0;
+        if (_miningAmount > 0) {
+          // TODO(Thor): use `call` to transfer reward with reentrancy gruard
+          require(
+            payable(_staking.treasuryAddressOf(_validatorAddr)).send(_miningAmount),
+            "RoninValidatorSet: could not transfer RON"
+          );
+        }
+      }
+
+      _delegatingAmount += _delegatingReward[_validatorAddr];
+      _delegatingReward[_validatorAddr] = 0;
+      // TODO: emit events
     }
 
+    console.log("2", gasleft());
+    // if (_periodEnding) {}
+
+    ISlashIndicator(_slashIndicatorContract).resetCounters(_validators);
+    console.log("2.a", gasleft());
+    _staking.settleMultipleRewardPools(_validators);
+
+    console.log("3", gasleft());
+
+    if (_delegatingAmount > 0) {
+      // TODO(Thor): use `call` to transfer reward with reentrancy gruard
+      require(payable(address(_staking)).send(_delegatingAmount), "RoninValidatorSet: could not transfer RON");
+    }
+
+    console.log("4", gasleft());
     _updateValidatorSet();
+    console.log("5", gasleft());
   }
 
   /**
@@ -270,7 +287,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function getValidators() external view override returns (address[] memory _validatorList) {
+  function getValidators() public view override returns (address[] memory _validatorList) {
     _validatorList = new address[](validatorCount);
     for (uint _i = 0; _i < _validatorList.length; _i++) {
       _validatorList[_i] = _validator[_i];
@@ -324,7 +341,9 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    * @dev Updates the validator set based on the validator candidates from the Staking contract.
    */
   function _updateValidatorSet() internal {
+    console.log("\t3.1", gasleft());
     (address[] memory _candidates, uint256[] memory _weights) = IStaking(_stakingContract).getCandidateWeights();
+    console.log("\t3.2", gasleft());
     uint256 _newLength = _candidates.length;
     for (uint256 _i; _i < _candidates.length; _i++) {
       if (_jailed(_candidates[_i])) {
@@ -333,13 +352,16 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
         _weights[_i] = _weights[_newLength];
       }
     }
+    console.log("\t3.3", gasleft());
 
     assembly {
       mstore(_candidates, _newLength)
       mstore(_weights, _newLength)
     }
+    console.log("\t3.4", gasleft());
 
     _candidates = Sorting.sort(_candidates, _weights);
+    console.log("\t3.5", gasleft());
     uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
 
     // TODO: pick at least M governers as validators
@@ -356,6 +378,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
       _validatorMap[_newValidator] = true;
       _validator[_i] = _newValidator;
     }
+    console.log("\t3.6", gasleft());
 
     validatorCount = _newValidatorCount;
     _lastUpdatedBlock = block.number;

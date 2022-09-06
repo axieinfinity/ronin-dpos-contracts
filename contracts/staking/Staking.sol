@@ -491,9 +491,11 @@ contract Staking is IStaking, Initializable {
 
   function getValidatorCandidates() external view override returns (ValidatorCandidate[] memory candidates) {}
 
-  function recordRewardForDelegators(address _consensusAddr, uint256 _reward) external payable override {}
+  function recordReward(address _consensusAddr, uint256 _reward) external payable override {}
 
-  function settleRewardPoolForDelegators(address _consensusAddr) external override {}
+  function settleRewardPool(address _consensusAddr) external override {}
+
+  function settleMultipleRewardPools(address[] calldata _consensusAddrs) external override {}
 
   function sinkPendingReward(address _consensusAddr) external override {}
 

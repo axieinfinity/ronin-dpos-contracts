@@ -11,7 +11,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const logicContract = await deployments.get('DPoStakingLogic');
 
   const data = new DPoStaking__factory().interface.encodeFunctionData('initialize', [
-    stakingConfig[network.name]!.unstakingOnHoldBlocksNum,
     stakingConfig[network.name]!.validatorContract,
     stakingConfig[network.name]!.governanceAdminContract,
     stakingConfig[network.name]!.maxValidatorCandidate,

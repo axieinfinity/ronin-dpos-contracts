@@ -197,7 +197,7 @@ abstract contract RewardCalculation {
    * @notice This method should not be called after the pending pool is sinked.
    *
    */
-  function _recordRewardForDelegators(address _poolAddr, uint256 _reward) internal {
+  function _recordReward(address _poolAddr, uint256 _reward) internal {
     PendingPool storage _pool = _pendingPool[_poolAddr];
     uint256 _accumulatedRps = _pool.accumulatedRps + (_reward * 1e18) / totalBalance(_poolAddr);
     _pool.accumulatedRps = _accumulatedRps;
