@@ -122,6 +122,8 @@ contract RoninValidatorSet is IRoninValidatorSet {
           require(payable(address(_staking)).send(_delegatingAmount), "RoninValidatorSet: could not transfer RON");
         }
         _staking.settleRewardPoolForDelegators(_validatorAddr);
+        _miningReward[_validatorAddr] = 0;
+        _delegatingReward[_validatorAddr] = 0;
       }
       // TODO: emit event
     }
@@ -307,6 +309,8 @@ contract RoninValidatorSet is IRoninValidatorSet {
 
     _candidates = Sorting.sort(_candidates, _weights);
     uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
+
+    // TODO: pick at least M governers as validators
 
     for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
       delete _validator[_i];
