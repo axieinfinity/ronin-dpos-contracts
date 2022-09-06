@@ -11,7 +11,7 @@ import "../interfaces/IRoninValidatorSet.sol";
  */
 contract SlashIndicator is ISlashIndicator {
   /// @dev Mapping from validator address => unavailability indicator
-  mapping(address => Indicator) internal _unavailabilityIndicator;
+  mapping(address => uint256) internal _unavailabilityIndicator;
   /// @dev The last block that a validator is slashed
   uint256 public lastSlashedBlock;
 
@@ -48,15 +48,13 @@ contract SlashIndicator is ISlashIndicator {
    * @inheritdoc ISlashIndicator
    */
   function slash(address _validatorAddr) external override onlyCoinbase oncePerBlock {
-    Indicator storage indicator = _unavailabilityIndicator[_validatorAddr];
-    indicator.counter++;
-    indicator.lastSyncedBlock = block.number;
+    uint256 _count = ++_unavailabilityIndicator[_validatorAddr];
 
     // Slashs the validator as either the fenoly or the misdemeanor
-    if (indicator.counter == felonyThreshold) {
+    if (_count == felonyThreshold) {
       validatorContract.slashFelony(_validatorAddr);
       emit ValidatorSlashed(_validatorAddr, SlashType.FELONY);
-    } else if (indicator.counter == misdemeanorThreshold) {
+    } else if (_count == misdemeanorThreshold) {
       validatorContract.slashMisdemeanor(_validatorAddr);
       emit ValidatorSlashed(_validatorAddr, SlashType.MISDEMAENOR);
     }
@@ -66,21 +64,7 @@ contract SlashIndicator is ISlashIndicator {
    * @inheritdoc ISlashIndicator
    */
   function resetCounters(address[] calldata _validatorAddrs) external override onlyValidatorContract {
-    if (_validatorAddrs.length == 0) {
-      return;
-    }
-
-    for (uint256 _i; _i < _validatorAddrs.length; _i++) {
-      _resetCounter(_validatorAddrs[_i]);
-    }
-  }
-
-  /**
-   * @inheritdoc ISlashIndicator
-   */
-  function resetCounter(address _validatorAddr) external override onlyValidatorContract {
-    _resetCounter(_validatorAddr);
-    emit UnavailabilityIndicatorReset(_validatorAddr);
+    _resetCounters(_validatorAddrs);
   }
 
   /**
@@ -93,8 +77,8 @@ contract SlashIndicator is ISlashIndicator {
   /**
    * @inheritdoc ISlashIndicator
    */
-  function getSlashIndicator(address validator) external view override returns (Indicator memory _indicator) {
-    _indicator = _unavailabilityIndicator[validator];
+  function getSlashIndicator(address validator) external view override returns (uint256) {
+    return _unavailabilityIndicator[validator];
   }
 
   /**
@@ -107,9 +91,14 @@ contract SlashIndicator is ISlashIndicator {
   /**
    * @dev Resets counter for the validator address.
    */
-  function _resetCounter(address _validatorAddr) private {
-    Indicator storage _indicator = _unavailabilityIndicator[_validatorAddr];
-    _indicator.counter = 0;
-    _indicator.lastSyncedBlock = block.number;
+  function _resetCounters(address[] calldata _validatorAddrs) private {
+    if (_validatorAddrs.length == 0) {
+      return;
+    }
+
+    for (uint _i = 0; _i < _validatorAddrs.length; _i++) {
+      delete _unavailabilityIndicator[_validatorAddrs[_i]];
+    }
+    emit UnavailabilityIndicatorsReset(_validatorAddrs);
   }
 }

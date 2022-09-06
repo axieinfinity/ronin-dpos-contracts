@@ -7,20 +7,13 @@ import "../interfaces/IRoninValidatorSet.sol";
 interface ISlashIndicator {
   // TODO: fill comment for event. IE: Emitted when...
   event ValidatorSlashed(address indexed validator, SlashType slashType);
-  event UnavailabilityIndicatorReset(address indexed validator);
+  event UnavailabilityIndicatorsReset(address[] validators);
 
   enum SlashType {
     UNKNOWN,
     MISDEMAENOR,
     FELONY,
     DOUBLE_SIGNING
-  }
-
-  struct Indicator {
-    /// @dev The block height that the indicator get updated, make sure this update once each block
-    uint256 lastSyncedBlock;
-    /// @dev Number of missed block the validator, reset everyday or once reaching the fenoly threshold
-    uint128 counter;
   }
 
   /**
@@ -41,23 +34,12 @@ interface ISlashIndicator {
   function slash(address _valAddr) external;
 
   /**
-   * @dev Resets the counter of the validator at the end of every period
-   *
-   * Requirements:
-   * - Only validator contract can call this method
-   *
-   * Emits the event `UnavailabilityIndicatorReset`.
-   *
-   */
-  function resetCounter(address) external;
-
-  /**
    * @dev Resets the counter of all validators at the end of every period
    *
    * Requirements:
    * - Only validator contract can call this method
    *
-   * Emits the `UnavailabilityIndicatorReset` events.
+   * Emits the `UnavailabilityIndicatorsReset` events.
    *
    */
   function resetCounters(address[] calldata) external;
@@ -74,7 +56,7 @@ interface ISlashIndicator {
   /**
    * @dev Gets slash indicator of a validator.
    */
-  function getSlashIndicator(address _validator) external view returns (Indicator memory);
+  function getSlashIndicator(address _validator) external view returns (uint256);
 
   /**
    * @dev Gets slash threshold.
