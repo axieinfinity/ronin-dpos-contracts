@@ -48,6 +48,10 @@ contract SlashIndicator is ISlashIndicator {
    * @inheritdoc ISlashIndicator
    */
   function slash(address _validatorAddr) external override onlyCoinbase oncePerBlock {
+    if (msg.sender == _validatorAddr) {
+      return;
+    }
+
     uint256 _count = ++_unavailabilityIndicator[_validatorAddr];
 
     // Slashs the validator as either the fenoly or the misdemeanor
