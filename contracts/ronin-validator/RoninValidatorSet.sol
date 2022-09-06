@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../interfaces/ISlashIndicator.sol";
 import "../interfaces/IStaking.sol";
@@ -9,7 +10,7 @@ import "../interfaces/IRoninValidatorSet.sol";
 import "../libraries/Sorting.sol";
 import "../libraries/Math.sol";
 
-contract RoninValidatorSet is IRoninValidatorSet {
+contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   /// @dev Governance admin contract address.
   address internal _governanceAdminContract; // TODO(Thor): add setter.
   /// @dev Slash indicator contract address.
@@ -37,6 +38,7 @@ contract RoninValidatorSet is IRoninValidatorSet {
   mapping(uint256 => mapping(address => bool)) internal _noPendingReward;
   /// @dev Mapping from validator address => the last block that the validator is jailed
   mapping(address => uint256) internal _jailedUntil;
+
   /// @dev Mapping from validator address => pending reward from producing block
   mapping(address => uint256) internal _miningReward;
   /// @dev Mapping from validator address => pending reward from delegating
@@ -48,16 +50,46 @@ contract RoninValidatorSet is IRoninValidatorSet {
   uint256 public slashDoubleSignAmount;
 
   modifier onlyCoinbase() {
-    require(msg.sender == block.coinbase, "RoninValidatorSet: method caller is not coinbase");
+    require(msg.sender == block.coinbase, "RoninValidatorSet: method caller must be coinbase");
     _;
   }
 
-  modifier whenEndEpoch() {
-    require(epochEnded(block.number), "RoninValidatorSet: only allowed at the end of epoch");
+  modifier onlySlashIndicatorContract() {
+    require(msg.sender == _slashIndicatorContract, "RoninValidatorSet: method caller must be slash indicator contract");
     _;
   }
 
-  constructor() {}
+  modifier whenEpochEnding() {
+    require(epochEndingAt(block.number), "RoninValidatorSet: only allowed at the end of epoch");
+    _;
+  }
+
+  constructor() {
+    _disableInitializers();
+  }
+
+  /**
+   * @dev Initializes the contract storage.
+   */
+  function initialize(
+    address __governanceAdminContract,
+    address __slashIndicatorContract,
+    address __stakingContract,
+    uint256 __maxValidatorNumber,
+    uint256 __numberOfBlocksInEpoch,
+    uint256 __numberOfEpochsInPeriod,
+    uint256 _slashFelonyAmount,
+    uint256 _slashDoubleSignAmount
+  ) external initializer {
+    _governanceAdminContract = __governanceAdminContract;
+    _slashIndicatorContract = __slashIndicatorContract;
+    _stakingContract = __stakingContract;
+    _maxValidatorNumber = __maxValidatorNumber;
+    _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
+    _numberOfEpochsInPeriod = __numberOfEpochsInPeriod;
+    slashFelonyAmount = _slashFelonyAmount;
+    slashDoubleSignAmount = _slashDoubleSignAmount;
+  }
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR COINBASE                               //
@@ -93,7 +125,7 @@ contract RoninValidatorSet is IRoninValidatorSet {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function wrapUpEpoch() external payable override onlyCoinbase whenEndEpoch {
+  function wrapUpEpoch() external payable override onlyCoinbase whenEpochEnding {
     IStaking _staking = IStaking(_stakingContract);
     ISlashIndicator _slashIndicator = ISlashIndicator(_slashIndicatorContract);
 
@@ -103,7 +135,7 @@ contract RoninValidatorSet is IRoninValidatorSet {
       _slashIndicator.resetCounter(_validatorAddr);
 
       if (!_jailed(_validatorAddr) && !_noPendingReward[periodOf(block.number)][_validatorAddr]) {
-        if (periodEnded(block.number)) {
+        if (periodEndingAt(block.number)) {
           uint256 _miningAmount = _miningReward[_validatorAddr];
           _miningReward[_validatorAddr] = 0;
           if (_miningAmount > 0) {
@@ -166,7 +198,7 @@ contract RoninValidatorSet is IRoninValidatorSet {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function slashMisdemeanor(address _validatorAddr) public override {
+  function slashMisdemeanor(address _validatorAddr) public override onlySlashIndicatorContract {
     _noPendingReward[periodOf(block.number)][_validatorAddr] = true;
     _miningReward[_validatorAddr] = 0;
     _delegatingReward[_validatorAddr] = 0;
@@ -176,7 +208,7 @@ contract RoninValidatorSet is IRoninValidatorSet {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function slashFelony(address _validatorAddr) external override {
+  function slashFelony(address _validatorAddr) external override onlySlashIndicatorContract {
     slashMisdemeanor(_validatorAddr);
     IStaking(_stakingContract).deductStakingAmount(_validatorAddr, slashFelonyAmount);
     uint256 _jailedBlock = block.number + 2 * 28800; // TODO: make this constant number to variable
@@ -187,7 +219,7 @@ contract RoninValidatorSet is IRoninValidatorSet {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function slashDoubleSign(address _validatorAddr) external override {
+  function slashDoubleSign(address _validatorAddr) external override onlySlashIndicatorContract {
     slashMisdemeanor(_validatorAddr);
     IStaking(_stakingContract).deductStakingAmount(_validatorAddr, slashDoubleSignAmount);
     _jailedUntil[_validatorAddr] = type(uint256).max;
@@ -224,14 +256,14 @@ contract RoninValidatorSet is IRoninValidatorSet {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function epochOf(uint256 _block) public view override returns (uint256) {
+  function epochOf(uint256 _block) public view virtual override returns (uint256) {
     return _block / _numberOfBlocksInEpoch + 1;
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function periodOf(uint256 _block) public view override returns (uint256) {
+  function periodOf(uint256 _block) public view virtual override returns (uint256) {
     return _block / (_numberOfBlocksInEpoch * _numberOfEpochsInPeriod) + 1;
   }
 
@@ -248,14 +280,14 @@ contract RoninValidatorSet is IRoninValidatorSet {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function epochEnded(uint256 _block) public view returns (bool) {
+  function epochEndingAt(uint256 _block) public view virtual returns (bool) {
     return _block % _numberOfBlocksInEpoch == _numberOfBlocksInEpoch - 1;
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function periodEnded(uint256 _block) public view returns (bool) {
+  function periodEndingAt(uint256 _block) public view virtual returns (bool) {
     uint256 _blockLength = _numberOfBlocksInEpoch * _numberOfEpochsInPeriod;
     return _block % _blockLength == _blockLength - 1;
   }

@@ -117,12 +117,12 @@ interface IRoninValidatorSet {
   function getValidators() external view returns (address[] memory);
 
   /**
-   * @dev Returns whether the epoch ended at the block number `_block`.
+   * @dev Returns whether the epoch ending is at the block number `_block`.
    */
-  function epochEnded(uint256 _block) external view returns (bool);
+  function epochEndingAt(uint256 _block) external view returns (bool);
 
   /**
-   * @dev Returns whether the period ended at the block number `_block`.
+   * @dev Returns whether the period ending is at the block number `_block`.
    */
-  function periodEnded(uint256 _block) external view returns (bool);
+  function periodEndingAt(uint256 _block) external view returns (bool);
 }
