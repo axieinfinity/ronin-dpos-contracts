@@ -10,13 +10,13 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   mapping(address => mapping(address => uint256)) internal _delegatedAmount;
 
   modifier noEmptyValue() {
-    require(msg.value > 0, "StakingManager: query for empty value");
+    require(msg.value > 0, "StakingManager: cannot deposit empty value");
     _;
   }
 
   modifier notCandidateOwner(address _consensusAddr) {
     ValidatorCandidate memory _candidate = _getCandidate(_consensusAddr);
-    require(msg.sender != _candidate.candidateAdmin, "StakingManager: method caller is the candidate admin");
+    require(msg.sender != _candidate.candidateAdmin, "StakingManager: method caller must not be the candidate admin");
     _;
   }
 
@@ -159,7 +159,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   ) internal {
     ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
     require(_candidate.candidateAdmin == _user, "StakingManager: user is not the candidate admin");
-    require(_amount < _candidate.stakedAmount, "StakingManager: insufficient staked amount");
+    require(_amount <= _candidate.stakedAmount, "StakingManager: insufficient staked amount");
 
     uint256 remainAmount = _candidate.stakedAmount - _amount;
     require(remainAmount >= minValidatorBalance(), "StakingManager: invalid staked amount left");
