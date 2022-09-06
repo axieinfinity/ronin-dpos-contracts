@@ -111,7 +111,7 @@ describe('DPoStaking test', () => {
     );
     await proxyContract.deployed();
     stakingContract = DPoStaking__factory.connect(proxyContract.address, deployer);
-    expect(stakingContractAddr.toLowerCase()).eq(proxyContract.address.toLowerCase());
+    expect(stakingContractAddr.toLowerCase()).eq(stakingContract.address.toLowerCase());
   });
 
   describe('Validator candidate test', () => {
@@ -135,6 +135,12 @@ describe('DPoStaking test', () => {
       poolAddr = validatorCandidates[1];
       otherPoolAddr = validatorCandidates[2];
       expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance);
+    });
+
+    it('Should not be able to propose validator again', async () => {
+      await expect(
+        stakingContract.connect(poolAddr).proposeValidator(poolAddr.address, poolAddr.address, 0)
+      ).revertedWith('StakingManager: query for existed candidate');
     });
 
     it('Should not be able to stake with empty value', async () => {
