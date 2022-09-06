@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.9;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../interfaces/ISlashIndicator.sol";
@@ -127,7 +126,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    * @inheritdoc IRoninValidatorSet
    */
   function wrapUpEpoch() external payable override onlyCoinbase whenEpochEnding {
-    console.log("0", gasleft());
     IStaking _staking = IStaking(_stakingContract);
 
     address _validatorAddr;
@@ -135,7 +133,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     uint256 _period = periodOf(block.number);
     bool _periodEnding = periodEndingAt(block.number);
 
-    console.log("1", gasleft());
     address[] memory _validators = getValidators();
     for (uint _i = 0; _i < _validators.length; _i++) {
       _validatorAddr = _validators[_i];
@@ -161,23 +158,17 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
       // TODO: emit events
     }
 
-    console.log("2", gasleft());
-    // if (_periodEnding) {}
+    if (_periodEnding) {
+      ISlashIndicator(_slashIndicatorContract).resetCounters(_validators);
+    }
 
-    ISlashIndicator(_slashIndicatorContract).resetCounters(_validators);
-    console.log("2.a", gasleft());
-    _staking.settleMultipleRewardPools(_validators);
-
-    console.log("3", gasleft());
-
+    _staking.settleRewardPools(_validators);
     if (_delegatingAmount > 0) {
       // TODO(Thor): use `call` to transfer reward with reentrancy gruard
       require(payable(address(_staking)).send(_delegatingAmount), "RoninValidatorSet: could not transfer RON");
     }
 
-    console.log("4", gasleft());
     _updateValidatorSet();
-    console.log("5", gasleft());
   }
 
   /**
@@ -341,9 +332,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    * @dev Updates the validator set based on the validator candidates from the Staking contract.
    */
   function _updateValidatorSet() internal {
-    console.log("\t3.1", gasleft());
     (address[] memory _candidates, uint256[] memory _weights) = IStaking(_stakingContract).getCandidateWeights();
-    console.log("\t3.2", gasleft());
     uint256 _newLength = _candidates.length;
     for (uint256 _i; _i < _candidates.length; _i++) {
       if (_jailed(_candidates[_i])) {
@@ -352,16 +341,13 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
         _weights[_i] = _weights[_newLength];
       }
     }
-    console.log("\t3.3", gasleft());
 
     assembly {
       mstore(_candidates, _newLength)
       mstore(_weights, _newLength)
     }
-    console.log("\t3.4", gasleft());
 
     _candidates = Sorting.sort(_candidates, _weights);
-    console.log("\t3.5", gasleft());
     uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
 
     // TODO: pick at least M governers as validators
@@ -378,7 +364,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
       _validatorMap[_newValidator] = true;
       _validator[_i] = _newValidator;
     }
-    console.log("\t3.6", gasleft());
 
     validatorCount = _newValidatorCount;
     _lastUpdatedBlock = block.number;
