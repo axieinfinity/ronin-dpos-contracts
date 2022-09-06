@@ -88,6 +88,10 @@ describe('Core Staking test', () => {
     local.reset();
   });
 
+  after(async () => {
+    await network.provider.send('evm_setAutomine', [true]);
+  });
+
   it('Should work properly with staking actions occurring sequentially for a normal period', async () => {
     await stakingContract.stake(userA.address, 100);
     await stakingContract.stake(userB.address, 100);
@@ -323,18 +327,7 @@ describe('Core Staking test', () => {
     await stakingContract.stake(userA.address, 100);
     await stakingContract.unstake(userA.address, 100);
     await stakingContract.stake(userA.address, 100);
-    await stakingContract.unstake(userA.address, 100);
     await stakingContract.stake(userB.address, 200);
-    await stakingContract.unstake(userB.address, 200);
-    await stakingContract.stake(userB.address, 200);
-    await stakingContract.unstake(userB.address, 200);
-    await stakingContract.stake(userB.address, 200);
-    await stakingContract.stake(userA.address, 100);
-    await stakingContract.unstake(userA.address, 100);
-    await stakingContract.unstake(userB.address, 200);
-    await stakingContract.stake(userB.address, 200);
-    await stakingContract.unstake(userA.address, 100);
-    await stakingContract.stake(userA.address, 100);
     await stakingContract.unstake(userB.address, 200);
     await stakingContract.recordRewardForDelegators(1000);
     await stakingContract.commitRewardPool();
@@ -375,13 +368,6 @@ describe('Core Staking test', () => {
     local.commitRewardPool();
     await expectLocalCalculationRight();
 
-    await stakingContract.claimReward(userA.address);
-    await stakingContract.claimReward(userB.address);
-    await stakingContract.claimReward(userA.address);
-    await stakingContract.claimReward(userB.address);
-    await stakingContract.claimReward(userA.address);
-    await stakingContract.claimReward(userB.address);
-    await stakingContract.claimReward(userA.address);
     await stakingContract.claimReward(userA.address);
     await stakingContract.claimReward(userA.address);
     await stakingContract.claimReward(userB.address);

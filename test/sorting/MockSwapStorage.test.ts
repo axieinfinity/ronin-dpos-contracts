@@ -29,7 +29,7 @@ const generateCandidate = (
   };
 };
 
-describe('Mock swap struct on storage tests', () => {
+describe.skip('Mock swap struct on storage tests', () => {
   describe('Stress test', async () => {
     before(async () => {
       [admin, ...signers] = await ethers.getSigners();

@@ -24,16 +24,6 @@ contract MockSorting {
     return (data, data.length);
   }
 
-  function copyStorage2Memory() public view returns (uint256[] memory, uint256) {
-    uint256[] memory _tmpData = new uint256[](data.length);
-
-    for (uint256 i; i < data.length; i++) {
-      _tmpData[i] = data[i];
-    }
-
-    return (_tmpData, data.length);
-  }
-
   function sortAddressesAndValues(address[] calldata _addrs, uint256[] calldata _values)
     public
     pure

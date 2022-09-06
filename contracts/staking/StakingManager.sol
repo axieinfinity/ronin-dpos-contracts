@@ -10,7 +10,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   mapping(address => mapping(address => uint256)) internal _delegatedAmount;
 
   modifier noEmptyValue() {
-    require(msg.value > 0, "StakingManager: cannot deposit empty value");
+    require(msg.value > 0, "StakingManager: query with empty value");
     _;
   }
 

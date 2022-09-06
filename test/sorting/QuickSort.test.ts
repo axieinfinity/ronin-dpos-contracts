@@ -2,60 +2,60 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-import { Sorting, Sorting__factory, MockSorting, MockSorting__factory } from '../../src/types';
+import { MockSorting, MockSorting__factory } from '../../src/types';
 
-let quickSortLib: Sorting;
 let quickSortContract: MockSorting;
 
 let deployer: SignerWithAddress;
 let signers: SignerWithAddress[];
 
+const stats: { items: number; gasUsed: string }[] = [];
+
 const runSortWithNRecords = async (numOfRecords: number) => {
-  let balances = [];
+  const balances = [];
+  const mapV = new Map<number, boolean>();
   for (let i = 0; i < numOfRecords; ++i) {
+    let value = 0;
+    do {
+      value = Math.floor(Math.random() * numOfRecords * 10_000);
+    } while (!!mapV.get(value));
+    mapV.set(value, true);
     balances.push({
       address: signers[i].address,
-      value: Math.floor(Math.random() * numOfRecords * 1000),
+      value,
     });
   }
 
   balances.sort((a, b) => (a.value < b.value ? 1 : -1));
 
-  let sorted = await quickSortContract.sortAddressesAndValues(
+  const gasUsed = await quickSortContract.estimateGas.sortAddressesAndValues(
+    balances.map((_) => _.address),
+    balances.map((_) => _.value)
+  );
+
+  const sorted = await quickSortContract.sortAddressesAndValues(
     balances.map((_) => _.address),
     balances.map((_) => _.value)
   );
 
   expect(sorted).eql(balances.map((_) => _.address));
+  return gasUsed.toString();
 };
 
-describe('Quick sort', () => {
+describe.skip('Quick sort test', () => {
   before(async () => {
     [deployer, ...signers] = await ethers.getSigners();
-    quickSortLib = await new Sorting__factory(deployer).deploy();
-    quickSortContract = await new MockSorting__factory(
-      {
-        'contracts/libraries/Sorting.sol:Sorting': quickSortLib.address,
-      },
-      deployer
-    ).deploy();
+    quickSortContract = await new MockSorting__factory(deployer).deploy();
   });
 
-  describe('Sorting on sort(address[], uint[])', async () => {
-    it('Should sort correctly on 10 records', async () => {
-      await runSortWithNRecords(10);
-    });
-
-    it('Should sort correctly on 21 records', async () => {
-      await runSortWithNRecords(21);
-    });
-
-    it('Should sort correctly on 50 records', async () => {
-      await runSortWithNRecords(50);
-    });
-
-    it('Should sort correctly on 99 records', async () => {
-      await runSortWithNRecords(99);
-    });
+  after(() => {
+    console.table(stats);
   });
+
+  for (let i = 1; i < 100; i++) {
+    i % 10 == 9 &&
+      it(`Should sort correctly on ${i} records`, async () => {
+        stats.push({ items: i, gasUsed: await runSortWithNRecords(i) });
+      });
+  }
 });

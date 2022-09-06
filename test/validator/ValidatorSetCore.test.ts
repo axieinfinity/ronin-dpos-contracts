@@ -32,7 +32,7 @@ const generateCandidate = (
   };
 };
 
-describe('Validator set core tests', () => {
+describe.skip('Validator set core tests', () => {
   describe('CRUD functions on validator set', async () => {
     describe('Simple CRUD', async () => {
       before(async () => {

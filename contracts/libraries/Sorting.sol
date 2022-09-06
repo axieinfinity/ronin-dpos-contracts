@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.0;
 
 library Sorting {
   struct Node {
@@ -8,16 +8,16 @@ library Sorting {
     uint value;
   }
 
-  function sort(uint[] memory data) public pure returns (uint[] memory) {
+  function sort(uint[] memory data) internal pure returns (uint[] memory) {
     return _quickSort(data, int(0), int(data.length - 1));
   }
 
-  function sortNodes(Node[] memory nodes) public pure returns (Node[] memory) {
+  function sortNodes(Node[] memory nodes) internal pure returns (Node[] memory) {
     // return _bubbleSortNodes(nodes);
     return _quickSortNodes(nodes, int(0), int(nodes.length - 1));
   }
 
-  function sort(address[] memory _keys, uint256[] memory _values) public pure returns (address[] memory) {
+  function sort(address[] memory _keys, uint256[] memory _values) internal pure returns (address[] memory) {
     require(_keys.length > 0 && _values.length == _keys.length, "Sorting: invalid array length");
     Node[] memory _nodes = new Node[](_keys.length);
     for (uint256 _i; _i < _nodes.length; _i++) {

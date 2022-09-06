@@ -1,28 +1,19 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { Staking__factory } from '../types';
-import { StakingLibraryAddresses } from '../types/factories/Staking__factory';
 
-const deploy = async ({ getNamedAccounts, deployments}: HardhatRuntimeEnvironment) => {
+const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
   let { deployer } = await getNamedAccounts();
 
   const proxyAdmin = await deployments.get('ProxyAdmin');
-  const sortingLibrary = await deployments.get('SortingLibrary');
   const stakingLogic = await deploy('StakingLogic', {
     contract: 'Staking',
     from: deployer,
     log: true,
-    libraries: {
-      Sorting: sortingLibrary.address,
-    },
   });
 
-  const param: StakingLibraryAddresses = {
-    ['contracts/libraries/Sorting.sol:Sorting']: sortingLibrary.address,
-  };
-
-  const data = new Staking__factory(param).interface.encodeFunctionData('initialize', []);
+  const data = new Staking__factory().interface.encodeFunctionData('initialize', []);
 
   await deploy('StakingProxy', {
     contract: 'TransparentUpgradeableProxy',

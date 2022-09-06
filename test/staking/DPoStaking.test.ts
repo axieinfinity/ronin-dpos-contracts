@@ -94,9 +94,11 @@ describe('DPoStaking test', () => {
     [deployer, proxyAdmin, userA, userB, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
     validatorCandidates = validatorCandidates.slice(0, 3);
     const nonce = await deployer.getTransactionCount();
-    const proxyContractAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 2 });
-    validatorContract = await new MockValidatorSetForStaking__factory(deployer).deploy(proxyContractAddress, 10, 2);
+    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 2 });
+    validatorContract = await new MockValidatorSetForStaking__factory(deployer).deploy(stakingContractAddr, 10, 2);
+    await validatorContract.deployed();
     const logicContract = await new DPoStaking__factory(deployer).deploy();
+    await logicContract.deployed();
     const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
       logicContract.address,
       proxyAdmin.address,
@@ -107,8 +109,9 @@ describe('DPoStaking test', () => {
         minValidatorBalance,
       ])
     );
+    await proxyContract.deployed();
     stakingContract = DPoStaking__factory.connect(proxyContract.address, deployer);
-    expect(proxyContractAddress.toLowerCase()).eq(proxyContract.address.toLowerCase());
+    expect(stakingContractAddr.toLowerCase()).eq(proxyContract.address.toLowerCase());
   });
 
   describe('Validator candidate test', () => {
@@ -131,12 +134,12 @@ describe('DPoStaking test', () => {
 
       poolAddr = validatorCandidates[1];
       otherPoolAddr = validatorCandidates[2];
-      expect(await stakingContract.callStatic.totalBalance(poolAddr.address)).eq(minValidatorBalance);
+      expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance);
     });
 
     it('Should not be able to stake with empty value', async () => {
       await expect(stakingContract.stake(poolAddr.address, { value: 0 })).revertedWith(
-        'StakingManager: query for empty value'
+        'StakingManager: query with empty value'
       );
     });
 
@@ -152,6 +155,8 @@ describe('DPoStaking test', () => {
     it('Should be able to stake/unstake as a validator', async () => {
       await stakingContract.connect(poolAddr).stake(poolAddr.address, { value: 1 });
       expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance.add(1));
+      await stakingContract.connect(poolAddr).unstake(poolAddr.address, 1);
+      expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance);
     });
 
     it('Should be not able to unstake with the balance left is not larger than the minimum balance threshold', async () => {
@@ -164,16 +169,16 @@ describe('DPoStaking test', () => {
   describe('Delegator test', () => {
     it('Should not be able to delegate with empty value', async () => {
       await expect(stakingContract.delegate(otherPoolAddr.address)).revertedWith(
-        'StakingManager: query for empty value'
+        'StakingManager: query with empty value'
       );
     });
 
     it('Should not be able to delegate/undelegate when the method caller is the candidate owner', async () => {
       await expect(stakingContract.connect(poolAddr).delegate(poolAddr.address, { value: 1 })).revertedWith(
-        'StakingManager: method caller is the candidate admin'
+        'StakingManager: method caller must not be the candidate admin'
       );
       await expect(stakingContract.connect(poolAddr).undelegate(poolAddr.address, 1)).revertedWith(
-        'StakingManager: method caller is the candidate admin'
+        'StakingManager: method caller must not be the candidate admin'
       );
     });
 

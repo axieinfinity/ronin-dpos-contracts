@@ -57,7 +57,7 @@ const validateTwoObjects = async (definedObj: any, resultObj: any) => {
   }
 };
 
-describe('Staking test', () => {
+describe.skip('Staking test', () => {
   let unstakingOnHoldBlocksNum: BigNumber;
   let minValidatorBalance: BigNumber;
 
