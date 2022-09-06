@@ -117,6 +117,8 @@ contract RoninValidatorSet is IRoninValidatorSet {
           _staking.settleRewardPoolForDelegators(_validatorAddr);
         }
         _miningReward[_validatorAddr] = 0;
+        _delegatingReward[_validatorAddr] = 0;
+        // TODO: emit event
       }
     }
     _updateValidatorSet();
