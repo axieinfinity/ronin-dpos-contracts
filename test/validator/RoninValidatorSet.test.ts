@@ -1,60 +1,166 @@
-// import { expect } from 'chai';
-// import { ethers } from 'hardhat';
-// import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { expect } from 'chai';
+import { ethers, network } from 'hardhat';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-// import { MockSorting, MockSorting__factory } from '../../src/types';
+import {
+  DPoStaking,
+  MockSorting,
+  MockSorting__factory,
+  RoninValidatorSet,
+  MockRoninValidatorSet,
+  MockRoninValidatorSet__factory,
+  DPoStaking__factory,
+  TransparentUpgradeableProxy__factory,
+  SlashIndicator,
+  SlashIndicator__factory,
+} from '../../src/types';
+import { BigNumber } from 'ethers';
 
-// let quickSortContract: MockSorting;
+let roninValidatorSet: MockRoninValidatorSet;
+let stakingContract: DPoStaking;
+let slashIndicator: SlashIndicator;
 
-// let deployer: SignerWithAddress;
-// let signers: SignerWithAddress[];
+let coinbase: SignerWithAddress;
+let deployer: SignerWithAddress;
+let governanceAdmin: SignerWithAddress;
+let proxyAdmin: SignerWithAddress;
+let validatorCandidates: SignerWithAddress[];
 
-// const stats: { items: number; gasUsed: string; }[] = [];
+const slashFelonyAmount = 100;
+const slashDoubleSignAmount = 1000;
+const maxValidatorNumber = 4;
+const minValidatorBalance = BigNumber.from(2);
 
-// const runSortWithNRecords = async (numOfRecords: number) => {
-//   const balances = [];
-//   const mapV = new Map<number, boolean>();
-//   for (let i = 0; i < numOfRecords; ++i) {
-//     let value = 0;
-//     do {
-//       value = Math.floor(Math.random() * numOfRecords * 10_000);
-//     } while (!!mapV.get(value));
-//     mapV.set(value, true);
-//     balances.push({
-//       address: signers[i].address,
-//       value,
-//     });
-//   }
+const mineTxs = async (fn: () => Promise<void>) => {
+  await network.provider.send('evm_setAutomine', [false]);
+  await fn();
+  await network.provider.send('evm_mine');
+  await network.provider.send('evm_setAutomine', [true]);
+};
 
-//   balances.sort((a, b) => (a.value < b.value ? 1 : -1));
+describe('Ronin Validator Set test', () => {
+  before(async () => {
+    [coinbase, deployer, proxyAdmin, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
+    validatorCandidates = validatorCandidates.slice(0, 5);
+    await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-//   const gasUsed = await quickSortContract.estimateGas.sortAddressesAndValues(
-//     balances.map((_) => _.address),
-//     balances.map((_) => _.value)
-//   );
+    const nonce = await deployer.getTransactionCount();
+    const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 1 });
+    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 3 });
 
-//   const sorted = await quickSortContract.sortAddressesAndValues(
-//     balances.map((_) => _.address),
-//     balances.map((_) => _.value)
-//   );
+    slashIndicator = await new SlashIndicator__factory(deployer).deploy(roninValidatorSetAddr);
+    await slashIndicator.deployed();
 
-//   expect(sorted).eql(balances.map((_) => _.address));
-//   return gasUsed.toString();
-// };
+    roninValidatorSet = await new MockRoninValidatorSet__factory(deployer).deploy(
+      governanceAdmin.address,
+      slashIndicator.address,
+      stakingContractAddr,
+      maxValidatorNumber,
+      slashFelonyAmount,
+      slashDoubleSignAmount
+    );
+    await roninValidatorSet.deployed();
 
-// describe('Quick sort test', () => {
-//   before(async () => {
-//     [deployer, ...signers] = await ethers.getSigners();
-//     quickSortContract = await new MockSorting__factory(deployer).deploy();
-//   });
+    const logicContract = await new DPoStaking__factory(deployer).deploy();
+    await logicContract.deployed();
 
-//   after(() => {
-//     console.table(stats);
-//   });
+    const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+      logicContract.address,
+      proxyAdmin.address,
+      logicContract.interface.encodeFunctionData('initialize', [
+        roninValidatorSet.address,
+        governanceAdmin.address,
+        100,
+        minValidatorBalance,
+      ])
+    );
+    await proxyContract.deployed();
+    stakingContract = DPoStaking__factory.connect(proxyContract.address, deployer);
 
-//   for (let i = 1; i < 100; i++) {
-//     i % 10 == 9 && it(`Should sort correctly on ${i} records`, async () => {
-//       stats.push({ items: i, gasUsed: await runSortWithNRecords(i) });
-//     });
-//   }
-// });
+    expect(roninValidatorSetAddr.toLowerCase()).eq(roninValidatorSet.address.toLowerCase());
+    expect(stakingContractAddr.toLowerCase()).eq(stakingContract.address.toLowerCase());
+  });
+
+  after(async () => {
+    await network.provider.send('hardhat_setCoinbase', [ethers.constants.AddressZero]);
+  });
+
+  it('Should not be able to wrap up epoch using unauthorized account', async () => {
+    await expect(roninValidatorSet.connect(deployer).wrapUpEpoch()).revertedWith(
+      'RoninValidatorSet: method caller must be coinbase'
+    );
+  });
+
+  it('Should not be able to wrap up epoch when the epoch is not ending', async () => {
+    await expect(roninValidatorSet.connect(coinbase).wrapUpEpoch()).revertedWith(
+      'RoninValidatorSet: only allowed at the end of epoch'
+    );
+  });
+
+  it('Should be able to wrap up epoch when the epoch is ending', async () => {
+    await mineTxs(async () => {
+      await roninValidatorSet.endEpoch();
+      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+    });
+    expect(await roninValidatorSet.getValidators()).have.same.members([]);
+  });
+
+  it('Should be able to wrap up epoch and sync validator set from staking contract', async () => {
+    for (let i = 0; i <= 3; i++) {
+      await stakingContract
+        .connect(validatorCandidates[i])
+        .proposeValidator(validatorCandidates[i].address, validatorCandidates[i].address, 2_00, {
+          value: minValidatorBalance.add(i),
+        });
+    }
+
+    await mineTxs(async () => {
+      await roninValidatorSet.endEpoch();
+      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+    });
+
+    expect(await roninValidatorSet.getValidators()).have.same.members(
+      validatorCandidates
+        .slice(0, 4)
+        .reverse()
+        .map((_) => _.address)
+    );
+  });
+
+  it(`Should be able to wrap up epoch and pick top ${maxValidatorNumber} to be validators`, async () => {
+    await stakingContract
+      .connect(coinbase)
+      .proposeValidator(coinbase.address, coinbase.address, 1_00 /* 1% */, { value: 100 });
+    for (let i = 4; i < validatorCandidates.length; i++) {
+      await stakingContract
+        .connect(validatorCandidates[i])
+        .proposeValidator(validatorCandidates[i].address, validatorCandidates[i].address, 2_00, {
+          value: minValidatorBalance.add(i),
+        });
+    }
+    expect((await stakingContract.getValidatorCandidates()).length).eq(validatorCandidates.length + 1);
+
+    await mineTxs(async () => {
+      await roninValidatorSet.endEpoch();
+      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+    });
+
+    expect(await roninValidatorSet.getValidators()).have.same.members([
+      coinbase.address,
+      ...validatorCandidates
+        .slice(2)
+        .reverse()
+        .map((_) => _.address),
+    ]);
+  });
+
+  it('Should not be able to submit block reward using unauthorized account', async () => {
+    await expect(roninValidatorSet.submitBlockReward()).revertedWith(
+      'RoninValidatorSet: method caller must be coinbase'
+    );
+  });
+
+  it('Should be able to submit block reward using coinbase account', async () => {
+    await roninValidatorSet.connect(coinbase).submitBlockReward();
+  });
+});
