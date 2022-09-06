@@ -125,21 +125,10 @@ interface IStaking {
    * Requirements:
    * - The method caller is validator contract.
    *
-   * Emits the `SettledPoolUpdated` event.
+   * Emits the `SettledPoolsUpdated` event.
    *
    */
-  function settleRewardPool(address _consensusAddr) external;
-
-  /**
-   * @dev Settles the pending pool and allocates rewards for the pool `_consensusAddr`.
-   *
-   * Requirements:
-   * - The method caller is validator contract.
-   *
-   * Emits the `SettledPoolUpdated` event.
-   *
-   */
-  function settleMultipleRewardPools(address[] calldata _consensusAddrs) external;
+  function settleRewardPools(address[] calldata _consensusAddrs) external;
 
   /**
    * @dev Handles when the pending reward pool of the validator is sinked.

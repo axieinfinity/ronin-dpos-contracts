@@ -493,9 +493,7 @@ contract Staking is IStaking, Initializable {
 
   function recordReward(address _consensusAddr, uint256 _reward) external payable override {}
 
-  function settleRewardPool(address _consensusAddr) external override {}
-
-  function settleMultipleRewardPools(address[] calldata _consensusAddrs) external override {}
+  function settleRewardPools(address[] calldata _consensusAddrs) external override {}
 
   function sinkPendingReward(address _consensusAddr) external override {}
 

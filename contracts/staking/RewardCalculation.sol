@@ -11,7 +11,7 @@ pragma solidity ^0.8.9;
  */
 abstract contract RewardCalculation {
   /// @dev Emitted when the settled pool is updated.
-  event SettledPoolUpdated(address poolAddress, uint256 accumulatedRps);
+  event SettledPoolsUpdated(address[] poolAddress, uint256[] accumulatedRps);
   /// @dev Emitted when the pending pool is updated.
   event PendingPoolUpdated(address poolAddress, uint256 accumulatedRps);
   /// @dev Emitted when the fields to calculate settled reward for the user is updated.
@@ -224,17 +224,24 @@ abstract contract RewardCalculation {
   /**
    * @dev Handles when the pool `_poolAddr` is settled.
    *
-   * Emits the `SettledPoolUpdated` event.
+   * Emits the `SettledPoolsUpdated` event.
    *
    * @notice This method should be called once in the end of each period.
    *
    */
-  function _onPoolSettled(address _poolAddr) internal {
-    uint256 _accumulatedRps = _pendingPool[_poolAddr].accumulatedRps;
-    SettledPool storage _sPool = _settledPool[_poolAddr];
-    _sPool.accumulatedRps = _accumulatedRps;
-    _sPool.lastSyncBlock = block.number;
-    emit SettledPoolUpdated(_poolAddr, _accumulatedRps);
+  function _onPoolsSettled(address[] calldata _poolList) internal {
+    uint256[] memory _accumulatedRpsList = new uint256[](_poolList.length);
+    address _poolAddr;
+    uint256 _accumulatedRps;
+    for (uint256 _i; _i < _poolList.length; _i++) {
+      _poolAddr = _poolList[_i];
+      _accumulatedRps = _accumulatedRpsList[_i] = _pendingPool[_poolAddr].accumulatedRps;
+
+      SettledPool storage _sPool = _settledPool[_poolAddr];
+      _sPool.accumulatedRps = _accumulatedRps;
+      _sPool.lastSyncBlock = block.number;
+    }
+    emit SettledPoolsUpdated(_poolList, _accumulatedRpsList);
   }
 
   /**

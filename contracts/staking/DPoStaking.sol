@@ -133,17 +133,11 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function settleRewardPool(address _consensusAddr) external onlyValidatorContract {
-    _onPoolSettled(_consensusAddr);
-  }
-
-  /**
-   * @inheritdoc IStaking
-   */
-  function settleMultipleRewardPools(address[] calldata _consensusAddrs) external onlyValidatorContract {
-    for (uint _i = 0; _i < _consensusAddrs.length; _i++) {
-      _onPoolSettled(_consensusAddrs[_i]);
+  function settleRewardPools(address[] calldata _consensusAddrs) external onlyValidatorContract {
+    if (_consensusAddrs.length == 0) {
+      return;
     }
+    _onPoolsSettled(_consensusAddrs);
   }
 
   /**

@@ -29,7 +29,7 @@ contract MockValidatorSetForStaking is IValidatorSet {
   }
 
   function settledReward(address[] calldata _validatorList) external {
-    stakingContract.settleMultipleRewardPools(_validatorList);
+    stakingContract.settleRewardPools(_validatorList);
   }
 
   function slashMisdemeanor(address _validator) external override {
