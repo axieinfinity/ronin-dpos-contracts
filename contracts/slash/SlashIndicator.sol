@@ -4,148 +4,111 @@ pragma solidity ^0.8.9;
 
 import "../interfaces/ISlashIndicator.sol";
 import "../interfaces/IStaking.sol";
-import "../interfaces/IValidatorSet.sol";
+import "../interfaces/IRoninValidatorSet.sol";
 
+/**
+ * TODO: Apply proxy pattern to this contract.
+ */
 contract SlashIndicator is ISlashIndicator {
-  /// Init configuration
-  uint256 public constant MISDEMEANOR_THRESHOLD = 50;
-  uint256 public constant FELONY_THRESHOLD = 150;
+  /// @dev Mapping from validator address => unavailability indicator
+  mapping(address => Indicator) internal _unavailabilityIndicator;
+  /// @dev The last block that a validator is slashed
+  uint256 public lastSlashedBlock;
 
-  /// State of the contract
-  bool public initialized;
-  address[] public validators;
-  mapping(address => Indicator) public indicators;
-  uint256 public previousHeight;
-
-  /// Threshold of slashing
-  uint256 public misdemeanorThreshold;
-  uint256 public felonyThreshold;
-
-  /// Other contract address
-  IValidatorSet public validatorSetContract;
-  IStaking public stakingContract;
-
-  event SlashedValidator(address indexed validator, SlashType slashType);
-  event ResetIndicator(address indexed validator);
-  event ResetIndicators();
+  /// @dev The threshold to slash when validator is unavailability reaches misdemeanor
+  uint256 public misdemeanorThreshold; // TODO: add setter by gov admin
+  /// @dev The threshold to slash when validator is unavailability reaches felony
+  uint256 public felonyThreshold; // TODO: add setter by gov admin
+  /// @dev The validator contract
+  IRoninValidatorSet public validatorContract;
 
   modifier onlyCoinbase() {
-    require(msg.sender == block.coinbase, "Slash: Only coinbase");
+    require(msg.sender == block.coinbase, "SlashIndicator: method caller is not the coinbase");
     _;
   }
 
   modifier onlyValidatorContract() {
-    require(msg.sender == address(validatorSetContract), "Slash: Only validator set contract");
+    require(msg.sender == address(validatorContract), "SlashIndicator: method caller is not the validator contract");
     _;
   }
 
   modifier oncePerBlock() {
-    require(block.number > previousHeight, "Slash: Cannot slash twice in one block");
+    require(block.number > lastSlashedBlock, "SlashIndicator: cannot slash twice in one block");
     _;
-    previousHeight = block.number;
+    lastSlashedBlock = block.number;
   }
 
-  modifier onlyInitialized() {
-    require(initialized, "Slash: Contract is not initialized");
-    _;
-  }
-
-  constructor() {
-    misdemeanorThreshold = MISDEMEANOR_THRESHOLD;
-    felonyThreshold = FELONY_THRESHOLD;
-  }
-
-  function initialize(IValidatorSet _validatorSetContract, IStaking _stakingContract) external {
-    require(!initialized, "Slash: Contract is already initialized");
-
-    initialized = true;
-    validatorSetContract = _validatorSetContract;
-    stakingContract = _stakingContract;
+  constructor(IRoninValidatorSet _validatorSetContract) {
+    misdemeanorThreshold = 50;
+    felonyThreshold = 150;
+    validatorContract = _validatorSetContract;
   }
 
   /**
-   * @notice Slash for inavailability
-   *
-   * @dev Increase the counter of validator with valAddr. If the counter passes the threshold, call
-   * the function from Validators.sol
-   *
-   * Requirements:
-   * - Only coinbase can call this method
-   *
+   * @inheritdoc ISlashIndicator
    */
-  function slash(address _validatorAddr) external override onlyInitialized onlyCoinbase oncePerBlock {
-    // Check if the to be slashed validator is in the current epoch
-    require(
-      validatorSetContract.isCurrentValidator(_validatorAddr),
-      "Slash: Cannot slash validator not in current epoch"
-    );
-
-    Indicator storage indicator = indicators[_validatorAddr];
-
+  function slash(address _validatorAddr) external override onlyCoinbase oncePerBlock {
+    Indicator storage indicator = _unavailabilityIndicator[_validatorAddr];
     indicator.counter++;
     indicator.lastSyncedBlock = block.number;
 
-    // Slash the validator as either the fenoly or the misdemeanor
+    // Slashs the validator as either the fenoly or the misdemeanor
     if (indicator.counter == felonyThreshold) {
-      indicator.counter = 0;
-      validatorSetContract.slashFelony(_validatorAddr);
-      emit SlashedValidator(_validatorAddr, SlashType.FELONY);
+      validatorContract.slashFelony(_validatorAddr);
+      emit ValidatorSlashed(_validatorAddr, SlashType.FELONY);
     } else if (indicator.counter == misdemeanorThreshold) {
-      validatorSetContract.slashMisdemeanor(_validatorAddr);
-      emit SlashedValidator(_validatorAddr, SlashType.MISDEMAENOR);
+      validatorContract.slashMisdemeanor(_validatorAddr);
+      emit ValidatorSlashed(_validatorAddr, SlashType.MISDEMAENOR);
     }
   }
 
   /**
-   * @dev Reset the counter of the validator everyday
-   *
-   * Requirements:
-   * - Only validator contract can call this method
+   * @inheritdoc ISlashIndicator
    */
-  function resetCounters(address[] calldata _validatorAddrs) external override onlyInitialized onlyValidatorContract {
+  function resetCounters(address[] calldata _validatorAddrs) external override onlyValidatorContract {
     if (_validatorAddrs.length == 0) {
       return;
     }
 
-    for (uint i = 0; i < _validatorAddrs.length; i++) {
-      _resetCounter(_validatorAddrs[i]);
+    for (uint256 _i; _i < _validatorAddrs.length; _i++) {
+      _resetCounter(_validatorAddrs[_i]);
     }
-
-    emit ResetIndicators();
-  }
-
-  function resetCounter(address _validatorAddr) external override onlyInitialized onlyValidatorContract {
-    _resetCounter(_validatorAddr);
-    emit ResetIndicator(_validatorAddr);
   }
 
   /**
-   * @notice Slash for double signing
-   *
-   * @dev Verify the evidence, call the function from Validators.sol
-   *
-   * Requirements:
-   * - Only coinbase can call this method
-   *
+   * @inheritdoc ISlashIndicator
    */
-  function slashDoubleSign(address valAddr, bytes calldata evidence) external override onlyInitialized onlyCoinbase {
+  function resetCounter(address _validatorAddr) external override onlyValidatorContract {
+    _resetCounter(_validatorAddr);
+    emit UnavailabilityIndicatorReset(_validatorAddr);
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function slashDoubleSign(address _valAddr, bytes calldata _evidence) external override onlyCoinbase {
     revert("Not implemented");
   }
 
   /**
-   * @notice Get slash indicator of a validator
+   * @inheritdoc ISlashIndicator
    */
-  function getSlashIndicator(address validator) external view override returns (Indicator memory) {
-    Indicator memory _indicator = indicators[validator];
-    return _indicator;
+  function getSlashIndicator(address validator) external view override returns (Indicator memory _indicator) {
+    _indicator = _unavailabilityIndicator[validator];
   }
 
+  /**
+   * @inheritdoc ISlashIndicator
+   */
   function getSlashThresholds() external view override returns (uint256, uint256) {
     return (misdemeanorThreshold, felonyThreshold);
   }
 
+  /**
+   * @dev Resets counter for the validator address.
+   */
   function _resetCounter(address _validatorAddr) private {
-    Indicator storage _indicator = indicators[_validatorAddr];
+    Indicator storage _indicator = _unavailabilityIndicator[_validatorAddr];
     _indicator.counter = 0;
     _indicator.lastSyncedBlock = block.number;
   }

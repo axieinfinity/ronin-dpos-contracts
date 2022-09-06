@@ -2,7 +2,13 @@
 
 pragma solidity ^0.8.9;
 
+import "../interfaces/IRoninValidatorSet.sol";
+
 interface ISlashIndicator {
+  // TODO: fill comment for event. IE: Emitted when...
+  event ValidatorSlashed(address indexed validator, SlashType slashType);
+  event UnavailabilityIndicatorReset(address indexed validator);
+
   enum SlashType {
     UNKNOWN,
     MISDEMAENOR,
@@ -18,55 +24,60 @@ interface ISlashIndicator {
   }
 
   /**
-   * @notice Slash for inavailability
-   *
-   * @dev Increase the counter of validator with valAddr. If the counter passes the threshold, call
-   * the function from Validators.sol
+   * @dev Returns the validator contract.
+   */
+  function validatorContract() external view returns (IRoninValidatorSet);
+
+  /**
+   * @dev Slashs for inavailability by increasing the counter of validator with `_valAddr`.
+   * If the counter passes the threshold, call the function from the validator contract.
    *
    * Requirements:
    * - Only coinbase can call this method
    *
+   * Emits the event `ValidatorSlashed`.
+   *
    */
-  function slash(address valAddr) external;
+  function slash(address _valAddr) external;
 
   /**
-   * @dev Reset the counter of the validator at the end of every period
+   * @dev Resets the counter of the validator at the end of every period
    *
    * Requirements:
    * - Only validator contract can call this method
+   *
+   * Emits the event `UnavailabilityIndicatorReset`.
+   *
    */
   function resetCounter(address) external;
 
   /**
-   * @dev Reset the counter of all validators at the end of every period
+   * @dev Resets the counter of all validators at the end of every period
    *
    * Requirements:
    * - Only validator contract can call this method
+   *
+   * Emits the `UnavailabilityIndicatorReset` events.
+   *
    */
   function resetCounters(address[] calldata) external;
 
   /**
-   * @notice Slash for double signing
-   *
-   * @dev Verify the evidence, call the function from Validators.sol
+   * @dev Slashs for double signing.
    *
    * Requirements:
    * - Only coinbase can call this method
    *
    */
-  function slashDoubleSign(address valAddr, bytes calldata evidence) external;
-
-  ///
-  /// QUERY FUNCTIONS
-  ///
+  function slashDoubleSign(address _valAddr, bytes calldata _evidence) external;
 
   /**
-   * @notice Get slash indicator of a validator
+   * @dev Gets slash indicator of a validator.
    */
-  function getSlashIndicator(address validator) external view returns (Indicator memory);
+  function getSlashIndicator(address _validator) external view returns (Indicator memory);
 
   /**
-   * @notice Get slash threshold
+   * @dev Gets slash threshold.
    */
   function getSlashThresholds() external view returns (uint256 misdemeanorThreshold, uint256 felonyThreshold);
 }
