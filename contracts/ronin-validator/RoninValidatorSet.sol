@@ -94,33 +94,38 @@ contract RoninValidatorSet is IRoninValidatorSet {
    * @inheritdoc IRoninValidatorSet
    */
   function wrapUpEpoch() external payable override onlyCoinbase whenEndEpoch {
-    if (periodEnded(block.number)) {
-      IStaking _staking = IStaking(_stakingContract);
-      ISlashIndicator _slashIndicator = ISlashIndicator(_slashIndicatorContract);
+    IStaking _staking = IStaking(_stakingContract);
+    ISlashIndicator _slashIndicator = ISlashIndicator(_slashIndicatorContract);
 
-      address _validatorAddr;
-      uint256 _miningAmount;
-      uint256 _delegatingAmount;
-      for (uint _i = 0; _i < validatorCount; _i++) {
-        _validatorAddr = _validator[_i];
-        _slashIndicator.resetCounter(_validatorAddr);
-        _miningAmount = _miningReward[_validatorAddr];
-        _delegatingAmount = _delegatingReward[_validatorAddr];
-        if (!_jailed(_validatorAddr) && !_noPendingReward[periodOf(block.number)][_validatorAddr]) {
-          // TODO(Thor): use `call` to transfer reward with reentrancy gruard
-          require(
-            payable(_staking.treasuryAddressOf(_validatorAddr)).send(_miningAmount),
-            "RoninValidatorSet: could not transfer RON"
-          );
-          require(payable(address(_staking)).send(_delegatingAmount), "RoninValidatorSet: could not transfer RON");
+    address _validatorAddr;
+    for (uint _i = 0; _i < validatorCount; _i++) {
+      _validatorAddr = _validator[_i];
+      _slashIndicator.resetCounter(_validatorAddr);
 
-          _staking.settleRewardPoolForDelegators(_validatorAddr);
+      if (!_jailed(_validatorAddr) && !_noPendingReward[periodOf(block.number)][_validatorAddr]) {
+        if (periodEnded(block.number)) {
+          uint256 _miningAmount = _miningReward[_validatorAddr];
+          _miningReward[_validatorAddr] = 0;
+          if (_miningAmount > 0) {
+            // TODO(Thor): use `call` to transfer reward with reentrancy gruard
+            require(
+              payable(_staking.treasuryAddressOf(_validatorAddr)).send(_miningAmount),
+              "RoninValidatorSet: could not transfer RON"
+            );
+          }
         }
-        _miningReward[_validatorAddr] = 0;
+
+        uint256 _delegatingAmount = _delegatingReward[_validatorAddr];
         _delegatingReward[_validatorAddr] = 0;
-        // TODO: emit event
+        if (_delegatingAmount > 0) {
+          // TODO(Thor): use `call` to transfer reward with reentrancy gruard
+          require(payable(address(_staking)).send(_delegatingAmount), "RoninValidatorSet: could not transfer RON");
+        }
+        _staking.settleRewardPoolForDelegators(_validatorAddr);
       }
+      // TODO: emit event
     }
+
     _updateValidatorSet();
   }
 
