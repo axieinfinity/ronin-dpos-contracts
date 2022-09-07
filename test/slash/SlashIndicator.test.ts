@@ -7,12 +7,14 @@ import {
   SlashIndicator__factory,
   MockEmptyValidatorSet,
   MockEmptyValidatorSet__factory,
+  TransparentUpgradeableProxy__factory,
 } from '../../src/types';
 import { Address } from 'hardhat-deploy/dist/types';
 
 let slashContract: SlashIndicator;
 
 let deployer: SignerWithAddress;
+let proxyAdmin: SignerWithAddress;
 let dummyValidatorsContract: MockEmptyValidatorSet;
 let vagabond: SignerWithAddress;
 let coinbases: SignerWithAddress[];
@@ -56,12 +58,18 @@ describe('Slash indicator test', () => {
   let misdemeanorThreshold: number;
 
   before(async () => {
-    [deployer, vagabond, ...coinbases] = await ethers.getSigners();
+    [deployer, proxyAdmin, vagabond, ...coinbases] = await ethers.getSigners();
 
     localIndicators = Array<number>(coinbases.length).fill(0);
 
     dummyValidatorsContract = await new MockEmptyValidatorSet__factory(deployer).deploy();
-    slashContract = await new SlashIndicator__factory(deployer).deploy(dummyValidatorsContract.address);
+    const logicContract = await new SlashIndicator__factory(deployer).deploy();
+    const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+      logicContract.address,
+      proxyAdmin.address,
+      logicContract.interface.encodeFunctionData('initialize', [50, 150, dummyValidatorsContract.address])
+    );
+    slashContract = SlashIndicator__factory.connect(proxyContract.address, deployer);
     await dummyValidatorsContract.connect(deployer).setSlashingContract(slashContract.address);
 
     let thresholds = await slashContract.getSlashThresholds();
@@ -69,7 +77,6 @@ describe('Slash indicator test', () => {
     misdemeanorThreshold = thresholds[1].toNumber();
 
     defaultCoinbase = await network.provider.send('eth_coinbase');
-    console.log('Default coinbase:', defaultCoinbase);
   });
 
   describe('Single flow test', async () => {

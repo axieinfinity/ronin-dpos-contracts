@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { stakingConfig } from '../script/dpostaking';
-import { DPoStaking__factory } from '../types';
+import { stakingConfig, initAddress } from '../../config';
+import { DPoStaking__factory } from '../../types';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
@@ -11,8 +11,8 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const logicContract = await deployments.get('DPoStakingLogic');
 
   const data = new DPoStaking__factory().interface.encodeFunctionData('initialize', [
-    stakingConfig[network.name]!.validatorContract,
-    stakingConfig[network.name]!.governanceAdminContract,
+    initAddress[network.name]!.validatorContract,
+    initAddress[network.name]!.governanceAdmin,
     stakingConfig[network.name]!.maxValidatorCandidate,
     stakingConfig[network.name]!.minValidatorBalance,
   ]);
@@ -26,6 +26,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['DPoStakingProxy'];
-deploy.dependencies = ['ProxyAdmin', 'DPoStakingLogic'];
+deploy.dependencies = ['ProxyAdmin', 'DPoStakingLogic', 'SlashIndicatorProxy'];
 
 export default deploy;

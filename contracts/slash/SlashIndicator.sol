@@ -2,14 +2,12 @@
 
 pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/ISlashIndicator.sol";
 import "../interfaces/IStaking.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 
-/**
- * TODO: Apply proxy pattern to this contract.
- */
-contract SlashIndicator is ISlashIndicator {
+contract SlashIndicator is ISlashIndicator, Initializable {
   /// @dev Mapping from validator address => unavailability indicator
   mapping(address => uint256) internal _unavailabilityIndicator;
   /// @dev The last block that a validator is slashed
@@ -41,9 +39,20 @@ contract SlashIndicator is ISlashIndicator {
     lastSlashedBlock = block.number;
   }
 
-  constructor(IRoninValidatorSet _validatorSetContract) {
-    misdemeanorThreshold = 50;
-    felonyThreshold = 150;
+  constructor() {
+    _disableInitializers();
+  }
+
+  /**
+   * @dev Initializes the contract storage.
+   */
+  function initialize(
+    uint256 _misdemeanorThreshold,
+    uint256 _felonyThreshold,
+    IRoninValidatorSet _validatorSetContract
+  ) external initializer {
+    misdemeanorThreshold = _misdemeanorThreshold;
+    felonyThreshold = _felonyThreshold;
     validatorContract = _validatorSetContract;
   }
 

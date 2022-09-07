@@ -39,4 +39,8 @@ contract MockSlashIndicator is ISlashIndicator {
     override
     returns (uint256 misdemeanorThreshold, uint256 felonyThreshold)
   {}
+
+  function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) external override {}
+
+  function governanceAdminContract() external view override returns (address) {}
 }

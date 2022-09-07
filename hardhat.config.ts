@@ -11,7 +11,11 @@ dotenv.config();
 
 const DEFAULT_MNEMONIC = 'title spike pink garlic hamster sorry few damage silver mushroom clever window';
 
-const { REPORT_GAS, TESTNET_PK, TESTNET_URL, MAINNET_PK, MAINNET_URL } = process.env;
+const { REPORT_GAS, DEVNET_PK, DEVNET_URL, TESTNET_PK, TESTNET_URL, MAINNET_PK, MAINNET_URL } = process.env;
+
+if (!DEVNET_PK) {
+  console.warn('DEVNET_PK is unset. Using DEFAULT_MNEMONIC');
+}
 
 if (!TESTNET_PK) {
   console.warn('TESTNET_PK is unset. Using DEFAULT_MNEMONIC');
@@ -20,6 +24,11 @@ if (!TESTNET_PK) {
 if (!MAINNET_PK) {
   console.warn('MAINNET_PK is unset. Using DEFAULT_MNEMONIC');
 }
+
+const devnet: NetworkUserConfig = {
+  url: DEVNET_URL || 'http://localhost:8545',
+  accounts: DEVNET_PK ? [DEVNET_PK] : { mnemonic: DEFAULT_MNEMONIC },
+};
 
 const testnet: NetworkUserConfig = {
   chainId: 2021,
@@ -67,6 +76,7 @@ const config: HardhatUserConfig = {
         accountsBalance: '1000000000000000000000000000', // 1B RON
       },
     },
+    'ronin-devnet': devnet,
     'ronin-testnet': testnet,
     'ronin-mainnet': mainnet,
   },
