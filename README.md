@@ -4,6 +4,19 @@ The next version of smart contracts that power Ronin DPoS network.
 
 _NOTE: This smart contract version does not includes method to prevent the 51% attack. It is not finalized at the implementation time._
 
+- [Overview](#ronin-dpos-contracts)
+  - [Staking contract](#staking-contract)
+    - [Validator Candidate](#validator-candidate)
+    - [Delegator](#delegator)
+    - [Reward Calculation](#reward-calculation)
+  - [Validator Contract](#validator-contract)
+  - [Slashing](#slashing)
+  - [Contract Interaction flow](#contract-interaction-flow)
+- [Development](#development)
+  - [Requirement](#requirement)
+  - [Compile & test](#compile---test)
+- [Deployment](#deployment)
+
 ## Staking contract
 
 An user can propose themselves to be a validator candidate by staking their RON. Other users are allowed to register as delegators by staking any amount of RON to the staking contract, he/she can choose a validator to stake their coins.
@@ -84,3 +97,33 @@ The validators will be slashed when they do not provide the good service for Ron
 ## Contract Interaction flow
 
 Read the contract interaction flow at [DPoS Contract: Interaction Flow](https://www.notion.so/skymavis/DPoS-Contract-Interaction-Flow-3a535cf9048f46f69dd9a45958ad9b85).
+
+## Development
+
+### Requirement
+
+- Node@>=14 + Solc@^0.8.0 + Docker
+
+### Compile & test
+
+```shell
+$ yarn install
+$ yarn compile
+$ yarn test
+```
+
+## Deployment
+
+- Init the environment variables:
+
+```shell
+$ cp .env.example .env && vim .env
+```
+
+- Update the contract configuration in [`config.ts`](./src/config.ts#L54-L93) file
+
+- Deploy the contracts:
+
+```shell
+$ yarn hardhat deploy --network <ronin-devnet|ronin-mainnet|ronin-testnet>
+```
