@@ -287,7 +287,7 @@ interface IStaking {
   function claimRewards(address[] calldata _consensusAddrList) external returns (uint256 _amount);
 
   /**
-   * @dev Claims all pending rewards and delegates them to the consensus address.
+   * @dev Claims the rewards and delegates them to the consensus address.
    *
    * Requirements:
    * - The method caller is not the candidate admin.

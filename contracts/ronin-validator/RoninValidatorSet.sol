@@ -27,9 +27,9 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   /// @dev The maximum number of validator.
   uint256 internal _maxValidatorNumber;
 
-  /// @dev Returns the number of epochs in a period
-  uint256 internal _numberOfBlocksInEpoch;
   /// @dev The number of blocks in a epoch
+  uint256 internal _numberOfBlocksInEpoch;
+  /// @dev Returns the number of epochs in a period
   uint256 internal _numberOfEpochsInPeriod;
   /// @dev The last updated block
   uint256 internal _lastUpdatedBlock;

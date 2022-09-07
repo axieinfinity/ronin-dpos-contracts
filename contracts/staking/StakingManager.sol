@@ -311,7 +311,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   }
 
   /**
-   * @dev Claims all pending rewards and delegates them to the consensus address.
+   * @dev Claims the rewards and delegates them to the consensus address.
    */
   function _delegateRewards(
     address _user,

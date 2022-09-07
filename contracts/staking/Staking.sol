@@ -289,7 +289,7 @@ contract Staking is IStaking, Initializable {
   }
 
   /**
-   * @dev Claims all pending rewards and delegates them to the consensus address.
+   * @dev Claims the rewards and delegates them to the consensus address.
    */
   function delegateRewards(address[] calldata _consensusAddrList, address _consensusAddrDst)
     external
