@@ -70,6 +70,7 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
+      hardfork: 'istanbul',
       accounts: {
         mnemonic: DEFAULT_MNEMONIC,
         count: 100,

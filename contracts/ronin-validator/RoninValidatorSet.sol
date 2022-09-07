@@ -145,11 +145,10 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
         uint256 _miningAmount = _miningReward[_validatorAddr];
         _miningReward[_validatorAddr] = 0;
         if (_miningAmount > 0) {
-          // TODO(Thor): use `call` to transfer reward with reentrancy gruard
-          require(
-            payable(_staking.treasuryAddressOf(_validatorAddr)).send(_miningAmount),
-            "RoninValidatorSet: could not transfer RON"
-          );
+          // TODO(Thor): consider using reentrancy gruard
+          address _treasury = _staking.treasuryAddressOf(_validatorAddr);
+          (bool _success, ) = _treasury.call{ value: _miningAmount }("");
+          require(_success, "RoninValidatorSet: could not transfer RON validator addr");
         }
       }
 
@@ -164,8 +163,9 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
 
     _staking.settleRewardPools(_validators);
     if (_delegatingAmount > 0) {
-      // TODO(Thor): use `call` to transfer reward with reentrancy gruard
-      require(payable(address(_staking)).send(_delegatingAmount), "RoninValidatorSet: could not transfer RON");
+      // TODO(Thor): consider using reentrancy gruard
+      (bool _success, ) = address(_staking).call{ value: _delegatingAmount }("");
+      require(_success, "RoninValidatorSet: could not transfer RON to staking contract");
     }
 
     _updateValidatorSet();
