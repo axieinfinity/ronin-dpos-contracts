@@ -173,7 +173,7 @@ abstract contract RewardCalculation {
    * @notice This method should be called before transferring rewards for the user.
    *
    */
-  function _claimReward(address _poolAddr, address _user) public returns (uint256 _amount) {
+  function _claimReward(address _poolAddr, address _user) internal returns (uint256 _amount) {
     _amount = getClaimableReward(_poolAddr, _user);
     emit RewardClaimed(_poolAddr, _user, _amount);
     SettledPool memory _sPool = _settledPool[_poolAddr];

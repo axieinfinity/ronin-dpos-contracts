@@ -87,6 +87,16 @@ interface IRoninValidatorSet {
    */
   function noPendingReward(address[] memory, uint256 _period) external view returns (bool[] memory);
 
+  /**
+   * @dev The amount of RON to slash felony.
+   */
+  function slashFelonyAmount() external view returns (uint256);
+
+  /**
+   * @dev The amount of RON to slash felony.
+   */
+  function slashDoubleSignAmount() external view returns (uint256);
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                             FUNCTIONS FOR NORMAL USER                             //
   ///////////////////////////////////////////////////////////////////////////////////////

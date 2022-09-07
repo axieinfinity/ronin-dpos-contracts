@@ -6,6 +6,7 @@ import "../interfaces/IRoninValidatorSet.sol";
 
 interface ISlashIndicator {
   // TODO: fill comment for event. IE: Emitted when...
+  // TODO: add event for thresholds
   event ValidatorSlashed(address indexed validator, SlashType slashType);
   event UnavailabilityIndicatorsReset(address[] validators);
 
@@ -58,6 +59,7 @@ interface ISlashIndicator {
    *
    * Requirements:
    * - Only governance admin contract can call this method
+   *
    */
   function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) external;
 
