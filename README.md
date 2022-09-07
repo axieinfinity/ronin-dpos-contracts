@@ -32,7 +32,7 @@ The ones on top `N` users with the highest amount of staked coins will become va
 | `uint256 commissionRate` | The rate to share for the validator. Values in range [0; 100_00] stands for [0; 100%]        |
 | `address consensusAddr`  | Address to produce block                                                                     |
 | `address treasuryAddr`   | Address to receive block reward                                                              |
-| `msg.value`              | The amount of RON to stake, require to larger than the minimum RON threshold to be validator |
+| `msg.value`              | The amount of RON to stake, require to be larger than the minimum RON threshold to be validator |
 
 The validator candidates can deposit or withdraw their funds afterwards as long as the staking balance must be greater than the minimum RON threshold.
 
@@ -80,18 +80,18 @@ The validators will be slashed when they do not provide the good service for Ron
 
 **Unavailability**
 
-- If a validator missed >= `misdemeanorThreshold` blocks in a day: Cannot claim the reward on that day
+- If a validator missed >= `misdemeanorThreshold` blocks in a day: Cannot claim the reward on that day.
 
 - If a validator missed >= `felonyThreshold` blocks in a day:
   - Cannot claim the reward on that day.
   - Be slashed `slashFelonyAmount` amount of self-delegated RON.
-  - Be put in jail for `felonyThreshold` days.
+  - Be put in jail for `57600` blocks.
 
 **Double Sign**
 
 - If a validator submit more than 1 block at the same `block.number`:
   - Cannot claim the reward.
-  - Be put in jail for `type(uint256).max` days.
+  - Be put in jail for `type(uint256).max` blocks.
   - Be slashed `slashDoubleSignAmount` amount of self-delegated RON.
 
 ## Contract Interaction flow
