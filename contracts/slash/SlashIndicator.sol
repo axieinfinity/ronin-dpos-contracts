@@ -14,13 +14,13 @@ contract SlashIndicator is ISlashIndicator {
   mapping(address => uint256) internal _unavailabilityIndicator;
   /// @dev The last block that a validator is slashed
   uint256 public lastSlashedBlock;
-
   /// @dev The threshold to slash when validator is unavailability reaches misdemeanor
-  uint256 public misdemeanorThreshold; // TODO: add setter by gov admin
+  uint256 public misdemeanorThreshold;
   /// @dev The threshold to slash when validator is unavailability reaches felony
-  uint256 public felonyThreshold; // TODO: add setter by gov admin
+  uint256 public felonyThreshold;
   /// @dev The validator contract
   IRoninValidatorSet public validatorContract;
+  address internal _governanceAdminContract;
 
   modifier onlyCoinbase() {
     require(msg.sender == block.coinbase, "SlashIndicator: method caller is not the coinbase");
@@ -33,7 +33,10 @@ contract SlashIndicator is ISlashIndicator {
   }
 
   modifier oncePerBlock() {
-    require(block.number > lastSlashedBlock, "SlashIndicator: cannot slash twice in one block");
+    require(
+      block.number > lastSlashedBlock,
+      "SlashIndicator: cannot slash a validator twice or slash more than one validator in one block"
+    );
     _;
     lastSlashedBlock = block.number;
   }
@@ -43,6 +46,10 @@ contract SlashIndicator is ISlashIndicator {
     felonyThreshold = 150;
     validatorContract = _validatorSetContract;
   }
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                                SLASHING FUNCTIONS                                 //
+  ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * @inheritdoc ISlashIndicator
@@ -60,8 +67,15 @@ contract SlashIndicator is ISlashIndicator {
       emit ValidatorSlashed(_validatorAddr, SlashType.FELONY);
     } else if (_count == misdemeanorThreshold) {
       validatorContract.slashMisdemeanor(_validatorAddr);
-      emit ValidatorSlashed(_validatorAddr, SlashType.MISDEMAENOR);
+      emit ValidatorSlashed(_validatorAddr, SlashType.MISDEMEANOR);
     }
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function slashDoubleSign(address _valAddr, bytes calldata _evidence) external override onlyCoinbase {
+    revert("Not implemented");
   }
 
   /**
@@ -72,11 +86,34 @@ contract SlashIndicator is ISlashIndicator {
   }
 
   /**
+   * @dev Resets counter for the validator address.
+   */
+  function _resetCounters(address[] calldata _validatorAddrs) private {
+    if (_validatorAddrs.length == 0) {
+      return;
+    }
+
+    for (uint _i = 0; _i < _validatorAddrs.length; _i++) {
+      delete _unavailabilityIndicator[_validatorAddrs[_i]];
+    }
+    emit UnavailabilityIndicatorsReset(_validatorAddrs);
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                               GOVERNANCE FUNCTIONS                                //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
    * @inheritdoc ISlashIndicator
    */
-  function slashDoubleSign(address _valAddr, bytes calldata _evidence) external override onlyCoinbase {
-    revert("Not implemented");
+  function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) external override {
+    felonyThreshold = _felonyThreshold;
+    misdemeanorThreshold = _misdemeanorThreshold;
   }
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                                  QUERY FUNCTIONS                                  //
+  ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * @inheritdoc ISlashIndicator
@@ -93,16 +130,9 @@ contract SlashIndicator is ISlashIndicator {
   }
 
   /**
-   * @dev Resets counter for the validator address.
+   * @inheritdoc ISlashIndicator
    */
-  function _resetCounters(address[] calldata _validatorAddrs) private {
-    if (_validatorAddrs.length == 0) {
-      return;
-    }
-
-    for (uint _i = 0; _i < _validatorAddrs.length; _i++) {
-      delete _unavailabilityIndicator[_validatorAddrs[_i]];
-    }
-    emit UnavailabilityIndicatorsReset(_validatorAddrs);
+  function governanceAdminContract() external view override returns (address) {
+    return _governanceAdminContract;
   }
 }

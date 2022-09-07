@@ -11,7 +11,7 @@ interface ISlashIndicator {
 
   enum SlashType {
     UNKNOWN,
-    MISDEMAENOR,
+    MISDEMEANOR,
     FELONY,
     DOUBLE_SIGNING
   }
@@ -22,7 +22,7 @@ interface ISlashIndicator {
   function validatorContract() external view returns (IRoninValidatorSet);
 
   /**
-   * @dev Slashs for inavailability by increasing the counter of validator with `_valAddr`.
+   * @dev Slashes for unavailability by increasing the counter of validator with `_valAddr`.
    * If the counter passes the threshold, call the function from the validator contract.
    *
    * Requirements:
@@ -45,7 +45,7 @@ interface ISlashIndicator {
   function resetCounters(address[] calldata) external;
 
   /**
-   * @dev Slashs for double signing.
+   * @dev Slashes for double signing.
    *
    * Requirements:
    * - Only coinbase can call this method
@@ -54,12 +54,25 @@ interface ISlashIndicator {
   function slashDoubleSign(address _valAddr, bytes calldata _evidence) external;
 
   /**
+   * @dev Sets the slash thresholds
+   *
+   * Requirements:
+   * - Only governance admin contract can call this method
+   */
+  function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) external;
+
+  /**
    * @dev Gets slash indicator of a validator.
    */
   function getSlashIndicator(address _validator) external view returns (uint256);
 
   /**
-   * @dev Gets slash threshold.
+   * @dev Gets the slash thresholds.
    */
   function getSlashThresholds() external view returns (uint256 misdemeanorThreshold, uint256 felonyThreshold);
+
+  /**
+   * @dev Returns the governance admin contract address.
+   */
+  function governanceAdminContract() external view returns (address);
 }

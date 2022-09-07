@@ -21,33 +21,18 @@ let localIndicators: number[];
 
 enum SlashType {
   UNKNOWN,
-  MISDEMAENOR,
+  MISDEMEANOR,
   FELONY,
   DOUBLE_SIGNING,
 }
-
-const getBlockNumber = async () => {
-  return network.provider.send('eth_blockNumber');
-};
 
 const resetCoinbase = async () => {
   await network.provider.send('hardhat_setCoinbase', [defaultCoinbase]);
 };
 
-const validateTwoObjects = async (definedObj: any, resultObj: any) => {
-  let key: keyof typeof definedObj;
-  for (key in definedObj) {
-    const definedVal = definedObj[key];
-    const resultVal = resultObj[key];
-
-    if (Array.isArray(resultVal)) {
-      for (let i = 0; i < resultVal.length; i++) {
-        await expect(resultVal[i]).to.eq(definedVal[i]);
-      }
-    } else {
-      await expect(resultVal).to.eq(definedVal);
-    }
-  }
+const increaseLocalCounterForValidatorAt = async (_index: number, _increase?: number) => {
+  _increase = _increase ?? 1;
+  localIndicators[_index] += _increase;
 };
 
 const setLocalCounterForValidatorAt = async (_index: number, _value: number) => {
@@ -129,13 +114,33 @@ describe('Slash indicator test', () => {
         await network.provider.send('evm_setAutomine', [false]);
         await doSlash(coinbases[slasherIdx], coinbases[slasheeIdx]);
         let tx = doSlash(coinbases[slasherIdx], coinbases[slasheeIdx]);
+        await expect(tx).to.be.revertedWith(
+          'SlashIndicator: cannot slash a validator twice or slash more than one validator in one block'
+        );
         await network.provider.send('evm_mine');
         await network.provider.send('evm_setAutomine', [true]);
 
-        expect(tx).to.be.revertedWith('SlashIndicator: cannot slash twice in one block');
-
-        await setLocalCounterForValidatorAt(slasheeIdx, 1);
+        await increaseLocalCounterForValidatorAt(slasheeIdx);
         await validateIndicatorAt(slasheeIdx);
+      });
+
+      it('Should not able to slash more than one validator in one block', async () => {
+        let slasherIdx = 0;
+        let slasheeIdx1 = 1;
+        let slasheeIdx2 = 2;
+        await network.provider.send('evm_setAutomine', [false]);
+        await doSlash(coinbases[slasherIdx], coinbases[slasheeIdx1]);
+        let tx = doSlash(coinbases[slasherIdx], coinbases[slasheeIdx2]);
+        await expect(tx).to.be.revertedWith(
+          'SlashIndicator: cannot slash a validator twice or slash more than one validator in one block'
+        );
+        await network.provider.send('evm_mine');
+        await network.provider.send('evm_setAutomine', [true]);
+
+        await increaseLocalCounterForValidatorAt(slasheeIdx1);
+        await validateIndicatorAt(slasheeIdx1);
+        await setLocalCounterForValidatorAt(slasheeIdx2, 1);
+        await validateIndicatorAt(slasheeIdx1);
       });
     });
 
@@ -164,13 +169,13 @@ describe('Slash indicator test', () => {
         for (let i = 0; i < misdemeanorThreshold; i++) {
           tx = await doSlash(coinbases[slasherIdx], coinbases[slasheeIdx]);
         }
-        expect(tx).to.emit(slashContract, 'ValidatorSlashed').withArgs(coinbases[1].address, SlashType.MISDEMAENOR);
+        expect(tx).to.emit(slashContract, 'ValidatorSlashed').withArgs(coinbases[1].address, SlashType.MISDEMEANOR);
         await setLocalCounterForValidatorAt(slasheeIdx, misdemeanorThreshold);
         await validateIndicatorAt(slasheeIdx);
       });
     });
 
-    describe('Reseting counter', async () => {
+    describe('Resetting counter', async () => {
       it('Should validator set contract reset counter for one validator', async () => {
         let tx;
         let slasherIdx = 0;
