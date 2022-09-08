@@ -35,6 +35,9 @@ export interface SlashIndicatorConf {
     | {
         misdemeanorThreshold: BigNumberish;
         felonyThreshold: BigNumberish;
+        slashFelonyAmount: BigNumberish;
+        slashDoubleSignAmount: BigNumberish;
+        felonyJailBlocks: BigNumberish;
       }
     | undefined;
 }
@@ -45,8 +48,6 @@ export interface RoninValidatorSetConf {
         maxValidatorNumber: BigNumberish;
         numberOfBlocksInEpoch: BigNumberish;
         numberOfEpochsInPeriod: BigNumberish;
-        slashFelonyAmount: BigNumberish;
-        slashDoubleSignAmount: BigNumberish;
       }
     | undefined;
 }
@@ -74,10 +75,14 @@ export const slashIndicatorConf: SlashIndicatorConf = {
   [Network.Devnet]: {
     misdemeanorThreshold: 50,
     felonyThreshold: 150,
+    slashFelonyAmount: BigNumber.from(10).pow(18).mul(1), // 10 RON
+    slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10), // 10 RON
+    felonyJailBlocks: 28800 * 2, // jails for 2 days
   },
   [Network.Testnet]: undefined,
   [Network.Mainnet]: undefined,
 };
+
 // TODO: update config for devnet, testnet & mainnet
 export const roninValidatorSetConf: RoninValidatorSetConf = {
   [Network.Hardhat]: undefined,
@@ -85,8 +90,6 @@ export const roninValidatorSetConf: RoninValidatorSetConf = {
     maxValidatorNumber: 21,
     numberOfBlocksInEpoch: 600,
     numberOfEpochsInPeriod: 48, // 1 day
-    slashFelonyAmount: BigNumber.from(10).pow(18).mul(1), // 10 RON
-    slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10), // 10 RON
   },
   [Network.Testnet]: undefined,
   [Network.Mainnet]: undefined,

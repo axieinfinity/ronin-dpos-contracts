@@ -4,8 +4,8 @@ import { BigNumber, BigNumberish } from 'ethers';
 import { ethers, network } from 'hardhat';
 
 import { DPoStaking, DPoStaking__factory, TransparentUpgradeableProxy__factory } from '../../src/types';
-import { MockValidatorSetForStaking__factory } from '../../src/types/factories/MockValidatorSetForStaking__factory';
-import { MockValidatorSetForStaking } from '../../src/types/MockValidatorSetForStaking';
+import { MockValidatorSet__factory } from '../../src/types/factories/MockValidatorSet__factory';
+import { MockValidatorSet } from '../../src/types/MockValidatorSet';
 
 const EPS = 1;
 
@@ -16,7 +16,7 @@ let proxyAdmin: SignerWithAddress;
 let userA: SignerWithAddress;
 let userB: SignerWithAddress;
 let governanceAdmin: SignerWithAddress;
-let validatorContract: MockValidatorSetForStaking;
+let validatorContract: MockValidatorSet;
 let stakingContract: DPoStaking;
 let validatorCandidates: SignerWithAddress[];
 
@@ -95,7 +95,12 @@ describe('DPoStaking test', () => {
     validatorCandidates = validatorCandidates.slice(0, 3);
     const nonce = await deployer.getTransactionCount();
     const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 2 });
-    validatorContract = await new MockValidatorSetForStaking__factory(deployer).deploy(stakingContractAddr, 10, 2);
+    validatorContract = await new MockValidatorSet__factory(deployer).deploy(
+      stakingContractAddr,
+      ethers.constants.AddressZero,
+      10,
+      2
+    );
     await validatorContract.deployed();
     const logicContract = await new DPoStaking__factory(deployer).deploy();
     await logicContract.deployed();

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../../staking/RewardCalculation.sol";
+import "../staking/RewardCalculation.sol";
 
 contract MockStaking is RewardCalculation {
   /// @dev Mapping from user => staking balance

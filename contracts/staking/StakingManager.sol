@@ -77,7 +77,9 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   /**
    * @inheritdoc IStaking
    */
-  function renounce(address consensusAddr) external {
+  function renounce(
+    address /* _consensusAddr */
+  ) external {
     revert("unimplemented");
   }
 

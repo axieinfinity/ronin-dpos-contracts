@@ -17,8 +17,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     roninValidatorSetConf[network.name]!.maxValidatorNumber,
     roninValidatorSetConf[network.name]!.numberOfBlocksInEpoch,
     roninValidatorSetConf[network.name]!.numberOfEpochsInPeriod,
-    roninValidatorSetConf[network.name]!.slashFelonyAmount,
-    roninValidatorSetConf[network.name]!.slashDoubleSignAmount,
   ]);
 
   await deploy('RoninValidatorSetProxy', {

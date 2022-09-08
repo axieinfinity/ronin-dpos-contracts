@@ -5,7 +5,7 @@ pragma solidity ^0.8.9;
 // import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IStaking.sol";
-import "../interfaces/IValidatorSet.sol";
+import "../interfaces/IRoninValidatorSet.sol";
 import "../libraries/Sorting.sol";
 import "./StakingManager.sol";
 
@@ -271,7 +271,7 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
    * @inheritdoc RewardCalculation
    */
   function _periodOf(uint256 _block) internal view virtual override returns (uint256) {
-    return IValidatorSet(_validatorContract).periodOf(_block);
+    return IRoninValidatorSet(_validatorContract).periodOf(_block);
   }
 
   /**

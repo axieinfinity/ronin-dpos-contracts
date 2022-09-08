@@ -4,7 +4,6 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/ISlashIndicator.sol";
-import "../interfaces/IStaking.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 
 contract SlashIndicator is ISlashIndicator, Initializable {
@@ -12,12 +11,22 @@ contract SlashIndicator is ISlashIndicator, Initializable {
   mapping(address => uint256) internal _unavailabilityIndicator;
   /// @dev The last block that a validator is slashed
   uint256 public lastSlashedBlock;
+
   /// @dev The threshold to slash when validator is unavailability reaches misdemeanor
   uint256 public misdemeanorThreshold;
   /// @dev The threshold to slash when validator is unavailability reaches felony
   uint256 public felonyThreshold;
+
+  /// @dev The amount of RON to slash felony.
+  uint256 public slashFelonyAmount;
+  /// @dev The amount of RON to slash double sign.
+  uint256 public slashDoubleSignAmount;
+  /// @dev The block duration to jail validator that reaches felony thresold.
+  uint256 public felonyJailDuration;
+
   /// @dev The validator contract
   IRoninValidatorSet public validatorContract;
+  /// @dev The governance admin contract
   address internal _governanceAdminContract;
 
   modifier onlyCoinbase() {
@@ -49,11 +58,17 @@ contract SlashIndicator is ISlashIndicator, Initializable {
   function initialize(
     uint256 _misdemeanorThreshold,
     uint256 _felonyThreshold,
-    IRoninValidatorSet _validatorSetContract
+    IRoninValidatorSet _validatorSetContract,
+    uint256 _slashFelonyAmount,
+    uint256 _slashDoubleSignAmount,
+    uint256 _felonyJailBlocks
   ) external initializer {
     misdemeanorThreshold = _misdemeanorThreshold;
     felonyThreshold = _felonyThreshold;
     validatorContract = _validatorSetContract;
+    slashFelonyAmount = _slashFelonyAmount;
+    slashDoubleSignAmount = _slashDoubleSignAmount;
+    felonyJailDuration = _felonyJailBlocks;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -72,19 +87,25 @@ contract SlashIndicator is ISlashIndicator, Initializable {
 
     // Slashs the validator as either the fenoly or the misdemeanor
     if (_count == felonyThreshold) {
-      validatorContract.slashFelony(_validatorAddr);
       emit ValidatorSlashed(_validatorAddr, SlashType.FELONY);
+      validatorContract.slash(_validatorAddr, block.number + felonyJailDuration, slashFelonyAmount);
     } else if (_count == misdemeanorThreshold) {
-      validatorContract.slashMisdemeanor(_validatorAddr);
       emit ValidatorSlashed(_validatorAddr, SlashType.MISDEMEANOR);
+      validatorContract.slash(_validatorAddr, 0, 0);
     }
   }
 
   /**
    * @inheritdoc ISlashIndicator
    */
-  function slashDoubleSign(address _valAddr, bytes calldata _evidence) external override onlyCoinbase {
-    revert("Not implemented");
+  function slashDoubleSign(
+    address _validatorAddr,
+    bytes calldata /* _evidence */
+  ) external override onlyCoinbase {
+    bool _proved = false; // Proves the `_evidence` is right
+    if (_proved) {
+      validatorContract.slash(_validatorAddr, type(uint256).max, slashDoubleSignAmount);
+    }
   }
 
   /**

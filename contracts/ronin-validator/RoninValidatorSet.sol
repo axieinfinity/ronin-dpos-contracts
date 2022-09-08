@@ -33,9 +33,11 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   uint256 internal _numberOfEpochsInPeriod;
   /// @dev The last updated block
   uint256 internal _lastUpdatedBlock;
+  /// @dev Mapping from epoch index => flag indicating the epoch is wrapped up or not
+  mapping(uint256 => bool) internal _wrappedUp;
 
-  /// @dev Mapping from period index => validator address => flag indicating whether the validator has no pending reward in that period
-  mapping(uint256 => mapping(address => bool)) internal _noPendingReward;
+  /// @dev Mapping from validator address => the last **period** that the validator has no pending reward
+  mapping(address => mapping(uint256 => bool)) internal _rewardDeprecatedAtPeriod;
   /// @dev Mapping from validator address => the last block that the validator is jailed
   mapping(address => uint256) internal _jailedUntil;
 
@@ -43,11 +45,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   mapping(address => uint256) internal _miningReward;
   /// @dev Mapping from validator address => pending reward from delegating
   mapping(address => uint256) internal _delegatingReward;
-
-  /// @dev The amount of RON to slash felony.
-  uint256 public slashFelonyAmount;
-  /// @dev The amount of RON to slash double sign.
-  uint256 public slashDoubleSignAmount;
 
   modifier onlyCoinbase() {
     require(msg.sender == block.coinbase, "RoninValidatorSet: method caller must be coinbase");
@@ -77,9 +74,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     address __stakingContract,
     uint256 __maxValidatorNumber,
     uint256 __numberOfBlocksInEpoch,
-    uint256 __numberOfEpochsInPeriod,
-    uint256 _slashFelonyAmount,
-    uint256 _slashDoubleSignAmount
+    uint256 __numberOfEpochsInPeriod
   ) external initializer {
     _governanceAdminContract = __governanceAdminContract;
     _slashIndicatorContract = __slashIndicatorContract;
@@ -87,8 +82,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     _maxValidatorNumber = __maxValidatorNumber;
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
     _numberOfEpochsInPeriod = __numberOfEpochsInPeriod;
-    slashFelonyAmount = _slashFelonyAmount;
-    slashDoubleSignAmount = _slashDoubleSignAmount;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -100,34 +93,39 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    */
   function submitBlockReward() external payable override onlyCoinbase {
     uint256 _reward = msg.value;
-    address _validatorAddr = msg.sender;
-    if (!_isValidator(_validatorAddr)) {
-      // TODO(Thor): emit the deprecated reward event
+    if (_reward == 0) {
       return;
     }
 
-    if (_jailed(_validatorAddr) || _noPendingReward[periodOf(block.number)][_validatorAddr]) {
-      // TODO(Thor): emit the deprecated reward event
+    address _coinbaseAddr = msg.sender;
+    // Deprecates reward for non-validator or slashed validator
+    if (
+      !_isValidator(_coinbaseAddr) || _jailed(_coinbaseAddr) || _rewardDeprecated(_coinbaseAddr, periodOf(block.number))
+    ) {
+      emit RewardDeprecated(_coinbaseAddr, _reward);
       return;
     }
 
+    emit BlockRewardSubmitted(_coinbaseAddr, _reward);
     IStaking _staking = IStaking(_stakingContract);
-    uint256 _rate = _staking.commissionRateOf(_validatorAddr);
+    uint256 _rate = _staking.commissionRateOf(_coinbaseAddr);
     uint256 _miningAmount = (_rate * _reward) / 100_00;
     uint256 _delegatingAmount = _reward - _miningAmount;
 
-    _miningReward[_validatorAddr] += _miningAmount;
-    _delegatingReward[_validatorAddr] += _delegatingAmount;
-    IStaking(_stakingContract).recordReward(_validatorAddr, _delegatingAmount);
-    // TODO(Thor): emit event
+    _miningReward[_coinbaseAddr] += _miningAmount;
+    _delegatingReward[_coinbaseAddr] += _delegatingAmount;
+    _staking.recordReward(_coinbaseAddr, _delegatingAmount);
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
   function wrapUpEpoch() external payable override onlyCoinbase whenEpochEnding {
-    IStaking _staking = IStaking(_stakingContract);
+    uint256 _epoch = epochOf(block.number);
+    require(_wrappedUp[_epoch] == false, "RoninValidatorSet: query for already wrapped up epoch");
+    _wrappedUp[_epoch] = true;
 
+    IStaking _staking = IStaking(_stakingContract);
     address _validatorAddr;
     uint256 _delegatingAmount;
     uint256 _period = periodOf(block.number);
@@ -137,23 +135,22 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     for (uint _i = 0; _i < _validators.length; _i++) {
       _validatorAddr = _validators[_i];
 
-      if (_jailed(_validatorAddr) || _noPendingReward[_period][_validatorAddr]) {
+      if (_jailed(_validatorAddr) || _rewardDeprecated(_validatorAddr, _period)) {
         continue;
       }
 
       if (_periodEnding) {
         uint256 _miningAmount = _miningReward[_validatorAddr];
-        _miningReward[_validatorAddr] = 0;
+        delete _miningReward[_validatorAddr];
         if (_miningAmount > 0) {
-          // TODO(Thor): consider using reentrancy gruard
           address _treasury = _staking.treasuryAddressOf(_validatorAddr);
           (bool _success, ) = _treasury.call{ value: _miningAmount }("");
-          require(_success, "RoninValidatorSet: could not transfer RON validator addr");
+          require(_success, "RoninValidatorSet: could not transfer RON treasury addr");
         }
       }
 
       _delegatingAmount += _delegatingReward[_validatorAddr];
-      _delegatingReward[_validatorAddr] = 0;
+      delete _delegatingReward[_validatorAddr];
       // TODO: emit events
     }
 
@@ -163,7 +160,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
 
     _staking.settleRewardPools(_validators);
     if (_delegatingAmount > 0) {
-      // TODO(Thor): consider using reentrancy gruard
       (bool _success, ) = address(_staking).call{ value: _delegatingAmount }("");
       require(_success, "RoninValidatorSet: could not transfer RON to staking contract");
     }
@@ -206,32 +202,25 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function slashMisdemeanor(address _validatorAddr) public override onlySlashIndicatorContract {
-    _noPendingReward[periodOf(block.number)][_validatorAddr] = true;
-    _miningReward[_validatorAddr] = 0;
-    _delegatingReward[_validatorAddr] = 0;
+  function slash(
+    address _validatorAddr,
+    uint256 _newJailedUntil,
+    uint256 _slashAmount
+  ) external onlySlashIndicatorContract {
+    _rewardDeprecatedAtPeriod[_validatorAddr][periodOf(block.number)] = true;
+    delete _miningReward[_validatorAddr];
+    delete _delegatingReward[_validatorAddr];
     IStaking(_stakingContract).sinkPendingReward(_validatorAddr);
-  }
 
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function slashFelony(address _validatorAddr) external override onlySlashIndicatorContract {
-    slashMisdemeanor(_validatorAddr);
-    IStaking(_stakingContract).deductStakingAmount(_validatorAddr, slashFelonyAmount);
-    uint256 _jailedBlock = block.number + 2 * 28800; // TODO: make this constant number to variable
-    _jailedUntil[_validatorAddr] = Math.max(_jailedUntil[_validatorAddr], _jailedBlock);
-    // TODO(Thor): emit event
-  }
+    if (_newJailedUntil > 0) {
+      _jailedUntil[_validatorAddr] = Math.max(_newJailedUntil, _jailedUntil[_validatorAddr]);
+    }
 
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function slashDoubleSign(address _validatorAddr) external override onlySlashIndicatorContract {
-    slashMisdemeanor(_validatorAddr);
-    IStaking(_stakingContract).deductStakingAmount(_validatorAddr, slashDoubleSignAmount);
-    _jailedUntil[_validatorAddr] = type(uint256).max;
-    // TODO(Thor): emit event
+    if (_slashAmount > 0) {
+      IStaking(_stakingContract).deductStakingAmount(_validatorAddr, _slashAmount);
+    }
+
+    emit ValidatorSlashed(_validatorAddr, _jailedUntil[_validatorAddr], _slashAmount);
   }
 
   /**
@@ -246,14 +235,14 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function noPendingReward(address[] memory _addrList, uint256 _period)
+  function rewardDeprecated(address[] memory _addrList, uint256 _period)
     external
     view
     override
     returns (bool[] memory _result)
   {
     for (uint256 _i; _i < _addrList.length; _i++) {
-      _result[_i] = _noPendingReward[_period][_addrList[_i]];
+      _result[_i] = _rewardDeprecated(_addrList[_i], _period);
     }
   }
 
@@ -319,6 +308,13 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    */
   function _jailed(address _validatorAddr) internal view returns (bool) {
     return block.number <= _jailedUntil[_validatorAddr];
+  }
+
+  /**
+   * @dev Returns whether the validator has no pending reward in that period.
+   */
+  function _rewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
+    return _rewardDeprecatedAtPeriod[_validatorAddr][_period];
   }
 
   /**

@@ -5,15 +5,15 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import {
   DPoStaking,
-  MockRoninValidatorSet,
-  MockRoninValidatorSet__factory,
+  MockRoninValidatorSetEpochSetter,
+  MockRoninValidatorSetEpochSetter__factory,
   DPoStaking__factory,
   TransparentUpgradeableProxy__factory,
   MockSlashIndicator,
   MockSlashIndicator__factory,
 } from '../../src/types';
 
-let roninValidatorSet: MockRoninValidatorSet;
+let roninValidatorSet: MockRoninValidatorSetEpochSetter;
 let stakingContract: DPoStaking;
 let slashIndicator: MockSlashIndicator;
 
@@ -46,16 +46,18 @@ describe('Ronin Validator Set test', () => {
     const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 1 });
     const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 3 });
 
-    slashIndicator = await new MockSlashIndicator__factory(deployer).deploy(roninValidatorSetAddr);
+    slashIndicator = await new MockSlashIndicator__factory(deployer).deploy(
+      roninValidatorSetAddr,
+      slashFelonyAmount,
+      slashDoubleSignAmount
+    );
     await slashIndicator.deployed();
 
-    roninValidatorSet = await new MockRoninValidatorSet__factory(deployer).deploy(
+    roninValidatorSet = await new MockRoninValidatorSetEpochSetter__factory(deployer).deploy(
       governanceAdmin.address,
       slashIndicator.address,
       stakingContractAddr,
-      maxValidatorNumber,
-      slashFelonyAmount,
-      slashDoubleSignAmount
+      maxValidatorNumber
     );
     await roninValidatorSet.deployed();
 

@@ -5,6 +5,13 @@ pragma solidity ^0.8.9;
 import "./ISlashIndicator.sol";
 
 interface IRoninValidatorSet {
+  /// @dev Emitted when the reward of the valdiator is deprecated
+  event RewardDeprecated(address coinbaseAddr, uint256 rewardAmount);
+  /// @dev Emitted when the block reward is submitted
+  event BlockRewardSubmitted(address coinbaseAddr, uint256 rewardAmount);
+  /// @dev Emitted when the validator is slashed.
+  event ValidatorSlashed(address validatorAddr, uint256 jailedUntil, uint256 deductedStakingAmount);
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR COINBASE                               //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -51,31 +58,18 @@ interface IRoninValidatorSet {
    */
   function stakingContract() external view returns (address);
 
-  /* @dev Slashes the validator that missed 50 block a day
-   *
-   * Requirements:
-   * - The method caller is slash indicator contract.
-   *
-   */
-  function slashMisdemeanor(address _validatorAddr) external;
-
   /**
-   * @dev Slashes the validator that missed 150 block a day
+   * @dev Slashes the validator.
    *
    * Requirements:
    * - The method caller is slash indicator contract.
    *
    */
-  function slashFelony(address _validatorAddr) external;
-
-  /**
-   * @dev Slashes the validator that created 2 blocks on a same height
-   *
-   * Requirements:
-   * - The method caller is slash indicator contract.
-   *
-   */
-  function slashDoubleSign(address _validatorAddr) external;
+  function slash(
+    address _validatorAddr,
+    uint256 _newJailedUntil,
+    uint256 _slashAmount
+  ) external;
 
   /**
    * @dev Returns whether the validators are put in jail (cannot join the set of validators) during the current period.
@@ -83,19 +77,9 @@ interface IRoninValidatorSet {
   function jailed(address[] memory) external view returns (bool[] memory);
 
   /**
-   * @dev Returns whether the incoming reward of the validators are sinked during the period.
+   * @dev Returns whether the incoming reward of the validators are deprecated during the period.
    */
-  function noPendingReward(address[] memory, uint256 _period) external view returns (bool[] memory);
-
-  /**
-   * @dev The amount of RON to slash felony.
-   */
-  function slashFelonyAmount() external view returns (uint256);
-
-  /**
-   * @dev The amount of RON to slash felony.
-   */
-  function slashDoubleSignAmount() external view returns (uint256);
+  function rewardDeprecated(address[] memory, uint256 _period) external view returns (bool[] memory);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                             FUNCTIONS FOR NORMAL USER                             //

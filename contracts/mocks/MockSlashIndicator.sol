@@ -2,27 +2,35 @@
 
 pragma solidity ^0.8.9;
 
-import "../../interfaces/IRoninValidatorSet.sol";
-import "../../interfaces/ISlashIndicator.sol";
+import "../interfaces/IRoninValidatorSet.sol";
+import "../interfaces/ISlashIndicator.sol";
 
 contract MockSlashIndicator is ISlashIndicator {
   IRoninValidatorSet public validatorContract;
+  uint256 public slashFelonyAmount;
+  uint256 public slashDoubleSignAmount;
 
   modifier onlyCoinbase() {
     require(msg.sender == block.coinbase, "SlashIndicator: method caller is not the coinbase");
     _;
   }
 
-  constructor(IRoninValidatorSet _validatorSetContract) {
+  constructor(
+    IRoninValidatorSet _validatorSetContract,
+    uint256 _slashFelonyAmount,
+    uint256 _slashDoubleSignAmount
+  ) {
     validatorContract = _validatorSetContract;
+    slashFelonyAmount = _slashFelonyAmount;
+    slashDoubleSignAmount = _slashDoubleSignAmount;
   }
 
   function slashFelony(address _validatorAddr) external {
-    validatorContract.slashFelony(_validatorAddr);
+    validatorContract.slash(_validatorAddr, 0, 0);
   }
 
   function slashMisdemeanor(address _validatorAddr) external {
-    validatorContract.slashMisdemeanor(_validatorAddr);
+    validatorContract.slash(_validatorAddr, 0, 0);
   }
 
   function resetCounters(address[] calldata) external {}

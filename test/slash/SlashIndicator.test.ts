@@ -5,9 +5,9 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   SlashIndicator,
   SlashIndicator__factory,
-  MockEmptyValidatorSet,
-  MockEmptyValidatorSet__factory,
   TransparentUpgradeableProxy__factory,
+  MockValidatorSet__factory,
+  MockValidatorSet,
 } from '../../src/types';
 import { Address } from 'hardhat-deploy/dist/types';
 
@@ -15,7 +15,7 @@ let slashContract: SlashIndicator;
 
 let deployer: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
-let dummyValidatorsContract: MockEmptyValidatorSet;
+let validatorContract: MockValidatorSet;
 let vagabond: SignerWithAddress;
 let coinbases: SignerWithAddress[];
 let defaultCoinbase: Address;
@@ -62,15 +62,21 @@ describe('Slash indicator test', () => {
 
     localIndicators = Array<number>(coinbases.length).fill(0);
 
-    dummyValidatorsContract = await new MockEmptyValidatorSet__factory(deployer).deploy();
+    const nonce = await deployer.getTransactionCount();
+    const slashIndicatorAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 2 });
+    validatorContract = await new MockValidatorSet__factory(deployer).deploy(
+      ethers.constants.AddressZero,
+      slashIndicatorAddr,
+      0,
+      0
+    );
     const logicContract = await new SlashIndicator__factory(deployer).deploy();
     const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
       logicContract.address,
       proxyAdmin.address,
-      logicContract.interface.encodeFunctionData('initialize', [50, 150, dummyValidatorsContract.address])
+      logicContract.interface.encodeFunctionData('initialize', [10, 20, validatorContract.address, 0, 0, 28800 * 2])
     );
     slashContract = SlashIndicator__factory.connect(proxyContract.address, deployer);
-    await dummyValidatorsContract.connect(deployer).setSlashingContract(slashContract.address);
 
     let thresholds = await slashContract.getSlashThresholds();
     felonyThreshold = thresholds[0].toNumber();
@@ -198,7 +204,7 @@ describe('Slash indicator test', () => {
 
         await resetCoinbase();
 
-        tx = await dummyValidatorsContract.resetCounters([coinbases[slasheeIdx].address]);
+        tx = await validatorContract.resetCounters([coinbases[slasheeIdx].address]);
         expect(tx).to.emit(slashContract, 'UnavailabilityIndicatorReset').withArgs(coinbases[slasheeIdx].address);
 
         await resetLocalCounterForValidatorAt(slasheeIdx);
@@ -225,7 +231,7 @@ describe('Slash indicator test', () => {
 
         await resetCoinbase();
 
-        tx = await dummyValidatorsContract.resetCounters(slasheeIdxs.map((_) => coinbases[_].address));
+        tx = await validatorContract.resetCounters(slasheeIdxs.map((_) => coinbases[_].address));
 
         for (let j = 0; j < slasheeIdxs.length; j++) {
           expect(tx).to.emit(slashContract, 'UnavailabilityIndicatorReset').withArgs(coinbases[slasheeIdxs[j]].address);

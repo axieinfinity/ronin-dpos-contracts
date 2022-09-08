@@ -14,6 +14,9 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     slashIndicatorConf[network.name]!.misdemeanorThreshold,
     slashIndicatorConf[network.name]!.felonyThreshold,
     initAddress[network.name]!.validatorContract,
+    slashIndicatorConf[network.name]!.slashFelonyAmount,
+    slashIndicatorConf[network.name]!.slashDoubleSignAmount,
+    slashIndicatorConf[network.name]!.felonyJailBlocks,
   ]);
 
   await deploy('SlashIndicatorProxy', {
