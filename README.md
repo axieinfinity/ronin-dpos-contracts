@@ -102,7 +102,7 @@ Read the contract interaction flow at [DPoS Contract: Interaction Flow](https://
 
 ### Requirement
 
-- Node@>=14 + Solc@^0.8.0 + Docker
+- Node@>=14 + Solc@^0.8.0
 
 ### Compile & test
 
