@@ -5,12 +5,18 @@ pragma solidity ^0.8.9;
 import "./ISlashIndicator.sol";
 
 interface IRoninValidatorSet {
-  /// @dev Emitted when the reward of the valdiator is deprecated
+  /// @dev Emitted when the reward of the valdiator is deprecated.
   event RewardDeprecated(address coinbaseAddr, uint256 rewardAmount);
-  /// @dev Emitted when the block reward is submitted
+  /// @dev Emitted when the block reward is submitted.
   event BlockRewardSubmitted(address coinbaseAddr, uint256 rewardAmount);
   /// @dev Emitted when the validator is slashed.
   event ValidatorSlashed(address validatorAddr, uint256 jailedUntil, uint256 deductedStakingAmount);
+  /// @dev Emitted when the validator reward is distributed.
+  event MiningRewardDistributed(address validatorAddr, uint256 amount);
+  /// @dev Emitted when the amount of RON reward is distributed.
+  event StakingRewardDistributed(uint256 amount);
+  /// @dev Emitted when the validator set is updated
+  event ValidatorSetUpdated(address[]);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR COINBASE                               //
@@ -22,6 +28,9 @@ interface IRoninValidatorSet {
    * Requirements:
    * - The method caller is coinbase.
    *
+   * Emits the event `RewardDeprecated` if the coinbase is slashed or no longer be a validator.
+   * Emits the event `BlockRewardSubmitted` for the valid call.
+   *
    */
   function submitBlockReward() external payable;
 
@@ -29,7 +38,13 @@ interface IRoninValidatorSet {
    * @dev Wraps up the current epoch.
    *
    * Requirements:
+   * - The method must be called when the current epoch is ending.
+   * - The epoch is not wrapped yet.
    * - The method caller is coinbase.
+   *
+   * Emits the event `MiningRewardDistributed` when some validator has reward distributed.
+   * Emits the event `StakingRewardDistributed` when some staking pool has reward distributed.
+   * Emits the event `ValidatorSetUpdated`.
    *
    */
   function wrapUpEpoch() external payable;
@@ -63,6 +78,8 @@ interface IRoninValidatorSet {
    *
    * Requirements:
    * - The method caller is slash indicator contract.
+   *
+   * Emits the event `ValidatorSlashed`.
    *
    */
   function slash(

@@ -36,7 +36,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   /// @dev Mapping from epoch index => flag indicating the epoch is wrapped up or not
   mapping(uint256 => bool) internal _wrappedUp;
 
-  /// @dev Mapping from validator address => the last **period** that the validator has no pending reward
+  /// @dev Mapping from validator address => the last period that the validator has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _rewardDeprecatedAtPeriod;
   /// @dev Mapping from validator address => the last block that the validator is jailed
   mapping(address => uint256) internal _jailedUntil;
@@ -106,7 +106,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
       return;
     }
 
-    emit BlockRewardSubmitted(_coinbaseAddr, _reward);
     IStaking _staking = IStaking(_stakingContract);
     uint256 _rate = _staking.commissionRateOf(_coinbaseAddr);
     uint256 _miningAmount = (_rate * _reward) / 100_00;
@@ -115,6 +114,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     _miningReward[_coinbaseAddr] += _miningAmount;
     _delegatingReward[_coinbaseAddr] += _delegatingAmount;
     _staking.recordReward(_coinbaseAddr, _delegatingAmount);
+    emit BlockRewardSubmitted(_coinbaseAddr, _reward);
   }
 
   /**
@@ -146,12 +146,12 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
           address _treasury = _staking.treasuryAddressOf(_validatorAddr);
           (bool _success, ) = _treasury.call{ value: _miningAmount }("");
           require(_success, "RoninValidatorSet: could not transfer RON treasury addr");
+          emit MiningRewardDistributed(_validatorAddr, _miningAmount);
         }
       }
 
       _delegatingAmount += _delegatingReward[_validatorAddr];
       delete _delegatingReward[_validatorAddr];
-      // TODO: emit events
     }
 
     if (_periodEnding) {
@@ -162,6 +162,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     if (_delegatingAmount > 0) {
       (bool _success, ) = address(_staking).call{ value: _delegatingAmount }("");
       require(_success, "RoninValidatorSet: could not transfer RON to staking contract");
+      emit StakingRewardDistributed(_delegatingAmount);
     }
 
     _updateValidatorSet();
@@ -303,6 +304,10 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     return _numberOfBlocksInEpoch;
   }
 
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                                  HELPER FUNCTIONS                                 //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
   /**
    * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) during the current period.
    */
@@ -326,8 +331,12 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
 
   /**
    * @dev Updates the validator set based on the validator candidates from the Staking contract.
+   *
+   * Emits the `ValidatorSetUpdated` event.
+   *
    */
   function _updateValidatorSet() internal {
+    // TODO: measure gas metrics from getting candidates
     (address[] memory _candidates, uint256[] memory _weights) = IStaking(_stakingContract).getCandidateWeights();
     uint256 _newLength = _candidates.length;
     for (uint256 _i; _i < _candidates.length; _i++) {
@@ -344,7 +353,12 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     }
 
     _candidates = Sorting.sort(_candidates, _weights);
+    // TODO: measure gas metrics to after sorting candidates
     uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
+
+    assembly {
+      mstore(_candidates, _newValidatorCount)
+    }
 
     // TODO: pick at least M governers as validators
 
@@ -363,6 +377,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
 
     validatorCount = _newValidatorCount;
     _lastUpdatedBlock = block.number;
-    // TODO(Thor): emit validator set updated.
+    emit ValidatorSetUpdated(_candidates);
   }
 }

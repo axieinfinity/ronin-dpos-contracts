@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { BigNumber } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
 import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
@@ -12,6 +12,7 @@ import {
   MockSlashIndicator,
   MockSlashIndicator__factory,
 } from '../../src/types';
+import * as RoninValidatorSet from '../../src/script/ronin-validator-set';
 
 let roninValidatorSet: MockRoninValidatorSetEpochSetter;
 let stakingContract: Staking;
@@ -23,6 +24,8 @@ let deployer: SignerWithAddress;
 let governanceAdmin: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
+
+let currentValidatorSet: string[];
 
 const slashFelonyAmount = 100;
 const slashDoubleSignAmount = 1000;
@@ -98,10 +101,12 @@ describe('Ronin Validator Set test', () => {
   });
 
   it('Should be able to wrap up epoch when the epoch is ending', async () => {
+    let tx: ContractTransaction;
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
-      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+      tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
+    await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, []);
     expect(await roninValidatorSet.getValidators()).have.same.members([]);
   });
 
@@ -114,10 +119,18 @@ describe('Ronin Validator Set test', () => {
         });
     }
 
+    let tx: ContractTransaction;
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
-      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+      tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
+    await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(
+      tx!,
+      validatorCandidates
+        .slice(0, 4)
+        .reverse()
+        .map((_) => _.address)
+    );
 
     expect(await roninValidatorSet.getValidators()).have.same.members(
       validatorCandidates
@@ -140,18 +153,20 @@ describe('Ronin Validator Set test', () => {
     }
     expect((await stakingContract.getValidatorCandidates()).length).eq(validatorCandidates.length + 1);
 
+    let tx: ContractTransaction;
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
-      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+      tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+      currentValidatorSet = [
+        coinbase.address,
+        ...validatorCandidates
+          .slice(2)
+          .reverse()
+          .map((_) => _.address),
+      ];
     });
-
-    expect(await roninValidatorSet.getValidators()).have.same.members([
-      coinbase.address,
-      ...validatorCandidates
-        .slice(2)
-        .reverse()
-        .map((_) => _.address),
-    ]);
+    await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
+    expect(await roninValidatorSet.getValidators()).have.same.members(currentValidatorSet);
   });
 
   it('Should not be able to submit block reward using unauthorized account', async () => {
@@ -161,34 +176,43 @@ describe('Ronin Validator Set test', () => {
   });
 
   it('Should be able to submit block reward using coinbase account', async () => {
-    await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
+    const tx = await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
+    await RoninValidatorSet.expects.emitBlockRewardSubmittedEvent(tx, coinbase.address, 100);
   });
 
   it('Should be able to get right reward at the end of period', async () => {
     const balance = await treasury.getBalance();
+    let tx: ContractTransaction;
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
       await roninValidatorSet.endPeriod();
-      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+      tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
+    await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
+    await RoninValidatorSet.expects.emitStakingRewardDistributedEvent(tx!, 99);
+    await RoninValidatorSet.expects.emitMiningRewardDistributedEvent(tx!, coinbase.address, 1);
     const balanceDiff = (await treasury.getBalance()).sub(balance);
     expect(balanceDiff).eq(1); // 100 * 1%
     expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(99); // remain amount (99%)
   });
 
   it('Should not allocate minting fee for the slashed validators', async () => {
+    let tx: ContractTransaction;
     {
       const balance = await treasury.getBalance();
       await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
-      await slashIndicator.slashMisdemeanor(coinbase.address);
+      tx = await slashIndicator.slashMisdemeanor(coinbase.address);
+      await RoninValidatorSet.expects.emitValidatorSlashedEvent(tx!, coinbase.address, 0, 0);
+
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();
-        await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+        tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
       });
       const balanceDiff = (await treasury.getBalance()).sub(balance);
       expect(balanceDiff).eq(0);
       // The delegators don't receives the new rewards until the period is ended
       expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(99);
+      await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
     }
 
     {
@@ -197,37 +221,44 @@ describe('Ronin Validator Set test', () => {
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();
         await roninValidatorSet.endPeriod();
-        await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+        tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
       });
       const balanceDiff = (await treasury.getBalance()).sub(balance);
       expect(balanceDiff).eq(0);
       expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(99);
+      await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
     }
   });
 
   it('Should be able to record delegating reward for a successful epoch', async () => {
+    let tx: ContractTransaction;
     const balance = await treasury.getBalance();
     await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
-      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+      tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
     const balanceDiff = (await treasury.getBalance()).sub(balance);
     expect(balanceDiff).eq(0);
     expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(99 * 2);
+    await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
+    await RoninValidatorSet.expects.emitStakingRewardDistributedEvent(tx!, 99);
   });
 
   it('Should not allocate reward for the slashed validator', async () => {
+    let tx: ContractTransaction;
     const balance = await treasury.getBalance();
-    await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
+    tx = await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
+    await RoninValidatorSet.expects.emitRewardDeprecatedEvent(tx!, coinbase.address, 100);
     await slashIndicator.slashMisdemeanor(coinbase.address);
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
       await roninValidatorSet.endPeriod();
-      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+      tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
     const balanceDiff = (await treasury.getBalance()).sub(balance);
     expect(balanceDiff).eq(0);
     expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(99 * 2);
+    await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
   });
 });
