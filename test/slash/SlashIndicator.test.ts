@@ -5,28 +5,24 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   SlashIndicator,
   SlashIndicator__factory,
+  MockValidatorSetForSlash,
+  MockValidatorSetForSlash__factory,
   TransparentUpgradeableProxy__factory,
-  MockValidatorSet__factory,
-  MockValidatorSet,
 } from '../../src/types';
 import { Address } from 'hardhat-deploy/dist/types';
+import { SlashType } from './slashType';
+import { Network, slashIndicatorConf } from '../../src/config';
+import { BigNumber } from 'ethers';
 
 let slashContract: SlashIndicator;
 
 let deployer: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
-let validatorContract: MockValidatorSet;
+let mockValidatorsContract: MockValidatorSetForSlash;
 let vagabond: SignerWithAddress;
 let coinbases: SignerWithAddress[];
 let defaultCoinbase: Address;
 let localIndicators: number[];
-
-enum SlashType {
-  UNKNOWN,
-  MISDEMEANOR,
-  FELONY,
-  DOUBLE_SIGNING,
-}
 
 const resetCoinbase = async () => {
   await network.provider.send('hardhat_setCoinbase', [defaultCoinbase]);
@@ -59,30 +55,37 @@ describe('Slash indicator test', () => {
 
   before(async () => {
     [deployer, proxyAdmin, vagabond, ...coinbases] = await ethers.getSigners();
-
     localIndicators = Array<number>(coinbases.length).fill(0);
+    defaultCoinbase = await network.provider.send('eth_coinbase');
 
-    const nonce = await deployer.getTransactionCount();
-    const slashIndicatorAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 2 });
-    validatorContract = await new MockValidatorSet__factory(deployer).deploy(
-      ethers.constants.AddressZero,
-      slashIndicatorAddr,
-      0,
-      0
-    );
+    if (network.name == Network.Hardhat) {
+      slashIndicatorConf[network.name] = {
+        misdemeanorThreshold: 10,
+        felonyThreshold: 20, // set low threshold to get rid of 40000ms of test timeout
+        slashFelonyAmount: BigNumber.from(10).pow(18).mul(1), // 10 RON
+        slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10), // 10 RON
+        felonyJailBlocks: 28800 * 2, // jails for 2 days
+      };
+    }
+
+    mockValidatorsContract = await new MockValidatorSetForSlash__factory(deployer).deploy();
     const logicContract = await new SlashIndicator__factory(deployer).deploy();
     const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
       logicContract.address,
       proxyAdmin.address,
-      logicContract.interface.encodeFunctionData('initialize', [10, 20, validatorContract.address, 0, 0, 28800 * 2])
+      logicContract.interface.encodeFunctionData('initialize', [
+        slashIndicatorConf[network.name]!.misdemeanorThreshold,
+        slashIndicatorConf[network.name]!.felonyThreshold,
+        mockValidatorsContract.address,
+        slashIndicatorConf[network.name]!.slashFelonyAmount,
+        slashIndicatorConf[network.name]!.slashDoubleSignAmount,
+        slashIndicatorConf[network.name]!.felonyJailBlocks,
+      ])
     );
     slashContract = SlashIndicator__factory.connect(proxyContract.address, deployer);
+    await mockValidatorsContract.connect(deployer).setSlashingContract(slashContract.address);
 
-    let thresholds = await slashContract.getSlashThresholds();
-    felonyThreshold = thresholds[0].toNumber();
-    misdemeanorThreshold = thresholds[1].toNumber();
-
-    defaultCoinbase = await network.provider.send('eth_coinbase');
+    [misdemeanorThreshold, felonyThreshold] = (await slashContract.getSlashThresholds()).map((_) => _.toNumber());
   });
 
   describe('Single flow test', async () => {
@@ -158,25 +161,10 @@ describe('Slash indicator test', () => {
     });
 
     describe('Slash method: recording and call to validator set', async () => {
-      it('Should sync with validator set for felony', async () => {
-        let tx;
-        let slasherIdx = 0;
-        let slasheeIdx = 3;
-
-        await network.provider.send('hardhat_setCoinbase', [coinbases[slasherIdx].address]);
-
-        for (let i = 0; i < felonyThreshold; i++) {
-          tx = await doSlash(coinbases[slasherIdx], coinbases[slasheeIdx]);
-        }
-        expect(tx).to.emit(slashContract, 'ValidatorSlashed').withArgs(coinbases[1].address, SlashType.FELONY);
-        await setLocalCounterForValidatorAt(slasheeIdx, felonyThreshold);
-        await validateIndicatorAt(slasheeIdx);
-      });
-
-      it('Should sync with validator set for misdemeanor', async () => {
+      it('Should sync with validator set for misdemeanor (slash tier-1)', async () => {
         let tx;
         let slasherIdx = 1;
-        let slasheeIdx = 4;
+        let slasheeIdx = 3;
         await network.provider.send('hardhat_setCoinbase', [coinbases[slasherIdx].address]);
 
         for (let i = 0; i < misdemeanorThreshold; i++) {
@@ -185,6 +173,52 @@ describe('Slash indicator test', () => {
         expect(tx).to.emit(slashContract, 'ValidatorSlashed').withArgs(coinbases[1].address, SlashType.MISDEMEANOR);
         await setLocalCounterForValidatorAt(slasheeIdx, misdemeanorThreshold);
         await validateIndicatorAt(slasheeIdx);
+      });
+
+      it('Should not sync with validator set when the indicator counter is in between misdemeanor (tier-1) and felony (tier-2) thresholds ', async () => {
+        let tx;
+        let slasherIdx = 1;
+        let slasheeIdx = 3;
+        await network.provider.send('hardhat_setCoinbase', [coinbases[slasherIdx].address]);
+
+        tx = await doSlash(coinbases[slasherIdx], coinbases[slasheeIdx]);
+        await increaseLocalCounterForValidatorAt(slasheeIdx);
+        await validateIndicatorAt(slasheeIdx);
+
+        expect(tx).not.to.emit(slashContract, 'ValidatorSlashed');
+      });
+
+      it('Should sync with validator set for felony (slash tier-2)', async () => {
+        let tx;
+        let slasherIdx = 0;
+        let slasheeIdx = 4;
+
+        await network.provider.send('hardhat_setCoinbase', [coinbases[slasherIdx].address]);
+
+        for (let i = 0; i < felonyThreshold; i++) {
+          tx = await doSlash(coinbases[slasherIdx], coinbases[slasheeIdx]);
+
+          if (i == misdemeanorThreshold - 1) {
+            expect(tx).to.emit(slashContract, 'ValidatorSlashed').withArgs(coinbases[1].address, SlashType.MISDEMEANOR);
+          }
+        }
+
+        expect(tx).to.emit(slashContract, 'ValidatorSlashed').withArgs(coinbases[1].address, SlashType.FELONY);
+        await setLocalCounterForValidatorAt(slasheeIdx, felonyThreshold);
+        await validateIndicatorAt(slasheeIdx);
+      });
+
+      it('Should not sync with validator set when the indicator counter exceeds felony threshold (tier-2) ', async () => {
+        let tx;
+        let slasherIdx = 1;
+        let slasheeIdx = 4;
+        await network.provider.send('hardhat_setCoinbase', [coinbases[slasherIdx].address]);
+
+        tx = await doSlash(coinbases[slasherIdx], coinbases[slasheeIdx]);
+        await increaseLocalCounterForValidatorAt(slasheeIdx);
+        await validateIndicatorAt(slasheeIdx);
+
+        expect(tx).not.to.emit(slashContract, 'ValidatorSlashed');
       });
     });
 
@@ -204,7 +238,7 @@ describe('Slash indicator test', () => {
 
         await resetCoinbase();
 
-        tx = await validatorContract.resetCounters([coinbases[slasheeIdx].address]);
+        tx = await mockValidatorsContract.resetCounters([coinbases[slasheeIdx].address]);
         expect(tx).to.emit(slashContract, 'UnavailabilityIndicatorReset').withArgs(coinbases[slasheeIdx].address);
 
         await resetLocalCounterForValidatorAt(slasheeIdx);
@@ -231,7 +265,7 @@ describe('Slash indicator test', () => {
 
         await resetCoinbase();
 
-        tx = await validatorContract.resetCounters(slasheeIdxs.map((_) => coinbases[_].address));
+        tx = await mockValidatorsContract.resetCounters(slasheeIdxs.map((_) => coinbases[_].address));
 
         for (let j = 0; j < slasheeIdxs.length; j++) {
           expect(tx).to.emit(slashContract, 'UnavailabilityIndicatorReset').withArgs(coinbases[slasheeIdxs[j]].address);
@@ -241,6 +275,4 @@ describe('Slash indicator test', () => {
       });
     });
   });
-
-  describe('Integration test', async () => {});
 });
