@@ -59,9 +59,32 @@ interface ISlashIndicator {
    *
    * Requirements:
    * - Only governance admin can call this method
-   *
    */
   function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) external;
+
+  /**
+   * @dev Sets the slash felony amount
+   *
+   * Requirements:
+   * - Only governance admin can call this method
+   */
+  function setSlashFelonyAmount(uint256 _slashFelonyAmount) external;
+
+  /**
+   * @dev Sets the slash double sign amount
+   *
+   * Requirements:
+   * - Only governance admin can call this method
+   */
+  function setSlashDoubleSignAmount(uint256 _slashDoubleSignAmount) external;
+
+  /**
+   * @dev Sets the felony jail duration
+   *
+   * Requirements:
+   * - Only governance admin can call this method
+   */
+  function setFelonyJailDuration(uint256 _felonyJailDuration) external;
 
   /**
    * @dev Gets slash indicator of a validator.

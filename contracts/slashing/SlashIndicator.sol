@@ -39,6 +39,11 @@ contract SlashIndicator is ISlashIndicator, Initializable {
     _;
   }
 
+  modifier onlyGovernanceAdmin() {
+    require(msg.sender == _governanceAdmin, "SlashIndicator: method caller is not the governance admin");
+    _;
+  }
+
   modifier oncePerBlock() {
     require(
       block.number > lastSlashedBlock,
@@ -85,7 +90,7 @@ contract SlashIndicator is ISlashIndicator, Initializable {
 
     uint256 _count = ++_unavailabilityIndicator[_validatorAddr];
 
-    // Slashs the validator as either the fenoly or the misdemeanor
+    // Slashes the validator as either the fenoly or the misdemeanor
     if (_count == felonyThreshold) {
       emit ValidatorSlashed(_validatorAddr, SlashType.FELONY);
       validatorContract.slash(_validatorAddr, block.number + felonyJailDuration, slashFelonyAmount);
@@ -136,9 +141,34 @@ contract SlashIndicator is ISlashIndicator, Initializable {
   /**
    * @inheritdoc ISlashIndicator
    */
-  function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) external override {
+  function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold)
+    external
+    override
+    onlyGovernanceAdmin
+  {
     felonyThreshold = _felonyThreshold;
     misdemeanorThreshold = _misdemeanorThreshold;
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function setSlashFelonyAmount(uint256 _slashFelonyAmount) external override onlyGovernanceAdmin {
+    slashFelonyAmount = _slashFelonyAmount;
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function setSlashDoubleSignAmount(uint256 _slashDoubleSignAmount) external override onlyGovernanceAdmin {
+    slashDoubleSignAmount = _slashDoubleSignAmount;
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function setFelonyJailDuration(uint256 _felonyJailDuration) external override onlyGovernanceAdmin {
+    felonyJailDuration = _felonyJailDuration;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
