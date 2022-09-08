@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { BigNumber, BigNumberish } from 'ethers';
 import { ethers, network } from 'hardhat';
 
-import { DPoStaking, DPoStaking__factory, TransparentUpgradeableProxy__factory } from '../../src/types';
+import { Staking, Staking__factory, TransparentUpgradeableProxy__factory } from '../../src/types';
 import { MockValidatorSet__factory } from '../../src/types/factories/MockValidatorSet__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
 
@@ -17,7 +17,7 @@ let userA: SignerWithAddress;
 let userB: SignerWithAddress;
 let governanceAdmin: SignerWithAddress;
 let validatorContract: MockValidatorSet;
-let stakingContract: DPoStaking;
+let stakingContract: Staking;
 let validatorCandidates: SignerWithAddress[];
 
 const local = {
@@ -89,7 +89,7 @@ const expectLocalCalculationRight = async () => {
 
 const minValidatorBalance = BigNumber.from(2);
 
-describe('DPoStaking test', () => {
+describe('Staking test', () => {
   before(async () => {
     [deployer, proxyAdmin, userA, userB, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
     validatorCandidates = validatorCandidates.slice(0, 3);
@@ -102,7 +102,7 @@ describe('DPoStaking test', () => {
       2
     );
     await validatorContract.deployed();
-    const logicContract = await new DPoStaking__factory(deployer).deploy();
+    const logicContract = await new Staking__factory(deployer).deploy();
     await logicContract.deployed();
     const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
       logicContract.address,
@@ -115,7 +115,7 @@ describe('DPoStaking test', () => {
       ])
     );
     await proxyContract.deployed();
-    stakingContract = DPoStaking__factory.connect(proxyContract.address, deployer);
+    stakingContract = Staking__factory.connect(proxyContract.address, deployer);
     expect(stakingContractAddr.toLowerCase()).eq(stakingContract.address.toLowerCase());
   });
 

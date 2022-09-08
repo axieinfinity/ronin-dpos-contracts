@@ -4,17 +4,17 @@ import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import {
-  DPoStaking,
+  Staking,
   MockRoninValidatorSetEpochSetter,
   MockRoninValidatorSetEpochSetter__factory,
-  DPoStaking__factory,
+  Staking__factory,
   TransparentUpgradeableProxy__factory,
   MockSlashIndicator,
   MockSlashIndicator__factory,
 } from '../../src/types';
 
 let roninValidatorSet: MockRoninValidatorSetEpochSetter;
-let stakingContract: DPoStaking;
+let stakingContract: Staking;
 let slashIndicator: MockSlashIndicator;
 
 let coinbase: SignerWithAddress;
@@ -61,7 +61,7 @@ describe('Ronin Validator Set test', () => {
     );
     await roninValidatorSet.deployed();
 
-    const logicContract = await new DPoStaking__factory(deployer).deploy();
+    const logicContract = await new Staking__factory(deployer).deploy();
     await logicContract.deployed();
 
     const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
@@ -75,7 +75,7 @@ describe('Ronin Validator Set test', () => {
       ])
     );
     await proxyContract.deployed();
-    stakingContract = DPoStaking__factory.connect(proxyContract.address, deployer);
+    stakingContract = Staking__factory.connect(proxyContract.address, deployer);
 
     expect(roninValidatorSetAddr.toLowerCase()).eq(roninValidatorSet.address.toLowerCase());
     expect(stakingContractAddr.toLowerCase()).eq(stakingContract.address.toLowerCase());

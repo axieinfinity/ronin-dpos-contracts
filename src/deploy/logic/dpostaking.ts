@@ -4,14 +4,14 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  await deploy('DPoStakingLogic', {
-    contract: 'DPoStaking',
+  await deploy('StakingLogic', {
+    contract: 'Staking',
     from: deployer,
     log: true,
   });
 };
 
-deploy.tags = ['DPoStakingLogic'];
+deploy.tags = ['StakingLogic'];
 deploy.dependencies = ['ProxyAdmin'];
 
 export default deploy;

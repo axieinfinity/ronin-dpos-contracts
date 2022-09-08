@@ -4,7 +4,7 @@ import { initAddress } from '../config';
 
 const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
   const indicator = await deployments.get('SlashIndicatorProxy');
-  const stakingContract = await deployments.get('DPoStakingProxy');
+  const stakingContract = await deployments.get('StakingProxy');
   const validatorContract = await deployments.get('RoninValidatorSetProxy');
 
   if (initAddress[network.name].slashIndicator?.toLowerCase() != indicator.address.toLowerCase()) {
@@ -32,6 +32,6 @@ const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
 };
 
 deploy.tags = ['VerifyAddress'];
-deploy.dependencies = ['ProxyAdmin', 'DPoStakingProxy', 'SlashIndicatorProxy', 'RoninValidatorSetProxy'];
+deploy.dependencies = ['ProxyAdmin', 'StakingProxy', 'SlashIndicatorProxy', 'RoninValidatorSetProxy'];
 
 export default deploy;

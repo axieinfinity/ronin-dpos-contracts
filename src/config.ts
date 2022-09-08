@@ -21,7 +21,7 @@ export interface InitAddr {
   };
 }
 
-export interface DPoStakingConf {
+export interface StakingConf {
   [network: LiteralNetwork]:
     | {
         maxValidatorCandidate: BigNumberish;
@@ -59,7 +59,7 @@ export const initAddress: InitAddr = {
 };
 
 // TODO: update config for devnet, testnet & mainnet
-export const stakingConfig: DPoStakingConf = {
+export const stakingConfig: StakingConf = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
     minValidatorBalance: BigNumber.from(10).pow(18).mul(1000), // 1000 RON

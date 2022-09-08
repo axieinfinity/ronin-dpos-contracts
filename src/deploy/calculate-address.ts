@@ -11,6 +11,6 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
 };
 
 deploy.tags = ['CalculateAddresses'];
-deploy.dependencies = ['ProxyAdmin', 'DPoStakingLogic', 'SlashIndicatorLogic', 'RoninValidatorSetLogic'];
+deploy.dependencies = ['ProxyAdmin', 'StakingLogic', 'SlashIndicatorLogic', 'RoninValidatorSetLogic'];
 
 export default deploy;

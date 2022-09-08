@@ -9,7 +9,7 @@ import "../interfaces/IRoninValidatorSet.sol";
 import "../libraries/Sorting.sol";
 import "./StakingManager.sol";
 
-contract DPoStaking is IStaking, StakingManager, Initializable {
+contract Staking is IStaking, StakingManager, Initializable {
   /// @dev The minimum threshold for being a validator candidate.
   uint256 internal _minValidatorBalance;
   /// @dev Maximum number of validator.
@@ -27,12 +27,12 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   mapping(address => mapping(uint256 => bool)) internal _pRewardSinked;
 
   modifier onlyGovernanceAdmin() {
-    require(msg.sender == _governanceAdmin, "DPoStaking: method caller is not governance admin");
+    require(msg.sender == _governanceAdmin, "Staking: method caller is not governance admin");
     _;
   }
 
   modifier onlyValidatorContract() {
-    require(msg.sender == _validatorContract, "DPoStaking: method caller is not the validator contract");
+    require(msg.sender == _validatorContract, "Staking: method caller is not the validator contract");
     _;
   }
 
@@ -188,7 +188,7 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
     returns (ValidatorCandidate storage _candidate)
   {
     uint256 _idx = _candidateIndex[_consensusAddr];
-    require(_idx > 0, "DPoStaking: query for nonexistent candidate");
+    require(_idx > 0, "Staking: query for nonexistent candidate");
     _candidate = validatorCandidates[~_idx];
   }
 
