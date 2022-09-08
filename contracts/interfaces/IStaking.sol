@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-interface IStaking {
+import "./IRewardPool.sol";
+
+interface IStaking is IRewardPool {
   enum ValidatorState {
     ACTIVE,
     ON_REQUESTING_RENOUNCE,
@@ -32,23 +34,32 @@ interface IStaking {
     uint256[20] ____gap;
   }
 
-  /// @dev TODO: add comment for these events
+  /// @dev Emitted when the validator candidate is proposed.
   event ValidatorProposed(
     address indexed consensusAddr,
     address indexed candidateIdx,
     uint256 amount,
     ValidatorCandidate _info
   );
+  /// @dev Emitted when the candidate admin staked for themself.
   event Staked(address indexed validator, uint256 amount);
+  /// @dev Emitted when the candidate admin unstaked the amount of RON from themself.
   event Unstaked(address indexed validator, uint256 amount);
+  /// @dev Emitted when the validator candidate requested to renounce.
   event ValidatorRenounceRequested(address indexed consensusAddr, uint256 amount);
+  /// @dev Emitted when the renounce request is finalized.
   event ValidatorRenounceFinalized(address indexed consensusAddr, uint256 amount);
+  /// @dev Emitted when the delegator staked for a validator.
   event Delegated(address indexed delegator, address indexed validator, uint256 amount);
+  /// @dev Emitted when the delegator unstaked from a validator.
   event Undelegated(address indexed delegator, address indexed validator, uint256 amount);
-
+  /// @dev Emitted when the address of validator contract is updated.
   event ValidatorContractUpdated(address);
+  /// @dev Emitted when the address of governance admin is updated.
   event GovernanceAdminUpdated(address);
+  /// @dev Emitted when the minimum balance for being a validator is updated.
   event MinValidatorBalanceUpdated(uint256 threshold);
+  /// @dev Emitted when the maximum number of validator candidates is updated.
   event MaxValidatorCandidateUpdated(uint256 threshold);
 
   ///////////////////////////////////////////////////////////////////////////////////////

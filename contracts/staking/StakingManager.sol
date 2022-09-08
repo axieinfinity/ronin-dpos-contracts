@@ -21,22 +21,33 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   }
 
   /**
-   * @inheritdoc RewardCalculation
+   * @inheritdoc IRewardPool
    */
-  function balanceOf(address _poolAddr, address _user) public view override returns (uint256) {
+  function balanceOf(address _poolAddr, address _user)
+    public
+    view
+    override(IRewardPool, RewardCalculation)
+    returns (uint256)
+  {
     return _delegatedAmount[_poolAddr][_user];
   }
 
   /**
-   * @inheritdoc RewardCalculation
+   * @inheritdoc IRewardPool
    */
-  function totalBalance(address _poolAddr) public view override returns (uint256) {
+  function totalBalance(address _poolAddr) public view override(IRewardPool, RewardCalculation) returns (uint256) {
     ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
     return _candidate.delegatedAmount;
   }
 
+  /**
+   * @inheritdoc IStaking
+   */
   function minValidatorBalance() public view virtual returns (uint256);
 
+  /**
+   * @inheritdoc IStaking
+   */
   function maxValidatorCandidate() public view virtual returns (uint256);
 
   ///////////////////////////////////////////////////////////////////////////////////////

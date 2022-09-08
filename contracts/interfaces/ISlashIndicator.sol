@@ -5,9 +5,9 @@ pragma solidity ^0.8.9;
 import "../interfaces/IRoninValidatorSet.sol";
 
 interface ISlashIndicator {
-  // TODO: fill comment for event. IE: Emitted when...
-  // TODO: add event for thresholds
+  /// @dev Emitted when the validator is slashed
   event ValidatorSlashed(address indexed validator, SlashType slashType);
+  /// @dev Emitted when the validator indicators are reset
   event UnavailabilityIndicatorsReset(address[] validators);
 
   enum SlashType {

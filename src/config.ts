@@ -58,7 +58,7 @@ export const initAddress: InitAddr = {
   },
 };
 
-// TODO: update config for devnet, testnet & mainnet
+// TODO: update config for testnet & mainnet
 export const stakingConfig: StakingConf = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
@@ -69,7 +69,7 @@ export const stakingConfig: StakingConf = {
   [Network.Mainnet]: undefined,
 };
 
-// TODO: update config for devnet, testnet & mainnet
+// TODO: update config for testnet & mainnet
 export const slashIndicatorConf: SlashIndicatorConf = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
@@ -83,7 +83,7 @@ export const slashIndicatorConf: SlashIndicatorConf = {
   [Network.Mainnet]: undefined,
 };
 
-// TODO: update config for devnet, testnet & mainnet
+// TODO: update config for testnet & mainnet
 export const roninValidatorSetConf: RoninValidatorSetConf = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
