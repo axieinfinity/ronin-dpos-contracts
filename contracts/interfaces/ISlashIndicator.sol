@@ -58,7 +58,7 @@ interface ISlashIndicator {
    * @dev Sets the slash thresholds
    *
    * Requirements:
-   * - Only governance admin contract can call this method
+   * - Only governance admin can call this method
    *
    */
   function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) external;
@@ -74,7 +74,7 @@ interface ISlashIndicator {
   function getSlashThresholds() external view returns (uint256 misdemeanorThreshold, uint256 felonyThreshold);
 
   /**
-   * @dev Returns the governance admin contract address.
+   * @dev Returns the governance admin address.
    */
-  function governanceAdminContract() external view returns (address);
+  function governanceAdmin() external view returns (address);
 }

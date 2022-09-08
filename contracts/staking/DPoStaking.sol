@@ -14,8 +14,8 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   uint256 internal _minValidatorBalance;
   /// @dev Maximum number of validator.
   uint256 internal _maxValidatorCandidate;
-  /// @dev Governance admin contract address.
-  address internal _governanceAdminContract; // TODO(Thor): add setter.
+  /// @dev Governance admin address.
+  address internal _governanceAdmin; // TODO(Thor): add setter.
   /// @dev Validator contract address.
   address internal _validatorContract; // Change type to address for testing purpose
 
@@ -26,8 +26,8 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /// @dev Mapping from consensus address => period index => indicating the pending reward in the period is sinked or not.
   mapping(address => mapping(uint256 => bool)) internal _pRewardSinked;
 
-  modifier onlyGovernanceAdminContract() {
-    require(msg.sender == _governanceAdminContract, "DPoStaking: method caller is not governance admin contract");
+  modifier onlyGovernanceAdmin() {
+    require(msg.sender == _governanceAdmin, "DPoStaking: method caller is not governance admin");
     _;
   }
 
@@ -49,12 +49,12 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
    */
   function initialize(
     address __validatorContract,
-    address __governanceAdminContract,
+    address __governanceAdmin,
     uint256 __maxValidatorCandidate,
     uint256 __minValidatorBalance
   ) external initializer {
     _setValidatorContract(__validatorContract);
-    _setGovernanceAdminContractAddress(__governanceAdminContract);
+    _setGovernanceAdminAddress(__governanceAdmin);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setMinValidatorBalance(__minValidatorBalance);
   }
@@ -66,8 +66,8 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function governanceAdminContract() public view override returns (address) {
-    return _governanceAdminContract;
+  function governanceAdmin() public view override returns (address) {
+    return _governanceAdmin;
   }
 
   /**
@@ -80,7 +80,7 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function setMinValidatorBalance(uint256 _threshold) external onlyGovernanceAdminContract {
+  function setMinValidatorBalance(uint256 _threshold) external onlyGovernanceAdmin {
     _setMinValidatorBalance(_threshold);
   }
 
@@ -94,7 +94,7 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function setMaxValidatorCandidate(uint256 _threshold) external onlyGovernanceAdminContract {
+  function setMaxValidatorCandidate(uint256 _threshold) external onlyGovernanceAdmin {
     _setMaxValidatorCandidate(_threshold);
   }
 
@@ -214,18 +214,18 @@ contract DPoStaking is IStaking, StakingManager, Initializable {
   }
 
   /**
-   * @dev Sets the governance admin contract address.
+   * @dev Sets the governance admin address.
    *
-   * Emits the `GovernanceAdminContractUpdated` event.
+   * Emits the `GovernanceAdminUpdated` event.
    *
    */
-  function _setGovernanceAdminContractAddress(address _newAddr) internal {
-    _governanceAdminContract = _newAddr;
-    emit GovernanceAdminContractUpdated(_newAddr);
+  function _setGovernanceAdminAddress(address _newAddr) internal {
+    _governanceAdmin = _newAddr;
+    emit GovernanceAdminUpdated(_newAddr);
   }
 
   /**
-   * @dev Sets the governance admin contract address.
+   * @dev Sets the governance admin address.
    *
    * Emits the `ValidatorContractUpdated` event.
    *

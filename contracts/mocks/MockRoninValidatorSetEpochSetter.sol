@@ -9,12 +9,12 @@ contract MockRoninValidatorSetEpochSetter is RoninValidatorSet {
   uint256[] internal _periods;
 
   constructor(
-    address __governanceAdminContract,
+    address __governanceAdmin,
     address __slashIndicatorContract,
     address __stakingContract,
     uint256 __maxValidatorNumber
   ) {
-    _governanceAdminContract = __governanceAdminContract;
+    _governanceAdmin = __governanceAdmin;
     _slashIndicatorContract = __slashIndicatorContract;
     _stakingContract = __stakingContract;
     _maxValidatorNumber = __maxValidatorNumber;

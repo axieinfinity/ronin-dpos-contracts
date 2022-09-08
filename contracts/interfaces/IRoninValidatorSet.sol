@@ -44,9 +44,9 @@ interface IRoninValidatorSet {
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev Returns the governance admin contract address.
+   * @dev Returns the governance admin address.
    */
-  function governanceAdminContract() external view returns (address);
+  function governanceAdmin() external view returns (address);
 
   /**
    * @dev Returns the slash indicator contract address.

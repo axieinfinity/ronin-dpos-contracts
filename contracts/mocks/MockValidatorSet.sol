@@ -67,7 +67,7 @@ contract MockValidatorSet is IRoninValidatorSet {
 
   function getLastUpdatedBlock() external view override returns (uint256) {}
 
-  function governanceAdminContract() external view override returns (address) {}
+  function governanceAdmin() external view override returns (address) {}
 
   function jailed(address[] memory) external view override returns (bool[] memory) {}
 

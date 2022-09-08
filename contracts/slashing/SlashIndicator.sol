@@ -26,8 +26,8 @@ contract SlashIndicator is ISlashIndicator, Initializable {
 
   /// @dev The validator contract
   IRoninValidatorSet public validatorContract;
-  /// @dev The governance admin contract
-  address internal _governanceAdminContract;
+  /// @dev The governance admin
+  address internal _governanceAdmin;
 
   modifier onlyCoinbase() {
     require(msg.sender == block.coinbase, "SlashIndicator: method caller is not the coinbase");
@@ -162,7 +162,7 @@ contract SlashIndicator is ISlashIndicator, Initializable {
   /**
    * @inheritdoc ISlashIndicator
    */
-  function governanceAdminContract() external view override returns (address) {
-    return _governanceAdminContract;
+  function governanceAdmin() external view override returns (address) {
+    return _governanceAdmin;
   }
 }

@@ -47,7 +47,7 @@ interface IStaking {
   event Undelegated(address indexed delegator, address indexed validator, uint256 amount);
 
   event ValidatorContractUpdated(address);
-  event GovernanceAdminContractUpdated(address);
+  event GovernanceAdminUpdated(address);
   event MinValidatorBalanceUpdated(uint256 threshold);
   event MaxValidatorCandidateUpdated(uint256 threshold);
 
@@ -56,9 +56,9 @@ interface IStaking {
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev Returns the governance admin contract address.
+   * @dev Returns the governance admin address.
    */
-  function governanceAdminContract() external view returns (address);
+  function governanceAdmin() external view returns (address);
 
   /**
    * @dev Returns the minimum threshold for being a validator candidate.

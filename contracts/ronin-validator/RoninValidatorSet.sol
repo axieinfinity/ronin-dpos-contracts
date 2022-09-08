@@ -11,8 +11,8 @@ import "../libraries/Sorting.sol";
 import "../libraries/Math.sol";
 
 contract RoninValidatorSet is IRoninValidatorSet, Initializable {
-  /// @dev Governance admin contract address.
-  address internal _governanceAdminContract; // TODO(Thor): add setter.
+  /// @dev Governance admin address.
+  address internal _governanceAdmin; // TODO(Thor): add setter.
   /// @dev Slash indicator contract address.
   address internal _slashIndicatorContract; // Change type to address for testing purpose
   /// @dev Staking contract address.
@@ -69,14 +69,14 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    * @dev Initializes the contract storage.
    */
   function initialize(
-    address __governanceAdminContract,
+    address __governanceAdmin,
     address __slashIndicatorContract,
     address __stakingContract,
     uint256 __maxValidatorNumber,
     uint256 __numberOfBlocksInEpoch,
     uint256 __numberOfEpochsInPeriod
   ) external initializer {
-    _governanceAdminContract = __governanceAdminContract;
+    _governanceAdmin = __governanceAdmin;
     _slashIndicatorContract = __slashIndicatorContract;
     _stakingContract = __stakingContract;
     _maxValidatorNumber = __maxValidatorNumber;
@@ -181,8 +181,8 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function governanceAdminContract() external view override returns (address) {
-    return _governanceAdminContract;
+  function governanceAdmin() external view override returns (address) {
+    return _governanceAdmin;
   }
 
   /**
