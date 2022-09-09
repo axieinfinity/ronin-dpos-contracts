@@ -55,7 +55,7 @@ The delegator can choose the validator to stake and receive the commission rewar
 
 ### Reward Calculation
 
-- Read how the reward is calculated for delegator at [Staking Problem: Reward Calculation](https://www.notion.so/skymavis/Staking-Problem-Reward-Calculation-bd47bbcefde24bbd8e959bee45dfd4a5).
+- Read how the reward is calculated for delegator at [Staking Problem: Reward Calculation](https://skymavis.notion.site/Staking-Problem-Reward-Calculation-bd47bbcefde24bbd8e959bee45dfd4a5).
 - See [`RewardCalculation` contract](./contracts/staking/RewardCalculation.sol) for the implementation.
 
 ## Validator Contract
@@ -96,7 +96,7 @@ The validators will be slashed when they do not provide the good service for Ron
 
 ## Contract Interaction flow
 
-Read the contract interaction flow at [DPoS Contract: Interaction Flow](https://www.notion.so/skymavis/DPoS-Contract-Interaction-Flow-3a535cf9048f46f69dd9a45958ad9b85).
+Read the contract interaction flow at [DPoS Contract: Interaction Flow](https://skymavis.notion.site/DPoS-Contract-Interaction-Flow-3a535cf9048f46f69dd9a45958ad9b85).
 
 ## Development
 
@@ -120,7 +120,7 @@ $ yarn test
 $ cp .env.example .env && vim .env
 ```
 
-- Update the contract configuration in [`config.ts`](./src/config.ts#L54-L93) file
+- Update the contract configuration in [`config.ts`](./src/config.ts#L55-L96) file
 
 - Deploy the contracts:
 
