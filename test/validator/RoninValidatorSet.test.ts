@@ -110,7 +110,7 @@ describe('Ronin Validator Set test', () => {
       tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
     await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, []);
-    expect(await roninValidatorSet.getValidators()).have.same.members([]);
+    expect(await roninValidatorSet.getValidators()).eql([]);
   });
 
   it('Should be able to wrap up epoch and sync validator set from staking contract', async () => {
@@ -135,7 +135,7 @@ describe('Ronin Validator Set test', () => {
         .map((_) => _.address)
     );
 
-    expect(await roninValidatorSet.getValidators()).have.same.members(
+    expect(await roninValidatorSet.getValidators()).eql(
       validatorCandidates
         .slice(0, 4)
         .reverse()
@@ -169,7 +169,7 @@ describe('Ronin Validator Set test', () => {
       ];
     });
     await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
-    expect(await roninValidatorSet.getValidators()).have.same.members(currentValidatorSet);
+    expect(await roninValidatorSet.getValidators()).eql(currentValidatorSet);
   });
 
   it('Should not be able to submit block reward using unauthorized account', async () => {
