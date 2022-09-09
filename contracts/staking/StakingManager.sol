@@ -174,6 +174,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     require(_candidate.candidateAdmin == _user, "StakingManager: user is not the candidate admin");
     require(_amount <= _candidate.stakedAmount, "StakingManager: insufficient staked amount");
 
+    // TODO: exclude min balance check when staked is deducted by slashing
     uint256 remainAmount = _candidate.stakedAmount - _amount;
     require(remainAmount >= minValidatorBalance(), "StakingManager: invalid staked amount left");
 

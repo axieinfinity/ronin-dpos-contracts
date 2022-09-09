@@ -359,6 +359,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    */
   function _updateValidatorSet() internal {
     // TODO: measure gas metrics from getting candidates
+    // TODO: filter validators that do not have enough min balance
     (address[] memory _candidates, uint256[] memory _weights) = IStaking(_stakingContract).getCandidateWeights();
     uint256 _newLength = _candidates.length;
     for (uint256 _i; _i < _candidates.length; _i++) {

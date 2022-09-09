@@ -99,7 +99,7 @@ interface IStaking is IRewardPool {
   function setMaxValidatorCandidate(uint256) external;
 
   ///////////////////////////////////////////////////////////////////////////////////////
-  //                              FUNCTIONS FOR VALIDATOR                              //
+  //                         FUNCTIONS FOR VALIDATOR CONTRACT                           //
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
