@@ -5,17 +5,18 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import {
   Staking,
-  MockRoninValidatorSetEpochSetter,
-  MockRoninValidatorSetEpochSetter__factory,
+  MockRoninValidatorSetEpochSetterAndQueryInfo,
+  MockRoninValidatorSetEpochSetterAndQueryInfo__factory,
   Staking__factory,
   TransparentUpgradeableProxy__factory,
   MockSlashIndicator,
   MockSlashIndicator__factory,
   StakingVesting__factory,
 } from '../../src/types';
-import * as RoninValidatorSet from '../helpers/ronin-validator-set';
+import * as RoninValidatorSet from '../../src/script/ronin-validator-set';
+import { mineBatchTxs } from '../utils';
 
-let roninValidatorSet: MockRoninValidatorSetEpochSetter;
+let roninValidatorSet: MockRoninValidatorSetEpochSetterAndQueryInfo;
 let stakingContract: Staking;
 let slashIndicator: MockSlashIndicator;
 
@@ -32,13 +33,6 @@ const slashFelonyAmount = 100;
 const slashDoubleSignAmount = 1000;
 const maxValidatorNumber = 4;
 const minValidatorBalance = BigNumber.from(2);
-
-const mineBatchTxs = async (fn: () => Promise<void>) => {
-  await network.provider.send('evm_setAutomine', [false]);
-  await fn();
-  await network.provider.send('evm_mine');
-  await network.provider.send('evm_setAutomine', [true]);
-};
 
 describe('Ronin Validator Set test', () => {
   before(async () => {
@@ -64,7 +58,7 @@ describe('Ronin Validator Set test', () => {
     );
     await slashIndicator.deployed();
 
-    roninValidatorSet = await new MockRoninValidatorSetEpochSetter__factory(deployer).deploy(
+    roninValidatorSet = await new MockRoninValidatorSetEpochSetterAndQueryInfo__factory(deployer).deploy(
       governanceAdmin.address,
       slashIndicator.address,
       stakingContractAddr,

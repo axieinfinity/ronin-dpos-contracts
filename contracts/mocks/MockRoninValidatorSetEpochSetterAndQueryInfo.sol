@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../ronin-validator/RoninValidatorSet.sol";
 
-contract MockRoninValidatorSetEpochSetter is RoninValidatorSet {
+contract MockRoninValidatorSetEpochSetterAndQueryInfo is RoninValidatorSet {
   uint256[] internal _epochs;
   uint256[] internal _periods;
 
@@ -62,5 +62,12 @@ contract MockRoninValidatorSetEpochSetter is RoninValidatorSet {
       }
     }
     return false;
+  }
+
+  function getJailUntils(address[] calldata _addrs) public view returns (uint256[] memory jailUntils_) {
+    jailUntils_ = new uint256[](_addrs.length);
+    for (uint _i = 0; _i < _addrs.length; _i++) {
+      jailUntils_[_i] = _jailedUntil[_addrs[_i]];
+    }
   }
 }
