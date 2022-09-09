@@ -298,7 +298,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     address _poolAddr,
     address _user,
     uint256 _amount
-  ) internal {
+  ) private {
     require(_delegatedAmount[_poolAddr][_user] >= _amount, "StakingManager: insufficient amount to undelegate");
 
     uint256 _newBalance = _delegatedAmount[_poolAddr][_user] - _amount;
