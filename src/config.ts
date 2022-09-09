@@ -62,7 +62,7 @@ export const initAddress: InitAddr = {
 export const stakingConfig: StakingConf = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
-    minValidatorBalance: BigNumber.from(10).pow(18).mul(1000), // 1000 RON
+    minValidatorBalance: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5)), // 100.000 RON
     maxValidatorCandidate: 100,
   },
   [Network.Testnet]: undefined,
@@ -75,7 +75,7 @@ export const slashIndicatorConf: SlashIndicatorConf = {
   [Network.Devnet]: {
     misdemeanorThreshold: 50,
     felonyThreshold: 150,
-    slashFelonyAmount: BigNumber.from(10).pow(18).mul(1), // 10 RON
+    slashFelonyAmount: BigNumber.from(10).pow(18).mul(1), // 1 RON
     slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10), // 10 RON
     felonyJailBlocks: 28800 * 2, // jails for 2 days
   },
