@@ -12,7 +12,8 @@ import {
   TransparentUpgradeableProxy__factory,
 } from '../../src/types';
 import { Network, slashIndicatorConf, roninValidatorSetConf, stakingConfig, initAddress } from '../../src/config';
-import { BigNumber } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
+import { mineBatchTxs } from '../utils';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
@@ -31,6 +32,7 @@ const minValidatorBalance = BigNumber.from(100);
 const felonyJailDuration = 28800 * 2;
 const misdemeanorThreshold = 10;
 const felonyThreshold = 20;
+const blockRewardAmount = BigNumber.from(2);
 
 describe('[Integration] Submit Block Reward', () => {
   before(async () => {
@@ -128,6 +130,89 @@ describe('[Integration] Submit Block Reward', () => {
         let _validatorSetContract = await stakingContract.validatorContract();
         expect(_validatorSetContract).to.eq(validatorContract.address);
       });
+    });
+  });
+
+  describe('One validator submits block reward', async () => {
+    let validator: SignerWithAddress;
+    let submitRewardTx: ContractTransaction;
+
+    before(async () => {
+      let initStakingAmount = minValidatorBalance.mul(2);
+      validator = validatorCandidates[0];
+      await stakingContract.connect(validator).proposeValidator(validator.address, validator.address, 2_00, {
+        value: initStakingAmount,
+      });
+      await mineBatchTxs(async () => {
+        await validatorContract.connect(coinbase).endEpoch();
+        await validatorContract.connect(coinbase).wrapUpEpoch();
+      });
+    });
+
+    it('Should validator can submit block reward', async () => {
+      await network.provider.send('hardhat_setCoinbase', [validator.address]);
+      validatorContract = validatorContract.connect(validator);
+
+      submitRewardTx = await validatorContract.submitBlockReward({
+        value: blockRewardAmount,
+      });
+    });
+
+    it('Should the ValidatorSetContract emit event of submitting reward', async () => {
+      await expect(submitRewardTx)
+        .to.emit(validatorContract, 'BlockRewardSubmitted')
+        .withArgs(validator.address, blockRewardAmount);
+    });
+
+    it.skip('Should the StakingContract emit event of recording reward', async () => {
+      await expect(submitRewardTx).to.emit(stakingContract, 'PendingPoolUpdated').withArgs(validator.address);
+    });
+
+    it('Should the StakingContract record update for new block reward', async () => {});
+
+    after(async () => {
+      await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+    });
+  });
+
+  describe('In-jail validator submits block reward', async () => {
+    let validator: SignerWithAddress;
+    let submitRewardTx: ContractTransaction;
+
+    before(async () => {
+      let initStakingAmount = minValidatorBalance.mul(2);
+      validator = validatorCandidates[1];
+      await stakingContract.connect(validator).proposeValidator(validator.address, validator.address, 2_00, {
+        value: initStakingAmount,
+      });
+
+      await mineBatchTxs(async () => {
+        await validatorContract.connect(coinbase).endEpoch();
+        await validatorContract.connect(coinbase).wrapUpEpoch();
+      });
+
+      for (let i = 0; i < felonyThreshold; i++) {
+        await slashContract.connect(coinbase).slash(validator.address);
+      }
+    });
+
+    it('Should in-jail validator cannot submit block reward', async () => {
+      await network.provider.send('hardhat_setCoinbase', [validator.address]);
+      validatorContract = validatorContract.connect(validator);
+
+      submitRewardTx = await validatorContract.submitBlockReward({
+        value: blockRewardAmount,
+      });
+    });
+
+    it('Should the ValidatorSetContract emit event of deprecating reward', async () => {
+      await expect(submitRewardTx)
+        .to.emit(validatorContract, 'RewardDeprecated')
+        .withArgs(validator.address, blockRewardAmount);
+    });
+
+    it('Should the StakingContract emit event of recording reward', async () => {
+      expect(submitRewardTx).not.to.emit(stakingContract, 'PendingPoolUpdated');
     });
   });
 });
