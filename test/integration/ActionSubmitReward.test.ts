@@ -150,6 +150,10 @@ describe('[Integration] Submit Block Reward', () => {
       });
     });
 
+    after(async () => {
+      await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+    });
+
     it('Should validator can submit block reward', async () => {
       await network.provider.send('hardhat_setCoinbase', [validator.address]);
       validatorContract = validatorContract.connect(validator);
@@ -172,10 +176,6 @@ describe('[Integration] Submit Block Reward', () => {
     });
 
     it.skip('Should the StakingContract record update for new block reward', async () => {});
-
-    after(async () => {
-      await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-    });
   });
 
   describe('In-jail validator submits block reward', async () => {
