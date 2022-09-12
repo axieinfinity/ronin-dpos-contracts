@@ -161,7 +161,7 @@ contract Staking is IStaking, StakingManager, Initializable {
    */
   function deductStakingAmount(address _consensusAddr, uint256 _amount) external onlyValidatorContract {
     ValidatorCandidate storage _candidate = _getCandidate(_consensusAddr);
-    _unstake(_consensusAddr, _candidate.candidateAdmin, _amount);
+    _unstake(_consensusAddr, _candidate.candidateAdmin, _amount, false);
   }
 
   /**

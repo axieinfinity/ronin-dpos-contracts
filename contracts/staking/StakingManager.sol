@@ -85,7 +85,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
    */
   function unstake(address _consensusAddr, uint256 _amount) external override {
     address _delegator = msg.sender;
-    _unstake(_consensusAddr, _delegator, _amount);
+    _unstake(_consensusAddr, _delegator, _amount, true);
     // TODO(Thor): replace by `call` and use reentrancy gruard
     require(payable(msg.sender).send(_amount), "StakingManager: could not transfer RON");
   }
@@ -96,6 +96,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   function renounce(
     address /* _consensusAddr */
   ) external {
+    // TODO(Thor): implement this function
     revert("unimplemented");
   }
 
@@ -168,7 +169,8 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   function _unstake(
     address _poolAddr,
     address _user,
-    uint256 _amount
+    uint256 _amount,
+    bool _checkMinBalance
   ) internal {
     ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
     require(_candidate.candidateAdmin == _user, "StakingManager: user is not the candidate admin");
@@ -176,7 +178,9 @@ abstract contract StakingManager is IStaking, RewardCalculation {
 
     // TODO: exclude min balance check when staked is deducted by slashing
     uint256 remainAmount = _candidate.stakedAmount - _amount;
-    require(remainAmount >= minValidatorBalance(), "StakingManager: invalid staked amount left");
+    if (_checkMinBalance) {
+      require(remainAmount >= minValidatorBalance(), "StakingManager: invalid staked amount left");
+    }
 
     _candidate.stakedAmount -= _amount;
     emit Unstaked(_poolAddr, _amount);
