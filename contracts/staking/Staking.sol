@@ -70,6 +70,10 @@ contract Staking is IStaking, StakingManager, Initializable {
     return _governanceAdmin;
   }
 
+  function validatorContract() external view override returns (address) {
+    return _validatorContract;
+  }
+
   /**
    * @inheritdoc IStaking
    */
