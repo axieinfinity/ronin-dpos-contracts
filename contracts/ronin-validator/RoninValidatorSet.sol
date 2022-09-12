@@ -170,6 +170,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     }
 
     if (_periodEnding) {
+      // TODO: reset for candidates / kicked validators
       ISlashIndicator(_slashIndicatorContract).resetCounters(_validators);
     }
 
