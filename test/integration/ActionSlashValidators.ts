@@ -385,8 +385,10 @@ describe('[Integration] Slash validators', () => {
           value: slashFelonyAmount,
         });
 
-        expect(topUpTx).to.emit(stakingContract, 'Staked').withArgs(slashee.address, slashFelonyAmount);
-        expect(topUpTx).to.emit(stakingContract, 'Delegated').withArgs(slashee.address, slashFelonyAmount);
+        await expect(topUpTx).to.emit(stakingContract, 'Staked').withArgs(slashee.address, slashFelonyAmount);
+        await expect(topUpTx)
+          .to.emit(stakingContract, 'Delegated')
+          .withArgs(slashee.address, slashee.address, slashFelonyAmount);
       });
 
       it('Should the validator be able to re-join the validator set', async () => {
