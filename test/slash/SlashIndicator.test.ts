@@ -13,6 +13,7 @@ import { Address } from 'hardhat-deploy/dist/types';
 import { SlashType } from './slashType';
 import { Network, slashIndicatorConf } from '../../src/config';
 import { BigNumber } from 'ethers';
+import { expects as SlashExpects } from '../../src/script/slash-indicator';
 
 let slashContract: SlashIndicator;
 
@@ -239,7 +240,7 @@ describe('Slash indicator test', () => {
         await resetCoinbase();
 
         tx = await mockValidatorsContract.resetCounters([coinbases[slasheeIdx].address]);
-        expect(tx).to.emit(slashContract, 'UnavailabilityIndicatorReset').withArgs(coinbases[slasheeIdx].address);
+        await SlashExpects.emitUnavailabilityIndicatorsResetEvent(tx, [coinbases[slasheeIdx].address]);
 
         await resetLocalCounterForValidatorAt(slasheeIdx);
         await validateIndicatorAt(slasheeIdx);
@@ -267,8 +268,12 @@ describe('Slash indicator test', () => {
 
         tx = await mockValidatorsContract.resetCounters(slasheeIdxs.map((_) => coinbases[_].address));
 
+        await SlashExpects.emitUnavailabilityIndicatorsResetEvent(
+          tx,
+          slasheeIdxs.map((_) => coinbases[_].address)
+        );
+
         for (let j = 0; j < slasheeIdxs.length; j++) {
-          expect(tx).to.emit(slashContract, 'UnavailabilityIndicatorReset').withArgs(coinbases[slasheeIdxs[j]].address);
           await resetLocalCounterForValidatorAt(slasheeIdxs[j]);
           await validateIndicatorAt(slasheeIdxs[j]);
         }
