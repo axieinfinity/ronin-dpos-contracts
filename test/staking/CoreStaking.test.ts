@@ -1,11 +1,13 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { BigNumber, BigNumberish } from 'ethers';
+import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
 import { ethers, network } from 'hardhat';
 
 import { MockStaking, MockStaking__factory } from '../../src/types';
+import * as StakingContract from '../../src/script/staking';
 
 const EPS = 1;
+const MASK = BigNumber.from(10).pow(18);
 const poolAddr = ethers.constants.AddressZero;
 
 let deployer: SignerWithAddress;
@@ -14,34 +16,48 @@ let userB: SignerWithAddress;
 let stakingContract: MockStaking;
 
 const local = {
+  balanceA: BigNumber.from(0),
+  balanceB: BigNumber.from(0),
   accumulatedRewardForA: BigNumber.from(0),
   accumulatedRewardForB: BigNumber.from(0),
   claimableRewardForA: BigNumber.from(0),
   claimableRewardForB: BigNumber.from(0),
+  aRps: BigNumber.from(0),
+  settledARps: BigNumber.from(0),
+  syncBalance: async function () {
+    this.balanceA = await stakingContract.balanceOf(poolAddr, userA.address);
+    this.balanceB = await stakingContract.balanceOf(poolAddr, userB.address);
+  },
   recordReward: async function (reward: BigNumberish) {
     const totalStaked = await stakingContract.totalBalance(poolAddr);
-    const stakingAmountA = await stakingContract.balanceOf(poolAddr, userA.address);
-    const stakingAmountB = await stakingContract.balanceOf(poolAddr, userB.address);
+    await this.syncBalance();
     this.accumulatedRewardForA = this.accumulatedRewardForA.add(
-      BigNumber.from(reward).mul(stakingAmountA).div(totalStaked)
+      BigNumber.from(reward).mul(this.balanceA).div(totalStaked)
     );
     this.accumulatedRewardForB = this.accumulatedRewardForB.add(
-      BigNumber.from(reward).mul(stakingAmountB).div(totalStaked)
+      BigNumber.from(reward).mul(this.balanceB).div(totalStaked)
     );
+    this.aRps = this.aRps.add(BigNumber.from(reward).mul(MASK).div(totalStaked));
   },
   commitRewardPool: function () {
     this.claimableRewardForA = this.accumulatedRewardForA;
     this.claimableRewardForB = this.accumulatedRewardForB;
+    this.settledARps = this.aRps;
   },
   slash: function () {
     this.accumulatedRewardForA = this.claimableRewardForA;
     this.accumulatedRewardForB = this.claimableRewardForB;
+    this.aRps = this.settledARps;
   },
   reset: function () {
     this.claimableRewardForA = BigNumber.from(0);
     this.claimableRewardForB = BigNumber.from(0);
     this.accumulatedRewardForA = BigNumber.from(0);
     this.accumulatedRewardForB = BigNumber.from(0);
+    this.aRps = BigNumber.from(0);
+    this.settledARps = BigNumber.from(0);
+    this.balanceA = BigNumber.from(0);
+    this.balanceB = BigNumber.from(0);
   },
   claimRewardForA: function () {
     this.accumulatedRewardForA = this.accumulatedRewardForA.sub(this.claimableRewardForA);
@@ -81,6 +97,9 @@ const expectLocalCalculationRight = async () => {
 };
 
 describe('Core Staking test', () => {
+  let tx: ContractTransaction;
+  const txs: ContractTransaction[] = [];
+
   before(async () => {
     [deployer, userA, userB] = await ethers.getSigners();
     stakingContract = await new MockStaking__factory(deployer).deploy(poolAddr);
@@ -93,79 +112,137 @@ describe('Core Staking test', () => {
   });
 
   it('Should work properly with staking actions occurring sequentially for a normal period', async () => {
-    await stakingContract.stake(userA.address, 100);
-    await stakingContract.stake(userB.address, 100);
+    txs[0] = await stakingContract.stake(userA.address, 100);
+    txs[1] = await stakingContract.stake(userB.address, 100);
     await network.provider.send('evm_mine');
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(txs[0]!, poolAddr, userA.address, 0, 0);
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(txs[1]!, poolAddr, userB.address, 0, 0);
 
-    await stakingContract.recordReward(1000);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
     await network.provider.send('evm_mine');
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.stake(userA.address, 200);
+    txs[0] = await stakingContract.stake(userA.address, 200);
     await network.provider.send('evm_mine');
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      1000,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.unstake(userA.address, 200);
-    await stakingContract.recordReward(1000);
+    txs[0] = await stakingContract.unstake(userA.address, 200);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      1750,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.stake(userA.address, 200);
+    txs[0] = await stakingContract.stake(userA.address, 200);
     await network.provider.send('evm_mine');
-    await local.recordReward(0);
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      2250,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
     await expectLocalCalculationRight();
 
-    await stakingContract.commitRewardPool([ethers.constants.AddressZero]);
+    tx = await stakingContract.commitRewardPool([ethers.constants.AddressZero]);
     await stakingContract.endPeriod();
     await network.provider.send('evm_mine');
+    await StakingContract.expects.emitSettledPoolsUpdatedEvent(tx!, [poolAddr], [local.aRps]);
     local.commitRewardPool();
     await expectLocalCalculationRight();
   });
 
   it('Should work properly with staking actions occurring sequentially for a slashed period', async () => {
-    await stakingContract.stake(userA.address, 100);
+    txs[0] = await stakingContract.stake(userA.address, 100);
     await network.provider.send('evm_mine');
     await expectLocalCalculationRight();
-    await local.recordReward(0);
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      local.balanceA,
+      2250,
+      local.aRps
+    );
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      2250,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
 
-    await stakingContract.recordReward(1000);
+    tx = await stakingContract.recordReward(1000);
+    await network.provider.send('evm_mine');
+    await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
+    await expectLocalCalculationRight();
+
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
     await expectLocalCalculationRight();
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
 
-    await stakingContract.recordReward(1000);
+    txs[0] = await stakingContract.stake(userA.address, 300);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      3850,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.stake(userA.address, 300);
-    await stakingContract.recordReward(1000);
-    await network.provider.send('evm_mine');
-    await local.recordReward(1000);
-    await expectLocalCalculationRight();
-
-    await stakingContract.slash();
+    tx = await stakingContract.slash();
     await network.provider.send('evm_mine');
     local.slash();
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(0);
+    tx = await stakingContract.recordReward(0);
     await network.provider.send('evm_mine');
     await local.recordReward(0);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
     await network.provider.send('evm_mine');
@@ -173,50 +250,111 @@ describe('Core Staking test', () => {
     await network.provider.send('evm_mine');
     await network.provider.send('evm_mine');
 
-    await stakingContract.unstake(userA.address, 300);
+    txs[0] = await stakingContract.unstake(userA.address, 300);
     await network.provider.send('evm_mine');
-    await stakingContract.unstake(userA.address, 100);
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      2250,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
+    txs[0] = await stakingContract.unstake(userA.address, 100);
     await network.provider.send('evm_mine');
     await expectLocalCalculationRight();
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      2250,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
 
-    await stakingContract.commitRewardPool([ethers.constants.AddressZero]);
+    tx = await stakingContract.commitRewardPool([ethers.constants.AddressZero]);
     await stakingContract.endPeriod();
     await network.provider.send('evm_mine');
     await expectLocalCalculationRight();
+    await StakingContract.expects.emitSettledPoolsUpdatedEvent(tx!, [poolAddr], [local.aRps]);
   });
 
   it('Should work properly with staking actions occurring sequentially for a slashed period again', async () => {
-    await stakingContract.stake(userA.address, 100);
+    txs[0] = await stakingContract.stake(userA.address, 100);
     await network.provider.send('evm_mine');
-    await local.recordReward(0);
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      local.balanceA,
+      local.claimableRewardForA,
+      local.settledARps
+    );
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      2250,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
     await expectLocalCalculationRight();
 
-    await stakingContract.claimReward(userA.address);
-    await stakingContract.recordReward(1000);
+    txs[0] = await stakingContract.claimReward(userA.address);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
-    await local.recordReward(1000);
+    await StakingContract.expects.emitRewardClaimedEvent(txs[0]!, poolAddr, userA.address, local.claimableRewardForA);
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      2250,
+      local.aRps.mul(local.balanceA).div(MASK).add(local.claimableRewardForA)
+    );
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      300,
+      0,
+      local.settledARps
+    );
     local.claimRewardForA();
+    await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.stake(userA.address, 300);
-    await stakingContract.recordReward(1000);
+    txs[0] = await stakingContract.stake(userA.address, 300);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      1600,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.slash();
+    tx = await stakingContract.slash();
     await network.provider.send('evm_mine');
     local.slash();
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(0);
+    tx = await stakingContract.recordReward(0);
     await network.provider.send('evm_mine');
     await local.recordReward(0);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
     await network.provider.send('evm_mine');
@@ -224,100 +362,278 @@ describe('Core Staking test', () => {
     await network.provider.send('evm_mine');
     await network.provider.send('evm_mine');
 
-    await stakingContract.unstake(userA.address, 300);
+    txs[0] = await stakingContract.unstake(userA.address, 300);
     await network.provider.send('evm_mine');
-    await stakingContract.unstake(userA.address, 100);
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      0,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
+
+    txs[0] = await stakingContract.unstake(userA.address, 100);
     await network.provider.send('evm_mine');
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      0,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
     await expectLocalCalculationRight();
 
-    await stakingContract.claimReward(userB.address);
-    await stakingContract.commitRewardPool([ethers.constants.AddressZero]);
+    txs[1] = await stakingContract.claimReward(userB.address);
+    tx = await stakingContract.commitRewardPool([ethers.constants.AddressZero]);
     await stakingContract.endPeriod();
     await network.provider.send('evm_mine');
+    await StakingContract.expects.emitRewardClaimedEvent(txs[1]!, poolAddr, userB.address, local.claimableRewardForB);
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[1]!,
+      poolAddr,
+      userB.address,
+      0,
+      local.aRps.mul(local.balanceB).div(MASK)
+    );
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(
+      txs[1]!,
+      poolAddr,
+      userB.address,
+      local.balanceB,
+      0,
+      local.settledARps
+    );
     local.claimRewardForB();
+    await StakingContract.expects.emitSettledPoolsUpdatedEvent(tx!, [poolAddr], [local.aRps]);
+    local.commitRewardPool();
     await expectLocalCalculationRight();
   });
 
   it('Should be able to calculate right reward after claiming', async () => {
-    await stakingContract.recordReward(1000);
-    await stakingContract.commitRewardPool([ethers.constants.AddressZero]);
+    const lastCredited = local.aRps.mul(300).div(MASK);
+
+    txs[0] = await stakingContract.recordReward(1000);
+    txs[1] = await stakingContract.commitRewardPool([ethers.constants.AddressZero]);
     await stakingContract.endPeriod();
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(txs[0]!, poolAddr, local.aRps);
+    await StakingContract.expects.emitSettledPoolsUpdatedEvent(txs[1]!, [poolAddr], [local.aRps]);
     local.commitRewardPool();
     await expectLocalCalculationRight();
 
-    await stakingContract.claimReward(userA.address);
-    await stakingContract.recordReward(1000);
+    txs[0] = await stakingContract.claimReward(userA.address);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
+    await StakingContract.expects.emitRewardClaimedEvent(txs[0]!, poolAddr, userA.address, local.claimableRewardForA);
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      0,
+      lastCredited.add(local.claimableRewardForA)
+    );
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(txs[0]!, poolAddr, userA.address, 300, 0, local.aRps);
+    local.claimRewardForA();
     await local.recordReward(1000);
-    local.claimRewardForA();
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.claimReward(userA.address);
+    txs[0] = await stakingContract.claimReward(userA.address);
     await network.provider.send('evm_mine');
     local.claimRewardForA();
     await expectLocalCalculationRight();
+    await StakingContract.expects.emitRewardClaimedEvent(txs[0]!, poolAddr, userA.address, 0);
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      0,
+      lastCredited.add(750)
+    );
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      300,
+      0,
+      local.settledARps
+    );
 
-    await stakingContract.claimReward(userB.address);
-    await stakingContract.commitRewardPool([ethers.constants.AddressZero]);
+    txs[1] = await stakingContract.claimReward(userB.address);
+    tx = await stakingContract.commitRewardPool([ethers.constants.AddressZero]);
     await stakingContract.endPeriod();
     await network.provider.send('evm_mine');
+    await StakingContract.expects.emitRewardClaimedEvent(txs[1]!, poolAddr, userB.address, 250);
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(txs[1]!, poolAddr, userB.address, 0, 1750 + 250);
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(
+      txs[1]!,
+      poolAddr,
+      userB.address,
+      100,
+      0,
+      local.settledARps
+    );
     local.claimRewardForB();
     local.commitRewardPool();
+    await StakingContract.expects.emitSettledPoolsUpdatedEvent(tx!, [poolAddr], [local.settledARps]);
     await expectLocalCalculationRight();
   });
 
   it('Should work properly with staking actions from multi-users occurring in the same block', async () => {
-    await stakingContract.stake(userA.address, 100);
+    txs[0] = await stakingContract.stake(userA.address, 100);
     await network.provider.send('evm_mine');
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      local.balanceA,
+      local.claimableRewardForA,
+      local.settledARps
+    );
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      local.claimableRewardForA,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
 
-    await stakingContract.stake(userA.address, 300);
-    await stakingContract.recordReward(1000);
+    txs[0] = await stakingContract.stake(userA.address, 300);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
+    await local.syncBalance();
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      750,
+      local.aRps.mul(local.balanceA).div(MASK)
+    );
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.stake(userB.address, 200);
-    await stakingContract.recordReward(1000);
+    txs[1] = await stakingContract.stake(userB.address, 200);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(
+      txs[1]!,
+      poolAddr,
+      userB.address,
+      local.balanceB,
+      local.claimableRewardForB,
+      local.settledARps
+    );
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.recordReward(1000);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.unstake(userB.address, 200);
-    await stakingContract.unstake(userA.address, 400);
-    await stakingContract.recordReward(1000);
+    txs[1] = await stakingContract.unstake(userB.address, 200);
+    txs[0] = await stakingContract.unstake(userA.address, 400);
+    tx = await stakingContract.recordReward(1000);
     await network.provider.send('evm_mine');
+    await local.syncBalance();
+    let lastCreditedB = local.aRps.mul(local.balanceB).div(MASK);
+    let lastCreditedA = local.aRps.mul(local.balanceA).div(MASK);
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[1]!,
+      poolAddr,
+      userB.address,
+      local.accumulatedRewardForB,
+      lastCreditedB
+    );
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(txs[0]!, poolAddr, userA.address, 3725, lastCreditedA);
     await local.recordReward(1000);
+    await StakingContract.expects.emitPendingPoolUpdatedEvent(tx!, poolAddr, local.aRps);
     await expectLocalCalculationRight();
 
-    await stakingContract.claimReward(userA.address);
-    await stakingContract.claimReward(userB.address);
+    txs[0] = await stakingContract.claimReward(userA.address);
+    txs[1] = await stakingContract.claimReward(userB.address);
     await network.provider.send('evm_mine');
+    lastCreditedA = lastCreditedA.add(local.claimableRewardForA);
+    await StakingContract.expects.emitRewardClaimedEvent(txs[0]!, poolAddr, userA.address, local.claimableRewardForA);
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      local.balanceA,
+      0,
+      local.settledARps
+    );
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(txs[0]!, poolAddr, userA.address, 3725, lastCreditedA);
+    lastCreditedB = lastCreditedB.add(local.claimableRewardForB);
+    await StakingContract.expects.emitRewardClaimedEvent(txs[1]!, poolAddr, userB.address, local.claimableRewardForB);
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(
+      txs[1]!,
+      poolAddr,
+      userB.address,
+      local.balanceB,
+      0,
+      local.settledARps
+    );
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(txs[1]!, poolAddr, userB.address, 1275, lastCreditedB);
     local.claimRewardForA();
     local.claimRewardForB();
     await expectLocalCalculationRight();
 
-    await stakingContract.unstake(userA.address, 200);
-    await stakingContract.commitRewardPool([ethers.constants.AddressZero]);
+    txs[0] = await stakingContract.unstake(userA.address, 200);
+    tx = await stakingContract.commitRewardPool([ethers.constants.AddressZero]);
     await stakingContract.endPeriod();
     await network.provider.send('evm_mine');
+    await local.syncBalance();
+    lastCreditedA = local.balanceA.mul(local.aRps).div(MASK);
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      local.accumulatedRewardForA,
+      lastCreditedA
+    );
     local.commitRewardPool();
+    await StakingContract.expects.emitSettledPoolsUpdatedEvent(tx!, [poolAddr], [local.settledARps]);
     await expectLocalCalculationRight();
 
-    await stakingContract.claimReward(userA.address);
-    await stakingContract.claimReward(userB.address);
+    txs[0] = await stakingContract.claimReward(userA.address);
+    txs[1] = await stakingContract.claimReward(userB.address);
     await network.provider.send('evm_mine');
+    lastCreditedA = lastCreditedA.add(local.claimableRewardForA);
+    await StakingContract.expects.emitRewardClaimedEvent(txs[0]!, poolAddr, userA.address, local.claimableRewardForA);
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(
+      txs[0]!,
+      poolAddr,
+      userA.address,
+      local.balanceA,
+      0,
+      local.settledARps
+    );
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(txs[0]!, poolAddr, userA.address, 3725, lastCreditedA);
+    lastCreditedB = lastCreditedB.add(local.claimableRewardForB);
+    await StakingContract.expects.emitRewardClaimedEvent(txs[1]!, poolAddr, userB.address, local.claimableRewardForB);
+    await StakingContract.expects.emitSettledRewardUpdatedEvent(
+      txs[1]!,
+      poolAddr,
+      userB.address,
+      local.balanceB,
+      0,
+      local.settledARps
+    );
+    await StakingContract.expects.emitPendingRewardUpdatedEvent(txs[1]!, poolAddr, userB.address, 1275, lastCreditedB);
     local.claimRewardForA();
     local.claimRewardForB();
     await expectLocalCalculationRight();

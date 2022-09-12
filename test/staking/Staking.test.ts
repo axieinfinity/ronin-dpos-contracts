@@ -1,12 +1,13 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { BigNumber, BigNumberish } from 'ethers';
+import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
 import { ethers, network } from 'hardhat';
 
 import { Staking, Staking__factory, TransparentUpgradeableProxy__factory } from '../../src/types';
 import { MockValidatorSet__factory } from '../../src/types/factories/MockValidatorSet__factory';
 import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
+import * as StakingContract from '../../src/script/staking';
 
 const EPS = 1;
 
@@ -132,11 +133,18 @@ describe('Staking test', () => {
     it('Should be able to propose validator with sufficient amount', async () => {
       for (let i = 1; i < validatorCandidates.length; i++) {
         const candidate = validatorCandidates[i];
-        await stakingContract.connect(candidate).proposeValidator(
+        const tx = await stakingContract.connect(candidate).proposeValidator(
           candidate.address,
           candidate.address,
           1, // 0.01%
           { value: minValidatorBalance }
+        );
+        await StakingContract.expects.emitValidatorProposedEvent(
+          tx,
+          candidate.address,
+          candidate.address,
+          i - 1,
+          minValidatorBalance
         );
       }
 
@@ -167,9 +175,13 @@ describe('Staking test', () => {
     });
 
     it('Should be able to stake/unstake as a validator', async () => {
-      await stakingContract.connect(poolAddr).stake(poolAddr.address, { value: 1 });
+      let tx: ContractTransaction;
+      tx = await stakingContract.connect(poolAddr).stake(poolAddr.address, { value: 1 });
+      await StakingContract.expects.emitStakedEvent(tx!, poolAddr.address, 1);
       expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance.add(1));
-      await stakingContract.connect(poolAddr).unstake(poolAddr.address, 1);
+
+      tx = await stakingContract.connect(poolAddr).unstake(poolAddr.address, 1);
+      await StakingContract.expects.emitUnstakedEvent(tx!, poolAddr.address, 1);
       expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance);
     });
 
@@ -197,10 +209,16 @@ describe('Staking test', () => {
     });
 
     it('Should be able to delegate/undelegate', async () => {
-      await stakingContract.connect(userA).delegate(otherPoolAddr.address, { value: 1 });
-      await stakingContract.connect(userB).delegate(otherPoolAddr.address, { value: 1 });
+      let tx: ContractTransaction;
+      tx = await stakingContract.connect(userA).delegate(otherPoolAddr.address, { value: 1 });
+      await StakingContract.expects.emitDelegatedEvent(tx!, userA.address, otherPoolAddr.address, 1);
+
+      tx = await stakingContract.connect(userB).delegate(otherPoolAddr.address, { value: 1 });
+      await StakingContract.expects.emitDelegatedEvent(tx!, userB.address, otherPoolAddr.address, 1);
       expect(await stakingContract.totalBalance(otherPoolAddr.address)).eq(minValidatorBalance.add(2));
-      await stakingContract.connect(userA).undelegate(otherPoolAddr.address, 1);
+
+      tx = await stakingContract.connect(userA).undelegate(otherPoolAddr.address, 1);
+      await StakingContract.expects.emitUndelegatedEvent(tx!, userA.address, otherPoolAddr.address, 1);
       expect(await stakingContract.totalBalance(otherPoolAddr.address)).eq(minValidatorBalance.add(1));
     });
   });

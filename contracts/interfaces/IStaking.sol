@@ -35,12 +35,7 @@ interface IStaking is IRewardPool {
   }
 
   /// @dev Emitted when the validator candidate is proposed.
-  event ValidatorProposed(
-    address indexed consensusAddr,
-    address indexed candidateIdx,
-    uint256 amount,
-    ValidatorCandidate _info
-  );
+  event ValidatorProposed(address indexed consensusAddr, address indexed candidateAdmin, uint256 indexed candidateIdx);
   /// @dev Emitted when the candidate admin staked for themself.
   event Staked(address indexed validator, uint256 amount);
   /// @dev Emitted when the candidate admin unstaked the amount of RON from themself.
@@ -111,6 +106,11 @@ interface IStaking is IRewardPool {
    * @dev Returns the validator candidate list.
    */
   function getValidatorCandidates() external view returns (ValidatorCandidate[] memory candidates);
+
+  /**
+   * @dev Returns the current candidate length.
+   */
+  function getValidatorCandidateLength() external view returns (uint256);
 
   /**
    * @dev Returns the validator candidate weights.

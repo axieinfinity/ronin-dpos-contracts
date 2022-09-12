@@ -12,7 +12,7 @@ export const expects = {
     expectedCoinbaseAddr: string,
     expectedDeprecatedReward: BigNumberish
   ) {
-    expectEvent(
+    await expectEvent(
       contractInterface,
       'RewardDeprecated',
       tx,
@@ -29,7 +29,7 @@ export const expects = {
     expectedCoinbaseAddr: string,
     expectedDeprecatedReward: BigNumberish
   ) {
-    expectEvent(
+    await expectEvent(
       contractInterface,
       'BlockRewardSubmitted',
       tx,
@@ -47,7 +47,7 @@ export const expects = {
     expectedJailedUntil: BigNumberish,
     expectedDeductedStakingAmount: BigNumberish
   ) {
-    expectEvent(
+    await expectEvent(
       contractInterface,
       'ValidatorSlashed',
       tx,
@@ -65,7 +65,7 @@ export const expects = {
     expectedCoinbaseAddr: string,
     expectedAmount: BigNumberish
   ) {
-    expectEvent(
+    await expectEvent(
       contractInterface,
       'MiningRewardDistributed',
       tx,
@@ -78,7 +78,7 @@ export const expects = {
   },
 
   emitStakingRewardDistributedEvent: async function (tx: ContractTransaction, expectedAmount: BigNumberish) {
-    expectEvent(
+    await expectEvent(
       contractInterface,
       'StakingRewardDistributed',
       tx,
@@ -90,7 +90,7 @@ export const expects = {
   },
 
   emitValidatorSetUpdatedEvent: async function (tx: ContractTransaction, expectedValidators: string[]) {
-    expectEvent(
+    await expectEvent(
       contractInterface,
       'ValidatorSetUpdated',
       tx,

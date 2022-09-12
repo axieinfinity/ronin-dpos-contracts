@@ -257,9 +257,9 @@ describe('Ronin Validator Set test', () => {
   it('Should not allocate reward for the slashed validator', async () => {
     let tx: ContractTransaction;
     const balance = await treasury.getBalance();
+    await slashIndicator.slashMisdemeanor(coinbase.address);
     tx = await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
     await RoninValidatorSet.expects.emitRewardDeprecatedEvent(tx!, coinbase.address, 100);
-    await slashIndicator.slashMisdemeanor(coinbase.address);
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
       await roninValidatorSet.endPeriod();

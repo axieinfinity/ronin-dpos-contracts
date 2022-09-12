@@ -49,14 +49,11 @@ abstract contract RewardCalculation is IRewardPool {
 
     if (_reward.lastSyncedBlock <= _sPool.lastSyncedBlock) {
       uint256 _currentBalance = balanceOf(_poolAddr, _user);
-      _sReward.debited = (_currentBalance * _sPool.accumulatedRps) / 1e18 + _reward.debited - _reward.credited;
-      _sReward.balance = _currentBalance;
-      _sReward.accumulatedRps = _sPool.accumulatedRps;
+      return (_currentBalance * _sPool.accumulatedRps) / 1e18 + _reward.debited - _reward.credited;
     }
 
-    uint256 _balance = _sReward.balance;
-    uint256 _credited = (_balance * _sReward.accumulatedRps) / 1e18;
-    return (_balance * _sPool.accumulatedRps) / 1e18 + _sReward.debited - _credited;
+    uint256 _diffRps = _sPool.accumulatedRps - _sReward.accumulatedRps;
+    return (_sReward.balance * _diffRps) / 1e18 + _sReward.debited;
   }
 
   /**
@@ -126,17 +123,21 @@ abstract contract RewardCalculation is IRewardPool {
   function _claimReward(address _poolAddr, address _user) internal returns (uint256 _amount) {
     _amount = getClaimableReward(_poolAddr, _user);
     emit RewardClaimed(_poolAddr, _user, _amount);
+
     SettledPool memory _sPool = _settledPool[_poolAddr];
-
     PendingRewardFields storage _reward = _pUserReward[_poolAddr][_user];
-    _reward.credited += _amount;
-    _reward.lastSyncedBlock = block.number;
-    emit PendingRewardUpdated(_poolAddr, _user, _reward.debited, _reward.credited);
-
     SettledRewardFields storage _sReward = _sUserReward[_poolAddr][_user];
+
     _sReward.debited = 0;
-    _sReward.accumulatedRps = _sPool.accumulatedRps;
+    if (_reward.lastSyncBlock <= _sPool.lastSyncBlock) {
+      _sReward.balance = balanceOf(_poolAddr, _user);
+      _sReward.accumulatedRps = _sPool.accumulatedRps;
+    }
     emit SettledRewardUpdated(_poolAddr, _user, _sReward.balance, 0, _sPool.accumulatedRps);
+
+    _reward.credited += _amount;
+    _reward.lastSyncBlock = block.number;
+    emit PendingRewardUpdated(_poolAddr, _user, _reward.debited, _reward.credited);
   }
 
   /**
