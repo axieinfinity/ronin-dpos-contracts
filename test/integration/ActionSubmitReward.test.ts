@@ -199,7 +199,7 @@ describe('[Integration] Submit Block Reward', () => {
       }
     });
 
-    it('Should in-jail validator cannot submit block reward', async () => {
+    it('Should in-jail validator submit block reward', async () => {
       await network.provider.send('hardhat_setCoinbase', [validator.address]);
       validatorContract = validatorContract.connect(validator);
 
@@ -214,7 +214,7 @@ describe('[Integration] Submit Block Reward', () => {
         .withArgs(validator.address, blockRewardAmount);
     });
 
-    it('Should the StakingContract emit event of recording reward', async () => {
+    it('Should the StakingContract not emit event of recording reward', async () => {
       expect(submitRewardTx).not.to.emit(stakingContract, 'PendingPoolUpdated');
     });
   });
