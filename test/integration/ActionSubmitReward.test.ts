@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { network, ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 
 import {
   SlashIndicator,
@@ -164,11 +165,13 @@ describe('[Integration] Submit Block Reward', () => {
         .withArgs(validator.address, blockRewardAmount);
     });
 
-    it.skip('Should the StakingContract emit event of recording reward', async () => {
-      await expect(submitRewardTx).to.emit(stakingContract, 'PendingPoolUpdated').withArgs(validator.address);
+    it.skip('Should the ValidatorSetContract update mining reward', async () => {});
+
+    it('Should the StakingContract emit event of recording reward', async () => {
+      await expect(submitRewardTx).to.emit(stakingContract, 'PendingPoolUpdated').withArgs(validator.address, anyValue);
     });
 
-    it('Should the StakingContract record update for new block reward', async () => {});
+    it.skip('Should the StakingContract record update for new block reward', async () => {});
 
     after(async () => {
       await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
