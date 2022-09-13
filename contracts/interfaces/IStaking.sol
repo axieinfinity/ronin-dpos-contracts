@@ -309,4 +309,19 @@ interface IStaking is IRewardPool {
   function delegateRewards(address[] calldata _consensusAddrList, address _consensusAddrDst)
     external
     returns (uint256 _amount);
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                         FUNCTIONS FOR GOVERNANCE ADMIN                            //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Updates the governance admin
+   *
+   * Requirements:
+   * - The method caller is the governance admin
+   *
+   * Emits the event `GovernanceAdminUpdated`
+   *
+   */
+  function setGovernanceAdmin(address _governanceAdmin) external;
 }
