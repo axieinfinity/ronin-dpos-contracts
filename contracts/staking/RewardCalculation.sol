@@ -129,14 +129,14 @@ abstract contract RewardCalculation is IRewardPool {
     SettledRewardFields storage _sReward = _sUserReward[_poolAddr][_user];
 
     _sReward.debited = 0;
-    if (_reward.lastSyncBlock <= _sPool.lastSyncBlock) {
+    if (_reward.lastSyncedBlock <= _sPool.lastSyncedBlock) {
       _sReward.balance = balanceOf(_poolAddr, _user);
       _sReward.accumulatedRps = _sPool.accumulatedRps;
     }
     emit SettledRewardUpdated(_poolAddr, _user, _sReward.balance, 0, _sPool.accumulatedRps);
 
     _reward.credited += _amount;
-    _reward.lastSyncBlock = block.number;
+    _reward.lastSyncedBlock = block.number;
     emit PendingRewardUpdated(_poolAddr, _user, _reward.debited, _reward.credited);
   }
 
