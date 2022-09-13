@@ -9,6 +9,14 @@ interface ISlashIndicator {
   event ValidatorSlashed(address indexed validator, SlashType slashType);
   /// @dev Emitted when the validator indicators are reset
   event UnavailabilityIndicatorsReset(address[] validators);
+  /// @dev Emitted when the thresholds updated
+  event SlashThresholdsUpdated(uint256 felonyThreshold, uint256 misdemeanorThreshold);
+  /// @dev Emitted when the amount of slashing felony updated
+  event SlashFelonyAmountUpdated(uint256 slashFelonyAmount);
+  /// @dev Emitted when the amount of slashing double sign updated
+  event SlashDoubleSignAmountUpdated(uint256 slashDoubleSignAmount);
+  /// @dev Emiited when the duration of jailing felony updated
+  event FelonyJailDurationUpdated(uint256 felonyJailDuration);
 
   enum SlashType {
     UNKNOWN,
@@ -59,6 +67,9 @@ interface ISlashIndicator {
    *
    * Requirements:
    * - Only governance admin can call this method
+   *
+   * Emits the event `SlashThresholdsUpdated`.
+   *
    */
   function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) external;
 
@@ -67,6 +78,9 @@ interface ISlashIndicator {
    *
    * Requirements:
    * - Only governance admin can call this method
+   *
+   * Emits the event `SlashFelonyAmountUpdated`.
+   *
    */
   function setSlashFelonyAmount(uint256 _slashFelonyAmount) external;
 
@@ -75,6 +89,9 @@ interface ISlashIndicator {
    *
    * Requirements:
    * - Only governance admin can call this method
+   *
+   * Emits the event `SlashDoubleSignAmountUpdated`.
+   *
    */
   function setSlashDoubleSignAmount(uint256 _slashDoubleSignAmount) external;
 
@@ -83,6 +100,9 @@ interface ISlashIndicator {
    *
    * Requirements:
    * - Only governance admin can call this method
+   *
+   * Emits the event `FelonyJailDurationUpdated`.
+   *
    */
   function setFelonyJailDuration(uint256 _felonyJailDuration) external;
 
