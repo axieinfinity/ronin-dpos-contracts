@@ -67,7 +67,7 @@ interface IStaking is IRewardPool {
   function governanceAdmin() external view returns (address);
 
   /**
-   * @dev Returns validator contracts
+   * @dev Returns validator contract
    */
   function validatorContract() external view returns (address);
 
