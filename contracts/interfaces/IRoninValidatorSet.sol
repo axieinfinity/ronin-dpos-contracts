@@ -74,6 +74,11 @@ interface IRoninValidatorSet {
   function stakingContract() external view returns (address);
 
   /**
+   * @dev Returns the staking vesting contract address.
+   */
+  function stakingVestingContract() external view returns (address);
+
+  /**
    * @dev Slashes the validator.
    *
    * Requirements:

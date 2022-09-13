@@ -8,6 +8,7 @@ import "../interfaces/IStaking.sol";
 
 contract MockValidatorSet is IRoninValidatorSet {
   address public stakingContract;
+  address public stakingVestingContract;
   address public slashIndicatorContract;
 
   uint256 public numberOfEpochsInPeriod;
@@ -19,11 +20,13 @@ contract MockValidatorSet is IRoninValidatorSet {
   constructor(
     address _stakingContract,
     address _slashIndicatorContract,
+    address _stakingVestingContract,
     uint256 _numberOfEpochsInPeriod,
     uint256 _numberOfBlocksInEpoch
   ) {
     stakingContract = _stakingContract;
     slashIndicatorContract = _slashIndicatorContract;
+    stakingVestingContract = _stakingVestingContract;
     numberOfEpochsInPeriod = _numberOfEpochsInPeriod;
     numberOfBlocksInEpoch = _numberOfBlocksInEpoch;
   }

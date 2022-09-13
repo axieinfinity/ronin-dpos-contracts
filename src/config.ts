@@ -17,6 +17,7 @@ export interface InitAddr {
     governanceAdmin: string;
     validatorContract?: string;
     stakingContract?: string;
+    stakingVestingContract?: string;
     slashIndicator?: string;
   };
 }
@@ -26,6 +27,15 @@ export interface StakingConf {
     | {
         maxValidatorCandidate: BigNumberish;
         minValidatorBalance: BigNumberish;
+      }
+    | undefined;
+}
+
+export interface StakingVestingConf {
+  [network: LiteralNetwork]:
+    | {
+        bonusPerBlock: BigNumber;
+        topupAmount: BigNumber;
       }
     | undefined;
 }
@@ -64,6 +74,17 @@ export const stakingConfig: StakingConf = {
   [Network.Devnet]: {
     minValidatorBalance: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5)), // 100.000 RON
     maxValidatorCandidate: 100,
+  },
+  [Network.Testnet]: undefined,
+  [Network.Mainnet]: undefined,
+};
+
+// TODO: update config for testnet & mainnet
+export const stakingVestingConfig: StakingVestingConf = {
+  [Network.Hardhat]: undefined,
+  [Network.Devnet]: {
+    bonusPerBlock: BigNumber.from(10).pow(18), // 1 RON per block
+    topupAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(4)), // 10.000 RON
   },
   [Network.Testnet]: undefined,
   [Network.Mainnet]: undefined,

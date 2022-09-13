@@ -14,6 +14,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     initAddress[network.name]!.governanceAdmin,
     initAddress[network.name]!.slashIndicator,
     initAddress[network.name]!.stakingContract,
+    initAddress[network.name]!.stakingVestingContract,
     roninValidatorSetConf[network.name]!.maxValidatorNumber,
     roninValidatorSetConf[network.name]!.numberOfBlocksInEpoch,
     roninValidatorSetConf[network.name]!.numberOfEpochsInPeriod,
@@ -28,6 +29,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['RoninValidatorSetProxy'];
-deploy.dependencies = ['ProxyAdmin', 'RoninValidatorSetLogic'];
+deploy.dependencies = ['ProxyAdmin', 'RoninValidatorSetLogic', 'SlashIndicatorProxy', 'StakingProxy', 'StakingVestingProxy'];
 
 export default deploy;
