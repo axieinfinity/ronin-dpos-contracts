@@ -13,6 +13,7 @@ import {
   MockSlashIndicator__factory,
 } from '../../src/types';
 import * as RoninValidatorSet from '../../src/script/ronin-validator-set';
+import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 
 let roninValidatorSet: MockRoninValidatorSetEpochSetter;
 let stakingContract: Staking;
@@ -46,8 +47,15 @@ describe('Ronin Validator Set test', () => {
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
     const nonce = await deployer.getTransactionCount();
-    const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 1 });
-    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 3 });
+    const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 3 });
+    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 5 });
+
+    const stakingVestingLogic = await new StakingVesting__factory(deployer).deploy();
+    const stakingVesting = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+      stakingVestingLogic.address,
+      proxyAdmin.address,
+      stakingVestingLogic.interface.encodeFunctionData('initialize', [0, roninValidatorSetAddr])
+    );
 
     slashIndicator = await new MockSlashIndicator__factory(deployer).deploy(
       roninValidatorSetAddr,
@@ -60,6 +68,7 @@ describe('Ronin Validator Set test', () => {
       governanceAdmin.address,
       slashIndicator.address,
       stakingContractAddr,
+      stakingVesting.address,
       maxValidatorNumber
     );
     await roninValidatorSet.deployed();

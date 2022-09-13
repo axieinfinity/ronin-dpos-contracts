@@ -5,6 +5,7 @@ import { initAddress } from '../config';
 const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
   const indicator = await deployments.get('SlashIndicatorProxy');
   const stakingContract = await deployments.get('StakingProxy');
+  const stakingVestingContract = await deployments.get('StakingVestingProxy');
   const validatorContract = await deployments.get('RoninValidatorSetProxy');
 
   if (initAddress[network.name].slashIndicator?.toLowerCase() != indicator.address.toLowerCase()) {
@@ -21,6 +22,13 @@ const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
       ].stakingContract?.toLowerCase()}, actual=${stakingContract.address.toLowerCase()}`
     );
   }
+  if (initAddress[network.name].stakingVestingContract?.toLowerCase() != stakingVestingContract.address.toLowerCase()) {
+    throw Error(
+      `invalid address for stakingVestingContract, expected=${initAddress[
+        network.name
+      ].stakingVestingContract?.toLowerCase()}, actual=${stakingVestingContract.address.toLowerCase()}`
+    );
+  }
   if (initAddress[network.name].validatorContract?.toLowerCase() != validatorContract.address.toLowerCase()) {
     throw Error(
       `invalid address for validatorContract, expected=${initAddress[
@@ -32,6 +40,12 @@ const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
 };
 
 deploy.tags = ['VerifyAddress'];
-deploy.dependencies = ['ProxyAdmin', 'StakingProxy', 'SlashIndicatorProxy', 'RoninValidatorSetProxy'];
+deploy.dependencies = [
+  'ProxyAdmin',
+  'StakingProxy',
+  'SlashIndicatorProxy',
+  'StakingVestingProxy',
+  'RoninValidatorSetProxy',
+];
 
 export default deploy;

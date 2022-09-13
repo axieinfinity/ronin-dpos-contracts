@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../interfaces/ISlashIndicator.sol";
 import "../interfaces/IStaking.sol";
+import "../interfaces/IStakingVesting.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 import "../libraries/Sorting.sol";
 import "../libraries/Math.sol";
@@ -17,6 +18,8 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   address internal _slashIndicatorContract; // Change type to address for testing purpose
   /// @dev Staking contract address.
   address internal _stakingContract; // Change type to address for testing purpose
+  /// @dev Staking vesting contract address.
+  address internal _stakingVestingContract;
 
   /// @dev The total of validators
   uint256 public validatorCount;
@@ -65,6 +68,14 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     _disableInitializers();
   }
 
+  fallback() external payable {
+    _fallback();
+  }
+
+  receive() external payable {
+    _fallback();
+  }
+
   /**
    * @dev Initializes the contract storage.
    */
@@ -72,6 +83,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     address __governanceAdmin,
     address __slashIndicatorContract,
     address __stakingContract,
+    address __stakingVestingContract,
     uint256 __maxValidatorNumber,
     uint256 __numberOfBlocksInEpoch,
     uint256 __numberOfEpochsInPeriod
@@ -79,6 +91,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     _governanceAdmin = __governanceAdmin;
     _slashIndicatorContract = __slashIndicatorContract;
     _stakingContract = __stakingContract;
+    _stakingVestingContract = __stakingVestingContract;
     _maxValidatorNumber = __maxValidatorNumber;
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
     _numberOfEpochsInPeriod = __numberOfEpochsInPeriod;
@@ -105,6 +118,8 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
       emit RewardDeprecated(_coinbaseAddr, _reward);
       return;
     }
+
+    _reward += IStakingVesting(_stakingVestingContract).requestBlockBonus();
 
     IStaking _staking = IStaking(_stakingContract);
     uint256 _rate = _staking.commissionRateOf(_coinbaseAddr);
@@ -198,6 +213,13 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    */
   function stakingContract() external view override returns (address) {
     return _stakingContract;
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function stakingVestingContract() external view override returns (address) {
+    return _stakingVestingContract;
   }
 
   /**
@@ -378,5 +400,12 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     validatorCount = _newValidatorCount;
     _lastUpdatedBlock = block.number;
     emit ValidatorSetUpdated(_candidates);
+  }
+
+  /**
+   * @dev Only receives RON from staking vesting contract.
+   */
+  function _fallback() internal view {
+    require(msg.sender == _stakingVestingContract, "RoninValidatorSet: method caller must be staking vesting contract");
   }
 }

@@ -5,6 +5,7 @@ import { ethers, network } from 'hardhat';
 
 import { Staking, Staking__factory, TransparentUpgradeableProxy__factory } from '../../src/types';
 import { MockValidatorSet__factory } from '../../src/types/factories/MockValidatorSet__factory';
+import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
 
 const EPS = 1;
@@ -93,11 +94,13 @@ describe('Staking test', () => {
   before(async () => {
     [deployer, proxyAdmin, userA, userB, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
     validatorCandidates = validatorCandidates.slice(0, 3);
+    const stakingVestingContract = await new StakingVesting__factory(deployer).deploy();
     const nonce = await deployer.getTransactionCount();
     const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 2 });
     validatorContract = await new MockValidatorSet__factory(deployer).deploy(
       stakingContractAddr,
       ethers.constants.AddressZero,
+      stakingVestingContract.address,
       10,
       2
     );
