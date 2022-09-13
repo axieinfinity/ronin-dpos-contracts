@@ -39,6 +39,11 @@ contract SlashIndicator is ISlashIndicator, Initializable {
     _;
   }
 
+  modifier onlyGovernanceAdmin() {
+    require(msg.sender == _governanceAdmin, "SlashIndicator: method caller is not governance admin");
+    _;
+  }
+
   modifier oncePerBlock() {
     require(
       block.number > lastSlashedBlock,
@@ -132,6 +137,18 @@ contract SlashIndicator is ISlashIndicator, Initializable {
   ///////////////////////////////////////////////////////////////////////////////////////
   //                               GOVERNANCE FUNCTIONS                                //
   ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function setGovernanceAdmin(address __governanceAdmin) external override onlyGovernanceAdmin {
+    if (__governanceAdmin == address(0) || __governanceAdmin == _governanceAdmin) {
+      return;
+    }
+
+    _governanceAdmin == __governanceAdmin;
+    emit GovernanceAdminUpdated(__governanceAdmin);
+  }
 
   /**
    * @inheritdoc ISlashIndicator

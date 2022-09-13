@@ -9,6 +9,8 @@ interface ISlashIndicator {
   event ValidatorSlashed(address indexed validator, SlashType slashType);
   /// @dev Emitted when the validator indicators are reset
   event UnavailabilityIndicatorsReset(address[] validators);
+  /// @dev Emitted when the address of governance admin is updated.
+  event GovernanceAdminUpdated(address);
 
   enum SlashType {
     UNKNOWN,
@@ -77,4 +79,19 @@ interface ISlashIndicator {
    * @dev Returns the governance admin address.
    */
   function governanceAdmin() external view returns (address);
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                               GOVERNANCE FUNCTIONS                                //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Updates the governance admin
+   *
+   * Requirements:
+   * - The method caller is the governance admin
+   *
+   * Emits the event `GovernanceAdminUpdated`
+   *
+   */
+  function setGovernanceAdmin(address _governanceAdmin) external;
 }
