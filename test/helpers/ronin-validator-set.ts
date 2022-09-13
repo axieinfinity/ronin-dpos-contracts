@@ -9,16 +9,16 @@ const contractInterface = RoninValidatorSet__factory.createInterface();
 export const expects = {
   emitRewardDeprecatedEvent: async function (
     tx: ContractTransaction,
-    expectedCoinbaseAddr: string,
-    expectedDeprecatedReward: BigNumberish
+    expectingCoinbaseAddr: string,
+    expectingDeprecatedReward: BigNumberish
   ) {
     await expectEvent(
       contractInterface,
       'RewardDeprecated',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid coinbase address').eq(expectedCoinbaseAddr);
-        expect(event.args[1], 'invalid reward').eq(expectedDeprecatedReward);
+        expect(event.args[0], 'invalid coinbase address').eq(expectingCoinbaseAddr);
+        expect(event.args[1], 'invalid reward').eq(expectingDeprecatedReward);
       },
       1
     );
@@ -26,16 +26,16 @@ export const expects = {
 
   emitBlockRewardSubmittedEvent: async function (
     tx: ContractTransaction,
-    expectedCoinbaseAddr: string,
-    expectedDeprecatedReward: BigNumberish
+    expectingCoinbaseAddr: string,
+    expectingDeprecatedReward: BigNumberish
   ) {
     await expectEvent(
       contractInterface,
       'BlockRewardSubmitted',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid coinbase address').eq(expectedCoinbaseAddr);
-        expect(event.args[1], 'invalid reward').eq(expectedDeprecatedReward);
+        expect(event.args[0], 'invalid coinbase address').eq(expectingCoinbaseAddr);
+        expect(event.args[1], 'invalid reward').eq(expectingDeprecatedReward);
       },
       1
     );
@@ -43,18 +43,18 @@ export const expects = {
 
   emitValidatorSlashedEvent: async function (
     tx: ContractTransaction,
-    expectedValidatorAddr: string,
-    expectedJailedUntil: BigNumberish,
-    expectedDeductedStakingAmount: BigNumberish
+    expectingValidatorAddr: string,
+    expectingJailedUntil: BigNumberish,
+    expectingDeductedStakingAmount: BigNumberish
   ) {
     await expectEvent(
       contractInterface,
       'ValidatorSlashed',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid coinbase address').eq(expectedValidatorAddr);
-        expect(event.args[1], 'invalid jailed until').eq(expectedJailedUntil);
-        expect(event.args[2], 'invalid deducted staking amount').eq(expectedDeductedStakingAmount);
+        expect(event.args[0], 'invalid coinbase address').eq(expectingValidatorAddr);
+        expect(event.args[1], 'invalid jailed until').eq(expectingJailedUntil);
+        expect(event.args[2], 'invalid deducted staking amount').eq(expectingDeductedStakingAmount);
       },
       1
     );
@@ -62,40 +62,40 @@ export const expects = {
 
   emitMiningRewardDistributedEvent: async function (
     tx: ContractTransaction,
-    expectedCoinbaseAddr: string,
-    expectedAmount: BigNumberish
+    expectingCoinbaseAddr: string,
+    expectingAmount: BigNumberish
   ) {
     await expectEvent(
       contractInterface,
       'MiningRewardDistributed',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid coinbase address').eq(expectedCoinbaseAddr);
-        expect(event.args[1], 'invalid amount').eq(expectedAmount);
+        expect(event.args[0], 'invalid coinbase address').eq(expectingCoinbaseAddr);
+        expect(event.args[1], 'invalid amount').eq(expectingAmount);
       },
       1
     );
   },
 
-  emitStakingRewardDistributedEvent: async function (tx: ContractTransaction, expectedAmount: BigNumberish) {
+  emitStakingRewardDistributedEvent: async function (tx: ContractTransaction, expectingAmount: BigNumberish) {
     await expectEvent(
       contractInterface,
       'StakingRewardDistributed',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid deprecated reward').eq(expectedAmount);
+        expect(event.args[0], 'invalid deprecated reward').eq(expectingAmount);
       },
       1
     );
   },
 
-  emitValidatorSetUpdatedEvent: async function (tx: ContractTransaction, expectedValidators: string[]) {
+  emitValidatorSetUpdatedEvent: async function (tx: ContractTransaction, expectingValidators: string[]) {
     await expectEvent(
       contractInterface,
       'ValidatorSetUpdated',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid validator set').have.deep.members(expectedValidators);
+        expect(event.args[0], 'invalid validator set').have.deep.members(expectingValidators);
       },
       1
     );
