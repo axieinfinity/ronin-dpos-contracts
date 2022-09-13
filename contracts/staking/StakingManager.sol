@@ -14,7 +14,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     _;
   }
 
-  modifier notCandidateOwner(address _consensusAddr) {
+  modifier notCandidateAdmin(address _consensusAddr) {
     ValidatorCandidate memory _candidate = _getCandidate(_consensusAddr);
     require(msg.sender != _candidate.candidateAdmin, "StakingManager: method caller must not be the candidate admin");
     _;
@@ -49,6 +49,11 @@ abstract contract StakingManager is IStaking, RewardCalculation {
    * @inheritdoc IStaking
    */
   function maxValidatorCandidate() public view virtual returns (uint256);
+
+  /**
+   * @dev IStaking
+   */
+  function getValidatorCandidateLength() public view virtual returns (uint256);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                          FUNCTIONS FOR VALIDATOR CANDIDATE                        //
@@ -112,9 +117,9 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     address payable _treasuryAddr,
     uint256 _commissionRate,
     uint256 _amount,
-    address _candidateOwner
+    address _candidateAdmin
   ) internal returns (uint256 _candidateIdx) {
-    uint256 _length = _getValidatorCandidateLength();
+    uint256 _length = getValidatorCandidateLength();
     require(_length < maxValidatorCandidate(), "StakingManager: query for exceeded validator array length");
     require(_getCandidateIndex(_consensusAddr) == 0, "StakingManager: query for existed candidate");
     require(_amount >= minValidatorBalance(), "StakingManager: insufficient amount");
@@ -123,14 +128,9 @@ abstract contract StakingManager is IStaking, RewardCalculation {
 
     _candidateIdx = ~_length;
     _setCandidateIndex(_consensusAddr, _candidateIdx);
-    ValidatorCandidate memory _candidate = _createValidatorCandidate(
-      _consensusAddr,
-      _candidateOwner,
-      _treasuryAddr,
-      _commissionRate
-    );
+    _createValidatorCandidate(_consensusAddr, _candidateAdmin, _treasuryAddr, _commissionRate);
 
-    emit ValidatorProposed(_consensusAddr, _candidateOwner, _amount, _candidate);
+    emit ValidatorProposed(_consensusAddr, _candidateAdmin, _length);
   }
 
   /**
@@ -190,14 +190,14 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   /**
    * @inheritdoc IStaking
    */
-  function delegate(address _consensusAddr) external payable noEmptyValue notCandidateOwner(_consensusAddr) {
+  function delegate(address _consensusAddr) external payable noEmptyValue notCandidateAdmin(_consensusAddr) {
     _delegate(_consensusAddr, msg.sender, msg.value);
   }
 
   /**
    * @inheritdoc IStaking
    */
-  function undelegate(address _consensusAddr, uint256 _amount) external notCandidateOwner(_consensusAddr) {
+  function undelegate(address _consensusAddr, uint256 _amount) external notCandidateAdmin(_consensusAddr) {
     address payable _delegator = payable(msg.sender);
     _undelegate(_consensusAddr, _delegator, _amount);
     // TODO(Thor): replace by `call` and use reentrancy gruard
@@ -211,7 +211,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     address _consensusAddrSrc,
     address _consensusAddrDst,
     uint256 _amount
-  ) external notCandidateOwner(_consensusAddrDst) {
+  ) external notCandidateAdmin(_consensusAddrDst) {
     address _delegator = msg.sender;
     _undelegate(_consensusAddrSrc, _delegator, _amount);
     _delegate(_consensusAddrDst, _delegator, _amount);
@@ -251,7 +251,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   function delegateRewards(address[] calldata _consensusAddrList, address _consensusAddrDst)
     external
     override
-    notCandidateOwner(_consensusAddrDst)
+    notCandidateAdmin(_consensusAddrDst)
     returns (uint256 _amount)
   {
     return _delegateRewards(msg.sender, _consensusAddrList, _consensusAddrDst);
@@ -363,16 +363,11 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   function _setCandidateIndex(address _consensusAddr, uint256 _candidateIdx) internal virtual;
 
   /**
-   * @dev Returns the current validator length.
-   */
-  function _getValidatorCandidateLength() internal view virtual returns (uint256);
-
-  /**
    * @dev Creates new validator candidate in the storage and returns its struct.
    */
   function _createValidatorCandidate(
     address _consensusAddr,
-    address _candidateOwner,
+    address _candidateAdmin,
     address payable _treasuryAddr,
     uint256 _commissionRate
   ) internal virtual returns (ValidatorCandidate memory);

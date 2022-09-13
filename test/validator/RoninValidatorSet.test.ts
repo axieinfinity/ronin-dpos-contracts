@@ -11,9 +11,9 @@ import {
   TransparentUpgradeableProxy__factory,
   MockSlashIndicator,
   MockSlashIndicator__factory,
+  StakingVesting__factory,
 } from '../../src/types';
-import * as RoninValidatorSet from '../../src/script/ronin-validator-set';
-import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
+import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 
 let roninValidatorSet: MockRoninValidatorSetEpochSetter;
 let stakingContract: Staking;
@@ -257,9 +257,9 @@ describe('Ronin Validator Set test', () => {
   it('Should not allocate reward for the slashed validator', async () => {
     let tx: ContractTransaction;
     const balance = await treasury.getBalance();
+    await slashIndicator.slashMisdemeanor(coinbase.address);
     tx = await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
     await RoninValidatorSet.expects.emitRewardDeprecatedEvent(tx!, coinbase.address, 100);
-    await slashIndicator.slashMisdemeanor(coinbase.address);
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
       await roninValidatorSet.endPeriod();

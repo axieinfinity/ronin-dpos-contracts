@@ -98,6 +98,13 @@ contract Staking is IStaking, StakingManager, Initializable {
     _setMaxValidatorCandidate(_threshold);
   }
 
+  /**
+   * @inheritdoc IStaking
+   */
+  function getValidatorCandidateLength() public view override(IStaking, StakingManager) returns (uint256) {
+    return validatorCandidates.length;
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR VALIDATOR                              //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -207,13 +214,6 @@ contract Staking is IStaking, StakingManager, Initializable {
   }
 
   /**
-   * @inheritdoc StakingManager
-   */
-  function _getValidatorCandidateLength() internal view override returns (uint256) {
-    return validatorCandidates.length;
-  }
-
-  /**
    * @dev Sets the governance admin address.
    *
    * Emits the `GovernanceAdminUpdated` event.
@@ -279,13 +279,13 @@ contract Staking is IStaking, StakingManager, Initializable {
    */
   function _createValidatorCandidate(
     address _consensusAddr,
-    address _candidateOwner,
+    address _candidateAdmin,
     address payable _treasuryAddr,
     uint256 _commissionRate
   ) internal virtual override returns (ValidatorCandidate memory) {
     ValidatorCandidate storage _candidate = validatorCandidates.push();
     _candidate.consensusAddr = _consensusAddr;
-    _candidate.candidateAdmin = _candidateOwner;
+    _candidate.candidateAdmin = _candidateAdmin;
     _candidate.treasuryAddr = _treasuryAddr;
     _candidate.commissionRate = _commissionRate;
     return _candidate;
