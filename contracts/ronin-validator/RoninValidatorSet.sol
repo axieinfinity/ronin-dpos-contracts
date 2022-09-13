@@ -476,7 +476,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    * @dev Updates the number of epochs in period
    */
   function _setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) internal {
-    _numberOfEpochsInPeriod == __numberOfEpochsInPeriod;
+    _numberOfEpochsInPeriod = __numberOfEpochsInPeriod;
     emit NumberOfEpochsInPeriodUpdated(__numberOfEpochsInPeriod);
   }
 
