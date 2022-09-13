@@ -193,25 +193,9 @@ describe('[Integration] Wrap up epoch', () => {
         });
       });
 
-      describe('ValidatorSetContract internal actions', async () => {
-        it.skip('Should the mining award distributed', async () => {
-          // TODO: should this be in the unit test?
-        });
-
-        it.skip('Should the validator set get updated', async () => {
-          // TODO: should this be in the unit test?
-        });
-
-        it.skip('Should the treasury address of the validator received mining reward', async () => {
-          // TODO: should this be in the unit test?
-        });
-      });
+      describe.skip('ValidatorSetContract internal actions', async () => {});
 
       describe('StakingContract internal actions: settle reward pool', async () => {
-        it.skip('Should the StakingContract update rewarding info for validators and delegators', async () => {
-          // TODO: should this be in the unit test?
-        });
-
         it('Should the StakingContract emit event of settling reward', async () => {
           await StakingExpects.emitSettledPoolsUpdatedEvent(
             wrapUpTx,
