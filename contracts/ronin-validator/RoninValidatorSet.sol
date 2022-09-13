@@ -333,6 +333,13 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     return _numberOfBlocksInEpoch;
   }
 
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function maxValidatorNumber() external view override returns (uint256 _maximumValidatorNumber) {
+    return _maxValidatorNumber;
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                         FUNCTIONS FOR GOVERNANCE ADMIN                            //
   ///////////////////////////////////////////////////////////////////////////////////////

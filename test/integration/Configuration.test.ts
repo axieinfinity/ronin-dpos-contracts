@@ -95,9 +95,9 @@ describe('[Integration] Configuration check', () => {
       expect(_slashingContract).to.eq(slashContract.address);
     });
 
-    it.skip('Should config the maxValidatorNumber correctly', async () => {
-      // let _maxValidatorNumber= await validatorContract.maxValidatorNumber();
-      // expect(_maxValidatorNumber).to.eq(maxValidatorNumber);
+    it('Should config the maxValidatorNumber correctly', async () => {
+      let _maxValidatorNumber = await validatorContract.maxValidatorNumber();
+      expect(_maxValidatorNumber).to.eq(maxValidatorNumber);
     });
 
     it('Should config the numberOfBlocksInEpoch correctly', async () => {

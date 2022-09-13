@@ -126,6 +126,11 @@ interface IRoninValidatorSet {
   function numberOfBlocksInEpoch() external view returns (uint256 _numberOfBlocks);
 
   /**
+   * @dev Returns the maximum number of validators in the epoch
+   */
+  function maxValidatorNumber() external view returns (uint256 _maximumValidatorNumber);
+
+  /**
    * @dev Returns the epoch index from the block number.
    */
   function epochOf(uint256 _block) external view returns (uint256);
