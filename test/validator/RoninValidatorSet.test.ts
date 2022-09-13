@@ -11,9 +11,9 @@ import {
   TransparentUpgradeableProxy__factory,
   MockSlashIndicator,
   MockSlashIndicator__factory,
+  StakingVesting__factory,
 } from '../../src/types';
-import * as RoninValidatorSet from '../../src/script/ronin-validator-set';
-import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
+import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 
 let roninValidatorSet: MockRoninValidatorSetEpochSetter;
 let stakingContract: Staking;

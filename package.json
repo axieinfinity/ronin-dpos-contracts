@@ -16,8 +16,7 @@
   },
   "lint-staged": {
     "contracts/**/*.sol": "prettier --write",
-    "{test,src}/!(types)/*.{js,ts}": "prettier --write",
-    "src/*.{js,ts}": "prettier --write",
+    "{test,src}/**/*.{js,ts}": "prettier --write",
     "hardhat.config.{js,ts}": "prettier --write"
   },
   "dependencies": {
