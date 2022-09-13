@@ -5,18 +5,18 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import {
   Staking,
-  MockRoninValidatorSetEpochSetterAndQueryInfo,
-  MockRoninValidatorSetEpochSetterAndQueryInfo__factory,
+  MockRoninValidatorSetEpochSetter,
+  MockRoninValidatorSetEpochSetter__factory,
   Staking__factory,
   TransparentUpgradeableProxy__factory,
   MockSlashIndicator,
   MockSlashIndicator__factory,
   StakingVesting__factory,
 } from '../../src/types';
-import * as RoninValidatorSet from '../../src/script/ronin-validator-set';
+import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../utils';
 
-let roninValidatorSet: MockRoninValidatorSetEpochSetterAndQueryInfo;
+let roninValidatorSet: MockRoninValidatorSetEpochSetter;
 let stakingContract: Staking;
 let slashIndicator: MockSlashIndicator;
 
@@ -58,7 +58,7 @@ describe('Ronin Validator Set test', () => {
     );
     await slashIndicator.deployed();
 
-    roninValidatorSet = await new MockRoninValidatorSetEpochSetterAndQueryInfo__factory(deployer).deploy(
+    roninValidatorSet = await new MockRoninValidatorSetEpochSetter__factory(deployer).deploy(
       governanceAdmin.address,
       slashIndicator.address,
       stakingContractAddr,

@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import { BigNumberish, ContractTransaction } from 'ethers';
 
-import { expectEvent } from '../utils';
-import { RewardCalculation__factory } from '../types';
+import { expectEvent } from './utils';
+import { RewardCalculation__factory } from '../../src/types';
 
 const contractInterface = RewardCalculation__factory.createInterface();
 

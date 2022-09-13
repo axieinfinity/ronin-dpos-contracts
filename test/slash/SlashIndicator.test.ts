@@ -13,7 +13,7 @@ import { Address } from 'hardhat-deploy/dist/types';
 import { SlashType } from './slashType';
 import { Network, slashIndicatorConf } from '../../src/config';
 import { BigNumber } from 'ethers';
-import { expects as SlashExpects } from '../../src/script/slash-indicator';
+import { expects as SlashExpects } from '../helpers/slash-indicator';
 
 let slashContract: SlashIndicator;
 

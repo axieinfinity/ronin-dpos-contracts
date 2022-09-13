@@ -9,9 +9,15 @@ import {
   Staking__factory,
   RoninValidatorSet,
   RoninValidatorSet__factory,
-  TransparentUpgradeableProxy__factory,
 } from '../../src/types';
-import { Network, slashIndicatorConf, roninValidatorSetConf, stakingConfig, initAddress } from '../../src/config';
+import {
+  Network,
+  slashIndicatorConf,
+  roninValidatorSetConf,
+  stakingConfig,
+  stakingVestingConfig,
+  initAddress,
+} from '../../src/config';
 import { BigNumber } from 'ethers';
 
 let slashContract: SlashIndicator;
@@ -31,6 +37,8 @@ const minValidatorBalance = BigNumber.from(100);
 const felonyJailDuration = 28800 * 2;
 const misdemeanorThreshold = 10;
 const felonyThreshold = 20;
+const bonusPerBlock = BigNumber.from(1);
+const topUpAmount = BigNumber.from(10000);
 
 describe('[Integration] Configuration check', () => {
   before(async () => {
@@ -55,6 +63,10 @@ describe('[Integration] Configuration check', () => {
       stakingConfig[network.name] = {
         minValidatorBalance: minValidatorBalance,
         maxValidatorCandidate: maxValidatorNumber,
+      };
+      stakingVestingConfig[network.name] = {
+        bonusPerBlock: bonusPerBlock,
+        topupAmount: topUpAmount,
       };
     }
 

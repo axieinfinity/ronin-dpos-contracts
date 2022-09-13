@@ -8,9 +8,10 @@ import {
   SlashIndicator__factory,
   Staking,
   Staking__factory,
-  MockRoninValidatorSetEpochSetterAndQueryInfo__factory,
-  MockRoninValidatorSetEpochSetterAndQueryInfo,
+  MockRoninValidatorSetEpochSetter__factory,
+  MockRoninValidatorSetEpochSetter,
   TransparentUpgradeableProxy__factory,
+  StakingVesting__factory,
 } from '../../src/types';
 import { Network, slashIndicatorConf, roninValidatorSetConf, stakingConfig, initAddress } from '../../src/config';
 import { BigNumber, ContractTransaction } from 'ethers';
@@ -18,7 +19,7 @@ import { mineBatchTxs } from '../utils';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
-let validatorContract: MockRoninValidatorSetEpochSetterAndQueryInfo;
+let validatorContract: MockRoninValidatorSetEpochSetter;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -64,8 +65,8 @@ describe('[Integration] Submit Block Reward', () => {
     }
 
     const nonce = await deployer.getTransactionCount();
-    const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 2 });
-    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
+    const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
+    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 6 });
 
     const slashLogicContract = await new SlashIndicator__factory(deployer).deploy();
     await slashLogicContract.deployed();
@@ -85,10 +86,18 @@ describe('[Integration] Submit Block Reward', () => {
     await slashProxyContract.deployed();
     slashContract = SlashIndicator__factory.connect(slashProxyContract.address, deployer);
 
-    validatorContract = await new MockRoninValidatorSetEpochSetterAndQueryInfo__factory(deployer).deploy(
+    const stakingVestingLogic = await new StakingVesting__factory(deployer).deploy();
+    const stakingVesting = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+      stakingVestingLogic.address,
+      proxyAdmin.address,
+      stakingVestingLogic.interface.encodeFunctionData('initialize', [0, roninValidatorSetAddr])
+    );
+
+    validatorContract = await new MockRoninValidatorSetEpochSetter__factory(deployer).deploy(
       governanceAdmin.address,
       slashContract.address,
       stakingContractAddr,
+      stakingVesting.address,
       maxValidatorNumber
     );
     await validatorContract.deployed();

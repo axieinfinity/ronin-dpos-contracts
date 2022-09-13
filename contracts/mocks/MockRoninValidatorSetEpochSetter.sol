@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../ronin-validator/RoninValidatorSet.sol";
 
-contract MockRoninValidatorSetEpochSetterAndQueryInfo is RoninValidatorSet {
+contract MockRoninValidatorSetEpochSetter is RoninValidatorSet {
   uint256[] internal _epochs;
   uint256[] internal _periods;
 

@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import { BigNumberish, ContractTransaction } from 'ethers';
 
-import { expectEvent } from '../utils';
-import { ISlashIndicator__factory } from '../types';
+import { expectEvent } from './utils';
+import { ISlashIndicator__factory } from '../../src/types';
 
 const contractInterface = ISlashIndicator__factory.createInterface();
 
