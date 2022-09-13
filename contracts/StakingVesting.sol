@@ -55,6 +55,7 @@ contract StakingVesting is Initializable, IStakingVesting {
     uint256 _block = block.number;
 
     require(_block > lastBonusSentBlock, "Staking: bonus already sent");
+    lastBonusSentBlock = _block;
     _amount = blockBonus(_block);
 
     if (_amount > 0) {
@@ -62,8 +63,6 @@ contract StakingVesting is Initializable, IStakingVesting {
       require(_success, "Staking: could not transfer RON to validator contract");
       emit BlockBonusTransferred(_block, _validatorContract, _amount);
     }
-
-    lastBonusSentBlock = _block;
   }
 
   /**

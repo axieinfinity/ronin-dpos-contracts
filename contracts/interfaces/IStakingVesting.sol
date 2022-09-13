@@ -21,7 +21,7 @@ interface IStakingVesting {
   function receiveRON() external payable;
 
   /**
-   * @dev Returns the last block number that the bonus reward sent.
+   * @dev Returns the last block number that the bonus reward is sent.
    */
   function lastBonusSentBlock() external view returns (uint256);
 
