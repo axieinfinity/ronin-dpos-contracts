@@ -97,9 +97,10 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     _slashIndicatorContract = __slashIndicatorContract;
     _stakingContract = __stakingContract;
     _stakingVestingContract = __stakingVestingContract;
-    _maxValidatorNumber = __maxValidatorNumber;
-    _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
-    _numberOfEpochsInPeriod = __numberOfEpochsInPeriod;
+
+    _setMaxValidatorNumber(__maxValidatorNumber);
+    _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
+    _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -352,24 +353,21 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    * @inheritdoc IRoninValidatorSet
    */
   function setMaxValidatorNumber(uint256 __maxValidatorNumber) external override onlyGovernanceAdmin {
-    _maxValidatorNumber = __maxValidatorNumber;
-    emit MaxValidatorNumberUpdated(__maxValidatorNumber);
+    _setMaxValidatorNumber(__maxValidatorNumber);
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
   function setNumberOfBlocksInEpoch(uint256 __numberOfBlocksInEpoch) external override onlyGovernanceAdmin {
-    _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
-    emit NumberOfBlocksInEpochUpdated(__numberOfBlocksInEpoch);
+    _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
   function setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) external override onlyGovernanceAdmin {
-    _numberOfEpochsInPeriod == __numberOfEpochsInPeriod;
-    emit NumberOfEpochsInPeriodUpdated(__numberOfEpochsInPeriod);
+    _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -449,6 +447,30 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     validatorCount = _newValidatorCount;
     _lastUpdatedBlock = block.number;
     emit ValidatorSetUpdated(_candidates);
+  }
+
+  /**
+   * @dev Updates the max validator number
+   */
+  function _setMaxValidatorNumber(uint256 __maxValidatorNumber) internal {
+    _maxValidatorNumber = __maxValidatorNumber;
+    emit MaxValidatorNumberUpdated(__maxValidatorNumber);
+  }
+
+  /**
+   * @dev Updates the number of blocks in epoch
+   */
+  function _setNumberOfBlocksInEpoch(uint256 __numberOfBlocksInEpoch) internal {
+    _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
+    emit NumberOfBlocksInEpochUpdated(__numberOfBlocksInEpoch);
+  }
+
+  /**
+   * @dev Updates the number of epochs in period
+   */
+  function _setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) internal {
+    _numberOfEpochsInPeriod == __numberOfEpochsInPeriod;
+    emit NumberOfEpochsInPeriodUpdated(__numberOfEpochsInPeriod);
   }
 
   /**
