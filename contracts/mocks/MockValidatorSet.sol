@@ -93,4 +93,12 @@ contract MockValidatorSet is IRoninValidatorSet {
   function resetCounters(address[] calldata _validatorAddrs) external {
     ISlashIndicator(slashIndicatorContract).resetCounters(_validatorAddrs);
   }
+
+  function setGovernanceAdmin(address _governanceAdmin) external override {}
+
+  function setMaxValidatorNumber(uint256 _maxValidatorNumber) external override {}
+
+  function setNumberOfBlocksInEpoch(uint256 _numberOfBlocksInEpoch) external override {}
+
+  function setNumberOfEpochsInPeriod(uint256 _numberOfEpochsInPeriod) external override {}
 }
