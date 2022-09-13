@@ -68,12 +68,12 @@ contract SlashIndicator is ISlashIndicator, Initializable {
     uint256 _slashDoubleSignAmount,
     uint256 _felonyJailBlocks
   ) external initializer {
-    misdemeanorThreshold = _misdemeanorThreshold;
-    felonyThreshold = _felonyThreshold;
     validatorContract = _validatorSetContract;
-    slashFelonyAmount = _slashFelonyAmount;
-    slashDoubleSignAmount = _slashDoubleSignAmount;
-    felonyJailDuration = _felonyJailBlocks;
+
+    _setSlashThresholds(_felonyThreshold, _misdemeanorThreshold);
+    _setSlashFelonyAmount(_slashFelonyAmount);
+    _setSlashDoubleSignAmount(_slashDoubleSignAmount);
+    _setFelonyJailDuration(_felonyJailBlocks);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -146,33 +146,28 @@ contract SlashIndicator is ISlashIndicator, Initializable {
     override
     onlyGovernanceAdmin
   {
-    felonyThreshold = _felonyThreshold;
-    misdemeanorThreshold = _misdemeanorThreshold;
-    emit SlashThresholdsUpdated(_felonyThreshold, _misdemeanorThreshold);
+    _setSlashThresholds(_felonyThreshold, _misdemeanorThreshold);
   }
 
   /**
    * @inheritdoc ISlashIndicator
    */
   function setSlashFelonyAmount(uint256 _slashFelonyAmount) external override onlyGovernanceAdmin {
-    slashFelonyAmount = _slashFelonyAmount;
-    emit SlashFelonyAmountUpdated(_slashFelonyAmount);
+    _setSlashFelonyAmount(_slashFelonyAmount);
   }
 
   /**
    * @inheritdoc ISlashIndicator
    */
   function setSlashDoubleSignAmount(uint256 _slashDoubleSignAmount) external override onlyGovernanceAdmin {
-    slashDoubleSignAmount = _slashDoubleSignAmount;
-    emit SlashDoubleSignAmountUpdated(_slashDoubleSignAmount);
+    _setSlashDoubleSignAmount(_slashDoubleSignAmount);
   }
 
   /**
    * @inheritdoc ISlashIndicator
    */
   function setFelonyJailDuration(uint256 _felonyJailDuration) external override onlyGovernanceAdmin {
-    felonyJailDuration = _felonyJailDuration;
-    emit FelonyJailDurationUpdated(_felonyJailDuration);
+    _setFelonyJailDuration(_felonyJailDuration);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -198,5 +193,42 @@ contract SlashIndicator is ISlashIndicator, Initializable {
    */
   function governanceAdmin() external view override returns (address) {
     return _governanceAdmin;
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                                 HELPER FUNCTIONS                                  //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Sets the slash thresholds
+   */
+  function _setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) internal {
+    felonyThreshold = _felonyThreshold;
+    misdemeanorThreshold = _misdemeanorThreshold;
+    emit SlashThresholdsUpdated(_felonyThreshold, _misdemeanorThreshold);
+  }
+
+  /**
+   * @dev Sets the slash felony amount
+   */
+  function _setSlashFelonyAmount(uint256 _slashFelonyAmount) internal {
+    slashFelonyAmount = _slashFelonyAmount;
+    emit SlashFelonyAmountUpdated(_slashFelonyAmount);
+  }
+
+  /**
+   * @dev Sets the slash double sign amount
+   */
+  function _setSlashDoubleSignAmount(uint256 _slashDoubleSignAmount) internal {
+    slashDoubleSignAmount = _slashDoubleSignAmount;
+    emit SlashDoubleSignAmountUpdated(_slashDoubleSignAmount);
+  }
+
+  /**
+   * @dev Sets the felony jail duration
+   */
+  function _setFelonyJailDuration(uint256 _felonyJailDuration) internal {
+    felonyJailDuration = _felonyJailDuration;
+    emit FelonyJailDurationUpdated(_felonyJailDuration);
   }
 }
