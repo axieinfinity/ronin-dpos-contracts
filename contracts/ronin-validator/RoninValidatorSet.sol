@@ -12,7 +12,7 @@ import "../libraries/Math.sol";
 
 contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   /// @dev Governance admin address.
-  address internal _governanceAdmin; // TODO(Thor): add setter.
+  address internal _governanceAdmin;
   /// @dev Slash indicator contract address.
   address internal _slashIndicatorContract; // Change type to address for testing purpose
   /// @dev Staking contract address.
@@ -53,6 +53,11 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
 
   modifier onlySlashIndicatorContract() {
     require(msg.sender == _slashIndicatorContract, "RoninValidatorSet: method caller must be slash indicator contract");
+    _;
+  }
+
+  modifier onlyGovernanceAdmin() {
+    require(msg.sender == _governanceAdmin, "RoninValidatorSet: method caller must be governance admin");
     _;
   }
 
@@ -302,6 +307,46 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    */
   function numberOfBlocksInEpoch() external view override returns (uint256 _numberOfBlocks) {
     return _numberOfBlocksInEpoch;
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                         FUNCTIONS FOR GOVERNANCE ADMIN                            //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function setGovernanceAdmin(address __governanceAdmin) external override onlyGovernanceAdmin {
+    if (__governanceAdmin == address(0) || __governanceAdmin == _governanceAdmin) {
+      return;
+    }
+
+    _governanceAdmin == __governanceAdmin;
+    emit GovernanceAdminUpdated(__governanceAdmin);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function setMaxValidatorNumber(uint256 __maxValidatorNumber) external override onlyGovernanceAdmin {
+    _maxValidatorNumber = __maxValidatorNumber;
+    emit MaxValidatorNumberUpdated(__maxValidatorNumber);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function setNumberOfBlocksInEpoch(uint256 __numberOfBlocksInEpoch) external override onlyGovernanceAdmin {
+    _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
+    emit NumberOfBlocksInEpochUpdated(__numberOfBlocksInEpoch);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) external override onlyGovernanceAdmin {
+    _numberOfEpochsInPeriod == __numberOfEpochsInPeriod;
+    emit NumberOfEpochsInPeriodUpdated(__numberOfEpochsInPeriod);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
