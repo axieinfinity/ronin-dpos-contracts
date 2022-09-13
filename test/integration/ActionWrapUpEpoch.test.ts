@@ -15,6 +15,7 @@ import { Network, slashIndicatorConf, roninValidatorSetConf, stakingConfig, init
 import { BigNumber, ContractTransaction } from 'ethers';
 import { expects as StakingExpects } from '../../src/script/reward-calculation';
 import { expects as SlashExpects } from '../../src/script/slash-indicator';
+import { expects as ValidatorSetExpects } from '../../src/script/ronin-validator-set';
 import { mineBatchTxs } from '../utils';
 
 let slashContract: SlashIndicator;
@@ -29,7 +30,7 @@ let validatorCandidates: SignerWithAddress[];
 
 const slashFelonyAmount = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
-const maxValidatorNumber = 4;
+const maxValidatorNumber = 3;
 const minValidatorBalance = BigNumber.from(100);
 const felonyJailDuration = 28800 * 2;
 const misdemeanorThreshold = 10;
@@ -39,7 +40,6 @@ const blockRewardAmount = BigNumber.from(2);
 describe('[Integration] Wrap up epoch', () => {
   before(async () => {
     [coinbase, deployer, proxyAdmin, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
-    validatorCandidates = validatorCandidates.slice(0, 5);
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
     if (network.name == Network.Hardhat) {
@@ -54,7 +54,7 @@ describe('[Integration] Wrap up epoch', () => {
         felonyJailBlocks: felonyJailDuration,
       };
       roninValidatorSetConf[network.name] = {
-        maxValidatorNumber: 21,
+        maxValidatorNumber: maxValidatorNumber,
         numberOfBlocksInEpoch: 600,
         numberOfEpochsInPeriod: 48, // 1 day
       };
@@ -144,7 +144,7 @@ describe('[Integration] Wrap up epoch', () => {
     });
   });
 
-  describe('Flow test', async () => {
+  describe('Flow test on one validator', async () => {
     let wrapUpTx: ContractTransaction;
     let validators: SignerWithAddress[];
 
@@ -164,11 +164,15 @@ describe('[Integration] Wrap up epoch', () => {
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
 
-      await network.provider.send('hardhat_setCoinbase', [validators[0].address]);
-      validatorContract = validatorContract.connect(validators[0]);
+      await network.provider.send('hardhat_setCoinbase', [validators[3].address]);
+      validatorContract = validatorContract.connect(validators[3]);
       await validatorContract.submitBlockReward({
         value: blockRewardAmount,
       });
+    });
+
+    after(async () => {
+      coinbase = validators[3];
     });
 
     describe('Wrap up epoch: at the end of the epoch', async () => {
@@ -209,7 +213,13 @@ describe('[Integration] Wrap up epoch', () => {
         });
 
         it('Should the StakingContract emit event of settling reward', async () => {
-          await StakingExpects.emitSettledPoolsUpdatedEvent(wrapUpTx, validators.map((_) => _.address).reverse());
+          await StakingExpects.emitSettledPoolsUpdatedEvent(
+            wrapUpTx,
+            validators
+              .slice(1, 4)
+              .map((_) => _.address)
+              .reverse()
+          );
         });
       });
     });
@@ -229,7 +239,78 @@ describe('[Integration] Wrap up epoch', () => {
           await validatorContract.endPeriod();
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
-        await SlashExpects.emitUnavailabilityIndicatorsResetEvent(wrapUpTx, validators.map((_) => _.address).reverse());
+        await SlashExpects.emitUnavailabilityIndicatorsResetEvent(
+          wrapUpTx,
+          validators
+            .slice(1, 4)
+            .map((_) => _.address)
+            .reverse()
+        );
+      });
+    });
+  });
+
+  describe('Flow test on many validators', async () => {
+    let wrapUpTx: ContractTransaction;
+    let validators: SignerWithAddress[];
+
+    before(async () => {
+      validators = validatorCandidates.slice(4, 8);
+
+      for (let i = 0; i < validators.length; i++) {
+        await stakingContract
+          .connect(validators[i])
+          .proposeValidator(validators[i].address, validators[i].address, 2_00, {
+            value: minValidatorBalance.mul(3).add(i),
+          });
+      }
+
+      await mineBatchTxs(async () => {
+        await validatorContract.connect(coinbase).endEpoch();
+        await validatorContract.connect(coinbase).wrapUpEpoch();
+      });
+
+      await network.provider.send('hardhat_setCoinbase', [validators[3].address]);
+      validatorContract = validatorContract.connect(validators[3]);
+      await validatorContract.submitBlockReward({
+        value: blockRewardAmount,
+      });
+    });
+
+    describe('One validator get slashed between period', async () => {
+      before(async () => {
+        await mineBatchTxs(async () => {
+          await validatorContract.endEpoch();
+          await validatorContract.wrapUpEpoch();
+        });
+
+        for (let i = 0; i < felonyThreshold; i++) {
+          await slashContract.connect(validators[3]).slash(validators[1].address);
+        }
+      });
+
+      it('Should the validator set get updated (excluding the slashed validator)', async () => {
+        await mineBatchTxs(async () => {
+          await validatorContract.endEpoch();
+          wrapUpTx = await validatorContract.wrapUpEpoch();
+        });
+
+        await ValidatorSetExpects.emitValidatorSetUpdatedEvent(
+          wrapUpTx,
+          [validators[0], validators[2], validators[3]].map((_) => _.address).reverse()
+        );
+      });
+
+      it('Should the validators in the previous epoch (including slashed one) got slashing counter reset, when the epoch ends', async () => {
+        await mineBatchTxs(async () => {
+          await validatorContract.endEpoch();
+          await validatorContract.endPeriod();
+          wrapUpTx = await validatorContract.wrapUpEpoch();
+        });
+        await SlashExpects.emitUnavailabilityIndicatorsResetEvent(
+          wrapUpTx,
+          [validators[0], validators[2], validators[3]].map((_) => _.address).reverse()
+        );
       });
     });
   });
