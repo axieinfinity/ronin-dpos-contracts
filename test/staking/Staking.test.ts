@@ -7,7 +7,6 @@ import { Staking, Staking__factory, TransparentUpgradeableProxy__factory } from 
 import { MockValidatorSet__factory } from '../../src/types/factories/MockValidatorSet__factory';
 import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
-import * as StakingContract from '../../src/script/staking';
 
 const EPS = 1;
 
@@ -139,13 +138,9 @@ describe('Staking test', () => {
           1, // 0.01%
           { value: minValidatorBalance }
         );
-        await StakingContract.expects.emitValidatorProposedEvent(
-          tx,
-          candidate.address,
-          candidate.address,
-          i - 1,
-          minValidatorBalance
-        );
+        await expect(tx)
+          .emit(stakingContract, 'ValidatorProposed')
+          .withArgs(candidate.address, candidate.address, i - 1);
       }
 
       poolAddr = validatorCandidates[1];
@@ -177,11 +172,11 @@ describe('Staking test', () => {
     it('Should be able to stake/unstake as a validator', async () => {
       let tx: ContractTransaction;
       tx = await stakingContract.connect(poolAddr).stake(poolAddr.address, { value: 1 });
-      await StakingContract.expects.emitStakedEvent(tx!, poolAddr.address, 1);
+      await expect(tx!).emit(stakingContract, 'Staked').withArgs(poolAddr.address, 1);
       expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance.add(1));
 
       tx = await stakingContract.connect(poolAddr).unstake(poolAddr.address, 1);
-      await StakingContract.expects.emitUnstakedEvent(tx!, poolAddr.address, 1);
+      await expect(tx!).emit(stakingContract, 'Unstaked').withArgs(poolAddr.address, 1);
       expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance);
     });
 
@@ -211,14 +206,14 @@ describe('Staking test', () => {
     it('Should be able to delegate/undelegate', async () => {
       let tx: ContractTransaction;
       tx = await stakingContract.connect(userA).delegate(otherPoolAddr.address, { value: 1 });
-      await StakingContract.expects.emitDelegatedEvent(tx!, userA.address, otherPoolAddr.address, 1);
+      await expect(tx!).emit(stakingContract, 'Delegated').withArgs(userA.address, otherPoolAddr.address, 1);
 
       tx = await stakingContract.connect(userB).delegate(otherPoolAddr.address, { value: 1 });
-      await StakingContract.expects.emitDelegatedEvent(tx!, userB.address, otherPoolAddr.address, 1);
+      await expect(tx!).emit(stakingContract, 'Delegated').withArgs(userB.address, otherPoolAddr.address, 1);
       expect(await stakingContract.totalBalance(otherPoolAddr.address)).eq(minValidatorBalance.add(2));
 
       tx = await stakingContract.connect(userA).undelegate(otherPoolAddr.address, 1);
-      await StakingContract.expects.emitUndelegatedEvent(tx!, userA.address, otherPoolAddr.address, 1);
+      await expect(tx!).emit(stakingContract, 'Undelegated').withArgs(userA.address, otherPoolAddr.address, 1);
       expect(await stakingContract.totalBalance(otherPoolAddr.address)).eq(minValidatorBalance.add(1));
     });
   });
