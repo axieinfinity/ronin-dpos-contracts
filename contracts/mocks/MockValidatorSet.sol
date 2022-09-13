@@ -98,4 +98,6 @@ contract MockValidatorSet is IRoninValidatorSet {
   function setNumberOfBlocksInEpoch(uint256 _numberOfBlocksInEpoch) external override {}
 
   function setNumberOfEpochsInPeriod(uint256 _numberOfEpochsInPeriod) external override {}
+
+  function maxValidatorNumber() external view override returns (uint256 _maximumValidatorNumber) {}
 }
