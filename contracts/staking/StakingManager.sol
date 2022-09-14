@@ -88,7 +88,6 @@ abstract contract StakingManager is IStaking, RewardCalculation {
 
     ValidatorCandidate storage _candidate = _getCandidate(_consensusAddr);
 
-    // TODO: exclude min balance check when staked is deducted by slashing
     uint256 remainAmount = _candidate.stakedAmount - _amount;
     require(remainAmount >= minValidatorBalance(), "StakingManager: invalid staked amount left");
 
