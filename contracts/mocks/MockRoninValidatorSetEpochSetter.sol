@@ -8,19 +8,7 @@ contract MockRoninValidatorSetEpochSetter is RoninValidatorSet {
   uint256[] internal _epochs;
   uint256[] internal _periods;
 
-  constructor(
-    address __governanceAdmin,
-    address __slashIndicatorContract,
-    address __stakingContract,
-    address __stakingVestingContract,
-    uint256 __maxValidatorNumber
-  ) {
-    _governanceAdmin = __governanceAdmin;
-    _slashIndicatorContract = __slashIndicatorContract;
-    _stakingContract = __stakingContract;
-    _stakingVestingContract = __stakingVestingContract;
-    _maxValidatorNumber = __maxValidatorNumber;
-  }
+  constructor() RoninValidatorSet() {}
 
   function endEpoch() external {
     _epochs.push(block.number);
