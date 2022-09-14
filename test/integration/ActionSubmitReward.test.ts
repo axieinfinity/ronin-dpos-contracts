@@ -164,7 +164,7 @@ describe('[Integration] Submit Block Reward', () => {
     it('Should the ValidatorSetContract emit event of submitting reward', async () => {
       await expect(submitRewardTx)
         .to.emit(validatorContract, 'BlockRewardSubmitted')
-        .withArgs(validator.address, blockRewardAmount);
+        .withArgs(validator.address, blockRewardAmount, bonusPerBlock);
     });
 
     it.skip('Should the ValidatorSetContract update mining reward', async () => {});

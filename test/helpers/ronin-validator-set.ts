@@ -27,7 +27,8 @@ export const expects = {
   emitBlockRewardSubmittedEvent: async function (
     tx: ContractTransaction,
     expectingCoinbaseAddr: string,
-    expectingDeprecatedReward: BigNumberish
+    expectingSubmittedReward: BigNumberish,
+    expectingBonusReward: BigNumberish
   ) {
     await expectEvent(
       contractInterface,
@@ -35,7 +36,8 @@ export const expects = {
       tx,
       (event) => {
         expect(event.args[0], 'invalid coinbase address').eq(expectingCoinbaseAddr);
-        expect(event.args[1], 'invalid reward').eq(expectingDeprecatedReward);
+        expect(event.args[1], 'invalid submitted reward').eq(expectingSubmittedReward);
+        expect(event.args[2], 'invalid bonus reward').eq(expectingBonusReward);
       },
       1
     );
@@ -83,7 +85,7 @@ export const expects = {
       'StakingRewardDistributed',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid deprecated reward').eq(expectingAmount);
+        expect(event.args[0], 'invalid distributing reward').eq(expectingAmount);
       },
       1
     );

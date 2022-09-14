@@ -128,7 +128,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     address _candidateAdmin
   ) internal returns (uint256 _candidateIdx) {
     uint256 _length = getValidatorCandidateLength();
-    require(_length < maxValidatorCandidate(), "StakingManager: query for exceeded validator array length");
+    require(_length < maxValidatorCandidate(), "StakingManager: exceeds maximum number of candidates");
     require(_getCandidateIndex(_consensusAddr) == 0, "StakingManager: query for existed candidate");
     require(_amount >= minValidatorBalance(), "StakingManager: insufficient amount");
     // TODO(Thor): replace by `call` and use reentrancy gruard
