@@ -13,7 +13,7 @@ import "../libraries/Math.sol";
 
 contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   /// @dev Governance admin address.
-  address internal _governanceAdmin; // TODO(Thor): add setter.
+  address internal _governanceAdmin;
   /// @dev Slash indicator contract address.
   address internal _slashIndicatorContract; // Change type to address for testing purpose
   /// @dev Staking contract address.
@@ -59,6 +59,11 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     _;
   }
 
+  modifier onlyGovernanceAdmin() {
+    require(msg.sender == _governanceAdmin, "RoninValidatorSet: method caller must be governance admin");
+    _;
+  }
+
   modifier whenEpochEnding() {
     require(epochEndingAt(block.number), "RoninValidatorSet: only allowed at the end of epoch");
     _;
@@ -88,13 +93,15 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     uint256 __numberOfBlocksInEpoch,
     uint256 __numberOfEpochsInPeriod
   ) external initializer {
-    _governanceAdmin = __governanceAdmin;
+    _setGovernanceAdmin(__governanceAdmin);
+
     _slashIndicatorContract = __slashIndicatorContract;
     _stakingContract = __stakingContract;
     _stakingVestingContract = __stakingVestingContract;
-    _maxValidatorNumber = __maxValidatorNumber;
-    _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
-    _numberOfEpochsInPeriod = __numberOfEpochsInPeriod;
+
+    _setMaxValidatorNumber(__maxValidatorNumber);
+    _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
+    _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -170,6 +177,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     }
 
     if (_periodEnding) {
+      // TODO: reset for candidates / kicked validators
       ISlashIndicator(_slashIndicatorContract).resetCounters(_validators);
     }
 
@@ -326,6 +334,45 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     return _numberOfBlocksInEpoch;
   }
 
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function maxValidatorNumber() external view override returns (uint256 _maximumValidatorNumber) {
+    return _maxValidatorNumber;
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                         FUNCTIONS FOR GOVERNANCE ADMIN                            //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function setGovernanceAdmin(address __governanceAdmin) external override onlyGovernanceAdmin {
+    _setGovernanceAdmin(__governanceAdmin);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function setMaxValidatorNumber(uint256 __maxValidatorNumber) external override onlyGovernanceAdmin {
+    _setMaxValidatorNumber(__maxValidatorNumber);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function setNumberOfBlocksInEpoch(uint256 __numberOfBlocksInEpoch) external override onlyGovernanceAdmin {
+    _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) external override onlyGovernanceAdmin {
+    _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                                  HELPER FUNCTIONS                                 //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -359,6 +406,9 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    */
   function _updateValidatorSet() internal {
     // TODO: measure gas metrics from getting candidates
+
+    // TODO: filter validators that do not have enough min balance
+
     (address[] memory _candidates, uint256[] memory _weights) = IStaking(_stakingContract).getCandidateWeights();
     uint256 _newLength = _candidates.length;
     for (uint256 _i; _i < _candidates.length; _i++) {
@@ -400,6 +450,44 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     validatorCount = _newValidatorCount;
     _lastUpdatedBlock = block.number;
     emit ValidatorSetUpdated(_candidates);
+  }
+
+  /**
+   * @dev Updates the address of governance admin
+   */
+  function _setGovernanceAdmin(address __governanceAdmin) internal {
+    if (__governanceAdmin == _governanceAdmin) {
+      return;
+    }
+
+    require(__governanceAdmin != address(0), "RoninValidatorSet: Cannot set admin to zero address");
+
+    _governanceAdmin == __governanceAdmin;
+    emit GovernanceAdminUpdated(__governanceAdmin);
+  }
+
+  /**
+   * @dev Updates the max validator number
+   */
+  function _setMaxValidatorNumber(uint256 __maxValidatorNumber) internal {
+    _maxValidatorNumber = __maxValidatorNumber;
+    emit MaxValidatorNumberUpdated(__maxValidatorNumber);
+  }
+
+  /**
+   * @dev Updates the number of blocks in epoch
+   */
+  function _setNumberOfBlocksInEpoch(uint256 __numberOfBlocksInEpoch) internal {
+    _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
+    emit NumberOfBlocksInEpochUpdated(__numberOfBlocksInEpoch);
+  }
+
+  /**
+   * @dev Updates the number of epochs in period
+   */
+  function _setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) internal {
+    _numberOfEpochsInPeriod = __numberOfEpochsInPeriod;
+    emit NumberOfEpochsInPeriodUpdated(__numberOfEpochsInPeriod);
   }
 
   /**

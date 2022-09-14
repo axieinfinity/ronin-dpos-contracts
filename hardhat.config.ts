@@ -3,6 +3,7 @@ import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import 'hardhat-deploy';
 import 'hardhat-gas-reporter';
+import '@nomicfoundation/hardhat-chai-matchers';
 
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, NetworkUserConfig, SolcUserConfig } from 'hardhat/types';

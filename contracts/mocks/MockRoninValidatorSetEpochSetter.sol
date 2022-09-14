@@ -63,4 +63,11 @@ contract MockRoninValidatorSetEpochSetter is RoninValidatorSet {
     }
     return false;
   }
+
+  function getJailUntils(address[] calldata _addrs) public view returns (uint256[] memory jailUntils_) {
+    jailUntils_ = new uint256[](_addrs.length);
+    for (uint _i = 0; _i < _addrs.length; _i++) {
+      jailUntils_[_i] = _jailedUntil[_addrs[_i]];
+    }
+  }
 }

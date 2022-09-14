@@ -54,7 +54,7 @@ contract Staking is IStaking, StakingManager, Initializable {
     uint256 __minValidatorBalance
   ) external initializer {
     _setValidatorContract(__validatorContract);
-    _setGovernanceAdminAddress(__governanceAdmin);
+    _setGovernanceAdmin(__governanceAdmin);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setMinValidatorBalance(__minValidatorBalance);
   }
@@ -70,6 +70,17 @@ contract Staking is IStaking, StakingManager, Initializable {
     return _governanceAdmin;
   }
 
+  function validatorContract() external view override returns (address) {
+    return _validatorContract;
+  }
+
+  /**
+   * @inheritdoc IStaking
+   */
+  function setGovernanceAdmin(address _newAddr) external override onlyGovernanceAdmin {
+    _setGovernanceAdmin(_newAddr);
+  }
+
   /**
    * @inheritdoc IStaking
    */
@@ -80,7 +91,7 @@ contract Staking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function setMinValidatorBalance(uint256 _threshold) external onlyGovernanceAdmin {
+  function setMinValidatorBalance(uint256 _threshold) external override onlyGovernanceAdmin {
     _setMinValidatorBalance(_threshold);
   }
 
@@ -94,7 +105,7 @@ contract Staking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function setMaxValidatorCandidate(uint256 _threshold) external onlyGovernanceAdmin {
+  function setMaxValidatorCandidate(uint256 _threshold) external override onlyGovernanceAdmin {
     _setMaxValidatorCandidate(_threshold);
   }
 
@@ -161,8 +172,7 @@ contract Staking is IStaking, StakingManager, Initializable {
    */
   function deductStakingAmount(address _consensusAddr, uint256 _amount) external onlyValidatorContract {
     ValidatorCandidate storage _candidate = _getCandidate(_consensusAddr);
-    _unstake(_consensusAddr, _candidate.candidateAdmin, _amount);
-    _undelegate(_consensusAddr, _candidate.candidateAdmin, _amount);
+    _unstake(_candidate, _candidate.candidateAdmin, _amount);
   }
 
   /**
@@ -219,7 +229,8 @@ contract Staking is IStaking, StakingManager, Initializable {
    * Emits the `GovernanceAdminUpdated` event.
    *
    */
-  function _setGovernanceAdminAddress(address _newAddr) internal {
+  function _setGovernanceAdmin(address _newAddr) internal {
+    require(_newAddr != address(0), "Staking: Cannot set admin to zero address");
     _governanceAdmin = _newAddr;
     emit GovernanceAdminUpdated(_newAddr);
   }

@@ -67,9 +67,25 @@ interface IStaking is IRewardPool {
   function governanceAdmin() external view returns (address);
 
   /**
+   * @dev Returns validator contract
+   */
+  function validatorContract() external view returns (address);
+
+  /**
    * @dev Returns the minimum threshold for being a validator candidate.
    */
   function minValidatorBalance() external view returns (uint256);
+
+  /**
+   * @dev Updates the governance admin
+   *
+   * Requirements:
+   * - The method caller is the governance admin
+   *
+   * Emits the event `GovernanceAdminUpdated`
+   *
+   */
+  function setGovernanceAdmin(address _governanceAdmin) external;
 
   /**
    * @dev Sets the minimum threshold for being a validator candidate.
@@ -99,7 +115,7 @@ interface IStaking is IRewardPool {
   function setMaxValidatorCandidate(uint256) external;
 
   ///////////////////////////////////////////////////////////////////////////////////////
-  //                              FUNCTIONS FOR VALIDATOR                              //
+  //                         FUNCTIONS FOR VALIDATOR CONTRACT                           //
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**

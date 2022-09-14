@@ -17,6 +17,14 @@ interface IRoninValidatorSet {
   event StakingRewardDistributed(uint256 amount);
   /// @dev Emitted when the validator set is updated
   event ValidatorSetUpdated(address[]);
+  /// @dev Emitted when the governance admin is updated
+  event GovernanceAdminUpdated(address);
+  /// @dev Emitted when the number of max validator is updated
+  event MaxValidatorNumberUpdated(uint256);
+  /// @dev Emitted when the number of blocks in epoch is updated
+  event NumberOfBlocksInEpochUpdated(uint256);
+  /// @dev Emitted when the number of epochs in period is updated
+  event NumberOfEpochsInPeriodUpdated(uint256);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR COINBASE                               //
@@ -118,6 +126,11 @@ interface IRoninValidatorSet {
   function numberOfBlocksInEpoch() external view returns (uint256 _numberOfBlocks);
 
   /**
+   * @dev Returns the maximum number of validators in the epoch
+   */
+  function maxValidatorNumber() external view returns (uint256 _maximumValidatorNumber);
+
+  /**
    * @dev Returns the epoch index from the block number.
    */
   function epochOf(uint256 _block) external view returns (uint256);
@@ -141,4 +154,52 @@ interface IRoninValidatorSet {
    * @dev Returns whether the period ending is at the block number `_block`.
    */
   function periodEndingAt(uint256 _block) external view returns (bool);
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                         FUNCTIONS FOR GOVERNANCE ADMIN                            //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Updates the governance admin
+   *
+   * Requirements:
+   * - The method caller is the governance admin
+   *
+   * Emits the event `GovernanceAdminUpdated`
+   *
+   */
+  function setGovernanceAdmin(address _governanceAdmin) external;
+
+  /**
+   * @dev Updates the max validator number
+   *
+   * Requirements:
+   * - The method caller is the governance admin
+   *
+   * Emits the event `MaxValidatorNumberUpdated`
+   *
+   */
+  function setMaxValidatorNumber(uint256 _maxValidatorNumber) external;
+
+  /**
+   * @dev Updates the number of blocks in epoch
+   *
+   * Requirements:
+   * - The method caller is the governance admin
+   *
+   * Emits the event `NumberOfBlocksInEpochUpdated`
+   *
+   */
+  function setNumberOfBlocksInEpoch(uint256 _numberOfBlocksInEpoch) external;
+
+  /**
+   * @dev Updates the number of epochs in period
+   *
+   * Requirements:
+   * - The method caller is the governance admin
+   *
+   * Emits the event `NumberOfEpochsInPeriodUpdated`
+   *
+   */
+  function setNumberOfEpochsInPeriod(uint256 _numberOfEpochsInPeriod) external;
 }

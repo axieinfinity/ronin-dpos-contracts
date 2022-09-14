@@ -9,6 +9,14 @@ interface ISlashIndicator {
   event ValidatorSlashed(address indexed validator, SlashType slashType);
   /// @dev Emitted when the validator indicators are reset
   event UnavailabilityIndicatorsReset(address[] validators);
+  /// @dev Emitted when the thresholds updated
+  event SlashThresholdsUpdated(uint256 felonyThreshold, uint256 misdemeanorThreshold);
+  /// @dev Emitted when the amount of slashing felony updated
+  event SlashFelonyAmountUpdated(uint256 slashFelonyAmount);
+  /// @dev Emitted when the amount of slashing double sign updated
+  event SlashDoubleSignAmountUpdated(uint256 slashDoubleSignAmount);
+  /// @dev Emiited when the duration of jailing felony updated
+  event FelonyJailDurationUpdated(uint256 felonyJailDuration);
 
   enum SlashType {
     UNKNOWN,
@@ -18,7 +26,7 @@ interface ISlashIndicator {
   }
 
   /**
-   * @dev Returns the validator contract.
+   * @dev Returns the validator contract
    */
   function validatorContract() external view returns (IRoninValidatorSet);
 
@@ -29,7 +37,7 @@ interface ISlashIndicator {
    * Requirements:
    * - Only coinbase can call this method
    *
-   * Emits the event `ValidatorSlashed`.
+   * Emits the event `ValidatorSlashed`
    *
    */
   function slash(address _valAddr) external;
@@ -40,13 +48,13 @@ interface ISlashIndicator {
    * Requirements:
    * - Only validator contract can call this method
    *
-   * Emits the `UnavailabilityIndicatorsReset` events.
+   * Emits the `UnavailabilityIndicatorsReset` events
    *
    */
   function resetCounters(address[] calldata) external;
 
   /**
-   * @dev Slashes for double signing.
+   * @dev Slashes for double signing
    *
    * Requirements:
    * - Only coinbase can call this method
@@ -60,21 +68,56 @@ interface ISlashIndicator {
    * Requirements:
    * - Only governance admin can call this method
    *
+   * Emits the event `SlashThresholdsUpdated`
+   *
    */
   function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) external;
 
   /**
-   * @dev Gets slash indicator of a validator.
+   * @dev Sets the slash felony amount
+   *
+   * Requirements:
+   * - Only governance admin can call this method
+   *
+   * Emits the event `SlashFelonyAmountUpdated`
+   *
+   */
+  function setSlashFelonyAmount(uint256 _slashFelonyAmount) external;
+
+  /**
+   * @dev Sets the slash double sign amount
+   *
+   * Requirements:
+   * - Only governance admin can call this method
+   *
+   * Emits the event `SlashDoubleSignAmountUpdated`
+   *
+   */
+  function setSlashDoubleSignAmount(uint256 _slashDoubleSignAmount) external;
+
+  /**
+   * @dev Sets the felony jail duration
+   *
+   * Requirements:
+   * - Only governance admin can call this method
+   *
+   * Emits the event `FelonyJailDurationUpdated`
+   *
+   */
+  function setFelonyJailDuration(uint256 _felonyJailDuration) external;
+
+  /**
+   * @dev Gets slash indicator of a validator
    */
   function getSlashIndicator(address _validator) external view returns (uint256);
 
   /**
-   * @dev Gets the slash thresholds.
+   * @dev Gets the slash thresholds
    */
   function getSlashThresholds() external view returns (uint256 misdemeanorThreshold, uint256 felonyThreshold);
 
   /**
-   * @dev Returns the governance admin address.
+   * @dev Returns the governance admin address
    */
   function governanceAdmin() external view returns (address);
 }
