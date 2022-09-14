@@ -34,22 +34,25 @@ let deployer: SignerWithAddress;
 let governanceAdmin: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
-const slashFelonyAmount = BigNumber.from(1);
-const slashDoubleSignAmount = 1000;
-const maxValidatorNumber = 4;
-const minValidatorBalance = BigNumber.from(100);
-const numberOfBlocksInEpoch = 600;
-const numberOfEpochsInPeriod = 48;
 const felonyJailDuration = 28800 * 2;
 const misdemeanorThreshold = 10;
 const felonyThreshold = 20;
+const slashFelonyAmount = BigNumber.from(1);
+const slashDoubleSignAmount = 1000;
+
+const maxValidatorNumber = 3;
+const numberOfBlocksInEpoch = 600;
+const numberOfEpochsInPeriod = 48;
+
+const minValidatorBalance = BigNumber.from(100);
+const maxValidatorCandidate = 10;
+
 const bonusPerBlock = BigNumber.from(1);
 const topUpAmount = BigNumber.from(10000);
 
 describe('[Integration] Slash validators', () => {
   before(async () => {
     [deployer, coinbase, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
-    validatorCandidates = validatorCandidates.slice(0, 5);
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
     if (network.name == Network.Hardhat) {
@@ -70,7 +73,7 @@ describe('[Integration] Slash validators', () => {
       };
       stakingConfig[network.name] = {
         minValidatorBalance: minValidatorBalance,
-        maxValidatorCandidate: maxValidatorNumber,
+        maxValidatorCandidate: maxValidatorCandidate,
       };
       stakingVestingConfig[network.name] = {
         bonusPerBlock: bonusPerBlock,
