@@ -11,9 +11,10 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const logicContract = await deployments.get('SlashIndicatorLogic');
 
   const data = new SlashIndicator__factory().interface.encodeFunctionData('initialize', [
+    initAddress[network.name]!.governanceAdmin,
+    initAddress[network.name]!.validatorContract,
     slashIndicatorConf[network.name]!.misdemeanorThreshold,
     slashIndicatorConf[network.name]!.felonyThreshold,
-    initAddress[network.name]!.validatorContract,
     slashIndicatorConf[network.name]!.slashFelonyAmount,
     slashIndicatorConf[network.name]!.slashDoubleSignAmount,
     slashIndicatorConf[network.name]!.felonyJailBlocks,

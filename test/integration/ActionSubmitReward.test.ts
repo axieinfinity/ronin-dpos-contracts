@@ -75,9 +75,10 @@ describe('[Integration] Submit Block Reward', () => {
       slashLogicContract.address,
       proxyAdmin.address,
       slashLogicContract.interface.encodeFunctionData('initialize', [
+        governanceAdmin.address,
+        roninValidatorSetAddr,
         slashIndicatorConf[network.name]!.misdemeanorThreshold,
         slashIndicatorConf[network.name]!.felonyThreshold,
-        roninValidatorSetAddr,
         slashIndicatorConf[network.name]!.slashFelonyAmount,
         slashIndicatorConf[network.name]!.slashDoubleSignAmount,
         slashIndicatorConf[network.name]!.felonyJailBlocks,
