@@ -15,7 +15,7 @@ contract Staking is IStaking, StakingManager, Initializable {
   /// @dev Maximum number of validator.
   uint256 internal _maxValidatorCandidate;
   /// @dev Governance admin address.
-  address internal _governanceAdmin; // TODO(Thor): add setter.
+  address internal _governanceAdmin;
   /// @dev Validator contract address.
   address internal _validatorContract; // Change type to address for testing purpose
 

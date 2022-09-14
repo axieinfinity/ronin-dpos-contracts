@@ -31,8 +31,16 @@ let currentValidatorSet: string[];
 
 const slashFelonyAmount = 100;
 const slashDoubleSignAmount = 1000;
+
 const maxValidatorNumber = 4;
+const numberOfBlocksInEpoch = 600;
+const numberOfEpochsInPeriod = 48;
+
+const maxValidatorCandidate = 100;
 const minValidatorBalance = BigNumber.from(2);
+
+const bonusPerBlock = BigNumber.from(1);
+const topUpAmount = BigNumber.from(10000);
 
 describe('Ronin Validator Set test', () => {
   before(async () => {
@@ -41,15 +49,24 @@ describe('Ronin Validator Set test', () => {
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
     const nonce = await deployer.getTransactionCount();
-    const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 3 });
-    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 5 });
+    const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
+    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 6 });
+
+    ///
+    /// Deploy staking mock contract
+    ///
 
     const stakingVestingLogic = await new StakingVesting__factory(deployer).deploy();
     const stakingVesting = await new TransparentUpgradeableProxy__factory(deployer).deploy(
       stakingVestingLogic.address,
       proxyAdmin.address,
-      stakingVestingLogic.interface.encodeFunctionData('initialize', [0, roninValidatorSetAddr])
+      stakingVestingLogic.interface.encodeFunctionData('initialize', [bonusPerBlock, roninValidatorSetAddr]),
+      { value: topUpAmount }
     );
+
+    ///
+    /// Deploy slash indicator contract
+    ///
 
     slashIndicator = await new MockSlashIndicator__factory(deployer).deploy(
       roninValidatorSetAddr,
@@ -58,33 +75,55 @@ describe('Ronin Validator Set test', () => {
     );
     await slashIndicator.deployed();
 
-    roninValidatorSet = await new MockRoninValidatorSetEpochSetter__factory(deployer).deploy(
-      governanceAdmin.address,
-      slashIndicator.address,
-      stakingContractAddr,
-      stakingVesting.address,
-      maxValidatorNumber
-    );
-    await roninValidatorSet.deployed();
+    ///
+    /// Deploy validator mock contract
+    ///
 
-    const logicContract = await new Staking__factory(deployer).deploy();
-    await logicContract.deployed();
+    const validatorLogicContract = await new MockRoninValidatorSetEpochSetter__factory(deployer).deploy();
+    await validatorLogicContract.deployed();
 
-    const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
-      logicContract.address,
+    const validatorProxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+      validatorLogicContract.address,
       proxyAdmin.address,
-      logicContract.interface.encodeFunctionData('initialize', [
+      validatorLogicContract.interface.encodeFunctionData('initialize', [
+        governanceAdmin.address,
+        slashIndicator.address,
+        stakingContractAddr,
+        stakingVesting.address,
+        maxValidatorNumber,
+        numberOfBlocksInEpoch,
+        numberOfEpochsInPeriod,
+      ])
+    );
+    await validatorProxyContract.deployed();
+    roninValidatorSet = MockRoninValidatorSetEpochSetter__factory.connect(validatorProxyContract.address, deployer);
+
+    ///
+    /// Deploy staking contract
+    ///
+
+    const stakingLogicContract = await new Staking__factory(deployer).deploy();
+    await stakingLogicContract.deployed();
+
+    const stakingProxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+      stakingLogicContract.address,
+      proxyAdmin.address,
+      stakingLogicContract.interface.encodeFunctionData('initialize', [
         roninValidatorSet.address,
         governanceAdmin.address,
-        100,
+        maxValidatorCandidate,
         minValidatorBalance,
       ])
     );
-    await proxyContract.deployed();
-    stakingContract = Staking__factory.connect(proxyContract.address, deployer);
+    await stakingProxyContract.deployed();
+    stakingContract = Staking__factory.connect(stakingProxyContract.address, deployer);
 
-    expect(roninValidatorSetAddr.toLowerCase()).eq(roninValidatorSet.address.toLowerCase());
-    expect(stakingContractAddr.toLowerCase()).eq(stakingContract.address.toLowerCase());
+    expect(roninValidatorSetAddr.toLowerCase(), 'wrong ronin validator set contract address').eq(
+      roninValidatorSet.address.toLowerCase()
+    );
+    expect(stakingContractAddr.toLowerCase(), 'wrong staking contract address').eq(
+      stakingContract.address.toLowerCase()
+    );
   });
 
   after(async () => {
@@ -180,7 +219,7 @@ describe('Ronin Validator Set test', () => {
 
   it('Should be able to submit block reward using coinbase account', async () => {
     const tx = await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
-    await RoninValidatorSet.expects.emitBlockRewardSubmittedEvent(tx, coinbase.address, 100);
+    await RoninValidatorSet.expects.emitBlockRewardSubmittedEvent(tx, coinbase.address, 100, bonusPerBlock);
   });
 
   it('Should be able to get right reward at the end of period', async () => {
@@ -192,11 +231,11 @@ describe('Ronin Validator Set test', () => {
       tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
     await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
-    await RoninValidatorSet.expects.emitStakingRewardDistributedEvent(tx!, 99);
+    await RoninValidatorSet.expects.emitStakingRewardDistributedEvent(tx!, bonusPerBlock.add(99));
     await RoninValidatorSet.expects.emitMiningRewardDistributedEvent(tx!, coinbase.address, 1);
     const balanceDiff = (await treasury.getBalance()).sub(balance);
     expect(balanceDiff).eq(1); // 100 * 1%
-    expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(99); // remain amount (99%)
+    expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(bonusPerBlock.add(99)); // remain amount (99%)
   });
 
   it('Should not allocate minting fee for the slashed validators', async () => {
@@ -214,7 +253,7 @@ describe('Ronin Validator Set test', () => {
       const balanceDiff = (await treasury.getBalance()).sub(balance);
       expect(balanceDiff).eq(0);
       // The delegators don't receives the new rewards until the period is ended
-      expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(99);
+      expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(bonusPerBlock.add(99));
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
     }
 
@@ -228,7 +267,7 @@ describe('Ronin Validator Set test', () => {
       });
       const balanceDiff = (await treasury.getBalance()).sub(balance);
       expect(balanceDiff).eq(0);
-      expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(99);
+      expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(bonusPerBlock.add(99));
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
     }
   });
@@ -243,9 +282,11 @@ describe('Ronin Validator Set test', () => {
     });
     const balanceDiff = (await treasury.getBalance()).sub(balance);
     expect(balanceDiff).eq(0);
-    expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(99 * 2);
+    expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
+      bonusPerBlock.add(99).mul(2)
+    );
     await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
-    await RoninValidatorSet.expects.emitStakingRewardDistributedEvent(tx!, 99);
+    await RoninValidatorSet.expects.emitStakingRewardDistributedEvent(tx!, bonusPerBlock.add(99));
   });
 
   it('Should not allocate reward for the slashed validator', async () => {
@@ -261,7 +302,9 @@ describe('Ronin Validator Set test', () => {
     });
     const balanceDiff = (await treasury.getBalance()).sub(balance);
     expect(balanceDiff).eq(0);
-    expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(99 * 2);
+    expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
+      bonusPerBlock.add(99).mul(2)
+    );
     await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
   });
 });

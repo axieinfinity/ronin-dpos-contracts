@@ -8,7 +8,7 @@ interface IRoninValidatorSet {
   /// @dev Emitted when the reward of the valdiator is deprecated.
   event RewardDeprecated(address coinbaseAddr, uint256 rewardAmount);
   /// @dev Emitted when the block reward is submitted.
-  event BlockRewardSubmitted(address coinbaseAddr, uint256 rewardAmount);
+  event BlockRewardSubmitted(address coinbaseAddr, uint256 submittedAmount, uint256 bonusAmount);
   /// @dev Emitted when the validator is slashed.
   event ValidatorSlashed(address validatorAddr, uint256 jailedUntil, uint256 deductedStakingAmount);
   /// @dev Emitted when the validator reward is distributed.

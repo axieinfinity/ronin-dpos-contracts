@@ -112,8 +112,8 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    * @inheritdoc IRoninValidatorSet
    */
   function submitBlockReward() external payable override onlyCoinbase {
-    uint256 _reward = msg.value;
-    if (_reward == 0) {
+    uint256 _submittedReward = msg.value;
+    if (_submittedReward == 0) {
       return;
     }
 
@@ -122,11 +122,12 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     if (
       !_isValidator(_coinbaseAddr) || _jailed(_coinbaseAddr) || _rewardDeprecated(_coinbaseAddr, periodOf(block.number))
     ) {
-      emit RewardDeprecated(_coinbaseAddr, _reward);
+      emit RewardDeprecated(_coinbaseAddr, _submittedReward);
       return;
     }
 
-    _reward += IStakingVesting(_stakingVestingContract).requestBlockBonus();
+    uint256 _bonusReward = IStakingVesting(_stakingVestingContract).requestBlockBonus();
+    uint256 _reward = _submittedReward + _bonusReward;
 
     IStaking _staking = IStaking(_stakingContract);
     uint256 _rate = _staking.commissionRateOf(_coinbaseAddr);
@@ -136,7 +137,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     _miningReward[_coinbaseAddr] += _miningAmount;
     _delegatingReward[_coinbaseAddr] += _delegatingAmount;
     _staking.recordReward(_coinbaseAddr, _delegatingAmount);
-    emit BlockRewardSubmitted(_coinbaseAddr, _reward);
+    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _bonusReward);
   }
 
   /**
