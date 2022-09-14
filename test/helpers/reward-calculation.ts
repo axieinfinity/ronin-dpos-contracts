@@ -9,19 +9,19 @@ const contractInterface = RewardCalculation__factory.createInterface();
 export const expects = {
   emitSettledPoolsUpdatedEvent: async function (
     tx: ContractTransaction,
-    expectedPoolList?: string[],
-    expectedAccumulatedRpsList?: BigNumberish[]
+    expectingPoolList?: string[],
+    expectingAccumulatedRpsList?: BigNumberish[]
   ) {
     await expectEvent(
       contractInterface,
       'SettledPoolsUpdated',
       tx,
       (event) => {
-        if (expectedPoolList) {
-          expect(event.args[0], 'invalid pool list').eql(expectedPoolList);
+        if (expectingPoolList) {
+          expect(event.args[0], 'invalid pool list').eql(expectingPoolList);
         }
-        if (expectedAccumulatedRpsList) {
-          expect(event.args[1], 'invalid accumulated rps list').eql(expectedAccumulatedRpsList);
+        if (expectingAccumulatedRpsList) {
+          expect(event.args[1], 'invalid accumulated rps list').eql(expectingAccumulatedRpsList);
         }
       },
       1
