@@ -61,15 +61,16 @@ contract SlashIndicator is ISlashIndicator, Initializable {
    * @dev Initializes the contract storage.
    */
   function initialize(
+    address __governanceAdmin,
+    IRoninValidatorSet _validatorSetContract,
     uint256 _misdemeanorThreshold,
     uint256 _felonyThreshold,
-    IRoninValidatorSet _validatorSetContract,
     uint256 _slashFelonyAmount,
     uint256 _slashDoubleSignAmount,
     uint256 _felonyJailBlocks
   ) external initializer {
     validatorContract = _validatorSetContract;
-
+    _setGovernanceAdmin(__governanceAdmin);
     _setSlashThresholds(_felonyThreshold, _misdemeanorThreshold);
     _setSlashFelonyAmount(_slashFelonyAmount);
     _setSlashDoubleSignAmount(_slashDoubleSignAmount);
@@ -141,6 +142,13 @@ contract SlashIndicator is ISlashIndicator, Initializable {
   /**
    * @inheritdoc ISlashIndicator
    */
+  function setGovernanceAdmin(address __governanceAdmin) external override onlyGovernanceAdmin {
+    _setGovernanceAdmin(__governanceAdmin);
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
   function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold)
     external
     override
@@ -198,6 +206,20 @@ contract SlashIndicator is ISlashIndicator, Initializable {
   ///////////////////////////////////////////////////////////////////////////////////////
   //                                 HELPER FUNCTIONS                                  //
   ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Updates the address of governance admin
+   */
+  function _setGovernanceAdmin(address __governanceAdmin) internal {
+    if (__governanceAdmin == _governanceAdmin) {
+      return;
+    }
+
+    require(__governanceAdmin != address(0), "SlashIndicator: Cannot set admin to zero address");
+
+    _governanceAdmin == __governanceAdmin;
+    emit GovernanceAdminUpdated(__governanceAdmin);
+  }
 
   /**
    * @dev Sets the slash thresholds

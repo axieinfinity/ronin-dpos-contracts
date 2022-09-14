@@ -12,7 +12,7 @@ import {
 import { Address } from 'hardhat-deploy/dist/types';
 import { SlashType } from './slashType';
 import { Network, slashIndicatorConf } from '../../src/config';
-import { BigNumber } from 'ethers';
+import { BigNumber, Signer } from 'ethers';
 import { expects as SlashExpects } from '../helpers/slash-indicator';
 
 let slashContract: SlashIndicator;
@@ -21,6 +21,7 @@ let deployer: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
 let mockValidatorsContract: MockValidatorSetForSlash;
 let vagabond: SignerWithAddress;
+let governanceAdmin: SignerWithAddress;
 let coinbases: SignerWithAddress[];
 let defaultCoinbase: Address;
 let localIndicators: number[];
@@ -55,7 +56,7 @@ describe('Slash indicator test', () => {
   let misdemeanorThreshold: number;
 
   before(async () => {
-    [deployer, proxyAdmin, vagabond, ...coinbases] = await ethers.getSigners();
+    [deployer, proxyAdmin, vagabond, governanceAdmin, ...coinbases] = await ethers.getSigners();
     localIndicators = Array<number>(coinbases.length).fill(0);
     defaultCoinbase = await network.provider.send('eth_coinbase');
 
@@ -75,9 +76,10 @@ describe('Slash indicator test', () => {
       logicContract.address,
       proxyAdmin.address,
       logicContract.interface.encodeFunctionData('initialize', [
+        governanceAdmin.address,
+        mockValidatorsContract.address,
         slashIndicatorConf[network.name]!.misdemeanorThreshold,
         slashIndicatorConf[network.name]!.felonyThreshold,
-        mockValidatorsContract.address,
         slashIndicatorConf[network.name]!.slashFelonyAmount,
         slashIndicatorConf[network.name]!.slashDoubleSignAmount,
         slashIndicatorConf[network.name]!.felonyJailBlocks,
