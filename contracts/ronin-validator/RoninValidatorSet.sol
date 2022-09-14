@@ -93,7 +93,8 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     uint256 __numberOfBlocksInEpoch,
     uint256 __numberOfEpochsInPeriod
   ) external initializer {
-    _governanceAdmin = __governanceAdmin;
+    _setGovernanceAdmin(__governanceAdmin);
+
     _slashIndicatorContract = __slashIndicatorContract;
     _stakingContract = __stakingContract;
     _stakingVestingContract = __stakingVestingContract;
@@ -348,12 +349,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    * @inheritdoc IRoninValidatorSet
    */
   function setGovernanceAdmin(address __governanceAdmin) external override onlyGovernanceAdmin {
-    if (__governanceAdmin == address(0) || __governanceAdmin == _governanceAdmin) {
-      return;
-    }
-
-    _governanceAdmin == __governanceAdmin;
-    emit GovernanceAdminUpdated(__governanceAdmin);
+    _setGovernanceAdmin(__governanceAdmin);
   }
 
   /**
@@ -454,6 +450,20 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     validatorCount = _newValidatorCount;
     _lastUpdatedBlock = block.number;
     emit ValidatorSetUpdated(_candidates);
+  }
+
+  /**
+   * @dev Updates the address of governance admin
+   */
+  function _setGovernanceAdmin(address __governanceAdmin) internal {
+    if (__governanceAdmin == _governanceAdmin) {
+      return;
+    }
+
+    require(__governanceAdmin != address(0), "RoninValidatorSet: Cannot set admin to zero address");
+
+    _governanceAdmin == __governanceAdmin;
+    emit GovernanceAdminUpdated(__governanceAdmin);
   }
 
   /**
