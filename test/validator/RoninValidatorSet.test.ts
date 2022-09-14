@@ -31,7 +31,12 @@ let currentValidatorSet: string[];
 
 const slashFelonyAmount = 100;
 const slashDoubleSignAmount = 1000;
+
 const maxValidatorNumber = 4;
+const numberOfBlocksInEpoch = 600;
+const numberOfEpochsInPeriod = 48;
+
+const maxValidatorCandidate = 100;
 const minValidatorBalance = BigNumber.from(2);
 
 describe('Ronin Validator Set test', () => {
@@ -41,8 +46,12 @@ describe('Ronin Validator Set test', () => {
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
     const nonce = await deployer.getTransactionCount();
-    const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 3 });
-    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 5 });
+    const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
+    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 6 });
+
+    ///
+    /// Deploy staking mock contract
+    ///
 
     const stakingVestingLogic = await new StakingVesting__factory(deployer).deploy();
     const stakingVesting = await new TransparentUpgradeableProxy__factory(deployer).deploy(
@@ -58,33 +67,55 @@ describe('Ronin Validator Set test', () => {
     );
     await slashIndicator.deployed();
 
-    roninValidatorSet = await new MockRoninValidatorSetEpochSetter__factory(deployer).deploy(
-      governanceAdmin.address,
-      slashIndicator.address,
-      stakingContractAddr,
-      stakingVesting.address,
-      maxValidatorNumber
-    );
-    await roninValidatorSet.deployed();
+    ///
+    /// Deploy validator mock contract
+    ///
 
-    const logicContract = await new Staking__factory(deployer).deploy();
-    await logicContract.deployed();
+    const validatorLogicContract = await new MockRoninValidatorSetEpochSetter__factory(deployer).deploy();
+    await validatorLogicContract.deployed();
 
-    const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
-      logicContract.address,
+    const validatorProxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+      validatorLogicContract.address,
       proxyAdmin.address,
-      logicContract.interface.encodeFunctionData('initialize', [
+      validatorLogicContract.interface.encodeFunctionData('initialize', [
+        governanceAdmin.address,
+        slashIndicator.address,
+        stakingContractAddr,
+        stakingVesting.address,
+        maxValidatorNumber,
+        numberOfBlocksInEpoch,
+        numberOfEpochsInPeriod,
+      ])
+    );
+    await validatorProxyContract.deployed();
+    roninValidatorSet = MockRoninValidatorSetEpochSetter__factory.connect(validatorProxyContract.address, deployer);
+
+    ///
+    /// Deploy staking contract
+    ///
+
+    const stakingLogicContract = await new Staking__factory(deployer).deploy();
+    await stakingLogicContract.deployed();
+
+    const stakingProxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+      stakingLogicContract.address,
+      proxyAdmin.address,
+      stakingLogicContract.interface.encodeFunctionData('initialize', [
         roninValidatorSet.address,
         governanceAdmin.address,
-        100,
+        maxValidatorCandidate,
         minValidatorBalance,
       ])
     );
-    await proxyContract.deployed();
-    stakingContract = Staking__factory.connect(proxyContract.address, deployer);
+    await stakingProxyContract.deployed();
+    stakingContract = Staking__factory.connect(stakingProxyContract.address, deployer);
 
-    expect(roninValidatorSetAddr.toLowerCase()).eq(roninValidatorSet.address.toLowerCase());
-    expect(stakingContractAddr.toLowerCase()).eq(stakingContract.address.toLowerCase());
+    expect(roninValidatorSetAddr.toLowerCase(), 'wrong ronin validator set contract address').eq(
+      roninValidatorSet.address.toLowerCase()
+    );
+    expect(stakingContractAddr.toLowerCase(), 'wrong staking contract address').eq(
+      stakingContract.address.toLowerCase()
+    );
   });
 
   after(async () => {
