@@ -1,0 +1,14 @@
+name: Run tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    uses: axieinfinity/workflows-samples/.github/workflows/testing-node.yml@main
+    with:
+      node_version: v14.18.1
