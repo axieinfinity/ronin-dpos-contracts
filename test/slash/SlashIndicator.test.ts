@@ -10,7 +10,7 @@ import {
   TransparentUpgradeableProxy__factory,
 } from '../../src/types';
 import { Address } from 'hardhat-deploy/dist/types';
-import { SlashType } from './slashType';
+import { SlashType } from '../../src/script/slash-indicator';
 import { Network, slashIndicatorConf } from '../../src/config';
 import { BigNumber, Signer } from 'ethers';
 import { expects as SlashExpects } from '../helpers/slash-indicator';

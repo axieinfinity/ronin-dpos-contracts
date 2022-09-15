@@ -34,8 +34,8 @@ export interface StakingConf {
 export interface StakingVestingConf {
   [network: LiteralNetwork]:
     | {
-        bonusPerBlock: BigNumber;
-        topupAmount: BigNumber;
+        bonusPerBlock: BigNumberish;
+        topupAmount: BigNumberish;
       }
     | undefined;
 }

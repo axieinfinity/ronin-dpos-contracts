@@ -23,7 +23,7 @@ import { BigNumber, ContractTransaction } from 'ethers';
 import { expects as StakingExpects } from '../helpers/reward-calculation';
 import { expects as SlashExpects } from '../helpers/slash-indicator';
 import { expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
-import { mineBatchTxs } from '../utils';
+import { mineBatchTxs } from '../helpers/utils';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;

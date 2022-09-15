@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { ContractTransaction } from 'ethers';
 import { Interface, LogDescription } from 'ethers/lib/utils';
+import { network } from 'hardhat';
 
 export const expectEvent = async (
   contractInterface: Interface,
@@ -23,4 +24,11 @@ export const expectEvent = async (
   }
 
   expect(counter, 'invalid number of emitted events').eq(eventNumbers);
+};
+
+export const mineBatchTxs = async (fn: () => Promise<void>) => {
+  await network.provider.send('evm_setAutomine', [false]);
+  await fn();
+  await network.provider.send('evm_mine');
+  await network.provider.send('evm_setAutomine', [true]);
 };

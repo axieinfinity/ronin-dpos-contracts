@@ -14,7 +14,7 @@ import {
   StakingVesting__factory,
 } from '../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
-import { mineBatchTxs } from '../utils';
+import { mineBatchTxs } from '../helpers/utils';
 
 let roninValidatorSet: MockRoninValidatorSetEpochSetter;
 let stakingContract: Staking;
