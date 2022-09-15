@@ -9,6 +9,6 @@ on:
 
 jobs:
   test:
-    uses: axieinfinity/workflows-samples/.github/workflows/testing-node.yml@Unittest-yarn
+    uses: axieinfinity/workflows-samples/.github/workflows/testing-node.yml@main
     with:
       node_version: v14.18.1
