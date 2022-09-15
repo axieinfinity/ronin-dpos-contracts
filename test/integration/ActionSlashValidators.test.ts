@@ -356,7 +356,7 @@ describe('[Integration] Slash validators', () => {
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
       });
 
-      it('Should the jail time end', async () => {
+      it('Should the validator candidate cannot join as a validator when jail time is over, due to insufficient fund', async () => {
         let _blockNumber = await network.provider.send('eth_blockNumber');
         let _jailUntil = await validatorContract.getJailUntils([slashee.address]);
         let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber);
@@ -366,13 +366,6 @@ describe('[Integration] Slash validators', () => {
           await validatorContract.connect(coinbase).endEpoch();
           updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
-        // FIXME: Fix this assertion when update contract to check minimum amount on updating validator set
-        expectingValidatorSet.push(slashee.address);
-      });
-
-      it.skip('Should the validator candidate cannot join as a validator when jail time is over, due to insufficient fund', async () => {
-        // FIXME: Fix this assertion when update contract to check minimum amount on updating validator set
-        // expectingValidatorSet.pop();
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
       });
 
@@ -392,6 +385,7 @@ describe('[Integration] Slash validators', () => {
           await validatorContract.connect(coinbase).endEpoch();
           updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
+        expectingValidatorSet.push(slashee.address);
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
       });
     });
