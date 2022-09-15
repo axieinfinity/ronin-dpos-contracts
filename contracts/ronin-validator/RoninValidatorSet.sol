@@ -468,7 +468,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
 
     require(__governanceAdmin != address(0), "RoninValidatorSet: Cannot set admin to zero address");
 
-    _governanceAdmin == __governanceAdmin;
+    _governanceAdmin = __governanceAdmin;
     emit GovernanceAdminUpdated(__governanceAdmin);
   }
 

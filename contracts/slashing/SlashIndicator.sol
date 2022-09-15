@@ -217,7 +217,7 @@ contract SlashIndicator is ISlashIndicator, Initializable {
 
     require(__governanceAdmin != address(0), "SlashIndicator: Cannot set admin to zero address");
 
-    _governanceAdmin == __governanceAdmin;
+    _governanceAdmin = __governanceAdmin;
     emit GovernanceAdminUpdated(__governanceAdmin);
   }
 
