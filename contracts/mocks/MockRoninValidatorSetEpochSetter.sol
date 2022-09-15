@@ -8,7 +8,7 @@ contract MockRoninValidatorSetEpochSetter is RoninValidatorSet {
   uint256[] internal _epochs;
   uint256[] internal _periods;
 
-  constructor() RoninValidatorSet() {}
+  constructor() {}
 
   function endEpoch() external {
     _epochs.push(block.number);
@@ -19,17 +19,17 @@ contract MockRoninValidatorSetEpochSetter is RoninValidatorSet {
   }
 
   function periodOf(uint256 _block) public view override returns (uint256 _period) {
-    for (uint256 _i; _i < _periods.length; _i++) {
-      if (_block >= _periods[_i]) {
-        _period = _i + 1;
+    for (uint256 _i = _periods.length; _i > 0; _i--) {
+      if (_block >= _periods[_i - 1]) {
+        return _i;
       }
     }
   }
 
   function epochOf(uint256 _block) public view override returns (uint256 _epoch) {
-    for (uint256 _i; _i < _epochs.length; _i++) {
-      if (_block >= _epochs[_i]) {
-        _epoch = _i + 1;
+    for (uint256 _i = _epochs.length; _i > 0; _i--) {
+      if (_block >= _epochs[_i - 1]) {
+        return _i;
       }
     }
   }
