@@ -132,12 +132,23 @@ contract Staking is IStaking, StakingManager, Initializable {
    */
   function getCandidateWeights() external view returns (address[] memory _candidates, uint256[] memory _weights) {
     uint256 _length = validatorCandidates.length;
+    uint256 _newLength = _length;
     _candidates = new address[](_length);
     _weights = new uint256[](_length);
+
     for (uint256 _i; _i < _length; _i++) {
       ValidatorCandidate storage _candidate = validatorCandidates[_i];
+      if (_candidate.stakedAmount < _minValidatorBalance) {
+        _newLength--;
+        continue;
+      }
       _candidates[_i] = _candidate.consensusAddr;
       _weights[_i] = _candidate.delegatedAmount;
+    }
+
+    assembly {
+      mstore(_candidates, _newLength)
+      mstore(_weights, _newLength)
     }
   }
 
