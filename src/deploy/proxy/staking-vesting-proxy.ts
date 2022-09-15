@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers';
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { initAddress, stakingVestingConfig } from '../../config';
@@ -20,7 +21,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     from: deployer,
     log: true,
     args: [logicContract.address, proxyAdmin.address, data],
-    value: stakingVestingConfig[network.name]!.topupAmount,
+    value: BigNumber.from(stakingVestingConfig[network.name]!.topupAmount),
   });
 };
 

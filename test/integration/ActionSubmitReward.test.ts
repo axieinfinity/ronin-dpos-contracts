@@ -21,7 +21,7 @@ import {
   stakingVestingConfig,
 } from '../../src/config';
 import { BigNumber, ContractTransaction } from 'ethers';
-import { mineBatchTxs } from '../utils';
+import { mineBatchTxs } from '../helpers/utils';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;

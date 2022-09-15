@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { network, ethers, deployments, getNamedAccounts } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { Address } from 'hardhat-deploy/dist/types';
 
 import {
   SlashIndicator,
@@ -20,10 +21,9 @@ import {
   initAddress,
 } from '../../src/config';
 import { BigNumber, ContractTransaction } from 'ethers';
-import { SlashType } from '../slash/slashType';
 import { expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
-import { mineBatchTxs } from '../utils';
-import { Address } from 'hardhat-deploy/dist/types';
+import { mineBatchTxs } from '../helpers/utils';
+import { SlashType } from '../../src/script/slash-indicator';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;

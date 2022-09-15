@@ -36,8 +36,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   uint256 internal _numberOfEpochsInPeriod;
   /// @dev The last updated block
   uint256 internal _lastUpdatedBlock;
-  /// @dev Mapping from epoch index => flag indicating the epoch is wrapped up or not
-  mapping(uint256 => bool) internal _wrappedUp;
 
   /// @dev Mapping from validator address => the last period that the validator has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _rewardDeprecatedAtPeriod;
@@ -143,10 +141,11 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function wrapUpEpoch() external payable override onlyCoinbase whenEpochEnding {
-    uint256 _epoch = epochOf(block.number);
-    require(_wrappedUp[_epoch] == false, "RoninValidatorSet: query for already wrapped up epoch");
-    _wrappedUp[_epoch] = true;
+  function wrapUpEpoch() external payable virtual override onlyCoinbase whenEpochEnding {
+    require(
+      epochOf(_lastUpdatedBlock) < epochOf(block.number),
+      "RoninValidatorSet: query for already wrapped up epoch"
+    );
 
     IStaking _staking = IStaking(_stakingContract);
     address _validatorAddr;
@@ -400,17 +399,12 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   }
 
   /**
-   * @dev Updates the validator set based on the validator candidates from the Staking contract.
-   *
-   * Emits the `ValidatorSetUpdated` event.
-   *
+   * @dev Returns validator candidates list.
    */
-  function _updateValidatorSet() internal {
-    // TODO: measure gas metrics from getting candidates
-
+  function _getValidatorCandidates() internal view returns (address[] memory _candidates) {
+    uint256[] memory _weights;
+    (_candidates, _weights) = IStaking(_stakingContract).getCandidateWeights();
     // TODO: filter validators that do not have enough min balance
-
-    (address[] memory _candidates, uint256[] memory _weights) = IStaking(_stakingContract).getCandidateWeights();
     uint256 _newLength = _candidates.length;
     for (uint256 _i; _i < _candidates.length; _i++) {
       if (_jailed(_candidates[_i])) {
@@ -426,14 +420,23 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     }
 
     _candidates = Sorting.sort(_candidates, _weights);
-    // TODO: measure gas metrics to after sorting candidates
+    // TODO: pick at least M governers as validators
+  }
+
+  /**
+   * @dev Updates the validator set based on the validator candidates from the Staking contract.
+   *
+   * Emits the `ValidatorSetUpdated` event.
+   *
+   */
+  function _updateValidatorSet() internal virtual {
+    address[] memory _candidates = _getValidatorCandidates();
+
     uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
 
     assembly {
       mstore(_candidates, _newValidatorCount)
     }
-
-    // TODO: pick at least M governers as validators
 
     for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
       delete _validator[_i];
@@ -441,9 +444,11 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     }
 
     for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
-      delete _validatorMap[_validator[_i]];
-
       address _newValidator = _candidates[_i];
+      if (_newValidator == _validator[_i]) {
+        continue;
+      }
+      delete _validatorMap[_validator[_i]];
       _validatorMap[_newValidator] = true;
       _validator[_i] = _newValidator;
     }

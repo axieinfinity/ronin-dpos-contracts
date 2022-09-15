@@ -181,13 +181,12 @@ abstract contract RewardCalculation is IRewardPool {
   function _onPoolsSettled(address[] calldata _poolList) internal {
     uint256[] memory _accumulatedRpsList = new uint256[](_poolList.length);
     address _poolAddr;
-    uint256 _accumulatedRps;
     for (uint256 _i; _i < _poolList.length; _i++) {
       _poolAddr = _poolList[_i];
-      _accumulatedRps = _accumulatedRpsList[_i] = _pendingPool[_poolAddr].accumulatedRps;
+      _accumulatedRpsList[_i] = _pendingPool[_poolAddr].accumulatedRps;
 
       SettledPool storage _sPool = _settledPool[_poolAddr];
-      _sPool.accumulatedRps = _accumulatedRps;
+      _sPool.accumulatedRps = _accumulatedRpsList[_i];
       _sPool.lastSyncedBlock = block.number;
     }
     emit SettledPoolsUpdated(_poolList, _accumulatedRpsList);
