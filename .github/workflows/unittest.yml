@@ -1,0 +1,14 @@
+name: Run tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    uses: axieinfinity/workflows-samples/.github/workflows/testing-node.yml@Unittest-yarn
+    with:
+      node_version: v18.7.0
