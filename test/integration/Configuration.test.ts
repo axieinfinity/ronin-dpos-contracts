@@ -85,6 +85,11 @@ describe('[Integration] Configuration check', () => {
   });
 
   describe('ValidatorSetContract configuration', async () => {
+    it('Should config the governanceAdmin correctly', async () => {
+      let _governanceAdmin = await validatorContract.governanceAdmin();
+      expect(_governanceAdmin).to.eq(governanceAdmin.address);
+    });
+
     it('Should the ValidatorSetContract config the StakingContract correctly', async () => {
       let _stakingContract = await validatorContract.stakingContract();
       expect(_stakingContract).to.eq(stakingContract.address);
@@ -112,6 +117,11 @@ describe('[Integration] Configuration check', () => {
   });
 
   describe('StakingContract configuration', async () => {
+    it('Should config the governanceAdmin correctly', async () => {
+      let _governanceAdmin = await stakingContract.governanceAdmin();
+      expect(_governanceAdmin).to.eq(governanceAdmin.address);
+    });
+
     it('Should the StakingContract config the ValidatorSetContract correctly', async () => {
       let _validatorSetContract = await stakingContract.validatorContract();
       expect(_validatorSetContract).to.eq(validatorContract.address);
@@ -129,6 +139,11 @@ describe('[Integration] Configuration check', () => {
   });
 
   describe('SlashIndicatorContract configuration', async () => {
+    it('Should config the governanceAdmin correctly', async () => {
+      let _governanceAdmin = await slashContract.governanceAdmin();
+      expect(_governanceAdmin).to.eq(governanceAdmin.address);
+    });
+
     it('Should the SlashIndicatorContract config the ValidatorSetContract correctly', async () => {
       let _validatorSetContract = await slashContract.validatorContract();
       expect(_validatorSetContract).to.eq(validatorContract.address);
