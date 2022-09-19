@@ -7,9 +7,6 @@ import "../interfaces/IRewardPool.sol";
 /**
  * @title RewardCalculation contract
  * @dev This contract mainly contains to calculate reward for staking contract.
- *
- * TODO(Thor): optimize gas cost when emitting SettledRewardUpdated and PendingRewardUpdated in the method `_claimReward`;
- *
  */
 abstract contract RewardCalculation is IRewardPool {
   /// @dev Mapping from the pool address => user address => settled reward info of the user
@@ -133,7 +130,7 @@ abstract contract RewardCalculation is IRewardPool {
       _sReward.balance = balanceOf(_poolAddr, _user);
       _sReward.accumulatedRps = _sPool.accumulatedRps;
     }
-    emit SettledRewardUpdated(_poolAddr, _user, _sReward.balance, 0, _sPool.accumulatedRps);
+    emit SettledRewardUpdated(_poolAddr, _user, _sReward.balance, 0, _sReward.accumulatedRps);
 
     _reward.credited += _amount;
     _reward.lastSyncedBlock = block.number;
