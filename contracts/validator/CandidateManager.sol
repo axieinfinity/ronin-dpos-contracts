@@ -53,7 +53,7 @@ contract CandidateManager is ICandidateManager, HasStakingContract {
   /**
    * @inheritdoc ICandidateManager
    */
-  function syncCandidate() public override returns (uint256[] memory _balances) {
+  function syncCandidates() public override returns (uint256[] memory _balances) {
     IStaking _staking = _stakingContract;
     uint256 _minBalance = _staking.minValidatorBalance();
     _balances = _staking.totalBalances(_candidates);
@@ -91,7 +91,7 @@ contract CandidateManager is ICandidateManager, HasStakingContract {
   /**
    * @inheritdoc ICandidateManager
    */
-  function getValidatorCandidates() external view override returns (address[] memory) {
+  function getValidatorCandidates() public view override returns (address[] memory) {
     return _candidates;
   }
 

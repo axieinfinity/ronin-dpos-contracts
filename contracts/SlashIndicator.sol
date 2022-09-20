@@ -78,6 +78,10 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, Initializable 
     if (_count == felonyThreshold) {
       emit ValidatorSlashed(_validatorAddr, SlashType.FELONY);
       _validatorContract.slash(_validatorAddr, block.number + felonyJailDuration, slashFelonyAmount);
+      delete _unavailabilityIndicator[_validatorAddr];
+      address[] memory _addrList = new address[](1);
+      _addrList[0] = _validatorAddr;
+      emit UnavailabilityIndicatorsReset(_addrList);
     } else if (_count == misdemeanorThreshold) {
       emit ValidatorSlashed(_validatorAddr, SlashType.MISDEMEANOR);
       _validatorContract.slash(_validatorAddr, 0, 0);

@@ -110,7 +110,7 @@ contract MockValidatorSet is IRoninValidatorSet {
     uint256 _commissionRate
   ) external override {}
 
-  function syncCandidate() external override returns (uint256[] memory _balances) {}
+  function syncCandidates() external override returns (uint256[] memory _balances) {}
 
   function isValidatorCandidate(address _addr) external view override returns (bool) {}
 

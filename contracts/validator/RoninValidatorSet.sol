@@ -164,14 +164,16 @@ abstract contract RoninValidatorSet is
     }
 
     if (_periodEnding) {
-      // TODO: reset for candidates / kicked validators
       ISlashIndicator(_slashIndicatorContract).resetCounters(_validators);
-    }
 
-    _staking.settleRewardPools(_validators);
-    if (_delegatingAmount > 0) {
-      require(_sendRON(payable(address(_staking)), 0), "RoninValidatorSet: could not transfer RON to staking contract");
-      emit StakingRewardDistributed(_delegatingAmount);
+      _staking.settleRewardPools(_validators);
+      if (_delegatingAmount > 0) {
+        require(
+          _sendRON(payable(address(_staking)), 0),
+          "RoninValidatorSet: could not transfer RON to staking contract"
+        );
+        emit StakingRewardDistributed(_delegatingAmount);
+      }
     }
 
     _updateValidatorSet();
@@ -329,46 +331,24 @@ abstract contract RoninValidatorSet is
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) during the current period.
-   */
-  function _jailed(address _validatorAddr) internal view returns (bool) {
-    return block.number <= _jailedUntil[_validatorAddr];
-  }
-
-  /**
-   * @dev Returns whether the validator has no pending reward in that period.
-   */
-  function _rewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
-    return _rewardDeprecatedAtPeriod[_validatorAddr][_period];
-  }
-
-  /**
-   * @dev Returns whether the address `_addr` is validator or not.
-   */
-  function _isValidator(address _addr) internal view returns (bool) {
-    return _validatorMap[_addr];
-  }
-
-  /**
    * @dev Returns validator candidates list.
    */
-  function _getValidatorCandidates() internal view returns (address[] memory _candidates) {
-    uint256[] memory _weights;
-    // TODO: fix this.
-    // (_candidates, _weights) = IStaking(_stakingContract).getCandidateWeights();
-    // TODO: filter validators that do not have enough min balance
-    uint256 _newLength = _candidates.length;
+  function _syncNewValidatorSet() internal returns (address[] memory _candidates) {
+    uint256[] memory _weights = syncCandidates();
+    _candidates = _candidates;
+
+    uint256 _length = _candidates.length;
     for (uint256 _i; _i < _candidates.length; _i++) {
       if (_jailed(_candidates[_i])) {
-        _newLength--;
-        _candidates[_i] = _candidates[_newLength];
-        _weights[_i] = _weights[_newLength];
+        _length--;
+        _candidates[_i] = _candidates[_length];
+        _weights[_i] = _weights[_length];
       }
     }
 
     assembly {
-      mstore(_candidates, _newLength)
-      mstore(_weights, _newLength)
+      mstore(_candidates, _length)
+      mstore(_weights, _length)
     }
 
     _candidates = Sorting.sort(_candidates, _weights);
@@ -382,8 +362,7 @@ abstract contract RoninValidatorSet is
    *
    */
   function _updateValidatorSet() internal virtual {
-    address[] memory _candidates = _getValidatorCandidates();
-
+    address[] memory _candidates = _syncNewValidatorSet();
     uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
 
     assembly {
@@ -410,7 +389,31 @@ abstract contract RoninValidatorSet is
   }
 
   /**
+   * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) during the current period.
+   */
+  function _jailed(address _validatorAddr) internal view returns (bool) {
+    return block.number <= _jailedUntil[_validatorAddr];
+  }
+
+  /**
+   * @dev Returns whether the validator has no pending reward in that period.
+   */
+  function _rewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
+    return _rewardDeprecatedAtPeriod[_validatorAddr][_period];
+  }
+
+  /**
+   * @dev Returns whether the address `_addr` is validator or not.
+   */
+  function _isValidator(address _addr) internal view returns (bool) {
+    return _validatorMap[_addr];
+  }
+
+  /**
    * @dev Updates the max validator number
+   *
+   * Emits the event `MaxValidatorNumberUpdated`
+   *
    */
   function _setMaxValidatorNumber(uint256 _number) internal {
     _maxValidatorNumber = _number;
@@ -419,6 +422,9 @@ abstract contract RoninValidatorSet is
 
   /**
    * @dev Updates the number of blocks in epoch
+   *
+   * Emits the event `NumberOfBlocksInEpochUpdated`
+   *
    */
   function _setNumberOfBlocksInEpoch(uint256 _number) internal {
     _numberOfBlocksInEpoch = _number;
@@ -427,6 +433,9 @@ abstract contract RoninValidatorSet is
 
   /**
    * @dev Updates the number of epochs in period
+   *
+   * Emits the event `NumberOfEpochsInPeriodUpdated`
+   *
    */
   function _setNumberOfEpochsInPeriod(uint256 _number) internal {
     _numberOfEpochsInPeriod = _number;

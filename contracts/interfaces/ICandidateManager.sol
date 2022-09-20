@@ -63,7 +63,7 @@ interface ICandidateManager {
    * Emits the event `ValidatorCandidateRemoved` when a candidate is removed.
    *
    */
-  function syncCandidate() external returns (uint256[] memory _balances);
+  function syncCandidates() external returns (uint256[] memory _balances);
 
   /**
    * @dev Returns whether the address is a validator (candidate).
