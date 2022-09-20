@@ -4,23 +4,32 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "./extensions/RONTransferHelper.sol";
-import "./interfaces/ISlashIndicator.sol";
-import "./interfaces/IStaking.sol";
-import "./interfaces/IStakingVesting.sol";
-import "./interfaces/IRoninValidatorSet.sol";
-import "./libraries/Sorting.sol";
-import "./libraries/Math.sol";
+import "../extensions/RONTransferHelper.sol";
+import "../extensions/HasStakingVestingContract.sol";
+import "../extensions/HasStakingContract.sol";
+import "../extensions/HasSlashIndicatorContract.sol";
+import "../interfaces/IRoninValidatorSet.sol";
+import "../libraries/Sorting.sol";
+import "../libraries/Math.sol";
+import "./CandidateManager.sol";
 
-contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializable {
-  /// @dev Governance admin address.
-  address internal _governanceAdmin;
-  /// @dev Slash indicator contract address.
-  address internal _slashIndicatorContract; // Change type to address for testing purpose
-  /// @dev Staking contract address.
-  address internal _stakingContract; // Change type to address for testing purpose
-  /// @dev Staking vesting contract address.
-  address internal _stakingVestingContract;
+abstract contract RoninValidatorSet is
+  IRoninValidatorSet,
+  RONTransferHelper,
+  HasStakingContract,
+  HasStakingVestingContract,
+  HasSlashIndicatorContract,
+  CandidateManager,
+  Initializable
+{
+  /// @dev The maximum number of validator.
+  uint256 internal _maxValidatorNumber;
+  /// @dev The number of blocks in a epoch
+  uint256 internal _numberOfBlocksInEpoch;
+  /// @dev Returns the number of epochs in a period
+  uint256 internal _numberOfEpochsInPeriod;
+  /// @dev The last updated block
+  uint256 internal _lastUpdatedBlock;
 
   /// @dev The total of validators
   uint256 public validatorCount;
@@ -28,15 +37,6 @@ contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializab
   mapping(uint256 => address) internal _validator;
   /// @dev Mapping from validator address => bool
   mapping(address => bool) internal _validatorMap;
-  /// @dev The maximum number of validator.
-  uint256 internal _maxValidatorNumber;
-
-  /// @dev The number of blocks in a epoch
-  uint256 internal _numberOfBlocksInEpoch;
-  /// @dev Returns the number of epochs in a period
-  uint256 internal _numberOfEpochsInPeriod;
-  /// @dev The last updated block
-  uint256 internal _lastUpdatedBlock;
 
   /// @dev Mapping from validator address => the last period that the validator has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _rewardDeprecatedAtPeriod;
@@ -50,16 +50,6 @@ contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializab
 
   modifier onlyCoinbase() {
     require(msg.sender == block.coinbase, "RoninValidatorSet: method caller must be coinbase");
-    _;
-  }
-
-  modifier onlySlashIndicatorContract() {
-    require(msg.sender == _slashIndicatorContract, "RoninValidatorSet: method caller must be slash indicator contract");
-    _;
-  }
-
-  modifier onlyGovernanceAdmin() {
-    require(msg.sender == _governanceAdmin, "RoninValidatorSet: method caller must be governance admin");
     _;
   }
 
@@ -84,7 +74,6 @@ contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializab
    * @dev Initializes the contract storage.
    */
   function initialize(
-    address __governanceAdmin,
     address __slashIndicatorContract,
     address __stakingContract,
     address __stakingVestingContract,
@@ -92,12 +81,9 @@ contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializab
     uint256 __numberOfBlocksInEpoch,
     uint256 __numberOfEpochsInPeriod
   ) external initializer {
-    _setGovernanceAdmin(__governanceAdmin);
-
-    _slashIndicatorContract = __slashIndicatorContract;
-    _stakingContract = __stakingContract;
-    _stakingVestingContract = __stakingVestingContract;
-
+    _setSlashIndicatorContract(__slashIndicatorContract);
+    _setStakingContract(__stakingContract);
+    _setStakingVestingContract(__stakingVestingContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
     _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
@@ -125,11 +111,11 @@ contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializab
       return;
     }
 
-    uint256 _bonusReward = IStakingVesting(_stakingVestingContract).requestBlockBonus();
+    uint256 _bonusReward = _stakingVestingContract.requestBlockBonus();
     uint256 _reward = _submittedReward + _bonusReward;
 
     IStaking _staking = IStaking(_stakingContract);
-    uint256 _rate = _staking.commissionRateOf(_coinbaseAddr);
+    uint256 _rate = 0; // _staking.commissionRateOf(_coinbaseAddr);
     uint256 _miningAmount = (_rate * _reward) / 100_00;
     uint256 _delegatingAmount = _reward - _miningAmount;
 
@@ -167,7 +153,7 @@ contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializab
         uint256 _miningAmount = _miningReward[_validatorAddr];
         delete _miningReward[_validatorAddr];
         if (_miningAmount > 0) {
-          address payable _treasury = payable(_staking.treasuryAddressOf(_validatorAddr));
+          address payable _treasury; // = payable(_staking.treasuryAddressOf(_validatorAddr));
           require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
           emit MiningRewardDistributed(_validatorAddr, _miningAmount);
         }
@@ -201,34 +187,6 @@ contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializab
   ///////////////////////////////////////////////////////////////////////////////////////
   //                            FUNCTIONS FOR SLASH INDICATOR                          //
   ///////////////////////////////////////////////////////////////////////////////////////
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function governanceAdmin() external view override returns (address) {
-    return _governanceAdmin;
-  }
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function slashIndicatorContract() external view override returns (address) {
-    return _slashIndicatorContract;
-  }
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function stakingContract() external view override returns (address) {
-    return _stakingContract;
-  }
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function stakingVestingContract() external view override returns (address) {
-    return _stakingVestingContract;
-  }
 
   /**
    * @inheritdoc IRoninValidatorSet
@@ -348,28 +306,21 @@ contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializab
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function setGovernanceAdmin(address __governanceAdmin) external override onlyGovernanceAdmin {
-    _setGovernanceAdmin(__governanceAdmin);
-  }
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function setMaxValidatorNumber(uint256 __maxValidatorNumber) external override onlyGovernanceAdmin {
+  function setMaxValidatorNumber(uint256 __maxValidatorNumber) external override onlyAdmin {
     _setMaxValidatorNumber(__maxValidatorNumber);
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function setNumberOfBlocksInEpoch(uint256 __numberOfBlocksInEpoch) external override onlyGovernanceAdmin {
+  function setNumberOfBlocksInEpoch(uint256 __numberOfBlocksInEpoch) external override onlyAdmin {
     _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) external override onlyGovernanceAdmin {
+  function setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) external override onlyAdmin {
     _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
   }
 
@@ -403,7 +354,8 @@ contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializab
    */
   function _getValidatorCandidates() internal view returns (address[] memory _candidates) {
     uint256[] memory _weights;
-    (_candidates, _weights) = IStaking(_stakingContract).getCandidateWeights();
+    // TODO: fix this.
+    // (_candidates, _weights) = IStaking(_stakingContract).getCandidateWeights();
     // TODO: filter validators that do not have enough min balance
     uint256 _newLength = _candidates.length;
     for (uint256 _i; _i < _candidates.length; _i++) {
@@ -458,41 +410,27 @@ contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializab
   }
 
   /**
-   * @dev Updates the address of governance admin
-   */
-  function _setGovernanceAdmin(address __governanceAdmin) internal {
-    if (__governanceAdmin == _governanceAdmin) {
-      return;
-    }
-
-    require(__governanceAdmin != address(0), "RoninValidatorSet: Cannot set admin to zero address");
-
-    _governanceAdmin = __governanceAdmin;
-    emit GovernanceAdminUpdated(__governanceAdmin);
-  }
-
-  /**
    * @dev Updates the max validator number
    */
-  function _setMaxValidatorNumber(uint256 __maxValidatorNumber) internal {
-    _maxValidatorNumber = __maxValidatorNumber;
-    emit MaxValidatorNumberUpdated(__maxValidatorNumber);
+  function _setMaxValidatorNumber(uint256 _number) internal {
+    _maxValidatorNumber = _number;
+    emit MaxValidatorNumberUpdated(_number);
   }
 
   /**
    * @dev Updates the number of blocks in epoch
    */
-  function _setNumberOfBlocksInEpoch(uint256 __numberOfBlocksInEpoch) internal {
-    _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
-    emit NumberOfBlocksInEpochUpdated(__numberOfBlocksInEpoch);
+  function _setNumberOfBlocksInEpoch(uint256 _number) internal {
+    _numberOfBlocksInEpoch = _number;
+    emit NumberOfBlocksInEpochUpdated(_number);
   }
 
   /**
    * @dev Updates the number of epochs in period
    */
-  function _setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) internal {
-    _numberOfEpochsInPeriod = __numberOfEpochsInPeriod;
-    emit NumberOfEpochsInPeriodUpdated(__numberOfEpochsInPeriod);
+  function _setNumberOfEpochsInPeriod(uint256 _number) internal {
+    _numberOfEpochsInPeriod = _number;
+    emit NumberOfEpochsInPeriodUpdated(_number);
   }
 
   /**
@@ -500,7 +438,7 @@ contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializab
    */
   function _fallback() internal view {
     require(
-      msg.sender == _stakingVestingContract,
+      msg.sender == stakingVestingContract(),
       "RoninValidatorSet: only receives RON from staking vesting contract"
     );
   }
