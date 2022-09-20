@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.9;
 
-// import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IStaking.sol";
 import "../interfaces/IRoninValidatorSet.sol";
@@ -172,7 +171,7 @@ contract Staking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function sinkPendingReward(address _consensusAddr) external {
+  function sinkPendingReward(address _consensusAddr) external onlyValidatorContract {
     uint256 _period = _periodOf(block.number);
     _pRewardSinked[_consensusAddr][_period] = true;
     _sinkPendingReward(_consensusAddr);

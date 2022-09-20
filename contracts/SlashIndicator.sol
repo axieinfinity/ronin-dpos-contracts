@@ -3,8 +3,8 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../interfaces/ISlashIndicator.sol";
-import "../interfaces/IRoninValidatorSet.sol";
+import "./interfaces/ISlashIndicator.sol";
+import "./interfaces/IRoninValidatorSet.sol";
 
 contract SlashIndicator is ISlashIndicator, Initializable {
   /// @dev Mapping from validator address => unavailability indicator

@@ -2,10 +2,12 @@
 
 pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "../extensions/RONTransferHelper.sol";
 import "../interfaces/IStaking.sol";
 import "./RewardCalculation.sol";
 
-abstract contract StakingManager is IStaking, RewardCalculation {
+abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard, RewardCalculation {
   /// @dev Mapping from  pool address => delegator address => delegated amount.
   mapping(address => mapping(address => uint256)) internal _delegatedAmount;
 
@@ -66,11 +68,11 @@ abstract contract StakingManager is IStaking, RewardCalculation {
     address _consensusAddr,
     address payable _treasuryAddr,
     uint256 _commissionRate
-  ) external payable override returns (uint256 _candidateIdx) {
+  ) external payable override nonReentrant returns (uint256 _candidateIdx) {
     uint256 _amount = msg.value;
-    address _stakingAddr = msg.sender;
-    _candidateIdx = _proposeValidator(_consensusAddr, _treasuryAddr, _commissionRate, _amount, _stakingAddr);
-    _stake(_consensusAddr, _stakingAddr, _amount);
+    address payable _candidateAdmin = payable(msg.sender);
+    _candidateIdx = _proposeValidator(_candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate, _amount);
+    _stake(_consensusAddr, _candidateAdmin, _amount);
   }
 
   /**
@@ -83,18 +85,15 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   /**
    * @inheritdoc IStaking
    */
-  function unstake(address _consensusAddr, uint256 _amount) external override {
+  function unstake(address _consensusAddr, uint256 _amount) external override nonReentrant {
     address _delegator = msg.sender;
-
     ValidatorCandidate storage _candidate = _getCandidate(_consensusAddr);
 
     uint256 remainAmount = _candidate.stakedAmount - _amount;
     require(remainAmount >= minValidatorBalance(), "StakingManager: invalid staked amount left");
 
     _unstake(_candidate, _delegator, _amount);
-
-    // TODO(Thor): replace by `call` and use reentrancy gruard
-    require(payable(msg.sender).send(_amount), "StakingManager: could not transfer RON");
+    require(_sendRON(payable(_delegator), _amount), "StakingManager: could not transfer RON");
   }
 
   /**
@@ -121,18 +120,18 @@ abstract contract StakingManager is IStaking, RewardCalculation {
    *
    */
   function _proposeValidator(
+    address payable _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
     uint256 _commissionRate,
-    uint256 _amount,
-    address _candidateAdmin
+    uint256 _amount
   ) internal returns (uint256 _candidateIdx) {
+    require(_sendRON(_candidateAdmin, 0), "StakingManager: candidate admin cannot receive RON");
+    require(_sendRON(_treasuryAddr, 0), "StakingManager: treasury cannot receive RON");
     uint256 _length = getValidatorCandidateLength();
     require(_length < maxValidatorCandidate(), "StakingManager: exceeds maximum number of candidates");
     require(_getCandidateIndex(_consensusAddr) == 0, "StakingManager: query for existed candidate");
     require(_amount >= minValidatorBalance(), "StakingManager: insufficient amount");
-    // TODO(Thor): replace by `call` and use reentrancy gruard
-    require(_treasuryAddr.send(0), "StakingManager: invalid treasury address");
 
     _candidateIdx = ~_length;
     _setCandidateIndex(_consensusAddr, _candidateIdx);
@@ -200,11 +199,10 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   /**
    * @inheritdoc IStaking
    */
-  function undelegate(address _consensusAddr, uint256 _amount) external notCandidateAdmin(_consensusAddr) {
+  function undelegate(address _consensusAddr, uint256 _amount) external notCandidateAdmin(_consensusAddr) nonReentrant {
     address payable _delegator = payable(msg.sender);
     _undelegate(_consensusAddr, _delegator, _amount);
-    // TODO(Thor): replace by `call` and use reentrancy gruard
-    require(_delegator.send(_amount), "StakingManager: could not transfer RON");
+    require(_sendRON(_delegator, _amount), "StakingManager: could not transfer RON");
   }
 
   /**
@@ -242,10 +240,9 @@ abstract contract StakingManager is IStaking, RewardCalculation {
   /**
    * @inheritdoc IStaking
    */
-  function claimRewards(address[] calldata _consensusAddrList) external returns (uint256 _amount) {
+  function claimRewards(address[] calldata _consensusAddrList) external nonReentrant returns (uint256 _amount) {
     _amount = _claimRewards(msg.sender, _consensusAddrList);
-    // TODO(Thor): replace by `call` and use reentrancy gruard
-    require(payable(msg.sender).send(_amount), "StakingManager: could not transfer RON");
+    require(_sendRON(payable(msg.sender), _amount), "StakingManager: could not transfer RON");
   }
 
   /**
@@ -314,11 +311,7 @@ abstract contract StakingManager is IStaking, RewardCalculation {
 
   /**
    * @dev Claims rewards from the pools `_poolAddrList`.
-   *
-   *@notice This function does not transfer reward to user.
-   *
-   * TODO: Check whether pool addr is in the candidate list. or add test for this fn.
-   *
+   * Note: This function does not transfer reward to user.
    */
   function _claimRewards(address _user, address[] calldata _poolAddrList) internal returns (uint256 _amount) {
     for (uint256 _i = 0; _i < _poolAddrList.length; _i++) {

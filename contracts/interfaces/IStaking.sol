@@ -30,8 +30,8 @@ interface IStaking is IRewardPool {
     bool governing;
     /// @dev State of the validator
     ValidatorState state;
-    /// @dev For upgrability purpose
-    uint256[20] ____gap;
+    /// @dev Extra data
+    bytes extraData;
   }
 
   /// @dev Emitted when the validator candidate is proposed.

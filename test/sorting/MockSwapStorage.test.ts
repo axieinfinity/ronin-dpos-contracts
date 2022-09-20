@@ -25,7 +25,7 @@ const generateCandidate = (
     delegatedAmount: 0,
     governing: false,
     state: 0,
-    ____gap: Array.apply(null, Array(20)).map((_) => 0),
+    extraData: '0x',
   };
 };
 

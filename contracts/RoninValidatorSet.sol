@@ -4,12 +4,12 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "../interfaces/ISlashIndicator.sol";
-import "../interfaces/IStaking.sol";
-import "../interfaces/IStakingVesting.sol";
-import "../interfaces/IRoninValidatorSet.sol";
-import "../libraries/Sorting.sol";
-import "../libraries/Math.sol";
+import "./interfaces/ISlashIndicator.sol";
+import "./interfaces/IStaking.sol";
+import "./interfaces/IStakingVesting.sol";
+import "./interfaces/IRoninValidatorSet.sol";
+import "./libraries/Sorting.sol";
+import "./libraries/Math.sol";
 
 contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   /// @dev Governance admin address.
