@@ -4,19 +4,14 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./interfaces/IStakingVesting.sol";
+import "./extensions/HasValidatorContract.sol";
+import "./extensions/RONTransferHelper.sol";
 
-contract StakingVesting is Initializable, IStakingVesting {
+contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHelper, Initializable {
   /// @dev The block bonus whenever a new block is mined.
   uint256 internal _bonusPerBlock;
   /// @dev The last block number that the bonus reward sent.
   uint256 public lastBonusSentBlock;
-  /// @dev Validator contract address.
-  address internal _validatorContract;
-
-  modifier onlyValidatorContract() {
-    require(msg.sender == _validatorContract, "Staking: method caller is not the validator contract");
-    _;
-  }
 
   constructor() {
     _disableInitializers();
@@ -59,9 +54,9 @@ contract StakingVesting is Initializable, IStakingVesting {
     _amount = blockBonus(_block);
 
     if (_amount > 0) {
-      (bool _success, ) = payable(_validatorContract).call{ value: _amount }("");
-      require(_success, "Staking: could not transfer RON to validator contract");
-      emit BlockBonusTransferred(_block, _validatorContract, _amount);
+      address payable _validatorContractAddr = payable(validatorContract());
+      require(_sendRON(_validatorContractAddr, _amount), "Staking: could not transfer RON to validator contract");
+      emit BlockBonusTransferred(_block, _validatorContractAddr, _amount);
     }
   }
 
@@ -74,16 +69,5 @@ contract StakingVesting is Initializable, IStakingVesting {
   function _setBonusPerBlock(uint256 _amount) internal {
     _bonusPerBlock = _amount;
     emit BonusPerBlockUpdated(_amount);
-  }
-
-  /**
-   * @dev Sets the governance admin address.
-   *
-   * Emits the `ValidatorContractUpdated` event.
-   *
-   */
-  function _setValidatorContract(address _newValidatorContract) internal {
-    _validatorContract = _newValidatorContract;
-    emit ValidatorContractUpdated(_newValidatorContract);
   }
 }

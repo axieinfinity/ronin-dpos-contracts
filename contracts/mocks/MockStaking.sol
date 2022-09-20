@@ -84,4 +84,6 @@ contract MockStaking is RewardCalculation {
       }
     }
   }
+
+  function totalBalances(address[] calldata _poolAddr) external view override returns (uint256[] memory) {}
 }

@@ -70,8 +70,6 @@ contract MockValidatorSet is IRoninValidatorSet {
 
   function getLastUpdatedBlock() external view override returns (uint256) {}
 
-  function governanceAdmin() external view override returns (address) {}
-
   function jailed(address[] memory) external view override returns (bool[] memory) {}
 
   function rewardDeprecated(address[] memory, uint256 _period) external view override returns (bool[] memory) {}
@@ -94,8 +92,6 @@ contract MockValidatorSet is IRoninValidatorSet {
     ISlashIndicator(slashIndicatorContract).resetCounters(_validatorAddrs);
   }
 
-  function setGovernanceAdmin(address _governanceAdmin) external override {}
-
   function setMaxValidatorNumber(uint256 _maxValidatorNumber) external override {}
 
   function setNumberOfBlocksInEpoch(uint256 _numberOfBlocksInEpoch) external override {}
@@ -103,4 +99,22 @@ contract MockValidatorSet is IRoninValidatorSet {
   function setNumberOfEpochsInPeriod(uint256 _numberOfEpochsInPeriod) external override {}
 
   function maxValidatorNumber() external view override returns (uint256 _maximumValidatorNumber) {}
+
+  function maxValidatorCandidate() external view override returns (uint256) {}
+
+  function setMaxValidatorCandidate(uint256) external override {}
+
+  function addValidatorCandidate(
+    address _consensusAddr,
+    address payable _treasuryAddr,
+    uint256 _commissionRate
+  ) external override {}
+
+  function syncCandidate() external override returns (uint256[] memory _balances) {}
+
+  function isValidatorCandidate(address _addr) external view override returns (bool) {}
+
+  function getValidatorCandidates() external view override returns (address[] memory) {}
+
+  function getCandidateInfos() external view override returns (ValidatorCandidate[] memory) {}
 }

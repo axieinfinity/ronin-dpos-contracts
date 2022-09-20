@@ -76,7 +76,7 @@ abstract contract RewardCalculation is IRewardPool {
    * Emits the `SettledRewardUpdated` event if the last block user made changes is recorded in the settled period.
    * Emits the `PendingRewardUpdated` event.
    *
-   * @notice The method should be called whenever the user's balance changes.
+   * Note: The method should be called whenever the user's balance changes.
    *
    */
   function _syncUserReward(
@@ -114,7 +114,7 @@ abstract contract RewardCalculation is IRewardPool {
    *
    * Emits the `PendingRewardUpdated` event and the `SettledRewardUpdated` event.
    *
-   * @notice This method should be called before transferring rewards for the user.
+   * Note: This method should be called before transferring rewards for the user.
    *
    */
   function _claimReward(address _poolAddr, address _user) internal returns (uint256 _amount) {
@@ -142,7 +142,7 @@ abstract contract RewardCalculation is IRewardPool {
    *
    * Emits the `PendingPoolUpdated` event.
    *
-   * @notice This method should not be called after the pending pool is sinked.
+   * Note: This method should not be called after the pending pool is sinked.
    *
    */
   function _recordReward(address _poolAddr, uint256 _reward) internal {
@@ -157,7 +157,7 @@ abstract contract RewardCalculation is IRewardPool {
    *
    * Emits the `PendingPoolUpdated` event.
    *
-   * @notice This method should be called when the pool is sinked.
+   * Note: This method should be called when the pool is sinked.
    *
    */
   function _sinkPendingReward(address _poolAddr) internal {
@@ -172,7 +172,7 @@ abstract contract RewardCalculation is IRewardPool {
    *
    * Emits the `SettledPoolsUpdated` event.
    *
-   * @notice This method should be called once in the end of each period.
+   * Note: This method should be called once in the end of each period.
    *
    */
   function _onPoolsSettled(address[] calldata _poolList) internal {

@@ -17,8 +17,6 @@ interface ISlashIndicator {
   event SlashDoubleSignAmountUpdated(uint256 slashDoubleSignAmount);
   /// @dev Emiited when the duration of jailing felony updated
   event FelonyJailDurationUpdated(uint256 felonyJailDuration);
-  /// @dev Emitted when the address of governance admin is updated.
-  event GovernanceAdminUpdated(address);
 
   enum SlashType {
     UNKNOWN,
@@ -26,11 +24,6 @@ interface ISlashIndicator {
     FELONY,
     DOUBLE_SIGNING
   }
-
-  /**
-   * @dev Returns the validator contract
-   */
-  function validatorContract() external view returns (IRoninValidatorSet);
 
   /**
    * @dev Slashes for unavailability by increasing the counter of validator with `_valAddr`.
@@ -109,17 +102,6 @@ interface ISlashIndicator {
   function setFelonyJailDuration(uint256 _felonyJailDuration) external;
 
   /**
-   * @dev Updates the governance admin
-   *
-   * Requirements:
-   * - The method caller is the governance admin
-   *
-   * Emits the event `GovernanceAdminUpdated`
-   *
-   */
-  function setGovernanceAdmin(address _governanceAdmin) external;
-
-  /**
    * @dev Gets slash indicator of a validator
    */
   function getSlashIndicator(address _validator) external view returns (uint256);
@@ -128,9 +110,4 @@ interface ISlashIndicator {
    * @dev Gets the slash thresholds
    */
   function getSlashThresholds() external view returns (uint256 misdemeanorThreshold, uint256 felonyThreshold);
-
-  /**
-   * @dev Returns the governance admin address
-   */
-  function governanceAdmin() external view returns (address);
 }

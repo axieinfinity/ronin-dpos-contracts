@@ -7,8 +7,6 @@ interface IStakingVesting {
   event BlockBonusTransferred(uint256 indexed blockNumber, address indexed recipient, uint256 amount);
   /// @dev Emitted when the block bonus is updated
   event BonusPerBlockUpdated(uint256);
-  /// @dev Emitted when the address of validator contract is updated.
-  event ValidatorContractUpdated(address);
 
   /**
    * @dev Returns the bonus amount for the block `_block`.
