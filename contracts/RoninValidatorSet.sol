@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import "./extensions/RONTransferHelper.sol";
 import "./interfaces/ISlashIndicator.sol";
 import "./interfaces/IStaking.sol";
 import "./interfaces/IStakingVesting.sol";
@@ -11,7 +12,7 @@ import "./interfaces/IRoninValidatorSet.sol";
 import "./libraries/Sorting.sol";
 import "./libraries/Math.sol";
 
-contract RoninValidatorSet is IRoninValidatorSet, Initializable {
+contract RoninValidatorSet is IRoninValidatorSet, RONTransferHelper, Initializable {
   /// @dev Governance admin address.
   address internal _governanceAdmin;
   /// @dev Slash indicator contract address.
@@ -146,6 +147,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
       epochOf(_lastUpdatedBlock) < epochOf(block.number),
       "RoninValidatorSet: query for already wrapped up epoch"
     );
+    _lastUpdatedBlock = block.number;
 
     IStaking _staking = IStaking(_stakingContract);
     address _validatorAddr;
@@ -165,9 +167,8 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
         uint256 _miningAmount = _miningReward[_validatorAddr];
         delete _miningReward[_validatorAddr];
         if (_miningAmount > 0) {
-          address _treasury = _staking.treasuryAddressOf(_validatorAddr);
-          (bool _success, ) = _treasury.call{ value: _miningAmount }("");
-          require(_success, "RoninValidatorSet: could not transfer RON treasury addr");
+          address payable _treasury = payable(_staking.treasuryAddressOf(_validatorAddr));
+          require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
           emit MiningRewardDistributed(_validatorAddr, _miningAmount);
         }
       }
@@ -183,8 +184,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
 
     _staking.settleRewardPools(_validators);
     if (_delegatingAmount > 0) {
-      (bool _success, ) = address(_staking).call{ value: _delegatingAmount }("");
-      require(_success, "RoninValidatorSet: could not transfer RON to staking contract");
+      require(_sendRON(payable(address(_staking)), 0), "RoninValidatorSet: could not transfer RON to staking contract");
       emit StakingRewardDistributed(_delegatingAmount);
     }
 
@@ -454,7 +454,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     }
 
     validatorCount = _newValidatorCount;
-    _lastUpdatedBlock = block.number;
     emit ValidatorSetUpdated(_candidates);
   }
 
@@ -500,6 +499,9 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    * @dev Only receives RON from staking vesting contract.
    */
   function _fallback() internal view {
-    require(msg.sender == _stakingVestingContract, "RoninValidatorSet: method caller must be staking vesting contract");
+    require(
+      msg.sender == _stakingVestingContract,
+      "RoninValidatorSet: only receives RON from staking vesting contract"
+    );
   }
 }
