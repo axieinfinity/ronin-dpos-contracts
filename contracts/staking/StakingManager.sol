@@ -4,21 +4,35 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../extensions/RONTransferHelper.sol";
+import "../extensions/HasValidatorContract.sol";
 import "../interfaces/IStaking.sol";
 import "./RewardCalculation.sol";
 
-abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard, RewardCalculation {
-  /// @dev Mapping from  pool address => delegator address => delegated amount.
-  mapping(address => mapping(address => uint256)) internal _delegatedAmount;
+abstract contract StakingManager is
+  IStaking,
+  RONTransferHelper,
+  ReentrancyGuard,
+  RewardCalculation,
+  HasValidatorContract
+{
+  /// @dev Mapping from pool address => staking pool detail
+  mapping(address => PoolDetail) internal _stakingPool;
 
   modifier noEmptyValue() {
     require(msg.value > 0, "StakingManager: query with empty value");
     _;
   }
 
-  modifier notCandidateAdmin(address _consensusAddr) {
-    ValidatorCandidate memory _candidate = _getCandidate(_consensusAddr);
-    require(msg.sender != _candidate.candidateAdmin, "StakingManager: method caller must not be the candidate admin");
+  modifier notPoolAdmin(PoolDetail storage _pool, address _delegator) {
+    require(_pool.admin != _delegator, "StakingManager: delegator must not be the candidate admin");
+    _;
+  }
+
+  modifier onlyValidatorCandidate(address _poolAddr) {
+    require(
+      _validatorContract.isValidatorCandidate(_poolAddr),
+      "StakingManager: method caller must not be the candidate admin"
+    );
     _;
   }
 
@@ -31,15 +45,24 @@ abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard
     override(IRewardPool, RewardCalculation)
     returns (uint256)
   {
-    return _delegatedAmount[_poolAddr][_user];
+    return _stakingPool[_poolAddr].delegatedAmount[_user];
   }
 
   /**
    * @inheritdoc IRewardPool
    */
   function totalBalance(address _poolAddr) public view override(IRewardPool, RewardCalculation) returns (uint256) {
-    ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
-    return _candidate.delegatedAmount;
+    return _stakingPool[_poolAddr].totalBalance;
+  }
+
+  /**
+   * @inheritdoc IRewardPool
+   */
+  function totalBalances(address[] calldata _poolList) public view override returns (uint256[] memory _balances) {
+    _balances = new uint256[](_poolList.length);
+    for (uint _i = 0; _i < _poolList.length; _i++) {
+      _balances[_i] = totalBalance(_poolList[_i]);
+    }
   }
 
   /**
@@ -47,15 +70,10 @@ abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard
    */
   function minValidatorBalance() public view virtual returns (uint256);
 
-  /**
-   * @inheritdoc IStaking
-   */
-  function maxValidatorCandidate() public view virtual returns (uint256);
-
-  /**
-   * @dev IStaking
-   */
-  function getValidatorCandidateLength() public view virtual returns (uint256);
+  // /**
+  //  * @inheritdoc IStaking
+  //  */
+  // function maxValidatorCandidate() public view virtual returns (uint256);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                          FUNCTIONS FOR VALIDATOR CANDIDATE                        //
@@ -68,40 +86,42 @@ abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard
     address _consensusAddr,
     address payable _treasuryAddr,
     uint256 _commissionRate
-  ) external payable override nonReentrant returns (uint256 _candidateIdx) {
+  ) external payable override nonReentrant {
     uint256 _amount = msg.value;
     address payable _candidateAdmin = payable(msg.sender);
-    _candidateIdx = _proposeValidator(_candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate, _amount);
-    _stake(_consensusAddr, _candidateAdmin, _amount);
+    _proposeValidator(_candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate, _amount);
+    _stake(_stakingPool[_consensusAddr], _candidateAdmin, _amount);
   }
 
   /**
    * @inheritdoc IStaking
    */
-  function stake(address _consensusAddr) external payable override noEmptyValue {
-    _stake(_consensusAddr, msg.sender, msg.value);
+  function stake(address _consensusAddr) external payable override noEmptyValue onlyValidatorCandidate(_consensusAddr) {
+    _stake(_stakingPool[_consensusAddr], msg.sender, msg.value);
   }
 
   /**
    * @inheritdoc IStaking
    */
-  function unstake(address _consensusAddr, uint256 _amount) external override nonReentrant {
+  function unstake(address _consensusAddr, uint256 _amount)
+    external
+    override
+    nonReentrant
+    onlyValidatorCandidate(_consensusAddr)
+  {
     address _delegator = msg.sender;
-    ValidatorCandidate storage _candidate = _getCandidate(_consensusAddr);
+    PoolDetail storage _pool = _stakingPool[_consensusAddr];
+    uint256 _remainAmount = _pool.stakedAmount - _amount;
+    require(_remainAmount >= minValidatorBalance(), "StakingManager: invalid staked amount left");
 
-    uint256 remainAmount = _candidate.stakedAmount - _amount;
-    require(remainAmount >= minValidatorBalance(), "StakingManager: invalid staked amount left");
-
-    _unstake(_candidate, _delegator, _amount);
+    _unstake(_pool, _delegator, _amount);
     require(_sendRON(payable(_delegator), _amount), "StakingManager: could not transfer RON");
   }
 
   /**
    * @inheritdoc IStaking
    */
-  function renounce(
-    address /* _consensusAddr */
-  ) external {
+  function renounce(address _consensusAddr) external onlyValidatorCandidate(_consensusAddr) {
     // TODO(Thor): implement this function
     revert("unimplemented");
   }
@@ -110,13 +130,8 @@ abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard
    * @dev Proposes a candidate to become a valdiator.
    *
    * Requirements:
-   * -
    * - The validator length is not exceeded the total validator threshold `_maxValidatorCandidate`.
    * - The amount is larger than or equal to the minimum validator balance `_minValidatorBalance`.
-   *
-   * Emits the `ValidatorProposed` event.
-   *
-   * @return _candidateIdx The bitwise negative of candidate index.
    *
    */
   function _proposeValidator(
@@ -125,19 +140,12 @@ abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard
     address payable _treasuryAddr,
     uint256 _commissionRate,
     uint256 _amount
-  ) internal returns (uint256 _candidateIdx) {
+  ) internal {
     require(_sendRON(_candidateAdmin, 0), "StakingManager: candidate admin cannot receive RON");
     require(_sendRON(_treasuryAddr, 0), "StakingManager: treasury cannot receive RON");
-    uint256 _length = getValidatorCandidateLength();
-    require(_length < maxValidatorCandidate(), "StakingManager: exceeds maximum number of candidates");
-    require(_getCandidateIndex(_consensusAddr) == 0, "StakingManager: query for existed candidate");
     require(_amount >= minValidatorBalance(), "StakingManager: insufficient amount");
 
-    _candidateIdx = ~_length;
-    _setCandidateIndex(_consensusAddr, _candidateIdx);
-    _createValidatorCandidate(_consensusAddr, _candidateAdmin, _treasuryAddr, _commissionRate);
-
-    emit ValidatorProposed(_consensusAddr, _candidateAdmin, _length);
+    _validatorContract.addValidatorCandidate(_consensusAddr, _treasuryAddr, _commissionRate);
   }
 
   /**
@@ -150,39 +158,38 @@ abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard
    *
    */
   function _stake(
-    address _poolAddr,
-    address _user,
+    PoolDetail storage _pool,
+    address _requester,
     uint256 _amount
   ) internal {
-    ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
-    require(_candidate.candidateAdmin == _user, "StakingManager: user is not the candidate admin");
+    require(_pool.admin == _requester, "StakingManager: requester is not the candidate admin");
+    _pool.stakedAmount += _amount;
+    emit Staked(_pool.addr, _amount);
 
-    _candidate.stakedAmount += _amount;
-    emit Staked(_poolAddr, _amount);
-
-    _delegate(_poolAddr, _user, _amount);
+    _delegate(_pool, _requester, _amount);
   }
 
   /**
    * @dev Withdraws the staked amount `_amount` for the validator candidate.
    *
    * Requirements:
+   * - The address `_requester` must be the candidate admin.
    * - The remain balance must be greater than the minimum validator candidate thresold `minValidatorBalance()`.
    *
    * Emits the `Unstaked` event.
    *
    */
   function _unstake(
-    ValidatorCandidate storage _candidate,
-    address _user,
+    PoolDetail storage _pool,
+    address _requester,
     uint256 _amount
   ) internal {
-    require(_candidate.candidateAdmin == _user, "StakingManager: user is not the candidate admin");
-    require(_amount <= _candidate.stakedAmount, "StakingManager: insufficient staked amount");
+    require(_pool.admin == _requester, "StakingManager: requester is not the pool admin");
+    require(_amount <= _pool.stakedAmount, "StakingManager: insufficient staked amount");
 
-    _candidate.stakedAmount -= _amount;
-    emit Unstaked(_candidate.consensusAddr, _amount);
-    _undelegate(_candidate.consensusAddr, _user, _amount);
+    _pool.stakedAmount -= _amount;
+    emit Unstaked(_pool.addr, _amount);
+    _undelegate(_pool, _requester, _amount);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -192,16 +199,17 @@ abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard
   /**
    * @inheritdoc IStaking
    */
-  function delegate(address _consensusAddr) external payable noEmptyValue notCandidateAdmin(_consensusAddr) {
-    _delegate(_consensusAddr, msg.sender, msg.value);
+  function delegate(address _consensusAddr) external payable noEmptyValue onlyValidatorCandidate(_consensusAddr) {
+    _delegate(_stakingPool[_consensusAddr], msg.sender, msg.value);
   }
 
   /**
    * @inheritdoc IStaking
    */
-  function undelegate(address _consensusAddr, uint256 _amount) external notCandidateAdmin(_consensusAddr) nonReentrant {
+  function undelegate(address _consensusAddr, uint256 _amount) external nonReentrant {
+    // TODO: add bulk function to undelegate a list of consensus addresses
     address payable _delegator = payable(msg.sender);
-    _undelegate(_consensusAddr, _delegator, _amount);
+    _undelegate(_stakingPool[_consensusAddr], _delegator, _amount);
     require(_sendRON(_delegator, _amount), "StakingManager: could not transfer RON");
   }
 
@@ -212,10 +220,10 @@ abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard
     address _consensusAddrSrc,
     address _consensusAddrDst,
     uint256 _amount
-  ) external notCandidateAdmin(_consensusAddrDst) {
+  ) external {
     address _delegator = msg.sender;
-    _undelegate(_consensusAddrSrc, _delegator, _amount);
-    _delegate(_consensusAddrDst, _delegator, _amount);
+    _undelegate(_stakingPool[_consensusAddrSrc], _delegator, _amount);
+    _delegate(_stakingPool[_consensusAddrDst], _delegator, _amount);
   }
 
   /**
@@ -251,7 +259,6 @@ abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard
   function delegateRewards(address[] calldata _consensusAddrList, address _consensusAddrDst)
     external
     override
-    notCandidateAdmin(_consensusAddrDst)
     returns (uint256 _amount)
   {
     return _delegateRewards(msg.sender, _consensusAddrList, _consensusAddrDst);
@@ -261,52 +268,50 @@ abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard
    * @dev Delegates from a validator address.
    *
    * Requirements:
-   * - The validator is an existed candidate.
+   * - The delegator is not the pool admin.
    *
    * Emits the `Delegated` event.
    *
-   * @notice This function does not verify the `msg.value` with the amount.
+   * Note: This function does not verify the `msg.value` with the amount.
    *
    */
   function _delegate(
-    address _poolAddr,
-    address _user,
+    PoolDetail storage _pool,
+    address _delegator,
     uint256 _amount
-  ) internal {
-    uint256 _newBalance = _delegatedAmount[_poolAddr][_user] + _amount;
-    _syncUserReward(_poolAddr, _user, _newBalance);
+  ) internal notPoolAdmin(_pool, _delegator) {
+    uint256 _newBalance = _pool.delegatedAmount[_delegator] + _amount;
+    _syncUserReward(_pool.addr, _delegator, _newBalance);
 
-    ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
-    _candidate.delegatedAmount += _amount;
-    _delegatedAmount[_poolAddr][_user] = _newBalance;
-    emit Delegated(_user, _poolAddr, _amount);
+    _pool.totalBalance += _amount;
+    _pool.delegatedAmount[_delegator] = _newBalance;
+    emit Delegated(_delegator, _pool.addr, _amount);
   }
 
   /**
    * @dev Undelegates from a validator address.
    *
    * Requirements:
-   * - The validator is an existed candidate.
+   * - The delegator is not the pool admin.
    * - The delegated amount is larger than or equal to the undelegated amount.
    *
    * Emits the `Undelegated` event.
    *
-   * @notice Consider transferring back the amount of RON after calling this function.
+   * Note: Consider transferring back the amount of RON after calling this function.
+   *
    */
   function _undelegate(
-    address _poolAddr,
-    address _user,
+    PoolDetail storage _pool,
+    address _delegator,
     uint256 _amount
-  ) private {
-    require(_delegatedAmount[_poolAddr][_user] >= _amount, "StakingManager: insufficient amount to undelegate");
+  ) private notPoolAdmin(_pool, _delegator) {
+    require(_pool.delegatedAmount[_delegator] >= _amount, "StakingManager: insufficient amount to undelegate");
 
-    uint256 _newBalance = _delegatedAmount[_poolAddr][_user] - _amount;
-    _syncUserReward(_poolAddr, _user, _newBalance);
-
-    ValidatorCandidate storage _candidate = _getCandidate(_poolAddr);
-    _candidate.delegatedAmount -= _amount;
-    _delegatedAmount[_poolAddr][_user] = _newBalance;
-    emit Undelegated(_user, _poolAddr, _amount);
+    uint256 _newBalance = _pool.delegatedAmount[_delegator] - _amount;
+    _syncUserReward(_pool.addr, _delegator, _newBalance);
+    _pool.totalBalance -= _amount;
+    _pool.delegatedAmount[_delegator] = _newBalance;
+    emit Undelegated(_delegator, _pool.addr, _amount);
   }
 
   /**
@@ -328,43 +333,6 @@ abstract contract StakingManager is IStaking, RONTransferHelper, ReentrancyGuard
     address _poolAddrDst
   ) internal returns (uint256 _amount) {
     _amount = _claimRewards(_user, _poolAddrList);
-    _delegate(_poolAddrDst, _user, _amount);
+    _delegate(_stakingPool[_poolAddrDst], _user, _amount);
   }
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                                  HELPER FUNCTIONS                                 //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
-  /**
-   * @dev Returns the validator candidate from storage form.
-   *
-   * Requirements:
-   * - The candidate is already existed.
-   *
-   */
-  function _getCandidate(address _consensusAddr) internal view virtual returns (ValidatorCandidate storage _candidate);
-
-  /**
-   * @dev Returns the bitwise negation of the candidate index in the response of function `getValidator Candidates()`.
-   *
-   * Requirements:
-   * - The candidate is already existed.
-   *
-   */
-  function _getCandidateIndex(address _consensusAddr) internal view virtual returns (uint256);
-
-  /**
-   * @dev Sets the candidate index.
-   */
-  function _setCandidateIndex(address _consensusAddr, uint256 _candidateIdx) internal virtual;
-
-  /**
-   * @dev Creates new validator candidate in the storage and returns its struct.
-   */
-  function _createValidatorCandidate(
-    address _consensusAddr,
-    address _candidateAdmin,
-    address payable _treasuryAddr,
-    uint256 _commissionRate
-  ) internal virtual returns (ValidatorCandidate memory);
 }
