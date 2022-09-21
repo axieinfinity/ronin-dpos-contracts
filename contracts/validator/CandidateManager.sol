@@ -54,6 +54,9 @@ contract CandidateManager is ICandidateManager, HasStakingContract {
    * @inheritdoc ICandidateManager
    */
   function syncCandidates() public override returns (uint256[] memory _balances) {
+    // This is a temporary approach since the slashing issue is still not finalized.
+    // Consider calling validator contract to renounce for the removed candidates.
+    // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
     IStaking _staking = _stakingContract;
     uint256 _minBalance = _staking.minValidatorBalance();
     _balances = _staking.totalBalances(_candidates);
