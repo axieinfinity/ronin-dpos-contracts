@@ -186,6 +186,7 @@ describe('[Integration] Wrap up epoch', () => {
       it('Should validator be able to wrap up the epoch', async () => {
         await mineBatchTxs(async () => {
           await validatorContract.endEpoch();
+          await validatorContract.endPeriod();
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
       });
@@ -193,8 +194,7 @@ describe('[Integration] Wrap up epoch', () => {
       describe.skip('ValidatorSetContract internal actions', async () => {});
 
       describe('StakingContract internal actions: settle reward pool', async () => {
-        // TODO: update the emitted event
-        it.skip('Should the StakingContract emit event of settling reward', async () => {
+        it('Should the StakingContract emit event of settling reward', async () => {
           await StakingExpects.emitSettledPoolsUpdatedEvent(
             wrapUpTx,
             validators

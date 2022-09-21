@@ -133,10 +133,7 @@ describe('Staking test', () => {
           1, // 0.01%
           { value: minValidatorBalance }
         );
-        // TODO: update emitted event
-        // await expect(tx)
-        //   .emit(stakingContract, 'ValidatorProposed')
-        //   .withArgs(candidate.address, candidate.address, i - 1);
+        await expect(tx).emit(stakingContract, 'ValidatorPoolAdded').withArgs(candidate.address, candidate.address);
       }
 
       poolAddr = validatorCandidates[1];
