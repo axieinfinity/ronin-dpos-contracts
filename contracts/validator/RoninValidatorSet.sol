@@ -335,25 +335,25 @@ contract RoninValidatorSet is
   /**
    * @dev Returns validator candidates list.
    */
-  function _syncNewValidatorSet() internal returns (address[] memory _candidates) {
+  function _syncNewValidatorSet() internal returns (address[] memory _candidateList) {
     uint256[] memory _weights = syncCandidates();
-    _candidates = _candidates;
+    _candidateList = _candidates;
 
-    uint256 _length = _candidates.length;
-    for (uint256 _i; _i < _candidates.length; _i++) {
-      if (_jailed(_candidates[_i])) {
+    uint256 _length = _candidateList.length;
+    for (uint256 _i; _i < _candidateList.length; _i++) {
+      if (_jailed(_candidateList[_i])) {
         _length--;
-        _candidates[_i] = _candidates[_length];
+        _candidateList[_i] = _candidateList[_length];
         _weights[_i] = _weights[_length];
       }
     }
 
     assembly {
-      mstore(_candidates, _length)
+      mstore(_candidateList, _length)
       mstore(_weights, _length)
     }
 
-    _candidates = Sorting.sort(_candidates, _weights);
+    _candidateList = Sorting.sort(_candidateList, _weights);
     // TODO: pick at least M governers as validators
   }
 

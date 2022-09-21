@@ -70,11 +70,6 @@ abstract contract StakingManager is
    */
   function minValidatorBalance() public view virtual returns (uint256);
 
-  // /**
-  //  * @inheritdoc IStaking
-  //  */
-  // function maxValidatorCandidate() public view virtual returns (uint256);
-
   ///////////////////////////////////////////////////////////////////////////////////////
   //                          FUNCTIONS FOR VALIDATOR CANDIDATE                        //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -90,7 +85,12 @@ abstract contract StakingManager is
     uint256 _amount = msg.value;
     address payable _candidateAdmin = payable(msg.sender);
     _proposeValidator(_candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate, _amount);
+
+    PoolDetail storage _pool = _stakingPool[_consensusAddr];
+    _pool.admin = _candidateAdmin;
+    _pool.addr = _consensusAddr;
     _stake(_stakingPool[_consensusAddr], _candidateAdmin, _amount);
+    emit ValidatorPoolAdded(_consensusAddr, _candidateAdmin);
   }
 
   /**
@@ -166,7 +166,7 @@ abstract contract StakingManager is
     _pool.stakedAmount += _amount;
     emit Staked(_pool.addr, _amount);
 
-    _delegate(_pool, _requester, _amount);
+    _unsafeDelegate(_pool, _requester, _amount);
   }
 
   /**
@@ -189,7 +189,7 @@ abstract contract StakingManager is
 
     _pool.stakedAmount -= _amount;
     emit Unstaked(_pool.addr, _amount);
-    _undelegate(_pool, _requester, _amount);
+    _unsafeUndelegate(_pool, _requester, _amount);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -220,7 +220,7 @@ abstract contract StakingManager is
     address _consensusAddrSrc,
     address _consensusAddrDst,
     uint256 _amount
-  ) external {
+  ) external nonReentrant {
     address _delegator = msg.sender;
     _undelegate(_stakingPool[_consensusAddrSrc], _delegator, _amount);
     _delegate(_stakingPool[_consensusAddrDst], _delegator, _amount);
@@ -259,6 +259,7 @@ abstract contract StakingManager is
   function delegateRewards(address[] calldata _consensusAddrList, address _consensusAddrDst)
     external
     override
+    nonReentrant
     returns (uint256 _amount)
   {
     return _delegateRewards(msg.sender, _consensusAddrList, _consensusAddrDst);
@@ -267,19 +268,16 @@ abstract contract StakingManager is
   /**
    * @dev Delegates from a validator address.
    *
-   * Requirements:
-   * - The delegator is not the pool admin.
-   *
    * Emits the `Delegated` event.
    *
    * Note: This function does not verify the `msg.value` with the amount.
    *
    */
-  function _delegate(
+  function _unsafeDelegate(
     PoolDetail storage _pool,
     address _delegator,
     uint256 _amount
-  ) internal notPoolAdmin(_pool, _delegator) {
+  ) internal {
     uint256 _newBalance = _pool.delegatedAmount[_delegator] + _amount;
     _syncUserReward(_pool.addr, _delegator, _newBalance);
 
@@ -289,10 +287,24 @@ abstract contract StakingManager is
   }
 
   /**
-   * @dev Undelegates from a validator address.
+   * @dev See `_unsafeDelegate`.
    *
    * Requirements:
    * - The delegator is not the pool admin.
+   *
+   */
+  function _delegate(
+    PoolDetail storage _pool,
+    address _delegator,
+    uint256 _amount
+  ) internal notPoolAdmin(_pool, _delegator) {
+    _unsafeDelegate(_pool, _delegator, _amount);
+  }
+
+  /**
+   * @dev Undelegates from a validator address.
+   *
+   * Requirements:
    * - The delegated amount is larger than or equal to the undelegated amount.
    *
    * Emits the `Undelegated` event.
@@ -300,11 +312,11 @@ abstract contract StakingManager is
    * Note: Consider transferring back the amount of RON after calling this function.
    *
    */
-  function _undelegate(
+  function _unsafeUndelegate(
     PoolDetail storage _pool,
     address _delegator,
     uint256 _amount
-  ) private notPoolAdmin(_pool, _delegator) {
+  ) private {
     require(_pool.delegatedAmount[_delegator] >= _amount, "StakingManager: insufficient amount to undelegate");
 
     uint256 _newBalance = _pool.delegatedAmount[_delegator] - _amount;
@@ -312,6 +324,21 @@ abstract contract StakingManager is
     _pool.totalBalance -= _amount;
     _pool.delegatedAmount[_delegator] = _newBalance;
     emit Undelegated(_delegator, _pool.addr, _amount);
+  }
+
+  /**
+   * @dev See `_unsafeUndelegate`.
+   *
+   * Requirements:
+   * - The delegator is not the pool admin.
+   *
+   */
+  function _undelegate(
+    PoolDetail storage _pool,
+    address _delegator,
+    uint256 _amount
+  ) private notPoolAdmin(_pool, _delegator) {
+    _unsafeUndelegate(_pool, _delegator, _amount);
   }
 
   /**

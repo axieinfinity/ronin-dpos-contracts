@@ -18,6 +18,7 @@ interface IStaking is IRewardPool {
     mapping(address => uint256) delegatedAmount;
   }
 
+  event ValidatorPoolAdded(address indexed validator, address indexed admin);
   /// @dev Emitted when the validator candidate requested to renounce.
   event ValidatorRenounceRequested(address indexed consensusAddr, uint256 amount);
   /// @dev Emitted when the renounce request is finalized.
