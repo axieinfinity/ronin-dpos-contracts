@@ -94,6 +94,16 @@ contract ScheduledMaintenance is IScheduledMaintenance, HasValidatorContract, In
   /**
    * @inheritdoc IScheduledMaintenance
    */
+  function bulkMaintained(address[] calldata _addrList) external view override returns (bool[] memory _resList) {
+    _resList = new bool[](_addrList.length);
+    for (uint _i = 0; _i < _addrList.length; _i++) {
+      _resList[_i] = maintained(_addrList[_i]);
+    }
+  }
+
+  /**
+   * @inheritdoc IScheduledMaintenance
+   */
   function totalSchedules() public view returns (uint256 _count) {
     address[] memory _validators = _validatorContract.getValidators();
     for (uint _i = 0; _i < _validators.length; _i++) {

@@ -24,6 +24,11 @@ interface IScheduledMaintenance {
   function maintained(address _consensusAddr) external view returns (bool);
 
   /**
+   * @dev Returns the bool array indicating the validator is maintained or not.
+   */
+  function bulkMaintained(address[] calldata _addrList) external view returns (bool[] memory);
+
+  /**
    * @dev Returns whether the validator `_consensusAddr` has scheduled.
    */
   function scheduled(address _consensusAddr) external view returns (bool);

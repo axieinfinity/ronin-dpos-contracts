@@ -8,6 +8,7 @@ import "../extensions/RONTransferHelper.sol";
 import "../extensions/HasStakingVestingContract.sol";
 import "../extensions/HasStakingContract.sol";
 import "../extensions/HasSlashIndicatorContract.sol";
+import "../extensions/HasScheduledMaintenanceContract.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 import "../libraries/Sorting.sol";
 import "../libraries/Math.sol";
@@ -19,6 +20,7 @@ contract RoninValidatorSet is
   HasStakingContract,
   HasStakingVestingContract,
   HasSlashIndicatorContract,
+  HasScheduledMaintenanceContract,
   CandidateManager,
   Initializable
 {
@@ -82,6 +84,7 @@ contract RoninValidatorSet is
     address __slashIndicatorContract,
     address __stakingContract,
     address __stakingVestingContract,
+    address __scheduledMaintenanceContract,
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
@@ -91,6 +94,7 @@ contract RoninValidatorSet is
     _setSlashIndicatorContract(__slashIndicatorContract);
     _setStakingContract(__stakingContract);
     _setStakingVestingContract(__stakingVestingContract);
+    _setScheduledMaintenanceContract(__scheduledMaintenanceContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
@@ -420,17 +424,26 @@ contract RoninValidatorSet is
       delete _validatorMap[_validator[_i]];
     }
 
+    uint256 _count;
+    bool[] memory _maintainedList = _scheduledMaintenanceContract.bulkMaintained(_candidates);
     for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
-      address _newValidator = _candidates[_i];
-      if (_newValidator == _validator[_i]) {
+      if (_maintainedList[_i]) {
         continue;
       }
-      delete _validatorMap[_validator[_i]];
+
+      address _newValidator = _candidates[_i];
+      if (_newValidator == _validator[_count]) {
+        _count++;
+        continue;
+      }
+
+      delete _validatorMap[_validator[_count]];
       _validatorMap[_newValidator] = true;
-      _validator[_i] = _newValidator;
+      _validator[_count] = _newValidator;
+      _count++;
     }
 
-    validatorCount = _newValidatorCount;
+    validatorCount = _count;
     emit ValidatorSetUpdated(_candidates);
   }
 
