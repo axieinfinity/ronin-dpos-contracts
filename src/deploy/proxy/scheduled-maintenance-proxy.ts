@@ -13,8 +13,8 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const data = new ScheduledMaintenance__factory().interface.encodeFunctionData('initialize', [
     initAddress[network.name]!.validatorContract,
-    scheduledMaintenanceConfig[network.name]!.minMaintenanceBlockSize,
-    scheduledMaintenanceConfig[network.name]!.maxMaintenanceBlockSize,
+    scheduledMaintenanceConfig[network.name]!.minMaintenanceBlockPeriod,
+    scheduledMaintenanceConfig[network.name]!.maxMaintenanceBlockPeriod,
     scheduledMaintenanceConfig[network.name]!.minOffset,
     scheduledMaintenanceConfig[network.name]!.maxSchedules,
   ]);

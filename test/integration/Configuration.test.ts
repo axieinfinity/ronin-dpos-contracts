@@ -9,6 +9,10 @@ import {
   Staking__factory,
   RoninValidatorSet,
   RoninValidatorSet__factory,
+  ScheduledMaintenance__factory,
+  ScheduledMaintenance,
+  StakingVesting__factory,
+  StakingVesting,
 } from '../../src/types';
 import {
   Network,
@@ -21,6 +25,8 @@ import {
 } from '../../src/config';
 import { BigNumber } from 'ethers';
 
+let stakingVestingContract: StakingVesting;
+let scheduledMaintenanceContract: ScheduledMaintenance;
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: RoninValidatorSet;
@@ -47,8 +53,8 @@ const maxValidatorCandidate = 10;
 
 const bonusPerBlock = BigNumber.from(1);
 const topUpAmount = BigNumber.from(10000);
-const minMaintenanceBlockSize = 100;
-const maxMaintenanceBlockSize = 1000;
+const minMaintenanceBlockPeriod = 100;
+const maxMaintenanceBlockPeriod = 1000;
 const minOffset = 200;
 const maxSchedules = 50;
 
@@ -61,8 +67,8 @@ describe('[Integration] Configuration check', () => {
         governanceAdmin: governanceAdmin.address,
       };
       scheduledMaintenanceConfig[network.name] = {
-        minMaintenanceBlockSize,
-        maxMaintenanceBlockSize,
+        minMaintenanceBlockPeriod,
+        maxMaintenanceBlockPeriod,
         minOffset,
         maxSchedules,
       };
@@ -89,19 +95,54 @@ describe('[Integration] Configuration check', () => {
       };
     }
 
-    await deployments.fixture(['CalculateAddresses', 'RoninValidatorSetProxy', 'SlashIndicatorProxy', 'StakingProxy']);
-
+    await deployments.fixture([
+      'CalculateAddresses',
+      'RoninValidatorSetProxy',
+      'SlashIndicatorProxy',
+      'StakingProxy',
+      'ScheduledMaintenanceProxy',
+      'StakingVestingProxy',
+    ]);
+    const stakingVestingDeployment = await deployments.get('StakingVestingProxy');
+    const scheduledMaintenanceDeployment = await deployments.get('ScheduledMaintenanceProxy');
     const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
-    slashContract = SlashIndicator__factory.connect(slashContractDeployment.address, deployer);
-
     const stakingContractDeployment = await deployments.get('StakingProxy');
-    stakingContract = Staking__factory.connect(stakingContractDeployment.address, deployer);
-
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
+
+    stakingVestingContract = StakingVesting__factory.connect(stakingVestingDeployment.address, deployer);
+    scheduledMaintenanceContract = ScheduledMaintenance__factory.connect(
+      scheduledMaintenanceDeployment.address,
+      deployer
+    );
+    slashContract = SlashIndicator__factory.connect(slashContractDeployment.address, deployer);
+    stakingContract = Staking__factory.connect(stakingContractDeployment.address, deployer);
     validatorContract = RoninValidatorSet__factory.connect(validatorContractDeployment.address, deployer);
   });
 
-  // TODO: add test for staking vesting contract & schedule maintenance contract
+  describe('ScheduledMaintenance configuration', () => {
+    it('Should the ScheduledMaintenanceContract config the validator contract correctly', async () => {
+      expect(await scheduledMaintenanceContract.validatorContract()).eq(validatorContract.address);
+    });
+
+    it('Should the ScheduledMaintenanceContract set the maintenance config correctly', async () => {
+      expect(await scheduledMaintenanceContract.minMaintenanceBlockPeriod()).eq(minMaintenanceBlockPeriod);
+      expect(await scheduledMaintenanceContract.maxMaintenanceBlockPeriod()).eq(maxMaintenanceBlockPeriod);
+      expect(await scheduledMaintenanceContract.minOffset()).eq(minOffset);
+      expect(await scheduledMaintenanceContract.maxSchedules()).eq(maxSchedules);
+    });
+  });
+
+  describe('StakingVesting configuration', () => {
+    it('Should the StakingVestingContract config the validator contract correctly', async () => {
+      expect(await stakingVestingContract.validatorContract()).eq(validatorContract.address);
+    });
+
+    it('Should the StakingVestingContract config the block bonus correctly', async () => {
+      expect(await stakingVestingContract.blockBonus(0)).eq(bonusPerBlock);
+      expect(await stakingVestingContract.blockBonus(Math.floor(Math.random() * 1_000_000))).eq(bonusPerBlock);
+    });
+  });
+
   describe('ValidatorSetContract configuration', async () => {
     it('Should the ValidatorSetContract config the StakingContract correctly', async () => {
       let _stakingContract = await validatorContract.stakingContract();

@@ -52,8 +52,8 @@ const maxValidatorCandidate = 10;
 const bonusPerBlock = BigNumber.from(1);
 const topUpAmount = BigNumber.from(10000);
 
-const minMaintenanceBlockSize = 100;
-const maxMaintenanceBlockSize = 1000;
+const minMaintenanceBlockPeriod = 100;
+const maxMaintenanceBlockPeriod = 1000;
 const minOffset = 200;
 const maxSchedules = 50;
 
@@ -69,8 +69,8 @@ describe('[Integration] Wrap up epoch', () => {
         governanceAdmin: governanceAdmin.address,
       };
       scheduledMaintenanceConfig[network.name] = {
-        minMaintenanceBlockSize,
-        maxMaintenanceBlockSize,
+        minMaintenanceBlockPeriod,
+        maxMaintenanceBlockPeriod,
         minOffset,
         maxSchedules,
       };

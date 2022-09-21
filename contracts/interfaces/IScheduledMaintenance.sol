@@ -10,6 +10,13 @@ interface IScheduledMaintenance {
 
   /// @dev Emitted when the maintenance is scheduled.
   event MaintenanceScheduled(address consensusAddr, Schedule);
+  /// @dev Emitted when the maintenance config is updated.
+  event MaintenanceConfigUpdated(
+    uint256 minMaintenanceBlockPeriod,
+    uint256 maxMaintenanceBlockPeriod,
+    uint256 minOffset,
+    uint256 maxSchedules
+  );
 
   /**
    * @dev Returns whether the validator `_consensusAddr` is maintained at the current block.
@@ -27,22 +34,39 @@ interface IScheduledMaintenance {
   function getSchedule(address _consensusAddr) external view returns (Schedule memory);
 
   /**
-   * @dev Returns the minimum block size to maintenance.
+   * @dev Returns the min block period for maintenance.
    */
-  function minMaintenanceBlockSize() external view returns (uint256);
+  function minMaintenanceBlockPeriod() external view returns (uint256);
 
   /**
-   * @dev Returns the maximum block size to maintenance.
+   * @dev Returns the max block period for maintenance.
    */
-  function maxMaintenanceBlockSize() external view returns (uint256);
+  function maxMaintenanceBlockPeriod() external view returns (uint256);
 
   /**
-   * @dev Returns the minimum blocks from the current block to the start block.
+   * @dev Sets the min block period and max block period for maintenance.
+   *
+   * Requirements:
+   * - The method caller is admin.
+   * - The max period is larger than the min period.
+   *
+   * Emits the event `MaintenanceConfigUpdated`.
+   *
+   */
+  function setMaintenanceConfig(
+    uint256 _minMaintenanceBlockPeriod,
+    uint256 _maxMaintenanceBlockPeriod,
+    uint256 _minOffset,
+    uint256 _maxSchedules
+  ) external;
+
+  /**
+   * @dev Returns the min blocks from current block to the maintenance start block.
    */
   function minOffset() external view returns (uint256);
 
   /**
-   * @dev Returns the maximum number of scheduled maintenances.
+   * @dev Returns the max number of scheduled maintenances.
    */
   function maxSchedules() external view returns (uint256);
 
@@ -55,12 +79,12 @@ interface IScheduledMaintenance {
    * @dev Schedules for maintenance from `_startedAtBlock` to `_startedAtBlock`.
    *
    * Requirements:
-   * - The method caller is candidate owner of the candidate `_consensusAddr`.
    * - The candidate `_consensusAddr` is the validator.
-   * - The candidate `_consensusAddr` has no schedule yet.
-   * - The total number of current scheduled maintenances is not larger than `maxSchedules()`.
+   * - The method caller is candidate admin of the candidate `_consensusAddr`.
+   * - The candidate `_consensusAddr` has no schedule yet or the previous is done.
+   * - The total number of schedules is not larger than `maxSchedules()`.
    * - The end block is larger than the start block.
-   * - The scheduled block size is larger than the `minMaintenanceBlockSize()`.
+   * - The scheduled block period is larger than the `minMaintenanceBlockPeriod()` and less than the `maxMaintenanceBlockPeriod()`.
    * - The start block must be at least `minOffset()` blocks from the current block.
    *
    * Emits the event `MaintenanceScheduled`.

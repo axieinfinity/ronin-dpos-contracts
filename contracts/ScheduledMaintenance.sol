@@ -13,13 +13,13 @@ contract ScheduledMaintenance is IScheduledMaintenance, HasValidatorContract, In
   /// @dev Mapping from consensus address => maintenance schedule
   mapping(address => Schedule) internal _schedule;
 
-  /// @dev The minimum block size to maintenance
-  uint256 public minMaintenanceBlockSize;
-  /// @dev The maximum block size to maintenance
-  uint256 public maxMaintenanceBlockSize;
-  /// @dev The minimum blocks from the current block to the start block
+  /// @dev The min block period to maintenance
+  uint256 public minMaintenanceBlockPeriod;
+  /// @dev The max block period to maintenance
+  uint256 public maxMaintenanceBlockPeriod;
+  /// @dev The min blocks from the current block to the start block
   uint256 public minOffset;
-  /// @dev The maximum number of scheduled maintenances
+  /// @dev The max number of scheduled maintenances
   uint256 public maxSchedules;
 
   constructor() {
@@ -31,33 +31,57 @@ contract ScheduledMaintenance is IScheduledMaintenance, HasValidatorContract, In
    */
   function initialize(
     address __validatorContract,
-    uint256 _minMaintenanceBlockSize,
-    uint256 _maxMaintenanceBlockSize,
+    uint256 _minMaintenanceBlockPeriod,
+    uint256 _maxMaintenanceBlockPeriod,
     uint256 _minOffset,
     uint256 _maxSchedules
   ) external initializer {
     _setValidatorContract(__validatorContract);
-    // TODO: add setter
-    assert(_minMaintenanceBlockSize < _maxMaintenanceBlockSize);
-    minMaintenanceBlockSize = _minMaintenanceBlockSize;
-    maxMaintenanceBlockSize = _maxMaintenanceBlockSize;
-    minOffset = _minOffset;
-    maxSchedules = _maxSchedules;
+    _setMaintenanceConfig(_minMaintenanceBlockPeriod, _maxMaintenanceBlockPeriod, _minOffset, _maxSchedules);
   }
 
   /**
    * @inheritdoc IScheduledMaintenance
    */
-  function maintained(address _consensusAddr) public view override returns (bool) {
-    Schedule memory _s = _schedule[_consensusAddr];
-    return _s.startedAtBlock <= block.number && block.number <= _s.endedAtBlock;
+  function setMaintenanceConfig(
+    uint256 _minMaintenanceBlockPeriod,
+    uint256 _maxMaintenanceBlockPeriod,
+    uint256 _minOffset,
+    uint256 _maxSchedules
+  ) external onlyAdmin {
+    _setMaintenanceConfig(_minMaintenanceBlockPeriod, _maxMaintenanceBlockPeriod, _minOffset, _maxSchedules);
   }
 
   /**
    * @inheritdoc IScheduledMaintenance
    */
-  function scheduled(address _consensusAddr) public view override returns (bool) {
-    return block.number <= _schedule[_consensusAddr].endedAtBlock;
+  function schedule(
+    address _consensusAddr,
+    uint256 _startedAtBlock,
+    uint256 _endedAtBlock
+  ) external override {
+    require(
+      _validatorContract.isValidator(_consensusAddr),
+      "ScheduledMaintenance: consensus address must be  validator"
+    );
+    require(
+      _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender),
+      "ScheduledMaintenance: method caller must be a candidate admin"
+    );
+    require(!scheduled(_consensusAddr), "ScheduledMaintenance: already scheduled");
+    require(totalSchedules() < maxSchedules, "ScheduledMaintenance: exceeds total of schedules");
+    require(_startedAtBlock < _endedAtBlock, "ScheduledMaintenance: invalid request block");
+    require(block.number + minOffset <= _startedAtBlock, "ScheduledMaintenance: invalid offset size");
+
+    uint256 _blockPeriod = _endedAtBlock - _startedAtBlock;
+    require(
+      minMaintenanceBlockPeriod <= _blockPeriod && _blockPeriod <= maxMaintenanceBlockPeriod,
+      "ScheduledMaintenance: invalid maintainance block period"
+    );
+
+    Schedule memory _s = Schedule(_startedAtBlock, _endedAtBlock);
+    _schedule[_consensusAddr] = _s;
+    emit MaintenanceScheduled(_consensusAddr, _s);
   }
 
   /**
@@ -82,29 +106,38 @@ contract ScheduledMaintenance is IScheduledMaintenance, HasValidatorContract, In
   /**
    * @inheritdoc IScheduledMaintenance
    */
-  function schedule(
-    address _consensusAddr,
-    uint256 _startedAtBlock,
-    uint256 _endedAtBlock
-  ) external override {
-    require(
-      _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender),
-      "ScheduledMaintenance: method caller is not the candidate admin"
-    );
-    require(_validatorContract.isValidator(_consensusAddr), "ScheduledMaintenance: consensus address is not validator");
-    require(!scheduled(_consensusAddr), "ScheduledMaintenance: already scheduled");
-    require(totalSchedules() < maxSchedules, "ScheduledMaintenance: exceeds total of schedules");
-    require(_startedAtBlock < _endedAtBlock, "ScheduledMaintenance: invalid request block");
-    require(block.number + minOffset <= _startedAtBlock, "ScheduledMaintenance: invalid offset size");
+  function maintained(address _consensusAddr) public view override returns (bool) {
+    Schedule memory _s = _schedule[_consensusAddr];
+    return _s.startedAtBlock <= block.number && block.number <= _s.endedAtBlock;
+  }
 
-    uint256 _blockSize = _endedAtBlock - _startedAtBlock;
-    require(
-      minMaintenanceBlockSize <= _blockSize && _blockSize <= maxMaintenanceBlockSize,
-      "ScheduledMaintenance: invalid maintainance block size"
-    );
+  /**
+   * @inheritdoc IScheduledMaintenance
+   */
+  function scheduled(address _consensusAddr) public view override returns (bool) {
+    return block.number <= _schedule[_consensusAddr].endedAtBlock;
+  }
 
-    Schedule memory _s = Schedule(_startedAtBlock, _endedAtBlock);
-    _schedule[_consensusAddr] = _s;
-    emit MaintenanceScheduled(_consensusAddr, _s);
+  /**
+   * @dev Sets the min block period and max block period to maintenance.
+   *
+   * Requirements:
+   * - The max period is larger than the min period.
+   *
+   * Emits the event `MaintenanceConfigUpdated`.
+   *
+   */
+  function _setMaintenanceConfig(
+    uint256 _minMaintenanceBlockPeriod,
+    uint256 _maxMaintenanceBlockPeriod,
+    uint256 _minOffset,
+    uint256 _maxSchedules
+  ) internal {
+    require(_minMaintenanceBlockPeriod < _maxMaintenanceBlockPeriod, "ScheduledMaintenance: invalid block periods");
+    minMaintenanceBlockPeriod = _minMaintenanceBlockPeriod;
+    maxMaintenanceBlockPeriod = _maxMaintenanceBlockPeriod;
+    minOffset = _minOffset;
+    maxSchedules = _maxSchedules;
+    emit MaintenanceConfigUpdated(_minMaintenanceBlockPeriod, _maxMaintenanceBlockPeriod, _minOffset, _maxSchedules);
   }
 }

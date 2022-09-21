@@ -26,8 +26,8 @@ export interface InitAddr {
 export interface ScheduledMaintenanceConfig {
   [network: LiteralNetwork]:
     | {
-        minMaintenanceBlockSize: BigNumberish;
-        maxMaintenanceBlockSize: BigNumberish;
+        minMaintenanceBlockPeriod: BigNumberish;
+        maxMaintenanceBlockPeriod: BigNumberish;
         minOffset: BigNumberish;
         maxSchedules: BigNumberish;
       }
@@ -85,8 +85,8 @@ export const initAddress: InitAddr = {
 export const scheduledMaintenanceConfig: ScheduledMaintenanceConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
-    minMaintenanceBlockSize: 600, // 600 blocks
-    maxMaintenanceBlockSize: 28800, // ~1 day
+    minMaintenanceBlockPeriod: 600, // 600 blocks
+    maxMaintenanceBlockPeriod: 28800, // ~1 day
     minOffset: 28800, // requests before maintaining at least ~1 day
     maxSchedules: 3, // only 3 schedules are happening|in the futures
   },
