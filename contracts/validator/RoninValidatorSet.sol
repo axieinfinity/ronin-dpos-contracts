@@ -4,22 +4,32 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "../interfaces/ISlashIndicator.sol";
-import "../interfaces/IStaking.sol";
-import "../interfaces/IStakingVesting.sol";
+import "../extensions/RONTransferHelper.sol";
+import "../extensions/HasStakingVestingContract.sol";
+import "../extensions/HasStakingContract.sol";
+import "../extensions/HasSlashIndicatorContract.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 import "../libraries/Sorting.sol";
 import "../libraries/Math.sol";
+import "./CandidateManager.sol";
 
-contract RoninValidatorSet is IRoninValidatorSet, Initializable {
-  /// @dev Governance admin address.
-  address internal _governanceAdmin;
-  /// @dev Slash indicator contract address.
-  address internal _slashIndicatorContract; // Change type to address for testing purpose
-  /// @dev Staking contract address.
-  address internal _stakingContract; // Change type to address for testing purpose
-  /// @dev Staking vesting contract address.
-  address internal _stakingVestingContract;
+contract RoninValidatorSet is
+  IRoninValidatorSet,
+  RONTransferHelper,
+  HasStakingContract,
+  HasStakingVestingContract,
+  HasSlashIndicatorContract,
+  CandidateManager,
+  Initializable
+{
+  /// @dev The maximum number of validator.
+  uint256 internal _maxValidatorNumber;
+  /// @dev The number of blocks in a epoch
+  uint256 internal _numberOfBlocksInEpoch;
+  /// @dev Returns the number of epochs in a period
+  uint256 internal _numberOfEpochsInPeriod;
+  /// @dev The last updated block
+  uint256 internal _lastUpdatedBlock;
 
   /// @dev The total of validators
   uint256 public validatorCount;
@@ -27,15 +37,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   mapping(uint256 => address) internal _validator;
   /// @dev Mapping from validator address => bool
   mapping(address => bool) internal _validatorMap;
-  /// @dev The maximum number of validator.
-  uint256 internal _maxValidatorNumber;
-
-  /// @dev The number of blocks in a epoch
-  uint256 internal _numberOfBlocksInEpoch;
-  /// @dev Returns the number of epochs in a period
-  uint256 internal _numberOfEpochsInPeriod;
-  /// @dev The last updated block
-  uint256 internal _lastUpdatedBlock;
 
   /// @dev Mapping from validator address => the last period that the validator has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _rewardDeprecatedAtPeriod;
@@ -49,16 +50,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
 
   modifier onlyCoinbase() {
     require(msg.sender == block.coinbase, "RoninValidatorSet: method caller must be coinbase");
-    _;
-  }
-
-  modifier onlySlashIndicatorContract() {
-    require(msg.sender == _slashIndicatorContract, "RoninValidatorSet: method caller must be slash indicator contract");
-    _;
-  }
-
-  modifier onlyGovernanceAdmin() {
-    require(msg.sender == _governanceAdmin, "RoninValidatorSet: method caller must be governance admin");
     _;
   }
 
@@ -83,21 +74,19 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
    * @dev Initializes the contract storage.
    */
   function initialize(
-    address __governanceAdmin,
     address __slashIndicatorContract,
     address __stakingContract,
     address __stakingVestingContract,
     uint256 __maxValidatorNumber,
+    uint256 __maxValidatorCandidate,
     uint256 __numberOfBlocksInEpoch,
     uint256 __numberOfEpochsInPeriod
   ) external initializer {
-    _setGovernanceAdmin(__governanceAdmin);
-
-    _slashIndicatorContract = __slashIndicatorContract;
-    _stakingContract = __stakingContract;
-    _stakingVestingContract = __stakingVestingContract;
-
+    _setSlashIndicatorContract(__slashIndicatorContract);
+    _setStakingContract(__stakingContract);
+    _setStakingVestingContract(__stakingVestingContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
+    _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
     _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
   }
@@ -124,11 +113,11 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
       return;
     }
 
-    uint256 _bonusReward = IStakingVesting(_stakingVestingContract).requestBlockBonus();
+    uint256 _bonusReward = _stakingVestingContract.requestBlockBonus();
     uint256 _reward = _submittedReward + _bonusReward;
 
     IStaking _staking = IStaking(_stakingContract);
-    uint256 _rate = _staking.commissionRateOf(_coinbaseAddr);
+    uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
     uint256 _miningAmount = (_rate * _reward) / 100_00;
     uint256 _delegatingAmount = _reward - _miningAmount;
 
@@ -146,6 +135,7 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
       epochOf(_lastUpdatedBlock) < epochOf(block.number),
       "RoninValidatorSet: query for already wrapped up epoch"
     );
+    _lastUpdatedBlock = block.number;
 
     IStaking _staking = IStaking(_stakingContract);
     address _validatorAddr;
@@ -165,9 +155,8 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
         uint256 _miningAmount = _miningReward[_validatorAddr];
         delete _miningReward[_validatorAddr];
         if (_miningAmount > 0) {
-          address _treasury = _staking.treasuryAddressOf(_validatorAddr);
-          (bool _success, ) = _treasury.call{ value: _miningAmount }("");
-          require(_success, "RoninValidatorSet: could not transfer RON treasury addr");
+          address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
+          require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
           emit MiningRewardDistributed(_validatorAddr, _miningAmount);
         }
       }
@@ -177,15 +166,16 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
     }
 
     if (_periodEnding) {
-      // TODO: reset for candidates / kicked validators
       ISlashIndicator(_slashIndicatorContract).resetCounters(_validators);
-    }
 
-    _staking.settleRewardPools(_validators);
-    if (_delegatingAmount > 0) {
-      (bool _success, ) = address(_staking).call{ value: _delegatingAmount }("");
-      require(_success, "RoninValidatorSet: could not transfer RON to staking contract");
-      emit StakingRewardDistributed(_delegatingAmount);
+      _staking.settleRewardPools(_validators);
+      if (_delegatingAmount > 0) {
+        require(
+          _sendRON(payable(address(_staking)), 0),
+          "RoninValidatorSet: could not transfer RON to staking contract"
+        );
+        emit StakingRewardDistributed(_delegatingAmount);
+      }
     }
 
     _updateValidatorSet();
@@ -201,34 +191,6 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   ///////////////////////////////////////////////////////////////////////////////////////
   //                            FUNCTIONS FOR SLASH INDICATOR                          //
   ///////////////////////////////////////////////////////////////////////////////////////
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function governanceAdmin() external view override returns (address) {
-    return _governanceAdmin;
-  }
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function slashIndicatorContract() external view override returns (address) {
-    return _slashIndicatorContract;
-  }
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function stakingContract() external view override returns (address) {
-    return _stakingContract;
-  }
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function stakingVestingContract() external view override returns (address) {
-    return _stakingVestingContract;
-  }
 
   /**
    * @inheritdoc IRoninValidatorSet
@@ -348,34 +310,85 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function setGovernanceAdmin(address __governanceAdmin) external override onlyGovernanceAdmin {
-    _setGovernanceAdmin(__governanceAdmin);
-  }
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function setMaxValidatorNumber(uint256 __maxValidatorNumber) external override onlyGovernanceAdmin {
+  function setMaxValidatorNumber(uint256 __maxValidatorNumber) external override onlyAdmin {
     _setMaxValidatorNumber(__maxValidatorNumber);
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function setNumberOfBlocksInEpoch(uint256 __numberOfBlocksInEpoch) external override onlyGovernanceAdmin {
+  function setNumberOfBlocksInEpoch(uint256 __numberOfBlocksInEpoch) external override onlyAdmin {
     _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) external override onlyGovernanceAdmin {
+  function setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) external override onlyAdmin {
     _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                                  HELPER FUNCTIONS                                 //
   ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Returns validator candidates list.
+   */
+  function _syncNewValidatorSet() internal returns (address[] memory _candidateList) {
+    uint256[] memory _weights = syncCandidates();
+    _candidateList = _candidates;
+
+    uint256 _length = _candidateList.length;
+    for (uint256 _i; _i < _candidateList.length; _i++) {
+      if (_jailed(_candidateList[_i])) {
+        _length--;
+        _candidateList[_i] = _candidateList[_length];
+        _weights[_i] = _weights[_length];
+      }
+    }
+
+    assembly {
+      mstore(_candidateList, _length)
+      mstore(_weights, _length)
+    }
+
+    _candidateList = Sorting.sort(_candidateList, _weights);
+    // TODO: pick at least M governers as validators
+  }
+
+  /**
+   * @dev Updates the validator set based on the validator candidates from the Staking contract.
+   *
+   * Emits the `ValidatorSetUpdated` event.
+   *
+   */
+  function _updateValidatorSet() internal virtual {
+    address[] memory _candidates = _syncNewValidatorSet();
+    uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
+
+    assembly {
+      mstore(_candidates, _newValidatorCount)
+    }
+
+    for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
+      delete _validator[_i];
+      delete _validatorMap[_validator[_i]];
+    }
+
+    for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
+      address _newValidator = _candidates[_i];
+      if (_newValidator == _validator[_i]) {
+        continue;
+      }
+      delete _validatorMap[_validator[_i]];
+      _validatorMap[_newValidator] = true;
+      _validator[_i] = _newValidator;
+    }
+
+    validatorCount = _newValidatorCount;
+    emit ValidatorSetUpdated(_candidates);
+  }
 
   /**
    * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) during the current period.
@@ -399,107 +412,45 @@ contract RoninValidatorSet is IRoninValidatorSet, Initializable {
   }
 
   /**
-   * @dev Returns validator candidates list.
-   */
-  function _getValidatorCandidates() internal view returns (address[] memory _candidates) {
-    uint256[] memory _weights;
-    (_candidates, _weights) = IStaking(_stakingContract).getCandidateWeights();
-    // TODO: filter validators that do not have enough min balance
-    uint256 _newLength = _candidates.length;
-    for (uint256 _i; _i < _candidates.length; _i++) {
-      if (_jailed(_candidates[_i])) {
-        _newLength--;
-        _candidates[_i] = _candidates[_newLength];
-        _weights[_i] = _weights[_newLength];
-      }
-    }
-
-    assembly {
-      mstore(_candidates, _newLength)
-      mstore(_weights, _newLength)
-    }
-
-    _candidates = Sorting.sort(_candidates, _weights);
-    // TODO: pick at least M governers as validators
-  }
-
-  /**
-   * @dev Updates the validator set based on the validator candidates from the Staking contract.
-   *
-   * Emits the `ValidatorSetUpdated` event.
-   *
-   */
-  function _updateValidatorSet() internal virtual {
-    address[] memory _candidates = _getValidatorCandidates();
-
-    uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
-
-    assembly {
-      mstore(_candidates, _newValidatorCount)
-    }
-
-    for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
-      delete _validator[_i];
-      delete _validatorMap[_validator[_i]];
-    }
-
-    for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
-      address _newValidator = _candidates[_i];
-      if (_newValidator == _validator[_i]) {
-        continue;
-      }
-      delete _validatorMap[_validator[_i]];
-      _validatorMap[_newValidator] = true;
-      _validator[_i] = _newValidator;
-    }
-
-    validatorCount = _newValidatorCount;
-    _lastUpdatedBlock = block.number;
-    emit ValidatorSetUpdated(_candidates);
-  }
-
-  /**
-   * @dev Updates the address of governance admin
-   */
-  function _setGovernanceAdmin(address __governanceAdmin) internal {
-    if (__governanceAdmin == _governanceAdmin) {
-      return;
-    }
-
-    require(__governanceAdmin != address(0), "RoninValidatorSet: Cannot set admin to zero address");
-
-    _governanceAdmin = __governanceAdmin;
-    emit GovernanceAdminUpdated(__governanceAdmin);
-  }
-
-  /**
    * @dev Updates the max validator number
+   *
+   * Emits the event `MaxValidatorNumberUpdated`
+   *
    */
-  function _setMaxValidatorNumber(uint256 __maxValidatorNumber) internal {
-    _maxValidatorNumber = __maxValidatorNumber;
-    emit MaxValidatorNumberUpdated(__maxValidatorNumber);
+  function _setMaxValidatorNumber(uint256 _number) internal {
+    _maxValidatorNumber = _number;
+    emit MaxValidatorNumberUpdated(_number);
   }
 
   /**
    * @dev Updates the number of blocks in epoch
+   *
+   * Emits the event `NumberOfBlocksInEpochUpdated`
+   *
    */
-  function _setNumberOfBlocksInEpoch(uint256 __numberOfBlocksInEpoch) internal {
-    _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
-    emit NumberOfBlocksInEpochUpdated(__numberOfBlocksInEpoch);
+  function _setNumberOfBlocksInEpoch(uint256 _number) internal {
+    _numberOfBlocksInEpoch = _number;
+    emit NumberOfBlocksInEpochUpdated(_number);
   }
 
   /**
    * @dev Updates the number of epochs in period
+   *
+   * Emits the event `NumberOfEpochsInPeriodUpdated`
+   *
    */
-  function _setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) internal {
-    _numberOfEpochsInPeriod = __numberOfEpochsInPeriod;
-    emit NumberOfEpochsInPeriodUpdated(__numberOfEpochsInPeriod);
+  function _setNumberOfEpochsInPeriod(uint256 _number) internal {
+    _numberOfEpochsInPeriod = _number;
+    emit NumberOfEpochsInPeriodUpdated(_number);
   }
 
   /**
    * @dev Only receives RON from staking vesting contract.
    */
   function _fallback() internal view {
-    require(msg.sender == _stakingVestingContract, "RoninValidatorSet: method caller must be staking vesting contract");
+    require(
+      msg.sender == stakingVestingContract(),
+      "RoninValidatorSet: only receives RON from staking vesting contract"
+    );
   }
 }

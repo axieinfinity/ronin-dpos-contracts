@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers';
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -7,12 +8,11 @@ import {
   SlashIndicator__factory,
   MockValidatorSetForSlash,
   MockValidatorSetForSlash__factory,
-  TransparentUpgradeableProxy__factory,
+  TransparentUpgradeableProxyV2__factory,
 } from '../../src/types';
 import { Address } from 'hardhat-deploy/dist/types';
 import { SlashType } from '../../src/script/slash-indicator';
 import { Network, slashIndicatorConf } from '../../src/config';
-import { BigNumber, Signer } from 'ethers';
 import { expects as SlashExpects } from '../helpers/slash-indicator';
 
 let slashContract: SlashIndicator;
@@ -21,10 +21,11 @@ let deployer: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
 let mockValidatorsContract: MockValidatorSetForSlash;
 let vagabond: SignerWithAddress;
-let governanceAdmin: SignerWithAddress;
 let coinbases: SignerWithAddress[];
 let defaultCoinbase: Address;
 let localIndicators: number[];
+let felonyThreshold: number;
+let misdemeanorThreshold: number;
 
 const resetCoinbase = async () => {
   await network.provider.send('hardhat_setCoinbase', [defaultCoinbase]);
@@ -32,11 +33,11 @@ const resetCoinbase = async () => {
 
 const increaseLocalCounterForValidatorAt = async (_index: number, _increase?: number) => {
   _increase = _increase ?? 1;
-  localIndicators[_index] += _increase;
+  localIndicators[_index] = (localIndicators[_index] + _increase) % felonyThreshold;
 };
 
 const setLocalCounterForValidatorAt = async (_index: number, _value: number) => {
-  localIndicators[_index] = _value;
+  localIndicators[_index] = _value % felonyThreshold;
 };
 
 const resetLocalCounterForValidatorAt = async (_index: number) => {
@@ -52,11 +53,8 @@ const doSlash = async (slasher: SignerWithAddress, slashee: SignerWithAddress) =
 };
 
 describe('Slash indicator test', () => {
-  let felonyThreshold: number;
-  let misdemeanorThreshold: number;
-
   before(async () => {
-    [deployer, proxyAdmin, vagabond, governanceAdmin, ...coinbases] = await ethers.getSigners();
+    [deployer, proxyAdmin, vagabond, ...coinbases] = await ethers.getSigners();
     localIndicators = Array<number>(coinbases.length).fill(0);
     defaultCoinbase = await network.provider.send('eth_coinbase');
 
@@ -72,11 +70,10 @@ describe('Slash indicator test', () => {
 
     mockValidatorsContract = await new MockValidatorSetForSlash__factory(deployer).deploy();
     const logicContract = await new SlashIndicator__factory(deployer).deploy();
-    const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+    const proxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       logicContract.address,
       proxyAdmin.address,
       logicContract.interface.encodeFunctionData('initialize', [
-        governanceAdmin.address,
         mockValidatorsContract.address,
         slashIndicatorConf[network.name]!.misdemeanorThreshold,
         slashIndicatorConf[network.name]!.felonyThreshold,
@@ -101,7 +98,7 @@ describe('Slash indicator test', () => {
 
       it('Should non-validatorContract cannot call reset counter', async () => {
         await expect(slashContract.connect(vagabond).resetCounters([coinbases[0].address])).to.revertedWith(
-          'SlashIndicator: method caller is not the validator contract'
+          'HasValidatorContract: method caller must be validator contract'
         );
       });
     });

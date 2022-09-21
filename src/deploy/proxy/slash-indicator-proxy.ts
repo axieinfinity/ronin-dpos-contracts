@@ -1,5 +1,6 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+
 import { slashIndicatorConf, initAddress } from '../../config';
 import { SlashIndicator__factory } from '../../types';
 
@@ -11,7 +12,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const logicContract = await deployments.get('SlashIndicatorLogic');
 
   const data = new SlashIndicator__factory().interface.encodeFunctionData('initialize', [
-    initAddress[network.name]!.governanceAdmin,
     initAddress[network.name]!.validatorContract,
     slashIndicatorConf[network.name]!.misdemeanorThreshold,
     slashIndicatorConf[network.name]!.felonyThreshold,
@@ -21,7 +21,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   ]);
 
   await deploy('SlashIndicatorProxy', {
-    contract: 'TransparentUpgradeableProxy',
+    contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
     args: [logicContract.address, proxyAdmin.address, data],

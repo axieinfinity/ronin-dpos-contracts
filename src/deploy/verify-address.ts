@@ -1,5 +1,6 @@
-import { ethers, network } from 'hardhat';
+import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+
 import { initAddress } from '../config';
 
 const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {

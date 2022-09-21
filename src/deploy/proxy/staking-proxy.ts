@@ -1,5 +1,6 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+
 import { stakingConfig, initAddress } from '../../config';
 import { Staking__factory } from '../../types';
 
@@ -12,13 +13,11 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const data = new Staking__factory().interface.encodeFunctionData('initialize', [
     initAddress[network.name]!.validatorContract,
-    initAddress[network.name]!.governanceAdmin,
-    stakingConfig[network.name]!.maxValidatorCandidate,
     stakingConfig[network.name]!.minValidatorBalance,
   ]);
 
   await deploy('StakingProxy', {
-    contract: 'TransparentUpgradeableProxy',
+    contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
     args: [logicContract.address, proxyAdmin.address, data],

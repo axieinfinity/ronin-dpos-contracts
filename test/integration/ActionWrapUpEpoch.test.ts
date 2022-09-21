@@ -70,12 +70,12 @@ describe('[Integration] Wrap up epoch', () => {
       };
       roninValidatorSetConf[network.name] = {
         maxValidatorNumber: maxValidatorNumber,
+        maxValidatorCandidate: maxValidatorCandidate,
         numberOfBlocksInEpoch: numberOfBlocksInEpoch,
         numberOfEpochsInPeriod: numberOfEpochsInPeriod,
       };
       stakingConfig[network.name] = {
         minValidatorBalance: minValidatorBalance,
-        maxValidatorCandidate: maxValidatorCandidate,
       };
       stakingVestingConfig[network.name] = {
         bonusPerBlock: bonusPerBlock,
@@ -186,6 +186,7 @@ describe('[Integration] Wrap up epoch', () => {
       it('Should validator be able to wrap up the epoch', async () => {
         await mineBatchTxs(async () => {
           await validatorContract.endEpoch();
+          await validatorContract.endPeriod();
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
       });

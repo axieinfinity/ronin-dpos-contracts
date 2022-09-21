@@ -2,9 +2,17 @@
 
 pragma solidity ^0.8.9;
 
-import "./ISlashIndicator.sol";
+import "./ICandidateManager.sol";
 
-interface IRoninValidatorSet {
+interface IRoninValidatorSet is ICandidateManager {
+  /// @dev Emitted when the number of max validator is updated
+  event MaxValidatorNumberUpdated(uint256);
+  /// @dev Emitted when the number of blocks in epoch is updated
+  event NumberOfBlocksInEpochUpdated(uint256);
+  /// @dev Emitted when the number of epochs in period is updated
+  event NumberOfEpochsInPeriodUpdated(uint256);
+  /// @dev Emitted when the validator set is updated
+  event ValidatorSetUpdated(address[]);
   /// @dev Emitted when the reward of the valdiator is deprecated.
   event RewardDeprecated(address coinbaseAddr, uint256 rewardAmount);
   /// @dev Emitted when the block reward is submitted.
@@ -15,16 +23,6 @@ interface IRoninValidatorSet {
   event MiningRewardDistributed(address validatorAddr, uint256 amount);
   /// @dev Emitted when the amount of RON reward is distributed.
   event StakingRewardDistributed(uint256 amount);
-  /// @dev Emitted when the validator set is updated
-  event ValidatorSetUpdated(address[]);
-  /// @dev Emitted when the governance admin is updated
-  event GovernanceAdminUpdated(address);
-  /// @dev Emitted when the number of max validator is updated
-  event MaxValidatorNumberUpdated(uint256);
-  /// @dev Emitted when the number of blocks in epoch is updated
-  event NumberOfBlocksInEpochUpdated(uint256);
-  /// @dev Emitted when the number of epochs in period is updated
-  event NumberOfEpochsInPeriodUpdated(uint256);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR COINBASE                               //
@@ -65,26 +63,6 @@ interface IRoninValidatorSet {
   ///////////////////////////////////////////////////////////////////////////////////////
   //                            FUNCTIONS FOR SLASH INDICATOR                          //
   ///////////////////////////////////////////////////////////////////////////////////////
-
-  /**
-   * @dev Returns the governance admin address.
-   */
-  function governanceAdmin() external view returns (address);
-
-  /**
-   * @dev Returns the slash indicator contract address.
-   */
-  function slashIndicatorContract() external view returns (address);
-
-  /**
-   * @dev Returns the staking contract address.
-   */
-  function stakingContract() external view returns (address);
-
-  /**
-   * @dev Returns the staking vesting contract address.
-   */
-  function stakingVestingContract() external view returns (address);
 
   /**
    * @dev Slashes the validator.
@@ -158,17 +136,6 @@ interface IRoninValidatorSet {
   ///////////////////////////////////////////////////////////////////////////////////////
   //                         FUNCTIONS FOR GOVERNANCE ADMIN                            //
   ///////////////////////////////////////////////////////////////////////////////////////
-
-  /**
-   * @dev Updates the governance admin
-   *
-   * Requirements:
-   * - The method caller is the governance admin
-   *
-   * Emits the event `GovernanceAdminUpdated`
-   *
-   */
-  function setGovernanceAdmin(address _governanceAdmin) external;
 
   /**
    * @dev Updates the max validator number

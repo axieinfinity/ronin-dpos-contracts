@@ -5,14 +5,14 @@ pragma solidity ^0.8.9;
 import "../../interfaces/ISlashIndicator.sol";
 
 contract MockValidatorSetForSlash {
-  ISlashIndicator private __slashingContract;
+  ISlashIndicator private _slashingContract;
 
   function _setSlashingContract() internal view virtual returns (ISlashIndicator) {
-    return __slashingContract;
+    return _slashingContract;
   }
 
   function setSlashingContract(ISlashIndicator _addr) external {
-    __slashingContract = _addr;
+    _slashingContract = _addr;
   }
 
   function slash(
@@ -22,6 +22,6 @@ contract MockValidatorSetForSlash {
   ) external {}
 
   function resetCounters(address[] calldata _addr) external {
-    __slashingContract.resetCounters(_addr);
+    _slashingContract.resetCounters(_addr);
   }
 }

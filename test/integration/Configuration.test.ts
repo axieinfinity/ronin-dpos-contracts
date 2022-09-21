@@ -59,12 +59,12 @@ describe('[Integration] Configuration check', () => {
       };
       roninValidatorSetConf[network.name] = {
         maxValidatorNumber: maxValidatorNumber,
+        maxValidatorCandidate: maxValidatorNumber,
         numberOfBlocksInEpoch: numberOfBlocksInEpoch,
         numberOfEpochsInPeriod: numberOfEpochsInPeriod,
       };
       stakingConfig[network.name] = {
         minValidatorBalance: minValidatorBalance,
-        maxValidatorCandidate: maxValidatorNumber,
       };
       stakingVestingConfig[network.name] = {
         bonusPerBlock: bonusPerBlock,
@@ -85,11 +85,6 @@ describe('[Integration] Configuration check', () => {
   });
 
   describe('ValidatorSetContract configuration', async () => {
-    it('Should config the governanceAdmin correctly', async () => {
-      let _governanceAdmin = await validatorContract.governanceAdmin();
-      expect(_governanceAdmin).to.eq(governanceAdmin.address);
-    });
-
     it('Should the ValidatorSetContract config the StakingContract correctly', async () => {
       let _stakingContract = await validatorContract.stakingContract();
       expect(_stakingContract).to.eq(stakingContract.address);
@@ -105,6 +100,11 @@ describe('[Integration] Configuration check', () => {
       expect(_maxValidatorNumber).to.eq(maxValidatorNumber);
     });
 
+    it('Should config the maxValidatorCandidate correctly', async () => {
+      let _maxValidatorCandidate = await validatorContract.maxValidatorCandidate();
+      expect(_maxValidatorCandidate).to.eq(maxValidatorNumber);
+    });
+
     it('Should config the numberOfBlocksInEpoch correctly', async () => {
       let _numberOfBlocksInEpoch = await validatorContract.numberOfBlocksInEpoch();
       expect(_numberOfBlocksInEpoch).to.eq(numberOfBlocksInEpoch);
@@ -117,11 +117,6 @@ describe('[Integration] Configuration check', () => {
   });
 
   describe('StakingContract configuration', async () => {
-    it('Should config the governanceAdmin correctly', async () => {
-      let _governanceAdmin = await stakingContract.governanceAdmin();
-      expect(_governanceAdmin).to.eq(governanceAdmin.address);
-    });
-
     it('Should the StakingContract config the ValidatorSetContract correctly', async () => {
       let _validatorSetContract = await stakingContract.validatorContract();
       expect(_validatorSetContract).to.eq(validatorContract.address);
@@ -131,19 +126,9 @@ describe('[Integration] Configuration check', () => {
       let _minValidatorBalance = await stakingContract.minValidatorBalance();
       expect(_minValidatorBalance).to.eq(minValidatorBalance);
     });
-
-    it('Should config the maxValidatorCandidate correctly', async () => {
-      let _maxValidatorCandidate = await stakingContract.maxValidatorCandidate();
-      expect(_maxValidatorCandidate).to.eq(maxValidatorNumber);
-    });
   });
 
   describe('SlashIndicatorContract configuration', async () => {
-    it('Should config the governanceAdmin correctly', async () => {
-      let _governanceAdmin = await slashContract.governanceAdmin();
-      expect(_governanceAdmin).to.eq(governanceAdmin.address);
-    });
-
     it('Should the SlashIndicatorContract config the ValidatorSetContract correctly', async () => {
       let _validatorSetContract = await slashContract.validatorContract();
       expect(_validatorSetContract).to.eq(validatorContract.address);

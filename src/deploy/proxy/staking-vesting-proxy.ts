@@ -1,6 +1,7 @@
 import { BigNumber } from 'ethers';
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+
 import { initAddress, stakingVestingConfig } from '../../config';
 import { StakingVesting__factory } from '../../types';
 
@@ -17,7 +18,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   ]);
 
   await deploy('StakingVestingProxy', {
-    contract: 'TransparentUpgradeableProxy',
+    contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
     args: [logicContract.address, proxyAdmin.address, data],

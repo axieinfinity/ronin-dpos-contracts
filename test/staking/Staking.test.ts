@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
 import { ethers, network } from 'hardhat';
 
-import { Staking, Staking__factory, TransparentUpgradeableProxy__factory } from '../../src/types';
+import { Staking, Staking__factory, TransparentUpgradeableProxyV2__factory } from '../../src/types';
 import { MockValidatorSet__factory } from '../../src/types/factories/MockValidatorSet__factory';
 import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
@@ -16,7 +16,6 @@ let deployer: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
 let userA: SignerWithAddress;
 let userB: SignerWithAddress;
-let governanceAdmin: SignerWithAddress;
 let validatorContract: MockValidatorSet;
 let stakingContract: Staking;
 let validatorCandidates: SignerWithAddress[];
@@ -89,10 +88,13 @@ const expectLocalCalculationRight = async () => {
 };
 
 const minValidatorBalance = BigNumber.from(2);
+const maxValidatorCandidate = 50;
+const numberOfEpochsInPeriod = 10;
+const numberOfBlocksInEpoch = 2;
 
 describe('Staking test', () => {
   before(async () => {
-    [deployer, proxyAdmin, userA, userB, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
+    [deployer, proxyAdmin, userA, userB, ...validatorCandidates] = await ethers.getSigners();
     validatorCandidates = validatorCandidates.slice(0, 3);
     const stakingVestingContract = await new StakingVesting__factory(deployer).deploy();
     const nonce = await deployer.getTransactionCount();
@@ -101,21 +103,17 @@ describe('Staking test', () => {
       stakingContractAddr,
       ethers.constants.AddressZero,
       stakingVestingContract.address,
-      10,
-      2
+      maxValidatorCandidate,
+      numberOfEpochsInPeriod,
+      numberOfBlocksInEpoch
     );
     await validatorContract.deployed();
     const logicContract = await new Staking__factory(deployer).deploy();
     await logicContract.deployed();
-    const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+    const proxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       logicContract.address,
       proxyAdmin.address,
-      logicContract.interface.encodeFunctionData('initialize', [
-        validatorContract.address,
-        governanceAdmin.address,
-        50,
-        minValidatorBalance,
-      ])
+      logicContract.interface.encodeFunctionData('initialize', [validatorContract.address, minValidatorBalance])
     );
     await proxyContract.deployed();
     stakingContract = Staking__factory.connect(proxyContract.address, deployer);
@@ -138,9 +136,7 @@ describe('Staking test', () => {
           1, // 0.01%
           { value: minValidatorBalance }
         );
-        await expect(tx)
-          .emit(stakingContract, 'ValidatorProposed')
-          .withArgs(candidate.address, candidate.address, i - 1);
+        await expect(tx).emit(stakingContract, 'ValidatorPoolAdded').withArgs(candidate.address, candidate.address);
       }
 
       poolAddr = validatorCandidates[1];
@@ -150,8 +146,8 @@ describe('Staking test', () => {
 
     it('Should not be able to propose validator again', async () => {
       await expect(
-        stakingContract.connect(poolAddr).proposeValidator(poolAddr.address, poolAddr.address, 0)
-      ).revertedWith('StakingManager: query for existed candidate');
+        stakingContract.connect(poolAddr).proposeValidator(poolAddr.address, poolAddr.address, 0, { value: 10 })
+      ).revertedWith('CandidateManager: query for already existent candidate');
     });
 
     it('Should not be able to stake with empty value', async () => {
@@ -160,14 +156,14 @@ describe('Staking test', () => {
       );
     });
 
-    it('Should not be able to call stake/unstake when the method is not the candidate admin', async () => {
+    it('Should not be able to call stake/unstake when the method is not the pool admin', async () => {
       await expect(stakingContract.stake(poolAddr.address, { value: 1 })).revertedWith(
-        'StakingManager: user is not the candidate admin'
+        'StakingManager: requester must be the pool admin'
       );
 
       // TODO: fix unstake value greater than 0
       await expect(stakingContract.unstake(poolAddr.address, 0)).revertedWith(
-        'StakingManager: user is not the candidate admin'
+        'StakingManager: requester must be the pool admin'
       );
     });
 
@@ -196,12 +192,12 @@ describe('Staking test', () => {
       );
     });
 
-    it('Should not be able to delegate/undelegate when the method caller is the candidate owner', async () => {
+    it('Should not be able to delegate/undelegate when the method caller is the pool admin', async () => {
       await expect(stakingContract.connect(poolAddr).delegate(poolAddr.address, { value: 1 })).revertedWith(
-        'StakingManager: method caller must not be the candidate admin'
+        'StakingManager: delegator must not be the pool admin'
       );
       await expect(stakingContract.connect(poolAddr).undelegate(poolAddr.address, 1)).revertedWith(
-        'StakingManager: method caller must not be the candidate admin'
+        'StakingManager: delegator must not be the pool admin'
       );
     });
 
@@ -223,7 +219,9 @@ describe('Staking test', () => {
   describe('Reward Calculation test', () => {
     before(async () => {
       poolAddr = validatorCandidates[0];
-      await stakingContract.connect(governanceAdmin).setMinValidatorBalance(0);
+      await TransparentUpgradeableProxyV2__factory.connect(stakingContract.address, proxyAdmin).functionDelegateCall(
+        stakingContract.interface.encodeFunctionData('setMinValidatorBalance', [0])
+      );
       await stakingContract.connect(poolAddr).proposeValidator(poolAddr.address, poolAddr.address, 0, { value: 0 });
 
       await network.provider.send('evm_setAutomine', [false]);

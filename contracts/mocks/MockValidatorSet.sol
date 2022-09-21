@@ -5,9 +5,9 @@ pragma solidity ^0.8.9;
 import "../interfaces/ISlashIndicator.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 import "../interfaces/IStaking.sol";
+import "../validator/CandidateManager.sol";
 
-contract MockValidatorSet is IRoninValidatorSet {
-  address public stakingContract;
+contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   address public stakingVestingContract;
   address public slashIndicatorContract;
 
@@ -18,13 +18,15 @@ contract MockValidatorSet is IRoninValidatorSet {
   uint256[] internal _periods;
 
   constructor(
-    address _stakingContract,
+    address __stakingContract,
     address _slashIndicatorContract,
     address _stakingVestingContract,
+    uint256 __maxValidatorCandidate,
     uint256 _numberOfEpochsInPeriod,
     uint256 _numberOfBlocksInEpoch
   ) {
-    stakingContract = _stakingContract;
+    _setStakingContract(__stakingContract);
+    _setMaxValidatorCandidate(__maxValidatorCandidate);
     slashIndicatorContract = _slashIndicatorContract;
     stakingVestingContract = _stakingVestingContract;
     numberOfEpochsInPeriod = _numberOfEpochsInPeriod;
@@ -32,24 +34,24 @@ contract MockValidatorSet is IRoninValidatorSet {
   }
 
   function depositReward() external payable {
-    IStaking(stakingContract).recordReward{ value: msg.value }(msg.sender, msg.value);
+    _stakingContract.recordReward{ value: msg.value }(msg.sender, msg.value);
   }
 
   function settledReward(address[] calldata _validatorList) external {
-    IStaking(stakingContract).settleRewardPools(_validatorList);
+    _stakingContract.settleRewardPools(_validatorList);
   }
 
   function slashMisdemeanor(address _validator) external {
-    IStaking(stakingContract).sinkPendingReward(_validator);
+    _stakingContract.sinkPendingReward(_validator);
   }
 
   function slashFelony(address _validator) external {
-    IStaking(stakingContract).sinkPendingReward(_validator);
-    IStaking(stakingContract).deductStakingAmount(_validator, 1);
+    _stakingContract.sinkPendingReward(_validator);
+    _stakingContract.deductStakingAmount(_validator, 1);
   }
 
   function slashDoubleSign(address _validator) external {
-    IStaking(stakingContract).sinkPendingReward(_validator);
+    _stakingContract.sinkPendingReward(_validator);
   }
 
   function endPeriod() external {
@@ -69,8 +71,6 @@ contract MockValidatorSet is IRoninValidatorSet {
   function wrapUpEpoch() external payable override {}
 
   function getLastUpdatedBlock() external view override returns (uint256) {}
-
-  function governanceAdmin() external view override returns (address) {}
 
   function jailed(address[] memory) external view override returns (bool[] memory) {}
 
@@ -93,8 +93,6 @@ contract MockValidatorSet is IRoninValidatorSet {
   function resetCounters(address[] calldata _validatorAddrs) external {
     ISlashIndicator(slashIndicatorContract).resetCounters(_validatorAddrs);
   }
-
-  function setGovernanceAdmin(address _governanceAdmin) external override {}
 
   function setMaxValidatorNumber(uint256 _maxValidatorNumber) external override {}
 

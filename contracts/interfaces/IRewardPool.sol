@@ -53,7 +53,7 @@ interface IRewardPool {
   /**
    * @dev Returns total rewards from scratch including pending reward and claimable reward except the claimed amount.
    *
-   * @notice Do not use this function to get claimable reward, consider using the method `getClaimableReward` instead.
+   * Note: Do not use this function to get claimable reward, consider using the method `getClaimableReward` instead.
    *
    */
   function getTotalReward(address _poolAddr, address _user) external view returns (uint256);
@@ -77,4 +77,9 @@ interface IRewardPool {
    * @dev Returns the total staking amount of all users.
    */
   function totalBalance(address _poolAddr) external view returns (uint256);
+
+  /**
+   * @dev Returns the total staking amount of all users.
+   */
+  function totalBalances(address[] calldata _poolAddr) external view returns (uint256[] memory);
 }

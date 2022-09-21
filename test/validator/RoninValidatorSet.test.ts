@@ -8,7 +8,7 @@ import {
   MockRoninValidatorSetEpochSetter,
   MockRoninValidatorSetEpochSetter__factory,
   Staking__factory,
-  TransparentUpgradeableProxy__factory,
+  TransparentUpgradeableProxyV2__factory,
   MockSlashIndicator,
   MockSlashIndicator__factory,
   StakingVesting__factory,
@@ -23,7 +23,6 @@ let slashIndicator: MockSlashIndicator;
 let coinbase: SignerWithAddress;
 let treasury: SignerWithAddress;
 let deployer: SignerWithAddress;
-let governanceAdmin: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
@@ -44,7 +43,7 @@ const topUpAmount = BigNumber.from(10000);
 
 describe('Ronin Validator Set test', () => {
   before(async () => {
-    [coinbase, treasury, deployer, proxyAdmin, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
+    [coinbase, treasury, deployer, proxyAdmin, ...validatorCandidates] = await ethers.getSigners();
     validatorCandidates = validatorCandidates.slice(0, 5);
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
@@ -57,7 +56,7 @@ describe('Ronin Validator Set test', () => {
     ///
 
     const stakingVestingLogic = await new StakingVesting__factory(deployer).deploy();
-    const stakingVesting = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+    const stakingVesting = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       stakingVestingLogic.address,
       proxyAdmin.address,
       stakingVestingLogic.interface.encodeFunctionData('initialize', [bonusPerBlock, roninValidatorSetAddr]),
@@ -82,15 +81,15 @@ describe('Ronin Validator Set test', () => {
     const validatorLogicContract = await new MockRoninValidatorSetEpochSetter__factory(deployer).deploy();
     await validatorLogicContract.deployed();
 
-    const validatorProxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+    const validatorProxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       validatorLogicContract.address,
       proxyAdmin.address,
       validatorLogicContract.interface.encodeFunctionData('initialize', [
-        governanceAdmin.address,
         slashIndicator.address,
         stakingContractAddr,
         stakingVesting.address,
         maxValidatorNumber,
+        maxValidatorCandidate,
         numberOfBlocksInEpoch,
         numberOfEpochsInPeriod,
       ])
@@ -105,15 +104,10 @@ describe('Ronin Validator Set test', () => {
     const stakingLogicContract = await new Staking__factory(deployer).deploy();
     await stakingLogicContract.deployed();
 
-    const stakingProxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+    const stakingProxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       stakingLogicContract.address,
       proxyAdmin.address,
-      stakingLogicContract.interface.encodeFunctionData('initialize', [
-        roninValidatorSet.address,
-        governanceAdmin.address,
-        maxValidatorCandidate,
-        minValidatorBalance,
-      ])
+      stakingLogicContract.interface.encodeFunctionData('initialize', [roninValidatorSet.address, minValidatorBalance])
     );
     await stakingProxyContract.deployed();
     stakingContract = Staking__factory.connect(stakingProxyContract.address, deployer);
@@ -193,7 +187,7 @@ describe('Ronin Validator Set test', () => {
           value: minValidatorBalance.add(i),
         });
     }
-    expect((await stakingContract.getValidatorCandidates()).length).eq(validatorCandidates.length + 1);
+    expect((await roninValidatorSet.getValidatorCandidates()).length).eq(validatorCandidates.length + 1);
 
     let tx: ContractTransaction;
     await mineBatchTxs(async () => {
@@ -272,16 +266,17 @@ describe('Ronin Validator Set test', () => {
     }
   });
 
-  it('Should be able to record delegating reward for a successful epoch', async () => {
+  it('Should be able to record delegating reward for a successful period', async () => {
     let tx: ContractTransaction;
     const balance = await treasury.getBalance();
     await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
+      await roninValidatorSet.endPeriod();
       tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
     const balanceDiff = (await treasury.getBalance()).sub(balance);
-    expect(balanceDiff).eq(0);
+    expect(balanceDiff).eq(1);
     expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
       bonusPerBlock.add(99).mul(2)
     );
