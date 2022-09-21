@@ -30,15 +30,20 @@ let governanceAdmin: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
-const slashFelonyAmount = BigNumber.from(1);
-const slashDoubleSignAmount = 1000;
-const maxValidatorNumber = 4;
-const minValidatorBalance = BigNumber.from(100);
-const numberOfBlocksInEpoch = 600;
-const numberOfEpochsInPeriod = 48;
 const felonyJailDuration = 28800 * 2;
 const misdemeanorThreshold = 10;
 const felonyThreshold = 20;
+const slashFelonyAmount = BigNumber.from(1);
+const slashDoubleSignAmount = 1000;
+
+const maxValidatorNumber = 4;
+const maxPrioritizedValidatorNumber = 0;
+const numberOfBlocksInEpoch = 600;
+const numberOfEpochsInPeriod = 48;
+
+const minValidatorBalance = BigNumber.from(100);
+const maxValidatorCandidate = 10;
+
 const bonusPerBlock = BigNumber.from(1);
 const topUpAmount = BigNumber.from(10000);
 
@@ -60,6 +65,7 @@ describe('[Integration] Configuration check', () => {
       roninValidatorSetConf[network.name] = {
         maxValidatorNumber: maxValidatorNumber,
         maxValidatorCandidate: maxValidatorNumber,
+        maxPrioritizedValidatorNumber: maxPrioritizedValidatorNumber,
         numberOfBlocksInEpoch: numberOfBlocksInEpoch,
         numberOfEpochsInPeriod: numberOfEpochsInPeriod,
       };

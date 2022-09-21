@@ -41,6 +41,7 @@ const slashFelonyAmount = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
 
 const maxValidatorNumber = 3;
+const maxPrioritizedValidatorNumber = 0;
 const numberOfBlocksInEpoch = 600;
 const numberOfEpochsInPeriod = 48;
 
@@ -71,6 +72,7 @@ describe('[Integration] Wrap up epoch', () => {
       roninValidatorSetConf[network.name] = {
         maxValidatorNumber: maxValidatorNumber,
         maxValidatorCandidate: maxValidatorCandidate,
+        maxPrioritizedValidatorNumber: maxPrioritizedValidatorNumber,
         numberOfBlocksInEpoch: numberOfBlocksInEpoch,
         numberOfEpochsInPeriod: numberOfEpochsInPeriod,
       };

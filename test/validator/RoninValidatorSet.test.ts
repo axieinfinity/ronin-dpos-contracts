@@ -32,6 +32,7 @@ const slashFelonyAmount = 100;
 const slashDoubleSignAmount = 1000;
 
 const maxValidatorNumber = 4;
+const maxPrioritizedValidatorNumber = 0;
 const numberOfBlocksInEpoch = 600;
 const numberOfEpochsInPeriod = 48;
 
@@ -90,6 +91,7 @@ describe('Ronin Validator Set test', () => {
         stakingVesting.address,
         maxValidatorNumber,
         maxValidatorCandidate,
+        maxPrioritizedValidatorNumber,
         numberOfBlocksInEpoch,
         numberOfEpochsInPeriod,
       ])
