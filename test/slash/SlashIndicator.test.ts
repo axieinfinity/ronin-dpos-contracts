@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers';
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -12,7 +13,6 @@ import {
 import { Address } from 'hardhat-deploy/dist/types';
 import { SlashType } from '../../src/script/slash-indicator';
 import { Network, slashIndicatorConf } from '../../src/config';
-import { BigNumber, Signer } from 'ethers';
 import { expects as SlashExpects } from '../helpers/slash-indicator';
 
 let slashContract: SlashIndicator;
@@ -24,6 +24,8 @@ let vagabond: SignerWithAddress;
 let coinbases: SignerWithAddress[];
 let defaultCoinbase: Address;
 let localIndicators: number[];
+let felonyThreshold: number;
+let misdemeanorThreshold: number;
 
 const resetCoinbase = async () => {
   await network.provider.send('hardhat_setCoinbase', [defaultCoinbase]);
@@ -31,11 +33,11 @@ const resetCoinbase = async () => {
 
 const increaseLocalCounterForValidatorAt = async (_index: number, _increase?: number) => {
   _increase = _increase ?? 1;
-  localIndicators[_index] += _increase;
+  localIndicators[_index] = (localIndicators[_index] + _increase) % felonyThreshold;
 };
 
 const setLocalCounterForValidatorAt = async (_index: number, _value: number) => {
-  localIndicators[_index] = _value;
+  localIndicators[_index] = _value % felonyThreshold;
 };
 
 const resetLocalCounterForValidatorAt = async (_index: number) => {
@@ -51,9 +53,6 @@ const doSlash = async (slasher: SignerWithAddress, slashee: SignerWithAddress) =
 };
 
 describe('Slash indicator test', () => {
-  let felonyThreshold: number;
-  let misdemeanorThreshold: number;
-
   before(async () => {
     [deployer, proxyAdmin, vagabond, ...coinbases] = await ethers.getSigners();
     localIndicators = Array<number>(coinbases.length).fill(0);
@@ -99,7 +98,7 @@ describe('Slash indicator test', () => {
 
       it('Should non-validatorContract cannot call reset counter', async () => {
         await expect(slashContract.connect(vagabond).resetCounters([coinbases[0].address])).to.revertedWith(
-          'SlashIndicator: method caller is not the validator contract'
+          'HasValidatorContract: method caller must be validator contract'
         );
       });
     });
