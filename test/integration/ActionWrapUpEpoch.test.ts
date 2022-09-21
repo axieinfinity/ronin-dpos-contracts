@@ -18,6 +18,7 @@ import {
   stakingConfig,
   initAddress,
   stakingVestingConfig,
+  scheduledMaintenanceConfig,
 } from '../../src/config';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { expects as StakingExpects } from '../helpers/reward-calculation';
@@ -51,6 +52,11 @@ const maxValidatorCandidate = 10;
 const bonusPerBlock = BigNumber.from(1);
 const topUpAmount = BigNumber.from(10000);
 
+const minMaintenanceBlockSize = 100;
+const maxMaintenanceBlockSize = 1000;
+const minOffset = 200;
+const maxSchedules = 50;
+
 describe('[Integration] Wrap up epoch', () => {
   const blockRewardAmount = BigNumber.from(2);
 
@@ -61,6 +67,12 @@ describe('[Integration] Wrap up epoch', () => {
     if (network.name == Network.Hardhat) {
       initAddress[network.name] = {
         governanceAdmin: governanceAdmin.address,
+      };
+      scheduledMaintenanceConfig[network.name] = {
+        minMaintenanceBlockSize,
+        maxMaintenanceBlockSize,
+        minOffset,
+        maxSchedules,
       };
       slashIndicatorConf[network.name] = {
         misdemeanorThreshold: misdemeanorThreshold,
@@ -150,9 +162,15 @@ describe('[Integration] Wrap up epoch', () => {
       for (let i = 0; i < validators.length; i++) {
         await stakingContract
           .connect(validatorCandidates[i])
-          .proposeValidator(validatorCandidates[i].address, validatorCandidates[i].address, 2_00, {
-            value: minValidatorBalance.mul(2).add(i),
-          });
+          .proposeValidator(
+            validatorCandidates[i].address,
+            validatorCandidates[i].address,
+            validatorCandidates[i].address,
+            2_00,
+            {
+              value: minValidatorBalance.mul(2).add(i),
+            }
+          );
       }
 
       await mineBatchTxs(async () => {
@@ -241,7 +259,7 @@ describe('[Integration] Wrap up epoch', () => {
       for (let i = 0; i < validators.length; i++) {
         await stakingContract
           .connect(validators[i])
-          .proposeValidator(validators[i].address, validators[i].address, 2_00, {
+          .proposeValidator(validators[i].address, validators[i].address, validators[i].address, 2_00, {
             value: minValidatorBalance.mul(3).add(i),
           });
       }

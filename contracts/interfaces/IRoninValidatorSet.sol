@@ -133,6 +133,11 @@ interface IRoninValidatorSet is ICandidateManager {
   function getValidators() external view returns (address[] memory);
 
   /**
+   * @dev Returns whether the address is validator or not.
+   */
+  function isValidator(address _addr) external view returns (bool);
+
+  /**
    * @dev Returns whether the epoch ending is at the block number `_block`.
    */
   function epochEndingAt(uint256 _block) external view returns (bool);

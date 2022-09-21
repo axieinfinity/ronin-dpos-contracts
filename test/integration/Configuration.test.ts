@@ -17,6 +17,7 @@ import {
   stakingConfig,
   stakingVestingConfig,
   initAddress,
+  scheduledMaintenanceConfig,
 } from '../../src/config';
 import { BigNumber } from 'ethers';
 
@@ -46,6 +47,10 @@ const maxValidatorCandidate = 10;
 
 const bonusPerBlock = BigNumber.from(1);
 const topUpAmount = BigNumber.from(10000);
+const minMaintenanceBlockSize = 100;
+const maxMaintenanceBlockSize = 1000;
+const minOffset = 200;
+const maxSchedules = 50;
 
 describe('[Integration] Configuration check', () => {
   before(async () => {
@@ -54,6 +59,12 @@ describe('[Integration] Configuration check', () => {
     if (network.name == Network.Hardhat) {
       initAddress[network.name] = {
         governanceAdmin: governanceAdmin.address,
+      };
+      scheduledMaintenanceConfig[network.name] = {
+        minMaintenanceBlockSize,
+        maxMaintenanceBlockSize,
+        minOffset,
+        maxSchedules,
       };
       slashIndicatorConf[network.name] = {
         misdemeanorThreshold: misdemeanorThreshold,
@@ -90,6 +101,7 @@ describe('[Integration] Configuration check', () => {
     validatorContract = RoninValidatorSet__factory.connect(validatorContractDeployment.address, deployer);
   });
 
+  // TODO: add test for staking vesting contract & schedule maintenance contract
   describe('ValidatorSetContract configuration', async () => {
     it('Should the ValidatorSetContract config the StakingContract correctly', async () => {
       let _stakingContract = await validatorContract.stakingContract();

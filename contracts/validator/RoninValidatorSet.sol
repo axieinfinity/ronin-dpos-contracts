@@ -114,7 +114,7 @@ contract RoninValidatorSet is
     address _coinbaseAddr = msg.sender;
     // Deprecates reward for non-validator or slashed validator
     if (
-      !_isValidator(_coinbaseAddr) || _jailed(_coinbaseAddr) || _rewardDeprecated(_coinbaseAddr, periodOf(block.number))
+      !isValidator(_coinbaseAddr) || _jailed(_coinbaseAddr) || _rewardDeprecated(_coinbaseAddr, periodOf(block.number))
     ) {
       emit RewardDeprecated(_coinbaseAddr, _submittedReward);
       return;
@@ -272,6 +272,13 @@ contract RoninValidatorSet is
     for (uint _i = 0; _i < _validatorList.length; _i++) {
       _validatorList[_i] = _validator[_i];
     }
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function isValidator(address _addr) public view returns (bool) {
+    return _validatorMap[_addr];
   }
 
   /**

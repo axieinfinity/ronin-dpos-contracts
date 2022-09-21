@@ -5,8 +5,9 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./interfaces/ISlashIndicator.sol";
 import "./extensions/HasValidatorContract.sol";
+import "./extensions/HasScheduledMaintenanceContract.sol";
 
-contract SlashIndicator is ISlashIndicator, HasValidatorContract, Initializable {
+contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasScheduledMaintenanceContract, Initializable {
   /// @dev Mapping from validator address => unavailability indicator
   mapping(address => uint256) internal _unavailabilityIndicator;
   /// @dev The last block that a validator is slashed
@@ -47,6 +48,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, Initializable 
    */
   function initialize(
     address __validatorContract,
+    address __scheduledMaintenanceContract,
     uint256 _misdemeanorThreshold,
     uint256 _felonyThreshold,
     uint256 _slashFelonyAmount,
@@ -54,6 +56,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, Initializable 
     uint256 _felonyJailBlocks
   ) external initializer {
     _setValidatorContract(__validatorContract);
+    _setScheduledMaintenanceContract(__scheduledMaintenanceContract);
     _setSlashThresholds(_felonyThreshold, _misdemeanorThreshold);
     _setSlashFelonyAmount(_slashFelonyAmount);
     _setSlashDoubleSignAmount(_slashDoubleSignAmount);
@@ -68,7 +71,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, Initializable 
    * @inheritdoc ISlashIndicator
    */
   function slash(address _validatorAddr) external override onlyCoinbase oncePerBlock {
-    if (msg.sender == _validatorAddr) {
+    if (msg.sender == _validatorAddr || _scheduledMaintenanceContract.maintained(_validatorAddr)) {
       return;
     }
 

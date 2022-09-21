@@ -19,6 +19,7 @@ import {
   stakingConfig,
   initAddress,
   stakingVestingConfig,
+  scheduledMaintenanceConfig,
 } from '../../src/config';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { mineBatchTxs } from '../helpers/utils';
@@ -49,6 +50,11 @@ const maxValidatorCandidate = 10;
 const bonusPerBlock = BigNumber.from(1);
 const topUpAmount = BigNumber.from(10000);
 
+const minMaintenanceBlockSize = 100;
+const maxMaintenanceBlockSize = 1000;
+const minOffset = 200;
+const maxSchedules = 50;
+
 describe('[Integration] Submit Block Reward', () => {
   const blockRewardAmount = BigNumber.from(2);
 
@@ -59,6 +65,12 @@ describe('[Integration] Submit Block Reward', () => {
     if (network.name == Network.Hardhat) {
       initAddress[network.name] = {
         governanceAdmin: governanceAdmin.address,
+      };
+      scheduledMaintenanceConfig[network.name] = {
+        minMaintenanceBlockSize,
+        maxMaintenanceBlockSize,
+        minOffset,
+        maxSchedules,
       };
       slashIndicatorConf[network.name] = {
         misdemeanorThreshold: misdemeanorThreshold,
@@ -138,9 +150,11 @@ describe('[Integration] Submit Block Reward', () => {
     before(async () => {
       let initStakingAmount = minValidatorBalance.mul(2);
       validator = validatorCandidates[0];
-      await stakingContract.connect(validator).proposeValidator(validator.address, validator.address, 2_00, {
-        value: initStakingAmount,
-      });
+      await stakingContract
+        .connect(validator)
+        .proposeValidator(validator.address, validator.address, validator.address, 2_00, {
+          value: initStakingAmount,
+        });
       await mineBatchTxs(async () => {
         await validatorContract.connect(coinbase).endEpoch();
         await validatorContract.connect(coinbase).wrapUpEpoch();
@@ -182,9 +196,11 @@ describe('[Integration] Submit Block Reward', () => {
     before(async () => {
       let initStakingAmount = minValidatorBalance.mul(2);
       validator = validatorCandidates[1];
-      await stakingContract.connect(validator).proposeValidator(validator.address, validator.address, 2_00, {
-        value: initStakingAmount,
-      });
+      await stakingContract
+        .connect(validator)
+        .proposeValidator(validator.address, validator.address, validator.address, 2_00, {
+          value: initStakingAmount,
+        });
 
       await mineBatchTxs(async () => {
         await validatorContract.connect(coinbase).endEpoch();

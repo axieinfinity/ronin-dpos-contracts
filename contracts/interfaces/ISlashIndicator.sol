@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.9;
 
-import "../interfaces/IRoninValidatorSet.sol";
-
 interface ISlashIndicator {
   /// @dev Emitted when the validator is slashed
   event ValidatorSlashed(address indexed validator, SlashType slashType);

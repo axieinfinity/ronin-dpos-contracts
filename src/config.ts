@@ -15,11 +15,23 @@ export const defaultAddress = '0x0000000000000000000000000000000000000000';
 export interface InitAddr {
   [network: LiteralNetwork]: {
     governanceAdmin: string;
-    validatorContract?: string;
-    stakingContract?: string;
+    scheduledMaintenanceContract?: string;
     stakingVestingContract?: string;
-    slashIndicator?: string;
+    slashIndicatorContract?: string;
+    stakingContract?: string;
+    validatorContract?: string;
   };
+}
+
+export interface ScheduledMaintenanceConfig {
+  [network: LiteralNetwork]:
+    | {
+        minMaintenanceBlockSize: BigNumberish;
+        maxMaintenanceBlockSize: BigNumberish;
+        minOffset: BigNumberish;
+        maxSchedules: BigNumberish;
+      }
+    | undefined;
 }
 
 export interface StakingConf {
@@ -67,6 +79,19 @@ export const initAddress: InitAddr = {
   [Network.Devnet]: {
     governanceAdmin: '0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1',
   },
+};
+
+// TODO: update config for testnet & mainnet
+export const scheduledMaintenanceConfig: ScheduledMaintenanceConfig = {
+  [Network.Hardhat]: undefined,
+  [Network.Devnet]: {
+    minMaintenanceBlockSize: 600, // 600 blocks
+    maxMaintenanceBlockSize: 28800, // ~1 day
+    minOffset: 28800, // requests before maintaining at least ~1 day
+    maxSchedules: 3, // only 3 schedules are happening|in the futures
+  },
+  [Network.Testnet]: undefined,
+  [Network.Mainnet]: undefined,
 };
 
 // TODO: update config for testnet & mainnet

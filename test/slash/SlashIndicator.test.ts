@@ -9,6 +9,8 @@ import {
   MockValidatorSetForSlash,
   MockValidatorSetForSlash__factory,
   TransparentUpgradeableProxyV2__factory,
+  ScheduledMaintenance,
+  ScheduledMaintenance__factory,
 } from '../../src/types';
 import { Address } from 'hardhat-deploy/dist/types';
 import { SlashType } from '../../src/script/slash-indicator';
@@ -16,6 +18,7 @@ import { Network, slashIndicatorConf } from '../../src/config';
 import { expects as SlashExpects } from '../helpers/slash-indicator';
 
 let slashContract: SlashIndicator;
+let scheduledMaintenanceContract: ScheduledMaintenance;
 
 let deployer: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
@@ -69,12 +72,14 @@ describe('Slash indicator test', () => {
     }
 
     mockValidatorsContract = await new MockValidatorSetForSlash__factory(deployer).deploy();
+    scheduledMaintenanceContract = await new ScheduledMaintenance__factory(deployer).deploy();
     const logicContract = await new SlashIndicator__factory(deployer).deploy();
     const proxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       logicContract.address,
       proxyAdmin.address,
       logicContract.interface.encodeFunctionData('initialize', [
         mockValidatorsContract.address,
+        scheduledMaintenanceContract.address,
         slashIndicatorConf[network.name]!.misdemeanorThreshold,
         slashIndicatorConf[network.name]!.felonyThreshold,
         slashIndicatorConf[network.name]!.slashFelonyAmount,

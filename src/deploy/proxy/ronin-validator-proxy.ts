@@ -12,7 +12,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const logicContract = await deployments.get('RoninValidatorSetLogic');
 
   const data = new RoninValidatorSet__factory().interface.encodeFunctionData('initialize', [
-    initAddress[network.name]!.slashIndicator,
+    initAddress[network.name]!.slashIndicatorContract,
     initAddress[network.name]!.stakingContract,
     initAddress[network.name]!.stakingVestingContract,
     roninValidatorSetConf[network.name]!.maxValidatorNumber,
@@ -31,12 +31,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['RoninValidatorSetProxy'];
-deploy.dependencies = [
-  'ProxyAdmin',
-  'RoninValidatorSetLogic',
-  'SlashIndicatorProxy',
-  'StakingProxy',
-  'StakingVestingProxy',
-];
+deploy.dependencies = ['ProxyAdmin', 'RoninValidatorSetLogic', 'StakingProxy'];
 
 export default deploy;

@@ -112,14 +112,18 @@ interface IStaking is IRewardPool {
    * @dev Proposes a candidate to become a validator.
    *
    * Requirements:
-   * - The candidate admin is able to receive RON.
+   * - The method caller is able to receive RON.
    * - The treasury is able to receive RON.
    * - The amount is larger than or equal to the minimum validator balance `minValidatorBalance()`.
    *
    * Emits the event `ValidatorPoolAdded`.
    *
+   * @param _candidateAdmin the candidate admin will be stored in the validator contract, used for calling function that affects
+   * to its candidate. IE: scheduling maintenance.
+   *
    */
   function proposeValidator(
+    address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
     uint256 _commissionRate

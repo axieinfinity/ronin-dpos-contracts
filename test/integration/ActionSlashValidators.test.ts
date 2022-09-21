@@ -19,6 +19,7 @@ import {
   stakingConfig,
   stakingVestingConfig,
   initAddress,
+  scheduledMaintenanceConfig,
 } from '../../src/config';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
@@ -51,6 +52,11 @@ const maxValidatorCandidate = 10;
 const bonusPerBlock = BigNumber.from(1);
 const topUpAmount = BigNumber.from(10000);
 
+const minMaintenanceBlockSize = 100;
+const maxMaintenanceBlockSize = 1000;
+const minOffset = 200;
+const maxSchedules = 50;
+
 describe('[Integration] Slash validators', () => {
   before(async () => {
     [deployer, coinbase, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
@@ -59,6 +65,12 @@ describe('[Integration] Slash validators', () => {
     if (network.name == Network.Hardhat) {
       initAddress[network.name] = {
         governanceAdmin: governanceAdmin.address,
+      };
+      scheduledMaintenanceConfig[network.name] = {
+        minMaintenanceBlockSize,
+        maxMaintenanceBlockSize,
+        minOffset,
+        maxSchedules,
       };
       slashIndicatorConf[network.name] = {
         misdemeanorThreshold: misdemeanorThreshold,
@@ -167,9 +179,11 @@ describe('[Integration] Slash validators', () => {
         slasheeIdx = 2;
         slashee = validatorCandidates[slasheeIdx];
         slasheeInitStakingAmount = minValidatorBalance.add(slashFelonyAmount.mul(10));
-        await stakingContract.connect(slashee).proposeValidator(slashee.address, slashee.address, 2_00, {
-          value: slasheeInitStakingAmount,
-        });
+        await stakingContract
+          .connect(slashee)
+          .proposeValidator(slashee.address, slashee.address, slashee.address, 2_00, {
+            value: slasheeInitStakingAmount,
+          });
 
         expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
 
@@ -275,9 +289,11 @@ describe('[Integration] Slash validators', () => {
         slashee = validatorCandidates[slasheeIdx];
         slasheeInitStakingAmount = minValidatorBalance;
 
-        await stakingContract.connect(slashee).proposeValidator(slashee.address, slashee.address, 2_00, {
-          value: slasheeInitStakingAmount,
-        });
+        await stakingContract
+          .connect(slashee)
+          .proposeValidator(slashee.address, slashee.address, slashee.address, 2_00, {
+            value: slasheeInitStakingAmount,
+          });
 
         expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
 
