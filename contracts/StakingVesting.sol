@@ -45,13 +45,16 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
   function requestBlockBonus() external onlyValidatorContract returns (uint256 _amount) {
     uint256 _block = block.number;
 
-    require(_block > lastBonusSentBlock, "Staking: bonus already sent");
+    require(_block > lastBonusSentBlock, "StakingVesting: bonus already sent");
     lastBonusSentBlock = _block;
     _amount = blockBonus(_block);
 
     if (_amount > 0) {
       address payable _validatorContractAddr = payable(validatorContract());
-      require(_sendRON(_validatorContractAddr, _amount), "Staking: could not transfer RON to validator contract");
+      require(
+        _sendRON(_validatorContractAddr, _amount),
+        "StakingVesting: could not transfer RON to validator contract"
+      );
       emit BlockBonusTransferred(_block, _validatorContractAddr, _amount);
     }
   }

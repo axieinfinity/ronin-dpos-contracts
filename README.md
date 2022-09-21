@@ -27,11 +27,11 @@ The ones on top `N` users with the highest amount of staked coins will become va
 
 **Proposing validator**
 
-| Params                   | Explanation                                                                                  |
-| ------------------------ | -------------------------------------------------------------------------------------------- |
-| `uint256 commissionRate` | The rate to share for the validator. Values in range [0; 100_00] stands for [0; 100%]        |
-| `address consensusAddr`  | Address to produce block                                                                     |
-| `address treasuryAddr`   | Address to receive block reward                                                              |
+| Params                   | Explanation                                                                                     |
+| ------------------------ | ----------------------------------------------------------------------------------------------- |
+| `uint256 commissionRate` | The rate to share for the validator. Values in range [0; 100_00] stands for [0; 100%]           |
+| `address consensusAddr`  | Address to produce block                                                                        |
+| `address treasuryAddr`   | Address to receive block reward                                                                 |
 | `msg.value`              | The amount of RON to stake, require to be larger than the minimum RON threshold to be validator |
 
 The validator candidates can deposit or withdraw their funds afterwards as long as the staking balance must be greater than the minimum RON threshold.
@@ -49,7 +49,7 @@ The delegator can choose the validator to stake and receive the commission rewar
 | `delegate(consensusAddr)`                                 | Stakes `msg.value` amount of RON for a validator `consensusAddr`                   |
 | `undelegate(consensusAddr, amount)`                       | Unstakes from a validator                                                          |
 | `redelegate(consensusAddrSrc, consensusAddrDst, amount)`  | Unstakes `amount` RON from the `consensusAddrSrc` and stake for `consensusAddrDst` |
-| `getRewards()`                                            | Returns the pending rewards and the claimable rewards                              |
+| `getRewards(consensusAddrList)`                           | Returns the pending rewards and the claimable rewards                              |
 | `claimRewards(consensusAddrList)`                         | Claims all the reward from the validators                                          |
 | `delegatePendingReward(consensusAddrList, consensusAddr)` | Claims all the reward and delegates them to the consensus address                  |
 
@@ -120,7 +120,7 @@ $ yarn test
 $ cp .env.example .env && vim .env
 ```
 
-- Update the contract configuration in [`config.ts`](./src/config.ts#L55-L96) file
+- Update the contract configuration in [`config.ts`](./src/config.ts) file
 
 - Deploy the contracts:
 

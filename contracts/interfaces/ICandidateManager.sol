@@ -9,7 +9,7 @@ interface ICandidateManager {
     // Address that receives mining reward of the validator
     address payable treasuryAddr;
     // The percentile of reward that validators can be received, the rest goes to the delegators.
-    /// Values in range [0; 100_00] stands for 0-100%
+    // Values in range [0; 100_00] stands for 0-100%
     uint256 commissionRate;
     // Extra data
     bytes extraData;

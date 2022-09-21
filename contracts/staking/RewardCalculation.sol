@@ -6,7 +6,7 @@ import "../interfaces/IRewardPool.sol";
 
 /**
  * @title RewardCalculation contract
- * @dev This contract mainly contains to calculate reward for staking contract.
+ * @dev This contract mainly contains the methods to calculate reward for staking contract.
  */
 abstract contract RewardCalculation is IRewardPool {
   /// @dev Mapping from the pool address => user address => settled reward info of the user
