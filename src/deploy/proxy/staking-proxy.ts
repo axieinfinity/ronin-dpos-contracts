@@ -17,7 +17,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   ]);
 
   await deploy('StakingProxy', {
-    contract: 'TransparentUpgradeableProxy',
+    contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
     args: [logicContract.address, proxyAdmin.address, data],

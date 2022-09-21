@@ -8,7 +8,7 @@ import {
   MockRoninValidatorSetEpochSetter,
   MockRoninValidatorSetEpochSetter__factory,
   Staking__factory,
-  TransparentUpgradeableProxy__factory,
+  TransparentUpgradeableProxyV2__factory,
   MockSlashIndicator,
   MockSlashIndicator__factory,
   StakingVesting__factory,
@@ -57,7 +57,7 @@ describe('Ronin Validator Set test', () => {
     ///
 
     const stakingVestingLogic = await new StakingVesting__factory(deployer).deploy();
-    const stakingVesting = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+    const stakingVesting = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       stakingVestingLogic.address,
       proxyAdmin.address,
       stakingVestingLogic.interface.encodeFunctionData('initialize', [bonusPerBlock, roninValidatorSetAddr]),
@@ -82,7 +82,7 @@ describe('Ronin Validator Set test', () => {
     const validatorLogicContract = await new MockRoninValidatorSetEpochSetter__factory(deployer).deploy();
     await validatorLogicContract.deployed();
 
-    const validatorProxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+    const validatorProxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       validatorLogicContract.address,
       proxyAdmin.address,
       validatorLogicContract.interface.encodeFunctionData('initialize', [
@@ -105,7 +105,7 @@ describe('Ronin Validator Set test', () => {
     const stakingLogicContract = await new Staking__factory(deployer).deploy();
     await stakingLogicContract.deployed();
 
-    const stakingProxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+    const stakingProxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       stakingLogicContract.address,
       proxyAdmin.address,
       stakingLogicContract.interface.encodeFunctionData('initialize', [roninValidatorSet.address, minValidatorBalance])

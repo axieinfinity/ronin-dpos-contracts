@@ -41,7 +41,7 @@ contract CandidateManager is ICandidateManager, HasStakingContract {
     uint256 _commissionRate
   ) external override onlyStakingContract {
     uint256 _length = _candidates.length;
-    require(_length < maxValidatorCandidate(), "StakingManager: exceeds maximum number of candidates");
+    require(_length < maxValidatorCandidate(), "CandidateManager: exceeds maximum number of candidates");
     require(!isValidatorCandidate(_consensusAddr), "CandidateManager: query for already existent candidate");
 
     _candidateIndex[_consensusAddr] = ~_length;

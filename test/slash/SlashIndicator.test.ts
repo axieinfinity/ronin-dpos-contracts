@@ -8,7 +8,7 @@ import {
   SlashIndicator__factory,
   MockValidatorSetForSlash,
   MockValidatorSetForSlash__factory,
-  TransparentUpgradeableProxy__factory,
+  TransparentUpgradeableProxyV2__factory,
 } from '../../src/types';
 import { Address } from 'hardhat-deploy/dist/types';
 import { SlashType } from '../../src/script/slash-indicator';
@@ -70,7 +70,7 @@ describe('Slash indicator test', () => {
 
     mockValidatorsContract = await new MockValidatorSetForSlash__factory(deployer).deploy();
     const logicContract = await new SlashIndicator__factory(deployer).deploy();
-    const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
+    const proxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       logicContract.address,
       proxyAdmin.address,
       logicContract.interface.encodeFunctionData('initialize', [

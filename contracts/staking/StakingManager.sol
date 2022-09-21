@@ -24,14 +24,14 @@ abstract contract StakingManager is
   }
 
   modifier notPoolAdmin(PoolDetail storage _pool, address _delegator) {
-    require(_pool.admin != _delegator, "StakingManager: delegator must not be the candidate admin");
+    require(_pool.admin != _delegator, "StakingManager: delegator must not be the pool admin");
     _;
   }
 
   modifier onlyValidatorCandidate(address _poolAddr) {
     require(
       _validatorContract.isValidatorCandidate(_poolAddr),
-      "StakingManager: method caller must not be the candidate admin"
+      "StakingManager: method caller must not be the pool admin"
     );
     _;
   }
@@ -141,7 +141,7 @@ abstract contract StakingManager is
     uint256 _commissionRate,
     uint256 _amount
   ) internal {
-    require(_sendRON(_candidateAdmin, 0), "StakingManager: candidate admin cannot receive RON");
+    require(_sendRON(_candidateAdmin, 0), "StakingManager: pool admin cannot receive RON");
     require(_sendRON(_treasuryAddr, 0), "StakingManager: treasury cannot receive RON");
     require(_amount >= minValidatorBalance(), "StakingManager: insufficient amount");
 
@@ -162,7 +162,7 @@ abstract contract StakingManager is
     address _requester,
     uint256 _amount
   ) internal {
-    require(_pool.admin == _requester, "StakingManager: requester is not the candidate admin");
+    require(_pool.admin == _requester, "StakingManager: requester must be the pool admin");
     _pool.stakedAmount += _amount;
     emit Staked(_pool.addr, _amount);
 
@@ -173,7 +173,7 @@ abstract contract StakingManager is
    * @dev Withdraws the staked amount `_amount` for the validator candidate.
    *
    * Requirements:
-   * - The address `_requester` must be the candidate admin.
+   * - The address `_requester` must be the pool admin.
    * - The remain balance must be greater than the minimum validator candidate thresold `minValidatorBalance()`.
    *
    * Emits the `Unstaked` event.
@@ -184,7 +184,7 @@ abstract contract StakingManager is
     address _requester,
     uint256 _amount
   ) internal {
-    require(_pool.admin == _requester, "StakingManager: requester is not the pool admin");
+    require(_pool.admin == _requester, "StakingManager: requester must be the pool admin");
     require(_amount <= _pool.stakedAmount, "StakingManager: insufficient staked amount");
 
     _pool.stakedAmount -= _amount;
