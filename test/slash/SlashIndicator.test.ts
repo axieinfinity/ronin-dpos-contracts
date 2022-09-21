@@ -21,7 +21,6 @@ let deployer: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
 let mockValidatorsContract: MockValidatorSetForSlash;
 let vagabond: SignerWithAddress;
-let governanceAdmin: SignerWithAddress;
 let coinbases: SignerWithAddress[];
 let defaultCoinbase: Address;
 let localIndicators: number[];
@@ -56,7 +55,7 @@ describe('Slash indicator test', () => {
   let misdemeanorThreshold: number;
 
   before(async () => {
-    [deployer, proxyAdmin, vagabond, governanceAdmin, ...coinbases] = await ethers.getSigners();
+    [deployer, proxyAdmin, vagabond, ...coinbases] = await ethers.getSigners();
     localIndicators = Array<number>(coinbases.length).fill(0);
     defaultCoinbase = await network.provider.send('eth_coinbase');
 
@@ -76,7 +75,6 @@ describe('Slash indicator test', () => {
       logicContract.address,
       proxyAdmin.address,
       logicContract.interface.encodeFunctionData('initialize', [
-        governanceAdmin.address,
         mockValidatorsContract.address,
         slashIndicatorConf[network.name]!.misdemeanorThreshold,
         slashIndicatorConf[network.name]!.felonyThreshold,

@@ -86,11 +86,11 @@ describe('Ronin Validator Set test', () => {
       validatorLogicContract.address,
       proxyAdmin.address,
       validatorLogicContract.interface.encodeFunctionData('initialize', [
-        governanceAdmin.address,
         slashIndicator.address,
         stakingContractAddr,
         stakingVesting.address,
         maxValidatorNumber,
+        maxValidatorCandidate,
         numberOfBlocksInEpoch,
         numberOfEpochsInPeriod,
       ])
@@ -108,12 +108,7 @@ describe('Ronin Validator Set test', () => {
     const stakingProxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
       stakingLogicContract.address,
       proxyAdmin.address,
-      stakingLogicContract.interface.encodeFunctionData('initialize', [
-        roninValidatorSet.address,
-        governanceAdmin.address,
-        maxValidatorCandidate,
-        minValidatorBalance,
-      ])
+      stakingLogicContract.interface.encodeFunctionData('initialize', [roninValidatorSet.address, minValidatorBalance])
     );
     await stakingProxyContract.deployed();
     stakingContract = Staking__factory.connect(stakingProxyContract.address, deployer);
@@ -193,7 +188,7 @@ describe('Ronin Validator Set test', () => {
           value: minValidatorBalance.add(i),
         });
     }
-    expect((await stakingContract.getValidatorCandidates()).length).eq(validatorCandidates.length + 1);
+    expect((await roninValidatorSet.getValidatorCandidates()).length).eq(validatorCandidates.length + 1);
 
     let tx: ContractTransaction;
     await mineBatchTxs(async () => {

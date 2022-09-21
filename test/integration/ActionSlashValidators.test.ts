@@ -68,12 +68,12 @@ describe('[Integration] Slash validators', () => {
       };
       roninValidatorSetConf[network.name] = {
         maxValidatorNumber: maxValidatorNumber,
+        maxValidatorCandidate: maxValidatorCandidate,
         numberOfBlocksInEpoch: numberOfBlocksInEpoch,
         numberOfEpochsInPeriod: numberOfEpochsInPeriod,
       };
       stakingConfig[network.name] = {
         minValidatorBalance: minValidatorBalance,
-        maxValidatorCandidate: maxValidatorCandidate,
       };
       stakingVestingConfig[network.name] = {
         bonusPerBlock: bonusPerBlock,

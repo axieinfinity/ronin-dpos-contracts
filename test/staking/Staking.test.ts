@@ -16,7 +16,6 @@ let deployer: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
 let userA: SignerWithAddress;
 let userB: SignerWithAddress;
-let governanceAdmin: SignerWithAddress;
 let validatorContract: MockValidatorSet;
 let stakingContract: Staking;
 let validatorCandidates: SignerWithAddress[];
@@ -92,7 +91,7 @@ const minValidatorBalance = BigNumber.from(2);
 
 describe('Staking test', () => {
   before(async () => {
-    [deployer, proxyAdmin, userA, userB, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
+    [deployer, proxyAdmin, userA, userB, ...validatorCandidates] = await ethers.getSigners();
     validatorCandidates = validatorCandidates.slice(0, 3);
     const stakingVestingContract = await new StakingVesting__factory(deployer).deploy();
     const nonce = await deployer.getTransactionCount();
@@ -110,12 +109,7 @@ describe('Staking test', () => {
     const proxyContract = await new TransparentUpgradeableProxy__factory(deployer).deploy(
       logicContract.address,
       proxyAdmin.address,
-      logicContract.interface.encodeFunctionData('initialize', [
-        validatorContract.address,
-        governanceAdmin.address,
-        50,
-        minValidatorBalance,
-      ])
+      logicContract.interface.encodeFunctionData('initialize', [validatorContract.address, minValidatorBalance])
     );
     await proxyContract.deployed();
     stakingContract = Staking__factory.connect(proxyContract.address, deployer);
@@ -223,7 +217,7 @@ describe('Staking test', () => {
   describe('Reward Calculation test', () => {
     before(async () => {
       poolAddr = validatorCandidates[0];
-      await stakingContract.connect(governanceAdmin).setMinValidatorBalance(0);
+      await stakingContract.connect(proxyAdmin).setMinValidatorBalance(0);
       await stakingContract.connect(poolAddr).proposeValidator(poolAddr.address, poolAddr.address, 0, { value: 0 });
 
       await network.provider.send('evm_setAutomine', [false]);

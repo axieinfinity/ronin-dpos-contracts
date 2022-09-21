@@ -25,7 +25,6 @@ export interface InitAddr {
 export interface StakingConf {
   [network: LiteralNetwork]:
     | {
-        maxValidatorCandidate: BigNumberish;
         minValidatorBalance: BigNumberish;
       }
     | undefined;
@@ -56,6 +55,7 @@ export interface RoninValidatorSetConf {
   [network: LiteralNetwork]:
     | {
         maxValidatorNumber: BigNumberish;
+        maxValidatorCandidate: BigNumberish;
         numberOfBlocksInEpoch: BigNumberish;
         numberOfEpochsInPeriod: BigNumberish;
       }
@@ -73,7 +73,6 @@ export const stakingConfig: StakingConf = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
     minValidatorBalance: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5)), // 100.000 RON
-    maxValidatorCandidate: 100,
   },
   [Network.Testnet]: undefined,
   [Network.Mainnet]: undefined,
@@ -109,6 +108,7 @@ export const roninValidatorSetConf: RoninValidatorSetConf = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
     maxValidatorNumber: 21,
+    maxValidatorCandidate: 100,
     numberOfBlocksInEpoch: 600,
     numberOfEpochsInPeriod: 48, // 1 day
   },

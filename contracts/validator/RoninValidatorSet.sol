@@ -13,7 +13,7 @@ import "../libraries/Sorting.sol";
 import "../libraries/Math.sol";
 import "./CandidateManager.sol";
 
-abstract contract RoninValidatorSet is
+contract RoninValidatorSet is
   IRoninValidatorSet,
   RONTransferHelper,
   HasStakingContract,
@@ -78,6 +78,7 @@ abstract contract RoninValidatorSet is
     address __stakingContract,
     address __stakingVestingContract,
     uint256 __maxValidatorNumber,
+    uint256 __maxValidatorCandidate,
     uint256 __numberOfBlocksInEpoch,
     uint256 __numberOfEpochsInPeriod
   ) external initializer {
@@ -85,6 +86,7 @@ abstract contract RoninValidatorSet is
     _setStakingContract(__stakingContract);
     _setStakingVestingContract(__stakingVestingContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
+    _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
     _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
   }
@@ -115,7 +117,7 @@ abstract contract RoninValidatorSet is
     uint256 _reward = _submittedReward + _bonusReward;
 
     IStaking _staking = IStaking(_stakingContract);
-    uint256 _rate = 0; // _staking.commissionRateOf(_coinbaseAddr);
+    uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
     uint256 _miningAmount = (_rate * _reward) / 100_00;
     uint256 _delegatingAmount = _reward - _miningAmount;
 
@@ -153,7 +155,7 @@ abstract contract RoninValidatorSet is
         uint256 _miningAmount = _miningReward[_validatorAddr];
         delete _miningReward[_validatorAddr];
         if (_miningAmount > 0) {
-          address payable _treasury; // = payable(_staking.treasuryAddressOf(_validatorAddr));
+          address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
           require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
           emit MiningRewardDistributed(_validatorAddr, _miningAmount);
         }

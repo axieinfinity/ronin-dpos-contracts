@@ -1,5 +1,6 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+
 import { roninValidatorSetConf, initAddress } from '../../config';
 import { RoninValidatorSet__factory } from '../../types';
 
@@ -11,11 +12,11 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const logicContract = await deployments.get('RoninValidatorSetLogic');
 
   const data = new RoninValidatorSet__factory().interface.encodeFunctionData('initialize', [
-    initAddress[network.name]!.governanceAdmin,
     initAddress[network.name]!.slashIndicator,
     initAddress[network.name]!.stakingContract,
     initAddress[network.name]!.stakingVestingContract,
     roninValidatorSetConf[network.name]!.maxValidatorNumber,
+    roninValidatorSetConf[network.name]!.maxValidatorCandidate,
     roninValidatorSetConf[network.name]!.numberOfBlocksInEpoch,
     roninValidatorSetConf[network.name]!.numberOfEpochsInPeriod,
   ]);

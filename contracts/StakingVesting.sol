@@ -17,10 +17,6 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
     _disableInitializers();
   }
 
-  receive() external payable onlyValidatorContract {}
-
-  fallback() external payable onlyValidatorContract {}
-
   /**
    * @dev Initializes the contract storage.
    */
