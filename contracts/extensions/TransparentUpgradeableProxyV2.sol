@@ -16,7 +16,7 @@ contract TransparentUpgradeableProxyV2 is TransparentUpgradeableProxy {
    * Requirements:
    * - Only the admin can call this function.
    *
-   * @notice The proxy admin is not allowed to interact with the proxy logic through the fallback function to avoid
+   * Note: The proxy admin is not allowed to interact with the proxy logic through the fallback function to avoid
    * triggering some unexpected logic. This is to allow the administrator to explicitly call the proxy, please consider
    * reviewing the encoded data `_data` and the method which is called before using this.
    *

@@ -58,7 +58,8 @@ interface ICandidateManager {
   ) external;
 
   /**
-   * @dev Syncs the validator candidate list. Returns the total balance list of the new candidate list.
+   * @dev Syncs the validator candidate list (removes the ones who have insufficient minimum candidate balance).
+   * Returns the total balance list of the new candidate list.
    *
    * Emits the event `ValidatorCandidateRemoved` when a candidate is removed.
    *

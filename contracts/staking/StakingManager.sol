@@ -130,8 +130,9 @@ abstract contract StakingManager is
    * @dev Proposes a candidate to become a valdiator.
    *
    * Requirements:
-   * - The validator length is not exceeded the total validator threshold `_maxValidatorCandidate`.
-   * - The amount is larger than or equal to the minimum validator balance `_minValidatorBalance`.
+   * - The candidate admin is able to receive RON.
+   * - The treasury is able to receive RON.
+   * - The amount is larger than or equal to the minimum validator balance `minValidatorBalance()`.
    *
    */
   function _proposeValidator(

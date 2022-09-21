@@ -109,13 +109,14 @@ interface IStaking is IRewardPool {
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev Proposes a candidate to become a valdiator.
+   * @dev Proposes a candidate to become a validator.
    *
    * Requirements:
-   * - The validator length is not exceeded the total validator threshold `maxValidatorCandidate()`.
+   * - The candidate admin is able to receive RON.
+   * - The treasury is able to receive RON.
    * - The amount is larger than or equal to the minimum validator balance `minValidatorBalance()`.
    *
-   * Emits the `Staked` event and the `Delegated` event.
+   * Emits the event `ValidatorPoolAdded`.
    *
    */
   function proposeValidator(
