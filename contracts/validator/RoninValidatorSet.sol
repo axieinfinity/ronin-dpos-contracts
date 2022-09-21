@@ -472,11 +472,9 @@ contract RoninValidatorSet is
       _waitingCandidates[_waitingCounter++] = _candidates[_i];
     }
 
-    uint _unfilledSlotLeft = _newValidatorCount - _prioritySlotCounter;
-    uint _unfilledSlotCounter = _prioritySlotCounter;
-
-    for (uint _i = 0; _i < _unfilledSlotLeft; _i++) {
-      _candidates[_unfilledSlotCounter++] = _waitingCandidates[_i];
+    _waitingCounter = 0;
+    for (uint _i = _prioritySlotCounter; _i < _newValidatorCount; _i++) {
+      _candidates[_i] = _waitingCandidates[_waitingCounter++];
     }
   }
 

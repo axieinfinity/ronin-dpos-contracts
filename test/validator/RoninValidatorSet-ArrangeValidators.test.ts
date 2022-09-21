@@ -46,6 +46,9 @@ const setPriorityStatus = async (addrs: Address[], statuses: boolean[]) => {
 };
 
 const setPriorityStatusForMany = async (validators: SignerWithAddress[], status: boolean) => {
+  if (validators.length == 0) {
+    return;
+  }
   let addrs = validators.map((_) => _.address);
   let statuses = new Array(validators.length).fill(status);
   await setPriorityStatus(addrs, statuses);
