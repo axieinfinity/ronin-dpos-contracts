@@ -221,7 +221,7 @@ abstract contract StakingManager is
     address _consensusAddrSrc,
     address _consensusAddrDst,
     uint256 _amount
-  ) external nonReentrant {
+  ) external nonReentrant onlyValidatorCandidate(_consensusAddrDst) {
     address _delegator = msg.sender;
     _undelegate(_stakingPool[_consensusAddrSrc], _delegator, _amount);
     _delegate(_stakingPool[_consensusAddrDst], _delegator, _amount);
@@ -261,6 +261,7 @@ abstract contract StakingManager is
     external
     override
     nonReentrant
+    onlyValidatorCandidate(_consensusAddrDst)
     returns (uint256 _amount)
   {
     return _delegateRewards(msg.sender, _consensusAddrList, _consensusAddrDst);
