@@ -88,6 +88,9 @@ const expectLocalCalculationRight = async () => {
 };
 
 const minValidatorBalance = BigNumber.from(2);
+const maxValidatorCandidate = 50;
+const numberOfEpochsInPeriod = 10;
+const numberOfBlocksInEpoch = 2;
 
 describe('Staking test', () => {
   before(async () => {
@@ -100,9 +103,9 @@ describe('Staking test', () => {
       stakingContractAddr,
       ethers.constants.AddressZero,
       stakingVestingContract.address,
-      50, // _maxValidatorCandidate
-      10, // _numberOfEpochsInPeriod
-      2 // _numberOfBlocksInEpoch
+      maxValidatorCandidate,
+      numberOfEpochsInPeriod,
+      numberOfBlocksInEpoch
     );
     await validatorContract.deployed();
     const logicContract = await new Staking__factory(deployer).deploy();
