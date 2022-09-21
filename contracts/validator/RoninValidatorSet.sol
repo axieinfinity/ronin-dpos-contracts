@@ -317,6 +317,10 @@ contract RoninValidatorSet is
     return _maxPrioritizedValidatorNumber;
   }
 
+  function getPriorityStatus(address _addr) external view returns (bool) {
+    return _prioritizedRegisterredMap[_addr];
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                         FUNCTIONS FOR GOVERNANCE ADMIN                            //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -350,6 +354,7 @@ contract RoninValidatorSet is
     override
     onlyAdmin
   {
+    require(_addrs.length != 0, "RoninValidatorSet: empty array");
     require(_addrs.length == _prioritizedStatuses.length, "RoninValidatorSet: length of two input arrays mismatches");
 
     for (uint _i = 0; _i < _addrs.length; _i++) {
@@ -399,7 +404,7 @@ contract RoninValidatorSet is
   function _updateValidatorSet() internal virtual {
     address[] memory _candidates = _syncNewValidatorSet();
     uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
-    address[] memory _arrangedCandidates = _arrangeValidatorCandidates(_candidates, _newValidatorCount);
+    _arrangeValidatorCandidates(_candidates, _newValidatorCount);
 
     assembly {
       mstore(_candidates, _newValidatorCount)
@@ -411,7 +416,7 @@ contract RoninValidatorSet is
     }
 
     for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
-      address _newValidator = _arrangedCandidates[_i];
+      address _newValidator = _candidates[_i];
       if (_newValidator == _validator[_i]) {
         continue;
       }
@@ -421,7 +426,7 @@ contract RoninValidatorSet is
     }
 
     validatorCount = _newValidatorCount;
-    emit ValidatorSetUpdated(_arrangedCandidates);
+    emit ValidatorSetUpdated(_candidates);
   }
 
   /**
@@ -450,13 +455,7 @@ contract RoninValidatorSet is
    *
    * @param _candidates A sorted list of candidates
    */
-  function _arrangeValidatorCandidates(address[] memory _candidates, uint _newValidatorCount)
-    internal
-    view
-    returns (address[] memory _arrangedValidators)
-  {
-    _arrangedValidators = new address[](_newValidatorCount);
-
+  function _arrangeValidatorCandidates(address[] memory _candidates, uint _newValidatorCount) internal view {
     int _prioritySlotLeft = int(_maxPrioritizedValidatorNumber);
     uint _prioritySlotCounter;
 
@@ -466,7 +465,7 @@ contract RoninValidatorSet is
     for (uint _i = 0; _i < _candidates.length; _i++) {
       if (_prioritizedRegisterredMap[_candidates[_i]]) {
         if (_prioritySlotLeft-- > 0) {
-          _arrangedValidators[_prioritySlotCounter++] = _candidates[_i];
+          _candidates[_prioritySlotCounter++] = _candidates[_i];
           continue;
         }
       }
@@ -477,7 +476,7 @@ contract RoninValidatorSet is
     uint _unfilledSlotCounter = _prioritySlotCounter;
 
     for (uint _i = 0; _i < _unfilledSlotLeft; _i++) {
-      _arrangedValidators[_unfilledSlotCounter++] = _waitingCandidates[_i];
+      _candidates[_unfilledSlotCounter++] = _waitingCandidates[_i];
     }
   }
 

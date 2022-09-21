@@ -7,8 +7,8 @@ import {
   SlashIndicator__factory,
   Staking,
   Staking__factory,
-  MockRoninValidatorSetEpochSetter__factory,
-  MockRoninValidatorSetEpochSetter,
+  MockRoninValidatorSetExtends__factory,
+  MockRoninValidatorSetExtends,
   ProxyAdmin__factory,
 } from '../../src/types';
 import {
@@ -27,7 +27,7 @@ import { mineBatchTxs } from '../helpers/utils';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
-let validatorContract: MockRoninValidatorSetEpochSetter;
+let validatorContract: MockRoninValidatorSetExtends;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -101,12 +101,9 @@ describe('[Integration] Wrap up epoch', () => {
     stakingContract = Staking__factory.connect(stakingContractDeployment.address, deployer);
 
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
-    validatorContract = MockRoninValidatorSetEpochSetter__factory.connect(
-      validatorContractDeployment.address,
-      deployer
-    );
+    validatorContract = MockRoninValidatorSetExtends__factory.connect(validatorContractDeployment.address, deployer);
 
-    const mockValidatorLogic = await new MockRoninValidatorSetEpochSetter__factory(deployer).deploy();
+    const mockValidatorLogic = await new MockRoninValidatorSetExtends__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
 
     const proxyAdminDeployment = await deployments.get('ProxyAdmin');

@@ -6,8 +6,8 @@ import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 
 import {
   Staking,
-  MockRoninValidatorSetArrangeValidators,
-  MockRoninValidatorSetArrangeValidators__factory,
+  MockRoninValidatorSetExtends,
+  MockRoninValidatorSetExtends__factory,
   Staking__factory,
   TransparentUpgradeableProxyV2__factory,
   MockSlashIndicator,
@@ -16,7 +16,7 @@ import {
 } from '../../src/types';
 import { Address } from 'hardhat-deploy/dist/types';
 
-let validatorContract: MockRoninValidatorSetArrangeValidators;
+let validatorContract: MockRoninValidatorSetExtends;
 let stakingContract: Staking;
 let slashIndicator: MockSlashIndicator;
 
@@ -102,7 +102,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
     /// Deploy validator mock contract
     ///
 
-    const validatorLogicContract = await new MockRoninValidatorSetArrangeValidators__factory(deployer).deploy();
+    const validatorLogicContract = await new MockRoninValidatorSetExtends__factory(deployer).deploy();
     await validatorLogicContract.deployed();
 
     const validatorProxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
@@ -120,10 +120,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
       ])
     );
     await validatorProxyContract.deployed();
-    validatorContract = MockRoninValidatorSetArrangeValidators__factory.connect(
-      validatorProxyContract.address,
-      deployer
-    );
+    validatorContract = MockRoninValidatorSetExtends__factory.connect(validatorProxyContract.address, deployer);
 
     ///
     /// Deploy staking contract

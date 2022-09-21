@@ -142,6 +142,11 @@ interface IRoninValidatorSet is ICandidateManager {
    */
   function periodEndingAt(uint256 _block) external view returns (bool);
 
+  /**
+   * @dev Returns whether an `_addr` is whether prioritized.
+   */
+  function getPriorityStatus(address _addr) external view returns (bool);
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                         FUNCTIONS FOR GOVERNANCE ADMIN                            //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +185,7 @@ interface IRoninValidatorSet is ICandidateManager {
   function setNumberOfEpochsInPeriod(uint256 _numberOfEpochsInPeriod) external;
 
   /**
-   * @dev Updates the status to an array of validators that they will be prioritized or not
+   * @dev Updates the status to an array of addresses that they will be prioritized or not
    *
    * Requirements:
    * - The method caller is the governance admin
@@ -188,5 +193,5 @@ interface IRoninValidatorSet is ICandidateManager {
    * Emits the event `MaxPrioritizedValidatorNumberUpdated`
    *
    */
-  function setPrioritizedValidators(address[] memory _validatorAddresses, bool[] memory _prioritizedStatuses) external;
+  function setPrioritizedValidators(address[] memory _addresses, bool[] memory _prioritizedStatuses) external;
 }
