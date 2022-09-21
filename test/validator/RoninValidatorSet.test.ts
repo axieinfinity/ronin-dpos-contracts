@@ -23,7 +23,6 @@ let slashIndicator: MockSlashIndicator;
 let coinbase: SignerWithAddress;
 let treasury: SignerWithAddress;
 let deployer: SignerWithAddress;
-let governanceAdmin: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
@@ -44,7 +43,7 @@ const topUpAmount = BigNumber.from(10000);
 
 describe('Ronin Validator Set test', () => {
   before(async () => {
-    [coinbase, treasury, deployer, proxyAdmin, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
+    [coinbase, treasury, deployer, proxyAdmin, ...validatorCandidates] = await ethers.getSigners();
     validatorCandidates = validatorCandidates.slice(0, 5);
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
@@ -267,16 +266,17 @@ describe('Ronin Validator Set test', () => {
     }
   });
 
-  it('Should be able to record delegating reward for a successful epoch', async () => {
+  it('Should be able to record delegating reward for a successful period', async () => {
     let tx: ContractTransaction;
     const balance = await treasury.getBalance();
     await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
+      await roninValidatorSet.endPeriod();
       tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
     const balanceDiff = (await treasury.getBalance()).sub(balance);
-    expect(balanceDiff).eq(0);
+    expect(balanceDiff).eq(1);
     expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
       bonusPerBlock.add(99).mul(2)
     );
