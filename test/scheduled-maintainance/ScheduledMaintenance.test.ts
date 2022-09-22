@@ -138,13 +138,6 @@ describe('Scheduled Maintenance test', () => {
     stakingContract = Staking__factory.connect(stakingContractDeployment.address, deployer);
     validatorContract = MockRoninValidatorSetExtends__factory.connect(validatorContractDeployment.address, deployer);
 
-    // const mockValidatorLogic = await new MockRoninValidatorSetExtends__factory(deployer).deploy();
-    // await mockValidatorLogic.deployed();
-
-    // const proxyAdminDeployment = await deployments.get('ProxyAdmin');
-    // const proxyAdminContract = ProxyAdmin__factory.connect(proxyAdminDeployment.address, deployer);
-    // await proxyAdminContract.upgrade(validatorContract.address, mockValidatorLogic.address);
-
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {
       await stakingContract
@@ -159,25 +152,14 @@ describe('Scheduled Maintenance test', () => {
     }
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-    await network.provider.send('hardhat_mine', ['0x258']);
+    await network.provider.send('hardhat_mine', [
+      ethers.utils.hexStripZeros(BigNumber.from(numberOfBlocksInEpoch).toHexString()),
+    ]);
     await mineToBeforeEndOfEpoch();
-    // await network.provider.send("hardhat_mine", ["0x247"]);
 
     await validatorContract.connect(coinbase).wrapUpEpoch();
     expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
   });
-
-  // it('clmcc', async () => {
-  // await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-  // await network.provider.send("hardhat_mine", ["0x258"]);
-  // console.log(await ethers.provider.getBlockNumber(), diffToEndEpoch(await ethers.provider.getBlockNumber()).toString());
-  // await mineToBeforeEndOfEpoch();
-  // console.log(await ethers.provider.getBlockNumber());
-  // // await network.provider.send("hardhat_mine", ["0x247"]);
-
-  // await validatorContract.connect(coinbase).wrapUpEpoch();
-  // expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
-  // });
 
   describe('Configuration test', () => {
     before(async () => {
