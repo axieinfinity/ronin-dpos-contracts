@@ -7,6 +7,8 @@ import "./ICandidateManager.sol";
 interface IRoninValidatorSet is ICandidateManager {
   /// @dev Emitted when the number of max validator is updated
   event MaxValidatorNumberUpdated(uint256);
+  /// @dev Emitted when the number of reserved slots for prioritized validators is updated
+  event MaxPrioritizedValidatorNumberUpdated(uint256);
   /// @dev Emitted when the number of blocks in epoch is updated
   event NumberOfBlocksInEpochUpdated(uint256);
   /// @dev Emitted when the number of epochs in period is updated
@@ -23,6 +25,8 @@ interface IRoninValidatorSet is ICandidateManager {
   event MiningRewardDistributed(address validatorAddr, uint256 amount);
   /// @dev Emitted when the amount of RON reward is distributed.
   event StakingRewardDistributed(uint256 amount);
+  /// @dev Emitted when the priority status of addresses is updated
+  event AddressesPriorityStatusUpdated(address[], bool[]);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR COINBASE                               //
@@ -109,6 +113,11 @@ interface IRoninValidatorSet is ICandidateManager {
   function maxValidatorNumber() external view returns (uint256 _maximumValidatorNumber);
 
   /**
+   * @dev Returns the number of reserved slots for prioritized validators
+   */
+  function maxPrioritizedValidatorNumber() external view returns (uint256 _maximumPrioritizedValidatorNumber);
+
+  /**
    * @dev Returns the epoch index from the block number.
    */
   function epochOf(uint256 _block) external view returns (uint256);
@@ -132,6 +141,11 @@ interface IRoninValidatorSet is ICandidateManager {
    * @dev Returns whether the period ending is at the block number `_block`.
    */
   function periodEndingAt(uint256 _block) external view returns (bool);
+
+  /**
+   * @dev Returns whether an `_addr` is whether prioritized.
+   */
+  function getPriorityStatus(address _addr) external view returns (bool);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                         FUNCTIONS FOR GOVERNANCE ADMIN                            //
@@ -169,4 +183,15 @@ interface IRoninValidatorSet is ICandidateManager {
    *
    */
   function setNumberOfEpochsInPeriod(uint256 _numberOfEpochsInPeriod) external;
+
+  /**
+   * @dev Updates the status to an array of addresses that they will be prioritized or not
+   *
+   * Requirements:
+   * - The method caller is the governance admin
+   *
+   * Emits the event `AddressesPriorityStatusUpdated` for updated addresses
+   *
+   */
+  function setPrioritizedAddresses(address[] memory _addresses, bool[] memory _statuses) external;
 }

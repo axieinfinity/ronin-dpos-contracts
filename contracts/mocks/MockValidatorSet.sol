@@ -101,4 +101,18 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   function setNumberOfEpochsInPeriod(uint256 _numberOfEpochsInPeriod) external override {}
 
   function maxValidatorNumber() external view override returns (uint256 _maximumValidatorNumber) {}
+
+  function maxPrioritizedValidatorNumber()
+    external
+    view
+    override
+    returns (uint256 _maximumPrioritizedValidatorNumber)
+  {}
+
+  function setPrioritizedAddresses(address[] memory __validatorAddresses, bool[] memory __prioritizedList)
+    external
+    override
+  {}
+
+  function getPriorityStatus(address _addr) external view override returns (bool) {}
 }

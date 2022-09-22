@@ -35,8 +35,13 @@ contract RoninValidatorSet is
   uint256 public validatorCount;
   /// @dev Mapping from validator index => validator address
   mapping(uint256 => address) internal _validator;
-  /// @dev Mapping from validator address => bool
+  /// @dev Mapping from address => flag indicating whether the address is validator or not
   mapping(address => bool) internal _validatorMap;
+
+  /// @dev Mapping from address => flag indicating whether the address is prioritized to be a validator
+  mapping(address => bool) internal _prioritizedRegisterredMap;
+  /// @dev The number of slot that is reserved for prioritized validators
+  uint256 internal _maxPrioritizedValidatorNumber;
 
   /// @dev Mapping from validator address => the last period that the validator has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _rewardDeprecatedAtPeriod;
@@ -79,6 +84,7 @@ contract RoninValidatorSet is
     address __stakingVestingContract,
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
+    uint256 __maxPrioritizedValidatorNumber,
     uint256 __numberOfBlocksInEpoch,
     uint256 __numberOfEpochsInPeriod
   ) external initializer {
@@ -87,6 +93,7 @@ contract RoninValidatorSet is
     _setStakingVestingContract(__stakingVestingContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
+    _setPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
     _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
     _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
   }
@@ -303,6 +310,20 @@ contract RoninValidatorSet is
     return _maxValidatorNumber;
   }
 
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function maxPrioritizedValidatorNumber() external view override returns (uint256 _maximumPrioritizedValidatorNumber) {
+    return _maxPrioritizedValidatorNumber;
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function getPriorityStatus(address _addr) external view override returns (bool) {
+    return _prioritizedRegisterredMap[_addr];
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                         FUNCTIONS FOR GOVERNANCE ADMIN                            //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -326,6 +347,22 @@ contract RoninValidatorSet is
    */
   function setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) external override onlyAdmin {
     _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function setPrioritizedAddresses(address[] memory _addrs, bool[] memory _statuses) external override onlyAdmin {
+    require(_addrs.length != 0, "RoninValidatorSet: empty array");
+    require(_addrs.length == _statuses.length, "RoninValidatorSet: length of two input arrays mismatches");
+
+    for (uint _i = 0; _i < _addrs.length; _i++) {
+      if (_prioritizedRegisterredMap[_addrs[_i]] != _statuses[_i]) {
+        _prioritizedRegisterredMap[_addrs[_i]] = _statuses[_i];
+      }
+    }
+
+    emit AddressesPriorityStatusUpdated(_addrs, _statuses);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -354,7 +391,6 @@ contract RoninValidatorSet is
     }
 
     _candidateList = Sorting.sort(_candidateList, _weights);
-    // TODO: pick at least M governers as validators
   }
 
   /**
@@ -366,6 +402,7 @@ contract RoninValidatorSet is
   function _updateValidatorSet() internal virtual {
     address[] memory _candidates = _syncNewValidatorSet();
     uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
+    _arrangeValidatorCandidates(_candidates, _newValidatorCount);
 
     assembly {
       mstore(_candidates, _newValidatorCount)
@@ -412,6 +449,32 @@ contract RoninValidatorSet is
   }
 
   /**
+   * @dev Arranges the sorted candidates to list of validators, by asserting prioritized and non-prioritized candidates
+   *
+   * @param _candidates A sorted list of candidates
+   */
+  function _arrangeValidatorCandidates(address[] memory _candidates, uint _newValidatorCount) internal view {
+    address[] memory _waitingCandidates = new address[](_candidates.length);
+    uint _waitingCounter;
+    uint _prioritySlotCounter;
+
+    for (uint _i = 0; _i < _candidates.length; _i++) {
+      if (_prioritizedRegisterredMap[_candidates[_i]]) {
+        if (_prioritySlotCounter < _maxPrioritizedValidatorNumber) {
+          _candidates[_prioritySlotCounter++] = _candidates[_i];
+          continue;
+        }
+      }
+      _waitingCandidates[_waitingCounter++] = _candidates[_i];
+    }
+
+    _waitingCounter = 0;
+    for (uint _i = _prioritySlotCounter; _i < _newValidatorCount; _i++) {
+      _candidates[_i] = _waitingCandidates[_waitingCounter++];
+    }
+  }
+
+  /**
    * @dev Updates the max validator number
    *
    * Emits the event `MaxValidatorNumberUpdated`
@@ -420,6 +483,19 @@ contract RoninValidatorSet is
   function _setMaxValidatorNumber(uint256 _number) internal {
     _maxValidatorNumber = _number;
     emit MaxValidatorNumberUpdated(_number);
+  }
+
+  /**
+   * @dev Updates the number of reserved slots for prioritized validators
+   */
+  function _setPrioritizedValidatorNumber(uint256 _number) internal {
+    require(
+      _number <= _maxValidatorNumber,
+      "RoninValidatorSet: cannot set number of prioritized greater than number of max validators"
+    );
+
+    _maxPrioritizedValidatorNumber = _number;
+    emit MaxPrioritizedValidatorNumberUpdated(_number);
   }
 
   /**

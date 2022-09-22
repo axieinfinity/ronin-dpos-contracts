@@ -102,4 +102,21 @@ export const expects = {
       1
     );
   },
+
+  emitAddressesPriorityStatusUpdatedEvent: async function (
+    tx: ContractTransaction,
+    expectingAddressList: string[],
+    expectingPriorityStatusList: boolean[]
+  ) {
+    await expectEvent(
+      contractInterface,
+      'AddressesPriorityStatusUpdated',
+      tx,
+      (event) => {
+        expect(event.args[0], 'invalid address list').eql(expectingAddressList);
+        expect(event.args[1], 'invalid priority status list').eql(expectingPriorityStatusList);
+      },
+      1
+    );
+  },
 };

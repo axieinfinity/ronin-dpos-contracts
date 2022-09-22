@@ -5,8 +5,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import {
   Staking,
-  MockRoninValidatorSetEpochSetter,
-  MockRoninValidatorSetEpochSetter__factory,
+  MockRoninValidatorSetExtends,
+  MockRoninValidatorSetExtends__factory,
   Staking__factory,
   TransparentUpgradeableProxyV2__factory,
   MockSlashIndicator,
@@ -16,7 +16,7 @@ import {
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
 
-let roninValidatorSet: MockRoninValidatorSetEpochSetter;
+let roninValidatorSet: MockRoninValidatorSetExtends;
 let stakingContract: Staking;
 let slashIndicator: MockSlashIndicator;
 
@@ -32,6 +32,7 @@ const slashFelonyAmount = 100;
 const slashDoubleSignAmount = 1000;
 
 const maxValidatorNumber = 4;
+const maxPrioritizedValidatorNumber = 0;
 const numberOfBlocksInEpoch = 600;
 const numberOfEpochsInPeriod = 48;
 
@@ -78,7 +79,7 @@ describe('Ronin Validator Set test', () => {
     /// Deploy validator mock contract
     ///
 
-    const validatorLogicContract = await new MockRoninValidatorSetEpochSetter__factory(deployer).deploy();
+    const validatorLogicContract = await new MockRoninValidatorSetExtends__factory(deployer).deploy();
     await validatorLogicContract.deployed();
 
     const validatorProxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
@@ -90,12 +91,13 @@ describe('Ronin Validator Set test', () => {
         stakingVesting.address,
         maxValidatorNumber,
         maxValidatorCandidate,
+        maxPrioritizedValidatorNumber,
         numberOfBlocksInEpoch,
         numberOfEpochsInPeriod,
       ])
     );
     await validatorProxyContract.deployed();
-    roninValidatorSet = MockRoninValidatorSetEpochSetter__factory.connect(validatorProxyContract.address, deployer);
+    roninValidatorSet = MockRoninValidatorSetExtends__factory.connect(validatorProxyContract.address, deployer);
 
     ///
     /// Deploy staking contract
