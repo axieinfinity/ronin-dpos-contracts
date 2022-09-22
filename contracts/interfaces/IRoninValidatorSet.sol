@@ -25,8 +25,8 @@ interface IRoninValidatorSet is ICandidateManager {
   event MiningRewardDistributed(address validatorAddr, uint256 amount);
   /// @dev Emitted when the amount of RON reward is distributed.
   event StakingRewardDistributed(uint256 amount);
-  /// @dev Emitted when the priority status of validators is updated
-  event ValidatorPriorityStatusUpdated(address[], bool[]);
+  /// @dev Emitted when the priority status of addresses is updated
+  event AddressesPriorityStatusUpdated(address[], bool[]);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR COINBASE                               //
@@ -190,7 +190,7 @@ interface IRoninValidatorSet is ICandidateManager {
    * Requirements:
    * - The method caller is the governance admin
    *
-   * Emits the event `MaxPrioritizedValidatorNumberUpdated`
+   * Emits the event `AddressesPriorityStatusUpdated` for updated addresses
    *
    */
   function setPrioritizedAddresses(address[] memory _addresses, bool[] memory _statuses) external;

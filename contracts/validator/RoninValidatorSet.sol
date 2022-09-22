@@ -317,7 +317,10 @@ contract RoninValidatorSet is
     return _maxPrioritizedValidatorNumber;
   }
 
-  function getPriorityStatus(address _addr) external view returns (bool) {
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function getPriorityStatus(address _addr) external view override returns (bool) {
     return _prioritizedRegisterredMap[_addr];
   }
 
@@ -359,7 +362,7 @@ contract RoninValidatorSet is
       }
     }
 
-    emit ValidatorPriorityStatusUpdated(_addrs, _statuses);
+    emit AddressesPriorityStatusUpdated(_addrs, _statuses);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -388,7 +391,6 @@ contract RoninValidatorSet is
     }
 
     _candidateList = Sorting.sort(_candidateList, _weights);
-    // TODO: pick at least M governers as validators
   }
 
   /**

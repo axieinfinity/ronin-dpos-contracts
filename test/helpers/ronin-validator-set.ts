@@ -103,14 +103,14 @@ export const expects = {
     );
   },
 
-  emitValidatorPriorityStatusUpdatedEvent: async function (
+  emitAddressesPriorityStatusUpdatedEvent: async function (
     tx: ContractTransaction,
     expectingAddressList: string[],
     expectingPriorityStatusList: boolean[]
   ) {
     await expectEvent(
       contractInterface,
-      'ValidatorPriorityStatusUpdated',
+      'AddressesPriorityStatusUpdated',
       tx,
       (event) => {
         expect(event.args[0], 'invalid address list').eql(expectingAddressList);

@@ -167,7 +167,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
 
       let tx = await setPriorityStatus(addrs, statuses);
 
-      await RoninValidatorSet.expects.emitValidatorPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
     });
 
     it('Should be able to remove prioritized validators', async () => {
@@ -175,14 +175,14 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
       let statuses = new Array(10).fill(false);
 
       let tx = await setPriorityStatus(addrs, statuses);
-      await RoninValidatorSet.expects.emitValidatorPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
     });
 
     it('Should be able to add and remove prioritized validators: num(add) > num(remove)', async () => {
       let addrs = validatorCandidates.slice(0, 10).map((_) => _.address);
       let statuses = new Array(10).fill(true);
       let tx = await setPriorityStatus(addrs, statuses);
-      await RoninValidatorSet.expects.emitValidatorPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
 
       addrs = validatorCandidates.slice(4, 7).map((_) => _.address);
       statuses = new Array(3).fill(false);
@@ -190,26 +190,26 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
       statuses.push(...new Array(5).fill(true));
 
       tx = await setPriorityStatus(addrs, statuses);
-      await RoninValidatorSet.expects.emitValidatorPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
     });
 
     it('Should be able to add and remove prioritized validators: num(add) < num(remove)', async () => {
       let addrs = validatorCandidates.slice(0, 15).map((_) => _.address);
       let statuses = new Array(15).fill(false);
       let tx = await setPriorityStatus(addrs, statuses);
-      await RoninValidatorSet.expects.emitValidatorPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
 
       addrs = validatorCandidates.slice(0, 10).map((_) => _.address);
       statuses = new Array(10).fill(true);
       tx = await setPriorityStatus(addrs, statuses);
-      await RoninValidatorSet.expects.emitValidatorPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
 
       addrs = validatorCandidates.slice(1, 8).map((_) => _.address);
       statuses = new Array(7).fill(false);
       addrs.push(...validatorCandidates.slice(10, 14).map((_) => _.address));
       statuses.push(...new Array(4).fill(true));
       tx = await setPriorityStatus(addrs, statuses);
-      await RoninValidatorSet.expects.emitValidatorPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
     });
   });
 
