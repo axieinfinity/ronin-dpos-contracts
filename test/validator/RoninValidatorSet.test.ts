@@ -12,6 +12,7 @@ import {
   MockSlashIndicator,
   MockSlashIndicator__factory,
   StakingVesting__factory,
+  ScheduledMaintenance__factory,
 } from '../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
@@ -48,6 +49,7 @@ describe('Ronin Validator Set test', () => {
     validatorCandidates = validatorCandidates.slice(0, 5);
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
+    const scheduleMaintenance = await new ScheduledMaintenance__factory(deployer).deploy();
     const nonce = await deployer.getTransactionCount();
     const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
     const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 6 });
@@ -89,6 +91,7 @@ describe('Ronin Validator Set test', () => {
         slashIndicator.address,
         stakingContractAddr,
         stakingVesting.address,
+        scheduleMaintenance.address,
         maxValidatorNumber,
         maxValidatorCandidate,
         maxPrioritizedValidatorNumber,

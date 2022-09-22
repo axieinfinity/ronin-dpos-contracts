@@ -56,7 +56,7 @@ const topUpAmount = BigNumber.from(10000);
 const minMaintenanceBlockPeriod = 100;
 const maxMaintenanceBlockPeriod = 1000;
 const minOffset = 200;
-const maxSchedules = 50;
+const maxSchedules = 2;
 
 describe('[Integration] Configuration check', () => {
   before(async () => {
@@ -81,7 +81,7 @@ describe('[Integration] Configuration check', () => {
       };
       roninValidatorSetConf[network.name] = {
         maxValidatorNumber: maxValidatorNumber,
-        maxValidatorCandidate: maxValidatorNumber,
+        maxValidatorCandidate: maxValidatorCandidate,
         maxPrioritizedValidatorNumber: maxPrioritizedValidatorNumber,
         numberOfBlocksInEpoch: numberOfBlocksInEpoch,
         numberOfEpochsInPeriod: numberOfEpochsInPeriod,
@@ -161,7 +161,7 @@ describe('[Integration] Configuration check', () => {
 
     it('Should config the maxValidatorCandidate correctly', async () => {
       let _maxValidatorCandidate = await validatorContract.maxValidatorCandidate();
-      expect(_maxValidatorCandidate).to.eq(maxValidatorNumber);
+      expect(_maxValidatorCandidate).to.eq(maxValidatorCandidate);
     });
 
     it('Should config the numberOfBlocksInEpoch correctly', async () => {

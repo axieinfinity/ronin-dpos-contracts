@@ -13,6 +13,7 @@ import {
   MockSlashIndicator,
   MockSlashIndicator__factory,
   StakingVesting__factory,
+  ScheduledMaintenance__factory,
 } from '../../src/types';
 import { Address } from 'hardhat-deploy/dist/types';
 
@@ -74,6 +75,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
   before(async () => {
     [deployer, proxyAdmin, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
 
+    const scheduleMaintenance = await new ScheduledMaintenance__factory(deployer).deploy();
     const nonce = await deployer.getTransactionCount();
     const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
     const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 6 });
@@ -115,6 +117,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
         slashIndicator.address,
         stakingContractAddr,
         stakingVesting.address,
+        scheduleMaintenance.address,
         maxValidatorNumber,
         maxValidatorCandidate,
         maxPrioritizedValidatorNumber,
@@ -468,7 +471,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
 
     it('Shuffled: Actual(prioritized) == MaxNum(prioritized); Actual(regular) == MaxNum(regular)', async () => {
       // prettier-ignore
-      let indexes =  [   0,     1,    2,    3,     4,    5,     6];
+      let indexes = [0, 1, 2, 3, 4, 5, 6];
       let statuses = [true, false, true, true, false, true, false];
 
       await setPriorityStatusByIndexes(indexes, statuses);
@@ -487,7 +490,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
 
     it('Shuffled: Actual(prioritized) >  MaxNum(prioritized); Actual(regular) <  MaxNum(regular)', async () => {
       // prettier-ignore
-      let indexes =  [   0,     1,    2,    3,     4,    5,    6];
+      let indexes = [0, 1, 2, 3, 4, 5, 6];
       let statuses = [true, false, true, true, false, true, true];
 
       await setPriorityStatusByIndexes(indexes, statuses);
@@ -506,7 +509,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
 
     it('Shuffled: Actual(prioritized) <  MaxNum(prioritized); Actual(regular) >  MaxNum(regular)', async () => {
       // prettier-ignore
-      let indexes =  [   0,     1,     2,    3,      4,    5,    6,     7];
+      let indexes = [0, 1, 2, 3, 4, 5, 6, 7];
       let statuses = [true, false, false, false, false, true, true, false];
 
       await setPriorityStatusByIndexes(indexes, statuses);

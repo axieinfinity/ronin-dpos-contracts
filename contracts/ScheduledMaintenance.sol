@@ -60,24 +60,27 @@ contract ScheduledMaintenance is IScheduledMaintenance, HasValidatorContract, In
     uint256 _startedAtBlock,
     uint256 _endedAtBlock
   ) external override {
+    IRoninValidatorSet _validator = _validatorContract;
+
+    require(_validator.isValidator(_consensusAddr), "ScheduledMaintenance: consensus address must be a validator");
     require(
-      _validatorContract.isValidator(_consensusAddr),
-      "ScheduledMaintenance: consensus address must be  validator"
-    );
-    require(
-      _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender),
+      _validator.isCandidateAdmin(_consensusAddr, msg.sender),
       "ScheduledMaintenance: method caller must be a candidate admin"
     );
     require(!scheduled(_consensusAddr), "ScheduledMaintenance: already scheduled");
     require(totalSchedules() < maxSchedules, "ScheduledMaintenance: exceeds total of schedules");
-    require(_startedAtBlock < _endedAtBlock, "ScheduledMaintenance: invalid request block");
     require(block.number + minOffset <= _startedAtBlock, "ScheduledMaintenance: invalid offset size");
-
+    require(_startedAtBlock < _endedAtBlock, "ScheduledMaintenance: start block must be less than end block");
     uint256 _blockPeriod = _endedAtBlock - _startedAtBlock;
     require(
       minMaintenanceBlockPeriod <= _blockPeriod && _blockPeriod <= maxMaintenanceBlockPeriod,
-      "ScheduledMaintenance: invalid maintainance block period"
+      "ScheduledMaintenance: invalid maintenance block period"
     );
+    require(
+      _validator.epochEndingAt(_startedAtBlock - 1),
+      "ScheduledMaintenance: start block is not at the start of an epoch"
+    );
+    require(_validator.epochEndingAt(_endedAtBlock), "ScheduledMaintenance: end block is not at the end of an epoch");
 
     Schedule memory _s = Schedule(_startedAtBlock, _endedAtBlock);
     _schedule[_consensusAddr] = _s;
@@ -94,10 +97,15 @@ contract ScheduledMaintenance is IScheduledMaintenance, HasValidatorContract, In
   /**
    * @inheritdoc IScheduledMaintenance
    */
-  function bulkMaintained(address[] calldata _addrList) external view override returns (bool[] memory _resList) {
+  function bulkMaintaining(address[] calldata _addrList, uint256 _block)
+    external
+    view
+    override
+    returns (bool[] memory _resList)
+  {
     _resList = new bool[](_addrList.length);
     for (uint _i = 0; _i < _addrList.length; _i++) {
-      _resList[_i] = maintained(_addrList[_i]);
+      _resList[_i] = maintaining(_addrList[_i], _block);
     }
   }
 
@@ -116,9 +124,9 @@ contract ScheduledMaintenance is IScheduledMaintenance, HasValidatorContract, In
   /**
    * @inheritdoc IScheduledMaintenance
    */
-  function maintained(address _consensusAddr) public view override returns (bool) {
+  function maintaining(address _consensusAddr, uint256 _block) public view returns (bool) {
     Schedule memory _s = _schedule[_consensusAddr];
-    return _s.startedAtBlock <= block.number && block.number <= _s.endedAtBlock;
+    return _s.startedAtBlock <= _block && _block <= _s.endedAtBlock;
   }
 
   /**

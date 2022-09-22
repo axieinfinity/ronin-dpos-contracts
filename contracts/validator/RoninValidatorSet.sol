@@ -425,9 +425,9 @@ contract RoninValidatorSet is
     }
 
     uint256 _count;
-    bool[] memory _maintainedList = _scheduledMaintenanceContract.bulkMaintained(_candidates);
+    bool[] memory _maintainingList = _scheduledMaintenanceContract.bulkMaintaining(_candidates, block.number + 1);
     for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
-      if (_maintainedList[_i]) {
+      if (_maintainingList[_i]) {
         continue;
       }
 

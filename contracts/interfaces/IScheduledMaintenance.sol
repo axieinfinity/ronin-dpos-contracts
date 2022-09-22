@@ -19,14 +19,14 @@ interface IScheduledMaintenance {
   );
 
   /**
-   * @dev Returns whether the validator `_consensusAddr` is maintained at the current block.
+   * @dev Returns whether the validator `_consensusAddr` is maintaining at the block number `_block`.
    */
-  function maintained(address _consensusAddr) external view returns (bool);
+  function maintaining(address _consensusAddr, uint256 _block) external view returns (bool);
 
   /**
-   * @dev Returns the bool array indicating the validator is maintained or not.
+   * @dev Returns the bool array indicating the validator is maintaining or not.
    */
-  function bulkMaintained(address[] calldata _addrList) external view returns (bool[] memory);
+  function bulkMaintaining(address[] calldata _addrList, uint256 _block) external view returns (bool[] memory);
 
   /**
    * @dev Returns whether the validator `_consensusAddr` has scheduled.
@@ -88,9 +88,11 @@ interface IScheduledMaintenance {
    * - The method caller is candidate admin of the candidate `_consensusAddr`.
    * - The candidate `_consensusAddr` has no schedule yet or the previous is done.
    * - The total number of schedules is not larger than `maxSchedules()`.
+   * - The start block must be at least `minOffset()` blocks from the current block.
    * - The end block is larger than the start block.
    * - The scheduled block period is larger than the `minMaintenanceBlockPeriod()` and less than the `maxMaintenanceBlockPeriod()`.
-   * - The start block must be at least `minOffset()` blocks from the current block.
+   * - The start block is at the start of an epoch.
+   * - The end block is at the end of an epoch.
    *
    * Emits the event `MaintenanceScheduled`.
    *

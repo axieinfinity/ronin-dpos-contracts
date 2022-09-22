@@ -55,7 +55,7 @@ const topUpAmount = BigNumber.from(10000);
 const minMaintenanceBlockPeriod = 100;
 const maxMaintenanceBlockPeriod = 1000;
 const minOffset = 200;
-const maxSchedules = 50;
+const maxSchedules = 2;
 
 describe('[Integration] Wrap up epoch', () => {
   const blockRewardAmount = BigNumber.from(2);

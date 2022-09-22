@@ -71,12 +71,13 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasScheduledMa
    * @inheritdoc ISlashIndicator
    */
   function slash(address _validatorAddr) external override onlyCoinbase oncePerBlock {
-    if (msg.sender == _validatorAddr || _scheduledMaintenanceContract.maintained(_validatorAddr)) {
+    if (msg.sender == _validatorAddr || _scheduledMaintenanceContract.maintaining(_validatorAddr, block.number)) {
       return;
     }
 
     uint256 _count = ++_unavailabilityIndicator[_validatorAddr];
 
+    // TODO: rescale for maintaining validator
     // Slashes the validator as either the fenoly or the misdemeanor
     if (_count == felonyThreshold) {
       emit ValidatorSlashed(_validatorAddr, SlashType.FELONY);

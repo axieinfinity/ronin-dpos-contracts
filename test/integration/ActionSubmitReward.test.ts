@@ -53,7 +53,7 @@ const topUpAmount = BigNumber.from(10000);
 const minMaintenanceBlockPeriod = 100;
 const maxMaintenanceBlockPeriod = 1000;
 const minOffset = 200;
-const maxSchedules = 50;
+const maxSchedules = 2;
 
 describe('[Integration] Submit Block Reward', () => {
   const blockRewardAmount = BigNumber.from(2);
