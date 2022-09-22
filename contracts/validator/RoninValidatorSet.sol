@@ -452,15 +452,13 @@ contract RoninValidatorSet is
    * @param _candidates A sorted list of candidates
    */
   function _arrangeValidatorCandidates(address[] memory _candidates, uint _newValidatorCount) internal view {
-    int _prioritySlotLeft = int(_maxPrioritizedValidatorNumber);
-    uint _prioritySlotCounter;
-
     address[] memory _waitingCandidates = new address[](_candidates.length);
     uint _waitingCounter;
+    uint _prioritySlotCounter;
 
     for (uint _i = 0; _i < _candidates.length; _i++) {
       if (_prioritizedRegisterredMap[_candidates[_i]]) {
-        if (_prioritySlotLeft-- > 0) {
+        if (_prioritySlotCounter < _maxPrioritizedValidatorNumber) {
           _candidates[_prioritySlotCounter++] = _candidates[_i];
           continue;
         }
