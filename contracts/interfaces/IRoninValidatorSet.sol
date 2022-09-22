@@ -193,5 +193,5 @@ interface IRoninValidatorSet is ICandidateManager {
    * Emits the event `MaxPrioritizedValidatorNumberUpdated`
    *
    */
-  function setPrioritizedValidators(address[] memory _addresses, bool[] memory _prioritizedStatuses) external;
+  function setPrioritizedAddresses(address[] memory _addresses, bool[] memory _statuses) external;
 }

@@ -93,7 +93,7 @@ contract RoninValidatorSet is
     _setStakingVestingContract(__stakingVestingContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
-    _setPrioritizedReservedSlotNumber(__maxPrioritizedValidatorNumber);
+    _setPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
     _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
     _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
   }
@@ -349,21 +349,17 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function setPrioritizedValidators(address[] memory _addrs, bool[] memory _prioritizedStatuses)
-    external
-    override
-    onlyAdmin
-  {
+  function setPrioritizedAddresses(address[] memory _addrs, bool[] memory _statuses) external override onlyAdmin {
     require(_addrs.length != 0, "RoninValidatorSet: empty array");
-    require(_addrs.length == _prioritizedStatuses.length, "RoninValidatorSet: length of two input arrays mismatches");
+    require(_addrs.length == _statuses.length, "RoninValidatorSet: length of two input arrays mismatches");
 
     for (uint _i = 0; _i < _addrs.length; _i++) {
-      if (_prioritizedRegisterredMap[_addrs[_i]] != _prioritizedStatuses[_i]) {
-        _prioritizedRegisterredMap[_addrs[_i]] = _prioritizedStatuses[_i];
+      if (_prioritizedRegisterredMap[_addrs[_i]] != _statuses[_i]) {
+        _prioritizedRegisterredMap[_addrs[_i]] = _statuses[_i];
       }
     }
 
-    emit ValidatorPriorityStatusUpdated(_addrs, _prioritizedStatuses);
+    emit ValidatorPriorityStatusUpdated(_addrs, _statuses);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -492,14 +488,14 @@ contract RoninValidatorSet is
   /**
    * @dev Updates the number of reserved slots for prioritized validators
    */
-  function _setPrioritizedReservedSlotNumber(uint256 __maxPrioritizedValidatorNumber) internal {
+  function _setPrioritizedValidatorNumber(uint256 _number) internal {
     require(
-      __maxPrioritizedValidatorNumber <= _maxValidatorNumber,
+      _number <= _maxValidatorNumber,
       "RoninValidatorSet: cannot set number of prioritized greater than number of max validators"
     );
 
-    _maxPrioritizedValidatorNumber = __maxPrioritizedValidatorNumber;
-    emit MaxPrioritizedValidatorNumberUpdated(__maxPrioritizedValidatorNumber);
+    _maxPrioritizedValidatorNumber = _number;
+    emit MaxPrioritizedValidatorNumberUpdated(_number);
   }
 
   /**

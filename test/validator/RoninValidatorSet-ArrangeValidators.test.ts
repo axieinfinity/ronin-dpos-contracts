@@ -41,7 +41,7 @@ const topUpAmount = BigNumber.from(10000);
 
 const setPriorityStatus = async (addrs: Address[], statuses: boolean[]) => {
   return TransparentUpgradeableProxyV2__factory.connect(validatorContract.address, proxyAdmin).functionDelegateCall(
-    validatorContract.interface.encodeFunctionData('setPrioritizedValidators', [addrs, statuses])
+    validatorContract.interface.encodeFunctionData('setPrioritizedAddresses', [addrs, statuses])
   );
 };
 
