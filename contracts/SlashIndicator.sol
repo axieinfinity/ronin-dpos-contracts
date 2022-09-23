@@ -170,12 +170,14 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     uint256 _end = _start + _blockLength - 1;
     IMaintenance.Schedule memory _s = _maintenanceContract.getSchedule(_addr);
 
+    bool _fromInRange = _s.from.inRange(_start, _end);
+    bool _toInRange = _s.to.inRange(_start, _end);
     uint256 _availableDuration = _blockLength;
-    if (_s.from.inRange(_start, _end) && _s.to.inRange(_start, _end)) {
+    if (_fromInRange && _toInRange) {
       _availableDuration -= _s.to - _s.from;
-    } else if (_s.from.inRange(_start, _end)) {
+    } else if (_fromInRange) {
       _availableDuration -= _end - _s.from;
-    } else if (_s.to.inRange(_start, _end)) {
+    } else if (_toInRange) {
       _availableDuration -= _s.to - _start;
     }
 
