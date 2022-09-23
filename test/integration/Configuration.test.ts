@@ -9,8 +9,8 @@ import {
   Staking__factory,
   RoninValidatorSet,
   RoninValidatorSet__factory,
-  ScheduledMaintenance__factory,
-  ScheduledMaintenance,
+  Maintenance__factory,
+  Maintenance,
   StakingVesting__factory,
   StakingVesting,
 } from '../../src/types';
@@ -21,12 +21,12 @@ import {
   stakingConfig,
   stakingVestingConfig,
   initAddress,
-  scheduledMaintenanceConfig,
+  MaintenanceConfig,
 } from '../../src/config';
 import { BigNumber } from 'ethers';
 
 let stakingVestingContract: StakingVesting;
-let scheduledMaintenanceContract: ScheduledMaintenance;
+let MaintenanceContract: Maintenance;
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: RoninValidatorSet;
@@ -66,7 +66,7 @@ describe('[Integration] Configuration check', () => {
       initAddress[network.name] = {
         governanceAdmin: governanceAdmin.address,
       };
-      scheduledMaintenanceConfig[network.name] = {
+      MaintenanceConfig[network.name] = {
         minMaintenanceBlockPeriod,
         maxMaintenanceBlockPeriod,
         minOffset,
@@ -100,35 +100,32 @@ describe('[Integration] Configuration check', () => {
       'RoninValidatorSetProxy',
       'SlashIndicatorProxy',
       'StakingProxy',
-      'ScheduledMaintenanceProxy',
+      'MaintenanceProxy',
       'StakingVestingProxy',
     ]);
     const stakingVestingDeployment = await deployments.get('StakingVestingProxy');
-    const scheduledMaintenanceDeployment = await deployments.get('ScheduledMaintenanceProxy');
+    const MaintenanceDeployment = await deployments.get('MaintenanceProxy');
     const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
     const stakingContractDeployment = await deployments.get('StakingProxy');
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
 
     stakingVestingContract = StakingVesting__factory.connect(stakingVestingDeployment.address, deployer);
-    scheduledMaintenanceContract = ScheduledMaintenance__factory.connect(
-      scheduledMaintenanceDeployment.address,
-      deployer
-    );
+    MaintenanceContract = Maintenance__factory.connect(MaintenanceDeployment.address, deployer);
     slashContract = SlashIndicator__factory.connect(slashContractDeployment.address, deployer);
     stakingContract = Staking__factory.connect(stakingContractDeployment.address, deployer);
     validatorContract = RoninValidatorSet__factory.connect(validatorContractDeployment.address, deployer);
   });
 
-  describe('ScheduledMaintenance configuration', () => {
-    it('Should the ScheduledMaintenanceContract config the validator contract correctly', async () => {
-      expect(await scheduledMaintenanceContract.validatorContract()).eq(validatorContract.address);
+  describe('Maintenance configuration', () => {
+    it('Should the MaintenanceContract config the validator contract correctly', async () => {
+      expect(await MaintenanceContract.validatorContract()).eq(validatorContract.address);
     });
 
-    it('Should the ScheduledMaintenanceContract set the maintenance config correctly', async () => {
-      expect(await scheduledMaintenanceContract.minMaintenanceBlockPeriod()).eq(minMaintenanceBlockPeriod);
-      expect(await scheduledMaintenanceContract.maxMaintenanceBlockPeriod()).eq(maxMaintenanceBlockPeriod);
-      expect(await scheduledMaintenanceContract.minOffset()).eq(minOffset);
-      expect(await scheduledMaintenanceContract.maxSchedules()).eq(maxSchedules);
+    it('Should the MaintenanceContract set the maintenance config correctly', async () => {
+      expect(await MaintenanceContract.minMaintenanceBlockPeriod()).eq(minMaintenanceBlockPeriod);
+      expect(await MaintenanceContract.maxMaintenanceBlockPeriod()).eq(maxMaintenanceBlockPeriod);
+      expect(await MaintenanceContract.minOffset()).eq(minOffset);
+      expect(await MaintenanceContract.maxSchedules()).eq(maxSchedules);
     });
   });
 
