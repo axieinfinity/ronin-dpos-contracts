@@ -8,7 +8,7 @@ import "../extensions/RONTransferHelper.sol";
 import "../extensions/HasStakingVestingContract.sol";
 import "../extensions/HasStakingContract.sol";
 import "../extensions/HasSlashIndicatorContract.sol";
-import "../extensions/HasScheduledMaintenanceContract.sol";
+import "../extensions/HasMaintenanceContract.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 import "../libraries/Sorting.sol";
 import "../libraries/Math.sol";
@@ -20,7 +20,7 @@ contract RoninValidatorSet is
   HasStakingContract,
   HasStakingVestingContract,
   HasSlashIndicatorContract,
-  HasScheduledMaintenanceContract,
+  HasMaintenanceContract,
   CandidateManager,
   Initializable
 {
@@ -84,7 +84,7 @@ contract RoninValidatorSet is
     address __slashIndicatorContract,
     address __stakingContract,
     address __stakingVestingContract,
-    address __scheduledMaintenanceContract,
+    address __maintenanceContract,
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
@@ -94,7 +94,7 @@ contract RoninValidatorSet is
     _setSlashIndicatorContract(__slashIndicatorContract);
     _setStakingContract(__stakingContract);
     _setStakingVestingContract(__stakingVestingContract);
-    _setScheduledMaintenanceContract(__scheduledMaintenanceContract);
+    _setMaintenanceContract(__maintenanceContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
@@ -177,8 +177,6 @@ contract RoninValidatorSet is
     }
 
     if (_periodEnding) {
-      ISlashIndicator(_slashIndicatorContract).resetCounters(_validators);
-
       _staking.settleRewardPools(_validators);
       if (_delegatingAmount > 0) {
         require(
@@ -224,7 +222,7 @@ contract RoninValidatorSet is
       IStaking(_stakingContract).deductStakingAmount(_validatorAddr, _slashAmount);
     }
 
-    emit ValidatorSlashed(_validatorAddr, _jailedUntil[_validatorAddr], _slashAmount);
+    emit ValidatorPunished(_validatorAddr, _jailedUntil[_validatorAddr], _slashAmount);
   }
 
   /**
@@ -425,7 +423,7 @@ contract RoninValidatorSet is
     }
 
     uint256 _count;
-    bool[] memory _maintainingList = _scheduledMaintenanceContract.bulkMaintaining(_candidates, block.number + 1);
+    bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
     for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
       if (_maintainingList[_i]) {
         continue;

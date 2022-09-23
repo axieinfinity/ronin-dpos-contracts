@@ -20,8 +20,4 @@ contract MockValidatorSetForSlash {
     uint256 _newJailedUntil,
     uint256 _slashMisdemeanor
   ) external {}
-
-  function resetCounters(address[] calldata _addr) external {
-    _slashingContract.resetCounters(_addr);
-  }
 }

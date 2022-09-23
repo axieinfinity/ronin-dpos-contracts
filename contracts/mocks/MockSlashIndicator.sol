@@ -11,7 +11,7 @@ contract MockSlashIndicator is ISlashIndicator {
   uint256 public slashDoubleSignAmount;
 
   modifier onlyCoinbase() {
-    require(msg.sender == block.coinbase, "SlashIndicator: method caller is not the coinbase");
+    require(msg.sender == block.coinbase, "SlashIndicator: method caller must be coinbase");
     _;
   }
 
@@ -33,13 +33,9 @@ contract MockSlashIndicator is ISlashIndicator {
     validatorContract.slash(_validatorAddr, 0, 0);
   }
 
-  function resetCounters(address[] calldata) external {}
-
   function slash(address _valAddr) external override {}
 
   function slashDoubleSign(address _valAddr, bytes calldata _evidence) external override {}
-
-  function getSlashIndicator(address _validator) external view override returns (uint256) {}
 
   function getSlashThresholds()
     external
@@ -55,4 +51,8 @@ contract MockSlashIndicator is ISlashIndicator {
   function setSlashDoubleSignAmount(uint256 _slashDoubleSignAmount) external override {}
 
   function setFelonyJailDuration(uint256 _felonyJailDuration) external override {}
+
+  function currentUnavailabilityIndicator(address _validator) external view override returns (uint256) {}
+
+  function getUnavailabilityIndicator(address _validator, uint256 _period) external view override returns (uint256) {}
 }
