@@ -132,8 +132,8 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function maintaining(address _consensusAddr, uint256 _block) public view returns (bool) {
-    Schedule memory _s = _schedule[_consensusAddr];
-    return _s.to <= _block && _block <= _s.to;
+    Schedule storage _s = _schedule[_consensusAddr];
+    return _s.from <= _block && _block <= _s.to;
   }
 
   /**
