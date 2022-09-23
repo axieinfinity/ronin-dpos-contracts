@@ -15,7 +15,7 @@ export const defaultAddress = '0x0000000000000000000000000000000000000000';
 export interface InitAddr {
   [network: LiteralNetwork]: {
     governanceAdmin: string;
-    scheduledMaintenanceContract?: string;
+    maintenanceContract?: string;
     stakingVestingContract?: string;
     slashIndicatorContract?: string;
     stakingContract?: string;
@@ -23,7 +23,7 @@ export interface InitAddr {
   };
 }
 
-export interface ScheduledMaintenanceConfig {
+export interface MaintenanceConfig {
   [network: LiteralNetwork]:
     | {
         minMaintenanceBlockPeriod: BigNumberish;
@@ -82,7 +82,7 @@ export const initAddress: InitAddr = {
 };
 
 // TODO: update config for testnet & mainnet
-export const scheduledMaintenanceConfig: ScheduledMaintenanceConfig = {
+export const MaintenanceConfig: MaintenanceConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
     minMaintenanceBlockPeriod: 600, // 600 blocks

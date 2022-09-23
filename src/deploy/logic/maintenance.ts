@@ -4,14 +4,14 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  await deploy('ScheduledMaintenanceLogic', {
-    contract: 'ScheduledMaintenance',
+  await deploy('MaintenanceLogic', {
+    contract: 'Maintenance',
     from: deployer,
     log: true,
   });
 };
 
-deploy.tags = ['ScheduledMaintenanceLogic'];
+deploy.tags = ['MaintenanceLogic'];
 deploy.dependencies = ['ProxyAdmin'];
 
 export default deploy;

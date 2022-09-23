@@ -16,4 +16,26 @@ library Math {
   function min(uint256 a, uint256 b) internal pure returns (uint256) {
     return a < b ? a : b;
   }
+
+  /**
+   * @dev Returns whether the number `c` is in range of [a; b].
+   */
+  function inRange(
+    uint256 c,
+    uint256 a,
+    uint256 b
+  ) internal pure returns (bool) {
+    return a <= c && c <= b;
+  }
+
+  /**
+   * @dev Returns the result from scaling c to ratio 1-a/b.
+   */
+  function scale(
+    uint256 c,
+    uint256 a,
+    uint256 b
+  ) internal pure returns (uint256) {
+    return (c * a) / b;
+  }
 }

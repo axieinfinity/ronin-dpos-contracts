@@ -13,7 +13,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const data = new SlashIndicator__factory().interface.encodeFunctionData('initialize', [
     initAddress[network.name]!.validatorContract,
-    initAddress[network.name]!.scheduledMaintenanceContract,
+    initAddress[network.name]!.maintenanceContract,
     slashIndicatorConf[network.name]!.misdemeanorThreshold,
     slashIndicatorConf[network.name]!.felonyThreshold,
     slashIndicatorConf[network.name]!.slashFelonyAmount,

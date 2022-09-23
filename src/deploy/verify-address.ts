@@ -4,20 +4,17 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { initAddress } from '../config';
 
 const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
-  const scheduledMaintenanceContract = await deployments.get('ScheduledMaintenanceProxy');
+  const MaintenanceContract = await deployments.get('MaintenanceProxy');
   const stakingVestingContract = await deployments.get('StakingVestingProxy');
   const slashIndicatorContract = await deployments.get('SlashIndicatorProxy');
   const stakingContract = await deployments.get('StakingProxy');
   const validatorContract = await deployments.get('RoninValidatorSetProxy');
 
-  if (
-    initAddress[network.name].scheduledMaintenanceContract?.toLowerCase() !=
-    scheduledMaintenanceContract.address.toLowerCase()
-  ) {
+  if (initAddress[network.name].maintenanceContract?.toLowerCase() != MaintenanceContract.address.toLowerCase()) {
     throw Error(
       `invalid address for indicator, expected=${initAddress[
         network.name
-      ].scheduledMaintenanceContract?.toLowerCase()}, actual=${scheduledMaintenanceContract.address.toLowerCase()}`
+      ].maintenanceContract?.toLowerCase()}, actual=${MaintenanceContract.address.toLowerCase()}`
     );
   }
   if (initAddress[network.name].slashIndicatorContract?.toLowerCase() != slashIndicatorContract.address.toLowerCase()) {

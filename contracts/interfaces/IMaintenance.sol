@@ -2,10 +2,11 @@
 
 pragma solidity ^0.8.9;
 
-interface IScheduledMaintenance {
+interface IMaintenance {
   struct Schedule {
-    uint256 startedAtBlock;
-    uint256 endedAtBlock;
+    uint256 from;
+    uint256 to;
+    uint256 lastUpdatedBlock;
   }
 
   /// @dev Emitted when the maintenance is scheduled.

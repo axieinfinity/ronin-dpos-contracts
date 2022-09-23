@@ -6,7 +6,7 @@ import { initAddress } from '../config';
 const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
   const { deployer } = await getNamedAccounts();
   let nonce = await ethers.provider.getTransactionCount(deployer);
-  initAddress[network.name].scheduledMaintenanceContract = ethers.utils.getContractAddress({
+  initAddress[network.name].maintenanceContract = ethers.utils.getContractAddress({
     from: deployer,
     nonce: nonce++,
   });
@@ -25,7 +25,7 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
 deploy.tags = ['CalculateAddresses'];
 deploy.dependencies = [
   'ProxyAdmin',
-  'ScheduledMaintenanceLogic',
+  'MaintenanceLogic',
   'StakingVestingLogic',
   'SlashIndicatorLogic',
   'StakingLogic',
