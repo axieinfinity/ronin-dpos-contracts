@@ -123,6 +123,10 @@ describe('[Integration] Wrap up epoch', () => {
     await proxyAdminContract.upgrade(validatorContract.address, mockValidatorLogic.address);
   });
 
+  after(async () => {
+    await network.provider.send('hardhat_setCoinbase', [ethers.constants.AddressZero]);
+  });
+
   describe('Configuration test', () => {
     describe('ValidatorSetContract configuration', async () => {
       it('Should the ValidatorSetContract config the StakingContract correctly', async () => {
@@ -177,15 +181,12 @@ describe('[Integration] Wrap up epoch', () => {
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
 
-      await network.provider.send('hardhat_setCoinbase', [validators[3].address]);
-      validatorContract = validatorContract.connect(validators[3]);
+      coinbase = validators[3];
+      await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+      validatorContract = validatorContract.connect(coinbase);
       await validatorContract.submitBlockReward({
         value: blockRewardAmount,
       });
-    });
-
-    after(async () => {
-      coinbase = validators[3];
     });
 
     describe('Wrap up epoch: at the end of the epoch', async () => {
@@ -223,21 +224,29 @@ describe('[Integration] Wrap up epoch', () => {
     });
 
     describe('Wrap up epoch: at the end of the period', async () => {
+      before(async () => {
+        await Promise.all(validators.map((v) => slashContract.connect(coinbase).slash(v.address)));
+      });
+
       it('Should the ValidatorSet not reset counter, when the period is not ended', async () => {
         await mineBatchTxs(async () => {
           await validatorContract.endEpoch();
-          wrapUpTx = await validatorContract.wrapUpEpoch();
+          wrapUpTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
-        // TODO: slash someone here and check the slash indicator
+        expect(
+          await Promise.all(validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.address)))
+        ).eql(validators.map((v) => (v.address == coinbase.address ? BigNumber.from(0) : BigNumber.from(1))));
       });
 
       it('Should the ValidatorSet reset counter in SlashIndicator contract', async () => {
         await mineBatchTxs(async () => {
           await validatorContract.endEpoch();
           await validatorContract.endPeriod();
-          wrapUpTx = await validatorContract.wrapUpEpoch();
+          wrapUpTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
-        // TODO: slash someone here and check the slash indicator
+        expect(
+          await Promise.all(validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.address)))
+        ).eql(validators.map(() => BigNumber.from(0)));
       });
     });
   });
@@ -262,8 +271,9 @@ describe('[Integration] Wrap up epoch', () => {
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
 
-      await network.provider.send('hardhat_setCoinbase', [validators[3].address]);
-      validatorContract = validatorContract.connect(validators[3]);
+      coinbase = validators[3];
+      await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+      validatorContract = validatorContract.connect(coinbase);
       await validatorContract.submitBlockReward({
         value: blockRewardAmount,
       });
@@ -277,7 +287,7 @@ describe('[Integration] Wrap up epoch', () => {
         });
 
         for (let i = 0; i < felonyThreshold; i++) {
-          await slashContract.connect(validators[3]).slash(validators[1].address);
+          await slashContract.connect(coinbase).slash(validators[1].address);
         }
       });
 
@@ -289,7 +299,7 @@ describe('[Integration] Wrap up epoch', () => {
 
         await ValidatorSetExpects.emitValidatorSetUpdatedEvent(
           wrapUpTx,
-          [validators[0], validators[2], validators[3]].map((_) => _.address).reverse()
+          [validators[0], validators[2], coinbase].map((_) => _.address).reverse()
         );
       });
 
@@ -299,7 +309,9 @@ describe('[Integration] Wrap up epoch', () => {
           await validatorContract.endPeriod();
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
-        // TODO: slash someone here and check the slash indicator
+        expect(
+          await Promise.all(validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.address)))
+        ).eql(validators.map(() => BigNumber.from(0)));
       });
     });
   });
