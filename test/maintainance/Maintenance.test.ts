@@ -158,6 +158,10 @@ describe('Maintenance test', () => {
     expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
   });
 
+  after(async () => {
+    await network.provider.send('hardhat_setCoinbase', [ethers.constants.AddressZero]);
+  });
+
   describe('Configuration test', () => {
     before(async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
