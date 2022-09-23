@@ -1,7 +1,8 @@
 import { expect } from 'chai';
-import { network, ethers, deployments, getNamedAccounts } from 'hardhat';
+import { network, ethers, deployments } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Address } from 'hardhat-deploy/dist/types';
+import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
 
 import {
   SlashIndicator,
@@ -19,9 +20,8 @@ import {
   stakingConfig,
   stakingVestingConfig,
   initAddress,
-  scheduledMaintenanceConfig,
+  MaintenanceConfig,
 } from '../../src/config';
-import { BigNumber, ContractTransaction } from 'ethers';
 import { expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
 import { SlashType } from '../../src/script/slash-indicator';
@@ -66,7 +66,7 @@ describe('[Integration] Slash validators', () => {
       initAddress[network.name] = {
         governanceAdmin: governanceAdmin.address,
       };
-      scheduledMaintenanceConfig[network.name] = {
+      MaintenanceConfig[network.name] = {
         minMaintenanceBlockPeriod,
         maxMaintenanceBlockPeriod,
         minOffset,
@@ -152,6 +152,12 @@ describe('[Integration] Slash validators', () => {
 
   describe('Slash one validator', async () => {
     let expectingValidatorSet: Address[] = [];
+    let period: BigNumberish;
+
+    before(async () => {
+      const currentBlock = await ethers.provider.getBlockNumber();
+      period = await validatorContract.periodOf(currentBlock);
+    });
 
     describe('Slash misdemeanor validator', async () => {
       it('Should the ValidatorSet contract emit event', async () => {
@@ -163,8 +169,10 @@ describe('[Integration] Slash validators', () => {
         }
         let tx = slashContract.connect(coinbase).slash(slashee.address);
 
-        await expect(tx).to.emit(slashContract, 'ValidatorSlashed').withArgs(slashee.address, SlashType.MISDEMEANOR);
-        await expect(tx).to.emit(validatorContract, 'ValidatorSlashed').withArgs(slashee.address, 0, 0);
+        await expect(tx)
+          .to.emit(slashContract, 'UnavailabilitySlashed')
+          .withArgs(slashee.address, SlashType.MISDEMEANOR, period);
+        await expect(tx).to.emit(validatorContract, 'ValidatorPunished').withArgs(slashee.address, 0, 0);
       });
     });
 
@@ -205,13 +213,13 @@ describe('[Integration] Slash validators', () => {
         slashValidatorTx = await slashContract.connect(coinbase).slash(slashee.address);
 
         await expect(slashValidatorTx)
-          .to.emit(slashContract, 'ValidatorSlashed')
-          .withArgs(slashee.address, SlashType.FELONY);
+          .to.emit(slashContract, 'UnavailabilitySlashed')
+          .withArgs(slashee.address, SlashType.FELONY, period);
 
         let blockNumber = await network.provider.send('eth_blockNumber');
 
         await expect(slashValidatorTx)
-          .to.emit(validatorContract, 'ValidatorSlashed')
+          .to.emit(validatorContract, 'ValidatorPunished')
           .withArgs(slashee.address, BigNumber.from(blockNumber).add(felonyJailDuration), slashFelonyAmount);
       });
 
@@ -314,13 +322,13 @@ describe('[Integration] Slash validators', () => {
         slashValidatorTx = await slashContract.connect(coinbase).slash(slashee.address);
 
         await expect(slashValidatorTx)
-          .to.emit(slashContract, 'ValidatorSlashed')
-          .withArgs(slashee.address, SlashType.FELONY);
+          .to.emit(slashContract, 'UnavailabilitySlashed')
+          .withArgs(slashee.address, SlashType.FELONY, period);
 
         let blockNumber = await network.provider.send('eth_blockNumber');
 
         await expect(slashValidatorTx)
-          .to.emit(validatorContract, 'ValidatorSlashed')
+          .to.emit(validatorContract, 'ValidatorPunished')
           .withArgs(slashee.address, BigNumber.from(blockNumber).add(felonyJailDuration), slashFelonyAmount);
       });
 
