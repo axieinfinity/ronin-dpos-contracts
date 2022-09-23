@@ -12,7 +12,7 @@ import {
   MockSlashIndicator,
   MockSlashIndicator__factory,
   StakingVesting__factory,
-  ScheduledMaintenance__factory,
+  Maintenance__factory,
 } from '../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
@@ -49,7 +49,7 @@ describe('Ronin Validator Set test', () => {
     validatorCandidates = validatorCandidates.slice(0, 5);
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-    const scheduleMaintenance = await new ScheduledMaintenance__factory(deployer).deploy();
+    const scheduleMaintenance = await new Maintenance__factory(deployer).deploy();
     const nonce = await deployer.getTransactionCount();
     const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
     const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 6 });
@@ -255,7 +255,7 @@ describe('Ronin Validator Set test', () => {
       const balance = await treasury.getBalance();
       await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
       tx = await slashIndicator.slashMisdemeanor(coinbase.address);
-      await RoninValidatorSet.expects.emitValidatorSlashedEvent(tx!, coinbase.address, 0, 0);
+      expect(tx).emit(roninValidatorSet, 'ValidatorPunished').withArgs(coinbase.address, 0, 0);
 
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();

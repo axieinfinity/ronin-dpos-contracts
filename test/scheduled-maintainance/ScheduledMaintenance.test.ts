@@ -8,8 +8,8 @@ import {
   ProxyAdmin__factory,
   RoninValidatorSet,
   RoninValidatorSet__factory,
-  ScheduledMaintenance,
-  ScheduledMaintenance__factory,
+  Maintenance,
+  Maintenance__factory,
   SlashIndicator,
   SlashIndicator__factory,
   Staking,
@@ -24,7 +24,7 @@ import {
   stakingConfig,
   stakingVestingConfig,
   initAddress,
-  scheduledMaintenanceConfig,
+  MaintenanceConfig,
 } from '../../src/config';
 
 let coinbase: SignerWithAddress;
@@ -33,7 +33,7 @@ let governanceAdmin: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
-let scheduledMaintenanceContract: ScheduledMaintenance;
+let MaintenanceContract: Maintenance;
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: MockRoninValidatorSetExtends;
@@ -87,7 +87,7 @@ describe('Scheduled Maintenance test', () => {
       initAddress[network.name] = {
         governanceAdmin: governanceAdmin.address,
       };
-      scheduledMaintenanceConfig[network.name] = {
+      MaintenanceConfig[network.name] = {
         minMaintenanceBlockPeriod,
         maxMaintenanceBlockPeriod,
         minOffset,
@@ -121,19 +121,16 @@ describe('Scheduled Maintenance test', () => {
       'RoninValidatorSetProxy',
       'SlashIndicatorProxy',
       'StakingProxy',
-      'ScheduledMaintenanceProxy',
+      'MaintenanceProxy',
       'StakingVestingProxy',
     ]);
 
-    const scheduledMaintenanceDeployment = await deployments.get('ScheduledMaintenanceProxy');
+    const MaintenanceDeployment = await deployments.get('MaintenanceProxy');
     const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
     const stakingContractDeployment = await deployments.get('StakingProxy');
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
 
-    scheduledMaintenanceContract = ScheduledMaintenance__factory.connect(
-      scheduledMaintenanceDeployment.address,
-      deployer
-    );
+    MaintenanceContract = Maintenance__factory.connect(MaintenanceDeployment.address, deployer);
     slashContract = SlashIndicator__factory.connect(slashContractDeployment.address, deployer);
     stakingContract = Staking__factory.connect(stakingContractDeployment.address, deployer);
     validatorContract = MockRoninValidatorSetExtends__factory.connect(validatorContractDeployment.address, deployer);
@@ -171,19 +168,23 @@ describe('Scheduled Maintenance test', () => {
       endedAtBlock = 100;
       expect(startedAtBlock - currentBlock).lt(minOffset);
       await expect(
-        scheduledMaintenanceContract
-          .connect(validatorCandidates[0])
-          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('ScheduledMaintenance: invalid offset size');
+        MaintenanceContract.connect(validatorCandidates[0]).schedule(
+          validatorCandidates[0].address,
+          startedAtBlock,
+          endedAtBlock
+        )
+      ).revertedWith('Maintenance: invalid offset size');
 
       startedAtBlock = currentBlock;
       endedAtBlock = currentBlock + 1000;
       expect(startedAtBlock - currentBlock).lt(minOffset);
       await expect(
-        scheduledMaintenanceContract
-          .connect(validatorCandidates[0])
-          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('ScheduledMaintenance: invalid offset size');
+        MaintenanceContract.connect(validatorCandidates[0]).schedule(
+          validatorCandidates[0].address,
+          startedAtBlock,
+          endedAtBlock
+        )
+      ).revertedWith('Maintenance: invalid offset size');
     });
 
     it('Should be not able to request maintenance in case of: start block >= end block', async () => {
@@ -191,36 +192,44 @@ describe('Scheduled Maintenance test', () => {
       endedAtBlock = currentBlock;
       expect(endedAtBlock).lte(startedAtBlock);
       await expect(
-        scheduledMaintenanceContract
-          .connect(validatorCandidates[0])
-          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('ScheduledMaintenance: start block must be less than end block');
+        MaintenanceContract.connect(validatorCandidates[0]).schedule(
+          validatorCandidates[0].address,
+          startedAtBlock,
+          endedAtBlock
+        )
+      ).revertedWith('Maintenance: start block must be less than end block');
 
       endedAtBlock = startedAtBlock;
       expect(endedAtBlock).lte(startedAtBlock);
       await expect(
-        scheduledMaintenanceContract
-          .connect(validatorCandidates[0])
-          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('ScheduledMaintenance: start block must be less than end block');
+        MaintenanceContract.connect(validatorCandidates[0]).schedule(
+          validatorCandidates[0].address,
+          startedAtBlock,
+          endedAtBlock
+        )
+      ).revertedWith('Maintenance: start block must be less than end block');
     });
 
     it('Should be not able to request maintenance when the maintenance period is too small or large', async () => {
       endedAtBlock = BigNumber.from(startedAtBlock).add(1);
       expect(endedAtBlock.sub(startedAtBlock)).lt(minMaintenanceBlockPeriod);
       await expect(
-        scheduledMaintenanceContract
-          .connect(validatorCandidates[0])
-          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('ScheduledMaintenance: invalid maintenance block period');
+        MaintenanceContract.connect(validatorCandidates[0]).schedule(
+          validatorCandidates[0].address,
+          startedAtBlock,
+          endedAtBlock
+        )
+      ).revertedWith('Maintenance: invalid maintenance block period');
 
       endedAtBlock = BigNumber.from(startedAtBlock).add(maxMaintenanceBlockPeriod).add(1);
       expect(endedAtBlock.sub(startedAtBlock)).gt(maxMaintenanceBlockPeriod);
       await expect(
-        scheduledMaintenanceContract
-          .connect(validatorCandidates[0])
-          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('ScheduledMaintenance: invalid maintenance block period');
+        MaintenanceContract.connect(validatorCandidates[0]).schedule(
+          validatorCandidates[0].address,
+          startedAtBlock,
+          endedAtBlock
+        )
+      ).revertedWith('Maintenance: invalid maintenance block period');
     });
 
     it('Should be not able to request maintenance when the start block is not at the start of an epoch', async () => {
@@ -230,10 +239,12 @@ describe('Scheduled Maintenance test', () => {
       expect(startedAtBlock.mod(numberOfBlocksInEpoch)).not.eq(0);
       expect(endedAtBlock.mod(numberOfBlocksInEpoch)).eq(numberOfBlocksInEpoch - 1);
       await expect(
-        scheduledMaintenanceContract
-          .connect(validatorCandidates[0])
-          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('ScheduledMaintenance: start block is not at the start of an epoch');
+        MaintenanceContract.connect(validatorCandidates[0]).schedule(
+          validatorCandidates[0].address,
+          startedAtBlock,
+          endedAtBlock
+        )
+      ).revertedWith('Maintenance: start block is not at the start of an epoch');
     });
 
     it('Should be not able to request maintenance when the end block is not at the end of an epoch', async () => {
@@ -244,58 +255,68 @@ describe('Scheduled Maintenance test', () => {
       expect(startedAtBlock.mod(numberOfBlocksInEpoch)).eq(0);
       expect(endedAtBlock.mod(numberOfBlocksInEpoch)).not.eq(numberOfBlocksInEpoch - 1);
       await expect(
-        scheduledMaintenanceContract
-          .connect(validatorCandidates[0])
-          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('ScheduledMaintenance: end block is not at the end of an epoch');
+        MaintenanceContract.connect(validatorCandidates[0]).schedule(
+          validatorCandidates[0].address,
+          startedAtBlock,
+          endedAtBlock
+        )
+      ).revertedWith('Maintenance: end block is not at the end of an epoch');
     });
   });
 
   describe('Schedule test', () => {
     it('Should not be able to request maintenance using unauthorized account', async () => {
-      await expect(
-        scheduledMaintenanceContract.connect(deployer).schedule(validatorCandidates[0].address, 0, 100)
-      ).revertedWith('ScheduledMaintenance: method caller must be a candidate admin');
+      await expect(MaintenanceContract.connect(deployer).schedule(validatorCandidates[0].address, 0, 100)).revertedWith(
+        'Maintenance: method caller must be a candidate admin'
+      );
     });
 
     it('Should not be able to request maintenance for non-validator address', async () => {
-      await expect(
-        scheduledMaintenanceContract.connect(validatorCandidates[0]).schedule(deployer.address, 0, 100)
-      ).revertedWith('ScheduledMaintenance: consensus address must be a validator');
+      await expect(MaintenanceContract.connect(validatorCandidates[0]).schedule(deployer.address, 0, 100)).revertedWith(
+        'Maintenance: consensus address must be a validator'
+      );
     });
     it('Should be able to request maintenance using validator admin account', async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       startedAtBlock = calculateStartOfEpoch(currentBlock).add(numberOfBlocksInEpoch);
       endedAtBlock = calculateEndOfEpoch(BigNumber.from(startedAtBlock).add(minMaintenanceBlockPeriod));
-      const tx = await scheduledMaintenanceContract
-        .connect(validatorCandidates[0])
-        .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock);
+      const tx = await MaintenanceContract.connect(validatorCandidates[0]).schedule(
+        validatorCandidates[0].address,
+        startedAtBlock,
+        endedAtBlock
+      );
       await expect(tx)
-        .emit(scheduledMaintenanceContract, 'MaintenanceScheduled')
+        .emit(MaintenanceContract, 'MaintenanceScheduled')
         .withArgs(validatorCandidates[0].address, [startedAtBlock, endedAtBlock]);
-      expect(await scheduledMaintenanceContract.scheduled(validatorCandidates[0].address)).true;
+      expect(await MaintenanceContract.scheduled(validatorCandidates[0].address)).true;
     });
 
     it('Should not be able to request maintenance again', async () => {
       await expect(
-        scheduledMaintenanceContract
-          .connect(validatorCandidates[0])
-          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('ScheduledMaintenance: already scheduled');
+        MaintenanceContract.connect(validatorCandidates[0]).schedule(
+          validatorCandidates[0].address,
+          startedAtBlock,
+          endedAtBlock
+        )
+      ).revertedWith('Maintenance: already scheduled');
     });
 
     it('Should be able to request maintenance using another validator admin account', async () => {
-      await scheduledMaintenanceContract
-        .connect(validatorCandidates[1])
-        .schedule(validatorCandidates[1].address, startedAtBlock, endedAtBlock);
+      await MaintenanceContract.connect(validatorCandidates[1]).schedule(
+        validatorCandidates[1].address,
+        startedAtBlock,
+        endedAtBlock
+      );
     });
 
     it('Should not be able to request maintenance once there are many schedules', async () => {
       await expect(
-        scheduledMaintenanceContract
-          .connect(validatorCandidates[3])
-          .schedule(validatorCandidates[3].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('ScheduledMaintenance: exceeds total of schedules');
+        MaintenanceContract.connect(validatorCandidates[3]).schedule(
+          validatorCandidates[3].address,
+          startedAtBlock,
+          endedAtBlock
+        )
+      ).revertedWith('Maintenance: exceeds total of schedules');
     });
 
     it('Should the validator still appear in the validator list since it is not maintenance time yet', async () => {

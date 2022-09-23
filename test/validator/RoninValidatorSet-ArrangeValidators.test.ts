@@ -13,7 +13,7 @@ import {
   MockSlashIndicator,
   MockSlashIndicator__factory,
   StakingVesting__factory,
-  ScheduledMaintenance__factory,
+  Maintenance__factory,
 } from '../../src/types';
 import { Address } from 'hardhat-deploy/dist/types';
 
@@ -75,7 +75,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
   before(async () => {
     [deployer, proxyAdmin, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
 
-    const scheduleMaintenance = await new ScheduledMaintenance__factory(deployer).deploy();
+    const scheduleMaintenance = await new Maintenance__factory(deployer).deploy();
     const nonce = await deployer.getTransactionCount();
     const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
     const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 6 });

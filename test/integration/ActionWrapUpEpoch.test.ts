@@ -18,11 +18,10 @@ import {
   stakingConfig,
   initAddress,
   stakingVestingConfig,
-  scheduledMaintenanceConfig,
+  MaintenanceConfig,
 } from '../../src/config';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { expects as StakingExpects } from '../helpers/reward-calculation';
-import { expects as SlashExpects } from '../helpers/slash-indicator';
 import { expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
 
@@ -68,7 +67,7 @@ describe('[Integration] Wrap up epoch', () => {
       initAddress[network.name] = {
         governanceAdmin: governanceAdmin.address,
       };
-      scheduledMaintenanceConfig[network.name] = {
+      MaintenanceConfig[network.name] = {
         minMaintenanceBlockPeriod,
         maxMaintenanceBlockPeriod,
         minOffset,
@@ -229,7 +228,7 @@ describe('[Integration] Wrap up epoch', () => {
           await validatorContract.endEpoch();
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
-        await expect(wrapUpTx).not.to.emit(slashContract, 'UnavailabilityIndicatorsReset');
+        // TODO: slash someone here and check the slash indicator
       });
 
       it('Should the ValidatorSet reset counter in SlashIndicator contract', async () => {
@@ -238,13 +237,7 @@ describe('[Integration] Wrap up epoch', () => {
           await validatorContract.endPeriod();
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
-        await SlashExpects.emitUnavailabilityIndicatorsResetEvent(
-          wrapUpTx,
-          validators
-            .slice(1, 4)
-            .map((_) => _.address)
-            .reverse()
-        );
+        // TODO: slash someone here and check the slash indicator
       });
     });
   });
@@ -306,10 +299,7 @@ describe('[Integration] Wrap up epoch', () => {
           await validatorContract.endPeriod();
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
-        await SlashExpects.emitUnavailabilityIndicatorsResetEvent(
-          wrapUpTx,
-          [validators[0], validators[2], validators[3]].map((_) => _.address).reverse()
-        );
+        // TODO: slash someone here and check the slash indicator
       });
     });
   });

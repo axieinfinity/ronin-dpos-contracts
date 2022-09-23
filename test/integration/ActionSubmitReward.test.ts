@@ -19,7 +19,7 @@ import {
   stakingConfig,
   initAddress,
   stakingVestingConfig,
-  scheduledMaintenanceConfig,
+  MaintenanceConfig,
 } from '../../src/config';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { mineBatchTxs } from '../helpers/utils';
@@ -66,7 +66,7 @@ describe('[Integration] Submit Block Reward', () => {
       initAddress[network.name] = {
         governanceAdmin: governanceAdmin.address,
       };
-      scheduledMaintenanceConfig[network.name] = {
+      MaintenanceConfig[network.name] = {
         minMaintenanceBlockPeriod,
         maxMaintenanceBlockPeriod,
         minOffset,
