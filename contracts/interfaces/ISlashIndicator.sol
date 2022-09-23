@@ -100,4 +100,17 @@ interface ISlashIndicator {
    * @dev Gets the slash thresholds
    */
   function getSlashThresholds() external view returns (uint256 misdemeanorThreshold, uint256 felonyThreshold);
+
+  /**
+   * @dev Checks the slashed tier for unavailability of a validator.
+   */
+  function getUnavailabilitySlashType(address _validatorAddr, uint256 _period) external view returns (SlashType);
+
+  /**
+   * @dev Returns the scaled thresholds based on the maintenance duration for unavailability slashing.
+   */
+  function getUnavailabilityThresholds(address _addr, uint256 _block)
+    external
+    view
+    returns (uint256 _felonyThreshold, uint256 _misdemeanorThreshold);
 }

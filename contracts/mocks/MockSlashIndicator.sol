@@ -55,4 +55,18 @@ contract MockSlashIndicator is ISlashIndicator {
   function currentUnavailabilityIndicator(address _validator) external view override returns (uint256) {}
 
   function getUnavailabilityIndicator(address _validator, uint256 _period) external view override returns (uint256) {}
+
+  function getUnavailabilitySlashType(address _validatorAddr, uint256 _period)
+    external
+    view
+    override
+    returns (SlashType)
+  {}
+
+  function getUnavailabilityThresholds(address _addr, uint256 _block)
+    external
+    view
+    override
+    returns (uint256 _felonyThreshold, uint256 _misdemeanorThreshold)
+  {}
 }

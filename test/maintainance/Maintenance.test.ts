@@ -167,7 +167,7 @@ describe('Maintenance test', () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
     });
 
-    it('Should be not able to request maintenance with invalid offset', async () => {
+    it('Should be not able to schedule maintenance with invalid offset', async () => {
       startedAtBlock = 0;
       endedAtBlock = 100;
       expect(startedAtBlock - currentBlock).lt(minOffset);
@@ -187,7 +187,7 @@ describe('Maintenance test', () => {
       ).revertedWith('Maintenance: invalid offset size');
     });
 
-    it('Should be not able to request maintenance in case of: start block >= end block', async () => {
+    it('Should be not able to schedule maintenance in case of: start block >= end block', async () => {
       startedAtBlock = currentBlock + minOffset;
       endedAtBlock = currentBlock;
       expect(endedAtBlock).lte(startedAtBlock);
@@ -206,7 +206,7 @@ describe('Maintenance test', () => {
       ).revertedWith('Maintenance: start block must be less than end block');
     });
 
-    it('Should be not able to request maintenance when the maintenance period is too small or large', async () => {
+    it('Should be not able to schedule maintenance when the maintenance period is too small or large', async () => {
       endedAtBlock = BigNumber.from(startedAtBlock).add(1);
       expect(endedAtBlock.sub(startedAtBlock)).lt(minMaintenanceBlockPeriod);
       await expect(
@@ -224,7 +224,7 @@ describe('Maintenance test', () => {
       ).revertedWith('Maintenance: invalid maintenance block period');
     });
 
-    it('Should be not able to request maintenance when the start block is not at the start of an epoch', async () => {
+    it('Should be not able to schedule maintenance when the start block is not at the start of an epoch', async () => {
       startedAtBlock = calculateStartOfEpoch(currentBlock).add(1);
       endedAtBlock = calculateEndOfEpoch(startedAtBlock.add(minMaintenanceBlockPeriod));
 
@@ -237,7 +237,7 @@ describe('Maintenance test', () => {
       ).revertedWith('Maintenance: start block is not at the start of an epoch');
     });
 
-    it('Should be not able to request maintenance when the end block is not at the end of an epoch', async () => {
+    it('Should be not able to schedule maintenance when the end block is not at the end of an epoch', async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       startedAtBlock = calculateStartOfEpoch(currentBlock);
       endedAtBlock = calculateEndOfEpoch(startedAtBlock.add(minMaintenanceBlockPeriod)).add(1);
@@ -253,19 +253,19 @@ describe('Maintenance test', () => {
   });
 
   describe('Schedule test', () => {
-    it('Should not be able to request maintenance using unauthorized account', async () => {
+    it('Should not be able to schedule maintenance using unauthorized account', async () => {
       await expect(maintenanceContract.connect(deployer).schedule(validatorCandidates[0].address, 0, 100)).revertedWith(
         'Maintenance: method caller must be a candidate admin'
       );
     });
 
-    it('Should not be able to request maintenance for non-validator address', async () => {
+    it('Should not be able to schedule maintenance for non-validator address', async () => {
       await expect(maintenanceContract.connect(validatorCandidates[0]).schedule(deployer.address, 0, 100)).revertedWith(
         'Maintenance: consensus address must be a validator'
       );
     });
 
-    it('Should be able to request maintenance using validator admin account', async () => {
+    it('Should be able to schedule maintenance using validator admin account', async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       startedAtBlock = calculateStartOfEpoch(currentBlock).add(numberOfBlocksInEpoch);
       endedAtBlock = calculateEndOfEpoch(BigNumber.from(startedAtBlock).add(minMaintenanceBlockPeriod));
@@ -279,7 +279,7 @@ describe('Maintenance test', () => {
       expect(await maintenanceContract.scheduled(validatorCandidates[0].address)).true;
     });
 
-    it('Should not be able to request maintenance again', async () => {
+    it('Should not be able to schedule maintenance again', async () => {
       await expect(
         maintenanceContract
           .connect(validatorCandidates[0])
@@ -287,13 +287,13 @@ describe('Maintenance test', () => {
       ).revertedWith('Maintenance: already scheduled');
     });
 
-    it('Should be able to request maintenance using another validator admin account', async () => {
+    it('Should be able to schedule maintenance using another validator admin account', async () => {
       await maintenanceContract
         .connect(validatorCandidates[1])
         .schedule(validatorCandidates[1].address, startedAtBlock, endedAtBlock);
     });
 
-    it('Should not be able to request maintenance once there are many schedules', async () => {
+    it('Should not be able to schedule maintenance once there are many schedules', async () => {
       await expect(
         maintenanceContract
           .connect(validatorCandidates[3])
@@ -324,6 +324,17 @@ describe('Maintenance test', () => {
       await mineToBeforeEndOfEpoch();
       await validatorContract.connect(coinbase).wrapUpEpoch();
       expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
+    });
+
+    it('Should not be able to schedule maintenance twice in a period', async () => {
+      currentBlock = (await ethers.provider.getBlockNumber()) + 1;
+      startedAtBlock = calculateStartOfEpoch(currentBlock);
+      endedAtBlock = calculateEndOfEpoch(startedAtBlock);
+      await expect(
+        maintenanceContract
+          .connect(validatorCandidates[0])
+          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
+      ).revertedWith('Maintenance: schedule twice in a period is not allowed');
     });
   });
 });

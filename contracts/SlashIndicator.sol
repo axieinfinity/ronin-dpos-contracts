@@ -13,6 +13,9 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
 
   /// @dev Mapping from validator address => period index => unavailability indicator
   mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
+  /// @dev Maping from validator address => period index => slash type
+  mapping(address => mapping(uint256 => SlashType)) internal _unavailabilitySlashed;
+
   /// @dev The last block that a validator is slashed
   uint256 public lastSlashedBlock;
 
@@ -80,41 +83,22 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
 
     uint256 _period = _validatorContract.periodOf(block.number);
     uint256 _count = ++_unavailabilityIndicator[_validatorAddr][_period];
+    (uint256 _felonyThreshold, uint256 _misdemeanorThreshold) = getUnavailabilityThresholds(
+      _validatorAddr,
+      block.number
+    );
 
-    if (_count == felonyThreshold) {
+    SlashType _slashType = getUnavailabilitySlashType(_validatorAddr, _period);
+    // TODO: update test for this section
+    if (_count >= _felonyThreshold && _slashType < SlashType.FELONY) {
+      _unavailabilitySlashed[_validatorAddr][_period] = SlashType.FELONY;
       emit UnavailabilitySlashed(_validatorAddr, SlashType.FELONY, _period);
       _validatorContract.slash(_validatorAddr, block.number + felonyJailDuration, slashFelonyAmount);
-    } else if (_count == misdemeanorThreshold) {
+    } else if (_count >= _misdemeanorThreshold && _slashType < SlashType.MISDEMEANOR) {
+      _unavailabilitySlashed[_validatorAddr][_period] = SlashType.MISDEMEANOR;
       emit UnavailabilitySlashed(_validatorAddr, SlashType.MISDEMEANOR, _period);
       _validatorContract.slash(_validatorAddr, 0, 0);
     }
-  }
-
-  /**
-   * @dev Returns the scaled thresholds for unavailability slashing.
-   */
-  function getUnavailabilityThresholds(address _addr, uint256 _block)
-    public
-    view
-    returns (uint256 _felonyThreshold, uint256 _misdemeanorThreshold)
-  {
-    uint256 _blockLength = _validatorContract.numberOfBlocksInEpoch() * _validatorContract.numberOfEpochsInPeriod();
-    uint256 _start = (_block / _blockLength) * _blockLength;
-    uint256 _end = _start + _blockLength - 1;
-    IMaintenance.Schedule memory _s = _maintenanceContract.getSchedule(_addr);
-
-    uint256 _diff = _blockLength;
-    // TODO: add explaination here
-    if (_s.from.inRange(_start, _end) && _s.to.inRange(_start, _end)) {
-      _diff -= Math.min(_s.to, _block) - Math.min(_s.from, _block);
-    } else if (_s.from.inRange(_start, _end)) {
-      _diff -= _block - Math.min(_s.from, _block);
-    } else if (_s.to.inRange(_start, _end)) {
-      _diff -= Math.min(_s.to, _block) - _start;
-    }
-
-    _felonyThreshold = felonyThreshold.scale(_diff, _blockLength);
-    _misdemeanorThreshold = misdemeanorThreshold.scale(_diff, _blockLength);
   }
 
   /**
@@ -165,6 +149,39 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
   ///////////////////////////////////////////////////////////////////////////////////////
   //                                  QUERY FUNCTIONS                                  //
   ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function getUnavailabilitySlashType(address _validatorAddr, uint256 _period) public view returns (SlashType) {
+    return _unavailabilitySlashed[_validatorAddr][_period];
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function getUnavailabilityThresholds(address _addr, uint256 _block)
+    public
+    view
+    returns (uint256 _felonyThreshold, uint256 _misdemeanorThreshold)
+  {
+    uint256 _blockLength = _validatorContract.numberOfBlocksInEpoch() * _validatorContract.numberOfEpochsInPeriod();
+    uint256 _start = (_block / _blockLength) * _blockLength;
+    uint256 _end = _start + _blockLength - 1;
+    IMaintenance.Schedule memory _s = _maintenanceContract.getSchedule(_addr);
+
+    uint256 _availableDuration = _blockLength;
+    if (_s.from.inRange(_start, _end) && _s.to.inRange(_start, _end)) {
+      _availableDuration -= _s.to - _s.from;
+    } else if (_s.from.inRange(_start, _end)) {
+      _availableDuration -= _end - _s.from;
+    } else if (_s.to.inRange(_start, _end)) {
+      _availableDuration -= _s.to - _start;
+    }
+
+    _felonyThreshold = felonyThreshold.scale(_availableDuration, _blockLength);
+    _misdemeanorThreshold = misdemeanorThreshold.scale(_availableDuration, _blockLength);
+  }
 
   /**
    * @inheritdoc ISlashIndicator
