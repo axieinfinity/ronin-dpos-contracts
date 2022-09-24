@@ -92,25 +92,28 @@ interface ISlashIndicator {
   function currentUnavailabilityIndicator(address _validator) external view returns (uint256);
 
   /**
+   * @dev Returns the scaled thresholds based on the maintenance duration for unavailability slashing.
+   */
+  function unavailabilityThresholdsOf(address _addr, uint256 _block)
+    external
+    view
+    returns (uint256 _misdemeanorThreshold, uint256 _felonyThreshold);
+
+  /**
    * @dev Retursn the unavailability indicator in the period `_period` of a validator.
    */
   function getUnavailabilityIndicator(address _validator, uint256 _period) external view returns (uint256);
 
   /**
-   * @dev Gets the slash thresholds
+   * @dev Gets the unavailability thresholds.
    */
-  function getSlashThresholds() external view returns (uint256 misdemeanorThreshold, uint256 felonyThreshold);
+  function getUnavailabilityThresholds()
+    external
+    view
+    returns (uint256 _misdemeanorThreshold, uint256 _felonyThreshold);
 
   /**
    * @dev Checks the slashed tier for unavailability of a validator.
    */
   function getUnavailabilitySlashType(address _validatorAddr, uint256 _period) external view returns (SlashType);
-
-  /**
-   * @dev Returns the scaled thresholds based on the maintenance duration for unavailability slashing.
-   */
-  function getUnavailabilityThresholds(address _addr, uint256 _block)
-    external
-    view
-    returns (uint256 _felonyThreshold, uint256 _misdemeanorThreshold);
 }

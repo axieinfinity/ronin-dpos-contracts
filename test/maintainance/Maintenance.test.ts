@@ -25,6 +25,8 @@ let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: RoninValidatorSet;
 
+const misdemeanorThreshold = 50;
+const felonyThreshold = 150;
 const maxValidatorNumber = 4;
 const numberOfBlocksInEpoch = 600;
 const numberOfEpochsInPeriod = 48;
@@ -56,7 +58,11 @@ describe('Maintenance test', () => {
   before(async () => {
     [deployer, coinbase, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
     const { maintenanceContractAddress, slashContractAddress, stakingContractAddress, validatorContractAddress } =
-      await initTest('Maintenance')({ governanceAdmin: governanceAdmin.address });
+      await initTest('Maintenance')({
+        governanceAdmin: governanceAdmin.address,
+        misdemeanorThreshold,
+        felonyThreshold,
+      });
     maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -240,11 +246,24 @@ describe('Maintenance test', () => {
       expect(await validatorContract.getValidators()).eql(validatorCandidates.slice(2).map((_) => _.address));
     });
 
-    it('Should not be able to slash the validator in maintenance time', async () => {
+    it('[Slash Integration] Should not be able to slash the validator in maintenance time', async () => {
       await slashContract.connect(coinbase).slash(validatorCandidates[0].address);
       expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[0].address)).eq(0);
       await slashContract.connect(coinbase).slash(validatorCandidates[1].address);
       expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[1].address)).eq(0);
+    });
+
+    it('[Slash Integration] Should the unavailability thresholds of the validator is rescaled', async () => {
+      currentBlock = await ethers.provider.getBlockNumber();
+      const thresholds = await slashContract.unavailabilityThresholdsOf(validatorCandidates[0].address, currentBlock);
+
+      const blockLength = BigNumber.from(numberOfBlocksInEpoch * numberOfEpochsInPeriod);
+      const diff = blockLength.sub(BigNumber.from(endedAtBlock).sub(startedAtBlock).add(1));
+
+      expect(thresholds).eql([
+        diff.mul(misdemeanorThreshold).div(blockLength),
+        diff.mul(felonyThreshold).div(blockLength),
+      ]);
     });
 
     it('Should the validator appear in the validator list since the maintenance time is ended', async () => {
@@ -262,6 +281,24 @@ describe('Maintenance test', () => {
           .connect(validatorCandidates[0])
           .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
       ).revertedWith('Maintenance: schedule twice in a period is not allowed');
+    });
+
+    it('[Slash Integration] Should the unavailability thresholds reset in the next period', async () => {
+      await network.provider.send('hardhat_mine', [
+        ethers.utils.hexStripZeros(BigNumber.from(numberOfBlocksInEpoch * numberOfEpochsInPeriod).toHexString()),
+      ]);
+      currentBlock = await ethers.provider.getBlockNumber();
+      const thresholds = await slashContract.unavailabilityThresholdsOf(validatorCandidates[0].address, currentBlock);
+      expect(thresholds.map((v) => v.toNumber())).eql([misdemeanorThreshold, felonyThreshold]);
+    });
+
+    it('Should be able to schedule in the next period', async () => {
+      currentBlock = (await ethers.provider.getBlockNumber()) + 1;
+      startedAtBlock = calculateStartOfEpoch(currentBlock);
+      endedAtBlock = calculateEndOfEpoch(startedAtBlock);
+      await maintenanceContract
+        .connect(validatorCandidates[0])
+        .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock);
     });
   });
 });

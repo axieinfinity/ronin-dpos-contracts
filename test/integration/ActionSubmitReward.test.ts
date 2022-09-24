@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { network, ethers, deployments } from 'hardhat';
+import { network, ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { BigNumber, ContractTransaction } from 'ethers';

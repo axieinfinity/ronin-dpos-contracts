@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { network, ethers, deployments } from 'hardhat';
+import { network, ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Address } from 'hardhat-deploy/dist/types';
 import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
@@ -34,6 +34,8 @@ const felonyThreshold = 20;
 const slashFelonyAmount = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
 const minValidatorBalance = BigNumber.from(100);
+const numberOfBlocksInEpoch = 600;
+const numberOfEpochsInPeriod = 48;
 
 describe('[Integration] Slash validators', () => {
   before(async () => {
@@ -60,6 +62,9 @@ describe('[Integration] Slash validators', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtends__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await network.provider.send('hardhat_mine', [
+      ethers.utils.hexStripZeros(BigNumber.from(numberOfBlocksInEpoch * numberOfEpochsInPeriod).toHexString()),
+    ]);
   });
 
   describe('Slash one validator', async () => {

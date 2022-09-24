@@ -83,21 +83,25 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
 
     uint256 _period = _validatorContract.periodOf(block.number);
     uint256 _count = ++_unavailabilityIndicator[_validatorAddr][_period];
-    (uint256 _felonyThreshold, uint256 _misdemeanorThreshold) = getUnavailabilityThresholds(
+    (uint256 _misdemeanorThreshold, uint256 _felonyThreshold) = unavailabilityThresholdsOf(
       _validatorAddr,
       block.number
     );
 
     SlashType _slashType = getUnavailabilitySlashType(_validatorAddr, _period);
-    // TODO: update test for this section
+
     if (_count >= _felonyThreshold && _slashType < SlashType.FELONY) {
       _unavailabilitySlashed[_validatorAddr][_period] = SlashType.FELONY;
       emit UnavailabilitySlashed(_validatorAddr, SlashType.FELONY, _period);
       _validatorContract.slash(_validatorAddr, block.number + felonyJailDuration, slashFelonyAmount);
-    } else if (_count >= _misdemeanorThreshold && _slashType < SlashType.MISDEMEANOR) {
+      return;
+    }
+
+    if (_count >= _misdemeanorThreshold && _slashType < SlashType.MISDEMEANOR) {
       _unavailabilitySlashed[_validatorAddr][_period] = SlashType.MISDEMEANOR;
       emit UnavailabilitySlashed(_validatorAddr, SlashType.MISDEMEANOR, _period);
       _validatorContract.slash(_validatorAddr, 0, 0);
+      return;
     }
   }
 
@@ -160,10 +164,10 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
   /**
    * @inheritdoc ISlashIndicator
    */
-  function getUnavailabilityThresholds(address _addr, uint256 _block)
+  function unavailabilityThresholdsOf(address _addr, uint256 _block)
     public
     view
-    returns (uint256 _felonyThreshold, uint256 _misdemeanorThreshold)
+    returns (uint256 _misdemeanorThreshold, uint256 _felonyThreshold)
   {
     uint256 _blockLength = _validatorContract.numberOfBlocksInEpoch() * _validatorContract.numberOfEpochsInPeriod();
     uint256 _start = (_block / _blockLength) * _blockLength;
@@ -174,15 +178,15 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     bool _toInRange = _s.to.inRange(_start, _end);
     uint256 _availableDuration = _blockLength;
     if (_fromInRange && _toInRange) {
-      _availableDuration -= _s.to - _s.from;
+      _availableDuration -= _s.to - _s.from + 1;
     } else if (_fromInRange) {
-      _availableDuration -= _end - _s.from;
+      _availableDuration -= _end - _s.from + 1;
     } else if (_toInRange) {
-      _availableDuration -= _s.to - _start;
+      _availableDuration -= _s.to - _start + 1;
     }
 
-    _felonyThreshold = felonyThreshold.scale(_availableDuration, _blockLength);
     _misdemeanorThreshold = misdemeanorThreshold.scale(_availableDuration, _blockLength);
+    _felonyThreshold = felonyThreshold.scale(_availableDuration, _blockLength);
   }
 
   /**
@@ -195,7 +199,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
   /**
    * @inheritdoc ISlashIndicator
    */
-  function getSlashThresholds() external view override returns (uint256, uint256) {
+  function getUnavailabilityThresholds() external view override returns (uint256, uint256) {
     return (misdemeanorThreshold, felonyThreshold);
   }
 

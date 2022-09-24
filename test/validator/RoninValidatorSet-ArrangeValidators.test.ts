@@ -2,8 +2,9 @@ import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import * as RoninValidatorSet from '../helpers/ronin-validator-set';
+import { Address } from 'hardhat-deploy/dist/types';
 
+import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import {
   Staking,
   MockRoninValidatorSetExtends,
@@ -15,7 +16,6 @@ import {
   StakingVesting__factory,
   Maintenance__factory,
 } from '../../src/types';
-import { Address } from 'hardhat-deploy/dist/types';
 
 let validatorContract: MockRoninValidatorSetExtends;
 let stakingContract: Staking;

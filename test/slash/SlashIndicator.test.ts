@@ -3,18 +3,11 @@ import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-import {
-  SlashIndicator,
-  SlashIndicator__factory,
-  Maintenance,
-  MockValidatorSet__factory,
-  MockValidatorSet,
-} from '../../src/types';
+import { SlashIndicator, SlashIndicator__factory, MockValidatorSet__factory, MockValidatorSet } from '../../src/types';
 import { SlashType } from '../../src/script/slash-indicator';
 import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 
 let slashContract: SlashIndicator;
-let maintenanceContract: Maintenance;
 
 let deployer: SignerWithAddress;
 let governanceAdmin: SignerWithAddress;
@@ -79,7 +72,9 @@ describe('Slash indicator test', () => {
       slashContract.interface.encodeFunctionData('setValidatorContract', [mockValidatorsContract.address])
     );
 
-    [misdemeanorThreshold, felonyThreshold] = (await slashContract.getSlashThresholds()).map((_) => _.toNumber());
+    [misdemeanorThreshold, felonyThreshold] = (await slashContract.getUnavailabilityThresholds()).map((_) =>
+      _.toNumber()
+    );
   });
 
   after(async () => {
