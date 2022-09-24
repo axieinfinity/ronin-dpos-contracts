@@ -27,7 +27,7 @@ let proxyAdmin: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
 const slashFelonyAmount = 100;
-const slashDoubleSignAmount = 1000;
+const slashDoubleSignAmount = BigNumber.from(10).pow(18).mul(10);
 
 const maxValidatorNumber = 7;
 const maxPrioritizedValidatorNumber = 4;

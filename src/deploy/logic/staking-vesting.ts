@@ -12,6 +12,5 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['StakingVestingLogic'];
-deploy.dependencies = ['ProxyAdmin'];
 
 export default deploy;

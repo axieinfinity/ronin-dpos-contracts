@@ -8,7 +8,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  const proxyAdmin = await deployments.get('ProxyAdmin');
   const logicContract = await deployments.get('SlashIndicatorLogic');
 
   const data = new SlashIndicator__factory().interface.encodeFunctionData('initialize', [
@@ -25,11 +24,11 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    args: [logicContract.address, proxyAdmin.address, data],
+    args: [logicContract.address, initAddress[network.name]!.governanceAdmin, data],
   });
 };
 
 deploy.tags = ['SlashIndicatorProxy'];
-deploy.dependencies = ['ProxyAdmin', 'SlashIndicatorLogic', 'StakingVestingProxy'];
+deploy.dependencies = ['SlashIndicatorLogic', 'StakingVestingProxy'];
 
 export default deploy;

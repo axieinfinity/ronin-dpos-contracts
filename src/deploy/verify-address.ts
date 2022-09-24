@@ -49,12 +49,6 @@ const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
 };
 
 deploy.tags = ['VerifyAddress'];
-deploy.dependencies = [
-  'ProxyAdmin',
-  'StakingProxy',
-  'SlashIndicatorProxy',
-  'StakingVestingProxy',
-  'RoninValidatorSetProxy',
-];
+deploy.dependencies = ['StakingProxy', 'SlashIndicatorProxy', 'StakingVestingProxy', 'RoninValidatorSetProxy'];
 
 export default deploy;

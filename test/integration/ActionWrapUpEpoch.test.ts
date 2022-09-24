@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { network, ethers, deployments } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { BigNumber, ContractTransaction } from 'ethers';
 
 import {
   SlashIndicator,
@@ -9,118 +10,53 @@ import {
   Staking__factory,
   MockRoninValidatorSetExtends__factory,
   MockRoninValidatorSetExtends,
-  ProxyAdmin__factory,
 } from '../../src/types';
-import {
-  Network,
-  slashIndicatorConf,
-  roninValidatorSetConf,
-  stakingConfig,
-  initAddress,
-  stakingVestingConfig,
-  MaintenanceConfig,
-} from '../../src/config';
-import { BigNumber, ContractTransaction } from 'ethers';
 import { expects as StakingExpects } from '../helpers/reward-calculation';
 import { expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
+import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: MockRoninValidatorSetExtends;
+let governanceAdmin: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
-let governanceAdmin: SignerWithAddress;
+let governor: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
-const felonyJailDuration = 28800 * 2;
-const misdemeanorThreshold = 10;
-const felonyThreshold = 20;
+const felonyThreshold = 10;
 const slashFelonyAmount = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
-
-const maxValidatorNumber = 3;
-const maxPrioritizedValidatorNumber = 0;
-const numberOfBlocksInEpoch = 600;
-const numberOfEpochsInPeriod = 48;
-
 const minValidatorBalance = BigNumber.from(100);
-const maxValidatorCandidate = 10;
-
-const bonusPerBlock = BigNumber.from(1);
-const topUpAmount = BigNumber.from(10000);
-
-const minMaintenanceBlockPeriod = 100;
-const maxMaintenanceBlockPeriod = 1000;
-const minOffset = 200;
-const maxSchedules = 2;
+const maxValidatorNumber = 3;
 
 describe('[Integration] Wrap up epoch', () => {
   const blockRewardAmount = BigNumber.from(2);
 
   before(async () => {
-    [deployer, coinbase, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
+    [deployer, coinbase, governor, ...validatorCandidates] = await ethers.getSigners();
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+    governanceAdmin = new GovernanceAdminInterface(governor);
 
-    if (network.name == Network.Hardhat) {
-      initAddress[network.name] = {
-        governanceAdmin: governanceAdmin.address,
-      };
-      MaintenanceConfig[network.name] = {
-        minMaintenanceBlockPeriod,
-        maxMaintenanceBlockPeriod,
-        minOffset,
-        maxSchedules,
-      };
-      slashIndicatorConf[network.name] = {
-        misdemeanorThreshold: misdemeanorThreshold,
-        felonyThreshold: felonyThreshold,
-        slashFelonyAmount: slashFelonyAmount,
-        slashDoubleSignAmount: slashDoubleSignAmount,
-        felonyJailBlocks: felonyJailDuration,
-      };
-      roninValidatorSetConf[network.name] = {
-        maxValidatorNumber: maxValidatorNumber,
-        maxValidatorCandidate: maxValidatorCandidate,
-        maxPrioritizedValidatorNumber: maxPrioritizedValidatorNumber,
-        numberOfBlocksInEpoch: numberOfBlocksInEpoch,
-        numberOfEpochsInPeriod: numberOfEpochsInPeriod,
-      };
-      stakingConfig[network.name] = {
-        minValidatorBalance: minValidatorBalance,
-      };
-      stakingVestingConfig[network.name] = {
-        bonusPerBlock: bonusPerBlock,
-        topupAmount: topUpAmount,
-      };
-    }
-
-    await deployments.fixture([
-      'ProxyAdmin',
-      'CalculateAddresses',
-      'RoninValidatorSetProxy',
-      'SlashIndicatorProxy',
-      'StakingProxy',
-      'StakingVestingProxy',
-    ]);
-
-    const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
-    slashContract = SlashIndicator__factory.connect(slashContractDeployment.address, deployer);
-
-    const stakingContractDeployment = await deployments.get('StakingProxy');
-    stakingContract = Staking__factory.connect(stakingContractDeployment.address, deployer);
-
-    const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
-    validatorContract = MockRoninValidatorSetExtends__factory.connect(validatorContractDeployment.address, deployer);
+    const { slashContractAddress, stakingContractAddress, validatorContractAddress } = await initTest(
+      'ActionWrapUpEpoch'
+    )({
+      felonyThreshold,
+      slashFelonyAmount,
+      slashDoubleSignAmount,
+      minValidatorBalance,
+      maxValidatorNumber,
+      governanceAdmin: governanceAdmin.address,
+    });
+    slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
+    stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
+    validatorContract = MockRoninValidatorSetExtends__factory.connect(validatorContractAddress, deployer);
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtends__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
-
-    const proxyAdminDeployment = await deployments.get('ProxyAdmin');
-    let proxyAdminContract = ProxyAdmin__factory.connect(proxyAdminDeployment.address, deployer);
-
-    await proxyAdminContract.upgrade(validatorContract.address, mockValidatorLogic.address);
+    governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
   });
 
   after(async () => {

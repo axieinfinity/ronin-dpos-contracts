@@ -6,26 +6,26 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   SlashIndicator,
   SlashIndicator__factory,
-  TransparentUpgradeableProxyV2__factory,
   Maintenance,
-  Maintenance__factory,
   MockValidatorSet__factory,
   MockValidatorSet,
 } from '../../src/types';
 import { SlashType } from '../../src/script/slash-indicator';
-import { Network, slashIndicatorConf } from '../../src/config';
+import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 
 let slashContract: SlashIndicator;
 let maintenanceContract: Maintenance;
 
 let deployer: SignerWithAddress;
-let proxyAdmin: SignerWithAddress;
+let governanceAdmin: SignerWithAddress;
 let mockValidatorsContract: MockValidatorSet;
 let vagabond: SignerWithAddress;
 let coinbases: SignerWithAddress[];
 let localIndicators: number[];
 let felonyThreshold: number;
 let misdemeanorThreshold: number;
+
+const maxValidatorCandidate = 10;
 
 const increaseLocalCounterForValidatorAt = (idx: number, value?: number) => {
   value = value ?? 1;
@@ -46,43 +46,39 @@ const validateIndicatorAt = async (idx: number) => {
 
 describe('Slash indicator test', () => {
   before(async () => {
-    [deployer, proxyAdmin, vagabond, ...coinbases] = await ethers.getSigners();
+    [deployer, governanceAdmin, vagabond, ...coinbases] = await ethers.getSigners();
     localIndicators = Array<number>(coinbases.length).fill(0);
 
-    if (network.name == Network.Hardhat) {
-      slashIndicatorConf[network.name] = {
-        misdemeanorThreshold: 5,
-        felonyThreshold: 10, // set low threshold to get rid of 40000ms of test timeout
-        slashFelonyAmount: BigNumber.from(10).pow(18).mul(1), // 10 RON
-        slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10), // 10 RON
-        felonyJailBlocks: 28800 * 2, // jails for 2 days
-      };
-    }
+    const { slashContractAddress, stakingContractAddress, stakingVestingContractAddress } = await initTest(
+      'SlashIndicator'
+    )({
+      misdemeanorThreshold: 5,
+      felonyThreshold: 10,
+      slashFelonyAmount: BigNumber.from(10).pow(18).mul(1), // 1 RON
+      slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10), // 10 RON
+      felonyJailBlocks: 28800 * 2,
+      maxValidatorCandidate,
+      governanceAdmin: governanceAdmin.address,
+    });
 
+    slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
+
+    // Sets the new validator contract instead of upgrading because the storage is mismatched
     mockValidatorsContract = await new MockValidatorSet__factory(deployer).deploy(
-      ethers.constants.AddressZero,
-      ethers.constants.AddressZero,
-      ethers.constants.AddressZero,
-      0,
-      0,
-      0
+      stakingContractAddress,
+      slashContractAddress,
+      stakingVestingContractAddress,
+      maxValidatorCandidate,
+      600,
+      48
     );
-    maintenanceContract = await new Maintenance__factory(deployer).deploy();
-    const logicContract = await new SlashIndicator__factory(deployer).deploy();
-    const proxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
-      logicContract.address,
-      proxyAdmin.address,
-      logicContract.interface.encodeFunctionData('initialize', [
-        mockValidatorsContract.address,
-        maintenanceContract.address,
-        slashIndicatorConf[network.name]!.misdemeanorThreshold,
-        slashIndicatorConf[network.name]!.felonyThreshold,
-        slashIndicatorConf[network.name]!.slashFelonyAmount,
-        slashIndicatorConf[network.name]!.slashDoubleSignAmount,
-        slashIndicatorConf[network.name]!.felonyJailBlocks,
-      ])
+    await mockValidatorsContract.deployed();
+
+    await new GovernanceAdminInterface(governanceAdmin).functionDelegateCall(
+      slashContract.address,
+      slashContract.interface.encodeFunctionData('setValidatorContract', [mockValidatorsContract.address])
     );
-    slashContract = SlashIndicator__factory.connect(proxyContract.address, deployer);
+
     [misdemeanorThreshold, felonyThreshold] = (await slashContract.getSlashThresholds()).map((_) => _.toNumber());
   });
 

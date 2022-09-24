@@ -1,11 +1,9 @@
 import { expect } from 'chai';
-import { deployments, ethers, network } from 'hardhat';
+import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { BigNumber, BigNumberish } from 'ethers';
 
 import {
-  MockRoninValidatorSetExtends,
-  MockRoninValidatorSetExtends__factory,
-  ProxyAdmin__factory,
   RoninValidatorSet,
   RoninValidatorSet__factory,
   Maintenance,
@@ -13,51 +11,27 @@ import {
   SlashIndicator,
   SlashIndicator__factory,
   Staking,
-  StakingVesting,
   Staking__factory,
 } from '../../src/types';
-import { BigNumber, BigNumberish } from 'ethers';
-import {
-  Network,
-  slashIndicatorConf,
-  roninValidatorSetConf,
-  stakingConfig,
-  stakingVestingConfig,
-  initAddress,
-  MaintenanceConfig,
-} from '../../src/config';
+import { initTest } from '../helpers/fixture';
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
 let governanceAdmin: SignerWithAddress;
-let proxyAdmin: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
 let maintenanceContract: Maintenance;
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
-let validatorContract: MockRoninValidatorSetExtends;
-
-const felonyJailDuration = 28800 * 2;
-const misdemeanorThreshold = 10;
-const felonyThreshold = 20;
-const slashFelonyAmount = BigNumber.from(1);
-const slashDoubleSignAmount = 1000;
+let validatorContract: RoninValidatorSet;
 
 const maxValidatorNumber = 4;
-const maxPrioritizedValidatorNumber = 0;
 const numberOfBlocksInEpoch = 600;
 const numberOfEpochsInPeriod = 48;
-
 const minValidatorBalance = BigNumber.from(100);
-const maxValidatorCandidate = 10;
-
-const bonusPerBlock = BigNumber.from(1);
-const topUpAmount = BigNumber.from(10000);
 const minMaintenanceBlockPeriod = 100;
 const maxMaintenanceBlockPeriod = 1000;
 const minOffset = 200;
-const maxSchedules = 2;
 
 let startedAtBlock: BigNumberish = 0;
 let endedAtBlock: BigNumberish = 0;
@@ -78,62 +52,15 @@ const mineToBeforeEndOfEpoch = async () => {
   return network.provider.send('hardhat_mine', [ethers.utils.hexStripZeros(number.toHexString())]);
 };
 
-// TODO: create fixture to avoid repeating code
 describe('Maintenance test', () => {
   before(async () => {
-    [deployer, coinbase, proxyAdmin, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
-
-    if (network.name == Network.Hardhat) {
-      initAddress[network.name] = {
-        governanceAdmin: governanceAdmin.address,
-      };
-      MaintenanceConfig[network.name] = {
-        minMaintenanceBlockPeriod,
-        maxMaintenanceBlockPeriod,
-        minOffset,
-        maxSchedules,
-      };
-      slashIndicatorConf[network.name] = {
-        misdemeanorThreshold: misdemeanorThreshold,
-        felonyThreshold: felonyThreshold,
-        slashFelonyAmount: slashFelonyAmount,
-        slashDoubleSignAmount: slashDoubleSignAmount,
-        felonyJailBlocks: felonyJailDuration,
-      };
-      roninValidatorSetConf[network.name] = {
-        maxValidatorNumber: maxValidatorNumber,
-        maxValidatorCandidate: maxValidatorCandidate,
-        maxPrioritizedValidatorNumber: maxPrioritizedValidatorNumber,
-        numberOfBlocksInEpoch: numberOfBlocksInEpoch,
-        numberOfEpochsInPeriod: numberOfEpochsInPeriod,
-      };
-      stakingConfig[network.name] = {
-        minValidatorBalance: minValidatorBalance,
-      };
-      stakingVestingConfig[network.name] = {
-        bonusPerBlock: bonusPerBlock,
-        topupAmount: topUpAmount,
-      };
-    }
-
-    await deployments.fixture([
-      'CalculateAddresses',
-      'RoninValidatorSetProxy',
-      'SlashIndicatorProxy',
-      'StakingProxy',
-      'MaintenanceProxy',
-      'StakingVestingProxy',
-    ]);
-
-    const MaintenanceDeployment = await deployments.get('MaintenanceProxy');
-    const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
-    const stakingContractDeployment = await deployments.get('StakingProxy');
-    const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
-
-    maintenanceContract = Maintenance__factory.connect(MaintenanceDeployment.address, deployer);
-    slashContract = SlashIndicator__factory.connect(slashContractDeployment.address, deployer);
-    stakingContract = Staking__factory.connect(stakingContractDeployment.address, deployer);
-    validatorContract = MockRoninValidatorSetExtends__factory.connect(validatorContractDeployment.address, deployer);
+    [deployer, coinbase, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
+    const { maintenanceContractAddress, slashContractAddress, stakingContractAddress, validatorContractAddress } =
+      await initTest('Maintenance')({ governanceAdmin: governanceAdmin.address });
+    maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
+    slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
+    stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
+    validatorContract = RoninValidatorSet__factory.connect(validatorContractAddress, deployer);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {
