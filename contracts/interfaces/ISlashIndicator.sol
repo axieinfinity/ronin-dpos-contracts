@@ -76,6 +76,7 @@ interface ISlashIndicator {
    * Requirements:
    * - Only coinbase can call this method
    *
+   * Emits the event `UnavailabilitySlashed` if the double signing evidence of the two headers valid
    */
   function slashDoubleSign(
     address _validatorAddr,

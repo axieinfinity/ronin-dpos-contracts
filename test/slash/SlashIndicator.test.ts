@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-import { SlashIndicator, SlashIndicator__factory, MockValidatorSet__factory, MockValidatorSet } from '../../src/types';
+import { SlashIndicator, SlashIndicator__factory, MockValidatorSet, MockValidatorSet__factory } from '../../src/types';
 import { SlashType } from '../../src/script/slash-indicator';
 import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 

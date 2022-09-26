@@ -86,7 +86,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
    * @inheritdoc ISlashIndicator
    */
   function slash(address _validatorAddr) external override onlyCoinbase oncePerBlock {
-    if (msg.sender == _validatorAddr || _maintenanceContract.maintaining(_validatorAddr, block.number)) {
+    if (!_precheckBeforeSlashing(_validatorAddr)) {
       return;
     }
 
@@ -122,7 +122,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     BlockHeader memory _header1,
     BlockHeader memory _header2
   ) external override onlyCoinbase oncePerBlock {
-    if (!_isSatisfiedToSlash(_validatorAddr)) {
+    if (!_precheckBeforeSlashing(_validatorAddr)) {
       return;
     }
 
@@ -294,11 +294,22 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
 
   /**
    * @dev Check whether the address to be slashed is a validator and is not under maintanance
+   * @return `true` if it is OK to slash
    */
-  function _isSatisfiedToSlash(address _validatorAddr) private view returns (bool) {
-    return
-      (msg.sender == _validatorAddr || !_validatorContract.isValidator(_validatorAddr)) ||
-      _maintenanceContract.maintaining(_validatorAddr, block.number);
+  function _precheckBeforeSlashing(address _validatorAddr) private view returns (bool) {
+    if (msg.sender == _validatorAddr) {
+      return false;
+    }
+
+    if (!_validatorContract.isValidator(_validatorAddr)) {
+      return false;
+    }
+
+    if (_maintenanceContract.maintaining(_validatorAddr, block.number)) {
+      return false;
+    }
+
+    return true;
   }
 
   /**

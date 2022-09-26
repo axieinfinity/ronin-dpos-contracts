@@ -5,12 +5,10 @@ pragma solidity ^0.8.9;
 import "../slash/SlashIndicator.sol";
 
 contract MockSlashIndicatorExtended is SlashIndicator {
-  function _validateEvidence(BlockHeader memory _header1, BlockHeader memory _header2)
-    internal
-    view
-    override
-    returns (bool _validEvidence)
-  {
+  function _validateEvidence(
+    BlockHeader memory, /*_header1*/
+    BlockHeader memory /*_header2*/
+  ) internal pure override returns (bool _validEvidence) {
     return true;
   }
 }
