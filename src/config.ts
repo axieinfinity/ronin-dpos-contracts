@@ -56,6 +56,7 @@ export interface SlashIndicatorArguments {
   slashFelonyAmount?: BigNumberish;
   slashDoubleSignAmount?: BigNumberish;
   felonyJailBlocks?: BigNumberish;
+  doubleSigningConstrainBlocks?: BigNumberish;
 }
 
 export interface SlashIndicatorConfig {
@@ -126,6 +127,7 @@ export const slashIndicatorConf: SlashIndicatorConfig = {
     slashFelonyAmount: BigNumber.from(10).pow(18).mul(1), // 1 RON
     slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10), // 10 RON
     felonyJailBlocks: 28800 * 2, // jails for 2 days
+    doubleSigningConstrainBlocks: 28800,
   },
   [Network.Testnet]: undefined,
   [Network.Mainnet]: undefined,

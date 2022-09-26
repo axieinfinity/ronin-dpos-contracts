@@ -35,8 +35,6 @@ contract MockSlashIndicator is ISlashIndicator {
 
   function slash(address _valAddr) external override {}
 
-  function slashDoubleSign(address _valAddr, bytes calldata _evidence) external override {}
-
   function getUnavailabilityThresholds()
     external
     view
@@ -69,4 +67,10 @@ contract MockSlashIndicator is ISlashIndicator {
     override
     returns (uint256 _felonyThreshold, uint256 _misdemeanorThreshold)
   {}
+
+  function slashDoubleSign(
+    address _validatorAddr,
+    BlockHeader calldata _header1,
+    BlockHeader calldata _header2
+  ) external override {}
 }

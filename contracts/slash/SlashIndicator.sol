@@ -3,10 +3,10 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "./interfaces/ISlashIndicator.sol";
-import "./extensions/HasValidatorContract.sol";
-import "./extensions/HasMaintenanceContract.sol";
-import "./libraries/Math.sol";
+import "../interfaces/ISlashIndicator.sol";
+import "../extensions/HasValidatorContract.sol";
+import "../extensions/HasMaintenanceContract.sol";
+import "../libraries/Math.sol";
 
 contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenanceContract, Initializable {
   using Math for uint256;
@@ -19,6 +19,9 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
   /// @dev The last block that a validator is slashed
   uint256 public lastSlashedBlock;
 
+  /// @dev The number of blocks that the current block can be ahead of the double signed blocks
+  uint256 public doubleSigningConstrainBlocks;
+
   /// @dev The threshold to slash when validator is unavailability reaches misdemeanor
   uint256 public misdemeanorThreshold;
   /// @dev The threshold to slash when validator is unavailability reaches felony
@@ -30,6 +33,9 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
   uint256 public slashDoubleSignAmount;
   /// @dev The block duration to jail validator that reaches felony thresold.
   uint256 public felonyJailDuration;
+  /// @dev The block duration to jail validator that double signs block. This variable should be
+  /// a constant of MAX_UINT.
+  uint256 public doubleSigningJailDuration;
 
   modifier onlyCoinbase() {
     require(msg.sender == block.coinbase, "SlashIndicator: method caller must be coinbase");
@@ -59,7 +65,8 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     uint256 _felonyThreshold,
     uint256 _slashFelonyAmount,
     uint256 _slashDoubleSignAmount,
-    uint256 _felonyJailBlocks
+    uint256 _felonyJailBlocks,
+    uint256 _doubleSigningConstrainBlocks
   ) external initializer {
     _setValidatorContract(__validatorContract);
     _setMaintenanceContract(__maintenanceContract);
@@ -67,6 +74,8 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     _setSlashFelonyAmount(_slashFelonyAmount);
     _setSlashDoubleSignAmount(_slashDoubleSignAmount);
     _setFelonyJailDuration(_felonyJailBlocks);
+    _setDoubleSigningConstrainBlocks(_doubleSigningConstrainBlocks);
+    _setDoubleSigningJailDuration(type(uint256).max);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -110,11 +119,60 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
    */
   function slashDoubleSign(
     address _validatorAddr,
-    bytes calldata /* _evidence */
-  ) external override onlyCoinbase {
-    bool _proved = false; // Proves the `_evidence` is right
-    if (_proved) {
-      _validatorContract.slash(_validatorAddr, type(uint256).max, slashDoubleSignAmount);
+    BlockHeader calldata _header1,
+    BlockHeader calldata _header2
+  ) external override onlyCoinbase oncePerBlock {
+    // Check consensusAddress is a validator
+    if (!_isSatisfiedToSlash(_validatorAddr)) {
+      return;
+    }
+
+    // Check current block height is at most 28800 blocks ahead of the two blocks
+    require(
+      block.number <= _header1.number + doubleSigningConstrainBlocks,
+      "SlashIndicator: the submmitted block 1 is too old"
+    );
+    require(
+      block.number <= _header2.number + doubleSigningConstrainBlocks,
+      "SlashIndicator: the submmitted block 2 is too old"
+    );
+
+    // Check the parentHash field is the same
+    require(_header1.parentHash == _header2.parentHash, "SlashIndicator: the parent hash of two blocks mismatch");
+
+    // Verify the signatures using a precompiled contract.
+    bool _validEvidence;
+
+    /// FIXME: Choose either option 1 or option 2 belows.
+
+    ///
+    /// OPTION 1: Call by pre-compile contract name
+    ///
+
+    // address _addr1 = headerRecover(_header1);
+    // address _addr2 = headerRecover(_header2);
+    // _validEvidence = (_addr1 == _addr2);
+
+    ///
+    /// OPTION 2: Call by pre-compile contract address
+    ///
+
+    // bytes memory input = bytes.concat(_packBlockHeader(_header1), _packBlockHeader(_header2));
+    // assembly {
+    //   if iszero(staticcall(gas(), 0x20, input, 0x2160, validEvidence, 0x20)) {
+    //     // FIXME:                 ^^^^
+    //     //                        Replace by the actual pre-compile contract
+    //     revert(0, 0)
+    //   }
+
+    //   _validEvidence := mload(validEvidence)
+    // }
+
+    if (_validEvidence) {
+      uint256 _period = _validatorContract.periodOf(block.number);
+      _unavailabilitySlashed[_validatorAddr][_period] = SlashType.DOUBLE_SIGNING;
+      emit UnavailabilitySlashed(_validatorAddr, SlashType.DOUBLE_SIGNING, _period);
+      _validatorContract.slash(_validatorAddr, doubleSigningJailDuration, slashDoubleSignAmount);
     }
   }
 
@@ -245,5 +303,48 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
   function _setFelonyJailDuration(uint256 _felonyJailDuration) internal {
     felonyJailDuration = _felonyJailDuration;
     emit FelonyJailDurationUpdated(_felonyJailDuration);
+  }
+
+  /**
+   * @dev Sets the double signing constrain blocks
+   */
+  function _setDoubleSigningConstrainBlocks(uint256 _doubleSigningConstrainBlocks) internal {
+    doubleSigningConstrainBlocks = _doubleSigningConstrainBlocks;
+    emit DoubleSigningConstrainBlocksUpdated(_doubleSigningConstrainBlocks);
+  }
+
+  /**
+   * @dev Sets the double signing jail duration
+   */
+  function _setDoubleSigningJailDuration(uint256 _doubleSigningJailDuration) internal {
+    doubleSigningJailDuration = _doubleSigningJailDuration;
+    emit DoubleSigningJailDurationUpdated(_doubleSigningJailDuration);
+  }
+
+  /**
+   * @dev Check whether the address to be slashed is a validator and is not under maintanance
+   */
+  function _isSatisfiedToSlash(address _validatorAddr) private view returns (bool) {
+    return
+      (msg.sender == _validatorAddr || !_validatorContract.isValidator(_validatorAddr)) ||
+      _maintenanceContract.maintaining(_validatorAddr, block.number);
+  }
+
+  function _packBlockHeader(BlockHeader memory _header) private pure returns (bytes memory) {
+    return
+      abi.encode(
+        _header.parentHash,
+        _header.ommersHash,
+        _header.beneficiary,
+        _header.stateRoot,
+        _header.transactionsRoot,
+        _header.receiptsRoot,
+        _header.logsBloom,
+        _header.difficulty,
+        _header.number,
+        _header.gasLimit,
+        _header.gasUsed,
+        _header.timestamp
+      );
   }
 }
