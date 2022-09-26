@@ -119,15 +119,13 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
    */
   function slashDoubleSign(
     address _validatorAddr,
-    BlockHeader calldata _header1,
-    BlockHeader calldata _header2
+    BlockHeader memory _header1,
+    BlockHeader memory _header2
   ) external override onlyCoinbase oncePerBlock {
-    // Check consensusAddress is a validator
     if (!_isSatisfiedToSlash(_validatorAddr)) {
       return;
     }
 
-    // Check current block height is at most 28800 blocks ahead of the two blocks
     require(
       block.number <= _header1.number + doubleSigningConstrainBlocks,
       "SlashIndicator: the submmitted block 1 is too old"
@@ -137,36 +135,9 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
       "SlashIndicator: the submmitted block 2 is too old"
     );
 
-    // Check the parentHash field is the same
     require(_header1.parentHash == _header2.parentHash, "SlashIndicator: the parent hash of two blocks mismatch");
 
-    // Verify the signatures using a precompiled contract.
-    bool _validEvidence;
-
-    /// FIXME: Choose either option 1 or option 2 belows.
-
-    ///
-    /// OPTION 1: Call by pre-compile contract name
-    ///
-
-    // address _addr1 = headerRecover(_header1);
-    // address _addr2 = headerRecover(_header2);
-    // _validEvidence = (_addr1 == _addr2);
-
-    ///
-    /// OPTION 2: Call by pre-compile contract address
-    ///
-
-    // bytes memory input = bytes.concat(_packBlockHeader(_header1), _packBlockHeader(_header2));
-    // assembly {
-    //   if iszero(staticcall(gas(), 0x20, input, 0x2160, validEvidence, 0x20)) {
-    //     // FIXME:                 ^^^^
-    //     //                        Replace by the actual pre-compile contract
-    //     revert(0, 0)
-    //   }
-
-    //   _validEvidence := mload(validEvidence)
-    // }
+    bool _validEvidence = _validateEvidence(_header1, _header2);
 
     if (_validEvidence) {
       uint256 _period = _validatorContract.periodOf(block.number);
@@ -330,6 +301,49 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
       _maintenanceContract.maintaining(_validatorAddr, block.number);
   }
 
+  /**
+   * @dev Validate the two submitted block header if they are produced by the same address
+   *
+   * Note: The recover process is done by pre-compiled contract. This function is marked as
+   * virtual for implementing mocking contract for testing purpose.
+   */
+  function _validateEvidence(BlockHeader memory _header1, BlockHeader memory _header2)
+    internal
+    view
+    virtual
+    returns (bool _validEvidence)
+  {
+    /// FIXME: Choose either option 1 or option 2 belows.
+
+    ///
+    /// OPTION 1: Call by pre-compiled contract name
+    ///
+
+    // address _addr1 = headerRecover(_header1);
+    // address _addr2 = headerRecover(_header2);
+    // _validEvidence = (_addr1 == _addr2);
+
+    ///
+    /// OPTION 2: Call by pre-compiled contract address
+    ///
+
+    bytes memory _input = bytes.concat(_packBlockHeader(_header1), _packBlockHeader(_header2));
+    uint _inputSize = _input.length;
+    assembly {
+      if iszero(staticcall(gas(), 0x20, _input, _inputSize, _validEvidence, 0x20)) {
+        // FIXME:                 ^^^^
+        //                        Replace by the actual pre-compiled contract address
+        revert(0, 0)
+      }
+
+      _validEvidence := mload(_validEvidence)
+    }
+  }
+
+  /**
+   * @dev Packing the block header struct into a single bytes. Helper function for validating
+   * evidence function.
+   */
   function _packBlockHeader(BlockHeader memory _header) private pure returns (bytes memory) {
     return
       abi.encode(
