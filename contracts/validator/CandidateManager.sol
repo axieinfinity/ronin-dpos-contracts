@@ -36,6 +36,7 @@ contract CandidateManager is ICandidateManager, HasStakingContract {
    * @inheritdoc ICandidateManager
    */
   function addValidatorCandidate(
+    address _admin,
     address _consensusAddr,
     address payable _treasuryAddr,
     uint256 _commissionRate
@@ -46,7 +47,13 @@ contract CandidateManager is ICandidateManager, HasStakingContract {
 
     _candidateIndex[_consensusAddr] = ~_length;
     _candidates.push(_consensusAddr);
-    _candidateInfo[_consensusAddr] = ValidatorCandidate(_consensusAddr, _treasuryAddr, _commissionRate, new bytes(0));
+    _candidateInfo[_consensusAddr] = ValidatorCandidate(
+      _admin,
+      _consensusAddr,
+      _treasuryAddr,
+      _commissionRate,
+      new bytes(0)
+    );
     emit ValidatorCandidateAdded(_consensusAddr, _treasuryAddr, _candidateIndex[_consensusAddr]);
   }
 
@@ -96,6 +103,13 @@ contract CandidateManager is ICandidateManager, HasStakingContract {
    */
   function getValidatorCandidates() public view override returns (address[] memory) {
     return _candidates;
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
+  function isCandidateAdmin(address _candidate, address _admin) external view override returns (bool) {
+    return _candidateInfo[_candidate].admin == _admin;
   }
 
   /**

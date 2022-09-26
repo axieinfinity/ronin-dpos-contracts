@@ -2,13 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-import "../interfaces/IRoninValidatorSet.sol";
-
 interface ISlashIndicator {
-  /// @dev Emitted when the validator is slashed
-  event ValidatorSlashed(address indexed validator, SlashType slashType);
-  /// @dev Emitted when the validator indicators are reset
-  event UnavailabilityIndicatorsReset(address[] validators);
+  /// @dev Emitted when the validator is slashed for unavailability
+  event UnavailabilitySlashed(address indexed validator, SlashType slashType, uint256 period);
   /// @dev Emitted when the thresholds updated
   event SlashThresholdsUpdated(uint256 felonyThreshold, uint256 misdemeanorThreshold);
   /// @dev Emitted when the amount of slashing felony updated
@@ -32,21 +28,10 @@ interface ISlashIndicator {
    * Requirements:
    * - Only coinbase can call this method
    *
-   * Emits the event `ValidatorSlashed`
+   * Emits the event `UnavailabilitySlashed` when the threshold is reached.
    *
    */
   function slash(address _valAddr) external;
-
-  /**
-   * @dev Resets the counter of all validators at the end of every period
-   *
-   * Requirements:
-   * - Only validator contract can call this method
-   *
-   * Emits the `UnavailabilityIndicatorsReset` events
-   *
-   */
-  function resetCounters(address[] calldata) external;
 
   /**
    * @dev Slashes for double signing
@@ -102,12 +87,33 @@ interface ISlashIndicator {
   function setFelonyJailDuration(uint256 _felonyJailDuration) external;
 
   /**
-   * @dev Gets slash indicator of a validator
+   * @dev Returns the current unavailability indicator of a validator.
    */
-  function getSlashIndicator(address _validator) external view returns (uint256);
+  function currentUnavailabilityIndicator(address _validator) external view returns (uint256);
 
   /**
-   * @dev Gets the slash thresholds
+   * @dev Returns the scaled thresholds based on the maintenance duration for unavailability slashing.
    */
-  function getSlashThresholds() external view returns (uint256 misdemeanorThreshold, uint256 felonyThreshold);
+  function unavailabilityThresholdsOf(address _addr, uint256 _block)
+    external
+    view
+    returns (uint256 _misdemeanorThreshold, uint256 _felonyThreshold);
+
+  /**
+   * @dev Retursn the unavailability indicator in the period `_period` of a validator.
+   */
+  function getUnavailabilityIndicator(address _validator, uint256 _period) external view returns (uint256);
+
+  /**
+   * @dev Gets the unavailability thresholds.
+   */
+  function getUnavailabilityThresholds()
+    external
+    view
+    returns (uint256 _misdemeanorThreshold, uint256 _felonyThreshold);
+
+  /**
+   * @dev Checks the slashed tier for unavailability of a validator.
+   */
+  function getUnavailabilitySlashType(address _validatorAddr, uint256 _period) external view returns (SlashType);
 }

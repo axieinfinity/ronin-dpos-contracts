@@ -12,6 +12,7 @@ import {
   MockSlashIndicator,
   MockSlashIndicator__factory,
   StakingVesting__factory,
+  Maintenance__factory,
 } from '../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
@@ -29,7 +30,7 @@ let validatorCandidates: SignerWithAddress[];
 let currentValidatorSet: string[];
 
 const slashFelonyAmount = 100;
-const slashDoubleSignAmount = 1000;
+const slashDoubleSignAmount = BigNumber.from(10).pow(18).mul(10);
 
 const maxValidatorNumber = 4;
 const maxPrioritizedValidatorNumber = 0;
@@ -48,6 +49,7 @@ describe('Ronin Validator Set test', () => {
     validatorCandidates = validatorCandidates.slice(0, 5);
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
+    const scheduleMaintenance = await new Maintenance__factory(deployer).deploy();
     const nonce = await deployer.getTransactionCount();
     const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
     const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 6 });
@@ -89,6 +91,7 @@ describe('Ronin Validator Set test', () => {
         slashIndicator.address,
         stakingContractAddr,
         stakingVesting.address,
+        scheduleMaintenance.address,
         maxValidatorNumber,
         maxValidatorCandidate,
         maxPrioritizedValidatorNumber,
@@ -152,9 +155,15 @@ describe('Ronin Validator Set test', () => {
     for (let i = 0; i <= 3; i++) {
       await stakingContract
         .connect(validatorCandidates[i])
-        .proposeValidator(validatorCandidates[i].address, validatorCandidates[i].address, 2_00, {
-          value: minValidatorBalance.add(i),
-        });
+        .proposeValidator(
+          validatorCandidates[i].address,
+          validatorCandidates[i].address,
+          validatorCandidates[i].address,
+          2_00,
+          {
+            value: minValidatorBalance.add(i),
+          }
+        );
     }
 
     let tx: ContractTransaction;
@@ -181,13 +190,19 @@ describe('Ronin Validator Set test', () => {
   it(`Should be able to wrap up epoch and pick top ${maxValidatorNumber} to be validators`, async () => {
     await stakingContract
       .connect(coinbase)
-      .proposeValidator(coinbase.address, treasury.address, 1_00 /* 1% */, { value: 100 });
+      .proposeValidator(coinbase.address, coinbase.address, treasury.address, 1_00 /* 1% */, { value: 100 });
     for (let i = 4; i < validatorCandidates.length; i++) {
       await stakingContract
         .connect(validatorCandidates[i])
-        .proposeValidator(validatorCandidates[i].address, validatorCandidates[i].address, 2_00, {
-          value: minValidatorBalance.add(i),
-        });
+        .proposeValidator(
+          validatorCandidates[i].address,
+          validatorCandidates[i].address,
+          validatorCandidates[i].address,
+          2_00,
+          {
+            value: minValidatorBalance.add(i),
+          }
+        );
     }
     expect((await roninValidatorSet.getValidatorCandidates()).length).eq(validatorCandidates.length + 1);
 
@@ -240,7 +255,7 @@ describe('Ronin Validator Set test', () => {
       const balance = await treasury.getBalance();
       await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
       tx = await slashIndicator.slashMisdemeanor(coinbase.address);
-      await RoninValidatorSet.expects.emitValidatorSlashedEvent(tx!, coinbase.address, 0, 0);
+      expect(tx).emit(roninValidatorSet, 'ValidatorPunished').withArgs(coinbase.address, 0, 0);
 
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();

@@ -19,8 +19,8 @@ interface IRoninValidatorSet is ICandidateManager {
   event RewardDeprecated(address coinbaseAddr, uint256 rewardAmount);
   /// @dev Emitted when the block reward is submitted.
   event BlockRewardSubmitted(address coinbaseAddr, uint256 submittedAmount, uint256 bonusAmount);
-  /// @dev Emitted when the validator is slashed.
-  event ValidatorSlashed(address validatorAddr, uint256 jailedUntil, uint256 deductedStakingAmount);
+  /// @dev Emitted when the validator is punished.
+  event ValidatorPunished(address validatorAddr, uint256 jailedUntil, uint256 deductedStakingAmount);
   /// @dev Emitted when the validator reward is distributed.
   event MiningRewardDistributed(address validatorAddr, uint256 amount);
   /// @dev Emitted when the amount of RON reward is distributed.
@@ -74,7 +74,7 @@ interface IRoninValidatorSet is ICandidateManager {
    * Requirements:
    * - The method caller is slash indicator contract.
    *
-   * Emits the event `ValidatorSlashed`.
+   * Emits the event `ValidatorPunished`.
    *
    */
   function slash(
@@ -131,6 +131,11 @@ interface IRoninValidatorSet is ICandidateManager {
    * @dev Returns the current validator list.
    */
   function getValidators() external view returns (address[] memory);
+
+  /**
+   * @dev Returns whether the address is validator or not.
+   */
+  function isValidator(address _addr) external view returns (bool);
 
   /**
    * @dev Returns whether the epoch ending is at the block number `_block`.

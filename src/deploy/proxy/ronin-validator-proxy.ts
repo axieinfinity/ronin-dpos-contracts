@@ -8,13 +8,13 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  const proxyAdmin = await deployments.get('ProxyAdmin');
   const logicContract = await deployments.get('RoninValidatorSetLogic');
 
   const data = new RoninValidatorSet__factory().interface.encodeFunctionData('initialize', [
-    initAddress[network.name]!.slashIndicator,
+    initAddress[network.name]!.slashIndicatorContract,
     initAddress[network.name]!.stakingContract,
     initAddress[network.name]!.stakingVestingContract,
+    initAddress[network.name]!.maintenanceContract,
     roninValidatorSetConf[network.name]!.maxValidatorNumber,
     roninValidatorSetConf[network.name]!.maxValidatorCandidate,
     roninValidatorSetConf[network.name]!.maxPrioritizedValidatorNumber,
@@ -26,17 +26,11 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    args: [logicContract.address, proxyAdmin.address, data],
+    args: [logicContract.address, initAddress[network.name]!.governanceAdmin, data],
   });
 };
 
 deploy.tags = ['RoninValidatorSetProxy'];
-deploy.dependencies = [
-  'ProxyAdmin',
-  'RoninValidatorSetLogic',
-  'SlashIndicatorProxy',
-  'StakingProxy',
-  'StakingVestingProxy',
-];
+deploy.dependencies = ['RoninValidatorSetLogic', 'StakingProxy'];
 
 export default deploy;

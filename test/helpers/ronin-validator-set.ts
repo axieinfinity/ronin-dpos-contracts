@@ -43,25 +43,6 @@ export const expects = {
     );
   },
 
-  emitValidatorSlashedEvent: async function (
-    tx: ContractTransaction,
-    expectingValidatorAddr: string,
-    expectingJailedUntil: BigNumberish,
-    expectingDeductedStakingAmount: BigNumberish
-  ) {
-    await expectEvent(
-      contractInterface,
-      'ValidatorSlashed',
-      tx,
-      (event) => {
-        expect(event.args[0], 'invalid coinbase address').eq(expectingValidatorAddr);
-        expect(event.args[1], 'invalid jailed until').eq(expectingJailedUntil);
-        expect(event.args[2], 'invalid deducted staking amount').eq(expectingDeductedStakingAmount);
-      },
-      1
-    );
-  },
-
   emitMiningRewardDistributedEvent: async function (
     tx: ContractTransaction,
     expectingCoinbaseAddr: string,

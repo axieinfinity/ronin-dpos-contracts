@@ -1,6 +1,7 @@
 import { expect } from 'chai';
-import { network, ethers, deployments } from 'hardhat';
+import { network, ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { BigNumber, ContractTransaction } from 'ethers';
 
 import {
   SlashIndicator,
@@ -9,107 +10,57 @@ import {
   Staking__factory,
   MockRoninValidatorSetExtends__factory,
   MockRoninValidatorSetExtends,
-  ProxyAdmin__factory,
 } from '../../src/types';
-import {
-  Network,
-  slashIndicatorConf,
-  roninValidatorSetConf,
-  stakingConfig,
-  initAddress,
-  stakingVestingConfig,
-} from '../../src/config';
-import { BigNumber, ContractTransaction } from 'ethers';
 import { expects as StakingExpects } from '../helpers/reward-calculation';
-import { expects as SlashExpects } from '../helpers/slash-indicator';
 import { expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
+import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: MockRoninValidatorSetExtends;
+let governanceAdmin: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
-let governanceAdmin: SignerWithAddress;
+let governor: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
-const felonyJailDuration = 28800 * 2;
-const misdemeanorThreshold = 10;
-const felonyThreshold = 20;
+const felonyThreshold = 10;
 const slashFelonyAmount = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
-
-const maxValidatorNumber = 3;
-const maxPrioritizedValidatorNumber = 0;
-const numberOfBlocksInEpoch = 600;
-const numberOfEpochsInPeriod = 48;
-
 const minValidatorBalance = BigNumber.from(100);
-const maxValidatorCandidate = 10;
-
-const bonusPerBlock = BigNumber.from(1);
-const topUpAmount = BigNumber.from(10000);
+const maxValidatorNumber = 3;
 
 describe('[Integration] Wrap up epoch', () => {
   const blockRewardAmount = BigNumber.from(2);
 
   before(async () => {
-    [deployer, coinbase, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
+    [deployer, coinbase, governor, ...validatorCandidates] = await ethers.getSigners();
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+    governanceAdmin = new GovernanceAdminInterface(governor);
 
-    if (network.name == Network.Hardhat) {
-      initAddress[network.name] = {
-        governanceAdmin: governanceAdmin.address,
-      };
-      slashIndicatorConf[network.name] = {
-        misdemeanorThreshold: misdemeanorThreshold,
-        felonyThreshold: felonyThreshold,
-        slashFelonyAmount: slashFelonyAmount,
-        slashDoubleSignAmount: slashDoubleSignAmount,
-        felonyJailBlocks: felonyJailDuration,
-      };
-      roninValidatorSetConf[network.name] = {
-        maxValidatorNumber: maxValidatorNumber,
-        maxValidatorCandidate: maxValidatorCandidate,
-        maxPrioritizedValidatorNumber: maxPrioritizedValidatorNumber,
-        numberOfBlocksInEpoch: numberOfBlocksInEpoch,
-        numberOfEpochsInPeriod: numberOfEpochsInPeriod,
-      };
-      stakingConfig[network.name] = {
-        minValidatorBalance: minValidatorBalance,
-      };
-      stakingVestingConfig[network.name] = {
-        bonusPerBlock: bonusPerBlock,
-        topupAmount: topUpAmount,
-      };
-    }
-
-    await deployments.fixture([
-      'ProxyAdmin',
-      'CalculateAddresses',
-      'RoninValidatorSetProxy',
-      'SlashIndicatorProxy',
-      'StakingProxy',
-      'StakingVestingProxy',
-    ]);
-
-    const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
-    slashContract = SlashIndicator__factory.connect(slashContractDeployment.address, deployer);
-
-    const stakingContractDeployment = await deployments.get('StakingProxy');
-    stakingContract = Staking__factory.connect(stakingContractDeployment.address, deployer);
-
-    const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
-    validatorContract = MockRoninValidatorSetExtends__factory.connect(validatorContractDeployment.address, deployer);
+    const { slashContractAddress, stakingContractAddress, validatorContractAddress } = await initTest(
+      'ActionWrapUpEpoch'
+    )({
+      felonyThreshold,
+      slashFelonyAmount,
+      slashDoubleSignAmount,
+      minValidatorBalance,
+      maxValidatorNumber,
+      governanceAdmin: governanceAdmin.address,
+    });
+    slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
+    stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
+    validatorContract = MockRoninValidatorSetExtends__factory.connect(validatorContractAddress, deployer);
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtends__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
+    governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
+  });
 
-    const proxyAdminDeployment = await deployments.get('ProxyAdmin');
-    let proxyAdminContract = ProxyAdmin__factory.connect(proxyAdminDeployment.address, deployer);
-
-    await proxyAdminContract.upgrade(validatorContract.address, mockValidatorLogic.address);
+  after(async () => {
+    await network.provider.send('hardhat_setCoinbase', [ethers.constants.AddressZero]);
   });
 
   describe('Configuration test', () => {
@@ -150,9 +101,15 @@ describe('[Integration] Wrap up epoch', () => {
       for (let i = 0; i < validators.length; i++) {
         await stakingContract
           .connect(validatorCandidates[i])
-          .proposeValidator(validatorCandidates[i].address, validatorCandidates[i].address, 2_00, {
-            value: minValidatorBalance.mul(2).add(i),
-          });
+          .proposeValidator(
+            validatorCandidates[i].address,
+            validatorCandidates[i].address,
+            validatorCandidates[i].address,
+            2_00,
+            {
+              value: minValidatorBalance.mul(2).add(i),
+            }
+          );
       }
 
       await mineBatchTxs(async () => {
@@ -160,15 +117,12 @@ describe('[Integration] Wrap up epoch', () => {
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
 
-      await network.provider.send('hardhat_setCoinbase', [validators[3].address]);
-      validatorContract = validatorContract.connect(validators[3]);
+      coinbase = validators[3];
+      await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+      validatorContract = validatorContract.connect(coinbase);
       await validatorContract.submitBlockReward({
         value: blockRewardAmount,
       });
-    });
-
-    after(async () => {
-      coinbase = validators[3];
     });
 
     describe('Wrap up epoch: at the end of the epoch', async () => {
@@ -206,27 +160,29 @@ describe('[Integration] Wrap up epoch', () => {
     });
 
     describe('Wrap up epoch: at the end of the period', async () => {
+      before(async () => {
+        await Promise.all(validators.map((v) => slashContract.connect(coinbase).slash(v.address)));
+      });
+
       it('Should the ValidatorSet not reset counter, when the period is not ended', async () => {
         await mineBatchTxs(async () => {
           await validatorContract.endEpoch();
-          wrapUpTx = await validatorContract.wrapUpEpoch();
+          wrapUpTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
-        await expect(wrapUpTx).not.to.emit(slashContract, 'UnavailabilityIndicatorsReset');
+        expect(
+          await Promise.all(validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.address)))
+        ).eql(validators.map((v) => (v.address == coinbase.address ? BigNumber.from(0) : BigNumber.from(1))));
       });
 
       it('Should the ValidatorSet reset counter in SlashIndicator contract', async () => {
         await mineBatchTxs(async () => {
           await validatorContract.endEpoch();
           await validatorContract.endPeriod();
-          wrapUpTx = await validatorContract.wrapUpEpoch();
+          wrapUpTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
-        await SlashExpects.emitUnavailabilityIndicatorsResetEvent(
-          wrapUpTx,
-          validators
-            .slice(1, 4)
-            .map((_) => _.address)
-            .reverse()
-        );
+        expect(
+          await Promise.all(validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.address)))
+        ).eql(validators.map(() => BigNumber.from(0)));
       });
     });
   });
@@ -241,7 +197,7 @@ describe('[Integration] Wrap up epoch', () => {
       for (let i = 0; i < validators.length; i++) {
         await stakingContract
           .connect(validators[i])
-          .proposeValidator(validators[i].address, validators[i].address, 2_00, {
+          .proposeValidator(validators[i].address, validators[i].address, validators[i].address, 2_00, {
             value: minValidatorBalance.mul(3).add(i),
           });
       }
@@ -251,8 +207,9 @@ describe('[Integration] Wrap up epoch', () => {
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
 
-      await network.provider.send('hardhat_setCoinbase', [validators[3].address]);
-      validatorContract = validatorContract.connect(validators[3]);
+      coinbase = validators[3];
+      await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+      validatorContract = validatorContract.connect(coinbase);
       await validatorContract.submitBlockReward({
         value: blockRewardAmount,
       });
@@ -266,7 +223,7 @@ describe('[Integration] Wrap up epoch', () => {
         });
 
         for (let i = 0; i < felonyThreshold; i++) {
-          await slashContract.connect(validators[3]).slash(validators[1].address);
+          await slashContract.connect(coinbase).slash(validators[1].address);
         }
       });
 
@@ -278,7 +235,7 @@ describe('[Integration] Wrap up epoch', () => {
 
         await ValidatorSetExpects.emitValidatorSetUpdatedEvent(
           wrapUpTx,
-          [validators[0], validators[2], validators[3]].map((_) => _.address).reverse()
+          [validators[0], validators[2], coinbase].map((_) => _.address).reverse()
         );
       });
 
@@ -288,10 +245,9 @@ describe('[Integration] Wrap up epoch', () => {
           await validatorContract.endPeriod();
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
-        await SlashExpects.emitUnavailabilityIndicatorsResetEvent(
-          wrapUpTx,
-          [validators[0], validators[2], validators[3]].map((_) => _.address).reverse()
-        );
+        expect(
+          await Promise.all(validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.address)))
+        ).eql(validators.map(() => BigNumber.from(0)));
       });
     });
   });

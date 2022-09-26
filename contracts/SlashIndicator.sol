@@ -5,10 +5,17 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./interfaces/ISlashIndicator.sol";
 import "./extensions/HasValidatorContract.sol";
+import "./extensions/HasMaintenanceContract.sol";
+import "./libraries/Math.sol";
 
-contract SlashIndicator is ISlashIndicator, HasValidatorContract, Initializable {
-  /// @dev Mapping from validator address => unavailability indicator
-  mapping(address => uint256) internal _unavailabilityIndicator;
+contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenanceContract, Initializable {
+  using Math for uint256;
+
+  /// @dev Mapping from validator address => period index => unavailability indicator
+  mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
+  /// @dev Maping from validator address => period index => slash type
+  mapping(address => mapping(uint256 => SlashType)) internal _unavailabilitySlashed;
+
   /// @dev The last block that a validator is slashed
   uint256 public lastSlashedBlock;
 
@@ -25,7 +32,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, Initializable 
   uint256 public felonyJailDuration;
 
   modifier onlyCoinbase() {
-    require(msg.sender == block.coinbase, "SlashIndicator: method caller is not the coinbase");
+    require(msg.sender == block.coinbase, "SlashIndicator: method caller must be coinbase");
     _;
   }
 
@@ -47,6 +54,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, Initializable 
    */
   function initialize(
     address __validatorContract,
+    address __maintenanceContract,
     uint256 _misdemeanorThreshold,
     uint256 _felonyThreshold,
     uint256 _slashFelonyAmount,
@@ -54,6 +62,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, Initializable 
     uint256 _felonyJailBlocks
   ) external initializer {
     _setValidatorContract(__validatorContract);
+    _setMaintenanceContract(__maintenanceContract);
     _setSlashThresholds(_felonyThreshold, _misdemeanorThreshold);
     _setSlashFelonyAmount(_slashFelonyAmount);
     _setSlashDoubleSignAmount(_slashDoubleSignAmount);
@@ -68,23 +77,31 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, Initializable 
    * @inheritdoc ISlashIndicator
    */
   function slash(address _validatorAddr) external override onlyCoinbase oncePerBlock {
-    if (msg.sender == _validatorAddr) {
+    if (msg.sender == _validatorAddr || _maintenanceContract.maintaining(_validatorAddr, block.number)) {
       return;
     }
 
-    uint256 _count = ++_unavailabilityIndicator[_validatorAddr];
+    uint256 _period = _validatorContract.periodOf(block.number);
+    uint256 _count = ++_unavailabilityIndicator[_validatorAddr][_period];
+    (uint256 _misdemeanorThreshold, uint256 _felonyThreshold) = unavailabilityThresholdsOf(
+      _validatorAddr,
+      block.number
+    );
 
-    // Slashes the validator as either the fenoly or the misdemeanor
-    if (_count == felonyThreshold) {
-      emit ValidatorSlashed(_validatorAddr, SlashType.FELONY);
+    SlashType _slashType = getUnavailabilitySlashType(_validatorAddr, _period);
+
+    if (_count >= _felonyThreshold && _slashType < SlashType.FELONY) {
+      _unavailabilitySlashed[_validatorAddr][_period] = SlashType.FELONY;
+      emit UnavailabilitySlashed(_validatorAddr, SlashType.FELONY, _period);
       _validatorContract.slash(_validatorAddr, block.number + felonyJailDuration, slashFelonyAmount);
-      delete _unavailabilityIndicator[_validatorAddr];
-      address[] memory _addrList = new address[](1);
-      _addrList[0] = _validatorAddr;
-      emit UnavailabilityIndicatorsReset(_addrList);
-    } else if (_count == misdemeanorThreshold) {
-      emit ValidatorSlashed(_validatorAddr, SlashType.MISDEMEANOR);
+      return;
+    }
+
+    if (_count >= _misdemeanorThreshold && _slashType < SlashType.MISDEMEANOR) {
+      _unavailabilitySlashed[_validatorAddr][_period] = SlashType.MISDEMEANOR;
+      emit UnavailabilitySlashed(_validatorAddr, SlashType.MISDEMEANOR, _period);
       _validatorContract.slash(_validatorAddr, 0, 0);
+      return;
     }
   }
 
@@ -99,27 +116,6 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, Initializable 
     if (_proved) {
       _validatorContract.slash(_validatorAddr, type(uint256).max, slashDoubleSignAmount);
     }
-  }
-
-  /**
-   * @inheritdoc ISlashIndicator
-   */
-  function resetCounters(address[] calldata _validatorAddrs) external override onlyValidatorContract {
-    _resetCounters(_validatorAddrs);
-  }
-
-  /**
-   * @dev Resets counter for the validator address.
-   */
-  function _resetCounters(address[] calldata _validatorAddrs) private {
-    if (_validatorAddrs.length == 0) {
-      return;
-    }
-
-    for (uint _i = 0; _i < _validatorAddrs.length; _i++) {
-      delete _unavailabilityIndicator[_validatorAddrs[_i]];
-    }
-    emit UnavailabilityIndicatorsReset(_validatorAddrs);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -161,15 +157,57 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, Initializable 
   /**
    * @inheritdoc ISlashIndicator
    */
-  function getSlashIndicator(address validator) external view override returns (uint256) {
-    return _unavailabilityIndicator[validator];
+  function getUnavailabilitySlashType(address _validatorAddr, uint256 _period) public view returns (SlashType) {
+    return _unavailabilitySlashed[_validatorAddr][_period];
   }
 
   /**
    * @inheritdoc ISlashIndicator
    */
-  function getSlashThresholds() external view override returns (uint256, uint256) {
+  function unavailabilityThresholdsOf(address _addr, uint256 _block)
+    public
+    view
+    returns (uint256 _misdemeanorThreshold, uint256 _felonyThreshold)
+  {
+    uint256 _blockLength = _validatorContract.numberOfBlocksInEpoch() * _validatorContract.numberOfEpochsInPeriod();
+    uint256 _start = (_block / _blockLength) * _blockLength;
+    uint256 _end = _start + _blockLength - 1;
+    IMaintenance.Schedule memory _s = _maintenanceContract.getSchedule(_addr);
+
+    bool _fromInRange = _s.from.inRange(_start, _end);
+    bool _toInRange = _s.to.inRange(_start, _end);
+    uint256 _availableDuration = _blockLength;
+    if (_fromInRange && _toInRange) {
+      _availableDuration -= _s.to - _s.from + 1;
+    } else if (_fromInRange) {
+      _availableDuration -= _end - _s.from + 1;
+    } else if (_toInRange) {
+      _availableDuration -= _s.to - _start + 1;
+    }
+
+    _misdemeanorThreshold = misdemeanorThreshold.scale(_availableDuration, _blockLength);
+    _felonyThreshold = felonyThreshold.scale(_availableDuration, _blockLength);
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function currentUnavailabilityIndicator(address _validator) external view override returns (uint256) {
+    return getUnavailabilityIndicator(_validator, _validatorContract.periodOf(block.number));
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function getUnavailabilityThresholds() external view override returns (uint256, uint256) {
     return (misdemeanorThreshold, felonyThreshold);
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function getUnavailabilityIndicator(address _validator, uint256 _period) public view override returns (uint256) {
+    return _unavailabilityIndicator[_validator][_period];
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////

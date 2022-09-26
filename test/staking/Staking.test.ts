@@ -122,7 +122,7 @@ describe('Staking test', () => {
 
   describe('Validator candidate test', () => {
     it('Should not be able to propose validator with insufficient amount', async () => {
-      await expect(stakingContract.proposeValidator(userA.address, userA.address, 1)).revertedWith(
+      await expect(stakingContract.proposeValidator(userA.address, userA.address, userA.address, 1)).revertedWith(
         'StakingManager: insufficient amount'
       );
     });
@@ -130,12 +130,15 @@ describe('Staking test', () => {
     it('Should be able to propose validator with sufficient amount', async () => {
       for (let i = 1; i < validatorCandidates.length; i++) {
         const candidate = validatorCandidates[i];
-        const tx = await stakingContract.connect(candidate).proposeValidator(
-          candidate.address,
-          candidate.address,
-          1, // 0.01%
-          { value: minValidatorBalance }
-        );
+        const tx = await stakingContract
+          .connect(candidate)
+          .proposeValidator(
+            candidate.address,
+            candidate.address,
+            candidate.address,
+            1,
+            /* 0.01% */ { value: minValidatorBalance }
+          );
         await expect(tx).emit(stakingContract, 'ValidatorPoolAdded').withArgs(candidate.address, candidate.address);
       }
 
@@ -146,7 +149,9 @@ describe('Staking test', () => {
 
     it('Should not be able to propose validator again', async () => {
       await expect(
-        stakingContract.connect(poolAddr).proposeValidator(poolAddr.address, poolAddr.address, 0, { value: 10 })
+        stakingContract
+          .connect(poolAddr)
+          .proposeValidator(poolAddr.address, poolAddr.address, poolAddr.address, 0, { value: 10 })
       ).revertedWith('CandidateManager: query for already existent candidate');
     });
 
@@ -222,7 +227,9 @@ describe('Staking test', () => {
       await TransparentUpgradeableProxyV2__factory.connect(stakingContract.address, proxyAdmin).functionDelegateCall(
         stakingContract.interface.encodeFunctionData('setMinValidatorBalance', [0])
       );
-      await stakingContract.connect(poolAddr).proposeValidator(poolAddr.address, poolAddr.address, 0, { value: 0 });
+      await stakingContract
+        .connect(poolAddr)
+        .proposeValidator(poolAddr.address, poolAddr.address, poolAddr.address, 0, { value: 0 });
 
       await network.provider.send('evm_setAutomine', [false]);
     });

@@ -78,19 +78,20 @@ abstract contract StakingManager is
    * @inheritdoc IStaking
    */
   function proposeValidator(
+    address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
     uint256 _commissionRate
   ) external payable override nonReentrant {
     uint256 _amount = msg.value;
-    address payable _candidateAdmin = payable(msg.sender);
-    _proposeValidator(_candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate, _amount);
+    address payable _poolAdmin = payable(msg.sender);
+    _proposeValidator(_poolAdmin, _candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate, _amount);
 
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
-    _pool.admin = _candidateAdmin;
+    _pool.admin = _poolAdmin;
     _pool.addr = _consensusAddr;
-    _stake(_stakingPool[_consensusAddr], _candidateAdmin, _amount);
-    emit ValidatorPoolAdded(_consensusAddr, _candidateAdmin);
+    _stake(_stakingPool[_consensusAddr], _poolAdmin, _amount);
+    emit ValidatorPoolAdded(_consensusAddr, _poolAdmin);
   }
 
   /**
@@ -130,23 +131,27 @@ abstract contract StakingManager is
    * @dev Proposes a candidate to become a valdiator.
    *
    * Requirements:
-   * - The candidate admin is able to receive RON.
+   * - The pool admin is able to receive RON.
    * - The treasury is able to receive RON.
    * - The amount is larger than or equal to the minimum validator balance `minValidatorBalance()`.
    *
+   * @param _candidateAdmin the candidate admin will be stored in the validator contract, used for calling function that affects
+   * to its candidate. IE: scheduling maintenance.
+   *
    */
   function _proposeValidator(
-    address payable _candidateAdmin,
+    address payable _poolAdmin,
+    address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
     uint256 _commissionRate,
     uint256 _amount
   ) internal {
-    require(_sendRON(_candidateAdmin, 0), "StakingManager: pool admin cannot receive RON");
+    require(_sendRON(_poolAdmin, 0), "StakingManager: pool admin cannot receive RON");
     require(_sendRON(_treasuryAddr, 0), "StakingManager: treasury cannot receive RON");
     require(_amount >= minValidatorBalance(), "StakingManager: insufficient amount");
 
-    _validatorContract.addValidatorCandidate(_consensusAddr, _treasuryAddr, _commissionRate);
+    _validatorContract.addValidatorCandidate(_candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate);
   }
 
   /**

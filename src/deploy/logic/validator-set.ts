@@ -12,6 +12,5 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['RoninValidatorSetLogic'];
-deploy.dependencies = ['ProxyAdmin'];
 
 export default deploy;

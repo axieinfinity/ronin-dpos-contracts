@@ -4,6 +4,8 @@ pragma solidity ^0.8.9;
 
 interface ICandidateManager {
   struct ValidatorCandidate {
+    // Admin of the candidate
+    address admin;
     // Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
     address consensusAddr;
     // Address that receives mining reward of the validator
@@ -52,6 +54,7 @@ interface ICandidateManager {
    *
    */
   function addValidatorCandidate(
+    address _admin,
     address _consensusAddr,
     address payable _treasuryAddr,
     uint256 _commissionRate
@@ -80,4 +83,9 @@ interface ICandidateManager {
    * @dev Returns candidates info.
    */
   function getCandidateInfos() external view returns (ValidatorCandidate[] memory);
+
+  /**
+   * @dev Returns whether the address is the candidate admin.
+   */
+  function isCandidateAdmin(address _candidate, address _admin) external view returns (bool);
 }

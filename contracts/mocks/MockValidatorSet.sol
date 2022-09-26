@@ -90,10 +90,6 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     uint256 _slashAmount
   ) external override {}
 
-  function resetCounters(address[] calldata _validatorAddrs) external {
-    ISlashIndicator(slashIndicatorContract).resetCounters(_validatorAddrs);
-  }
-
   function setMaxValidatorNumber(uint256 _maxValidatorNumber) external override {}
 
   function setNumberOfBlocksInEpoch(uint256 _numberOfBlocksInEpoch) external override {}
@@ -115,4 +111,6 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   {}
 
   function getPriorityStatus(address _addr) external view override returns (bool) {}
+
+  function isValidator(address _addr) external view override returns (bool) {}
 }

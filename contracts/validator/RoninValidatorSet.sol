@@ -8,6 +8,7 @@ import "../extensions/RONTransferHelper.sol";
 import "../extensions/HasStakingVestingContract.sol";
 import "../extensions/HasStakingContract.sol";
 import "../extensions/HasSlashIndicatorContract.sol";
+import "../extensions/HasMaintenanceContract.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 import "../libraries/Sorting.sol";
 import "../libraries/Math.sol";
@@ -19,6 +20,7 @@ contract RoninValidatorSet is
   HasStakingContract,
   HasStakingVestingContract,
   HasSlashIndicatorContract,
+  HasMaintenanceContract,
   CandidateManager,
   Initializable
 {
@@ -82,6 +84,7 @@ contract RoninValidatorSet is
     address __slashIndicatorContract,
     address __stakingContract,
     address __stakingVestingContract,
+    address __maintenanceContract,
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
@@ -91,6 +94,7 @@ contract RoninValidatorSet is
     _setSlashIndicatorContract(__slashIndicatorContract);
     _setStakingContract(__stakingContract);
     _setStakingVestingContract(__stakingVestingContract);
+    _setMaintenanceContract(__maintenanceContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
@@ -114,7 +118,7 @@ contract RoninValidatorSet is
     address _coinbaseAddr = msg.sender;
     // Deprecates reward for non-validator or slashed validator
     if (
-      !_isValidator(_coinbaseAddr) || _jailed(_coinbaseAddr) || _rewardDeprecated(_coinbaseAddr, periodOf(block.number))
+      !isValidator(_coinbaseAddr) || _jailed(_coinbaseAddr) || _rewardDeprecated(_coinbaseAddr, periodOf(block.number))
     ) {
       emit RewardDeprecated(_coinbaseAddr, _submittedReward);
       return;
@@ -173,8 +177,6 @@ contract RoninValidatorSet is
     }
 
     if (_periodEnding) {
-      ISlashIndicator(_slashIndicatorContract).resetCounters(_validators);
-
       _staking.settleRewardPools(_validators);
       if (_delegatingAmount > 0) {
         require(
@@ -220,7 +222,7 @@ contract RoninValidatorSet is
       IStaking(_stakingContract).deductStakingAmount(_validatorAddr, _slashAmount);
     }
 
-    emit ValidatorSlashed(_validatorAddr, _jailedUntil[_validatorAddr], _slashAmount);
+    emit ValidatorPunished(_validatorAddr, _jailedUntil[_validatorAddr], _slashAmount);
   }
 
   /**
@@ -272,6 +274,13 @@ contract RoninValidatorSet is
     for (uint _i = 0; _i < _validatorList.length; _i++) {
       _validatorList[_i] = _validator[_i];
     }
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function isValidator(address _addr) public view returns (bool) {
+    return _validatorMap[_addr];
   }
 
   /**
@@ -413,17 +422,26 @@ contract RoninValidatorSet is
       delete _validatorMap[_validator[_i]];
     }
 
+    uint256 _count;
+    bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
     for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
-      address _newValidator = _candidates[_i];
-      if (_newValidator == _validator[_i]) {
+      if (_maintainingList[_i]) {
         continue;
       }
-      delete _validatorMap[_validator[_i]];
+
+      address _newValidator = _candidates[_i];
+      if (_newValidator == _validator[_count]) {
+        _count++;
+        continue;
+      }
+
+      delete _validatorMap[_validator[_count]];
       _validatorMap[_newValidator] = true;
-      _validator[_i] = _newValidator;
+      _validator[_count] = _newValidator;
+      _count++;
     }
 
-    validatorCount = _newValidatorCount;
+    validatorCount = _count;
     emit ValidatorSetUpdated(_candidates);
   }
 
