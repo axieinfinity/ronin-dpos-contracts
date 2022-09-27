@@ -4,6 +4,7 @@ import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import { SlashIndicator, SlashIndicator__factory, MockValidatorSet, MockValidatorSet__factory } from '../../src/types';
+import { BlockHeaderStruct } from '../../src/types/ISlashIndicator';
 import { SlashType } from '../../src/script/slash-indicator';
 import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 
@@ -19,6 +20,7 @@ let felonyThreshold: number;
 let misdemeanorThreshold: number;
 
 const maxValidatorCandidate = 10;
+const doubleSigningConstrainBlocks = BigNumber.from(28800);
 
 const increaseLocalCounterForValidatorAt = (idx: number, value?: number) => {
   value = value ?? 1;
@@ -37,6 +39,26 @@ const validateIndicatorAt = async (idx: number) => {
   expect(localIndicators[idx]).to.eq(await slashContract.currentUnavailabilityIndicator(coinbases[idx].address));
 };
 
+const generateDefaultBlockHeader = (blockHeight: number): BlockHeaderStruct => {
+  return {
+    parentHash: ethers.constants.HashZero,
+    ommersHash: ethers.constants.HashZero,
+    beneficiary: ethers.constants.AddressZero,
+    stateRoot: ethers.constants.HashZero,
+    transactionsRoot: ethers.constants.HashZero,
+    receiptsRoot: ethers.constants.HashZero,
+    logsBloom: new Array(256).fill(ethers.constants.HashZero),
+    difficulty: 1,
+    number: blockHeight,
+    gasLimit: 1,
+    gasUsed: 1,
+    timestamp: 1,
+    extraData: ethers.constants.HashZero,
+    mixHash: ethers.constants.HashZero,
+    nonce: 1,
+  };
+};
+
 describe('Slash indicator test', () => {
   before(async () => {
     [deployer, governanceAdmin, vagabond, ...coinbases] = await ethers.getSigners();
@@ -51,6 +73,7 @@ describe('Slash indicator test', () => {
       slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10), // 10 RON
       felonyJailBlocks: 28800 * 2,
       maxValidatorCandidate,
+      doubleSigningConstrainBlocks,
       governanceAdmin: governanceAdmin.address,
     });
 
@@ -105,8 +128,8 @@ describe('Slash indicator test', () => {
 
       it('Should validator not be able to slash themselves', async () => {
         const slasherIdx = 0;
-        let tx = await slashContract.connect(coinbases[slasherIdx]).slash(coinbases[slasherIdx].address);
-        expect(tx).to.not.emit(slashContract, 'UnavailabilitySlashed');
+        let tx = slashContract.connect(coinbases[slasherIdx]).slash(coinbases[slasherIdx].address);
+        await expect(tx).to.be.revertedWith('SlashIndicator: cannot slash themselves');
 
         resetLocalCounterForValidatorAt(slasherIdx);
         await validateIndicatorAt(slasherIdx);
@@ -258,6 +281,51 @@ describe('Slash indicator test', () => {
           await validateIndicatorAt(slasheeIdxs[j]);
         }
       });
+    });
+
+    describe('Double signing slash', async () => {
+      let header1: BlockHeaderStruct;
+      let header2: BlockHeaderStruct;
+
+      before(async () => {
+        await network.provider.send('hardhat_mine', [doubleSigningConstrainBlocks.toHexString()]);
+      });
+
+      it('Should not be able to slash themselves', async () => {
+        const slasherIdx = 0;
+        await network.provider.send('hardhat_setCoinbase', [coinbases[slasherIdx].address]);
+
+        let nextBlockHeight = await network.provider.send('eth_blockNumber');
+
+        header1 = generateDefaultBlockHeader(nextBlockHeight - 1);
+        header2 = generateDefaultBlockHeader(nextBlockHeight - 1);
+
+        let tx = slashContract
+          .connect(coinbases[slasherIdx])
+          .slashDoubleSign(coinbases[slasherIdx].address, header1, header2);
+        await expect(tx).to.be.revertedWith('SlashIndicator: cannot slash themselves');
+      });
+
+      it('Should not be able to slash with mismatched parent hash', async () => {
+        const slasherIdx = 0;
+        const slasheeIdx = 1;
+        let nextBlockHeight = await network.provider.send('eth_blockNumber');
+
+        header1 = generateDefaultBlockHeader(nextBlockHeight - 1);
+        header2 = generateDefaultBlockHeader(nextBlockHeight - 1);
+
+        header1.parentHash = ethers.constants.HashZero.slice(0, -1) + '1';
+
+        console.log(header1.parentHash);
+        console.log(header2.parentHash);
+
+        let tx = slashContract
+          .connect(coinbases[slasherIdx])
+          .slashDoubleSign(coinbases[slasheeIdx].address, header1, header2);
+        await expect(tx).to.be.revertedWith('SlashIndicator: the parent hash of two blocks mismatch');
+      });
+
+      it('Should be able to slash validator with double signing', async () => {});
     });
   });
 });

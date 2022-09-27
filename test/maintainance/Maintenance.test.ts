@@ -247,9 +247,12 @@ describe('Maintenance test', () => {
     });
 
     it('[Slash Integration] Should not be able to slash the validator in maintenance time', async () => {
-      await slashContract.connect(coinbase).slash(validatorCandidates[0].address);
+      let tx = slashContract.connect(coinbase).slash(validatorCandidates[0].address);
+      await expect(tx).to.be.revertedWith('SlashIndicator: the slashee is not a validator');
       expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[0].address)).eq(0);
-      await slashContract.connect(coinbase).slash(validatorCandidates[1].address);
+
+      tx = slashContract.connect(coinbase).slash(validatorCandidates[1].address);
+      await expect(tx).to.be.revertedWith('SlashIndicator: the slashee is not a validator');
       expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[1].address)).eq(0);
     });
 

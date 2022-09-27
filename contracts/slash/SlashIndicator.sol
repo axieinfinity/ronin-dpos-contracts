@@ -51,6 +51,19 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     lastSlashedBlock = block.number;
   }
 
+  modifier sanityCheck(address _validatorAddr) {
+    require(msg.sender != _validatorAddr, "SlashIndicator: cannot slash themselves");
+
+    require(_validatorContract.isValidator(_validatorAddr), "SlashIndicator: the slashee is not a validator");
+
+    require(
+      !_maintenanceContract.maintaining(_validatorAddr, block.number),
+      "SlashIndicator: cannot slash validator that is under maintainance"
+    );
+
+    _;
+  }
+
   constructor() {
     _disableInitializers();
   }
@@ -85,11 +98,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
   /**
    * @inheritdoc ISlashIndicator
    */
-  function slash(address _validatorAddr) external override onlyCoinbase oncePerBlock {
-    if (!_precheckBeforeSlashing(_validatorAddr)) {
-      return;
-    }
-
+  function slash(address _validatorAddr) external override onlyCoinbase oncePerBlock sanityCheck(_validatorAddr) {
     uint256 _period = _validatorContract.periodOf(block.number);
     uint256 _count = ++_unavailabilityIndicator[_validatorAddr][_period];
     (uint256 _misdemeanorThreshold, uint256 _felonyThreshold) = unavailabilityThresholdsOf(
@@ -121,11 +130,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     address _validatorAddr,
     BlockHeader memory _header1,
     BlockHeader memory _header2
-  ) external override onlyCoinbase oncePerBlock {
-    if (!_precheckBeforeSlashing(_validatorAddr)) {
-      return;
-    }
-
+  ) external override onlyCoinbase oncePerBlock sanityCheck(_validatorAddr) {
     require(
       block.number <= _header1.number + doubleSigningConstrainBlocks,
       "SlashIndicator: the submmitted block 1 is too old"
@@ -292,20 +297,16 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     emit DoubleSigningJailDurationUpdated(_doubleSigningJailDuration);
   }
 
-  /**
-   * @dev Check whether the address to be slashed is a validator and is not under maintanance
-   * @return `true` if it is OK to slash
-   */
-  function _precheckBeforeSlashing(address _validatorAddr) private view returns (bool) {
-    if (msg.sender == _validatorAddr) {
+  function _isSlashable(address _addr) internal view returns (bool) {
+    if (msg.sender == _addr) {
       return false;
     }
 
-    if (!_validatorContract.isValidator(_validatorAddr)) {
+    if (!_validatorContract.isValidator(_addr)) {
       return false;
     }
 
-    if (_maintenanceContract.maintaining(_validatorAddr, block.number)) {
+    if (_maintenanceContract.maintaining(_addr, block.number)) {
       return false;
     }
 
