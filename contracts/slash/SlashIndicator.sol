@@ -31,10 +31,10 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
   uint256 public slashFelonyAmount;
   /// @dev The amount of RON to slash double sign.
   uint256 public slashDoubleSignAmount;
-  /// @dev The block duration to jail validator that reaches felony thresold.
+  /// @dev The block duration to jail a validator that reaches felony thresold.
   uint256 public felonyJailDuration;
-  /// @dev The block duration to jail validator that double signs block. This variable should be
-  /// a constant of MAX_UINT.
+  /// @dev The block duration to jail a validator that double signs block. This variable should be
+  /// a constant of MAX_UINT since that validator is jailed forever.
   uint256 public doubleSigningJailDuration;
 
   modifier onlyCoinbase() {
@@ -49,19 +49,6 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     );
     _;
     lastSlashedBlock = block.number;
-  }
-
-  modifier sanityCheck(address _validatorAddr) {
-    require(msg.sender != _validatorAddr, "SlashIndicator: cannot slash themselves");
-
-    require(_validatorContract.isValidator(_validatorAddr), "SlashIndicator: the slashee is not a validator");
-
-    require(
-      !_maintenanceContract.maintaining(_validatorAddr, block.number),
-      "SlashIndicator: cannot slash validator that is under maintainance"
-    );
-
-    _;
   }
 
   constructor() {
@@ -98,7 +85,11 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
   /**
    * @inheritdoc ISlashIndicator
    */
-  function slash(address _validatorAddr) external override onlyCoinbase oncePerBlock sanityCheck(_validatorAddr) {
+  function slash(address _validatorAddr) external override onlyCoinbase oncePerBlock {
+    if (!_isSlashable(_validatorAddr)) {
+      return;
+    }
+
     uint256 _period = _validatorContract.periodOf(block.number);
     uint256 _count = ++_unavailabilityIndicator[_validatorAddr][_period];
     (uint256 _misdemeanorThreshold, uint256 _felonyThreshold) = unavailabilityThresholdsOf(
@@ -130,17 +121,18 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     address _validatorAddr,
     BlockHeader memory _header1,
     BlockHeader memory _header2
-  ) external override onlyCoinbase oncePerBlock sanityCheck(_validatorAddr) {
-    require(
-      block.number <= _header1.number + doubleSigningConstrainBlocks,
-      "SlashIndicator: the submmitted block 1 is too old"
-    );
-    require(
-      block.number <= _header2.number + doubleSigningConstrainBlocks,
-      "SlashIndicator: the submmitted block 2 is too old"
-    );
+  ) external override onlyCoinbase oncePerBlock {
+    if (!_isSlashable(_validatorAddr)) {
+      return;
+    }
 
-    require(_header1.parentHash == _header2.parentHash, "SlashIndicator: the parent hash of two blocks mismatch");
+    if (
+      block.number > _header1.number + doubleSigningConstrainBlocks ||
+      block.number > _header2.number + doubleSigningConstrainBlocks ||
+      _header1.parentHash != _header2.parentHash
+    ) {
+      return;
+    }
 
     bool _validEvidence = _validateEvidence(_header1, _header2);
 

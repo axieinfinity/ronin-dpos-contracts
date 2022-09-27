@@ -14,6 +14,7 @@ import {
   Staking__factory,
 } from '../../src/types';
 import { initTest } from '../helpers/fixture';
+import { EpochController } from '../helpers/ronin-validator-set';
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -24,6 +25,8 @@ let maintenanceContract: Maintenance;
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: RoninValidatorSet;
+
+let localEpochController: EpochController;
 
 const misdemeanorThreshold = 50;
 const felonyThreshold = 150;
@@ -38,21 +41,6 @@ const minOffset = 200;
 let startedAtBlock: BigNumberish = 0;
 let endedAtBlock: BigNumberish = 0;
 let currentBlock: number;
-
-const calculateStartOfEpoch = (block: number) =>
-  BigNumber.from(
-    Math.floor((block + minOffset + numberOfBlocksInEpoch - 1) / numberOfBlocksInEpoch) * numberOfBlocksInEpoch
-  );
-const diffToEndEpoch = (block: BigNumberish) =>
-  BigNumber.from(numberOfBlocksInEpoch).sub(BigNumber.from(block).mod(numberOfBlocksInEpoch)).sub(1);
-const calculateEndOfEpoch = (block: BigNumberish) => BigNumber.from(block).add(diffToEndEpoch(block));
-const mineToBeforeEndOfEpoch = async () => {
-  let number = diffToEndEpoch(await ethers.provider.getBlockNumber()).sub(1);
-  if (number.lt(0)) {
-    number = number.add(numberOfBlocksInEpoch);
-  }
-  return network.provider.send('hardhat_mine', [ethers.utils.hexStripZeros(number.toHexString())]);
-};
 
 describe('Maintenance test', () => {
   before(async () => {
@@ -85,7 +73,10 @@ describe('Maintenance test', () => {
     await network.provider.send('hardhat_mine', [
       ethers.utils.hexStripZeros(BigNumber.from(numberOfBlocksInEpoch * numberOfEpochsInPeriod).toHexString()),
     ]);
-    await mineToBeforeEndOfEpoch();
+
+    localEpochController = new EpochController(minOffset, numberOfBlocksInEpoch, numberOfEpochsInPeriod);
+
+    await localEpochController.mineToBeforeEndOfEpoch();
 
     await validatorContract.connect(coinbase).wrapUpEpoch();
     expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
@@ -158,8 +149,8 @@ describe('Maintenance test', () => {
     });
 
     it('Should be not able to schedule maintenance when the start block is not at the start of an epoch', async () => {
-      startedAtBlock = calculateStartOfEpoch(currentBlock).add(1);
-      endedAtBlock = calculateEndOfEpoch(startedAtBlock.add(minMaintenanceBlockPeriod));
+      startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock).add(1);
+      endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock.add(minMaintenanceBlockPeriod));
 
       expect(startedAtBlock.mod(numberOfBlocksInEpoch)).not.eq(0);
       expect(endedAtBlock.mod(numberOfBlocksInEpoch)).eq(numberOfBlocksInEpoch - 1);
@@ -172,8 +163,8 @@ describe('Maintenance test', () => {
 
     it('Should be not able to schedule maintenance when the end block is not at the end of an epoch', async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
-      startedAtBlock = calculateStartOfEpoch(currentBlock);
-      endedAtBlock = calculateEndOfEpoch(startedAtBlock.add(minMaintenanceBlockPeriod)).add(1);
+      startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
+      endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock.add(minMaintenanceBlockPeriod)).add(1);
 
       expect(startedAtBlock.mod(numberOfBlocksInEpoch)).eq(0);
       expect(endedAtBlock.mod(numberOfBlocksInEpoch)).not.eq(numberOfBlocksInEpoch - 1);
@@ -200,8 +191,10 @@ describe('Maintenance test', () => {
 
     it('Should be able to schedule maintenance using validator admin account', async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
-      startedAtBlock = calculateStartOfEpoch(currentBlock).add(numberOfBlocksInEpoch);
-      endedAtBlock = calculateEndOfEpoch(BigNumber.from(startedAtBlock).add(minMaintenanceBlockPeriod));
+      startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock).add(numberOfBlocksInEpoch);
+      endedAtBlock = localEpochController.calculateEndOfEpoch(
+        BigNumber.from(startedAtBlock).add(minMaintenanceBlockPeriod)
+      );
 
       const tx = await maintenanceContract
         .connect(validatorCandidates[0])
@@ -235,24 +228,21 @@ describe('Maintenance test', () => {
     });
 
     it('Should the validator still appear in the validator list since it is not maintenance time yet', async () => {
-      await mineToBeforeEndOfEpoch();
+      await localEpochController.mineToBeforeEndOfEpoch();
       await validatorContract.connect(coinbase).wrapUpEpoch();
       expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
     });
 
     it('Should the validator not appear in the validator list since the maintenance is started', async () => {
-      await mineToBeforeEndOfEpoch();
+      await localEpochController.mineToBeforeEndOfEpoch();
       await validatorContract.connect(coinbase).wrapUpEpoch();
       expect(await validatorContract.getValidators()).eql(validatorCandidates.slice(2).map((_) => _.address));
     });
 
     it('[Slash Integration] Should not be able to slash the validator in maintenance time', async () => {
-      let tx = slashContract.connect(coinbase).slash(validatorCandidates[0].address);
-      await expect(tx).to.be.revertedWith('SlashIndicator: the slashee is not a validator');
+      await slashContract.connect(coinbase).slash(validatorCandidates[0].address);
       expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[0].address)).eq(0);
-
-      tx = slashContract.connect(coinbase).slash(validatorCandidates[1].address);
-      await expect(tx).to.be.revertedWith('SlashIndicator: the slashee is not a validator');
+      await slashContract.connect(coinbase).slash(validatorCandidates[1].address);
       expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[1].address)).eq(0);
     });
 
@@ -270,15 +260,15 @@ describe('Maintenance test', () => {
     });
 
     it('Should the validator appear in the validator list since the maintenance time is ended', async () => {
-      await mineToBeforeEndOfEpoch();
+      await localEpochController.mineToBeforeEndOfEpoch();
       await validatorContract.connect(coinbase).wrapUpEpoch();
       expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
     });
 
     it('Should not be able to schedule maintenance twice in a period', async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
-      startedAtBlock = calculateStartOfEpoch(currentBlock);
-      endedAtBlock = calculateEndOfEpoch(startedAtBlock);
+      startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
+      endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock);
       await expect(
         maintenanceContract
           .connect(validatorCandidates[0])
@@ -297,8 +287,8 @@ describe('Maintenance test', () => {
 
     it('Should be able to schedule in the next period', async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
-      startedAtBlock = calculateStartOfEpoch(currentBlock);
-      endedAtBlock = calculateEndOfEpoch(startedAtBlock);
+      startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
+      endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock);
       await maintenanceContract
         .connect(validatorCandidates[0])
         .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock);
