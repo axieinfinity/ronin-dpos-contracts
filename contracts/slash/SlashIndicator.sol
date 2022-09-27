@@ -289,6 +289,9 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     emit DoubleSigningJailDurationUpdated(_doubleSigningJailDuration);
   }
 
+  /**
+   * @dev Sanity check the address to be slashed
+   */
   function _isSlashable(address _addr) internal view returns (bool) {
     if (msg.sender == _addr) {
       return false;

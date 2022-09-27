@@ -50,6 +50,10 @@ export class EpochController {
     return BigNumber.from(block).div(BigNumber.from(this.numberOfBlocksInPeriod)).add(1);
   }
 
+  async currentPeriod(): Promise<BigNumber> {
+    return this.calculatePeriodOf(await ethers.provider.getBlockNumber());
+  }
+
   async mineToBeforeEndOfEpoch() {
     let number = this.diffToEndEpoch(await ethers.provider.getBlockNumber()).sub(1);
     if (number.lt(0)) {

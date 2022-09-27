@@ -13,15 +13,17 @@ import {
 } from '../../src/types';
 import { BlockHeaderStruct } from '../../src/types/ISlashIndicator';
 import { SlashType } from '../../src/script/slash-indicator';
-import { initTest } from '../helpers/fixture';
+import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
 
 let slashContract: MockSlashIndicatorExtended;
+let mockSlashLogic: MockSlashIndicatorExtended;
 let stakingContract: Staking;
+let governanceAdmin: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
-let governanceAdmin: SignerWithAddress;
+let governor: SignerWithAddress;
 let validatorContract: RoninValidatorSet;
 let vagabond: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
@@ -84,11 +86,12 @@ const generateDefaultBlockHeader = (blockHeight: number): BlockHeaderStruct => {
 
 describe('Slash indicator test', () => {
   before(async () => {
-    [deployer, coinbase, governanceAdmin, vagabond, ...validatorCandidates] = await ethers.getSigners();
+    [deployer, coinbase, governor, vagabond, ...validatorCandidates] = await ethers.getSigners();
+    governanceAdmin = new GovernanceAdminInterface(governor);
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress } = await initTest('SlashIndicator')(
       {
-        governanceAdmin: governanceAdmin.address,
+        governanceAdmin: governor.address,
         misdemeanorThreshold,
         felonyThreshold,
         maxValidatorNumber,
@@ -100,9 +103,14 @@ describe('Slash indicator test', () => {
         slashDoubleSignAmount,
       }
     );
-    slashContract = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
+
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = RoninValidatorSet__factory.connect(validatorContractAddress, deployer);
+    slashContract = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
+
+    mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
+    await mockSlashLogic.deployed();
+    governanceAdmin.upgrade(slashContractAddress, mockSlashLogic.address);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {
@@ -216,7 +224,7 @@ describe('Slash indicator test', () => {
             .slash(validatorCandidates[slasheeIdx].address);
         }
 
-        let _period = await localEpochController.calculatePeriodOf(await network.provider.send('eth_blockNumber'));
+        let _period = await localEpochController.currentPeriod();
         await expect(tx)
           .to.emit(slashContract, 'UnavailabilitySlashed')
           .withArgs(validatorCandidates[slasheeIdx].address, SlashType.MISDEMEANOR, _period);
@@ -246,7 +254,7 @@ describe('Slash indicator test', () => {
 
         await network.provider.send('hardhat_setCoinbase', [validatorCandidates[slasherIdx].address]);
 
-        let _period = await localEpochController.calculatePeriodOf(await network.provider.send('eth_blockNumber'));
+        let _period = await localEpochController.currentPeriod();
 
         for (let i = 0; i < felonyThreshold; i++) {
           tx = await slashContract
@@ -384,9 +392,11 @@ describe('Slash indicator test', () => {
           .connect(validatorCandidates[slasherIdx])
           .slashDoubleSign(validatorCandidates[slasheeIdx].address, header1, header2);
 
+        let _period = await localEpochController.currentPeriod();
+
         await expect(tx)
           .to.emit(slashContract, 'UnavailabilitySlashed')
-          .withArgs([validatorCandidates[slasheeIdx].address, ethers.constants.MaxUint256, slashDoubleSignAmount]);
+          .withArgs(validatorCandidates[slasheeIdx].address, SlashType.DOUBLE_SIGNING, _period);
       });
     });
   });
