@@ -89,7 +89,7 @@ describe('[Integration] Submit Block Reward', () => {
       validator = validatorCandidates[0];
       await stakingContract
         .connect(validator)
-        .proposeValidator(validator.address, validator.address, validator.address, 2_00, {
+        .applyValidatorCandidate(validator.address, validator.address, validator.address, 2_00, {
           value: initStakingAmount,
         });
       await mineBatchTxs(async () => {
@@ -136,7 +136,7 @@ describe('[Integration] Submit Block Reward', () => {
 
       await stakingContract
         .connect(validator)
-        .proposeValidator(validator.address, validator.address, validator.address, 2_00, {
+        .applyValidatorCandidate(validator.address, validator.address, validator.address, 2_00, {
           value: initStakingAmount,
         });
 

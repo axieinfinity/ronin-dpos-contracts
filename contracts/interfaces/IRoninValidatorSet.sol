@@ -98,16 +98,6 @@ interface IRoninValidatorSet is ICandidateManager {
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev Returns the number of epochs in a period.
-   */
-  function numberOfEpochsInPeriod() external view returns (uint256 _numberOfEpochs);
-
-  /**
-   * @dev Returns the number of blocks in a epoch.
-   */
-  function numberOfBlocksInEpoch() external view returns (uint256 _numberOfBlocks);
-
-  /**
    * @dev Returns the maximum number of validators in the epoch
    */
   function maxValidatorNumber() external view returns (uint256 _maximumValidatorNumber);

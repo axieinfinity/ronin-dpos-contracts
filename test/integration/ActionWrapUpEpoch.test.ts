@@ -101,7 +101,7 @@ describe('[Integration] Wrap up epoch', () => {
       for (let i = 0; i < validators.length; i++) {
         await stakingContract
           .connect(validatorCandidates[i])
-          .proposeValidator(
+          .applyValidatorCandidate(
             validatorCandidates[i].address,
             validatorCandidates[i].address,
             validatorCandidates[i].address,
@@ -200,7 +200,7 @@ describe('[Integration] Wrap up epoch', () => {
       for (let i = 0; i < validators.length; i++) {
         await stakingContract
           .connect(validators[i])
-          .proposeValidator(validators[i].address, validators[i].address, validators[i].address, 2_00, {
+          .applyValidatorCandidate(validators[i].address, validators[i].address, validators[i].address, 2_00, {
             value: minValidatorBalance.mul(3).add(i),
           });
       }

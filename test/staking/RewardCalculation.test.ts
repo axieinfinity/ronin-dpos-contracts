@@ -96,7 +96,7 @@ const expectLocalCalculationRight = async () => {
   }
 };
 
-describe('Core Staking test', () => {
+describe('Reward Calculation test', () => {
   let tx: ContractTransaction;
   const txs: ContractTransaction[] = [];
 

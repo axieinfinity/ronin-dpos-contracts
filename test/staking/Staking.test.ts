@@ -8,8 +8,6 @@ import { MockValidatorSet__factory } from '../../src/types/factories/MockValidat
 import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
 
-const EPS = 1;
-
 let poolAddr: SignerWithAddress;
 let otherPoolAddr: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -20,74 +18,7 @@ let validatorContract: MockValidatorSet;
 let stakingContract: Staking;
 let validatorCandidates: SignerWithAddress[];
 
-const local = {
-  accumulatedRewardForA: BigNumber.from(0),
-  accumulatedRewardForB: BigNumber.from(0),
-  claimableRewardForA: BigNumber.from(0),
-  claimableRewardForB: BigNumber.from(0),
-  recordReward: async function (reward: BigNumberish) {
-    const totalStaked = await stakingContract.totalBalance(poolAddr.address);
-    const stakingAmountA = await stakingContract.balanceOf(poolAddr.address, userA.address);
-    const stakingAmountB = await stakingContract.balanceOf(poolAddr.address, userB.address);
-    this.accumulatedRewardForA = this.accumulatedRewardForA.add(
-      BigNumber.from(reward).mul(stakingAmountA).div(totalStaked)
-    );
-    this.accumulatedRewardForB = this.accumulatedRewardForB.add(
-      BigNumber.from(reward).mul(stakingAmountB).div(totalStaked)
-    );
-  },
-  commitRewardPool: function () {
-    this.claimableRewardForA = this.accumulatedRewardForA;
-    this.claimableRewardForB = this.accumulatedRewardForB;
-  },
-  slash: function () {
-    this.accumulatedRewardForA = this.claimableRewardForA;
-    this.accumulatedRewardForB = this.claimableRewardForB;
-  },
-  reset: function () {
-    this.claimableRewardForA = BigNumber.from(0);
-    this.claimableRewardForB = BigNumber.from(0);
-    this.accumulatedRewardForA = BigNumber.from(0);
-    this.accumulatedRewardForB = BigNumber.from(0);
-  },
-  claimRewardForA: function () {
-    this.accumulatedRewardForA = this.accumulatedRewardForA.sub(this.claimableRewardForA);
-    this.claimableRewardForA = BigNumber.from(0);
-  },
-  claimRewardForB: function () {
-    this.accumulatedRewardForB = this.accumulatedRewardForB.sub(this.claimableRewardForB);
-    this.claimableRewardForB = BigNumber.from(0);
-  },
-};
-
-const expectLocalCalculationRight = async () => {
-  {
-    const userReward = await stakingContract.getTotalReward(poolAddr.address, userA.address);
-    expect(
-      userReward.sub(local.accumulatedRewardForA).abs().lte(EPS),
-      `invalid user reward for A expected=${local.accumulatedRewardForA.toString()} actual=${userReward}`
-    ).to.be.true;
-    const claimableReward = await stakingContract.getClaimableReward(poolAddr.address, userA.address);
-    expect(
-      claimableReward.sub(local.claimableRewardForA).abs().lte(EPS),
-      `invalid claimable reward for A expected=${local.claimableRewardForA.toString()} actual=${claimableReward}`
-    ).to.be.true;
-  }
-  {
-    const userReward = await stakingContract.getTotalReward(poolAddr.address, userB.address);
-    expect(
-      userReward.sub(local.accumulatedRewardForB).abs().lte(EPS),
-      `invalid user reward for B expected=${local.accumulatedRewardForB.toString()} actual=${userReward}`
-    ).to.be.true;
-    const claimableReward = await stakingContract.getClaimableReward(poolAddr.address, userB.address);
-    expect(
-      claimableReward.sub(local.claimableRewardForB).abs().lte(EPS),
-      `invalid claimable reward for B expected=${local.claimableRewardForB.toString()} actual=${claimableReward}`
-    ).to.be.true;
-  }
-};
-
-const minValidatorBalance = BigNumber.from(2);
+const minValidatorBalance = BigNumber.from(20);
 const maxValidatorCandidate = 50;
 const numberOfEpochsInPeriod = 10;
 const numberOfBlocksInEpoch = 2;
@@ -122,9 +53,9 @@ describe('Staking test', () => {
 
   describe('Validator candidate test', () => {
     it('Should not be able to propose validator with insufficient amount', async () => {
-      await expect(stakingContract.proposeValidator(userA.address, userA.address, userA.address, 1)).revertedWith(
-        'StakingManager: insufficient amount'
-      );
+      await expect(
+        stakingContract.applyValidatorCandidate(userA.address, userA.address, userA.address, 1)
+      ).revertedWith('StakingManager: insufficient amount');
     });
 
     it('Should be able to propose validator with sufficient amount', async () => {
@@ -132,26 +63,27 @@ describe('Staking test', () => {
         const candidate = validatorCandidates[i];
         const tx = await stakingContract
           .connect(candidate)
-          .proposeValidator(
+          .applyValidatorCandidate(
             candidate.address,
             candidate.address,
             candidate.address,
             1,
-            /* 0.01% */ { value: minValidatorBalance }
+            /* 0.01% */ { value: minValidatorBalance.mul(2) }
           );
-        await expect(tx).emit(stakingContract, 'ValidatorPoolAdded').withArgs(candidate.address, candidate.address);
+        await expect(tx).emit(stakingContract, 'PoolApproved').withArgs(candidate.address, candidate.address);
       }
 
       poolAddr = validatorCandidates[1];
-      otherPoolAddr = validatorCandidates[2];
-      expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance);
+      expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance.mul(2));
     });
 
     it('Should not be able to propose validator again', async () => {
       await expect(
         stakingContract
           .connect(poolAddr)
-          .proposeValidator(poolAddr.address, poolAddr.address, poolAddr.address, 0, { value: 10 })
+          .applyValidatorCandidate(poolAddr.address, poolAddr.address, poolAddr.address, 0, {
+            value: minValidatorBalance,
+          })
       ).revertedWith('CandidateManager: query for already existent candidate');
     });
 
@@ -166,31 +98,66 @@ describe('Staking test', () => {
         'StakingManager: requester must be the pool admin'
       );
 
-      // TODO: fix unstake value greater than 0
-      await expect(stakingContract.unstake(poolAddr.address, 0)).revertedWith(
+      await expect(stakingContract.unstake(poolAddr.address, 1)).revertedWith(
         'StakingManager: requester must be the pool admin'
       );
     });
 
-    it('Should be able to stake/unstake as a validator', async () => {
+    it('Should be able to stake/unstake as a validator candidate', async () => {
       let tx: ContractTransaction;
       tx = await stakingContract.connect(poolAddr).stake(poolAddr.address, { value: 1 });
       await expect(tx!).emit(stakingContract, 'Staked').withArgs(poolAddr.address, 1);
-      expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance.add(1));
+      expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance.mul(2).add(1));
 
       tx = await stakingContract.connect(poolAddr).unstake(poolAddr.address, 1);
       await expect(tx!).emit(stakingContract, 'Unstaked').withArgs(poolAddr.address, 1);
-      expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance);
+      expect(await stakingContract.totalBalance(poolAddr.address)).eq(minValidatorBalance.mul(2));
     });
 
     it('Should be not able to unstake with the balance left is not larger than the minimum balance threshold', async () => {
-      await expect(stakingContract.connect(poolAddr).unstake(poolAddr.address, 2)).revertedWith(
-        'StakingManager: invalid staked amount left'
+      await expect(
+        stakingContract.connect(poolAddr).unstake(poolAddr.address, minValidatorBalance.add(1))
+      ).revertedWith('StakingManager: invalid staked amount left');
+    });
+
+    it('Should not be able to request renounce using unauthorized account', async () => {
+      await expect(stakingContract.connect(deployer).requestRenounce(poolAddr.address)).revertedWith(
+        'StakingManager: requester must be the pool admin'
+      );
+    });
+
+    it('Should be able to request renounce using pool admin', async () => {
+      await stakingContract.connect(poolAddr).requestRenounce(poolAddr.address);
+    });
+
+    it('Should not be able to request renounce again', async () => {
+      await expect(stakingContract.connect(poolAddr).requestRenounce(poolAddr.address)).revertedWith(
+        'CandidateManager: invalid block number'
+      );
+    });
+
+    it('Should the consensus account is no longer be a candidate', async () => {
+      await network.provider.send('hardhat_mine', [
+        ethers.utils.hexStripZeros(BigNumber.from(numberOfBlocksInEpoch * numberOfEpochsInPeriod * 2).toHexString()),
+      ]);
+      const stakedAmount = minValidatorBalance.mul(2);
+      expect(await stakingContract.getStakingPool(poolAddr.address)).eql([
+        poolAddr.address,
+        stakedAmount,
+        stakedAmount,
+      ]);
+      await expect(() => validatorContract.wrapUpEpoch()).changeEtherBalance(poolAddr, stakedAmount);
+      await expect(stakingContract.getStakingPool(poolAddr.address)).revertedWith(
+        'StakingManager: query for non-existent pool'
       );
     });
   });
 
   describe('Delegator test', () => {
+    before(() => {
+      otherPoolAddr = validatorCandidates[2];
+    });
+
     it('Should not be able to delegate with empty value', async () => {
       await expect(stakingContract.delegate(otherPoolAddr.address)).revertedWith(
         'StakingManager: query with empty value'
@@ -198,11 +165,17 @@ describe('Staking test', () => {
     });
 
     it('Should not be able to delegate/undelegate when the method caller is the pool admin', async () => {
-      await expect(stakingContract.connect(poolAddr).delegate(poolAddr.address, { value: 1 })).revertedWith(
+      await expect(stakingContract.connect(otherPoolAddr).delegate(otherPoolAddr.address, { value: 1 })).revertedWith(
         'StakingManager: delegator must not be the pool admin'
       );
-      await expect(stakingContract.connect(poolAddr).undelegate(poolAddr.address, 1)).revertedWith(
+      await expect(stakingContract.connect(otherPoolAddr).undelegate(otherPoolAddr.address, 1)).revertedWith(
         'StakingManager: delegator must not be the pool admin'
+      );
+    });
+
+    it('Should not be able to delegate to a deprecated pool', async () => {
+      await expect(stakingContract.delegate(poolAddr.address, { value: 1 })).revertedWith(
+        'StakingManager: query for non-existent pool'
       );
     });
 
@@ -213,122 +186,12 @@ describe('Staking test', () => {
 
       tx = await stakingContract.connect(userB).delegate(otherPoolAddr.address, { value: 1 });
       await expect(tx!).emit(stakingContract, 'Delegated').withArgs(userB.address, otherPoolAddr.address, 1);
-      expect(await stakingContract.totalBalance(otherPoolAddr.address)).eq(minValidatorBalance.add(2));
+
+      expect(await stakingContract.totalBalance(otherPoolAddr.address)).eq(minValidatorBalance.mul(2).add(2));
 
       tx = await stakingContract.connect(userA).undelegate(otherPoolAddr.address, 1);
       await expect(tx!).emit(stakingContract, 'Undelegated').withArgs(userA.address, otherPoolAddr.address, 1);
-      expect(await stakingContract.totalBalance(otherPoolAddr.address)).eq(minValidatorBalance.add(1));
-    });
-  });
-
-  describe('Reward Calculation test', () => {
-    before(async () => {
-      poolAddr = validatorCandidates[0];
-      await TransparentUpgradeableProxyV2__factory.connect(stakingContract.address, proxyAdmin).functionDelegateCall(
-        stakingContract.interface.encodeFunctionData('setMinValidatorBalance', [0])
-      );
-      await stakingContract
-        .connect(poolAddr)
-        .proposeValidator(poolAddr.address, poolAddr.address, poolAddr.address, 0, { value: 0 });
-
-      await network.provider.send('evm_setAutomine', [false]);
-    });
-
-    after(async () => {
-      await network.provider.send('evm_setAutomine', [true]);
-    });
-
-    it('Should work properly with staking actions occurring sequentially for a normal period', async () => {
-      await stakingContract.connect(userA).delegate(poolAddr.address, { value: 100 });
-      await stakingContract.connect(userB).delegate(poolAddr.address, { value: 100 });
-      await stakingContract.connect(userA).delegate(otherPoolAddr.address, { value: 100 });
-      await network.provider.send('evm_mine');
-
-      await validatorContract.connect(poolAddr).depositReward({ value: 1000 });
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
-
-      await validatorContract.connect(poolAddr).depositReward({ value: 1000 });
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
-
-      await stakingContract.connect(userA).delegate(poolAddr.address, { value: 200 });
-      await network.provider.send('evm_mine');
-      await expectLocalCalculationRight();
-
-      await validatorContract.connect(poolAddr).depositReward({ value: 1000 });
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
-
-      await stakingContract.connect(userA).undelegate(poolAddr.address, 200);
-      await validatorContract.connect(poolAddr).depositReward({ value: 1000 });
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
-
-      await stakingContract.connect(userA).delegate(poolAddr.address, { value: 200 });
-      await network.provider.send('evm_mine');
-      await local.recordReward(0);
-      await expectLocalCalculationRight();
-
-      await validatorContract.settledReward([poolAddr.address, otherPoolAddr.address]);
-      await validatorContract.endPeriod();
-      await network.provider.send('evm_mine');
-      local.commitRewardPool();
-      await expectLocalCalculationRight();
-    });
-
-    it('Should work properly with staking actions occurring sequentially for a slashed period', async () => {
-      await stakingContract.connect(userA).delegate(poolAddr.address, { value: 100 });
-      await network.provider.send('evm_mine');
-      await expectLocalCalculationRight();
-
-      await validatorContract.connect(poolAddr).depositReward({ value: 1000 });
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
-
-      await validatorContract.connect(poolAddr).depositReward({ value: 1000 });
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
-
-      await stakingContract.connect(userA).delegate(poolAddr.address, { value: 300 });
-      await validatorContract.connect(poolAddr).depositReward({ value: 1000 });
-      await network.provider.send('evm_mine');
-      await local.recordReward(1000);
-      await expectLocalCalculationRight();
-
-      await validatorContract.slashMisdemeanor(poolAddr.address);
-      await network.provider.send('evm_mine');
-      local.slash();
-      await expectLocalCalculationRight();
-
-      await validatorContract.connect(poolAddr).depositReward({ value: 0 });
-      await network.provider.send('evm_mine');
-      await local.recordReward(0);
-      await expectLocalCalculationRight();
-
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
-      await network.provider.send('evm_mine');
-
-      await stakingContract.connect(userA).undelegate(poolAddr.address, 300);
-      await network.provider.send('evm_mine');
-      await stakingContract.connect(userA).undelegate(poolAddr.address, 100);
-      await network.provider.send('evm_mine');
-      await expectLocalCalculationRight();
-
-      await validatorContract.settledReward([poolAddr.address]);
-      await validatorContract.endPeriod();
-      await network.provider.send('evm_mine');
-      await expectLocalCalculationRight();
+      expect(await stakingContract.totalBalance(otherPoolAddr.address)).eq(minValidatorBalance.mul(2).add(1));
     });
   });
 });

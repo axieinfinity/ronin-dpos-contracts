@@ -13,6 +13,8 @@ interface ICandidateManager {
     // The percentile of reward that validators can be received, the rest goes to the delegators.
     // Values in range [0; 100_00] stands for 0-100%
     uint256 commissionRate;
+    // The block that the candidate is removed.
+    uint256 removedAtBlock;
     // Extra data
     bytes extraData;
   }
@@ -20,13 +22,11 @@ interface ICandidateManager {
   /// @dev Emitted when the maximum number of validator candidates is updated.
   event MaxValidatorCandidateUpdated(uint256 threshold);
   /// @dev Emitted when the validator candidate is added.
-  event ValidatorCandidateAdded(
-    address indexed consensusAddr,
-    address indexed treasuryAddr,
-    uint256 indexed candidateIdx
-  );
+  event CandidateAdded(address indexed consensusAddr, address indexed treasuryAddr, address indexed admin);
+  /// @dev Emitted when the validator candidate is requested to remove at a specific block.
+  event CandidateRemovedAtBlock(address indexed consensusAddr, uint256 removedAtBlock);
   /// @dev Emitted when the validator candidate is removed.
-  event ValidatorCandidateRemoved(address indexed consensusAddr);
+  event CandidatesRemoved(address[] consensusAddrs);
 
   /**
    * @dev Returns the maximum number of validator candidate.
@@ -50,7 +50,7 @@ interface ICandidateManager {
    * Requirements:
    * - The method caller is staking contract.
    *
-   * Emits the event `ValidatorCandidateAdded`.
+   * Emits the event `CandidateAdded`.
    *
    */
   function addValidatorCandidate(
@@ -61,13 +61,15 @@ interface ICandidateManager {
   ) external;
 
   /**
-   * @dev Syncs the validator candidate list (removes the ones who have insufficient minimum candidate balance).
-   * Returns the total balance list of the new candidate list.
+   * @dev Requests to remove a validator candidate.
    *
-   * Emits the event `ValidatorCandidateRemoved` when a candidate is removed.
+   * Requirements:
+   * - The method caller is staking contract.
+   *
+   * Emits the event `CandidateRemovedAtBlock`.
    *
    */
-  function syncCandidates() external returns (uint256[] memory _balances);
+  function requestRemoveCandidate(address) external;
 
   /**
    * @dev Returns whether the address is a validator (candidate).
@@ -88,4 +90,14 @@ interface ICandidateManager {
    * @dev Returns whether the address is the candidate admin.
    */
   function isCandidateAdmin(address _candidate, address _admin) external view returns (bool);
+
+  /**
+   * @dev Returns the number of epochs in a period.
+   */
+  function numberOfEpochsInPeriod() external view returns (uint256 _numberOfEpochs);
+
+  /**
+   * @dev Returns the number of blocks in a epoch.
+   */
+  function numberOfBlocksInEpoch() external view returns (uint256 _numberOfBlocks);
 }

@@ -60,7 +60,7 @@ describe('Maintenance test', () => {
     for (let i = 0; i < maxValidatorNumber; i++) {
       await stakingContract
         .connect(validatorCandidates[i])
-        .proposeValidator(
+        .applyValidatorCandidate(
           validatorCandidates[i].address,
           validatorCandidates[i].address,
           validatorCandidates[i].address,

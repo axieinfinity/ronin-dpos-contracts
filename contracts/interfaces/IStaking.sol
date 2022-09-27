@@ -18,11 +18,12 @@ interface IStaking is IRewardPool {
     mapping(address => uint256) delegatedAmount;
   }
 
-  event ValidatorPoolAdded(address indexed validator, address indexed admin);
-  /// @dev Emitted when the validator candidate requested to renounce.
-  event ValidatorRenounceRequested(address indexed consensusAddr, uint256 amount);
-  /// @dev Emitted when the renounce request is finalized.
-  event ValidatorRenounceFinalized(address indexed consensusAddr, uint256 amount);
+  /// @dev Emitted when the validator pool is approved.
+  event PoolApproved(address indexed validator, address indexed admin);
+  /// @dev Emitted when the validator pool is deprecated.
+  event PoolsDeprecated(address[] validator);
+  /// @dev Emitted when the staked amount is deprecated.
+  event StakedAmountDeprecated(address indexed validator, address indexed admin, uint256 amount);
   /// @dev Emitted when the pool admin staked for themself.
   event Staked(address indexed validator, uint256 amount);
   /// @dev Emitted when the pool admin unstaked the amount of RON from themself.
@@ -94,15 +95,27 @@ interface IStaking is IRewardPool {
   function sinkPendingReward(address _consensusAddr) external;
 
   /**
-   * @dev Deducts from staking amount of the validator `_consensusAddr` for `_amount`.
+   * @dev Deducts from staked amount of the validator `_consensusAddr` for `_amount`.
    *
    * Requirements:
    * - The method caller is validator contract.
    *
-   * Emits the event `Unstaked` and `Undelegated` event.
+   * Emits the event `Unstaked`.
    *
    */
-  function deductStakingAmount(address _consensusAddr, uint256 _amount) external;
+  function deductStakedAmount(address _consensusAddr, uint256 _amount) external;
+
+  /**
+   * @dev Deprecates the pool.
+   *
+   * Requirements:
+   * - The method caller is validator contract.
+   *
+   * Emits the event `PoolsDeprecated` and `Unstaked` events.
+   * Emits the event `StakedAmountDeprecated` if the contract cannot transfer RON back to the pool admin.
+   *
+   */
+  function deprecatePools(address[] calldata _pools) external;
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                          FUNCTIONS FOR VALIDATOR CANDIDATE                        //
@@ -116,13 +129,13 @@ interface IStaking is IRewardPool {
    * - The treasury is able to receive RON.
    * - The amount is larger than or equal to the minimum validator balance `minValidatorBalance()`.
    *
-   * Emits the event `ValidatorPoolAdded`.
+   * Emits the event `PoolApproved`.
    *
    * @param _candidateAdmin the candidate admin will be stored in the validator contract, used for calling function that affects
    * to its candidate. IE: scheduling maintenance.
    *
    */
-  function proposeValidator(
+  function applyValidatorCandidate(
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
@@ -137,7 +150,7 @@ interface IStaking is IRewardPool {
    * - The method caller is the pool admin.
    * - The `msg.value` is larger than 0.
    *
-   * Emits the `Staked` event and the `Delegated` event.
+   * Emits the event `Staked`.
    *
    */
   function stake(address _consensusAddr) external payable;
@@ -149,7 +162,7 @@ interface IStaking is IRewardPool {
    * - The consensus address is a validator candidate.
    * - The method caller is the pool admin.
    *
-   * Emits the `Unstaked` event and the `Undelegated` event.
+   * Emits the event `Unstaked`.
    *
    */
   function unstake(address _consensusAddr, uint256 _amount) external;
@@ -162,7 +175,7 @@ interface IStaking is IRewardPool {
    * - The method caller is the pool admin.
    *
    */
-  function renounce(address consensusAddr) external;
+  function requestRenounce(address consensusAddr) external;
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                             FUNCTIONS FOR DELEGATOR                               //
@@ -190,6 +203,17 @@ interface IStaking is IRewardPool {
    *
    */
   function undelegate(address _consensusAddr, uint256 _amount) external;
+
+  /**
+   * @dev Bulk unstakes from a list of candidates.
+   *
+   * Requirements:
+   * - The method caller is not the pool admin.
+   *
+   * Emits the events `Undelegated`.
+   *
+   */
+  function bulkUndelegate(address[] calldata _consensusAddrs, uint256[] calldata _amounts) external;
 
   /**
    * @dev Unstakes an amount of RON from the `_consensusAddrSrc` and stake for `_consensusAddrDst`.
@@ -236,4 +260,16 @@ interface IStaking is IRewardPool {
   function delegateRewards(address[] calldata _consensusAddrList, address _consensusAddrDst)
     external
     returns (uint256 _amount);
+
+  /**
+   * @dev Returns the staking pool detail.
+   */
+  function getStakingPool(address)
+    external
+    view
+    returns (
+      address _admin,
+      uint256 _stakedAmount,
+      uint256 _totalBalance
+    );
 }

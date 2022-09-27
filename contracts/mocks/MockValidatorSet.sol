@@ -11,8 +11,8 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   address public stakingVestingContract;
   address public slashIndicatorContract;
 
-  uint256 public numberOfEpochsInPeriod;
-  uint256 public numberOfBlocksInEpoch;
+  uint256 internal _numberOfEpochsInPeriod;
+  uint256 internal _numberOfBlocksInEpoch;
   /// @dev Mapping from period number => slashed
   mapping(uint256 => bool) internal _periodSlashed;
   uint256[] internal _periods;
@@ -22,15 +22,15 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     address _slashIndicatorContract,
     address _stakingVestingContract,
     uint256 __maxValidatorCandidate,
-    uint256 _numberOfEpochsInPeriod,
-    uint256 _numberOfBlocksInEpoch
+    uint256 __numberOfEpochsInPeriod,
+    uint256 __numberOfBlocksInEpoch
   ) {
     _setStakingContract(__stakingContract);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     slashIndicatorContract = _slashIndicatorContract;
     stakingVestingContract = _stakingVestingContract;
-    numberOfEpochsInPeriod = _numberOfEpochsInPeriod;
-    numberOfBlocksInEpoch = _numberOfBlocksInEpoch;
+    _numberOfEpochsInPeriod = __numberOfEpochsInPeriod;
+    _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
   }
 
   function depositReward() external payable {
@@ -47,7 +47,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function slashFelony(address _validator) external {
     _stakingContract.sinkPendingReward(_validator);
-    _stakingContract.deductStakingAmount(_validator, 1);
+    _stakingContract.deductStakedAmount(_validator, 1);
   }
 
   function slashDoubleSign(address _validator) external {
@@ -68,7 +68,9 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function submitBlockReward() external payable override {}
 
-  function wrapUpEpoch() external payable override {}
+  function wrapUpEpoch() external payable override {
+    _filterUnsatisfiedCandidates(0);
+  }
 
   function getLastUpdatedBlock() external view override returns (uint256) {}
 
@@ -92,9 +94,9 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function setMaxValidatorNumber(uint256 _maxValidatorNumber) external override {}
 
-  function setNumberOfBlocksInEpoch(uint256 _numberOfBlocksInEpoch) external override {}
+  function setNumberOfBlocksInEpoch(uint256 _number) external override {}
 
-  function setNumberOfEpochsInPeriod(uint256 _numberOfEpochsInPeriod) external override {}
+  function setNumberOfEpochsInPeriod(uint256 _number) external override {}
 
   function maxValidatorNumber() external view override returns (uint256 _maximumValidatorNumber) {}
 
