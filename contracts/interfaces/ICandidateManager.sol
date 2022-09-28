@@ -13,7 +13,7 @@ interface ICandidateManager {
     // The percentile of reward that validators can be received, the rest goes to the delegators.
     // Values in range [0; 100_00] stands for 0-100%
     uint256 commissionRate;
-    // The block that the candidate is removed.
+    // The block that the candidate to be removed.
     uint256 removedAtBlock;
     // Extra data
     bytes extraData;
