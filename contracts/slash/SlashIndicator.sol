@@ -11,6 +11,8 @@ import "../libraries/Math.sol";
 contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenanceContract, Initializable {
   using Math for uint256;
 
+  uint8 public constant VALIDATING_DOUBLE_SIGN_PROOF_PRECOMPILE = 0x20;
+
   /// @dev Mapping from validator address => period index => unavailability indicator
   mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
   /// @dev Maping from validator address => period index => slash type
@@ -134,9 +136,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
       return;
     }
 
-    bool _validEvidence = _validateEvidence(_header1, _header2);
-
-    if (_validEvidence) {
+    if (_validateEvidence(_header1, _header2)) {
       uint256 _period = _validatorContract.periodOf(block.number);
       _unavailabilitySlashed[_validatorAddr][_period] = SlashType.DOUBLE_SIGNING;
       emit UnavailabilitySlashed(_validatorAddr, SlashType.DOUBLE_SIGNING, _period);
@@ -293,19 +293,10 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
    * @dev Sanity check the address to be slashed
    */
   function _shouldSlash(address _addr) internal view returns (bool) {
-    if (msg.sender == _addr) {
-      return false;
-    }
-
-    if (!_validatorContract.isValidator(_addr)) {
-      return false;
-    }
-
-    if (_maintenanceContract.maintaining(_addr, block.number)) {
-      return false;
-    }
-
-    return true;
+    return
+      (msg.sender != _addr) &&
+      _validatorContract.isValidator(_addr) &&
+      !_maintenanceContract.maintaining(_addr, block.number);
   }
 
   /**
@@ -320,31 +311,19 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     virtual
     returns (bool _validEvidence)
   {
-    /// FIXME: Choose either option 1 or option 2 belows.
-
-    ///
-    /// OPTION 1: Call by pre-compiled contract name
-    ///
-
-    // address _addr1 = headerRecover(_header1);
-    // address _addr2 = headerRecover(_header2);
-    // _validEvidence = (_addr1 == _addr2);
-
-    ///
-    /// OPTION 2: Call by pre-compiled contract address
-    ///
-
     bytes memory _input = bytes.concat(_packBlockHeader(_header1), _packBlockHeader(_header2));
     uint _inputSize = _input.length;
-    assembly {
-      if iszero(staticcall(gas(), 0x20, _input, _inputSize, _validEvidence, 0x20)) {
-        // FIXME:                 ^^^^
-        //                        Replace by the actual pre-compiled contract address
-        revert(0, 0)
-      }
+    uint[1] memory _output;
 
-      _validEvidence := mload(_validEvidence)
+    bytes memory _revertReason = "SlashIndicator: call to precompile fails";
+
+    assembly {
+      if iszero(staticcall(gas(), VALIDATING_DOUBLE_SIGN_PROOF_PRECOMPILE, _input, _inputSize, _output, 0x20)) {
+        revert(add(32, _revertReason), mload(_revertReason))
+      }
     }
+
+    return (_output[0] != 0);
   }
 
   /**
