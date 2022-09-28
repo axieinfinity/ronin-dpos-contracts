@@ -86,7 +86,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
    * @inheritdoc ISlashIndicator
    */
   function slash(address _validatorAddr) external override onlyCoinbase oncePerBlock {
-    if (!_isSlashable(_validatorAddr)) {
+    if (!_shouldSlash(_validatorAddr)) {
       return;
     }
 
@@ -122,7 +122,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     BlockHeader memory _header1,
     BlockHeader memory _header2
   ) external override onlyCoinbase oncePerBlock {
-    if (!_isSlashable(_validatorAddr)) {
+    if (!_shouldSlash(_validatorAddr)) {
       return;
     }
 
@@ -292,7 +292,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
   /**
    * @dev Sanity check the address to be slashed
    */
-  function _isSlashable(address _addr) internal view returns (bool) {
+  function _shouldSlash(address _addr) internal view returns (bool) {
     if (msg.sender == _addr) {
       return false;
     }
