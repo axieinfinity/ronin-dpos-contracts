@@ -9,8 +9,8 @@ import {
   SlashIndicator__factory,
   Staking,
   Staking__factory,
-  MockRoninValidatorSetExtends__factory,
-  MockRoninValidatorSetExtends,
+  MockRoninValidatorSetExtended__factory,
+  MockRoninValidatorSetExtended,
 } from '../../src/types';
 
 import { expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
@@ -20,7 +20,7 @@ import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
-let validatorContract: MockRoninValidatorSetExtends;
+let validatorContract: MockRoninValidatorSetExtended;
 let governanceAdmin: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
@@ -57,9 +57,9 @@ describe('[Integration] Slash validators', () => {
 
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
-    validatorContract = MockRoninValidatorSetExtends__factory.connect(validatorContractAddress, deployer);
+    validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
 
-    const mockValidatorLogic = await new MockRoninValidatorSetExtends__factory(deployer).deploy();
+    const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
     await network.provider.send('hardhat_mine', [
@@ -75,6 +75,8 @@ describe('[Integration] Slash validators', () => {
       const currentBlock = await ethers.provider.getBlockNumber();
       period = await validatorContract.periodOf(currentBlock);
       await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+
+      await validatorContract.addValidators([1, 2, 3].map((_) => validatorCandidates[_].address));
     });
 
     describe('Slash misdemeanor validator', async () => {

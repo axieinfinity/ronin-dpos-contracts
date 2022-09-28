@@ -112,5 +112,9 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function getPriorityStatus(address _addr) external view override returns (bool) {}
 
-  function isValidator(address _addr) external view override returns (bool) {}
+  function isValidator(
+    address /* _addr */
+  ) external pure override returns (bool) {
+    return true;
+  }
 }

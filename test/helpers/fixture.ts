@@ -32,6 +32,7 @@ export const defaultTestConfig = {
   felonyThreshold: 10,
   slashFelonyAmount: BigNumber.from(10).pow(18).mul(1),
   slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10),
+  doubleSigningConstrainBlocks: 28800,
 
   maxValidatorNumber: 4,
   maxPrioritizedValidatorNumber: 0,
@@ -72,6 +73,8 @@ export const initTest = (id: string) =>
         slashFelonyAmount: options?.slashFelonyAmount ?? defaultTestConfig.slashFelonyAmount,
         slashDoubleSignAmount: options?.slashDoubleSignAmount ?? defaultTestConfig.slashDoubleSignAmount,
         felonyJailBlocks: options?.felonyJailBlocks ?? defaultTestConfig.felonyJailBlocks,
+        doubleSigningConstrainBlocks:
+          options?.doubleSigningConstrainBlocks ?? defaultTestConfig.doubleSigningConstrainBlocks,
       };
       roninValidatorSetConf[network.name] = {
         maxValidatorNumber: options?.maxValidatorNumber ?? defaultTestConfig.maxValidatorNumber,

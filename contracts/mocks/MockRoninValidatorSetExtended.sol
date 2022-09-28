@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../validator/RoninValidatorSet.sol";
 
-contract MockRoninValidatorSetExtends is RoninValidatorSet {
+contract MockRoninValidatorSetExtended is RoninValidatorSet {
   uint256[] internal _epochs;
   uint256[] internal _periods;
 
@@ -56,6 +56,13 @@ contract MockRoninValidatorSetExtends is RoninValidatorSet {
     jailUntils_ = new uint256[](_addrs.length);
     for (uint _i = 0; _i < _addrs.length; _i++) {
       jailUntils_[_i] = _jailedUntil[_addrs[_i]];
+    }
+  }
+
+  function addValidators(address[] calldata _addrs) public {
+    for (uint _i = 0; _i < _addrs.length; _i++) {
+      _validator[_i] = _addrs[_i];
+      _validatorMap[_addrs[_i]] = true;
     }
   }
 

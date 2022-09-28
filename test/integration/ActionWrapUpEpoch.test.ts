@@ -8,8 +8,8 @@ import {
   SlashIndicator__factory,
   Staking,
   Staking__factory,
-  MockRoninValidatorSetExtends__factory,
-  MockRoninValidatorSetExtends,
+  MockRoninValidatorSetExtended__factory,
+  MockRoninValidatorSetExtended,
 } from '../../src/types';
 import { expects as StakingExpects } from '../helpers/reward-calculation';
 import { expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
@@ -18,7 +18,7 @@ import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
-let validatorContract: MockRoninValidatorSetExtends;
+let validatorContract: MockRoninValidatorSetExtended;
 let governanceAdmin: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
@@ -52,9 +52,9 @@ describe('[Integration] Wrap up epoch', () => {
     });
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
-    validatorContract = MockRoninValidatorSetExtends__factory.connect(validatorContractAddress, deployer);
+    validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
 
-    const mockValidatorLogic = await new MockRoninValidatorSetExtends__factory(deployer).deploy();
+    const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
   });
@@ -117,12 +117,14 @@ describe('[Integration] Wrap up epoch', () => {
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
 
-      coinbase = validators[3];
-      await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-      validatorContract = validatorContract.connect(coinbase);
+      await network.provider.send('hardhat_setCoinbase', [validators[3].address]);
+      validatorContract = validatorContract.connect(validators[3]);
       await validatorContract.submitBlockReward({
         value: blockRewardAmount,
       });
+
+      await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+      validatorContract = validatorContract.connect(coinbase);
     });
 
     describe('Wrap up epoch: at the end of the epoch', async () => {
@@ -161,6 +163,7 @@ describe('[Integration] Wrap up epoch', () => {
 
     describe('Wrap up epoch: at the end of the period', async () => {
       before(async () => {
+        await validatorContract.addValidators(validators.map((v) => v.address));
         await Promise.all(validators.map((v) => slashContract.connect(coinbase).slash(v.address)));
       });
 
