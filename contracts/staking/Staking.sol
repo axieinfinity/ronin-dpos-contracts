@@ -36,7 +36,7 @@ contract Staking is IStaking, StakingManager, Initializable {
   function getStakingPool(address _poolAddr)
     external
     view
-    onlyValidatorCandidate(_poolAddr)
+    poolExists(_poolAddr)
     returns (
       address _admin,
       uint256 _stakedAmount,

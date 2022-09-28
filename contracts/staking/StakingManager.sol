@@ -34,7 +34,7 @@ abstract contract StakingManager is
     _;
   }
 
-  modifier onlyValidatorCandidate(address _poolAddr) {
+  modifier poolExists(address _poolAddr) {
     require(_validatorContract.isValidatorCandidate(_poolAddr), "StakingManager: query for non-existent pool");
     _;
   }
@@ -116,19 +116,14 @@ abstract contract StakingManager is
   /**
    * @inheritdoc IStaking
    */
-  function stake(address _consensusAddr) external payable override noEmptyValue onlyValidatorCandidate(_consensusAddr) {
+  function stake(address _consensusAddr) external payable override noEmptyValue poolExists(_consensusAddr) {
     _stake(_stakingPool[_consensusAddr], msg.sender, msg.value);
   }
 
   /**
    * @inheritdoc IStaking
    */
-  function unstake(address _consensusAddr, uint256 _amount)
-    external
-    override
-    nonReentrant
-    onlyValidatorCandidate(_consensusAddr)
-  {
+  function unstake(address _consensusAddr, uint256 _amount) external override nonReentrant poolExists(_consensusAddr) {
     require(_amount > 0, "StakingManager: invalid amount");
     address _delegator = msg.sender;
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
@@ -144,7 +139,7 @@ abstract contract StakingManager is
    */
   function requestRenounce(address _consensusAddr)
     external
-    onlyValidatorCandidate(_consensusAddr)
+    poolExists(_consensusAddr)
     onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
   {
     _validatorContract.requestRemoveCandidate(_consensusAddr);
@@ -224,7 +219,7 @@ abstract contract StakingManager is
   /**
    * @inheritdoc IStaking
    */
-  function delegate(address _consensusAddr) external payable noEmptyValue onlyValidatorCandidate(_consensusAddr) {
+  function delegate(address _consensusAddr) external payable noEmptyValue poolExists(_consensusAddr) {
     _delegate(_stakingPool[_consensusAddr], msg.sender, msg.value);
   }
 
@@ -264,7 +259,7 @@ abstract contract StakingManager is
     address _consensusAddrSrc,
     address _consensusAddrDst,
     uint256 _amount
-  ) external nonReentrant onlyValidatorCandidate(_consensusAddrDst) {
+  ) external nonReentrant poolExists(_consensusAddrDst) {
     address _delegator = msg.sender;
     _undelegate(_stakingPool[_consensusAddrSrc], _delegator, _amount);
     _delegate(_stakingPool[_consensusAddrDst], _delegator, _amount);
@@ -304,7 +299,7 @@ abstract contract StakingManager is
     external
     override
     nonReentrant
-    onlyValidatorCandidate(_consensusAddrDst)
+    poolExists(_consensusAddrDst)
     returns (uint256 _amount)
   {
     return _delegateRewards(msg.sender, _consensusAddrList, _consensusAddrDst);
