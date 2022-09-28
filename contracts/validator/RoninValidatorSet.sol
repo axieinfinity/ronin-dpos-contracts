@@ -256,14 +256,14 @@ contract RoninValidatorSet is
    * @inheritdoc IRoninValidatorSet
    */
   function epochOf(uint256 _block) public view virtual override returns (uint256) {
-    return _block / _numberOfBlocksInEpoch + 1;
+    return _block == 0 ? 0 : _block / _numberOfBlocksInEpoch + 1;
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
   function periodOf(uint256 _block) public view virtual override returns (uint256) {
-    return _block / (_numberOfBlocksInEpoch * _numberOfEpochsInPeriod) + 1;
+    return _block == 0 ? 0 : _block / (_numberOfBlocksInEpoch * _numberOfEpochsInPeriod) + 1;
   }
 
   /**
@@ -418,8 +418,8 @@ contract RoninValidatorSet is
     }
 
     for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
-      delete _validator[_i];
       delete _validatorMap[_validator[_i]];
+      delete _validator[_i];
     }
 
     uint256 _count;
