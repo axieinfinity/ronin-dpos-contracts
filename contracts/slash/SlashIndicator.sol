@@ -35,9 +35,8 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
   uint256 public slashDoubleSignAmount;
   /// @dev The block duration to jail a validator that reaches felony thresold.
   uint256 public felonyJailDuration;
-  /// @dev The block duration to jail a validator that double signs block. This variable should be
-  /// a constant of MAX_UINT since that validator is jailed forever.
-  uint256 public doubleSigningJailDuration;
+  /// @dev The block number that the punished validator will be jailed until, due to double signing.
+  uint256 public doubleSigningJailUntilBlock;
 
   modifier onlyCoinbase() {
     require(msg.sender == block.coinbase, "SlashIndicator: method caller must be coinbase");
@@ -77,7 +76,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     _setSlashDoubleSignAmount(_slashDoubleSignAmount);
     _setFelonyJailDuration(_felonyJailBlocks);
     _setDoubleSigningConstrainBlocks(_doubleSigningConstrainBlocks);
-    _setDoubleSigningJailDuration(type(uint256).max);
+    _setDoubleSigningJailUntilBlock(type(uint256).max);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -140,7 +139,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
       uint256 _period = _validatorContract.periodOf(block.number);
       _unavailabilitySlashed[_validatorAddr][_period] = SlashType.DOUBLE_SIGNING;
       emit UnavailabilitySlashed(_validatorAddr, SlashType.DOUBLE_SIGNING, _period);
-      _validatorContract.slash(_validatorAddr, doubleSigningJailDuration, slashDoubleSignAmount);
+      _validatorContract.slash(_validatorAddr, doubleSigningJailUntilBlock, slashDoubleSignAmount);
     }
   }
 
@@ -282,11 +281,11 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
   }
 
   /**
-   * @dev Sets the double signing jail duration
+   * @dev Sets the double signing jail until block number
    */
-  function _setDoubleSigningJailDuration(uint256 _doubleSigningJailDuration) internal {
-    doubleSigningJailDuration = _doubleSigningJailDuration;
-    emit DoubleSigningJailDurationUpdated(_doubleSigningJailDuration);
+  function _setDoubleSigningJailUntilBlock(uint256 _doubleSigningJailUntilBlock) internal {
+    doubleSigningJailUntilBlock = _doubleSigningJailUntilBlock;
+    emit DoubleSigningJailUntilBlockUpdated(_doubleSigningJailUntilBlock);
   }
 
   /**

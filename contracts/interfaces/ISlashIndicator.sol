@@ -15,8 +15,8 @@ interface ISlashIndicator {
   event FelonyJailDurationUpdated(uint256 felonyJailDuration);
   /// @dev Emiited when the constrain of ahead block in double signing updated
   event DoubleSigningConstrainBlocksUpdated(uint256 doubleSigningConstrainBlocks);
-  /// @dev Emiited when the duration of jailing double signing updated
-  event DoubleSigningJailDurationUpdated(uint256 doubleSigningJailDuration);
+  /// @dev Emiited when the block number to jail the double signing validator to is updated
+  event DoubleSigningJailUntilBlockUpdated(uint256 doubleSigningJailUntilBlock);
 
   enum SlashType {
     UNKNOWN,
