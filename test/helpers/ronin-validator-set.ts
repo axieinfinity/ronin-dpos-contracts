@@ -46,6 +46,9 @@ export class EpochController {
   }
 
   calculatePeriodOf(block: BigNumberish): BigNumber {
+    if (block == 0) {
+      return BigNumber.from(0);
+    }
     return BigNumber.from(block).div(BigNumber.from(this.numberOfBlocksInPeriod)).add(1);
   }
 
