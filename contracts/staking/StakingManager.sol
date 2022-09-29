@@ -142,7 +142,7 @@ abstract contract StakingManager is
     poolExists(_consensusAddr)
     onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
   {
-    _validatorContract.requestRemoveCandidate(_consensusAddr);
+    _validatorContract.requestRevokeCandidate(_consensusAddr);
   }
 
   /**
@@ -169,7 +169,7 @@ abstract contract StakingManager is
     require(_sendRON(_treasuryAddr, 0), "StakingManager: treasury cannot receive RON");
     require(_amount >= minValidatorBalance(), "StakingManager: insufficient amount");
 
-    _validatorContract.addValidatorCandidate(_candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate);
+    _validatorContract.grantValidatorCandidate(_candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate);
   }
 
   /**

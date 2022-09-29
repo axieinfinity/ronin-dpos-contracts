@@ -13,20 +13,20 @@ interface ICandidateManager {
     // The percentile of reward that validators can be received, the rest goes to the delegators.
     // Values in range [0; 100_00] stands for 0-100%
     uint256 commissionRate;
-    // The block that the candidate to be removed.
-    uint256 removedAtBlock;
+    // The block that the candidate to be revoked.
+    uint256 revokedBlock;
     // Extra data
     bytes extraData;
   }
 
   /// @dev Emitted when the maximum number of validator candidates is updated.
   event MaxValidatorCandidateUpdated(uint256 threshold);
-  /// @dev Emitted when the validator candidate is added.
-  event CandidateAdded(address indexed consensusAddr, address indexed treasuryAddr, address indexed admin);
-  /// @dev Emitted when the validator candidate is requested to remove at a specific block.
-  event CandidateRemovedAtBlock(address indexed consensusAddr, uint256 removedAtBlock);
-  /// @dev Emitted when the validator candidate is removed.
-  event CandidatesRemoved(address[] consensusAddrs);
+  /// @dev Emitted when the validator candidate is granted.
+  event CandidateGranted(address indexed consensusAddr, address indexed treasuryAddr, address indexed admin);
+  /// @dev Emitted when the revoked block of a candidate is updated.
+  event CandidateRevokedBlockUpdated(address indexed consensusAddr, uint256 revokedBlock);
+  /// @dev Emitted when the validator candidate is revoked.
+  event CandidatesRevoked(address[] consensusAddrs);
 
   /**
    * @dev Returns the maximum number of validator candidate.
@@ -45,15 +45,15 @@ interface ICandidateManager {
   function setMaxValidatorCandidate(uint256) external;
 
   /**
-   * @dev Adds a validator candidate.
+   * @dev Grants a validator candidate.
    *
    * Requirements:
    * - The method caller is staking contract.
    *
-   * Emits the event `CandidateAdded`.
+   * Emits the event `CandidateGranted`.
    *
    */
-  function addValidatorCandidate(
+  function grantValidatorCandidate(
     address _admin,
     address _consensusAddr,
     address payable _treasuryAddr,
@@ -61,15 +61,15 @@ interface ICandidateManager {
   ) external;
 
   /**
-   * @dev Requests to remove a validator candidate.
+   * @dev Requests to revoke a validator candidate.
    *
    * Requirements:
    * - The method caller is staking contract.
    *
-   * Emits the event `CandidateRemovedAtBlock`.
+   * Emits the event `CandidateRevokedBlockUpdated`.
    *
    */
-  function requestRemoveCandidate(address) external;
+  function requestRevokeCandidate(address) external;
 
   /**
    * @dev Returns whether the address is a validator (candidate).

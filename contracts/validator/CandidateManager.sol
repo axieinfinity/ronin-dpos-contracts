@@ -35,7 +35,7 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
   /**
    * @inheritdoc ICandidateManager
    */
-  function addValidatorCandidate(
+  function grantValidatorCandidate(
     address _admin,
     address _consensusAddr,
     address payable _treasuryAddr,
@@ -55,19 +55,19 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
       type(uint256).max,
       new bytes(0)
     );
-    emit CandidateAdded(_consensusAddr, _treasuryAddr, _admin);
+    emit CandidateGranted(_consensusAddr, _treasuryAddr, _admin);
   }
 
   /**
    * @inheritdoc ICandidateManager
    */
-  function requestRemoveCandidate(address _consensusAddr) external override onlyStakingContract {
+  function requestRevokeCandidate(address _consensusAddr) external override onlyStakingContract {
     require(isValidatorCandidate(_consensusAddr), "CandidateManager: query for non-existent candidate");
     uint256 _blockLength = numberOfBlocksInEpoch() * numberOfEpochsInPeriod();
-    uint256 _removedAtBlock = (block.number / _blockLength) * _blockLength + _blockLength * 2 - 1;
-    require(_removedAtBlock < _candidateInfo[_consensusAddr].removedAtBlock, "CandidateManager: invalid block number");
-    _candidateInfo[_consensusAddr].removedAtBlock = _removedAtBlock;
-    emit CandidateRemovedAtBlock(_consensusAddr, _removedAtBlock);
+    uint256 _revokedBlock = (block.number / _blockLength) * _blockLength + _blockLength * 2 - 1;
+    require(_revokedBlock < _candidateInfo[_consensusAddr].revokedBlock, "CandidateManager: invalid block number");
+    _candidateInfo[_consensusAddr].revokedBlock = _revokedBlock;
+    emit CandidateRevokedBlockUpdated(_consensusAddr, _revokedBlock);
   }
 
   /**
@@ -108,7 +108,7 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
    * @dev Removes unsastisfied candidates (the ones who have insufficient minimum candidate balance).
    * Returns the total balance list of the new candidate list.
    *
-   * Emits the event `CandidatesRemoved` when a candidate is removed.
+   * Emits the event `CandidatesRevoked` when a candidate is revoked.
    *
    */
   function _filterUnsatisfiedCandidates(uint256 _minBalance) internal returns (uint256[] memory _balances) {
@@ -121,7 +121,7 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
     address _addr;
     for (uint _i = 0; _i < _length; _i++) {
       _addr = _candidates[_i];
-      if (_balances[_i] < _minBalance || _candidateInfo[_addr].removedAtBlock <= block.number) {
+      if (_balances[_i] < _minBalance || _candidateInfo[_addr].revokedBlock <= block.number) {
         _balances[_i] = _balances[--_length];
         _unsatisfiedCandidates[_unsatisfiedCount++] = _addr;
         _removeCandidate(_addr);
@@ -132,7 +132,7 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
       assembly {
         mstore(_unsatisfiedCandidates, _unsatisfiedCount)
       }
-      emit CandidatesRemoved(_unsatisfiedCandidates);
+      emit CandidatesRevoked(_unsatisfiedCandidates);
       _staking.deprecatePools(_unsatisfiedCandidates);
     }
 
