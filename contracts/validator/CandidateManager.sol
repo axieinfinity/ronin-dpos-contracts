@@ -7,7 +7,7 @@ import "../interfaces/ICandidateManager.sol";
 import "../interfaces/IStaking.sol";
 import "../libraries/Sorting.sol";
 
-contract CandidateManager is ICandidateManager, HasStakingContract {
+abstract contract CandidateManager is ICandidateManager, HasStakingContract {
   /// @dev Maximum number of validator candidate
   uint256 private _maxValidatorCandidate;
 
@@ -35,7 +35,7 @@ contract CandidateManager is ICandidateManager, HasStakingContract {
   /**
    * @inheritdoc ICandidateManager
    */
-  function addValidatorCandidate(
+  function grantValidatorCandidate(
     address _admin,
     address _consensusAddr,
     address payable _treasuryAddr,
@@ -52,33 +52,22 @@ contract CandidateManager is ICandidateManager, HasStakingContract {
       _consensusAddr,
       _treasuryAddr,
       _commissionRate,
+      type(uint256).max,
       new bytes(0)
     );
-    emit ValidatorCandidateAdded(_consensusAddr, _treasuryAddr, _candidateIndex[_consensusAddr]);
+    emit CandidateGranted(_consensusAddr, _treasuryAddr, _admin);
   }
 
   /**
    * @inheritdoc ICandidateManager
    */
-  function syncCandidates() public override returns (uint256[] memory _balances) {
-    // This is a temporary approach since the slashing issue is still not finalized.
-    // Consider calling validator contract to renounce for the removed candidates.
-    // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
-    IStaking _staking = _stakingContract;
-    uint256 _minBalance = _staking.minValidatorBalance();
-    _balances = _staking.totalBalances(_candidates);
-
-    uint256 _length = _candidates.length;
-    for (uint _i = 0; _i < _length; _i++) {
-      if (_balances[_i] < _minBalance) {
-        _balances[_i] = _balances[--_length];
-        _removeCandidate(_candidates[_i]);
-      }
-    }
-
-    assembly {
-      mstore(_balances, _length)
-    }
+  function requestRevokeCandidate(address _consensusAddr) external override onlyStakingContract {
+    require(isValidatorCandidate(_consensusAddr), "CandidateManager: query for non-existent candidate");
+    uint256 _blockLength = numberOfBlocksInEpoch() * numberOfEpochsInPeriod();
+    uint256 _revokedBlock = (block.number / _blockLength) * _blockLength + _blockLength * 2 - 1;
+    require(_revokedBlock < _candidateInfo[_consensusAddr].revokedBlock, "CandidateManager: invalid block number");
+    _candidateInfo[_consensusAddr].revokedBlock = _revokedBlock;
+    emit CandidateRevokedBlockUpdated(_consensusAddr, _revokedBlock);
   }
 
   /**
@@ -103,6 +92,53 @@ contract CandidateManager is ICandidateManager, HasStakingContract {
    */
   function getValidatorCandidates() public view override returns (address[] memory) {
     return _candidates;
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
+  function numberOfEpochsInPeriod() public view virtual returns (uint256);
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
+  function numberOfBlocksInEpoch() public view virtual returns (uint256);
+
+  /**
+   * @dev Removes unsastisfied candidates (the ones who have insufficient minimum candidate balance).
+   * Returns the total balance list of the new candidate list.
+   *
+   * Emits the event `CandidatesRevoked` when a candidate is revoked.
+   *
+   */
+  function _filterUnsatisfiedCandidates(uint256 _minBalance) internal returns (uint256[] memory _balances) {
+    IStaking _staking = _stakingContract;
+    _balances = _staking.totalBalances(_candidates);
+
+    uint256 _length = _candidates.length;
+    address[] memory _unsatisfiedCandidates = new address[](_length);
+    uint256 _unsatisfiedCount;
+    address _addr;
+    for (uint _i = 0; _i < _length; _i++) {
+      _addr = _candidates[_i];
+      if (_balances[_i] < _minBalance || _candidateInfo[_addr].revokedBlock <= block.number) {
+        _balances[_i] = _balances[--_length];
+        _unsatisfiedCandidates[_unsatisfiedCount++] = _addr;
+        _removeCandidate(_addr);
+      }
+    }
+
+    if (_unsatisfiedCount > 0) {
+      assembly {
+        mstore(_unsatisfiedCandidates, _unsatisfiedCount)
+      }
+      emit CandidatesRevoked(_unsatisfiedCandidates);
+      _staking.deprecatePools(_unsatisfiedCandidates);
+    }
+
+    assembly {
+      mstore(_balances, _length)
+    }
   }
 
   /**

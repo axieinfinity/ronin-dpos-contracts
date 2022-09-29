@@ -69,6 +69,13 @@ contract MockStaking is RewardCalculation {
     return _stakingBalance[_user];
   }
 
+  function bulkBalanceOf(address[] calldata _poolAddrs, address[] calldata _userList)
+    external
+    view
+    override
+    returns (uint256[] memory)
+  {}
+
   function totalBalance(address) public view virtual override returns (uint256) {
     return _totalBalance;
   }

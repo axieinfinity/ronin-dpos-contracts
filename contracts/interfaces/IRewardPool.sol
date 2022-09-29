@@ -69,17 +69,25 @@ interface IRewardPool {
   function getPendingReward(address _poolAddr, address _user) external view returns (uint256 _amount);
 
   /**
-   * @dev Returns the staking amount of the user.
+   * @dev Returns the staked amount of the user.
    */
   function balanceOf(address _poolAddr, address _user) external view returns (uint256);
 
   /**
-   * @dev Returns the total staking amount of all users.
+   * @dev Returns the staked amounts of the users.
+   */
+  function bulkBalanceOf(address[] calldata _poolAddrs, address[] calldata _userList)
+    external
+    view
+    returns (uint256[] memory);
+
+  /**
+   * @dev Returns the total staked amount of all users.
    */
   function totalBalance(address _poolAddr) external view returns (uint256);
 
   /**
-   * @dev Returns the total staking amount of all users.
+   * @dev Returns the total staked amount of all users.
    */
   function totalBalances(address[] calldata _poolAddr) external view returns (uint256[] memory);
 }

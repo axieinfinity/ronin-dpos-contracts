@@ -187,7 +187,7 @@ contract RoninValidatorSet is
       }
     }
 
-    _updateValidatorSet();
+    _updateValidatorSet(_periodEnding);
   }
 
   /**
@@ -219,7 +219,7 @@ contract RoninValidatorSet is
     }
 
     if (_slashAmount > 0) {
-      IStaking(_stakingContract).deductStakingAmount(_validatorAddr, _slashAmount);
+      IStaking(_stakingContract).deductStakedAmount(_validatorAddr, _slashAmount);
     }
 
     emit ValidatorPunished(_validatorAddr, _jailedUntil[_validatorAddr], _slashAmount);
@@ -299,16 +299,26 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @inheritdoc IRoninValidatorSet
+   * @inheritdoc ICandidateManager
    */
-  function numberOfEpochsInPeriod() external view override returns (uint256 _numberOfEpochs) {
+  function numberOfEpochsInPeriod()
+    public
+    view
+    override(CandidateManager, ICandidateManager)
+    returns (uint256 _numberOfEpochs)
+  {
     return _numberOfEpochsInPeriod;
   }
 
   /**
-   * @inheritdoc IRoninValidatorSet
+   * @inheritdoc ICandidateManager
    */
-  function numberOfBlocksInEpoch() external view override returns (uint256 _numberOfBlocks) {
+  function numberOfBlocksInEpoch()
+    public
+    view
+    override(CandidateManager, ICandidateManager)
+    returns (uint256 _numberOfBlocks)
+  {
     return _numberOfBlocksInEpoch;
   }
 
@@ -340,22 +350,22 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function setMaxValidatorNumber(uint256 __maxValidatorNumber) external override onlyAdmin {
-    _setMaxValidatorNumber(__maxValidatorNumber);
+  function setMaxValidatorNumber(uint256 _max) external override onlyAdmin {
+    _setMaxValidatorNumber(_max);
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function setNumberOfBlocksInEpoch(uint256 __numberOfBlocksInEpoch) external override onlyAdmin {
-    _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
+  function setNumberOfBlocksInEpoch(uint256 _number) external override onlyAdmin {
+    _setNumberOfBlocksInEpoch(_number);
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function setNumberOfEpochsInPeriod(uint256 __numberOfEpochsInPeriod) external override onlyAdmin {
-    _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
+  function setNumberOfEpochsInPeriod(uint256 _number) external override onlyAdmin {
+    _setNumberOfEpochsInPeriod(_number);
   }
 
   /**
@@ -381,13 +391,16 @@ contract RoninValidatorSet is
   /**
    * @dev Returns validator candidates list.
    */
-  function _syncNewValidatorSet() internal returns (address[] memory _candidateList) {
-    uint256[] memory _weights = syncCandidates();
+  function _syncNewValidatorSet(bool _periodEnding) internal returns (address[] memory _candidateList) {
+    // This is a temporary approach since the slashing issue is still not finalized.
+    // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
+    uint256 _minBalance = _stakingContract.minValidatorBalance();
+    uint256[] memory _weights = _filterUnsatisfiedCandidates(_periodEnding ? _minBalance : 0);
     _candidateList = _candidates;
 
     uint256 _length = _candidateList.length;
     for (uint256 _i; _i < _candidateList.length; _i++) {
-      if (_jailed(_candidateList[_i])) {
+      if (_jailed(_candidateList[_i]) || _weights[_i] < _minBalance) {
         _length--;
         _candidateList[_i] = _candidateList[_length];
         _weights[_i] = _weights[_length];
@@ -408,8 +421,8 @@ contract RoninValidatorSet is
    * Emits the `ValidatorSetUpdated` event.
    *
    */
-  function _updateValidatorSet() internal virtual {
-    address[] memory _candidates = _syncNewValidatorSet();
+  function _updateValidatorSet(bool _periodEnding) internal virtual {
+    address[] memory _candidates = _syncNewValidatorSet(_periodEnding);
     uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
     _arrangeValidatorCandidates(_candidates, _newValidatorCount);
 

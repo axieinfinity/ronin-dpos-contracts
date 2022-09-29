@@ -30,9 +30,22 @@ contract Staking is IStaking, StakingManager, Initializable {
     _setMinValidatorBalance(__minValidatorBalance);
   }
 
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                             FUNCTIONS FOR GOVERNANCE                              //
-  ///////////////////////////////////////////////////////////////////////////////////////
+  /**
+   * @inheritdoc IStaking
+   */
+  function getStakingPool(address _poolAddr)
+    external
+    view
+    poolExists(_poolAddr)
+    returns (
+      address _admin,
+      uint256 _stakedAmount,
+      uint256 _totalBalance
+    )
+  {
+    PoolDetail storage _pool = _stakingPool[_poolAddr];
+    return (_pool.admin, _pool.stakedAmount, _pool.totalBalance);
+  }
 
   /**
    * @inheritdoc IStaking
@@ -81,9 +94,33 @@ contract Staking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function deductStakingAmount(address _consensusAddr, uint256 _amount) external onlyValidatorContract {
-    PoolDetail storage _pool = _stakingPool[_consensusAddr];
-    _unstake(_pool, _pool.admin, _amount);
+  function deductStakedAmount(address _consensusAddr, uint256 _amount) public onlyValidatorContract {
+    return _deductStakedAmount(_stakingPool[_consensusAddr], _amount);
+  }
+
+  /**
+   * @inheritdoc IStaking
+   */
+  function deprecatePools(address[] calldata _pools) external override onlyValidatorContract {
+    if (_pools.length == 0) {
+      return;
+    }
+
+    uint256 _amount;
+    for (uint _i = 0; _i < _pools.length; _i++) {
+      PoolDetail storage _pool = _stakingPool[_pools[_i]];
+      _amount = _pool.stakedAmount;
+      _deductStakedAmount(_pool, _pool.stakedAmount);
+      if (_amount > 0) {
+        if (!_sendRON(payable(_pool.admin), _amount)) {
+          emit StakedAmountDeprecated(_pool.addr, _pool.admin, _amount);
+        }
+      }
+
+      delete _stakingPool[_pool.addr];
+    }
+
+    emit PoolsDeprecated(_pools);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -113,5 +150,19 @@ contract Staking is IStaking, StakingManager, Initializable {
    */
   function _periodOf(uint256 _block) internal view virtual override returns (uint256) {
     return IRoninValidatorSet(_validatorContract).periodOf(_block);
+  }
+
+  /**
+   * @dev Deducts from staked amount of the validator `_consensusAddr` for `_amount`.
+   *
+   * Emits the event `Unstaked`.
+   *
+   */
+  function _deductStakedAmount(PoolDetail storage _pool, uint256 _amount) internal {
+    _amount = Math.min(_pool.stakedAmount, _amount);
+
+    _pool.stakedAmount -= _amount;
+    _changeDelegatedAmount(_pool, _pool.admin, _pool.stakedAmount, _pool.totalBalance - _amount);
+    emit Unstaked(_pool.addr, _amount);
   }
 }

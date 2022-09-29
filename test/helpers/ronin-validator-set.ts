@@ -23,8 +23,7 @@ export class EpochController {
 
   calculateStartOfEpoch(block: number): BigNumber {
     return BigNumber.from(
-      Math.floor((block + this.minOffset + this.numberOfBlocksInEpoch - 1) / this.numberOfBlocksInEpoch) *
-        this.numberOfBlocksInEpoch
+      Math.floor((block + this.minOffset) / this.numberOfBlocksInEpoch + 1) * this.numberOfBlocksInEpoch
     );
   }
 
@@ -47,6 +46,9 @@ export class EpochController {
   }
 
   calculatePeriodOf(block: BigNumberish): BigNumber {
+    if (block == 0) {
+      return BigNumber.from(0);
+    }
     return BigNumber.from(block).div(BigNumber.from(this.numberOfBlocksInPeriod)).add(1);
   }
 

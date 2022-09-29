@@ -109,7 +109,7 @@ describe('[Integration] Slash validators', () => {
         slasheeInitStakingAmount = minValidatorBalance.add(slashFelonyAmount.mul(10));
         await stakingContract
           .connect(slashee)
-          .proposeValidator(slashee.address, slashee.address, slashee.address, 2_00, {
+          .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, 2_00, {
             value: slasheeInitStakingAmount,
           });
 
@@ -154,12 +154,6 @@ describe('[Integration] Slash validators', () => {
         await expect(slashValidatorTx)
           .to.emit(stakingContract, 'Unstaked')
           .withArgs(slashee.address, slashFelonyAmount);
-      });
-
-      it('Should the Staking contract emit Undelegated event', async () => {
-        await expect(slashValidatorTx)
-          .to.emit(stakingContract, 'Undelegated')
-          .withArgs(slashee.address, slashee.address, slashFelonyAmount);
       });
 
       it('Should the Staking contract subtract staked amount from validator', async () => {
@@ -219,7 +213,7 @@ describe('[Integration] Slash validators', () => {
 
         await stakingContract
           .connect(slashee)
-          .proposeValidator(slashee.address, slashee.address, slashee.address, 2_00, {
+          .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, 2_00, {
             value: slasheeInitStakingAmount,
           });
 
@@ -263,12 +257,6 @@ describe('[Integration] Slash validators', () => {
         await expect(slashValidatorTx)
           .to.emit(stakingContract, 'Unstaked')
           .withArgs(slashee.address, slashFelonyAmount);
-      });
-
-      it('Should the Staking contract emit Undelegated event', async () => {
-        await expect(slashValidatorTx)
-          .to.emit(stakingContract, 'Undelegated')
-          .withArgs(slashee.address, slashee.address, slashFelonyAmount);
       });
 
       it('Should the Staking contract subtract staked amount from validator', async () => {
@@ -318,9 +306,6 @@ describe('[Integration] Slash validators', () => {
         });
 
         await expect(topUpTx).to.emit(stakingContract, 'Staked').withArgs(slashee.address, slashFelonyAmount);
-        await expect(topUpTx)
-          .to.emit(stakingContract, 'Delegated')
-          .withArgs(slashee.address, slashee.address, slashFelonyAmount);
       });
 
       // NOTE: the candidate is kicked right after the epoch is ended.

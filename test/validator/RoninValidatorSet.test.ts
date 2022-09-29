@@ -155,7 +155,7 @@ describe('Ronin Validator Set test', () => {
     for (let i = 0; i <= 3; i++) {
       await stakingContract
         .connect(validatorCandidates[i])
-        .proposeValidator(
+        .applyValidatorCandidate(
           validatorCandidates[i].address,
           validatorCandidates[i].address,
           validatorCandidates[i].address,
@@ -190,11 +190,11 @@ describe('Ronin Validator Set test', () => {
   it(`Should be able to wrap up epoch and pick top ${maxValidatorNumber} to be validators`, async () => {
     await stakingContract
       .connect(coinbase)
-      .proposeValidator(coinbase.address, coinbase.address, treasury.address, 1_00 /* 1% */, { value: 100 });
+      .applyValidatorCandidate(coinbase.address, coinbase.address, treasury.address, 1_00 /* 1% */, { value: 100 });
     for (let i = 4; i < validatorCandidates.length; i++) {
       await stakingContract
         .connect(validatorCandidates[i])
-        .proposeValidator(
+        .applyValidatorCandidate(
           validatorCandidates[i].address,
           validatorCandidates[i].address,
           validatorCandidates[i].address,
