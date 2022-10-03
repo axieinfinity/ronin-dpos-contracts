@@ -55,7 +55,7 @@ interface ISlashIndicator {
     /// @dev A 256-bit hash which, combined with the `nonce`, proves that a sufficient amount of computation has been carried out on this block
     bytes32 mixHash;
     /// @dev A 64-bit value which, combined with the `mixHash`, proves that a sufficient amount of computation has been carried out on this block
-    uint8 nonce;
+    uint64 nonce;
   }
 
   /**
