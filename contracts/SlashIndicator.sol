@@ -310,15 +310,25 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     virtual
     returns (bool _validEvidence)
   {
-    bytes memory _input = bytes.concat(_packBlockHeader(_header1), _packBlockHeader(_header2));
-    uint _inputSize = _input.length;
+    bytes memory _headerInBytes1 = _packBlockHeader(_header1);
+    bytes memory _headerInBytes2 = _packBlockHeader(_header2);
+    bytes memory _payload = abi.encodeWithSignature(
+      "validatingDoubleSignProof(bytes,bytes)",
+      _headerInBytes1,
+      _headerInBytes2
+    );
+    uint _payloadLength = _payload.length;
+
     uint[1] memory _output;
 
     bytes memory _revertReason = "SlashIndicator: call to precompile fails";
 
     assembly {
-      if iszero(staticcall(gas(), VALIDATING_DOUBLE_SIGN_PROOF_PRECOMPILE, _input, _inputSize, _output, 0x20)) {
-        revert(add(32, _revertReason), mload(_revertReason))
+      let _payloadStart := add(_payload, 0x20)
+      if iszero(
+        staticcall(gas(), VALIDATING_DOUBLE_SIGN_PROOF_PRECOMPILE, _payloadStart, _payloadLength, _output, 0x20)
+      ) {
+        revert(add(0x20, _revertReason), mload(_revertReason))
       }
     }
 
