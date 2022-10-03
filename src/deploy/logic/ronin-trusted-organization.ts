@@ -1,22 +1,23 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { roninchainNetworks } from '../../config';
+import { allNetworks } from '../../config';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
-  if (!roninchainNetworks.includes(network.name!)) {
+  if (!allNetworks.includes(network.name!)) {
     return;
   }
+
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  await deploy('RoninValidatorSetLogic', {
-    contract: 'RoninValidatorSet',
+  await deploy('RoninTrustedOrganizationLogic', {
+    contract: 'RoninTrustedOrganization',
     from: deployer,
     log: true,
   });
 };
 
-deploy.tags = ['RoninValidatorSetLogic'];
+deploy.tags = ['RoninTrustedOrganizationLogic'];
 
 export default deploy;
