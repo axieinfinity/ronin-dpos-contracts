@@ -39,7 +39,7 @@ interface IRoninTrustedOrganization {
   /**
    * @dev Returns the number of trusted organizations.
    */
-  function count() external view returns (uint256);
+  function countTrustedOrganizations() external view returns (uint256);
 
   /**
    * @dev Returns all of the trusted organization addresses.
