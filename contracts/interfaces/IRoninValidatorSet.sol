@@ -143,14 +143,14 @@ interface IRoninValidatorSet is ICandidateManager {
   function getPriorityStatus(address _addr) external view returns (bool);
 
   ///////////////////////////////////////////////////////////////////////////////////////
-  //                         FUNCTIONS FOR GOVERNANCE ADMIN                            //
+  //                               FUNCTIONS FOR ADMIN                                 //
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * @dev Updates the max validator number
    *
    * Requirements:
-   * - The method caller is the governance admin
+   * - The method caller is admin
    *
    * Emits the event `MaxValidatorNumberUpdated`
    *
@@ -161,7 +161,7 @@ interface IRoninValidatorSet is ICandidateManager {
    * @dev Updates the number of blocks in epoch
    *
    * Requirements:
-   * - The method caller is the governance admin
+   * - The method caller is admin
    *
    * Emits the event `NumberOfBlocksInEpochUpdated`
    *
@@ -172,7 +172,7 @@ interface IRoninValidatorSet is ICandidateManager {
    * @dev Updates the number of epochs in period
    *
    * Requirements:
-   * - The method caller is the governance admin
+   * - The method caller is admin
    *
    * Emits the event `NumberOfEpochsInPeriodUpdated`
    *
@@ -183,7 +183,7 @@ interface IRoninValidatorSet is ICandidateManager {
    * @dev Updates the status to an array of addresses that they will be prioritized or not
    *
    * Requirements:
-   * - The method caller is the governance admin
+   * - The method caller is admin
    *
    * Emits the event `AddressesPriorityStatusUpdated` for updated addresses
    *

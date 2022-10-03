@@ -48,7 +48,7 @@ interface IStaking is IRewardPool {
    * @dev Sets the minimum threshold for being a validator candidate.
    *
    * Requirements:
-   * - The method caller is governance admin.
+   * - The method caller is admin.
    *
    * Emits the `MinValidatorBalanceUpdated` event.
    *
