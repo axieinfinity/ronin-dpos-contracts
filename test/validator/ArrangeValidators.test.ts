@@ -67,13 +67,13 @@ const sortArrayByBoolean = (indexes: number[], statuses: boolean[]) => {
   });
 };
 
-describe('Ronin Validator Set test -- Arrange validators', () => {
+describe('Arrange validators', () => {
   before(async () => {
     [deployer, governor, ...validatorCandidates] = await ethers.getSigners();
     governanceAdmin = new GovernanceAdminInterface(governor);
 
     const { slashContractAddress, validatorContractAddress, roninTrustedOrganizationAddress } = await initTest(
-      'RoninValidatorSet-ArrangeValidators'
+      'ArrangeValidators'
     )({
       governanceAdmin: governor.address,
       maxValidatorNumber,
