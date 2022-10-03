@@ -175,7 +175,7 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
 };
 
 // TODO: update config for testnet, mainnet, goerli, ethereum
-export const RoninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
+export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
     trustedOrganization: [], // trusted no one

@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { RoninTrustedOrganizationConf, initAddress, allNetworks } from '../../config';
+import { roninTrustedOrganizationConf, initAddress, allNetworks } from '../../config';
 import { verifyAddress } from '../../script/verify-address';
 import { RoninTrustedOrganization__factory } from '../../types';
 
@@ -16,7 +16,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const logicContract = await deployments.get('RoninTrustedOrganizationLogic');
 
   const data = new RoninTrustedOrganization__factory().interface.encodeFunctionData('initialize', [
-    RoninTrustedOrganizationConf[network.name]!.trustedOrganization,
+    roninTrustedOrganizationConf[network.name]!.trustedOrganization,
   ]);
 
   const deployment = await deploy('RoninTrustedOrganizationProxy', {

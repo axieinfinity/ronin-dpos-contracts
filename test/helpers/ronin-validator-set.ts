@@ -155,24 +155,7 @@ export const expects = {
       'ValidatorSetUpdated',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid validator set').have.deep.members(expectingValidators);
-      },
-      1
-    );
-  },
-
-  emitAddressesPriorityStatusUpdatedEvent: async function (
-    tx: ContractTransaction,
-    expectingAddressList: string[],
-    expectingPriorityStatusList: boolean[]
-  ) {
-    await expectEvent(
-      contractInterface,
-      'AddressesPriorityStatusUpdated',
-      tx,
-      (event) => {
-        expect(event.args[0], 'invalid address list').eql(expectingAddressList);
-        expect(event.args[1], 'invalid priority status list').eql(expectingPriorityStatusList);
+        expect(event.args[0], 'invalid validator set').eql(expectingValidators);
       },
       1
     );

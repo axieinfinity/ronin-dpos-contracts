@@ -83,8 +83,8 @@ contract RoninValidatorSet is
     address __slashIndicatorContract,
     address __stakingContract,
     address __stakingVestingContract,
-    address __roninTrustedOrganizationContract,
     address __maintenanceContract,
+    address __roninTrustedOrganizationContract,
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
@@ -94,8 +94,8 @@ contract RoninValidatorSet is
     _setSlashIndicatorContract(__slashIndicatorContract);
     _setStakingContract(__stakingContract);
     _setStakingVestingContract(__stakingVestingContract);
-    _setRoninTrustedOrganizationContract(__roninTrustedOrganizationContract);
     _setMaintenanceContract(__maintenanceContract);
+    _setRoninTrustedOrganizationContract(__roninTrustedOrganizationContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
@@ -469,11 +469,9 @@ contract RoninValidatorSet is
 
     bool[] memory _isTrustedOrgs = _roninTrustedOrganizationContract.isTrustedOrganizations(_candidates);
     for (uint _i = 0; _i < _candidates.length; _i++) {
-      if (_isTrustedOrgs[_i]) {
-        if (_prioritySlotCounter < _maxPrioritizedValidatorNumber) {
-          _candidates[_prioritySlotCounter++] = _candidates[_i];
-          continue;
-        }
+      if (_isTrustedOrgs[_i] && _prioritySlotCounter < _maxPrioritizedValidatorNumber) {
+        _candidates[_prioritySlotCounter++] = _candidates[_i];
+        continue;
       }
       _waitingCandidates[_waitingCounter++] = _candidates[_i];
     }
