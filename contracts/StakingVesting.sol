@@ -20,9 +20,9 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
   /**
    * @dev Initializes the contract storage.
    */
-  function initialize(uint256 __bonusPerBlock, address __validatorContract) external payable initializer {
-    _setBonusPerBlock(__bonusPerBlock);
+  function initialize(address __validatorContract, uint256 __bonusPerBlock) external payable initializer {
     _setValidatorContract(__validatorContract);
+    _setBonusPerBlock(__bonusPerBlock);
   }
 
   /**

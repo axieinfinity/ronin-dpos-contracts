@@ -9,6 +9,7 @@ import "../extensions/HasStakingVestingContract.sol";
 import "../extensions/HasStakingContract.sol";
 import "../extensions/HasSlashIndicatorContract.sol";
 import "../extensions/HasMaintenanceContract.sol";
+import "../extensions/HasRoninTrustedOrganizationContract.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 import "../libraries/Sorting.sol";
 import "../libraries/Math.sol";
@@ -21,6 +22,7 @@ contract RoninValidatorSet is
   HasStakingVestingContract,
   HasSlashIndicatorContract,
   HasMaintenanceContract,
+  HasRoninTrustedOrganizationContract,
   CandidateManager,
   Initializable
 {
@@ -39,9 +41,6 @@ contract RoninValidatorSet is
   mapping(uint256 => address) internal _validator;
   /// @dev Mapping from address => flag indicating whether the address is validator or not
   mapping(address => bool) internal _validatorMap;
-
-  /// @dev Mapping from address => flag indicating whether the address is prioritized to be a validator
-  mapping(address => bool) internal _prioritizedRegisterredMap;
   /// @dev The number of slot that is reserved for prioritized validators
   uint256 internal _maxPrioritizedValidatorNumber;
 
@@ -84,6 +83,7 @@ contract RoninValidatorSet is
     address __slashIndicatorContract,
     address __stakingContract,
     address __stakingVestingContract,
+    address __roninTrustedOrganizationContract,
     address __maintenanceContract,
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
@@ -94,6 +94,7 @@ contract RoninValidatorSet is
     _setSlashIndicatorContract(__slashIndicatorContract);
     _setStakingContract(__stakingContract);
     _setStakingVestingContract(__stakingVestingContract);
+    _setRoninTrustedOrganizationContract(__roninTrustedOrganizationContract);
     _setMaintenanceContract(__maintenanceContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
@@ -336,13 +337,6 @@ contract RoninValidatorSet is
     return _maxPrioritizedValidatorNumber;
   }
 
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function getPriorityStatus(address _addr) external view override returns (bool) {
-    return _prioritizedRegisterredMap[_addr];
-  }
-
   ///////////////////////////////////////////////////////////////////////////////////////
   //                               FUNCTIONS FOR ADMIN                                 //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -366,22 +360,6 @@ contract RoninValidatorSet is
    */
   function setNumberOfEpochsInPeriod(uint256 _number) external override onlyAdmin {
     _setNumberOfEpochsInPeriod(_number);
-  }
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function setPrioritizedAddresses(address[] memory _addrs, bool[] memory _statuses) external override onlyAdmin {
-    require(_addrs.length != 0, "RoninValidatorSet: empty array");
-    require(_addrs.length == _statuses.length, "RoninValidatorSet: length of two input arrays mismatches");
-
-    for (uint _i = 0; _i < _addrs.length; _i++) {
-      if (_prioritizedRegisterredMap[_addrs[_i]] != _statuses[_i]) {
-        _prioritizedRegisterredMap[_addrs[_i]] = _statuses[_i];
-      }
-    }
-
-    emit AddressesPriorityStatusUpdated(_addrs, _statuses);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -489,8 +467,9 @@ contract RoninValidatorSet is
     uint _waitingCounter;
     uint _prioritySlotCounter;
 
+    bool[] memory _isTrustedOrgs = _roninTrustedOrganizationContract.isTrustedOrganizations(_candidates);
     for (uint _i = 0; _i < _candidates.length; _i++) {
-      if (_prioritizedRegisterredMap[_candidates[_i]]) {
+      if (_isTrustedOrgs[_i]) {
         if (_prioritySlotCounter < _maxPrioritizedValidatorNumber) {
           _candidates[_prioritySlotCounter++] = _candidates[_i];
           continue;

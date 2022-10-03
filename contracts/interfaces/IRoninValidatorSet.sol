@@ -25,8 +25,6 @@ interface IRoninValidatorSet is ICandidateManager {
   event MiningRewardDistributed(address validatorAddr, uint256 amount);
   /// @dev Emitted when the amount of RON reward is distributed.
   event StakingRewardDistributed(uint256 amount);
-  /// @dev Emitted when the priority status of addresses is updated
-  event AddressesPriorityStatusUpdated(address[], bool[]);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR COINBASE                               //
@@ -137,11 +135,6 @@ interface IRoninValidatorSet is ICandidateManager {
    */
   function periodEndingAt(uint256 _block) external view returns (bool);
 
-  /**
-   * @dev Returns whether an `_addr` is whether prioritized.
-   */
-  function getPriorityStatus(address _addr) external view returns (bool);
-
   ///////////////////////////////////////////////////////////////////////////////////////
   //                               FUNCTIONS FOR ADMIN                                 //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -178,15 +171,4 @@ interface IRoninValidatorSet is ICandidateManager {
    *
    */
   function setNumberOfEpochsInPeriod(uint256 _numberOfEpochsInPeriod) external;
-
-  /**
-   * @dev Updates the status to an array of addresses that they will be prioritized or not
-   *
-   * Requirements:
-   * - The method caller is admin
-   *
-   * Emits the event `AddressesPriorityStatusUpdated` for updated addresses
-   *
-   */
-  function setPrioritizedAddresses(address[] memory _addresses, bool[] memory _statuses) external;
 }
