@@ -110,7 +110,7 @@ describe('Slash indicator test', () => {
 
     mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashLogic.deployed();
-    governanceAdmin.upgrade(slashContractAddress, mockSlashLogic.address);
+    await governanceAdmin.upgrade(slashContractAddress, mockSlashLogic.address);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {

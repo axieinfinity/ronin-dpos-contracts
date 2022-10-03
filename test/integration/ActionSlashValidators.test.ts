@@ -61,7 +61,7 @@ describe('[Integration] Slash validators', () => {
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
-    governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
     await network.provider.send('hardhat_mine', [
       ethers.utils.hexStripZeros(BigNumber.from(numberOfBlocksInEpoch * numberOfEpochsInPeriod).toHexString()),
     ]);
