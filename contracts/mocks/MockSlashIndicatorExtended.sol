@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../slash/SlashIndicator.sol";
+import "../SlashIndicator.sol";
 
 contract MockSlashIndicatorExtended is SlashIndicator {
   function _validateEvidence(

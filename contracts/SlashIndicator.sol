@@ -3,10 +3,10 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../interfaces/ISlashIndicator.sol";
-import "../extensions/HasValidatorContract.sol";
-import "../extensions/HasMaintenanceContract.sol";
-import "../libraries/Math.sol";
+import "./interfaces/ISlashIndicator.sol";
+import "./extensions/HasValidatorContract.sol";
+import "./extensions/HasMaintenanceContract.sol";
+import "./libraries/Math.sol";
 
 contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenanceContract, Initializable {
   using Math for uint256;
