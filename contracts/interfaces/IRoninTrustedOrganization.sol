@@ -32,9 +32,9 @@ interface IRoninTrustedOrganization {
   function isTrustedOrganizations(address[] calldata) external view returns (bool[] memory);
 
   /**
-   * @dev Returns the trusted organizations at the position.
+   * @dev Returns the trusted organization at `_index`.
    */
-  function getTrustedOrganizationAt(uint256) external view returns (address);
+  function getTrustedOrganizationAt(uint256 _index) external view returns (address);
 
   /**
    * @dev Returns the number of trusted organizations.
