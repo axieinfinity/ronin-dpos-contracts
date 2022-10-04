@@ -18,7 +18,7 @@ interface IRoninTrustedOrganization {
   function addTrustedOrganizations(address[] calldata) external;
 
   /**
-   * @dev Removes a list of addesses from the trusted organizations.
+   * @dev Removes a list of addresses from the trusted organization.
    *
    * Requirements:
    * - The method caller is admin.
