@@ -9,7 +9,7 @@ interface IRoninTrustedOrganization {
   event TrustedOrganizationsRemoved(address[]);
 
   /**
-   * @dev Adds a list of addesses into the trusted organizations.
+   * @dev Adds a list of addresses into the trusted organization.
    *
    * Requirements:
    * - The method caller is admin.
