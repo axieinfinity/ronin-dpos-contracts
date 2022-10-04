@@ -49,7 +49,7 @@ export interface MaintenanceArguments {
 }
 
 export interface RoninTrustedOrganizationArguments {
-  trustedOrganization?: Address[];
+  trustedOrganizations?: Address[];
 }
 
 export interface RoninTrustedOrganizationConfig {
