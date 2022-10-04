@@ -29,8 +29,8 @@ abstract contract RewardCalculation is IRewardPool {
     uint256 _balance = balanceOf(_poolAddr, _user);
     if (_rewardSinked(_poolAddr, _periodOf(_reward.lastSyncedBlock))) {
       SettledRewardFields memory _sReward = _sUserReward[_poolAddr][_user];
-      uint256 _credited = (_sReward.accumulatedRps * _balance) / 1e18;
-      return (_balance * _pool.accumulatedRps) / 1e18 + _sReward.debited - _credited;
+      uint256 _diffRps = _pool.accumulatedRps - _sReward.accumulatedRps;
+      return (_balance * _diffRps) / 1e18 + _sReward.debited;
     }
 
     return (_balance * _pool.accumulatedRps) / 1e18 + _reward.debited - _reward.credited;
@@ -44,12 +44,17 @@ abstract contract RewardCalculation is IRewardPool {
     SettledRewardFields memory _sReward = _sUserReward[_poolAddr][_user];
     SettledPool memory _sPool = _settledPool[_poolAddr];
 
+    uint256 _diffRps = _sPool.accumulatedRps - _sReward.accumulatedRps;
     if (_reward.lastSyncedBlock <= _sPool.lastSyncedBlock) {
       uint256 _currentBalance = balanceOf(_poolAddr, _user);
+
+      if (_rewardSinked(_poolAddr, _periodOf(_reward.lastSyncedBlock))) {
+        return (_currentBalance * _diffRps) / 1e18 + _sReward.debited;
+      }
+
       return (_currentBalance * _sPool.accumulatedRps) / 1e18 + _reward.debited - _reward.credited;
     }
 
-    uint256 _diffRps = _sPool.accumulatedRps - _sReward.accumulatedRps;
     return (_sReward.balance * _diffRps) / 1e18 + _sReward.debited;
   }
 
@@ -183,8 +188,10 @@ abstract contract RewardCalculation is IRewardPool {
       _accumulatedRpsList[_i] = _pendingPool[_poolAddr].accumulatedRps;
 
       SettledPool storage _sPool = _settledPool[_poolAddr];
-      _sPool.accumulatedRps = _accumulatedRpsList[_i];
-      _sPool.lastSyncedBlock = block.number;
+      if (_accumulatedRpsList[_i] != _sPool.accumulatedRps) {
+        _sPool.accumulatedRps = _accumulatedRpsList[_i];
+        _sPool.lastSyncedBlock = block.number;
+      }
     }
     emit SettledPoolsUpdated(_poolList, _accumulatedRpsList);
   }
