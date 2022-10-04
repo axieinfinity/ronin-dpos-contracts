@@ -73,7 +73,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   }
 
   /**
-   * @dev Adds a list of addesses into the trusted organizations.
+   * @dev Adds a list of addresses into the trusted organization.
    */
   function _addTrustedOrganizations(address[] calldata _list) internal {
     if (_list.length == 0) {
