@@ -52,7 +52,7 @@ export const defaultTestConfig = {
   minOffset: 200,
   maxSchedules: 2,
 
-  trustedOrganization: [],
+  trustedOrganizations: [],
 };
 
 export const initTest = (id: string) =>
