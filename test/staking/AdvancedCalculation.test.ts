@@ -179,7 +179,7 @@ describe('Advanced Calculation test', () => {
     await expectLocalCalculationRight();
     await expect(txs[0]!)
       .emit(stakingContract, 'SettledRewardUpdated')
-      .withArgs(poolAddr, userA.address, local.balanceA, 2250, local.aRps);
+      .withArgs(poolAddr, userA.address, 2250, local.aRps);
     await local.syncBalance();
     await expect(txs[0]!)
       .emit(stakingContract, 'PendingRewardUpdated')
@@ -266,7 +266,7 @@ describe('Advanced Calculation test', () => {
       .withArgs(poolAddr, userA.address, 2250, local.aRps.mul(local.balanceA).div(MASK).add(local.claimableRewardForA));
     await expect(txs[0]!)
       .emit(stakingContract, 'SettledRewardUpdated')
-      .withArgs(poolAddr, userA.address, 300, 0, local.settledARps);
+      .withArgs(poolAddr, userA.address, 0, local.settledARps);
     local.claimRewardForA();
     await local.recordReward(1000);
     await expect(tx!).to.emit(stakingContract, 'PendingPoolUpdated').withArgs(poolAddr, local.aRps);
@@ -333,7 +333,7 @@ describe('Advanced Calculation test', () => {
       .withArgs(poolAddr, userB.address, 0, local.aRps.mul(local.balanceB).div(MASK));
     await expect(txs[1]!)
       .emit(stakingContract, 'SettledRewardUpdated')
-      .withArgs(poolAddr, userB.address, local.balanceB, 0, local.settledARps);
+      .withArgs(poolAddr, userB.address, 0, local.settledARps);
     local.claimRewardForB();
     await StakingContract.expects.emitSettledPoolsUpdatedEvent(tx!, [poolAddr], [local.aRps]);
     local.settledPools();
@@ -364,7 +364,7 @@ describe('Advanced Calculation test', () => {
       .withArgs(poolAddr, userA.address, 0, lastCredited.add(local.claimableRewardForA));
     await expect(txs[0]!)
       .emit(stakingContract, 'SettledRewardUpdated')
-      .withArgs(poolAddr, userA.address, 300, 0, local.aRps);
+      .withArgs(poolAddr, userA.address, 0, local.aRps);
     local.claimRewardForA();
     await local.recordReward(1000);
     await expect(tx!).to.emit(stakingContract, 'PendingPoolUpdated').withArgs(poolAddr, local.aRps);
@@ -380,7 +380,7 @@ describe('Advanced Calculation test', () => {
       .withArgs(poolAddr, userA.address, 0, lastCredited.add(750));
     await expect(txs[0]!)
       .emit(stakingContract, 'SettledRewardUpdated')
-      .withArgs(poolAddr, userA.address, 300, 0, local.settledARps);
+      .withArgs(poolAddr, userA.address, 0, local.settledARps);
 
     txs[1] = await stakingContract.claimReward(userB.address);
     tx = await stakingContract.settledPools([poolAddr]);
@@ -392,7 +392,7 @@ describe('Advanced Calculation test', () => {
       .withArgs(poolAddr, userB.address, 0, 1750 + 250);
     await expect(txs[1]!)
       .emit(stakingContract, 'SettledRewardUpdated')
-      .withArgs(poolAddr, userB.address, 100, 0, local.settledARps);
+      .withArgs(poolAddr, userB.address, 0, local.settledARps);
     local.claimRewardForB();
     local.settledPools();
     await StakingContract.expects.emitSettledPoolsUpdatedEvent(tx!, [poolAddr], [local.settledARps]);
@@ -404,7 +404,7 @@ describe('Advanced Calculation test', () => {
     await network.provider.send('evm_mine');
     await expect(txs[0]!)
       .emit(stakingContract, 'SettledRewardUpdated')
-      .withArgs(poolAddr, userA.address, local.balanceA, local.claimableRewardForA, local.settledARps);
+      .withArgs(poolAddr, userA.address, local.claimableRewardForA, local.settledARps);
     await local.syncBalance();
     await expect(txs[0]!)
       .emit(stakingContract, 'PendingRewardUpdated')
@@ -426,7 +426,7 @@ describe('Advanced Calculation test', () => {
     await network.provider.send('evm_mine');
     await expect(txs[1]!)
       .emit(stakingContract, 'SettledRewardUpdated')
-      .withArgs(poolAddr, userB.address, local.balanceB, local.claimableRewardForB, local.settledARps);
+      .withArgs(poolAddr, userB.address, local.claimableRewardForB, local.settledARps);
     await local.recordReward(1000);
     await expect(tx!).to.emit(stakingContract, 'PendingPoolUpdated').withArgs(poolAddr, local.aRps);
     await expectLocalCalculationRight();
@@ -469,7 +469,7 @@ describe('Advanced Calculation test', () => {
       .withArgs(poolAddr, userA.address, local.claimableRewardForA);
     await expect(txs[0]!)
       .emit(stakingContract, 'SettledRewardUpdated')
-      .withArgs(poolAddr, userA.address, local.balanceA, 0, local.settledARps);
+      .withArgs(poolAddr, userA.address, 0, local.settledARps);
     await expect(txs[0]!)
       .emit(stakingContract, 'PendingRewardUpdated')
       .withArgs(poolAddr, userA.address, 3725, lastCreditedA);
@@ -479,7 +479,7 @@ describe('Advanced Calculation test', () => {
       .withArgs(poolAddr, userB.address, local.claimableRewardForB);
     await expect(txs[1]!)
       .emit(stakingContract, 'SettledRewardUpdated')
-      .withArgs(poolAddr, userB.address, local.balanceB, 0, local.settledARps);
+      .withArgs(poolAddr, userB.address, 0, local.settledARps);
     await expect(txs[1]!)
       .emit(stakingContract, 'PendingRewardUpdated')
       .withArgs(poolAddr, userB.address, 1275, lastCreditedB);
@@ -509,7 +509,7 @@ describe('Advanced Calculation test', () => {
       .withArgs(poolAddr, userA.address, local.claimableRewardForA);
     await expect(txs[0]!)
       .emit(stakingContract, 'SettledRewardUpdated')
-      .withArgs(poolAddr, userA.address, local.balanceA, 0, local.settledARps);
+      .withArgs(poolAddr, userA.address, 0, local.settledARps);
     await expect(txs[0]!)
       .emit(stakingContract, 'PendingRewardUpdated')
       .withArgs(poolAddr, userA.address, 3725, lastCreditedA);
@@ -519,7 +519,7 @@ describe('Advanced Calculation test', () => {
       .withArgs(poolAddr, userB.address, local.claimableRewardForB);
     await expect(txs[1]!)
       .emit(stakingContract, 'SettledRewardUpdated')
-      .withArgs(poolAddr, userB.address, local.balanceB, 0, local.settledARps);
+      .withArgs(poolAddr, userB.address, 0, local.settledARps);
     await expect(txs[1]!)
       .emit(stakingContract, 'PendingRewardUpdated')
       .withArgs(poolAddr, userB.address, 1275, lastCreditedB);
