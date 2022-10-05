@@ -7,28 +7,55 @@ export enum Network {
   Devnet = 'ronin-devnet',
   Testnet = 'ronin-testnet',
   Mainnet = 'ronin-mainnet',
+  Goerli = 'goerli',
+  Ethereum = 'ethereum',
 }
 
 export type LiteralNetwork = Network | string;
 
+export const commonNetworks: LiteralNetwork[] = [Network.Hardhat, Network.Devnet];
+export const mainchainNetworks: LiteralNetwork[] = [...commonNetworks, Network.Goerli, Network.Ethereum];
+export const roninchainNetworks: LiteralNetwork[] = [...commonNetworks, Network.Testnet, Network.Mainnet];
+export const allNetworks: LiteralNetwork[] = [
+  ...commonNetworks,
+  ...mainchainNetworks.slice(commonNetworks.length),
+  ...roninchainNetworks.slice(commonNetworks.length),
+];
+
 export const defaultAddress = '0x0000000000000000000000000000000000000000';
+
+export interface AddressExtended {
+  address: Address;
+  nonce?: number;
+}
 
 export interface InitAddr {
   [network: LiteralNetwork]: {
     governanceAdmin: Address;
-    maintenanceContract?: Address;
-    stakingVestingContract?: Address;
-    slashIndicatorContract?: Address;
-    stakingContract?: Address;
-    validatorContract?: Address;
+    maintenanceContract?: AddressExtended;
+    stakingVestingContract?: AddressExtended;
+    slashIndicatorContract?: AddressExtended;
+    stakingContract?: AddressExtended;
+    validatorContract?: AddressExtended;
+    roninTrustedOrganizationContract?: AddressExtended;
   };
 }
+
 export interface MaintenanceArguments {
   minMaintenanceBlockPeriod?: BigNumberish;
   maxMaintenanceBlockPeriod?: BigNumberish;
   minOffset?: BigNumberish;
   maxSchedules?: BigNumberish;
 }
+
+export interface RoninTrustedOrganizationArguments {
+  trustedOrganizations?: Address[];
+}
+
+export interface RoninTrustedOrganizationConfig {
+  [network: LiteralNetwork]: RoninTrustedOrganizationArguments | undefined;
+}
+
 export interface MaintenanceConfig {
   [network: LiteralNetwork]: MaintenanceArguments | undefined;
 }
@@ -145,4 +172,16 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
   },
   [Network.Testnet]: undefined,
   [Network.Mainnet]: undefined,
+};
+
+// TODO: update config for testnet, mainnet, goerli, ethereum
+export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
+  [Network.Hardhat]: undefined,
+  [Network.Devnet]: {
+    trustedOrganizations: [], // trusted no one
+  },
+  [Network.Testnet]: undefined,
+  [Network.Mainnet]: undefined,
+  [Network.Goerli]: undefined,
+  [Network.Ethereum]: undefined,
 };

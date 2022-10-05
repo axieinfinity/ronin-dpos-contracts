@@ -7,6 +7,8 @@ import {
   MaintenanceArguments,
   maintenanceConf,
   Network,
+  RoninTrustedOrganizationArguments,
+  roninTrustedOrganizationConf,
   RoninValidatorSetArguments,
   roninValidatorSetConf,
   SlashIndicatorArguments,
@@ -20,6 +22,7 @@ import { TransparentUpgradeableProxyV2__factory } from '../../src/types';
 
 export interface InitTestOutput {
   maintenanceContractAddress: Address;
+  roninTrustedOrganizationAddress: Address;
   slashContractAddress: Address;
   stakingContractAddress: Address;
   stakingVestingContractAddress: Address;
@@ -48,6 +51,8 @@ export const defaultTestConfig = {
   maxMaintenanceBlockPeriod: 1000,
   minOffset: 200,
   maxSchedules: 2,
+
+  trustedOrganizations: [],
 };
 
 export const initTest = (id: string) =>
@@ -57,7 +62,8 @@ export const initTest = (id: string) =>
       StakingArguments &
       StakingVestingArguments &
       SlashIndicatorArguments &
-      RoninValidatorSetArguments & { governanceAdmin: Address }
+      RoninValidatorSetArguments &
+      RoninTrustedOrganizationArguments & { governanceAdmin: Address }
   >(async ({ deployments }, options) => {
     if (network.name == Network.Hardhat) {
       initAddress[network.name] = { governanceAdmin: options?.governanceAdmin ?? ethers.constants.AddressZero };
@@ -91,6 +97,9 @@ export const initTest = (id: string) =>
         bonusPerBlock: options?.bonusPerBlock ?? defaultTestConfig.bonusPerBlock,
         topupAmount: options?.topupAmount ?? defaultTestConfig.topupAmount,
       };
+      roninTrustedOrganizationConf[network.name] = {
+        trustedOrganizations: options?.trustedOrganizations ?? defaultTestConfig.trustedOrganizations,
+      };
     }
 
     await deployments.fixture([
@@ -104,6 +113,7 @@ export const initTest = (id: string) =>
     ]);
 
     const maintenanceContractDeployment = await deployments.get('MaintenanceProxy');
+    const roninTrustedOrganizationDeployment = await deployments.get('RoninTrustedOrganizationProxy');
     const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
     const stakingContractDeployment = await deployments.get('StakingProxy');
     const stakingVestingContractDeployment = await deployments.get('StakingVestingProxy');
@@ -111,6 +121,7 @@ export const initTest = (id: string) =>
 
     return {
       maintenanceContractAddress: maintenanceContractDeployment.address,
+      roninTrustedOrganizationAddress: roninTrustedOrganizationDeployment.address,
       slashContractAddress: slashContractDeployment.address,
       stakingContractAddress: stakingContractDeployment.address,
       stakingVestingContractAddress: stakingVestingContractDeployment.address,

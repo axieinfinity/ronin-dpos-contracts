@@ -88,7 +88,7 @@ interface ISlashIndicator {
    * @dev Sets the slash thresholds
    *
    * Requirements:
-   * - Only governance admin can call this method
+   * - Only admin can call this method
    *
    * Emits the event `SlashThresholdsUpdated`
    *
@@ -99,7 +99,7 @@ interface ISlashIndicator {
    * @dev Sets the slash felony amount
    *
    * Requirements:
-   * - Only governance admin can call this method
+   * - Only admin can call this method
    *
    * Emits the event `SlashFelonyAmountUpdated`
    *
@@ -110,7 +110,7 @@ interface ISlashIndicator {
    * @dev Sets the slash double sign amount
    *
    * Requirements:
-   * - Only governance admin can call this method
+   * - Only admin can call this method
    *
    * Emits the event `SlashDoubleSignAmountUpdated`
    *
@@ -121,7 +121,7 @@ interface ISlashIndicator {
    * @dev Sets the felony jail duration
    *
    * Requirements:
-   * - Only governance admin can call this method
+   * - Only admin can call this method
    *
    * Emits the event `FelonyJailDurationUpdated`
    *

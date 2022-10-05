@@ -4,45 +4,41 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Address } from 'hardhat-deploy/dist/types';
 
-import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import {
-  Staking,
   MockRoninValidatorSetExtended,
   MockRoninValidatorSetExtended__factory,
-  Staking__factory,
-  TransparentUpgradeableProxyV2__factory,
-  MockSlashIndicator,
-  MockSlashIndicator__factory,
-  StakingVesting__factory,
-  Maintenance__factory,
+  MockSlashIndicatorExtended__factory,
+  MockSlashIndicatorExtended,
+  RoninTrustedOrganization__factory,
+  RoninTrustedOrganization,
 } from '../../src/types';
+import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 
 let validatorContract: MockRoninValidatorSetExtended;
-let stakingContract: Staking;
-let slashIndicator: MockSlashIndicator;
+let slashIndicator: MockSlashIndicatorExtended;
+let governanceAdmin: GovernanceAdminInterface;
+let roninTrustedOrganization: RoninTrustedOrganization;
 
 let deployer: SignerWithAddress;
-let governanceAdmin: SignerWithAddress;
-let proxyAdmin: SignerWithAddress;
+let governor: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
 const slashFelonyAmount = 100;
-const slashDoubleSignAmount = BigNumber.from(10).pow(18).mul(10);
-
 const maxValidatorNumber = 7;
 const maxPrioritizedValidatorNumber = 4;
-const numberOfBlocksInEpoch = 600;
-const numberOfEpochsInPeriod = 48;
-
 const maxValidatorCandidate = 100;
-const minValidatorBalance = BigNumber.from(2);
-
-const bonusPerBlock = BigNumber.from(1);
-const topUpAmount = BigNumber.from(10000);
 
 const setPriorityStatus = async (addrs: Address[], statuses: boolean[]) => {
-  return TransparentUpgradeableProxyV2__factory.connect(validatorContract.address, proxyAdmin).functionDelegateCall(
-    validatorContract.interface.encodeFunctionData('setPrioritizedAddresses', [addrs, statuses])
+  const arr = statuses.map((stt, i) => ({ address: addrs[i], stt }));
+  const addingTrustedOrgs = arr.filter(({ stt }) => stt).map(({ address }) => address);
+  const removingTrustedOrgs = arr.filter(({ stt }) => !stt).map(({ address }) => address);
+  await governanceAdmin.functionDelegateCall(
+    roninTrustedOrganization.address,
+    roninTrustedOrganization.interface.encodeFunctionData('addTrustedOrganizations', [addingTrustedOrgs])
+  );
+  await governanceAdmin.functionDelegateCall(
+    roninTrustedOrganization.address,
+    roninTrustedOrganization.interface.encodeFunctionData('removeTrustedOrganizations', [removingTrustedOrgs])
   );
 };
 
@@ -71,96 +67,32 @@ const sortArrayByBoolean = (indexes: number[], statuses: boolean[]) => {
   });
 };
 
-describe('Ronin Validator Set test -- Arrange validators', () => {
+describe('Arrange validators', () => {
   before(async () => {
-    [deployer, proxyAdmin, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
+    [deployer, governor, ...validatorCandidates] = await ethers.getSigners();
+    governanceAdmin = new GovernanceAdminInterface(governor);
 
-    const scheduleMaintenance = await new Maintenance__factory(deployer).deploy();
-    const nonce = await deployer.getTransactionCount();
-    const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
-    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 6 });
-
-    ///
-    /// Deploy staking mock contract
-    ///
-
-    const stakingVestingLogic = await new StakingVesting__factory(deployer).deploy();
-    const stakingVesting = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
-      stakingVestingLogic.address,
-      proxyAdmin.address,
-      stakingVestingLogic.interface.encodeFunctionData('initialize', [bonusPerBlock, roninValidatorSetAddr]),
-      { value: topUpAmount }
-    );
-
-    ///
-    /// Deploy slash indicator contract
-    ///
-
-    slashIndicator = await new MockSlashIndicator__factory(deployer).deploy(
-      roninValidatorSetAddr,
+    const { slashContractAddress, validatorContractAddress, roninTrustedOrganizationAddress } = await initTest(
+      'ArrangeValidators'
+    )({
+      governanceAdmin: governor.address,
+      maxValidatorNumber,
+      maxValidatorCandidate,
+      maxPrioritizedValidatorNumber,
       slashFelonyAmount,
-      slashDoubleSignAmount
-    );
-    await slashIndicator.deployed();
-
-    ///
-    /// Deploy validator mock contract
-    ///
-
-    const validatorLogicContract = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
-    await validatorLogicContract.deployed();
-
-    const validatorProxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
-      validatorLogicContract.address,
-      proxyAdmin.address,
-      validatorLogicContract.interface.encodeFunctionData('initialize', [
-        slashIndicator.address,
-        stakingContractAddr,
-        stakingVesting.address,
-        scheduleMaintenance.address,
-        maxValidatorNumber,
-        maxValidatorCandidate,
-        maxPrioritizedValidatorNumber,
-        numberOfBlocksInEpoch,
-        numberOfEpochsInPeriod,
-      ])
-    );
-    await validatorProxyContract.deployed();
-    validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorProxyContract.address, deployer);
-
-    ///
-    /// Deploy staking contract
-    ///
-
-    const stakingLogicContract = await new Staking__factory(deployer).deploy();
-    await stakingLogicContract.deployed();
-
-    const stakingProxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
-      stakingLogicContract.address,
-      proxyAdmin.address,
-      stakingLogicContract.interface.encodeFunctionData('initialize', [roninValidatorSetAddr, minValidatorBalance])
-    );
-    await stakingProxyContract.deployed();
-    stakingContract = Staking__factory.connect(stakingProxyContract.address, deployer);
-
-    expect(roninValidatorSetAddr.toLowerCase(), 'wrong ronin validator set contract address').eq(
-      validatorContract.address.toLowerCase()
-    );
-    expect(stakingContractAddr.toLowerCase(), 'wrong staking contract address').eq(
-      stakingContract.address.toLowerCase()
-    );
-  });
-
-  describe('ValidatorSetContract configuration', async () => {
-    it('Should config the maxValidatorNumber correctly', async () => {
-      let _maxValidatorNumber = await validatorContract.maxValidatorNumber();
-      expect(_maxValidatorNumber).to.eq(maxValidatorNumber);
     });
 
-    it('Should config the maxPrioritizedValidatorNumber correctly', async () => {
-      let _maxPrioritizedValidatorNumber = await validatorContract.maxPrioritizedValidatorNumber();
-      expect(_maxPrioritizedValidatorNumber).to.eq(maxPrioritizedValidatorNumber);
-    });
+    validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
+    slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
+    roninTrustedOrganization = RoninTrustedOrganization__factory.connect(roninTrustedOrganizationAddress, deployer);
+
+    const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
+    await mockValidatorLogic.deployed();
+    await governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
+
+    const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
+    await mockSlashIndicator.deployed();
+    await governanceAdmin.upgrade(slashIndicator.address, mockSlashIndicator.address);
   });
 
   describe('Update priority list', async () => {
@@ -168,51 +100,43 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
       let addrs = validatorCandidates.slice(0, 10).map((_) => _.address);
       let statuses = new Array(10).fill(true);
 
-      let tx = await setPriorityStatus(addrs, statuses);
-
-      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await setPriorityStatus(addrs, statuses);
     });
 
     it('Should be able to remove prioritized validators', async () => {
       let addrs = validatorCandidates.slice(0, 10).map((_) => _.address);
       let statuses = new Array(10).fill(false);
 
-      let tx = await setPriorityStatus(addrs, statuses);
-      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await setPriorityStatus(addrs, statuses);
     });
 
     it('Should be able to add and remove prioritized validators: num(add) > num(remove)', async () => {
       let addrs = validatorCandidates.slice(0, 10).map((_) => _.address);
       let statuses = new Array(10).fill(true);
-      let tx = await setPriorityStatus(addrs, statuses);
-      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await setPriorityStatus(addrs, statuses);
 
       addrs = validatorCandidates.slice(4, 7).map((_) => _.address);
       statuses = new Array(3).fill(false);
       addrs.push(...validatorCandidates.slice(10, 15).map((_) => _.address));
       statuses.push(...new Array(5).fill(true));
 
-      tx = await setPriorityStatus(addrs, statuses);
-      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await setPriorityStatus(addrs, statuses);
     });
 
     it('Should be able to add and remove prioritized validators: num(add) < num(remove)', async () => {
       let addrs = validatorCandidates.slice(0, 15).map((_) => _.address);
       let statuses = new Array(15).fill(false);
-      let tx = await setPriorityStatus(addrs, statuses);
-      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await setPriorityStatus(addrs, statuses);
 
       addrs = validatorCandidates.slice(0, 10).map((_) => _.address);
       statuses = new Array(10).fill(true);
-      tx = await setPriorityStatus(addrs, statuses);
-      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await setPriorityStatus(addrs, statuses);
 
       addrs = validatorCandidates.slice(1, 8).map((_) => _.address);
       statuses = new Array(7).fill(false);
       addrs.push(...validatorCandidates.slice(10, 14).map((_) => _.address));
       statuses.push(...new Array(4).fill(true));
-      tx = await setPriorityStatus(addrs, statuses);
-      await RoninValidatorSet.expects.emitAddressesPriorityStatusUpdatedEvent(tx, addrs, statuses);
+      await setPriorityStatus(addrs, statuses);
     });
   });
 
@@ -247,7 +171,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
         inputValidatorAddrs,
         actualPrioritizedNumber + actualRegularNumber
       );
-      await expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).eql(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) == MaxNum(prioritized); Actual(regular) >  MaxNum(regular)', async () => {
@@ -273,7 +197,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
         inputValidatorAddrs,
         maxValidatorNumber
       );
-      await expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).eql(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) == MaxNum(prioritized); Actual(regular) <  MaxNum(regular)', async () => {
@@ -299,7 +223,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
         inputValidatorAddrs,
         actualPrioritizedNumber + actualRegularNumber
       );
-      await expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).eql(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) >  MaxNum(prioritized); Actual(regular) == MaxNum(regular)', async () => {
@@ -325,7 +249,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
         inputValidatorAddrs,
         maxValidatorNumber
       );
-      await expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).eql(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) >  MaxNum(prioritized); Actual(regular) >  MaxNum(regular)', async () => {
@@ -351,7 +275,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
         inputValidatorAddrs,
         maxValidatorNumber
       );
-      await expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).eql(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) >  MaxNum(prioritized); Actual(regular) <  MaxNum(regular)', async () => {
@@ -379,7 +303,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
         inputValidatorAddrs,
         maxValidatorNumber
       );
-      await expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).eql(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) <  MaxNum(prioritized); Actual(regular) == MaxNum(regular)', async () => {
@@ -405,7 +329,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
         inputValidatorAddrs,
         actualPrioritizedNumber + actualRegularNumber
       );
-      await expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).eql(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) <  MaxNum(prioritized); Actual(regular) >  MaxNum(regular)', async () => {
@@ -433,7 +357,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
         inputValidatorAddrs,
         maxValidatorNumber
       );
-      await expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).eql(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) <  MaxNum(prioritized); Actual(regular) <  MaxNum(regular)', async () => {
@@ -459,7 +383,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
         inputValidatorAddrs,
         actualPrioritizedNumber + actualRegularNumber
       );
-      await expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).eql(expectingValidatorAddrs);
     });
   });
 
@@ -485,7 +409,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
 
         maxValidatorNumber
       );
-      await expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).eql(expectingValidatorAddrs);
     });
 
     it('Shuffled: Actual(prioritized) >  MaxNum(prioritized); Actual(regular) <  MaxNum(regular)', async () => {
@@ -504,7 +428,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
 
         maxValidatorNumber
       );
-      await expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).eql(expectingValidatorAddrs);
     });
 
     it('Shuffled: Actual(prioritized) <  MaxNum(prioritized); Actual(regular) >  MaxNum(regular)', async () => {
@@ -524,7 +448,7 @@ describe('Ronin Validator Set test -- Arrange validators', () => {
         inputValidatorAddrs,
         maxValidatorNumber
       );
-      await expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).eql(expectingValidatorAddrs);
     });
   });
 });

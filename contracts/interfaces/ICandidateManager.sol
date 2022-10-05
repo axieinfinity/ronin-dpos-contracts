@@ -37,7 +37,7 @@ interface ICandidateManager {
    * @dev Sets the maximum number of validator candidate.
    *
    * Requirements:
-   * - The method caller is governance admin.
+   * - The method caller is admin.
    *
    * Emits the `MaxValidatorCandidateUpdated` event.
    *

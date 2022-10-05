@@ -25,8 +25,6 @@ interface IRoninValidatorSet is ICandidateManager {
   event MiningRewardDistributed(address validatorAddr, uint256 amount);
   /// @dev Emitted when the amount of RON reward is distributed.
   event StakingRewardDistributed(uint256 amount);
-  /// @dev Emitted when the priority status of addresses is updated
-  event AddressesPriorityStatusUpdated(address[], bool[]);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR COINBASE                               //
@@ -137,20 +135,15 @@ interface IRoninValidatorSet is ICandidateManager {
    */
   function periodEndingAt(uint256 _block) external view returns (bool);
 
-  /**
-   * @dev Returns whether an `_addr` is whether prioritized.
-   */
-  function getPriorityStatus(address _addr) external view returns (bool);
-
   ///////////////////////////////////////////////////////////////////////////////////////
-  //                         FUNCTIONS FOR GOVERNANCE ADMIN                            //
+  //                               FUNCTIONS FOR ADMIN                                 //
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * @dev Updates the max validator number
    *
    * Requirements:
-   * - The method caller is the governance admin
+   * - The method caller is admin
    *
    * Emits the event `MaxValidatorNumberUpdated`
    *
@@ -161,7 +154,7 @@ interface IRoninValidatorSet is ICandidateManager {
    * @dev Updates the number of blocks in epoch
    *
    * Requirements:
-   * - The method caller is the governance admin
+   * - The method caller is admin
    *
    * Emits the event `NumberOfBlocksInEpochUpdated`
    *
@@ -172,21 +165,10 @@ interface IRoninValidatorSet is ICandidateManager {
    * @dev Updates the number of epochs in period
    *
    * Requirements:
-   * - The method caller is the governance admin
+   * - The method caller is admin
    *
    * Emits the event `NumberOfEpochsInPeriodUpdated`
    *
    */
   function setNumberOfEpochsInPeriod(uint256 _numberOfEpochsInPeriod) external;
-
-  /**
-   * @dev Updates the status to an array of addresses that they will be prioritized or not
-   *
-   * Requirements:
-   * - The method caller is the governance admin
-   *
-   * Emits the event `AddressesPriorityStatusUpdated` for updated addresses
-   *
-   */
-  function setPrioritizedAddresses(address[] memory _addresses, bool[] memory _statuses) external;
 }

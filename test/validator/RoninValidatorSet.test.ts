@@ -8,121 +8,60 @@ import {
   MockRoninValidatorSetExtended,
   MockRoninValidatorSetExtended__factory,
   Staking__factory,
-  TransparentUpgradeableProxyV2__factory,
-  MockSlashIndicator,
-  MockSlashIndicator__factory,
-  StakingVesting__factory,
-  Maintenance__factory,
+  MockSlashIndicatorExtended__factory,
+  MockSlashIndicatorExtended,
 } from '../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
+import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let stakingContract: Staking;
-let slashIndicator: MockSlashIndicator;
+let slashIndicator: MockSlashIndicatorExtended;
+let governanceAdmin: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let treasury: SignerWithAddress;
 let deployer: SignerWithAddress;
-let proxyAdmin: SignerWithAddress;
+let governor: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
-
 let currentValidatorSet: string[];
 
 const slashFelonyAmount = 100;
-const slashDoubleSignAmount = BigNumber.from(10).pow(18).mul(10);
-
 const maxValidatorNumber = 4;
-const maxPrioritizedValidatorNumber = 0;
-const numberOfBlocksInEpoch = 600;
-const numberOfEpochsInPeriod = 48;
-
 const maxValidatorCandidate = 100;
 const minValidatorBalance = BigNumber.from(2);
-
 const bonusPerBlock = BigNumber.from(1);
-const topUpAmount = BigNumber.from(10000);
 
 describe('Ronin Validator Set test', () => {
   before(async () => {
-    [coinbase, treasury, deployer, proxyAdmin, ...validatorCandidates] = await ethers.getSigners();
+    [coinbase, treasury, deployer, governor, ...validatorCandidates] = await ethers.getSigners();
+    governanceAdmin = new GovernanceAdminInterface(governor);
     validatorCandidates = validatorCandidates.slice(0, 5);
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-    const scheduleMaintenance = await new Maintenance__factory(deployer).deploy();
-    const nonce = await deployer.getTransactionCount();
-    const roninValidatorSetAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
-    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 6 });
-
-    ///
-    /// Deploy staking mock contract
-    ///
-
-    const stakingVestingLogic = await new StakingVesting__factory(deployer).deploy();
-    const stakingVesting = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
-      stakingVestingLogic.address,
-      proxyAdmin.address,
-      stakingVestingLogic.interface.encodeFunctionData('initialize', [bonusPerBlock, roninValidatorSetAddr]),
-      { value: topUpAmount }
-    );
-
-    ///
-    /// Deploy slash indicator contract
-    ///
-
-    slashIndicator = await new MockSlashIndicator__factory(deployer).deploy(
-      roninValidatorSetAddr,
+    const { slashContractAddress, validatorContractAddress, stakingContractAddress } = await initTest(
+      'RoninValidatorSet'
+    )({
+      governanceAdmin: governor.address,
+      minValidatorBalance,
+      maxValidatorNumber,
+      maxValidatorCandidate,
       slashFelonyAmount,
-      slashDoubleSignAmount
-    );
-    await slashIndicator.deployed();
+      bonusPerBlock,
+    });
 
-    ///
-    /// Deploy validator mock contract
-    ///
+    roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
+    slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
+    stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
 
-    const validatorLogicContract = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
-    await validatorLogicContract.deployed();
+    const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
+    await mockValidatorLogic.deployed();
+    await governanceAdmin.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
 
-    const validatorProxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
-      validatorLogicContract.address,
-      proxyAdmin.address,
-      validatorLogicContract.interface.encodeFunctionData('initialize', [
-        slashIndicator.address,
-        stakingContractAddr,
-        stakingVesting.address,
-        scheduleMaintenance.address,
-        maxValidatorNumber,
-        maxValidatorCandidate,
-        maxPrioritizedValidatorNumber,
-        numberOfBlocksInEpoch,
-        numberOfEpochsInPeriod,
-      ])
-    );
-    await validatorProxyContract.deployed();
-    roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorProxyContract.address, deployer);
-
-    ///
-    /// Deploy staking contract
-    ///
-
-    const stakingLogicContract = await new Staking__factory(deployer).deploy();
-    await stakingLogicContract.deployed();
-
-    const stakingProxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
-      stakingLogicContract.address,
-      proxyAdmin.address,
-      stakingLogicContract.interface.encodeFunctionData('initialize', [roninValidatorSet.address, minValidatorBalance])
-    );
-    await stakingProxyContract.deployed();
-    stakingContract = Staking__factory.connect(stakingProxyContract.address, deployer);
-
-    expect(roninValidatorSetAddr.toLowerCase(), 'wrong ronin validator set contract address').eq(
-      roninValidatorSet.address.toLowerCase()
-    );
-    expect(stakingContractAddr.toLowerCase(), 'wrong staking contract address').eq(
-      stakingContract.address.toLowerCase()
-    );
+    const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
+    await mockSlashIndicator.deployed();
+    await governanceAdmin.upgrade(slashIndicator.address, mockSlashIndicator.address);
   });
 
   after(async () => {
