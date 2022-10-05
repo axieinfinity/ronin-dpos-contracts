@@ -3,16 +3,18 @@
 pragma solidity ^0.8.9;
 
 interface IRoninTrustedOrganization {
-  /// @dev Emitted when the trusted organizations are added.
-  event TrustedOrganizationsAdded(address[]);
-  /// @dev Emitted when the trusted organizations are removed.
-  event TrustedOrganizationsRemoved(address[]);
+  /// @dev Emitted when the trusted organization is added.
+  event TrustedOrganizationAdded(address);
+  /// @dev Emitted when the trusted organization is removed.
+  event TrustedOrganizationRemoved(address);
 
   /**
    * @dev Adds a list of addresses into the trusted organization.
    *
    * Requirements:
    * - The method caller is admin.
+   *
+   * Emits the event `TrustedOrganizationAdded` once an organization is added.
    *
    */
   function addTrustedOrganizations(address[] calldata) external;
@@ -22,6 +24,8 @@ interface IRoninTrustedOrganization {
    *
    * Requirements:
    * - The method caller is admin.
+   *
+   * Emits the event `TrustedOrganizationRemoved` once an organization is removed.
    *
    */
   function removeTrustedOrganizations(address[] calldata) external;

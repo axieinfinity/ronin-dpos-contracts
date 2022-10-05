@@ -35,10 +35,10 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
     }
 
     for (uint _i = 0; _i < _list.length; _i++) {
-      _orgs.remove(_list[_i]);
+      if (_orgs.remove(_list[_i])) {
+        emit TrustedOrganizationRemoved(_list[_i]);
+      }
     }
-
-    emit TrustedOrganizationsRemoved(_list);
   }
 
   /**
@@ -81,9 +81,9 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
     }
 
     for (uint _i = 0; _i < _list.length; _i++) {
-      _orgs.add(_list[_i]);
+      if (_orgs.add(_list[_i])) {
+        emit TrustedOrganizationAdded(_list[_i]);
+      }
     }
-
-    emit TrustedOrganizationsAdded(_list);
   }
 }

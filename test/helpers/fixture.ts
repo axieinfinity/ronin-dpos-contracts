@@ -98,7 +98,7 @@ export const initTest = (id: string) =>
         topupAmount: options?.topupAmount ?? defaultTestConfig.topupAmount,
       };
       roninTrustedOrganizationConf[network.name] = {
-        trustedOrganization: options?.trustedOrganization ?? defaultTestConfig.trustedOrganization,
+        trustedOrganizations: options?.trustedOrganizations ?? defaultTestConfig.trustedOrganizations,
       };
     }
 

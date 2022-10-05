@@ -178,7 +178,7 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
 export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
-    trustedOrganization: [], // trusted no one
+    trustedOrganizations: [], // trusted no one
   },
   [Network.Testnet]: undefined,
   [Network.Mainnet]: undefined,
