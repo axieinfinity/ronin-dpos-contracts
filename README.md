@@ -51,7 +51,7 @@ The delegator can choose the validator to stake and receive the commission rewar
 | `redelegate(consensusAddrSrc, consensusAddrDst, amount)`  | Unstakes `amount` RON from the `consensusAddrSrc` and stake for `consensusAddrDst` |
 | `getRewards(consensusAddrList)`                           | Returns the pending rewards and the claimable rewards                              |
 | `claimRewards(consensusAddrList)`                         | Claims all the reward from the validators                                          |
-| `delegatePendingReward(consensusAddrList, consensusAddr)` | Claims all the reward and delegates them to the consensus address                  |
+| `delegateRewards(consensusAddrList, consensusAddr)` | Claims all the reward and delegates them to the consensus address                  |
 
 ### Reward Calculation
 
