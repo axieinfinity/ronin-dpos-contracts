@@ -3,21 +3,6 @@
 pragma solidity ^0.8.9;
 
 interface ISlashIndicator {
-  /// @dev Emitted when the validator is slashed for unavailability
-  event UnavailabilitySlashed(address indexed validator, SlashType slashType, uint256 period);
-  /// @dev Emitted when the thresholds updated
-  event SlashThresholdsUpdated(uint256 felonyThreshold, uint256 misdemeanorThreshold);
-  /// @dev Emitted when the amount of slashing felony updated
-  event SlashFelonyAmountUpdated(uint256 slashFelonyAmount);
-  /// @dev Emitted when the amount of slashing double sign updated
-  event SlashDoubleSignAmountUpdated(uint256 slashDoubleSignAmount);
-  /// @dev Emiited when the duration of jailing felony updated
-  event FelonyJailDurationUpdated(uint256 felonyJailDuration);
-  /// @dev Emiited when the constrain of ahead block in double signing updated
-  event DoubleSigningConstrainBlocksUpdated(uint256 doubleSigningConstrainBlocks);
-  /// @dev Emiited when the block number to jail the double signing validator to is updated
-  event DoubleSigningJailUntilBlockUpdated(uint256 doubleSigningJailUntilBlock);
-
   enum SlashType {
     UNKNOWN,
     MISDEMEANOR,
@@ -39,7 +24,7 @@ interface ISlashIndicator {
     /// @dev Keccak hash of the root node of recipients in the transaction
     bytes32 receiptsRoot;
     /// @dev Bloom filter of two fields log address and log topic in the receipts
-    bytes32[256] logsBloom;
+    uint8[256] logsBloom;
     /// @dev Scalar value of the difficulty of the previous block
     uint256 difficulty;
     /// @dev Scalar value of the number of ancestor blocks, i.e. block height
@@ -57,6 +42,21 @@ interface ISlashIndicator {
     /// @dev A 64-bit value which, combined with the `mixHash`, proves that a sufficient amount of computation has been carried out on this block
     uint64 nonce;
   }
+
+  /// @dev Emitted when the validator is slashed for unavailability
+  event UnavailabilitySlashed(address indexed validator, SlashType slashType, uint256 period);
+  /// @dev Emitted when the thresholds updated
+  event SlashThresholdsUpdated(uint256 felonyThreshold, uint256 misdemeanorThreshold);
+  /// @dev Emitted when the amount of slashing felony updated
+  event SlashFelonyAmountUpdated(uint256 slashFelonyAmount);
+  /// @dev Emitted when the amount of slashing double sign updated
+  event SlashDoubleSignAmountUpdated(uint256 slashDoubleSignAmount);
+  /// @dev Emiited when the duration of jailing felony updated
+  event FelonyJailDurationUpdated(uint256 felonyJailDuration);
+  /// @dev Emiited when the constrain of ahead block in double signing updated
+  event DoubleSigningConstrainBlocksUpdated(uint256 doubleSigningConstrainBlocks);
+  /// @dev Emiited when the block number to jail the double signing validator to is updated
+  event DoubleSigningJailUntilBlockUpdated(uint256 doubleSigningJailUntilBlock);
 
   /**
    * @dev Slashes for unavailability by increasing the counter of validator with `_valAddr`.

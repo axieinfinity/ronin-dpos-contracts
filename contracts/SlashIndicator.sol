@@ -120,8 +120,8 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
    */
   function slashDoubleSign(
     address _validatorAddr,
-    BlockHeader memory _header1,
-    BlockHeader memory _header2
+    BlockHeader calldata _header1,
+    BlockHeader calldata _header2
   ) external override onlyCoinbase oncePerBlock {
     if (!_shouldSlash(_validatorAddr)) {
       return;
@@ -304,7 +304,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
    * Note: The recover process is done by pre-compiled contract. This function is marked as
    * virtual for implementing mocking contract for testing purpose.
    */
-  function _validateEvidence(BlockHeader memory _header1, BlockHeader memory _header2)
+  function _validateEvidence(BlockHeader calldata _header1, BlockHeader calldata _header2)
     internal
     view
     virtual
@@ -339,7 +339,7 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
    * @dev Packing the block header struct into a single bytes. Helper function for validating
    * evidence function.
    */
-  function _packBlockHeader(BlockHeader memory _header) private pure returns (bytes memory) {
+  function _packBlockHeader(BlockHeader calldata _header) private pure returns (bytes memory) {
     return
       abi.encode(
         _header.parentHash,
