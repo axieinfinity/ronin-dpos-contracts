@@ -14,8 +14,8 @@ contract MockSlashIndicatorExtended is SlashIndicator {
   }
 
   function _validateEvidence(
-    bytes memory, /*_header1*/
-    bytes memory /*_header2*/
+    bytes calldata, /*_header1*/
+    bytes calldata /*_header2*/
   ) internal pure override returns (bool _validEvidence) {
     return true;
   }
