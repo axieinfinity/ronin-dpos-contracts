@@ -5,21 +5,21 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   PrecompileSortValidators,
   PrecompileSortValidators__factory,
-  UsageSortValidators,
-  UsageSortValidators__factory,
+  MockUsageSortValidators,
+  MockUsageSortValidators__factory,
 } from '../../src/types';
 
 let deployer: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 let precompileSorting: PrecompileSortValidators;
-let usageSorting: UsageSortValidators;
+let usageSorting: MockUsageSortValidators;
 
 describe('[Precompile] Sorting validators test', () => {
   before(async () => {
     [deployer, ...validatorCandidates] = await ethers.getSigners();
 
     precompileSorting = await new PrecompileSortValidators__factory(deployer).deploy();
-    usageSorting = await new UsageSortValidators__factory(deployer).deploy(precompileSorting.address);
+    usageSorting = await new MockUsageSortValidators__factory(deployer).deploy(precompileSorting.address);
   });
 
   it('Should the usage contract correctly configs the precompile address', async () => {
