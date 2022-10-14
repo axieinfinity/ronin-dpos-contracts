@@ -2,15 +2,23 @@
 
 pragma solidity ^0.8.9;
 
-contract MockUsageValidateDoubleSign {
-  address public precompileValidateDoubleSignAddress;
+abstract contract UsageValidateDoubleSign {
+  /// @dev Gets the address of the precompile of validating double sign evidence
+  function precompileValidateDoubleSignAddress() public view virtual returns (address);
 
-  constructor(address _precompile) {
-    precompileValidateDoubleSignAddress = _precompile;
-  }
-
-  function callPrecompile(bytes calldata _header1, bytes calldata _header2) public view returns (bool) {
-    address _smc = precompileValidateDoubleSignAddress;
+  /**
+   * @dev Validate the two submitted block header if they are produced by the same address
+   *
+   * Note: The recover process is done by pre-compiled contract. This function is marked as
+   * virtual for implementing mocking contract for testing purpose.
+   */
+  function _validateEvidence(bytes calldata _header1, bytes calldata _header2)
+    internal
+    view
+    virtual
+    returns (bool _validEvidence)
+  {
+    address _smc = precompileValidateDoubleSignAddress();
 
     bytes memory _payload = abi.encodeWithSignature("validatingDoubleSignProof(bytes,bytes)", _header1, _header2);
     uint _payloadLength = _payload.length;

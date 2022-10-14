@@ -7,11 +7,19 @@ import "./interfaces/ISlashIndicator.sol";
 import "./extensions/HasValidatorContract.sol";
 import "./extensions/HasMaintenanceContract.sol";
 import "./libraries/Math.sol";
+import "./precompiles/usage/UsageValidateDoubleSign.sol";
 
-contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenanceContract, Initializable {
+contract SlashIndicator is
+  ISlashIndicator,
+  UsageValidateDoubleSign,
+  HasValidatorContract,
+  HasMaintenanceContract,
+  Initializable
+{
   using Math for uint256;
 
-  uint8 public constant VALIDATING_DOUBLE_SIGN_PROOF_PRECOMPILE = 0x67;
+  /// @dev The address of the precompile of sorting validators
+  address internal constant _precompileValidateDoubleSignAddress = address(0x67);
 
   /// @dev Mapping from validator address => period index => unavailability indicator
   mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
@@ -227,6 +235,13 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
     return _unavailabilityIndicator[_validator][_period];
   }
 
+  /**
+   * @inheritdoc UsageValidateDoubleSign
+   */
+  function precompileValidateDoubleSignAddress() public pure override returns (address) {
+    return _precompileValidateDoubleSignAddress;
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                                 HELPER FUNCTIONS                                  //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -288,35 +303,5 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
       (msg.sender != _addr) &&
       _validatorContract.isValidator(_addr) &&
       !_maintenanceContract.maintaining(_addr, block.number);
-  }
-
-  /**
-   * @dev Validate the two submitted block header if they are produced by the same address
-   *
-   * Note: The recover process is done by pre-compiled contract. This function is marked as
-   * virtual for implementing mocking contract for testing purpose.
-   */
-  function _validateEvidence(bytes calldata _header1, bytes calldata _header2)
-    internal
-    view
-    virtual
-    returns (bool _validEvidence)
-  {
-    bytes memory _payload = abi.encodeWithSignature("validatingDoubleSignProof(bytes,bytes)", _header1, _header2);
-    uint _payloadLength = _payload.length;
-    uint[1] memory _output;
-
-    bytes memory _revertReason = "SlashIndicator: call to precompile fails";
-
-    assembly {
-      let _payloadStart := add(_payload, 0x20)
-      if iszero(
-        staticcall(gas(), VALIDATING_DOUBLE_SIGN_PROOF_PRECOMPILE, _payloadStart, _payloadLength, _output, 0x20)
-      ) {
-        revert(add(0x20, _revertReason), mload(_revertReason))
-      }
-    }
-
-    return (_output[0] != 0);
   }
 }
