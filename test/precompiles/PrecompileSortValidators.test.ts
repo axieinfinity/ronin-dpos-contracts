@@ -14,7 +14,7 @@ let validatorCandidates: SignerWithAddress[];
 let precompileSorting: PrecompileSortValidators;
 let usageSorting: UsageSortValidators;
 
-describe('Precompile sorting validators test', () => {
+describe('[Precompile] Sorting validators test', () => {
   before(async () => {
     [deployer, ...validatorCandidates] = await ethers.getSigners();
 
