@@ -23,11 +23,13 @@ abstract contract UsageSortValidators {
     uint256 _payloadLength = _payload.length;
     uint256 _resultLength = 0x20 * _candidates.length + 0x40;
 
+    bytes memory _revertReason = "UsageSortValidators: call to precompile fails";
+
     assembly {
       let _payloadStart := add(_payload, 0x20)
 
       if iszero(staticcall(gas(), _smc, _payloadStart, _payloadLength, _result, _resultLength)) {
-        revert(0, 0)
+        revert(add(_revertReason, 0x20), mload(_revertReason))
       }
       _result := add(_result, 0x20)
     }

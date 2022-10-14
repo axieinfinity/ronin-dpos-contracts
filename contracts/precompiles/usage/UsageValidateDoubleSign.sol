@@ -24,12 +24,12 @@ abstract contract UsageValidateDoubleSign {
     uint _payloadLength = _payload.length;
     uint[1] memory _output;
 
-    bytes memory _revertReason = "SlashIndicator: call to precompile fails";
+    bytes memory _revertReason = "UsageValidateDoubleSign: call to precompile fails";
 
     assembly {
       let _payloadStart := add(_payload, 0x20)
       if iszero(staticcall(gas(), _smc, _payloadStart, _payloadLength, _output, 0x20)) {
-        revert(add(0x20, _revertReason), mload(_revertReason))
+        revert(add(_revertReason, 0x20), mload(_revertReason))
       }
     }
 
