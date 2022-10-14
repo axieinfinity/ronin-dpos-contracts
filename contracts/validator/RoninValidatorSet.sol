@@ -12,12 +12,12 @@ import "../extensions/HasMaintenanceContract.sol";
 import "../extensions/HasRoninTrustedOrganizationContract.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 import "../libraries/Math.sol";
-import "../precompiles/usage/UsageSortValidators.sol";
+import "../precompile-usages/PrecompileUsageSortValidators.sol";
 import "./CandidateManager.sol";
 
 contract RoninValidatorSet is
   IRoninValidatorSet,
-  UsageSortValidators,
+  PrecompileUsageSortValidators,
   RONTransferHelper,
   HasStakingContract,
   HasStakingVestingContract,
@@ -341,9 +341,9 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @inheritdoc UsageSortValidators
+   * @inheritdoc PrecompileUsageSortValidators
    */
-  function precompileSortValidatorAddress() public pure override returns (address) {
+  function precompileSortValidatorsAddress() public pure override returns (address) {
     return _precompileSortValidatorAddress;
   }
 

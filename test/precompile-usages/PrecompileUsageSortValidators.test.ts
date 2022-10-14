@@ -3,29 +3,28 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import {
-  PrecompileSortValidators,
-  PrecompileSortValidators__factory,
-  MockUsageSortValidators,
-  MockUsageSortValidators__factory,
+  MockPrecompile,
+  MockPrecompile__factory,
+  MockPrecompileUsageSortValidators,
+  MockPrecompileUsageSortValidators__factory,
 } from '../../src/types';
-import { randomBigNumber } from '../../src/utils';
 import { randomInt } from 'crypto';
 
 let deployer: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
-let precompileSorting: PrecompileSortValidators;
-let usageSorting: MockUsageSortValidators;
+let precompileSorting: MockPrecompile;
+let usageSorting: MockPrecompileUsageSortValidators;
 
 describe('[Precompile] Sorting validators test', () => {
   before(async () => {
     [deployer, ...validatorCandidates] = await ethers.getSigners();
 
-    precompileSorting = await new PrecompileSortValidators__factory(deployer).deploy();
-    usageSorting = await new MockUsageSortValidators__factory(deployer).deploy(precompileSorting.address);
+    precompileSorting = await new MockPrecompile__factory(deployer).deploy();
+    usageSorting = await new MockPrecompileUsageSortValidators__factory(deployer).deploy(precompileSorting.address);
   });
 
   it('Should the usage contract correctly configs the precompile address', async () => {
-    expect(await usageSorting.precompileSortValidatorAddress()).eq(precompileSorting.address);
+    expect(await usageSorting.precompileSortValidatorsAddress()).eq(precompileSorting.address);
   });
 
   it('Should the usage contract can call the precompile address', async () => {
@@ -52,7 +51,7 @@ describe('[Precompile] Sorting validators test', () => {
   it('Should the usage contract revert with proper message on calling the precompile contract fails', async () => {
     await usageSorting.setPrecompileSortValidatorAddress(ethers.constants.AddressZero);
     await expect(usageSorting.callPrecompile([validatorCandidates[0].address], [1])).revertedWith(
-      'UsageSortValidators: call to precompile fails'
+      'PrecompileUsageSortValidators: call to precompile fails'
     );
   });
 });

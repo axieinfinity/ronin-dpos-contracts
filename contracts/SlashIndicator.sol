@@ -7,11 +7,11 @@ import "./interfaces/ISlashIndicator.sol";
 import "./extensions/HasValidatorContract.sol";
 import "./extensions/HasMaintenanceContract.sol";
 import "./libraries/Math.sol";
-import "./precompiles/usage/UsageValidateDoubleSign.sol";
+import "./precompile-usages/PrecompileUsageValidateDoubleSign.sol";
 
 contract SlashIndicator is
   ISlashIndicator,
-  UsageValidateDoubleSign,
+  PrecompileUsageValidateDoubleSign,
   HasValidatorContract,
   HasMaintenanceContract,
   Initializable
@@ -236,7 +236,7 @@ contract SlashIndicator is
   }
 
   /**
-   * @inheritdoc UsageValidateDoubleSign
+   * @inheritdoc PrecompileUsageValidateDoubleSign
    */
   function precompileValidateDoubleSignAddress() public pure override returns (address) {
     return _precompileValidateDoubleSignAddress;

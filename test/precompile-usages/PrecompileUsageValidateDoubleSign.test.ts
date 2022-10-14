@@ -3,23 +3,25 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import {
-  PrecompileValidateDoubleSign,
-  PrecompileValidateDoubleSign__factory,
-  MockUsageValidateDoubleSign,
-  MockUsageValidateDoubleSign__factory,
+  MockPrecompile,
+  MockPrecompile__factory,
+  MockPrecompileUsageValidateDoubleSign,
+  MockPrecompileUsageValidateDoubleSign__factory,
 } from '../../src/types';
 
 let deployer: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
-let precompileValidating: PrecompileValidateDoubleSign;
-let usageValidating: MockUsageValidateDoubleSign;
+let precompileValidating: MockPrecompile;
+let usageValidating: MockPrecompileUsageValidateDoubleSign;
 
 describe('[Precompile] Validate double sign test', () => {
   before(async () => {
     [deployer, ...validatorCandidates] = await ethers.getSigners();
 
-    precompileValidating = await new PrecompileValidateDoubleSign__factory(deployer).deploy();
-    usageValidating = await new MockUsageValidateDoubleSign__factory(deployer).deploy(precompileValidating.address);
+    precompileValidating = await new MockPrecompile__factory(deployer).deploy();
+    usageValidating = await new MockPrecompileUsageValidateDoubleSign__factory(deployer).deploy(
+      precompileValidating.address
+    );
   });
 
   let header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
@@ -37,7 +39,7 @@ describe('[Precompile] Validate double sign test', () => {
   it('Should the usage contract revert with proper message on calling the precompile contract fails', async () => {
     await usageValidating.setPrecompileValidateDoubleSignAddress(ethers.constants.AddressZero);
     await expect(usageValidating.callPrecompile(header1, header2)).revertedWith(
-      'UsageValidateDoubleSign: call to precompile fails'
+      'PrecompileUsageValidateDoubleSign: call to precompile fails'
     );
   });
 });

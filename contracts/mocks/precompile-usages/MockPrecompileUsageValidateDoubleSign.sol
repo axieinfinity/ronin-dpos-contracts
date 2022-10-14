@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-import "../../precompiles/usage/UsageValidateDoubleSign.sol";
+import "../../precompile-usages/PrecompileUsageValidateDoubleSign.sol";
 
-contract MockUsageValidateDoubleSign is UsageValidateDoubleSign {
+contract MockPrecompileUsageValidateDoubleSign is PrecompileUsageValidateDoubleSign {
   address internal _precompileValidateDoubleSignAddress;
 
   constructor(address _precompile) {

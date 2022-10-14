@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-import "../../precompiles/usage/UsageSortValidators.sol";
+import "../../precompile-usages/PrecompileUsageSortValidators.sol";
 
-contract MockUsageSortValidators is UsageSortValidators {
+contract MockPrecompileUsageSortValidators is PrecompileUsageSortValidators {
   address internal _precompileSortValidatorAddress;
 
   constructor(address _precompile) {
@@ -15,7 +15,7 @@ contract MockUsageSortValidators is UsageSortValidators {
     _precompileSortValidatorAddress = _addr;
   }
 
-  function precompileSortValidatorAddress() public view override returns (address) {
+  function precompileSortValidatorsAddress() public view override returns (address) {
     return _precompileSortValidatorAddress;
   }
 

@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-abstract contract UsageSortValidators {
+abstract contract PrecompileUsageSortValidators {
   /// @dev Gets the address of the precompile of sorting validators
-  function precompileSortValidatorAddress() public view virtual returns (address);
+  function precompileSortValidatorsAddress() public view virtual returns (address);
 
   /**
    * @dev Sorting candidates descending by their weights by calling precompile contract.
@@ -17,7 +17,7 @@ abstract contract UsageSortValidators {
     virtual
     returns (address[] memory _result)
   {
-    address _smc = precompileSortValidatorAddress();
+    address _smc = precompileSortValidatorsAddress();
     bool _success = true;
 
     bytes memory _payload = abi.encodeWithSignature("sortValidators(address[],uint256[])", _candidates, _weights);
@@ -38,6 +38,6 @@ abstract contract UsageSortValidators {
       _result := add(_result, 0x20)
     }
 
-    require(_success, "UsageSortValidators: call to precompile fails");
+    require(_success, "PrecompileUsageSortValidators: call to precompile fails");
   }
 }

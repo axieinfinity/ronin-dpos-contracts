@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-abstract contract UsageValidateDoubleSign {
+abstract contract PrecompileUsageValidateDoubleSign {
   /// @dev Gets the address of the precompile of validating double sign evidence
   function precompileValidateDoubleSignAddress() public view virtual returns (address);
 
@@ -36,7 +36,7 @@ abstract contract UsageValidateDoubleSign {
       }
     }
 
-    require(_success, "UsageValidateDoubleSign: call to precompile fails");
+    require(_success, "PrecompileUsageValidateDoubleSign: call to precompile fails");
     return (_output[0] != 0);
   }
 }
