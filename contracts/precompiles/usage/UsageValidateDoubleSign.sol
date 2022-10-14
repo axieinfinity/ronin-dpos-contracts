@@ -19,20 +19,24 @@ abstract contract UsageValidateDoubleSign {
     returns (bool _validEvidence)
   {
     address _smc = precompileValidateDoubleSignAddress();
+    bool _success = true;
 
     bytes memory _payload = abi.encodeWithSignature("validatingDoubleSignProof(bytes,bytes)", _header1, _header2);
     uint _payloadLength = _payload.length;
     uint[1] memory _output;
 
-    bytes memory _revertReason = "UsageValidateDoubleSign: call to precompile fails";
-
     assembly {
       let _payloadStart := add(_payload, 0x20)
       if iszero(staticcall(gas(), _smc, _payloadStart, _payloadLength, _output, 0x20)) {
-        revert(add(_revertReason, 0x20), mload(_revertReason))
+        _success := 0
+      }
+
+      if iszero(returndatasize()) {
+        _success := 0
       }
     }
 
+    require(_success, "UsageValidateDoubleSign: call to precompile fails");
     return (_output[0] != 0);
   }
 }

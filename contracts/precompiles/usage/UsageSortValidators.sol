@@ -18,20 +18,26 @@ abstract contract UsageSortValidators {
     returns (address[] memory _result)
   {
     address _smc = precompileSortValidatorAddress();
+    bool _success = true;
 
     bytes memory _payload = abi.encodeWithSignature("sortValidators(address[],uint256[])", _candidates, _weights);
     uint256 _payloadLength = _payload.length;
     uint256 _resultLength = 0x20 * _candidates.length + 0x40;
 
-    bytes memory _revertReason = "UsageSortValidators: call to precompile fails";
-
     assembly {
       let _payloadStart := add(_payload, 0x20)
 
       if iszero(staticcall(gas(), _smc, _payloadStart, _payloadLength, _result, _resultLength)) {
-        revert(add(_revertReason, 0x20), mload(_revertReason))
+        _success := 0
       }
+
+      if iszero(returndatasize()) {
+        _success := 0
+      }
+
       _result := add(_result, 0x20)
     }
+
+    require(_success, "UsageSortValidators: call to precompile fails");
   }
 }

@@ -48,4 +48,11 @@ describe('[Precompile] Sorting validators test', () => {
 
     expect(sortedValidators).eql(expectingValidators);
   });
+
+  it('Should the usage contract revert with proper message on calling the precompile contract fails', async () => {
+    await usageSorting.setPrecompileSortValidatorAddress(ethers.constants.AddressZero);
+    await expect(usageSorting.callPrecompile([validatorCandidates[0].address], [1])).revertedWith(
+      'UsageSortValidators: call to precompile fails'
+    );
+  });
 });
