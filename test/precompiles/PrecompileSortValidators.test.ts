@@ -8,6 +8,8 @@ import {
   MockUsageSortValidators,
   MockUsageSortValidators__factory,
 } from '../../src/types';
+import { randomBigNumber } from '../../src/utils';
+import { randomInt } from 'crypto';
 
 let deployer: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
@@ -27,9 +29,22 @@ describe('[Precompile] Sorting validators test', () => {
   });
 
   it('Should the usage contract can call the precompile address', async () => {
-    let inputValidators = await usageSorting.getValidators();
-    let expectingValidators = [...inputValidators].reverse();
-    let sortedValidators = await usageSorting.callPrecompile();
+    let numOfValidator = 21;
+    let validatorsAndWeights = Array.from({ length: numOfValidator }, (_, i) => {
+      return {
+        address: validatorCandidates[i].address,
+        balance: randomInt(numOfValidator * 10000),
+      };
+    });
+
+    let sortedValidators = await usageSorting.callPrecompile(
+      validatorsAndWeights.map((_) => _.address),
+      validatorsAndWeights.map((_) => _.balance)
+    );
+
+    let expectingValidators = validatorsAndWeights
+      .sort((a, b) => (a.balance > b.balance ? -1 : 1))
+      .map((_) => _.address);
 
     expect(sortedValidators).eql(expectingValidators);
   });
