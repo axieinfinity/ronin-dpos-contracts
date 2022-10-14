@@ -11,7 +11,7 @@ import "./libraries/Math.sol";
 contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenanceContract, Initializable {
   using Math for uint256;
 
-  uint8 public constant VALIDATING_DOUBLE_SIGN_PROOF_PRECOMPILE = 0x20;
+  uint8 public constant VALIDATING_DOUBLE_SIGN_PROOF_PRECOMPILE = 0x67;
 
   /// @dev Mapping from validator address => period index => unavailability indicator
   mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
@@ -120,18 +120,10 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
    */
   function slashDoubleSign(
     address _validatorAddr,
-    BlockHeader memory _header1,
-    BlockHeader memory _header2
+    bytes calldata _header1,
+    bytes calldata _header2
   ) external override onlyCoinbase oncePerBlock {
     if (!_shouldSlash(_validatorAddr)) {
-      return;
-    }
-
-    if (
-      block.number > _header1.number + doubleSigningConstrainBlocks ||
-      block.number > _header2.number + doubleSigningConstrainBlocks ||
-      _header1.parentHash != _header2.parentHash
-    ) {
       return;
     }
 
@@ -304,46 +296,27 @@ contract SlashIndicator is ISlashIndicator, HasValidatorContract, HasMaintenance
    * Note: The recover process is done by pre-compiled contract. This function is marked as
    * virtual for implementing mocking contract for testing purpose.
    */
-  function _validateEvidence(BlockHeader memory _header1, BlockHeader memory _header2)
+  function _validateEvidence(bytes calldata _header1, bytes calldata _header2)
     internal
     view
     virtual
     returns (bool _validEvidence)
   {
-    bytes memory _input = bytes.concat(_packBlockHeader(_header1), _packBlockHeader(_header2));
-    uint _inputSize = _input.length;
+    bytes memory _payload = abi.encodeWithSignature("validatingDoubleSignProof(bytes,bytes)", _header1, _header2);
+    uint _payloadLength = _payload.length;
     uint[1] memory _output;
 
     bytes memory _revertReason = "SlashIndicator: call to precompile fails";
 
     assembly {
-      if iszero(staticcall(gas(), VALIDATING_DOUBLE_SIGN_PROOF_PRECOMPILE, _input, _inputSize, _output, 0x20)) {
-        revert(add(32, _revertReason), mload(_revertReason))
+      let _payloadStart := add(_payload, 0x20)
+      if iszero(
+        staticcall(gas(), VALIDATING_DOUBLE_SIGN_PROOF_PRECOMPILE, _payloadStart, _payloadLength, _output, 0x20)
+      ) {
+        revert(add(0x20, _revertReason), mload(_revertReason))
       }
     }
 
     return (_output[0] != 0);
-  }
-
-  /**
-   * @dev Packing the block header struct into a single bytes. Helper function for validating
-   * evidence function.
-   */
-  function _packBlockHeader(BlockHeader memory _header) private pure returns (bytes memory) {
-    return
-      abi.encode(
-        _header.parentHash,
-        _header.ommersHash,
-        _header.beneficiary,
-        _header.stateRoot,
-        _header.transactionsRoot,
-        _header.receiptsRoot,
-        _header.logsBloom,
-        _header.difficulty,
-        _header.number,
-        _header.gasLimit,
-        _header.gasUsed,
-        _header.timestamp
-      );
   }
 }

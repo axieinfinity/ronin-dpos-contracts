@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers';
+import { BigNumber, BytesLike } from 'ethers';
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -11,7 +11,6 @@ import {
   Staking,
   Staking__factory,
 } from '../../src/types';
-import { BlockHeaderStruct } from '../../src/types/ISlashIndicator';
 import { SlashType } from '../../src/script/slash-indicator';
 import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
@@ -62,26 +61,6 @@ const validateIndicatorAt = async (idx: number) => {
   expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[idx].address)).to.eq(
     localIndicators[idx]
   );
-};
-
-const generateDefaultBlockHeader = (blockHeight: number): BlockHeaderStruct => {
-  return {
-    parentHash: ethers.constants.HashZero,
-    ommersHash: ethers.constants.HashZero,
-    beneficiary: ethers.constants.AddressZero,
-    stateRoot: ethers.constants.HashZero,
-    transactionsRoot: ethers.constants.HashZero,
-    receiptsRoot: ethers.constants.HashZero,
-    logsBloom: new Array(256).fill(ethers.constants.HashZero),
-    difficulty: 1,
-    number: blockHeight,
-    gasLimit: 1,
-    gasUsed: 1,
-    timestamp: 1,
-    extraData: ethers.constants.HashZero,
-    mixHash: ethers.constants.HashZero,
-    nonce: 1,
-  };
 };
 
 describe('Slash indicator test', () => {
@@ -340,8 +319,8 @@ describe('Slash indicator test', () => {
     });
 
     describe('Double signing slash', async () => {
-      let header1: BlockHeaderStruct;
-      let header2: BlockHeaderStruct;
+      let header1: BytesLike;
+      let header2: BytesLike;
 
       before(async () => {
         await network.provider.send('hardhat_mine', [doubleSigningConstrainBlocks.toHexString()]);
@@ -351,10 +330,8 @@ describe('Slash indicator test', () => {
         const slasherIdx = 0;
         await network.provider.send('hardhat_setCoinbase', [validatorCandidates[slasherIdx].address]);
 
-        let nextBlockHeight = await network.provider.send('eth_blockNumber');
-
-        header1 = generateDefaultBlockHeader(nextBlockHeight - 1);
-        header2 = generateDefaultBlockHeader(nextBlockHeight - 1);
+        header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
+        header2 = ethers.utils.toUtf8Bytes('sampleHeader2');
 
         let tx = await slashContract
           .connect(validatorCandidates[slasherIdx])
@@ -363,30 +340,12 @@ describe('Slash indicator test', () => {
         await expect(tx).to.not.emit(slashContract, 'UnavailabilitySlashed');
       });
 
-      it('Should not be able to slash with mismatched parent hash', async () => {
-        const slasherIdx = 0;
-        const slasheeIdx = 1;
-        let nextBlockHeight = await network.provider.send('eth_blockNumber');
-
-        header1 = generateDefaultBlockHeader(nextBlockHeight - 1);
-        header2 = generateDefaultBlockHeader(nextBlockHeight - 1);
-
-        header1.parentHash = ethers.constants.HashZero.slice(0, -1) + '1';
-
-        let tx = await slashContract
-          .connect(validatorCandidates[slasherIdx])
-          .slashDoubleSign(validatorCandidates[slasheeIdx].address, header1, header2);
-
-        await expect(tx).to.not.emit(slashContract, 'UnavailabilitySlashed');
-      });
-
       it('Should be able to slash validator with double signing', async () => {
         const slasherIdx = 0;
         const slasheeIdx = 1;
-        let nextBlockHeight = await network.provider.send('eth_blockNumber');
 
-        header1 = generateDefaultBlockHeader(nextBlockHeight - 1);
-        header2 = generateDefaultBlockHeader(nextBlockHeight - 1);
+        header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
+        header2 = ethers.utils.toUtf8Bytes('sampleHeader2');
 
         let tx = await slashContract
           .connect(validatorCandidates[slasherIdx])

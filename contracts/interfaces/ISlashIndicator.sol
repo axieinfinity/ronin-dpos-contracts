@@ -3,6 +3,13 @@
 pragma solidity ^0.8.9;
 
 interface ISlashIndicator {
+  enum SlashType {
+    UNKNOWN,
+    MISDEMEANOR,
+    FELONY,
+    DOUBLE_SIGNING
+  }
+
   /// @dev Emitted when the validator is slashed for unavailability
   event UnavailabilitySlashed(address indexed validator, SlashType slashType, uint256 period);
   /// @dev Emitted when the thresholds updated
@@ -17,46 +24,6 @@ interface ISlashIndicator {
   event DoubleSigningConstrainBlocksUpdated(uint256 doubleSigningConstrainBlocks);
   /// @dev Emiited when the block number to jail the double signing validator to is updated
   event DoubleSigningJailUntilBlockUpdated(uint256 doubleSigningJailUntilBlock);
-
-  enum SlashType {
-    UNKNOWN,
-    MISDEMEANOR,
-    FELONY,
-    DOUBLE_SIGNING
-  }
-
-  struct BlockHeader {
-    /// @dev Keccak hash of the parent block
-    bytes32 parentHash;
-    /// @dev Keccak hash of the ommers block
-    bytes32 ommersHash;
-    /// @dev Beneficiary address, i.e. mining fee recipient
-    address beneficiary;
-    /// @dev Keccak hash of the root of the state trie post execution
-    bytes32 stateRoot;
-    /// @dev Keccak hash of the root of transaction trie
-    bytes32 transactionsRoot;
-    /// @dev Keccak hash of the root node of recipients in the transaction
-    bytes32 receiptsRoot;
-    /// @dev Bloom filter of two fields log address and log topic in the receipts
-    bytes32[256] logsBloom;
-    /// @dev Scalar value of the difficulty of the previous block
-    uint256 difficulty;
-    /// @dev Scalar value of the number of ancestor blocks, i.e. block height
-    uint64 number;
-    /// @dev Scalar value of the current limit of gas usage per block
-    uint64 gasLimit;
-    /// @dev Scalar value of the total gas spent of the transactions in this block
-    uint64 gasUsed;
-    /// @dev Scalar value of the output of Unix's time()
-    uint64 timestamp;
-    /// @dev The signature of the validators
-    bytes32 extraData;
-    /// @dev A 256-bit hash which, combined with the `nonce`, proves that a sufficient amount of computation has been carried out on this block
-    bytes32 mixHash;
-    /// @dev A 64-bit value which, combined with the `mixHash`, proves that a sufficient amount of computation has been carried out on this block
-    uint8 nonce;
-  }
 
   /**
    * @dev Slashes for unavailability by increasing the counter of validator with `_valAddr`.
@@ -80,8 +47,8 @@ interface ISlashIndicator {
    */
   function slashDoubleSign(
     address _validatorAddr,
-    BlockHeader calldata _header1,
-    BlockHeader calldata _header2
+    bytes calldata _header1,
+    bytes calldata _header2
   ) external;
 
   /**
