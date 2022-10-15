@@ -49,7 +49,7 @@ contract MockStaking is RewardCalculation {
     _recordReward(poolAddr, _rewardAmount);
   }
 
-  function commitRewardPool(address[] calldata _addrList) external {
+  function settledPools(address[] calldata _addrList) external {
     _onPoolsSettled(_addrList);
   }
 

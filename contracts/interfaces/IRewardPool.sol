@@ -8,13 +8,7 @@ interface IRewardPool {
   /// @dev Emitted when the pending pool is updated.
   event PendingPoolUpdated(address poolAddress, uint256 accumulatedRps);
   /// @dev Emitted when the fields to calculate settled reward for the user is updated.
-  event SettledRewardUpdated(
-    address poolAddress,
-    address user,
-    uint256 balance,
-    uint256 debited,
-    uint256 accumulatedRps
-  );
+  event SettledRewardUpdated(address poolAddress, address user, uint256 debited, uint256 accumulatedRps);
   /// @dev Emitted when the fields to calculate pending reward for the user is updated.
   event PendingRewardUpdated(address poolAddress, address user, uint256 debited, uint256 credited);
   /// @dev Emitted when the user claimed their reward
@@ -30,8 +24,6 @@ interface IRewardPool {
   }
 
   struct SettledRewardFields {
-    // The balance at the commit time.
-    uint256 balance;
     // Recorded reward amount.
     uint256 debited;
     // Accumulated of the amount rewards per share (one unit staking).
