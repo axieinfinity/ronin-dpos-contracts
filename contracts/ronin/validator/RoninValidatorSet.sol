@@ -4,15 +4,16 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "../extensions/RONTransferHelper.sol";
-import "../extensions/HasStakingVestingContract.sol";
-import "../extensions/HasStakingContract.sol";
-import "../extensions/HasSlashIndicatorContract.sol";
-import "../extensions/HasMaintenanceContract.sol";
-import "../extensions/HasRoninTrustedOrganizationContract.sol";
-import "../interfaces/IRoninValidatorSet.sol";
-import "../libraries/Math.sol";
-import "../precompile-usages/PrecompileUsageSortValidators.sol";
+import "../../extensions/RONTransferHelper.sol";
+import "../../extensions/HasStakingVestingContract.sol";
+import "../../extensions/HasStakingContract.sol";
+import "../../extensions/HasSlashIndicatorContract.sol";
+import "../../extensions/HasMaintenanceContract.sol";
+import "../../extensions/HasRoninTrustedOrganizationContract.sol";
+import "../../interfaces/IRoninValidatorSet.sol";
+import "../../libraries/Sorting.sol";
+import "../../libraries/Math.sol";
+import "../../precompile-usages/PrecompileUsageSortValidators.sol";
 import "./CandidateManager.sol";
 
 contract RoninValidatorSet is

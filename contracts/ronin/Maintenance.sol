@@ -3,11 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "./interfaces/IMaintenance.sol";
-import "./interfaces/IRoninValidatorSet.sol";
-import "./interfaces/IStaking.sol";
-import "./extensions/HasValidatorContract.sol";
-import "./libraries/Math.sol";
+import "../interfaces/IMaintenance.sol";
+import "../interfaces/IRoninValidatorSet.sol";
+import "../interfaces/IStaking.sol";
+import "../extensions/HasValidatorContract.sol";
+import "../libraries/Math.sol";
 
 contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   using Math for uint256;

@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.9;
 
-import "../extensions/HasStakingContract.sol";
-import "../interfaces/ICandidateManager.sol";
-import "../interfaces/IStaking.sol";
-import "../libraries/Sorting.sol";
+import "../../extensions/HasStakingContract.sol";
+import "../../interfaces/ICandidateManager.sol";
+import "../../interfaces/IStaking.sol";
+import "../../libraries/Sorting.sol";
 
 abstract contract CandidateManager is ICandidateManager, HasStakingContract {
   /// @dev Maximum number of validator candidate

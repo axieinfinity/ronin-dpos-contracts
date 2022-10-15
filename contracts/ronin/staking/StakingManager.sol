@@ -3,10 +3,10 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "../extensions/RONTransferHelper.sol";
-import "../extensions/HasValidatorContract.sol";
-import "../interfaces/IStaking.sol";
-import "../libraries/Math.sol";
+import "../../extensions/RONTransferHelper.sol";
+import "../../extensions/HasValidatorContract.sol";
+import "../../interfaces/IStaking.sol";
+import "../../libraries/Math.sol";
 import "./RewardCalculation.sol";
 
 abstract contract StakingManager is

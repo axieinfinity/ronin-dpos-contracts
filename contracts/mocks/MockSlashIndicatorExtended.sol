@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../SlashIndicator.sol";
+import "../ronin/SlashIndicator.sol";
 
 contract MockSlashIndicatorExtended is SlashIndicator {
   function slashFelony(address _validatorAddr) external {

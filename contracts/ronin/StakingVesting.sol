@@ -3,9 +3,9 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "./interfaces/IStakingVesting.sol";
-import "./extensions/HasValidatorContract.sol";
-import "./extensions/RONTransferHelper.sol";
+import "../interfaces/IStakingVesting.sol";
+import "../extensions/HasValidatorContract.sol";
+import "../extensions/RONTransferHelper.sol";
 
 contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHelper, Initializable {
   /// @dev The block bonus whenever a new block is mined.
