@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "./HasProxyAdmin.sol";
-import "../interfaces/collections/IHasSlashIndicatorContract.sol";
-import "../interfaces/ISlashIndicator.sol";
+import "../../interfaces/collections/IHasSlashIndicatorContract.sol";
+import "../../interfaces/ISlashIndicator.sol";
 
 contract HasSlashIndicatorContract is IHasSlashIndicatorContract, HasProxyAdmin {
   ISlashIndicator internal _slashIndicatorContract;

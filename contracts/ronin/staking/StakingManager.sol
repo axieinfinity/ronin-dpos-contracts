@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../../extensions/RONTransferHelper.sol";
-import "../../extensions/HasValidatorContract.sol";
+import "../../extensions/collections/HasValidatorContract.sol";
 import "../../interfaces/IStaking.sol";
 import "../../libraries/Math.sol";
 import "./RewardCalculation.sol";

@@ -5,7 +5,7 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
-import "../extensions/HasProxyAdmin.sol";
+import "../extensions/collections/HasProxyAdmin.sol";
 
 contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, Initializable {
   using EnumerableSet for EnumerableSet.AddressSet;

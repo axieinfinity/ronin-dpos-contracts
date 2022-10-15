@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../../extensions/HasStakingContract.sol";
+import "../../extensions/collections/HasStakingContract.sol";
 import "../../interfaces/ICandidateManager.sol";
 import "../../interfaces/IStaking.sol";
 import "../../libraries/Sorting.sol";

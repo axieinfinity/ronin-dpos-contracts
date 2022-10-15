@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "./HasProxyAdmin.sol";
-import "../interfaces/collections/IHasStakingVestingContract.sol";
-import "../interfaces/IStakingVesting.sol";
+import "../../interfaces/collections/IHasStakingVestingContract.sol";
+import "../../interfaces/IStakingVesting.sol";
 
 contract HasStakingVestingContract is IHasStakingVestingContract, HasProxyAdmin {
   IStakingVesting internal _stakingVestingContract;

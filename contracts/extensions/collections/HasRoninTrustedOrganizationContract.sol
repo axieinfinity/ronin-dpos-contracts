@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "./HasProxyAdmin.sol";
-import "../interfaces/collections/IHasRoninTrustedOrganizationContract.sol";
-import "../interfaces/IRoninTrustedOrganization.sol";
+import "../../interfaces/collections/IHasRoninTrustedOrganizationContract.sol";
+import "../../interfaces/IRoninTrustedOrganization.sol";
 
 contract HasRoninTrustedOrganizationContract is IHasRoninTrustedOrganizationContract, HasProxyAdmin {
   IRoninTrustedOrganization internal _roninTrustedOrganizationContract;

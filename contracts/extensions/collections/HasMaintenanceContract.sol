@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "./HasProxyAdmin.sol";
-import "../interfaces/collections/IHasMaintenanceContract.sol";
-import "../interfaces/IMaintenance.sol";
+import "../../interfaces/collections/IHasMaintenanceContract.sol";
+import "../../interfaces/IMaintenance.sol";
 
 contract HasMaintenanceContract is IHasMaintenanceContract, HasProxyAdmin {
   IMaintenance internal _maintenanceContract;
