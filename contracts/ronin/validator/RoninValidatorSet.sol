@@ -478,9 +478,9 @@ contract RoninValidatorSet is
     uint _waitingCounter;
     uint _prioritySlotCounter;
 
-    bool[] memory _isTrustedOrgs = _roninTrustedOrganizationContract.isTrustedOrganizations(_candidates);
+    uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getWeights(_candidates);
     for (uint _i = 0; _i < _candidates.length; _i++) {
-      if (_isTrustedOrgs[_i] && _prioritySlotCounter < _maxPrioritizedValidatorNumber) {
+      if (_trustedWeights[_i] > 0 && _prioritySlotCounter < _maxPrioritizedValidatorNumber) {
         _candidates[_prioritySlotCounter++] = _candidates[_i];
         continue;
       }
