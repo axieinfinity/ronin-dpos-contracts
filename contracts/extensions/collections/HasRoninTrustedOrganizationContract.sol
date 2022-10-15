@@ -26,7 +26,7 @@ contract HasRoninTrustedOrganizationContract is IHasRoninTrustedOrganizationCont
   /**
    * @inheritdoc IHasRoninTrustedOrganizationContract
    */
-  function setRoninTrustedOrganizationContract(address _addr) external override onlyAdmin {
+  function setRoninTrustedOrganizationContract(address _addr) external virtual override onlyAdmin {
     _setRoninTrustedOrganizationContract(_addr);
   }
 
