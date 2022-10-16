@@ -25,7 +25,7 @@ let validatorContract: RoninValidatorSet;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
-let governanceAdmin: SignerWithAddress;
+let governor: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
 const felonyJailBlocks = 28800 * 2;
@@ -51,7 +51,7 @@ const maxSchedules = 2;
 
 describe('[Integration] Configuration check', () => {
   before(async () => {
-    [coinbase, deployer, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
+    [coinbase, deployer, governor, ...validatorCandidates] = await ethers.getSigners();
     const {
       maintenanceContractAddress,
       slashContractAddress,
@@ -76,7 +76,7 @@ describe('[Integration] Configuration check', () => {
       maxMaintenanceBlockPeriod,
       minOffset,
       maxSchedules,
-      governanceAdmin: governanceAdmin.address,
+      trustedOrganizations: [governor.address].map((addr) => ({ addr, weight: 100 })),
     });
 
     stakingVestingContract = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);

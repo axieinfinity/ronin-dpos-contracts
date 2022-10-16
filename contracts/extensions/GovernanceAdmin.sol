@@ -1,18 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "../extensions/sequential-governance/CoreGovernance.sol";
 import "../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../extensions/collections/HasBridgeContract.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 
-contract GovernanceAdmin is
-  AccessControlEnumerable,
-  CoreGovernance,
-  HasRoninTrustedOrganizationContract,
-  HasBridgeContract
-{
+contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract, HasBridgeContract {
   /// @dev Domain separator
   bytes32 public constant DOMAIN_SEPARATOR = 0xf8704f8860d9e985bf6c52ec4738bd10fe31487599b36c0944f746ea09dc256b;
 
@@ -21,11 +15,7 @@ contract GovernanceAdmin is
     _;
   }
 
-  constructor(
-    address _roleSetter,
-    address _roninTrustedOrganizationContract,
-    address _bridgeContract
-  ) {
+  constructor(address _roninTrustedOrganizationContract, address _bridgeContract) {
     require(
       keccak256(
         abi.encode(
@@ -37,7 +27,6 @@ contract GovernanceAdmin is
       ) == DOMAIN_SEPARATOR,
       "GovernanceAdmin: invalid domain"
     );
-    _setupRole(DEFAULT_ADMIN_ROLE, _roleSetter);
     _setRoninTrustedOrganizationContract(_roninTrustedOrganizationContract);
     _setBridgeContract(_bridgeContract);
   }

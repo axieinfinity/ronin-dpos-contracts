@@ -1,6 +1,7 @@
 import { BigNumber, BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
+import { WeightedAddressStruct } from './types/IBridge';
 
 export enum Network {
   Hardhat = 'hardhat',
@@ -31,7 +32,7 @@ export interface AddressExtended {
 
 export interface InitAddr {
   [network: LiteralNetwork]: {
-    governanceAdmin: Address;
+    governanceAdmin?: AddressExtended;
     maintenanceContract?: AddressExtended;
     stakingVestingContract?: AddressExtended;
     slashIndicatorContract?: AddressExtended;
@@ -49,7 +50,9 @@ export interface MaintenanceArguments {
 }
 
 export interface RoninTrustedOrganizationArguments {
-  trustedOrganizations?: Address[];
+  trustedOrganizations?: WeightedAddressStruct[];
+  numerator?: BigNumberish;
+  denominator?: BigNumberish;
 }
 
 export interface RoninTrustedOrganizationConfig {
@@ -102,14 +105,25 @@ export interface RoninValidatorSetConfig {
   [network: LiteralNetwork]: RoninValidatorSetArguments | undefined;
 }
 
-export const initAddress: InitAddr = {
-  [Network.Hardhat]: {
-    governanceAdmin: ethers.constants.AddressZero,
-  },
-  [Network.Devnet]: {
-    governanceAdmin: '0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1',
-  },
+export interface RoninGovernanceAdminArguments {
+  bridgeContract?: Address;
+}
+
+export interface RoninGovernanceAdminConfig {
+  [network: LiteralNetwork]: RoninGovernanceAdminArguments | undefined;
+}
+
+export type MainchainGovernanceAdminArguments = RoninGovernanceAdminArguments & {
+  roleSetter?: Address;
+  relayers?: Address[];
 };
+
+export interface MainchainGovernanceAdminConfig {
+  [network: LiteralNetwork]: MainchainGovernanceAdminArguments | undefined;
+}
+
+export const roninInitAddress: InitAddr = {};
+export const mainchainInitAddress: InitAddr = {};
 
 // TODO: update config for testnet & mainnet
 export const maintenanceConf: MaintenanceConfig = {
@@ -178,10 +192,34 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
 export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
-    trustedOrganizations: [], // trusted no one
+    trustedOrganizations: ['0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1'].map((addr) => ({ addr, weight: 100 })),
+    numerator: 1,
+    denominator: 1,
   },
   [Network.Testnet]: undefined,
   [Network.Mainnet]: undefined,
+  [Network.Goerli]: undefined,
+  [Network.Ethereum]: undefined,
+};
+
+// TODO: update config for testnet & mainnet
+export const roninGovernanceAdminConf: RoninGovernanceAdminConfig = {
+  [Network.Hardhat]: undefined,
+  [Network.Devnet]: {
+    bridgeContract: ethers.constants.AddressZero,
+  },
+  [Network.Goerli]: undefined,
+  [Network.Ethereum]: undefined,
+};
+
+// TODO: update config for goerli, ethereum
+export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
+  [Network.Hardhat]: undefined,
+  [Network.Devnet]: {
+    roleSetter: '0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1',
+    bridgeContract: ethers.constants.AddressZero,
+    relayers: ['0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1'],
+  },
   [Network.Goerli]: undefined,
   [Network.Ethereum]: undefined,
 };

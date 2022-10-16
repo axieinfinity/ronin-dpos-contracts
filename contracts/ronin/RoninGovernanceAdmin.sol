@@ -12,11 +12,9 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
     _;
   }
 
-  constructor(
-    address _roleSetter,
-    address _roninTrustedOrganizationContract,
-    address _bridgeContract
-  ) GovernanceAdmin(_roleSetter, _roninTrustedOrganizationContract, _bridgeContract) {}
+  constructor(address _roninTrustedOrganizationContract, address _bridgeContract)
+    GovernanceAdmin(_roninTrustedOrganizationContract, _bridgeContract)
+  {}
 
   /**
    * @dev Returns the voted signatures for the proposals.

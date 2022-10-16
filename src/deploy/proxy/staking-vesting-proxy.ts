@@ -2,7 +2,7 @@ import { BigNumber } from 'ethers';
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { initAddress, roninchainNetworks, stakingVestingConfig } from '../../config';
+import { roninInitAddress, roninchainNetworks, stakingVestingConfig } from '../../config';
 import { verifyAddress } from '../../script/verify-address';
 import { StakingVesting__factory } from '../../types';
 
@@ -17,7 +17,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const logicContract = await deployments.get('StakingVestingLogic');
 
   const data = new StakingVesting__factory().interface.encodeFunctionData('initialize', [
-    initAddress[network.name]!.validatorContract?.address,
+    roninInitAddress[network.name]!.validatorContract?.address,
     stakingVestingConfig[network.name]!.bonusPerBlock,
   ]);
 
@@ -25,11 +25,11 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    args: [logicContract.address, initAddress[network.name]!.governanceAdmin, data],
+    args: [logicContract.address, roninInitAddress[network.name]!.governanceAdmin?.address, data],
     value: BigNumber.from(stakingVestingConfig[network.name]!.topupAmount),
-    nonce: initAddress[network.name].stakingVestingContract?.nonce,
+    nonce: roninInitAddress[network.name].stakingVestingContract?.nonce,
   });
-  verifyAddress(deployment.address, initAddress[network.name].stakingVestingContract?.address);
+  verifyAddress(deployment.address, roninInitAddress[network.name].stakingVestingContract?.address);
 };
 
 deploy.tags = ['StakingVestingProxy'];

@@ -10,15 +10,19 @@ import {
   Staking__factory,
   MockSlashIndicatorExtended__factory,
   MockSlashIndicatorExtended,
+  RoninGovernanceAdmin__factory,
+  RoninGovernanceAdmin,
 } from '../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
-import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
+import { initTest } from '../helpers/fixture';
+import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let stakingContract: Staking;
 let slashIndicator: MockSlashIndicatorExtended;
-let governanceAdmin: GovernanceAdminInterface;
+let governanceAdmin: RoninGovernanceAdmin;
+let governanceAdminInterface: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let treasury: SignerWithAddress;
@@ -36,32 +40,32 @@ const bonusPerBlock = BigNumber.from(1);
 describe('Ronin Validator Set test', () => {
   before(async () => {
     [coinbase, treasury, deployer, governor, ...validatorCandidates] = await ethers.getSigners();
-    governanceAdmin = new GovernanceAdminInterface(governor);
     validatorCandidates = validatorCandidates.slice(0, 5);
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-    const { slashContractAddress, validatorContractAddress, stakingContractAddress } = await initTest(
-      'RoninValidatorSet'
-    )({
-      governanceAdmin: governor.address,
-      minValidatorBalance,
-      maxValidatorNumber,
-      maxValidatorCandidate,
-      slashFelonyAmount,
-      bonusPerBlock,
-    });
+    const { slashContractAddress, validatorContractAddress, stakingContractAddress, roninGovernanceAdminAddress } =
+      await initTest('RoninValidatorSet')({
+        trustedOrganizations: [governor.address].map((addr) => ({ addr, weight: 100 })),
+        minValidatorBalance,
+        maxValidatorNumber,
+        maxValidatorCandidate,
+        slashFelonyAmount,
+        bonusPerBlock,
+      });
 
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
+    governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
+    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, governor);
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
-    await governanceAdmin.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
+    await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
-    await governanceAdmin.upgrade(slashIndicator.address, mockSlashIndicator.address);
+    await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
   });
 
   after(async () => {

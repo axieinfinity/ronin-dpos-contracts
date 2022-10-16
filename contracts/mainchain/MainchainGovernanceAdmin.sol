@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "../extensions/isolated-governance/bridge-operator-governance/BOsGovernanceRelay.sol";
 import "../extensions/sequential-governance/GovernanceRelay.sol";
 import "../extensions/GovernanceAdmin.sol";
 import "../interfaces/IBridge.sol";
 
-contract MainchainGovernanceAdmin is GovernanceRelay, GovernanceAdmin, BOsGovernanceRelay {
+contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, GovernanceAdmin, BOsGovernanceRelay {
   bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
 
   constructor(
@@ -14,7 +15,8 @@ contract MainchainGovernanceAdmin is GovernanceRelay, GovernanceAdmin, BOsGovern
     address _roninTrustedOrganizationContract,
     address _bridgeContract,
     address[] memory _relayers
-  ) GovernanceAdmin(_roleSetter, _roninTrustedOrganizationContract, _bridgeContract) {
+  ) GovernanceAdmin(_roninTrustedOrganizationContract, _bridgeContract) {
+    _setupRole(DEFAULT_ADMIN_ROLE, _roleSetter);
     for (uint256 _i; _i < _relayers.length; _i++) {
       _grantRole(RELAYER_ROLE, _relayers[_i]);
     }

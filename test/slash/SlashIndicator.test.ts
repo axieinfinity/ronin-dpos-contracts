@@ -7,18 +7,22 @@ import {
   MockRoninValidatorSetSorting__factory,
   MockSlashIndicatorExtended,
   MockSlashIndicatorExtended__factory,
+  RoninGovernanceAdmin,
+  RoninGovernanceAdmin__factory,
   RoninValidatorSet,
   Staking,
   Staking__factory,
 } from '../../src/types';
 import { SlashType } from '../../src/script/slash-indicator';
-import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
+import { initTest } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
+import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 
 let slashContract: MockSlashIndicatorExtended;
 let mockSlashLogic: MockSlashIndicatorExtended;
 let stakingContract: Staking;
-let governanceAdmin: GovernanceAdminInterface;
+let governanceAdmin: RoninGovernanceAdmin;
+let governanceAdminInterface: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -66,11 +70,10 @@ const validateIndicatorAt = async (idx: number) => {
 describe('Slash indicator test', () => {
   before(async () => {
     [deployer, coinbase, governor, vagabond, ...validatorCandidates] = await ethers.getSigners();
-    governanceAdmin = new GovernanceAdminInterface(governor);
 
-    const { slashContractAddress, stakingContractAddress, validatorContractAddress } = await initTest('SlashIndicator')(
-      {
-        governanceAdmin: governor.address,
+    const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
+      await initTest('SlashIndicator')({
+        trustedOrganizations: [governor.address].map((addr) => ({ addr, weight: 100 })),
         misdemeanorThreshold,
         felonyThreshold,
         maxValidatorNumber,
@@ -80,12 +83,13 @@ describe('Slash indicator test', () => {
         minValidatorBalance,
         slashFelonyAmount,
         slashDoubleSignAmount,
-      }
-    );
+      });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetSorting__factory.connect(validatorContractAddress, deployer);
     slashContract = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
+    governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
+    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, governor);
 
     const mockValidatorLogic = await new MockRoninValidatorSetSorting__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
@@ -93,7 +97,7 @@ describe('Slash indicator test', () => {
 
     mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashLogic.deployed();
-    await governanceAdmin.upgrade(slashContractAddress, mockSlashLogic.address);
+    await governanceAdminInterface.upgrade(slashContractAddress, mockSlashLogic.address);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {

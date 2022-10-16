@@ -11,13 +11,17 @@ import {
   MockSlashIndicatorExtended,
   RoninTrustedOrganization__factory,
   RoninTrustedOrganization,
+  RoninGovernanceAdmin,
+  RoninGovernanceAdmin__factory,
 } from '../../src/types';
-import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
+import { initTest } from '../helpers/fixture';
+import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 
 let validatorContract: MockRoninValidatorSetExtended;
 let slashIndicator: MockSlashIndicatorExtended;
-let governanceAdmin: GovernanceAdminInterface;
 let roninTrustedOrganization: RoninTrustedOrganization;
+let governanceAdmin: RoninGovernanceAdmin;
+let governanceAdminInterface: GovernanceAdminInterface;
 
 let deployer: SignerWithAddress;
 let governor: SignerWithAddress;
@@ -32,11 +36,13 @@ const setPriorityStatus = async (addrs: Address[], statuses: boolean[]) => {
   const arr = statuses.map((stt, i) => ({ address: addrs[i], stt }));
   const addingTrustedOrgs = arr.filter(({ stt }) => stt).map(({ address }) => address);
   const removingTrustedOrgs = arr.filter(({ stt }) => !stt).map(({ address }) => address);
-  await governanceAdmin.functionDelegateCall(
+  await governanceAdminInterface.functionDelegateCall(
     roninTrustedOrganization.address,
-    roninTrustedOrganization.interface.encodeFunctionData('addTrustedOrganizations', [addingTrustedOrgs])
+    roninTrustedOrganization.interface.encodeFunctionData('addTrustedOrganizations', [
+      addingTrustedOrgs.map((v) => ({ addr: v, weight: 100 })),
+    ])
   );
-  await governanceAdmin.functionDelegateCall(
+  await governanceAdminInterface.functionDelegateCall(
     roninTrustedOrganization.address,
     roninTrustedOrganization.interface.encodeFunctionData('removeTrustedOrganizations', [removingTrustedOrgs])
   );
@@ -70,29 +76,33 @@ const sortArrayByBoolean = (indexes: number[], statuses: boolean[]) => {
 describe('Arrange validators', () => {
   before(async () => {
     [deployer, governor, ...validatorCandidates] = await ethers.getSigners();
-    governanceAdmin = new GovernanceAdminInterface(governor);
 
-    const { slashContractAddress, validatorContractAddress, roninTrustedOrganizationAddress } = await initTest(
-      'ArrangeValidators'
-    )({
-      governanceAdmin: governor.address,
+    const {
+      slashContractAddress,
+      validatorContractAddress,
+      roninTrustedOrganizationAddress,
+      roninGovernanceAdminAddress,
+    } = await initTest('ArrangeValidators')({
       maxValidatorNumber,
       maxValidatorCandidate,
       maxPrioritizedValidatorNumber,
       slashFelonyAmount,
+      trustedOrganizations: [governor.address].map((addr) => ({ addr, weight: 100 })),
     });
 
     validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
     roninTrustedOrganization = RoninTrustedOrganization__factory.connect(roninTrustedOrganizationAddress, deployer);
+    governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
+    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, governor);
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
-    await governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
-    await governanceAdmin.upgrade(slashIndicator.address, mockSlashIndicator.address);
+    await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
   });
 
   describe('Update priority list', async () => {
@@ -171,6 +181,7 @@ describe('Arrange validators', () => {
         inputValidatorAddrs,
         actualPrioritizedNumber + actualRegularNumber
       );
+
       expect(outputValidators).eql(expectingValidatorAddrs);
     });
 
