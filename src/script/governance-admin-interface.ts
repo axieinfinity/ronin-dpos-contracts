@@ -3,7 +3,7 @@ import { BigNumberish, BytesLike } from 'ethers';
 import { ethers, network } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
 import { TypedDataDomain } from '@ethersproject/abstract-signer';
-import { AbiCoder, keccak256, _TypedDataEncoder } from 'ethers/lib/utils';
+import { AbiCoder, Interface, keccak256, _TypedDataEncoder } from 'ethers/lib/utils';
 
 import { BallotTypes, getProposalHash, VoteType } from './proposal';
 import { RoninGovernanceAdmin, TransparentUpgradeableProxyV2__factory } from '../types';
@@ -24,19 +24,21 @@ export const mapByteSigToSigStruct = (sig: string): SignatureStruct => {
 };
 
 export class GovernanceAdminInterface {
-  signer!: SignerWithAddress;
+  signers!: SignerWithAddress[];
   contract!: RoninGovernanceAdmin;
   domain!: TypedDataDomain;
+  interface!: Interface;
   address = ethers.constants.AddressZero;
 
-  constructor(contract: RoninGovernanceAdmin, signer: SignerWithAddress) {
+  constructor(contract: RoninGovernanceAdmin, ...signers: SignerWithAddress[]) {
     this.contract = contract;
-    this.signer = signer;
+    this.signers = signers;
     this.address = contract.address;
     this.domain = getGovernanceAdminDomain();
+    this.interface = new TransparentUpgradeableProxyV2__factory().interface;
   }
 
-  private async createProposal(target: Address, value: BigNumberish, calldata: BytesLike, gasAmount: BigNumberish) {
+  async createProposal(target: Address, value: BigNumberish, calldata: BytesLike, gasAmount: BigNumberish) {
     const proposal: ProposalDetailStruct = {
       chainId: network.config.chainId!,
       nonce: (await this.contract.round(network.config.chainId!)).add(1),
@@ -48,13 +50,13 @@ export class GovernanceAdminInterface {
     return proposal;
   }
 
-  private async generateSignatures(proposal: ProposalDetailStruct) {
+  async generateSignatures(proposal: ProposalDetailStruct) {
     const proposalHash = getProposalHash(proposal);
-    const signatures = [
-      await this.signer
-        ._signTypedData(this.domain, BallotTypes, { proposalHash, support: VoteType.For })
-        .then(mapByteSigToSigStruct),
-    ];
+    const signatures = await Promise.all(
+      this.signers.map((v) =>
+        v._signTypedData(this.domain, BallotTypes, { proposalHash, support: VoteType.For }).then(mapByteSigToSigStruct)
+      )
+    );
     return signatures;
   }
 
@@ -62,26 +64,18 @@ export class GovernanceAdminInterface {
     const proposal = await this.createProposal(
       to,
       0,
-      TransparentUpgradeableProxyV2__factory.connect(to, this.signer).interface.encodeFunctionData(
-        'functionDelegateCall',
-        [data]
-      ),
+      this.interface.encodeFunctionData('functionDelegateCall', [data]),
       1_000_000
     );
-    const supports = [VoteType.For];
     const signatures = await this.generateSignatures(proposal);
-    return this.contract.connect(this.signer).proposeProposalStructAndCastVotes(proposal, supports, signatures);
+    const supports = signatures.map(() => VoteType.For);
+    return this.contract.connect(this.signers[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);
   }
 
   async upgrade(from: Address, to: Address) {
-    const proposal = await this.createProposal(
-      from,
-      0,
-      TransparentUpgradeableProxyV2__factory.connect(from, this.signer).interface.encodeFunctionData('upgradeTo', [to]),
-      500_000
-    );
-    const supports = [VoteType.For];
+    const proposal = await this.createProposal(from, 0, this.interface.encodeFunctionData('upgradeTo', [to]), 500_000);
     const signatures = await this.generateSignatures(proposal);
-    return this.contract.connect(this.signer).proposeProposalStructAndCastVotes(proposal, supports, signatures);
+    const supports = signatures.map(() => VoteType.For);
+    return this.contract.connect(this.signers[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);
   }
 }

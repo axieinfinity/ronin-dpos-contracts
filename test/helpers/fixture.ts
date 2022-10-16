@@ -23,8 +23,10 @@ import {
 
 export interface InitTestOutput {
   roninGovernanceAdminAddress: Address;
+  mainchainGovernanceAdminAddress: Address;
   maintenanceContractAddress: Address;
   roninTrustedOrganizationAddress: Address;
+  mainchainRoninTrustedOrganizationAddress: Address;
   slashContractAddress: Address;
   stakingContractAddress: Address;
   stakingVestingContractAddress: Address;
@@ -123,17 +125,22 @@ export const initTest = (id: string) =>
 
     await deployments.fixture([
       'CalculateAddresses',
+      'RoninGovernanceAdmin',
       'RoninValidatorSetProxy',
       'SlashIndicatorProxy',
       'StakingProxy',
       'MaintenanceProxy',
       'StakingVestingProxy',
+      'MainchainGovernanceAdmin',
+      'MainchainRoninTrustedOrganizationProxy',
       id,
     ]);
 
     const roninGovernanceAdminDeployment = await deployments.get('RoninGovernanceAdmin');
+    const mainchainGovernanceAdminDeployment = await deployments.get('MainchainGovernanceAdmin');
     const maintenanceContractDeployment = await deployments.get('MaintenanceProxy');
     const roninTrustedOrganizationDeployment = await deployments.get('RoninTrustedOrganizationProxy');
+    const mainchainRoninTrustedOrganizationDeployment = await deployments.get('MainchainRoninTrustedOrganizationProxy');
     const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
     const stakingContractDeployment = await deployments.get('StakingProxy');
     const stakingVestingContractDeployment = await deployments.get('StakingVestingProxy');
@@ -141,8 +148,10 @@ export const initTest = (id: string) =>
 
     return {
       roninGovernanceAdminAddress: roninGovernanceAdminDeployment.address,
+      mainchainGovernanceAdminAddress: mainchainGovernanceAdminDeployment.address,
       maintenanceContractAddress: maintenanceContractDeployment.address,
       roninTrustedOrganizationAddress: roninTrustedOrganizationDeployment.address,
+      mainchainRoninTrustedOrganizationAddress: mainchainRoninTrustedOrganizationDeployment.address,
       slashContractAddress: slashContractDeployment.address,
       stakingContractAddress: stakingContractDeployment.address,
       stakingVestingContractAddress: stakingVestingContractDeployment.address,

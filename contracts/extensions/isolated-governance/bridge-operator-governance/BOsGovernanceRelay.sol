@@ -30,7 +30,7 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, WeightedAddressConsum
     uint256 _minimumVoteWeight,
     bytes32 _domainSeperator
   ) internal {
-    require(_period >= _lastSyncedPeriod, "BOsGovernanceRelay: query for outdated period");
+    require(_period > _lastSyncedPeriod, "BOsGovernanceRelay: query for outdated period");
     require(_operators.length > 0 && _signatures.length > 0, "BOsGovernanceRelay: invalid array length");
 
     Signature memory _sig;

@@ -15,9 +15,9 @@ library BridgeOperatorsBallot {
     return keccak256(abi.encode(BRIDGE_OPERATOR_TYPEHASH, _operator.addr, _operator.weight));
   }
 
-  // keccak256("BridgeOperatorsBallot(uint256 _period,BridgeOperator[] _operators)BridgeOperator(address addr,uint256 weight)");
+  // keccak256("BridgeOperatorsBallot(uint256 period,BridgeOperator[] operators)BridgeOperator(address addr,uint256 weight)");
   bytes32 public constant BRIDGE_OPERATORS_ACKNOWLEDGE_BALLOT_TYPEHASH =
-    0x33036f625db2d5746e9489b2d87fd8574c7f9b703106d1878604b6c24ca38c1b;
+    0x086d287088869477577720f66bf2a8412510e726fd1a893739cf6c2280aadcb5;
 
   /**
    * @dev Returns hash of the ballot.
