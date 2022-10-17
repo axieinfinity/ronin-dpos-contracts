@@ -4,10 +4,10 @@ import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import {
+  MockRoninValidatorSetSorting__factory,
   MockSlashIndicatorExtended,
   MockSlashIndicatorExtended__factory,
   RoninValidatorSet,
-  RoninValidatorSet__factory,
   Staking,
   Staking__factory,
 } from '../../src/types';
@@ -84,8 +84,12 @@ describe('Slash indicator test', () => {
     );
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
-    validatorContract = RoninValidatorSet__factory.connect(validatorContractAddress, deployer);
+    validatorContract = MockRoninValidatorSetSorting__factory.connect(validatorContractAddress, deployer);
     slashContract = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
+
+    const mockValidatorLogic = await new MockRoninValidatorSetSorting__factory(deployer).deploy();
+    await mockValidatorLogic.deployed();
+    await governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
 
     mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashLogic.deployed();

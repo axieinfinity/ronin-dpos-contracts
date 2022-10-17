@@ -11,12 +11,13 @@ import "../extensions/HasSlashIndicatorContract.sol";
 import "../extensions/HasMaintenanceContract.sol";
 import "../extensions/HasRoninTrustedOrganizationContract.sol";
 import "../interfaces/IRoninValidatorSet.sol";
-import "../libraries/Sorting.sol";
 import "../libraries/Math.sol";
+import "../precompile-usages/PrecompileUsageSortValidators.sol";
 import "./CandidateManager.sol";
 
 contract RoninValidatorSet is
   IRoninValidatorSet,
+  PrecompileUsageSortValidators,
   RONTransferHelper,
   HasStakingContract,
   HasStakingVestingContract,
@@ -26,6 +27,8 @@ contract RoninValidatorSet is
   CandidateManager,
   Initializable
 {
+  /// @dev The address of the precompile of sorting validators
+  address internal constant _precompileSortValidatorAddress = address(0x66);
   /// @dev The maximum number of validator.
   uint256 internal _maxValidatorNumber;
   /// @dev The number of blocks in a epoch
@@ -337,6 +340,13 @@ contract RoninValidatorSet is
     return _maxPrioritizedValidatorNumber;
   }
 
+  /**
+   * @inheritdoc PrecompileUsageSortValidators
+   */
+  function precompileSortValidatorsAddress() public pure override returns (address) {
+    return _precompileSortValidatorAddress;
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                               FUNCTIONS FOR ADMIN                                 //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -390,7 +400,7 @@ contract RoninValidatorSet is
       mstore(_weights, _length)
     }
 
-    _candidateList = Sorting.sort(_candidateList, _weights);
+    _candidateList = _sortCandidates(_candidateList, _weights);
   }
 
   /**

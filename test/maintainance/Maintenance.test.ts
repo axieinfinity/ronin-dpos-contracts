@@ -12,19 +12,21 @@ import {
   SlashIndicator__factory,
   Staking,
   Staking__factory,
+  MockRoninValidatorSetSorting__factory,
 } from '../../src/types';
-import { initTest } from '../helpers/fixture';
+import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
-let governanceAdmin: SignerWithAddress;
+let governor: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
 let maintenanceContract: Maintenance;
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: RoninValidatorSet;
+let governanceAdmin: GovernanceAdminInterface;
 
 let localEpochController: EpochController;
 
@@ -44,17 +46,22 @@ let currentBlock: number;
 
 describe('Maintenance test', () => {
   before(async () => {
-    [deployer, coinbase, governanceAdmin, ...validatorCandidates] = await ethers.getSigners();
+    [deployer, coinbase, governor, ...validatorCandidates] = await ethers.getSigners();
+    governanceAdmin = new GovernanceAdminInterface(governor);
     const { maintenanceContractAddress, slashContractAddress, stakingContractAddress, validatorContractAddress } =
       await initTest('Maintenance')({
-        governanceAdmin: governanceAdmin.address,
+        governanceAdmin: governor.address,
         misdemeanorThreshold,
         felonyThreshold,
       });
     maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
-    validatorContract = RoninValidatorSet__factory.connect(validatorContractAddress, deployer);
+    validatorContract = MockRoninValidatorSetSorting__factory.connect(validatorContractAddress, deployer);
+
+    const mockValidatorLogic = await new MockRoninValidatorSetSorting__factory(deployer).deploy();
+    await mockValidatorLogic.deployed();
+    await governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {

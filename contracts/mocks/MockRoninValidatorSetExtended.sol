@@ -3,6 +3,7 @@
 pragma solidity ^0.8.9;
 
 import "../validator/RoninValidatorSet.sol";
+import "../libraries/Sorting.sol";
 
 contract MockRoninValidatorSetExtended is RoninValidatorSet {
   uint256[] internal _epochs;
@@ -78,5 +79,14 @@ contract MockRoninValidatorSetExtended is RoninValidatorSet {
     }
 
     return _candidates;
+  }
+
+  function _sortCandidates(address[] memory _candidates, uint256[] memory _weights)
+    internal
+    pure
+    override
+    returns (address[] memory _result)
+  {
+    return Sorting.sort(_candidates, _weights);
   }
 }
