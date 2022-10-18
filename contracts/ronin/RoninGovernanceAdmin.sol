@@ -7,6 +7,9 @@ import "../extensions/GovernanceAdmin.sol";
 import "../interfaces/IBridge.sol";
 
 contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGovernanceProposal {
+  /// @dev Emitted when the bridge operators are approved.
+  event BridgeOperatorsApproved(uint256 _period, address[] _operators);
+
   modifier onlyGovernor() {
     require(_getWeight(msg.sender) > 0, "GovernanceAdmin: sender is not governor");
     _;
@@ -182,6 +185,7 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
     IsolatedVote storage _v = _vote[_period];
     if (_v.status == VoteStatus.Approved) {
       _lastSyncedPeriod = _period;
+      emit BridgeOperatorsApproved(_period, _operators);
       _v.status = VoteStatus.Executed;
     }
   }
