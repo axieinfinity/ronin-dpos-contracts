@@ -38,17 +38,21 @@ const setPriorityStatus = async (addrs: Address[], statuses: boolean[]): Promise
   const addingTrustedOrgs = arr.filter(({ stt }) => stt).map(({ address }) => address);
   const removingTrustedOrgs = arr.filter(({ stt }) => !stt).map(({ address }) => address);
   if (addingTrustedOrgs.length > 0) {
-    await governanceAdminInterface.functionDelegateCall(
-      roninTrustedOrganization.address,
-      roninTrustedOrganization.interface.encodeFunctionData('addTrustedOrganizations', [
-        addingTrustedOrgs.map((v) => ({ consensusAddr: v, governor: v, bridgeVoter: v, weight: 100 })),
-      ])
+    await governanceAdminInterface.functionDelegateCalls(
+      addingTrustedOrgs.map(() => roninTrustedOrganization.address),
+      addingTrustedOrgs.map((v) =>
+        roninTrustedOrganization.interface.encodeFunctionData('addTrustedOrganizations', [
+          [{ consensusAddr: v, governor: v, bridgeVoter: v, weight: 100 }],
+        ])
+      )
     );
   }
   if (removingTrustedOrgs.length > 0) {
-    await governanceAdminInterface.functionDelegateCall(
-      roninTrustedOrganization.address,
-      roninTrustedOrganization.interface.encodeFunctionData('removeTrustedOrganizations', [removingTrustedOrgs])
+    await governanceAdminInterface.functionDelegateCalls(
+      removingTrustedOrgs.map(() => roninTrustedOrganization.address),
+      removingTrustedOrgs.map((v) =>
+        roninTrustedOrganization.interface.encodeFunctionData('removeTrustedOrganizations', [[v]])
+      )
     );
   }
 };

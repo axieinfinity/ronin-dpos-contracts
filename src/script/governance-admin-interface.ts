@@ -72,6 +72,25 @@ export class GovernanceAdminInterface {
     return this.contract.connect(this.signers[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);
   }
 
+  async functionDelegateCalls(toList: Address[], dataList: BytesLike[]) {
+    if (toList.length != dataList.length || toList.length == 0) {
+      throw Error('invalid array length');
+    }
+
+    const proposal = {
+      chainId: network.config.chainId!,
+      nonce: (await this.contract.round(network.config.chainId!)).add(1),
+      targets: toList,
+      values: toList.map(() => 0),
+      calldatas: dataList.map((v) => this.interface.encodeFunctionData('functionDelegateCall', [v])),
+      gasAmounts: toList.map(() => 2_000_000),
+    };
+
+    const signatures = await this.generateSignatures(proposal);
+    const supports = signatures.map(() => VoteType.For);
+    return this.contract.connect(this.signers[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);
+  }
+
   async upgrade(from: Address, to: Address) {
     const proposal = await this.createProposal(from, 0, this.interface.encodeFunctionData('upgradeTo', [to]), 500_000);
     const signatures = await this.generateSignatures(proposal);
