@@ -37,18 +37,20 @@ const setPriorityStatus = async (addrs: Address[], statuses: boolean[]): Promise
   const arr = statuses.map((stt, i) => ({ address: addrs[i], stt }));
   const addingTrustedOrgs = arr.filter(({ stt }) => stt).map(({ address }) => address);
   const removingTrustedOrgs = arr.filter(({ stt }) => !stt).map(({ address }) => address);
-  await governanceAdminInterface.functionDelegateCall(
-    roninTrustedOrganization.address,
-    roninTrustedOrganization.interface.encodeFunctionData('addTrustedOrganizations', [
-      addingTrustedOrgs.map((v) => ({ consensusAddr: v, governor: v, bridgeVoter: v, weight: 100 })),
-    ])
-  );
-  await governanceAdminInterface.functionDelegateCall(
-    roninTrustedOrganization.address,
-    roninTrustedOrganization.interface.encodeFunctionData('removeTrustedOrganizations', [removingTrustedOrgs])
-  );
-
-  return statuses.map((stt) => (stt ? defaultTrustedWeight : 0));
+  if (addingTrustedOrgs.length > 0) {
+    await governanceAdminInterface.functionDelegateCall(
+      roninTrustedOrganization.address,
+      roninTrustedOrganization.interface.encodeFunctionData('addTrustedOrganizations', [
+        addingTrustedOrgs.map((v) => ({ consensusAddr: v, governor: v, bridgeVoter: v, weight: 100 })),
+      ])
+    );
+  }
+  if (removingTrustedOrgs.length > 0) {
+    await governanceAdminInterface.functionDelegateCall(
+      roninTrustedOrganization.address,
+      roninTrustedOrganization.interface.encodeFunctionData('removeTrustedOrganizations', [removingTrustedOrgs])
+    );
+  }
 };
 
 const setPriorityStatusForMany = async (validators: Address[], status: boolean): Promise<BigNumberish[]> => {
@@ -414,7 +416,6 @@ describe('Arrange validators', () => {
     });
 
     it('Shuffled: Actual(prioritized) == MaxNum(prioritized); Actual(regular) == MaxNum(regular)', async () => {
-      // prettier-ignore
       let indexes = [0, 1, 2, 3, 4, 5, 6];
       let statuses = [true, false, true, true, false, true, false];
 
@@ -435,7 +436,6 @@ describe('Arrange validators', () => {
     });
 
     it('Shuffled: Actual(prioritized) >  MaxNum(prioritized); Actual(regular) <  MaxNum(regular)', async () => {
-      // prettier-ignore
       let indexes = [0, 1, 2, 3, 4, 5, 6];
       let statuses = [true, false, true, true, false, true, true];
 
@@ -455,8 +455,7 @@ describe('Arrange validators', () => {
     });
 
     it('Shuffled: Actual(prioritized) <  MaxNum(prioritized); Actual(regular) >  MaxNum(regular)', async () => {
-      // prettier-ignore
-      let indexes =  [0,    1,     2,     3,     4,     5,    6,    7    ];
+      let indexes = [0, 1, 2, 3, 4, 5, 6, 7];
       let statuses = [true, false, false, false, false, true, true, false];
 
       let inputTrustedWeights = await setPriorityStatusByIndexes(indexes, statuses);

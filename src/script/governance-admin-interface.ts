@@ -65,7 +65,7 @@ export class GovernanceAdminInterface {
       to,
       0,
       this.interface.encodeFunctionData('functionDelegateCall', [data]),
-      1_500_000
+      2_000_000
     );
     const signatures = await this.generateSignatures(proposal);
     const supports = signatures.map(() => VoteType.For);
