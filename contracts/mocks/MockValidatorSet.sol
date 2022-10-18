@@ -5,7 +5,7 @@ pragma solidity ^0.8.9;
 import "../interfaces/ISlashIndicator.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 import "../interfaces/IStaking.sol";
-import "../validator/CandidateManager.sol";
+import "../ronin/validator/CandidateManager.sol";
 
 contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   address public stakingVestingContract;

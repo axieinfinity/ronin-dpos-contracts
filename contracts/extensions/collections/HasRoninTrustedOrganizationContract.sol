@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "./HasProxyAdmin.sol";
-import "../interfaces/collections/IHasRoninTrustedOrganizationContract.sol";
-import "../interfaces/IRoninTrustedOrganization.sol";
+import "../../interfaces/collections/IHasRoninTrustedOrganizationContract.sol";
+import "../../interfaces/IRoninTrustedOrganization.sol";
 
 contract HasRoninTrustedOrganizationContract is IHasRoninTrustedOrganizationContract, HasProxyAdmin {
   IRoninTrustedOrganization internal _roninTrustedOrganizationContract;
@@ -26,7 +26,7 @@ contract HasRoninTrustedOrganizationContract is IHasRoninTrustedOrganizationCont
   /**
    * @inheritdoc IHasRoninTrustedOrganizationContract
    */
-  function setRoninTrustedOrganizationContract(address _addr) external override onlyAdmin {
+  function setRoninTrustedOrganizationContract(address _addr) external virtual override onlyAdmin {
     _setRoninTrustedOrganizationContract(_addr);
   }
 

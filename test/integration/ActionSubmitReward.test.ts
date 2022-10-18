@@ -11,14 +11,18 @@ import {
   Staking__factory,
   MockRoninValidatorSetExtended__factory,
   MockRoninValidatorSetExtended,
+  RoninGovernanceAdmin,
+  RoninGovernanceAdmin__factory,
 } from '../../src/types';
 import { mineBatchTxs } from '../helpers/utils';
-import { GovernanceAdminInterface, initTest } from '../helpers/fixture';
+import { initTest } from '../helpers/fixture';
+import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: MockRoninValidatorSetExtended;
-let governanceAdmin: GovernanceAdminInterface;
+let governanceAdmin: RoninGovernanceAdmin;
+let governanceAdminInterface: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -37,26 +41,26 @@ describe('[Integration] Submit Block Reward', () => {
   before(async () => {
     [deployer, coinbase, governor, ...validatorCandidates] = await ethers.getSigners();
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-    governanceAdmin = new GovernanceAdminInterface(governor);
 
-    const { slashContractAddress, stakingContractAddress, validatorContractAddress } = await initTest(
-      'ActionSubmitReward'
-    )({
-      felonyThreshold,
-      minValidatorBalance,
-      bonusPerBlock,
-      slashFelonyAmount,
-      slashDoubleSignAmount,
-      governanceAdmin: governanceAdmin.address,
-    });
+    const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
+      await initTest('ActionSubmitReward')({
+        felonyThreshold,
+        minValidatorBalance,
+        bonusPerBlock,
+        slashFelonyAmount,
+        slashDoubleSignAmount,
+        trustedOrganizations: [governor.address].map((addr) => ({ addr, weight: 100 })),
+      });
 
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
+    governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
+    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, governor);
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
-    await governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
   });
 
   describe('Configuration check', async () => {

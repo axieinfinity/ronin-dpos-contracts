@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { slashIndicatorConf, initAddress, roninchainNetworks } from '../../config';
+import { slashIndicatorConf, roninInitAddress, roninchainNetworks } from '../../config';
 import { verifyAddress } from '../../script/verify-address';
 import { SlashIndicator__factory } from '../../types';
 
@@ -16,8 +16,8 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const logicContract = await deployments.get('SlashIndicatorLogic');
 
   const data = new SlashIndicator__factory().interface.encodeFunctionData('initialize', [
-    initAddress[network.name]!.validatorContract?.address,
-    initAddress[network.name]!.maintenanceContract?.address,
+    roninInitAddress[network.name]!.validatorContract?.address,
+    roninInitAddress[network.name]!.maintenanceContract?.address,
     slashIndicatorConf[network.name]!.misdemeanorThreshold,
     slashIndicatorConf[network.name]!.felonyThreshold,
     slashIndicatorConf[network.name]!.slashFelonyAmount,
@@ -30,10 +30,10 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    args: [logicContract.address, initAddress[network.name]!.governanceAdmin, data],
-    nonce: initAddress[network.name].slashIndicatorContract?.nonce,
+    args: [logicContract.address, roninInitAddress[network.name]!.governanceAdmin?.address, data],
+    nonce: roninInitAddress[network.name].slashIndicatorContract?.nonce,
   });
-  verifyAddress(deployment.address, initAddress[network.name].slashIndicatorContract?.address);
+  verifyAddress(deployment.address, roninInitAddress[network.name].slashIndicatorContract?.address);
 };
 
 deploy.tags = ['SlashIndicatorProxy'];

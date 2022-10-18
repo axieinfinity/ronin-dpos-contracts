@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "./HasProxyAdmin.sol";
-import "../interfaces/collections/IHasValidatorContract.sol";
-import "../interfaces/IRoninValidatorSet.sol";
+import "../../interfaces/collections/IHasValidatorContract.sol";
+import "../../interfaces/IRoninValidatorSet.sol";
 
 contract HasValidatorContract is IHasValidatorContract, HasProxyAdmin {
   IRoninValidatorSet internal _validatorContract;

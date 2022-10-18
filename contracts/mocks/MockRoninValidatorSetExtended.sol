@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.9;
 
-import "../validator/RoninValidatorSet.sol";
 import "../libraries/Sorting.sol";
+import "../ronin/validator/RoninValidatorSet.sol";
 
 contract MockRoninValidatorSetExtended is RoninValidatorSet {
   uint256[] internal _epochs;

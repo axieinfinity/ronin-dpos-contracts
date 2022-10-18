@@ -4,15 +4,16 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "../extensions/RONTransferHelper.sol";
-import "../extensions/HasStakingVestingContract.sol";
-import "../extensions/HasStakingContract.sol";
-import "../extensions/HasSlashIndicatorContract.sol";
-import "../extensions/HasMaintenanceContract.sol";
-import "../extensions/HasRoninTrustedOrganizationContract.sol";
-import "../interfaces/IRoninValidatorSet.sol";
-import "../libraries/Math.sol";
-import "../precompile-usages/PrecompileUsageSortValidators.sol";
+import "../../extensions/RONTransferHelper.sol";
+import "../../extensions/collections/HasStakingVestingContract.sol";
+import "../../extensions/collections/HasStakingContract.sol";
+import "../../extensions/collections/HasSlashIndicatorContract.sol";
+import "../../extensions/collections/HasMaintenanceContract.sol";
+import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
+import "../../interfaces/IRoninValidatorSet.sol";
+import "../../libraries/Sorting.sol";
+import "../../libraries/Math.sol";
+import "../../precompile-usages/PrecompileUsageSortValidators.sol";
 import "./CandidateManager.sol";
 
 contract RoninValidatorSet is
@@ -477,9 +478,9 @@ contract RoninValidatorSet is
     uint _waitingCounter;
     uint _prioritySlotCounter;
 
-    bool[] memory _isTrustedOrgs = _roninTrustedOrganizationContract.isTrustedOrganizations(_candidates);
+    uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getWeights(_candidates);
     for (uint _i = 0; _i < _candidates.length; _i++) {
-      if (_isTrustedOrgs[_i] && _prioritySlotCounter < _maxPrioritizedValidatorNumber) {
+      if (_trustedWeights[_i] > 0 && _prioritySlotCounter < _maxPrioritizedValidatorNumber) {
         _candidates[_prioritySlotCounter++] = _candidates[_i];
         continue;
       }

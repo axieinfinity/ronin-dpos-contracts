@@ -1,12 +1,12 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { roninTrustedOrganizationConf, roninInitAddress, roninchainNetworks } from '../../config';
+import { roninTrustedOrganizationConf, mainchainNetworks, mainchainInitAddress } from '../../config';
 import { verifyAddress } from '../../script/verify-address';
 import { RoninTrustedOrganization__factory } from '../../types';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
-  if (!roninchainNetworks.includes(network.name!)) {
+  if (!mainchainNetworks.includes(network.name!)) {
     return;
   }
 
@@ -20,16 +20,17 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     roninTrustedOrganizationConf[network.name]!.denominator,
   ]);
 
-  const deployment = await deploy('RoninTrustedOrganizationProxy', {
+  const deployment = await deploy('MainchainRoninTrustedOrganizationProxy', {
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    args: [logicContract.address, roninInitAddress[network.name].governanceAdmin?.address, data],
+    args: [logicContract.address, mainchainInitAddress[network.name].governanceAdmin?.address, data],
+    nonce: mainchainInitAddress[network.name].roninTrustedOrganizationContract?.nonce,
   });
-  verifyAddress(deployment.address, roninInitAddress[network.name].roninTrustedOrganizationContract?.address);
+  verifyAddress(deployment.address, mainchainInitAddress[network.name].roninTrustedOrganizationContract?.address);
 };
 
-deploy.tags = ['RoninTrustedOrganizationProxy'];
-deploy.dependencies = ['RoninTrustedOrganizationLogic', 'CalculateAddresses', 'RoninGovernanceAdmin'];
+deploy.tags = ['MainchainRoninTrustedOrganizationProxy'];
+deploy.dependencies = ['RoninTrustedOrganizationLogic', 'MainchainGovernanceAdmin'];
 
 export default deploy;

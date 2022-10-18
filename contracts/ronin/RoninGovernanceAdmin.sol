@@ -1,0 +1,210 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "../extensions/isolated-governance/bridge-operator-governance/BOsGovernanceProposal.sol";
+import "../extensions/sequential-governance/GovernanceProposal.sol";
+import "../extensions/GovernanceAdmin.sol";
+import "../interfaces/IBridge.sol";
+
+contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGovernanceProposal {
+  modifier onlyGovernor() {
+    require(_getWeight(msg.sender) > 0, "GovernanceAdmin: sender is not governor");
+    _;
+  }
+
+  constructor(address _roninTrustedOrganizationContract, address _bridgeContract)
+    GovernanceAdmin(_roninTrustedOrganizationContract, _bridgeContract)
+  {}
+
+  /**
+   * @dev Returns the voted signatures for the proposals.
+   *
+   * Note: Does not verify whether the voter casted vote for the proposal and the returned signature can be empty.
+   * Please consider filtering for empty signatures after calling this function.
+   *
+   */
+  function getProposalSignatures(
+    uint256 _chainId,
+    uint256 _round,
+    address[] calldata _voters
+  ) external view returns (Ballot.VoteType[] memory _supports, Signature[] memory _signatures) {
+    ProposalVote storage _vote = vote[_chainId][_round];
+
+    address _voter;
+    _supports = new Ballot.VoteType[](_voters.length);
+    _signatures = new Signature[](_voters.length);
+    for (uint256 _i; _i < _voters.length; _i++) {
+      _voter = _voters[_i];
+
+      if (_vote.againstVoted[_voter]) {
+        _supports[_i] = Ballot.VoteType.Against;
+      }
+
+      _signatures[_i] = vote[_chainId][_round].sig[_voter];
+    }
+  }
+
+  /**
+   * @dev Returns the voted signatures for bridge operators at a specific period.
+   *
+   * Note: Does not verify whether the voter casted vote for the proposal and the returned signature can be empty.
+   * Please consider filtering for empty signatures after calling this function.
+   *
+   */
+  function getBridgeOperatorVotingSignatures(uint256 _period, address[] calldata _voters)
+    external
+    view
+    returns (Signature[] memory _signatures)
+  {
+    _signatures = new Signature[](_voters.length);
+    for (uint256 _i; _i < _voters.length; _i++) {
+      _signatures[_i] = _votingSig[_period][_voters[_i]];
+    }
+  }
+
+  /**
+   * @dev See {CoreGovernance-_proposeProposal}.
+   *
+   * Requirements:
+   * - The method caller is governor.
+   *
+   */
+  function propose(
+    uint256 _chainId,
+    address[] calldata _targets,
+    uint256[] calldata _values,
+    bytes[] calldata _calldatas,
+    uint256[] calldata _gasAmounts
+  ) external onlyGovernor {
+    _proposeProposal(_chainId, _targets, _values, _calldatas, _gasAmounts, msg.sender);
+  }
+
+  /**
+   * @dev See {GovernanceProposal-_proposeProposalStructAndCastVotes}.
+   *
+   * Requirements:
+   * - The method caller is governor.
+   *
+   */
+  function proposeProposalStructAndCastVotes(
+    Proposal.ProposalDetail calldata _proposal,
+    Ballot.VoteType[] calldata _supports,
+    Signature[] calldata _signatures
+  ) external onlyGovernor {
+    _proposeProposalStructAndCastVotes(_proposal, _supports, _signatures, DOMAIN_SEPARATOR, msg.sender);
+  }
+
+  /**
+   * @dev See {GovernanceProposal-_castProposalBySignatures}.
+   */
+  function castProposalBySignatures(
+    Proposal.ProposalDetail calldata _proposal,
+    Ballot.VoteType[] calldata _supports,
+    Signature[] calldata _signatures
+  ) external {
+    _castProposalBySignatures(_proposal, _supports, _signatures, DOMAIN_SEPARATOR);
+  }
+
+  /**
+   * @dev See {CoreGovernance-_proposeGlobal}.
+   *
+   * Requirements:
+   * - The method caller is governor.
+   *
+   */
+  function proposeGlobal(
+    GlobalProposal.TargetOption[] calldata _targetOptions,
+    uint256[] calldata _values,
+    bytes[] calldata _calldatas,
+    uint256[] calldata _gasAmounts
+  ) external onlyGovernor {
+    _proposeGlobal(
+      _targetOptions,
+      _values,
+      _calldatas,
+      _gasAmounts,
+      roninTrustedOrganizationContract(),
+      bridgeContract(),
+      msg.sender
+    );
+  }
+
+  /**
+   * @dev See {GovernanceProposal-_proposeGlobalProposalStructAndCastVotes}.
+   *
+   * Requirements:
+   * - The method caller is governor.
+   *
+   */
+  function proposeGlobalProposalStructAndCastVotes(
+    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
+    Ballot.VoteType[] calldata _supports,
+    Signature[] calldata _signatures
+  ) external onlyGovernor {
+    _proposeGlobalProposalStructAndCastVotes(
+      _globalProposal,
+      _supports,
+      _signatures,
+      DOMAIN_SEPARATOR,
+      roninTrustedOrganizationContract(),
+      bridgeContract(),
+      msg.sender
+    );
+  }
+
+  /**
+   * @dev See {GovernanceProposal-_castGlobalProposalBySignatures}.
+   */
+  function castGlobalProposalBySignatures(
+    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
+    Ballot.VoteType[] calldata _supports,
+    Signature[] calldata _signatures
+  ) external {
+    _castGlobalProposalBySignatures(
+      _globalProposal,
+      _supports,
+      _signatures,
+      DOMAIN_SEPARATOR,
+      roninTrustedOrganizationContract(),
+      bridgeContract()
+    );
+  }
+
+  /**
+   * @dev See {BOsGovernanceProposal-_castVotesBySignatures}.
+   */
+  function voteBridgeOperatorsBySignatures(
+    uint256 _period,
+    WeightedAddress[] calldata _operators,
+    Signature[] calldata _signatures
+  ) external {
+    _castVotesBySignatures(_operators, _signatures, _period, _getMinimumVoteWeight(), DOMAIN_SEPARATOR);
+    IsolatedVote storage _v = _vote[_period];
+    if (_v.status == VoteStatus.Approved) {
+      _lastSyncedPeriod = _period;
+      _v.status = VoteStatus.Executed;
+      _bridgeContract.replaceBridgeOperators(_operators);
+    }
+  }
+
+  /**
+   * @dev Override {CoreGovernance-_getWeight}.
+   */
+  function _getWeight(address _governor)
+    internal
+    view
+    virtual
+    override(BOsGovernanceProposal, GovernanceProposal)
+    returns (uint256)
+  {
+    (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
+      abi.encodeWithSelector(
+        // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
+        0x4bb5274a,
+        abi.encodeWithSelector(IRoninTrustedOrganization.getWeight.selector, _governor)
+      )
+    );
+    require(_success, "GovernanceAdmin: proxy call `getWeight(address)` failed");
+    return abi.decode(_returndata, (uint256));
+  }
+}

@@ -1,12 +1,14 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumber, BytesLike } from 'ethers';
+import { BigNumber } from 'ethers';
 import { deployments, ethers, network } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
 import {
-  initAddress,
+  MainchainGovernanceAdminArguments,
+  mainchainGovernanceAdminConf,
   MaintenanceArguments,
   maintenanceConf,
   Network,
+  RoninGovernanceAdminArguments,
+  roninGovernanceAdminConf,
   RoninTrustedOrganizationArguments,
   roninTrustedOrganizationConf,
   RoninValidatorSetArguments,
@@ -18,11 +20,13 @@ import {
   StakingVestingArguments,
   stakingVestingConfig,
 } from '../../src/config';
-import { TransparentUpgradeableProxyV2__factory } from '../../src/types';
 
 export interface InitTestOutput {
+  roninGovernanceAdminAddress: Address;
+  mainchainGovernanceAdminAddress: Address;
   maintenanceContractAddress: Address;
   roninTrustedOrganizationAddress: Address;
+  mainchainRoninTrustedOrganizationAddress: Address;
   slashContractAddress: Address;
   stakingContractAddress: Address;
   stakingVestingContractAddress: Address;
@@ -53,6 +57,12 @@ export const defaultTestConfig = {
   maxSchedules: 2,
 
   trustedOrganizations: [],
+  numerator: 0,
+  denominator: 1,
+
+  roleSetter: ethers.constants.AddressZero,
+  bridgeContract: ethers.constants.AddressZero,
+  relayers: [],
 };
 
 export const initTest = (id: string) =>
@@ -63,10 +73,11 @@ export const initTest = (id: string) =>
       StakingVestingArguments &
       SlashIndicatorArguments &
       RoninValidatorSetArguments &
-      RoninTrustedOrganizationArguments & { governanceAdmin: Address }
+      RoninTrustedOrganizationArguments &
+      RoninGovernanceAdminArguments &
+      MainchainGovernanceAdminArguments
   >(async ({ deployments }, options) => {
     if (network.name == Network.Hardhat) {
-      initAddress[network.name] = { governanceAdmin: options?.governanceAdmin ?? ethers.constants.AddressZero };
       maintenanceConf[network.name] = {
         minMaintenanceBlockPeriod: options?.minMaintenanceBlockPeriod ?? defaultTestConfig.minMaintenanceBlockPeriod,
         maxMaintenanceBlockPeriod: options?.maxMaintenanceBlockPeriod ?? defaultTestConfig.maxMaintenanceBlockPeriod,
@@ -99,49 +110,51 @@ export const initTest = (id: string) =>
       };
       roninTrustedOrganizationConf[network.name] = {
         trustedOrganizations: options?.trustedOrganizations ?? defaultTestConfig.trustedOrganizations,
+        numerator: options?.numerator ?? defaultTestConfig.numerator,
+        denominator: options?.denominator ?? defaultTestConfig.denominator,
+      };
+      roninGovernanceAdminConf[network.name] = {
+        bridgeContract: options?.bridgeContract ?? defaultTestConfig.bridgeContract,
+      };
+      mainchainGovernanceAdminConf[network.name] = {
+        roleSetter: options?.roleSetter ?? defaultTestConfig.roleSetter,
+        bridgeContract: options?.bridgeContract ?? defaultTestConfig.bridgeContract,
+        relayers: options?.relayers ?? defaultTestConfig.relayers,
       };
     }
 
     await deployments.fixture([
       'CalculateAddresses',
+      'RoninGovernanceAdmin',
       'RoninValidatorSetProxy',
       'SlashIndicatorProxy',
       'StakingProxy',
       'MaintenanceProxy',
       'StakingVestingProxy',
+      'MainchainGovernanceAdmin',
+      'MainchainRoninTrustedOrganizationProxy',
       id,
     ]);
 
+    const roninGovernanceAdminDeployment = await deployments.get('RoninGovernanceAdmin');
+    const mainchainGovernanceAdminDeployment = await deployments.get('MainchainGovernanceAdmin');
     const maintenanceContractDeployment = await deployments.get('MaintenanceProxy');
     const roninTrustedOrganizationDeployment = await deployments.get('RoninTrustedOrganizationProxy');
+    const mainchainRoninTrustedOrganizationDeployment = await deployments.get('MainchainRoninTrustedOrganizationProxy');
     const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
     const stakingContractDeployment = await deployments.get('StakingProxy');
     const stakingVestingContractDeployment = await deployments.get('StakingVestingProxy');
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
 
     return {
+      roninGovernanceAdminAddress: roninGovernanceAdminDeployment.address,
+      mainchainGovernanceAdminAddress: mainchainGovernanceAdminDeployment.address,
       maintenanceContractAddress: maintenanceContractDeployment.address,
       roninTrustedOrganizationAddress: roninTrustedOrganizationDeployment.address,
+      mainchainRoninTrustedOrganizationAddress: mainchainRoninTrustedOrganizationDeployment.address,
       slashContractAddress: slashContractDeployment.address,
       stakingContractAddress: stakingContractDeployment.address,
       stakingVestingContractAddress: stakingVestingContractDeployment.address,
       validatorContractAddress: validatorContractDeployment.address,
     };
   }, id);
-
-export class GovernanceAdminInterface {
-  signer!: SignerWithAddress;
-  address = ethers.constants.AddressZero;
-  constructor(signer: SignerWithAddress) {
-    this.signer = signer;
-    this.address = signer.address;
-  }
-
-  functionDelegateCall(to: Address, data: BytesLike) {
-    return TransparentUpgradeableProxyV2__factory.connect(to, this.signer).functionDelegateCall(data);
-  }
-
-  upgrade(from: Address, to: Address) {
-    return TransparentUpgradeableProxyV2__factory.connect(from, this.signer).upgradeTo(to);
-  }
-}
