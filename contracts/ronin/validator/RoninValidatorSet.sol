@@ -13,6 +13,7 @@ import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../../interfaces/IRoninValidatorSet.sol";
 import "../../libraries/Sorting.sol";
 import "../../libraries/Math.sol";
+import "../../libraries/EnumFlags.sol";
 import "../../precompile-usages/PrecompileUsageSortValidators.sol";
 import "./CandidateManager.sol";
 
@@ -28,6 +29,8 @@ contract RoninValidatorSet is
   CandidateManager,
   Initializable
 {
+  using EnumFlags for EnumFlags.ValidatorFlag;
+
   /// @dev The address of the precompile of sorting validators
   address internal constant _precompileSortValidatorAddress = address(0x66);
   /// @dev The maximum number of validator.
