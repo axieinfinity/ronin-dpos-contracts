@@ -33,7 +33,7 @@ const felonyThreshold = 10;
 const slashFelonyAmount = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
 const minValidatorBalance = BigNumber.from(100);
-const bonusPerBlock = BigNumber.from(1);
+const validatorBonusPerBlock = BigNumber.from(1);
 
 describe('[Integration] Submit Block Reward', () => {
   const blockRewardAmount = BigNumber.from(2);
@@ -46,7 +46,7 @@ describe('[Integration] Submit Block Reward', () => {
       await initTest('ActionSubmitReward')({
         felonyThreshold,
         minValidatorBalance,
-        bonusPerBlock,
+        validatorBonusPerBlock,
         slashFelonyAmount,
         slashDoubleSignAmount,
         trustedOrganizations: [governor.address].map((addr) => ({ addr, weight: 100 })),
@@ -93,7 +93,7 @@ describe('[Integration] Submit Block Reward', () => {
       validator = validatorCandidates[0];
       await stakingContract
         .connect(validator)
-        .applyValidatorCandidate(validator.address, validator.address, validator.address, 2_00, {
+        .applyValidatorCandidate(validator.address, validator.address, validator.address, validator.address, 2_00, {
           value: initStakingAmount,
         });
       await mineBatchTxs(async () => {
@@ -118,7 +118,7 @@ describe('[Integration] Submit Block Reward', () => {
     it('Should the ValidatorSetContract emit event of submitting reward', async () => {
       await expect(submitRewardTx)
         .to.emit(validatorContract, 'BlockRewardSubmitted')
-        .withArgs(validator.address, blockRewardAmount, bonusPerBlock);
+        .withArgs(validator.address, blockRewardAmount, validatorBonusPerBlock);
     });
 
     it.skip('Should the ValidatorSetContract update mining reward', async () => {});
@@ -140,7 +140,7 @@ describe('[Integration] Submit Block Reward', () => {
 
       await stakingContract
         .connect(validator)
-        .applyValidatorCandidate(validator.address, validator.address, validator.address, 2_00, {
+        .applyValidatorCandidate(validator.address, validator.address, validator.address, validator.address, 2_00, {
           value: initStakingAmount,
         });
 

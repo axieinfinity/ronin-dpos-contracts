@@ -22,7 +22,9 @@ interface IRoninValidatorSet is ICandidateManager {
   /// @dev Emitted when the validator is punished.
   event ValidatorPunished(address validatorAddr, uint256 jailedUntil, uint256 deductedStakingAmount);
   /// @dev Emitted when the validator reward is distributed.
-  event MiningRewardDistributed(address validatorAddr, uint256 amount);
+  event MiningRewardDistributed(address indexed validatorAddr, address indexed recipientAddr, uint256 amount);
+  /// @dev Emitted when the bridge operator reward is distributed.
+  event BridgeOperatorRewardDistributed(address indexed validatorAddr, address indexed recipientAddr, uint256 amount);
   /// @dev Emitted when the amount of RON reward is distributed.
   event StakingRewardDistributed(uint256 amount);
 

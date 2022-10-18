@@ -114,7 +114,7 @@ describe('[Integration] Slash validators', () => {
         slasheeInitStakingAmount = minValidatorBalance.add(slashFelonyAmount.mul(10));
         await stakingContract
           .connect(slashee)
-          .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, 2_00, {
+          .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, slashee.address, 2_00, {
             value: slasheeInitStakingAmount,
           });
 
@@ -218,7 +218,7 @@ describe('[Integration] Slash validators', () => {
 
         await stakingContract
           .connect(slashee)
-          .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, 2_00, {
+          .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, slashee.address, 2_00, {
             value: slasheeInitStakingAmount,
           });
 

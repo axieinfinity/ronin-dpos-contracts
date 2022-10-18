@@ -39,6 +39,7 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
     address _admin,
     address _consensusAddr,
     address payable _treasuryAddr,
+    address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external override onlyStakingContract {
     uint256 _length = _candidates.length;
@@ -51,11 +52,12 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
       _admin,
       _consensusAddr,
       _treasuryAddr,
+      _bridgeOperatorAddr,
       _commissionRate,
       type(uint256).max,
       new bytes(0)
     );
-    emit CandidateGranted(_consensusAddr, _treasuryAddr, _admin);
+    emit CandidateGranted(_consensusAddr, _treasuryAddr, _admin, _bridgeOperatorAddr);
   }
 
   /**

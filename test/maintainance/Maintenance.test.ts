@@ -80,6 +80,7 @@ describe('Maintenance test', () => {
           validatorCandidates[i].address,
           validatorCandidates[i].address,
           validatorCandidates[i].address,
+          validatorCandidates[i].address,
           1,
           { value: minValidatorBalance.add(maxValidatorNumber).sub(i) }
         );

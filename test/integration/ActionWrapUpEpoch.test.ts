@@ -109,6 +109,7 @@ describe('[Integration] Wrap up epoch', () => {
             validatorCandidates[i].address,
             validatorCandidates[i].address,
             validatorCandidates[i].address,
+            validatorCandidates[i].address,
             2_00,
             {
               value: minValidatorBalance.mul(2).add(i),
@@ -204,9 +205,16 @@ describe('[Integration] Wrap up epoch', () => {
       for (let i = 0; i < validators.length; i++) {
         await stakingContract
           .connect(validators[i])
-          .applyValidatorCandidate(validators[i].address, validators[i].address, validators[i].address, 2_00, {
-            value: minValidatorBalance.mul(3).add(i),
-          });
+          .applyValidatorCandidate(
+            validators[i].address,
+            validators[i].address,
+            validators[i].address,
+            validators[i].address,
+            2_00,
+            {
+              value: minValidatorBalance.mul(3).add(i),
+            }
+          );
       }
 
       await mineBatchTxs(async () => {

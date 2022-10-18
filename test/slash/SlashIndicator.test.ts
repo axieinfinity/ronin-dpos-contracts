@@ -107,6 +107,7 @@ describe('Slash indicator test', () => {
           validatorCandidates[i].address,
           validatorCandidates[i].address,
           validatorCandidates[i].address,
+          validatorCandidates[i].address,
           1,
           { value: minValidatorBalance.mul(2).add(maxValidatorNumber).sub(i) }
         );

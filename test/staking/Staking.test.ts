@@ -54,7 +54,7 @@ describe('Staking test', () => {
   describe('Validator candidate test', () => {
     it('Should not be able to propose validator with insufficient amount', async () => {
       await expect(
-        stakingContract.applyValidatorCandidate(userA.address, userA.address, userA.address, 1)
+        stakingContract.applyValidatorCandidate(userA.address, userA.address, userA.address, userA.address, 1)
       ).revertedWith('StakingManager: insufficient amount');
     });
 
@@ -64,6 +64,7 @@ describe('Staking test', () => {
         const tx = await stakingContract
           .connect(candidate)
           .applyValidatorCandidate(
+            candidate.address,
             candidate.address,
             candidate.address,
             candidate.address,
@@ -81,7 +82,7 @@ describe('Staking test', () => {
       await expect(
         stakingContract
           .connect(poolAddr)
-          .applyValidatorCandidate(poolAddr.address, poolAddr.address, poolAddr.address, 0, {
+          .applyValidatorCandidate(poolAddr.address, poolAddr.address, poolAddr.address, poolAddr.address, 0, {
             value: minValidatorBalance,
           })
       ).revertedWith('CandidateManager: query for already existent candidate');

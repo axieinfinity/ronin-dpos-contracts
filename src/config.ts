@@ -72,7 +72,8 @@ export interface StakingConfig {
 }
 
 export interface StakingVestingArguments {
-  bonusPerBlock?: BigNumberish;
+  validatorBonusPerBlock?: BigNumberish;
+  bridgeOperatorBonusPerBlock?: BigNumberish;
   topupAmount?: BigNumberish;
 }
 
@@ -152,7 +153,8 @@ export const stakingConfig: StakingConfig = {
 export const stakingVestingConfig: StakingVestingConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
-    bonusPerBlock: BigNumber.from(10).pow(18), // 1 RON per block
+    validatorBonusPerBlock: BigNumber.from(10).pow(18), // 1 RON per block
+    bridgeOperatorBonusPerBlock: BigNumber.from(10).pow(18), // 1 RON per block
     topupAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(4)), // 10.000 RON
   },
   [Network.Testnet]: undefined,

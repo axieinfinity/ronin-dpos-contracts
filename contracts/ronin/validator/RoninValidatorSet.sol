@@ -57,6 +57,8 @@ contract RoninValidatorSet is
   mapping(address => uint256) internal _miningReward;
   /// @dev Mapping from validator address => pending reward from delegating
   mapping(address => uint256) internal _delegatingReward;
+  /// @dev Mapping from validator address => pending reward for being bridge operator
+  mapping(address => uint256) internal _bridgeOperatingReward;
 
   modifier onlyCoinbase() {
     require(msg.sender == block.coinbase, "RoninValidatorSet: method caller must be coinbase");
@@ -129,8 +131,8 @@ contract RoninValidatorSet is
       return;
     }
 
-    uint256 _bonusReward = _stakingVestingContract.requestBlockBonus();
-    uint256 _reward = _submittedReward + _bonusReward;
+    (uint256 _validatorStakingVesting, uint256 _bridgeValidatorStakingVesting) = _stakingVestingContract.requestBonus();
+    uint256 _reward = _submittedReward + _validatorStakingVesting;
 
     IStaking _staking = IStaking(_stakingContract);
     uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
@@ -139,8 +141,9 @@ contract RoninValidatorSet is
 
     _miningReward[_coinbaseAddr] += _miningAmount;
     _delegatingReward[_coinbaseAddr] += _delegatingAmount;
+    _bridgeOperatingReward[_coinbaseAddr] += _bridgeValidatorStakingVesting;
     _staking.recordReward(_coinbaseAddr, _delegatingAmount);
-    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _bonusReward);
+    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _validatorStakingVesting);
   }
 
   /**
@@ -173,7 +176,18 @@ contract RoninValidatorSet is
         if (_miningAmount > 0) {
           address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
           require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
-          emit MiningRewardDistributed(_validatorAddr, _miningAmount);
+          emit MiningRewardDistributed(_validatorAddr, _treasury, _miningAmount);
+        }
+
+        uint256 _bridgeOperatingAmount = _bridgeOperatingReward[_validatorAddr];
+        delete _bridgeOperatingReward[_validatorAddr];
+        if (_bridgeOperatingAmount > 0) {
+          address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
+          require(
+            _sendRON(_treasury, _bridgeOperatingAmount),
+            "RoninValidatorSet: could not transfer RON to bridge operator address"
+          );
+          emit BridgeOperatorRewardDistributed(_validatorAddr, _treasury, _bridgeOperatingAmount);
         }
       }
 
