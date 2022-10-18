@@ -175,7 +175,7 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
    */
   function voteBridgeOperatorsBySignatures(
     uint256 _period,
-    WeightedAddress[] calldata _operators,
+    address[] calldata _operators,
     Signature[] calldata _signatures
   ) external {
     _castVotesBySignatures(_operators, _signatures, _period, _getMinimumVoteWeight(), DOMAIN_SEPARATOR);
@@ -183,7 +183,6 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
     if (_v.status == VoteStatus.Approved) {
       _lastSyncedPeriod = _period;
       _v.status = VoteStatus.Executed;
-      _bridgeContract.replaceBridgeOperators(_operators);
     }
   }
 

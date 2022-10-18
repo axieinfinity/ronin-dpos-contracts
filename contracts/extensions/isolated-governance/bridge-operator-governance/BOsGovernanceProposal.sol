@@ -2,11 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "../../../extensions/isolated-governance/IsolatedGovernance.sol";
-import "../../../interfaces/consumers/WeightedAddressConsumer.sol";
 import "../../../interfaces/consumers/SignatureConsumer.sol";
 import "../../../libraries/BridgeOperatorsBallot.sol";
 
-abstract contract BOsGovernanceProposal is SignatureConsumer, WeightedAddressConsumer, IsolatedGovernance {
+abstract contract BOsGovernanceProposal is SignatureConsumer, IsolatedGovernance {
   /// @dev The last period that the brige operators synced.
   uint256 internal _lastSyncedPeriod;
   /// @dev Mapping from period index => bridge operators vote
@@ -27,7 +26,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, WeightedAddressCon
    *
    */
   function _castVotesBySignatures(
-    WeightedAddress[] calldata _operators,
+    address[] calldata _operators,
     Signature[] calldata _signatures,
     uint256 _period,
     uint256 _minimumVoteWeight,

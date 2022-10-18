@@ -69,7 +69,7 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
    */
   function relayBridgeOperators(
     uint256 _period,
-    WeightedAddress[] calldata _operators,
+    address[] calldata _operators,
     Signature[] calldata _signatures
   ) external onlyRole(RELAYER_ROLE) {
     _relayVotesBySignatures(_operators, _signatures, _period, _getMinimumVoteWeight(), DOMAIN_SEPARATOR);

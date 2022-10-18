@@ -1,7 +1,7 @@
 import { BigNumber, BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
-import { WeightedAddressStruct } from './types/IBridge';
+import { WeightedAddressStruct } from './types/IRoninTrustedOrganization';
 
 export enum Network {
   Hardhat = 'hardhat',
