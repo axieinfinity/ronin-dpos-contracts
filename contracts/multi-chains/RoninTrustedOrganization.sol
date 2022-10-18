@@ -167,10 +167,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function _addTrustedOrganizations(WeightedAddress[] calldata _list) internal {
     for (uint _i = 0; _i < _list.length; _i++) {
-      if (_orgs.add(_list[_i].addr) && _list[_i].weight > 0) {
-        _totalWeights += _list[_i].weight;
-        _weight[_list[_i].addr] = _list[_i].weight;
-        emit TrustedOrganizationAdded(_list[_i]);
+      if (_list[_i].weight > 0) {
+        if (_orgs.add(_list[_i].addr)) {
+          _totalWeights += _list[_i].weight;
+          _weight[_list[_i].addr] = _list[_i].weight;
+          emit TrustedOrganizationAdded(_list[_i]);
+        }
       }
     }
   }

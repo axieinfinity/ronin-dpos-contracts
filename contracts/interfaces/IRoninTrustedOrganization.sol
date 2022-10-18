@@ -26,7 +26,7 @@ interface IRoninTrustedOrganization is WeightedAddressConsumer, IQuorum {
   function addTrustedOrganizations(WeightedAddress[] calldata) external;
 
   /**
-   * @dev Updates a list of trusted organization.
+   * @dev Updates weights for a list of existent trusted organization.
    *
    * Requirements:
    * - The weights should larger than 0.
