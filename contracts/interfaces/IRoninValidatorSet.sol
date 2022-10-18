@@ -128,6 +128,36 @@ interface IRoninValidatorSet is ICandidateManager {
   function isValidator(address _addr) external view returns (bool);
 
   /**
+   * @dev Returns the current block producer list.
+   */
+  function getBlockProducers() external view returns (address[] memory);
+
+  /**
+   * @dev Returns whether the address is block producer or not.
+   */
+  function isBlockProducer(address _addr) external view returns (bool);
+
+  /**
+   * @dev Returns total numbers of the block producers.
+   */
+  function totalBlockProducers() external view returns (uint256);
+
+  /**
+   * @dev Returns the current bridge operator list.
+   */
+  function getBridgeOperators() external view returns (address[] memory);
+
+  /**
+   * @dev Returns whether the address is bridge operator or not.
+   */
+  function isBridgeOperator(address _addr) external view returns (bool);
+
+  /**
+   * @dev Returns total numbers of the bridge operators.
+   */
+  function totalBridgeOperators() external view returns (uint256);
+
+  /**
    * @dev Returns whether the epoch ending is at the block number `_block`.
    */
   function epochEndingAt(uint256 _block) external view returns (bool);

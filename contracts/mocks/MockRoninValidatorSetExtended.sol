@@ -3,6 +3,7 @@
 pragma solidity ^0.8.9;
 
 import "../libraries/Sorting.sol";
+import "../libraries/EnumFlags.sol";
 import "../ronin/validator/RoninValidatorSet.sol";
 
 contract MockRoninValidatorSetExtended is RoninValidatorSet {
@@ -62,8 +63,8 @@ contract MockRoninValidatorSetExtended is RoninValidatorSet {
 
   function addValidators(address[] calldata _addrs) public {
     for (uint _i = 0; _i < _addrs.length; _i++) {
-      _validator[_i] = _addrs[_i];
-      _validatorMap[_addrs[_i]] = true;
+      _validators[_i] = _addrs[_i];
+      _validatorMap[_addrs[_i]] = EnumFlags.ValidatorFlag.Both;
     }
   }
 

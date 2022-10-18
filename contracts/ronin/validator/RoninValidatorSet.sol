@@ -45,9 +45,9 @@ contract RoninValidatorSet is
   /// @dev The total of validators
   uint256 public validatorCount;
   /// @dev Mapping from validator index => validator address
-  mapping(uint256 => address) internal _validator;
-  /// @dev Mapping from address => flag indicating whether the address is validator or not
-  mapping(address => bool) internal _validatorMap;
+  mapping(uint256 => address) internal _validators;
+  /// @dev Mapping from address => flag indicating the validator ability: producing block, operating bridge
+  mapping(address => EnumFlags.ValidatorFlag) internal _validatorMap;
   /// @dev The number of slot that is reserved for prioritized validators
   uint256 internal _maxPrioritizedValidatorNumber;
 
@@ -294,15 +294,71 @@ contract RoninValidatorSet is
   function getValidators() public view override returns (address[] memory _validatorList) {
     _validatorList = new address[](validatorCount);
     for (uint _i = 0; _i < _validatorList.length; _i++) {
-      _validatorList[_i] = _validator[_i];
+      _validatorList[_i] = _validators[_i];
     }
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function isValidator(address _addr) public view returns (bool) {
-    return _validatorMap[_addr];
+  function isValidator(address _addr) public view override returns (bool) {
+    return !_validatorMap[_addr].hasFlag(EnumFlags.ValidatorFlag.None);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function getBlockProducers() public view override returns (address[] memory _result) {
+    _result = new address[](validatorCount);
+    uint256 _count = 0;
+    for (uint _i = 0; _i < _result.length; _i++) {
+      if (isBlockProducer(_validators[_i])) {
+        _result[_count++] = _validators[_i];
+      }
+    }
+
+    assembly {
+      mstore(_result, _count)
+    }
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function isBlockProducer(address _addr) public view override returns (bool) {
+    return _validatorMap[_addr].hasFlag(EnumFlags.ValidatorFlag.BlockProducer);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function totalBlockProducers() external view returns (uint256 _total) {
+    for (uint _i = 0; _i < validatorCount; _i++) {
+      if (isBlockProducer(_validators[_i])) {
+        _total++;
+      }
+    }
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function getBridgeOperators() public view override returns (address[] memory _bridgeOperatorList) {
+    return getValidators();
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function isBridgeOperator(address _addr) public view override returns (bool) {
+    return isValidator(_addr);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function totalBridgeOperators() external view returns (uint256) {
+    return validatorCount;
   }
 
   /**
@@ -391,8 +447,51 @@ contract RoninValidatorSet is
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
-  //                                  HELPER FUNCTIONS                                 //
+  //                   HELPER FUNCTIONS OF UPDATE VALIDATOR SET                        //
   ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Updates the validator set based on the validator candidates from the Staking contract.
+   *
+   * Emits the `ValidatorSetUpdated` event.
+   *
+   */
+  function _updateValidatorSet(bool _periodEnding) internal virtual {
+    address[] memory _candidates = _syncNewValidatorSet(_periodEnding);
+    uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
+    _arrangeValidatorCandidates(_candidates, _newValidatorCount);
+
+    assembly {
+      mstore(_candidates, _newValidatorCount)
+    }
+
+    // for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
+    //   delete _validatorMap[_validators[_i]];
+    //   delete _validators[_i];
+    // }
+
+    // uint256 _count;
+    // bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
+    // for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
+    //   if (_maintainingList[_i]) {
+    //     continue;
+    //   }
+
+    //   address _newValidator = _candidates[_i];
+    //   if (_newValidator == _validators[_count]) {
+    //     _count++;
+    //     continue;
+    //   }
+
+    //   delete _validatorMap[_validators[_count]];
+    //   _validatorMap[_newValidator] = true;
+    //   _validators[_count] = _newValidator;
+    //   _count++;
+    // }
+
+    // validatorCount = _count;
+    // emit ValidatorSetUpdated(_candidates);
+  }
 
   /**
    * @dev Returns validator candidates list.
@@ -422,70 +521,6 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @dev Updates the validator set based on the validator candidates from the Staking contract.
-   *
-   * Emits the `ValidatorSetUpdated` event.
-   *
-   */
-  function _updateValidatorSet(bool _periodEnding) internal virtual {
-    address[] memory _candidates = _syncNewValidatorSet(_periodEnding);
-    uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
-    _arrangeValidatorCandidates(_candidates, _newValidatorCount);
-
-    assembly {
-      mstore(_candidates, _newValidatorCount)
-    }
-
-    for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
-      delete _validatorMap[_validator[_i]];
-      delete _validator[_i];
-    }
-
-    uint256 _count;
-    bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
-    for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
-      if (_maintainingList[_i]) {
-        continue;
-      }
-
-      address _newValidator = _candidates[_i];
-      if (_newValidator == _validator[_count]) {
-        _count++;
-        continue;
-      }
-
-      delete _validatorMap[_validator[_count]];
-      _validatorMap[_newValidator] = true;
-      _validator[_count] = _newValidator;
-      _count++;
-    }
-
-    validatorCount = _count;
-    emit ValidatorSetUpdated(_candidates);
-  }
-
-  /**
-   * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) during the current period.
-   */
-  function _jailed(address _validatorAddr) internal view returns (bool) {
-    return block.number <= _jailedUntil[_validatorAddr];
-  }
-
-  /**
-   * @dev Returns whether the validator has no pending reward in that period.
-   */
-  function _rewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
-    return _rewardDeprecatedAtPeriod[_validatorAddr][_period];
-  }
-
-  /**
-   * @dev Returns whether the address `_addr` is validator or not.
-   */
-  function _isValidator(address _addr) internal view returns (bool) {
-    return _validatorMap[_addr];
-  }
-
-  /**
    * @dev Arranges the sorted candidates to list of validators, by asserting prioritized and non-prioritized candidates
    *
    * @param _candidates A sorted list of candidates
@@ -508,6 +543,24 @@ contract RoninValidatorSet is
     for (uint _i = _prioritySlotCounter; _i < _newValidatorCount; _i++) {
       _candidates[_i] = _waitingCandidates[_waitingCounter++];
     }
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                             OTHER HELPER FUNCTIONS                                //
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) during the current period.
+   */
+  function _jailed(address _validatorAddr) internal view returns (bool) {
+    return block.number <= _jailedUntil[_validatorAddr];
+  }
+
+  /**
+   * @dev Returns whether the validator has no pending reward in that period.
+   */
+  function _rewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
+    return _rewardDeprecatedAtPeriod[_validatorAddr][_period];
   }
 
   /**
