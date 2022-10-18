@@ -418,6 +418,22 @@ contract RoninValidatorSet is
     _setNumberOfEpochsInPeriod(_number);
   }
 
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function isBridgeOperator(address) external pure override returns (bool) {
+    // TODO(Bao): implement this fn
+    revert("Unimplemented");
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function totalBridgeOperators() external pure returns (uint256) {
+    // TODO(Bao): implement this fn
+    revert("Unimplemented");
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                     PRIVATE HELPER FUNCTIONS OF WRAPPING UP EPOCH                 //
   ///////////////////////////////////////////////////////////////////////////////////////
