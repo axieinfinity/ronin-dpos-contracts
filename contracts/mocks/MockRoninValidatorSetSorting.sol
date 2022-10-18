@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../validator/RoninValidatorSet.sol";
+import "../ronin/validator/RoninValidatorSet.sol";
 import "../libraries/Sorting.sol";
 
 contract MockRoninValidatorSetSorting is RoninValidatorSet {

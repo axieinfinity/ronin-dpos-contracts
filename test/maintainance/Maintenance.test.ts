@@ -5,7 +5,6 @@ import { BigNumber, BigNumberish } from 'ethers';
 
 import {
   RoninValidatorSet,
-  RoninValidatorSet__factory,
   Maintenance,
   Maintenance__factory,
   SlashIndicator,
@@ -65,9 +64,13 @@ describe('Maintenance test', () => {
     maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
-    validatorContract = RoninValidatorSet__factory.connect(validatorContractAddress, deployer);
+    validatorContract = MockRoninValidatorSetSorting__factory.connect(validatorContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, governor);
+
+    const mockValidatorLogic = await new MockRoninValidatorSetSorting__factory(deployer).deploy();
+    await mockValidatorLogic.deployed();
+    await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {

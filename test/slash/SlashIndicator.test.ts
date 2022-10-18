@@ -93,7 +93,7 @@ describe('Slash indicator test', () => {
 
     const mockValidatorLogic = await new MockRoninValidatorSetSorting__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
-    await governanceAdmin.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
 
     mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashLogic.deployed();
