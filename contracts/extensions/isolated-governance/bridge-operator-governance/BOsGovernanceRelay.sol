@@ -46,7 +46,7 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
     }
 
     IsolatedVote storage _v = _vote[_period];
-    uint256 _totalVoteWeight = _getWeights(_signers);
+    uint256 _totalVoteWeight = _sumBridgeVoterWeights(_signers);
     if (_totalVoteWeight >= _minimumVoteWeight) {
       require(_totalVoteWeight > 0, "BOsGovernanceRelay: invalid vote weight");
       _v.status = VoteStatus.Approved;
@@ -60,5 +60,5 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
   /**
    * @dev Returns the weight of the governor list.
    */
-  function _getWeights(address[] memory _governors) internal view virtual returns (uint256);
+  function _sumBridgeVoterWeights(address[] memory _bridgeVoters) internal view virtual returns (uint256);
 }

@@ -76,7 +76,12 @@ describe('[Integration] Configuration check', () => {
       maxMaintenanceBlockPeriod,
       minOffset,
       maxSchedules,
-      trustedOrganizations: [governor.address].map((addr) => ({ addr, weight: 100 })),
+      trustedOrganizations: [governor].map((v) => ({
+        consensusAddr: v.address,
+        governor: v.address,
+        bridgeVoter: v.address,
+        weight: 100,
+      })),
     });
 
     stakingVestingContract = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);

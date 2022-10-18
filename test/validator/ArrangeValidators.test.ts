@@ -40,7 +40,7 @@ const setPriorityStatus = async (addrs: Address[], statuses: boolean[]): Promise
   await governanceAdminInterface.functionDelegateCall(
     roninTrustedOrganization.address,
     roninTrustedOrganization.interface.encodeFunctionData('addTrustedOrganizations', [
-      addingTrustedOrgs.map((v) => ({ addr: v, weight: defaultTrustedWeight })),
+      addingTrustedOrgs.map((v) => ({ consensusAddr: v, governor: v, bridgeVoter: v, weight: 100 })),
     ])
   );
   await governanceAdminInterface.functionDelegateCall(
@@ -91,7 +91,12 @@ describe('Arrange validators', () => {
       maxValidatorCandidate,
       maxPrioritizedValidatorNumber,
       slashFelonyAmount,
-      trustedOrganizations: [governor.address].map((addr) => ({ addr, weight: defaultTrustedWeight })),
+      trustedOrganizations: [governor].map((v) => ({
+        consensusAddr: v.address,
+        governor: v.address,
+        bridgeVoter: v.address,
+        weight: 100,
+      })),
     });
 
     validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);

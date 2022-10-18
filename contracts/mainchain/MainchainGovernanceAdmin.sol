@@ -77,23 +77,32 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
   }
 
   /**
-   * @dev Override {CoreGovernance-_getWeights}.
+   * @inheritdoc GovernanceRelay
    */
-  function _getWeights(address[] memory _governors)
-    internal
-    view
-    virtual
-    override(BOsGovernanceRelay, GovernanceRelay)
-    returns (uint256)
-  {
+  function _sumWeights(address[] memory _governors) internal view virtual override returns (uint256) {
     (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
-        abi.encodeWithSelector(IRoninTrustedOrganization.sumWeights.selector, _governors)
+        abi.encodeWithSelector(IRoninTrustedOrganization.sumGovernorWeights.selector, _governors)
       )
     );
-    require(_success, "GovernanceAdmin: proxy call `sumWeights(address[])` failed");
+    require(_success, "MainchainGovernanceAdmin: proxy call `sumGovernorWeights(address[])` failed");
+    return abi.decode(_returndata, (uint256));
+  }
+
+  /**
+   * @inheritdoc BOsGovernanceRelay
+   */
+  function _sumBridgeVoterWeights(address[] memory _governors) internal view virtual override returns (uint256) {
+    (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
+      abi.encodeWithSelector(
+        // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
+        0x4bb5274a,
+        abi.encodeWithSelector(IRoninTrustedOrganization.sumBridgeVoterWeights.selector, _governors)
+      )
+    );
+    require(_success, "MainchainGovernanceAdmin: proxy call `sumBridgeVoterWeights(address[])` failed");
     return abi.decode(_returndata, (uint256));
   }
 }

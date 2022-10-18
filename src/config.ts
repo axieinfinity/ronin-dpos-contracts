@@ -1,7 +1,7 @@
 import { BigNumber, BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
-import { WeightedAddressStruct } from './types/IRoninTrustedOrganization';
+import { TrustedOrganizationStruct } from './types/IRoninTrustedOrganization';
 
 export enum Network {
   Hardhat = 'hardhat',
@@ -50,7 +50,7 @@ export interface MaintenanceArguments {
 }
 
 export interface RoninTrustedOrganizationArguments {
-  trustedOrganizations?: WeightedAddressStruct[];
+  trustedOrganizations?: TrustedOrganizationStruct[];
   numerator?: BigNumberish;
   denominator?: BigNumberish;
 }
@@ -194,8 +194,13 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
 export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
-    trustedOrganizations: ['0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1'].map((addr) => ({ addr, weight: 100 })),
-    numerator: 1,
+    trustedOrganizations: ['0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1'].map((addr) => ({
+      consensusAddr: addr,
+      governor: addr,
+      bridgeVoter: addr,
+      weight: 100,
+    })),
+    numerator: 0,
     denominator: 1,
   },
   [Network.Testnet]: undefined,

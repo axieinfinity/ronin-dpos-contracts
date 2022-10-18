@@ -50,7 +50,12 @@ describe('Ronin Validator Set test', () => {
 
     const { slashContractAddress, validatorContractAddress, stakingContractAddress, roninGovernanceAdminAddress } =
       await initTest('RoninValidatorSet')({
-        trustedOrganizations: [governor.address].map((addr) => ({ addr, weight: 100 })),
+        trustedOrganizations: [governor].map((v) => ({
+          consensusAddr: v.address,
+          governor: v.address,
+          bridgeVoter: v.address,
+          weight: 100,
+        })),
         minValidatorBalance,
         maxValidatorNumber,
         maxValidatorCandidate,

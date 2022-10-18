@@ -55,7 +55,9 @@ describe('[Integration] Slash validators', () => {
         slashFelonyAmount,
         slashDoubleSignAmount,
         minValidatorBalance,
-        trustedOrganizations: [{ addr: governor.address, weight: 100 }],
+        trustedOrganizations: [
+          { consensusAddr: governor.address, governor: governor.address, bridgeVoter: governor.address, weight: 100 },
+        ],
       });
 
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);

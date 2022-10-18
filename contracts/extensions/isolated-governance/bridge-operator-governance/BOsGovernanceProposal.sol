@@ -49,7 +49,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IsolatedGovernance
       require(_lastSigner < _signer, "BOsGovernanceProposal: invalid order");
       _lastSigner = _signer;
 
-      uint256 _weight = _getWeight(_signer);
+      uint256 _weight = _getBridgeVoterWeight(_signer);
       if (_weight > 0) {
         _hasValidVotes = true;
         _lastVotedBlock[_signer] = block.number;
@@ -64,7 +64,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IsolatedGovernance
   }
 
   /**
-   * @dev Returns the weight of a governor.
+   * @dev Returns the weight of a bridge voter.
    */
-  function _getWeight(address _governor) internal view virtual returns (uint256);
+  function _getBridgeVoterWeight(address _bridgeVoter) internal view virtual returns (uint256);
 }

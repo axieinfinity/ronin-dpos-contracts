@@ -45,7 +45,12 @@ describe('Governance Admin test', () => {
     const { roninGovernanceAdminAddress, mainchainGovernanceAdminAddress, stakingContractAddress } = await initTest(
       'RoninGovernanceAdmin.test'
     )({
-      trustedOrganizations: governors.map((v) => ({ addr: v.address, weight: 100 })),
+      trustedOrganizations: governors.map((v) => ({
+        consensusAddr: v.address,
+        governor: v.address,
+        bridgeVoter: v.address,
+        weight: 100,
+      })),
       numerator: 1,
       denominator: 2,
       relayers: [relayer.address],
