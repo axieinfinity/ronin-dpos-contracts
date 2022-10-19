@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { BigNumber } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Address } from 'hardhat-deploy/dist/types';
@@ -25,44 +25,45 @@ let governanceAdminInterface: GovernanceAdminInterface;
 
 let deployer: SignerWithAddress;
 let governor: SignerWithAddress;
-let validatorCandidates: SignerWithAddress[];
+let candidates: Address[];
 
 const slashFelonyAmount = 100;
 const maxValidatorNumber = 7;
 const maxPrioritizedValidatorNumber = 4;
 const maxValidatorCandidate = 100;
+const defaultTrustedWeight = BigNumber.from(100);
 
-const setPriorityStatus = async (addrs: Address[], statuses: boolean[]) => {
+const setPriorityStatus = async (addrs: Address[], statuses: boolean[]): Promise<BigNumberish[]> => {
   const arr = statuses.map((stt, i) => ({ address: addrs[i], stt }));
   const addingTrustedOrgs = arr.filter(({ stt }) => stt).map(({ address }) => address);
   const removingTrustedOrgs = arr.filter(({ stt }) => !stt).map(({ address }) => address);
   await governanceAdminInterface.functionDelegateCall(
     roninTrustedOrganization.address,
     roninTrustedOrganization.interface.encodeFunctionData('addTrustedOrganizations', [
-      addingTrustedOrgs.map((v) => ({ addr: v, weight: 100 })),
+      addingTrustedOrgs.map((v) => ({ addr: v, weight: defaultTrustedWeight })),
     ])
   );
   await governanceAdminInterface.functionDelegateCall(
     roninTrustedOrganization.address,
     roninTrustedOrganization.interface.encodeFunctionData('removeTrustedOrganizations', [removingTrustedOrgs])
   );
+
+  return statuses.map((stt) => (stt ? defaultTrustedWeight : 0));
 };
 
-const setPriorityStatusForMany = async (validators: SignerWithAddress[], status: boolean) => {
+const setPriorityStatusForMany = async (validators: Address[], status: boolean): Promise<BigNumberish[]> => {
   if (validators.length == 0) {
-    return;
+    return [];
   }
-  let addrs = validators.map((_) => _.address);
   let statuses = new Array(validators.length).fill(status);
-  await setPriorityStatus(addrs, statuses);
+  return await setPriorityStatus(validators, statuses);
 };
 
-const setPriorityStatusByIndexes = async (indexes: number[], statuses: boolean[]) => {
+const setPriorityStatusByIndexes = async (indexes: number[], statuses: boolean[]): Promise<BigNumberish[]> => {
   expect(indexes.length, 'invalid input for setPriorityStatusByIndex').eq(statuses.length);
-  let addrs = indexes.filter((_, j) => statuses[j]).map((i) => validatorCandidates[i].address);
-  statuses = statuses.filter((s) => s == true);
+  let addrs = indexes.map((i) => candidates[i]);
 
-  await setPriorityStatus(addrs, statuses);
+  return await setPriorityStatus(addrs, statuses);
 };
 
 const sortArrayByBoolean = (indexes: number[], statuses: boolean[]) => {
@@ -75,7 +76,10 @@ const sortArrayByBoolean = (indexes: number[], statuses: boolean[]) => {
 
 describe('Arrange validators', () => {
   before(async () => {
-    [deployer, governor, ...validatorCandidates] = await ethers.getSigners();
+    [deployer, governor] = await ethers.getSigners();
+    candidates = Array.from({ length: maxValidatorCandidate }, (_, i) =>
+      ethers.utils.hexZeroPad(ethers.utils.hexlify(i + 0x40), 20)
+    );
 
     const {
       slashContractAddress,
@@ -87,7 +91,7 @@ describe('Arrange validators', () => {
       maxValidatorCandidate,
       maxPrioritizedValidatorNumber,
       slashFelonyAmount,
-      trustedOrganizations: [governor.address].map((addr) => ({ addr, weight: 100 })),
+      trustedOrganizations: [governor.address].map((addr) => ({ addr, weight: defaultTrustedWeight })),
     });
 
     validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
@@ -107,44 +111,44 @@ describe('Arrange validators', () => {
 
   describe('Update priority list', async () => {
     it('Should be able to add new prioritized validators', async () => {
-      let addrs = validatorCandidates.slice(0, 10).map((_) => _.address);
+      let addrs = candidates.slice(0, 10);
       let statuses = new Array(10).fill(true);
 
       await setPriorityStatus(addrs, statuses);
     });
 
     it('Should be able to remove prioritized validators', async () => {
-      let addrs = validatorCandidates.slice(0, 10).map((_) => _.address);
+      let addrs = candidates.slice(0, 10);
       let statuses = new Array(10).fill(false);
 
       await setPriorityStatus(addrs, statuses);
     });
 
     it('Should be able to add and remove prioritized validators: num(add) > num(remove)', async () => {
-      let addrs = validatorCandidates.slice(0, 10).map((_) => _.address);
+      let addrs = candidates.slice(0, 10);
       let statuses = new Array(10).fill(true);
       await setPriorityStatus(addrs, statuses);
 
-      addrs = validatorCandidates.slice(4, 7).map((_) => _.address);
+      addrs = candidates.slice(4, 7);
       statuses = new Array(3).fill(false);
-      addrs.push(...validatorCandidates.slice(10, 15).map((_) => _.address));
+      addrs.push(...candidates.slice(10, 15));
       statuses.push(...new Array(5).fill(true));
 
       await setPriorityStatus(addrs, statuses);
     });
 
     it('Should be able to add and remove prioritized validators: num(add) < num(remove)', async () => {
-      let addrs = validatorCandidates.slice(0, 15).map((_) => _.address);
+      let addrs = candidates.slice(0, 15);
       let statuses = new Array(15).fill(false);
       await setPriorityStatus(addrs, statuses);
 
-      addrs = validatorCandidates.slice(0, 10).map((_) => _.address);
+      addrs = candidates.slice(0, 10);
       statuses = new Array(10).fill(true);
       await setPriorityStatus(addrs, statuses);
 
-      addrs = validatorCandidates.slice(1, 8).map((_) => _.address);
+      addrs = candidates.slice(1, 8);
       statuses = new Array(7).fill(false);
-      addrs.push(...validatorCandidates.slice(10, 14).map((_) => _.address));
+      addrs.push(...candidates.slice(10, 14));
       statuses.push(...new Array(4).fill(true));
       await setPriorityStatus(addrs, statuses);
     });
@@ -154,7 +158,7 @@ describe('Arrange validators', () => {
     const maxRegularValidatorNumber = maxValidatorNumber - maxPrioritizedValidatorNumber;
 
     beforeEach(async () => {
-      let validators = validatorCandidates.slice(0, 15);
+      let validators = candidates.slice(0, 15);
       await setPriorityStatusForMany(validators, false);
     });
 
@@ -162,24 +166,24 @@ describe('Arrange validators', () => {
       let actualPrioritizedNumber = maxPrioritizedValidatorNumber;
       let actualRegularNumber = maxRegularValidatorNumber;
 
-      let prioritizedValidators = validatorCandidates.slice(0, actualPrioritizedNumber);
-      let regularValidators = validatorCandidates.slice(
-        actualPrioritizedNumber,
-        actualPrioritizedNumber + actualRegularNumber
-      );
+      let prioritizedValidators = candidates.slice(0, actualPrioritizedNumber);
+      let regularValidators = candidates.slice(actualPrioritizedNumber, actualPrioritizedNumber + actualRegularNumber);
 
-      await setPriorityStatusForMany(prioritizedValidators, true);
-      await setPriorityStatusForMany(regularValidators, false);
+      let prioritizedWeights = await setPriorityStatusForMany(prioritizedValidators, true);
+      let regularWeights = await setPriorityStatusForMany(regularValidators, false);
 
-      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators].map((_) => _.address);
+      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators];
+      let inputTrustedWeights = [...regularWeights, ...prioritizedWeights];
       let expectingValidatorAddrs = [
         ...prioritizedValidators.slice(0, maxPrioritizedValidatorNumber),
         ...regularValidators.slice(0, maxRegularValidatorNumber),
-      ].map((_) => _.address);
+      ];
 
       let outputValidators = await validatorContract.arrangeValidatorCandidates(
         inputValidatorAddrs,
-        actualPrioritizedNumber + actualRegularNumber
+        inputTrustedWeights,
+        actualPrioritizedNumber + actualRegularNumber,
+        maxPrioritizedValidatorNumber
       );
 
       expect(outputValidators).eql(expectingValidatorAddrs);
@@ -189,24 +193,24 @@ describe('Arrange validators', () => {
       let actualPrioritizedNumber = maxPrioritizedValidatorNumber;
       let actualRegularNumber = maxRegularValidatorNumber + 10;
 
-      let prioritizedValidators = validatorCandidates.slice(0, actualPrioritizedNumber);
-      let regularValidators = validatorCandidates.slice(
-        actualPrioritizedNumber,
-        actualPrioritizedNumber + actualRegularNumber
-      );
+      let prioritizedValidators = candidates.slice(0, actualPrioritizedNumber);
+      let regularValidators = candidates.slice(actualPrioritizedNumber, actualPrioritizedNumber + actualRegularNumber);
 
-      await setPriorityStatusForMany(prioritizedValidators, true);
-      await setPriorityStatusForMany(regularValidators, false);
+      let prioritizedWeights = await setPriorityStatusForMany(prioritizedValidators, true);
+      let regularWeights = await setPriorityStatusForMany(regularValidators, false);
 
-      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators].map((_) => _.address);
+      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators];
+      let inputTrustedWeights = [...regularWeights, ...prioritizedWeights];
       let expectingValidatorAddrs = [
         ...prioritizedValidators.slice(0, maxPrioritizedValidatorNumber),
         ...regularValidators.slice(0, maxRegularValidatorNumber),
-      ].map((_) => _.address);
+      ];
 
       let outputValidators = await validatorContract.arrangeValidatorCandidates(
         inputValidatorAddrs,
-        maxValidatorNumber
+        inputTrustedWeights,
+        maxValidatorNumber,
+        maxPrioritizedValidatorNumber
       );
       expect(outputValidators).eql(expectingValidatorAddrs);
     });
@@ -215,24 +219,24 @@ describe('Arrange validators', () => {
       let actualPrioritizedNumber = maxPrioritizedValidatorNumber;
       let actualRegularNumber = maxRegularValidatorNumber - 1;
 
-      let prioritizedValidators = validatorCandidates.slice(0, actualPrioritizedNumber);
-      let regularValidators = validatorCandidates.slice(
-        actualPrioritizedNumber,
-        actualPrioritizedNumber + actualRegularNumber
-      );
+      let prioritizedValidators = candidates.slice(0, actualPrioritizedNumber);
+      let regularValidators = candidates.slice(actualPrioritizedNumber, actualPrioritizedNumber + actualRegularNumber);
 
-      await setPriorityStatusForMany(prioritizedValidators, true);
-      await setPriorityStatusForMany(regularValidators, false);
+      let prioritizedWeights = await setPriorityStatusForMany(prioritizedValidators, true);
+      let regularWeights = await setPriorityStatusForMany(regularValidators, false);
 
-      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators].map((_) => _.address);
+      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators];
+      let inputTrustedWeights = [...regularWeights, ...prioritizedWeights];
       let expectingValidatorAddrs = [
         ...prioritizedValidators.slice(0, maxPrioritizedValidatorNumber),
         ...regularValidators.slice(0, actualRegularNumber),
-      ].map((_) => _.address);
+      ];
 
       let outputValidators = await validatorContract.arrangeValidatorCandidates(
         inputValidatorAddrs,
-        actualPrioritizedNumber + actualRegularNumber
+        inputTrustedWeights,
+        actualPrioritizedNumber + actualRegularNumber,
+        maxPrioritizedValidatorNumber
       );
       expect(outputValidators).eql(expectingValidatorAddrs);
     });
@@ -241,24 +245,24 @@ describe('Arrange validators', () => {
       let actualPrioritizedNumber = maxPrioritizedValidatorNumber + 10;
       let actualRegularNumber = maxRegularValidatorNumber;
 
-      let prioritizedValidators = validatorCandidates.slice(0, actualPrioritizedNumber);
-      let regularValidators = validatorCandidates.slice(
-        actualPrioritizedNumber,
-        actualPrioritizedNumber + actualRegularNumber
-      );
+      let prioritizedValidators = candidates.slice(0, actualPrioritizedNumber);
+      let regularValidators = candidates.slice(actualPrioritizedNumber, actualPrioritizedNumber + actualRegularNumber);
 
-      await setPriorityStatusForMany(prioritizedValidators, true);
-      await setPriorityStatusForMany(regularValidators, false);
+      let prioritizedWeights = await setPriorityStatusForMany(prioritizedValidators, true);
+      let regularWeights = await setPriorityStatusForMany(regularValidators, false);
 
-      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators].map((_) => _.address);
+      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators];
+      let inputTrustedWeights = [...regularWeights, ...prioritizedWeights];
       let expectingValidatorAddrs = [
         ...prioritizedValidators.slice(0, maxPrioritizedValidatorNumber),
         ...regularValidators.slice(0, maxRegularValidatorNumber),
-      ].map((_) => _.address);
+      ];
 
       let outputValidators = await validatorContract.arrangeValidatorCandidates(
         inputValidatorAddrs,
-        maxValidatorNumber
+        inputTrustedWeights,
+        maxValidatorNumber,
+        maxPrioritizedValidatorNumber
       );
       expect(outputValidators).eql(expectingValidatorAddrs);
     });
@@ -267,24 +271,24 @@ describe('Arrange validators', () => {
       let actualPrioritizedNumber = maxPrioritizedValidatorNumber + 10;
       let actualRegularNumber = maxRegularValidatorNumber + 10;
 
-      let prioritizedValidators = validatorCandidates.slice(0, actualPrioritizedNumber);
-      let regularValidators = validatorCandidates.slice(
-        actualPrioritizedNumber,
-        actualPrioritizedNumber + actualRegularNumber
-      );
+      let prioritizedValidators = candidates.slice(0, actualPrioritizedNumber);
+      let regularValidators = candidates.slice(actualPrioritizedNumber, actualPrioritizedNumber + actualRegularNumber);
 
-      await setPriorityStatusForMany(prioritizedValidators, true);
-      await setPriorityStatusForMany(regularValidators, false);
+      let prioritizedWeights = await setPriorityStatusForMany(prioritizedValidators, true);
+      let regularWeights = await setPriorityStatusForMany(regularValidators, false);
 
-      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators].map((_) => _.address);
+      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators];
+      let inputTrustedWeights = [...regularWeights, ...prioritizedWeights];
       let expectingValidatorAddrs = [
         ...prioritizedValidators.slice(0, maxPrioritizedValidatorNumber),
         ...regularValidators.slice(0, maxRegularValidatorNumber),
-      ].map((_) => _.address);
+      ];
 
       let outputValidators = await validatorContract.arrangeValidatorCandidates(
         inputValidatorAddrs,
-        maxValidatorNumber
+        inputTrustedWeights,
+        maxValidatorNumber,
+        maxPrioritizedValidatorNumber
       );
       expect(outputValidators).eql(expectingValidatorAddrs);
     });
@@ -294,25 +298,25 @@ describe('Arrange validators', () => {
       let actualPrioritizedNumber = maxPrioritizedValidatorNumber + 10;
       let actualRegularNumber = maxRegularValidatorNumber - spareSlotNumber;
 
-      let prioritizedValidators = validatorCandidates.slice(0, actualPrioritizedNumber);
-      let regularValidators = validatorCandidates.slice(
-        actualPrioritizedNumber,
-        actualPrioritizedNumber + actualRegularNumber
-      );
+      let prioritizedValidators = candidates.slice(0, actualPrioritizedNumber);
+      let regularValidators = candidates.slice(actualPrioritizedNumber, actualPrioritizedNumber + actualRegularNumber);
 
-      await setPriorityStatusForMany(prioritizedValidators, true);
-      await setPriorityStatusForMany(regularValidators, false);
+      let prioritizedWeights = await setPriorityStatusForMany(prioritizedValidators, true);
+      let regularWeights = await setPriorityStatusForMany(regularValidators, false);
 
-      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators].map((_) => _.address);
+      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators];
+      let inputTrustedWeights = [...regularWeights, ...prioritizedWeights];
       let expectingValidatorAddrs = [
         ...prioritizedValidators.slice(0, maxPrioritizedValidatorNumber),
         ...regularValidators.slice(0, maxRegularValidatorNumber),
         ...prioritizedValidators.slice(maxPrioritizedValidatorNumber, maxPrioritizedValidatorNumber + spareSlotNumber),
-      ].map((_) => _.address);
+      ];
 
       let outputValidators = await validatorContract.arrangeValidatorCandidates(
         inputValidatorAddrs,
-        maxValidatorNumber
+        inputTrustedWeights,
+        maxValidatorNumber,
+        maxPrioritizedValidatorNumber
       );
       expect(outputValidators).eql(expectingValidatorAddrs);
     });
@@ -321,24 +325,24 @@ describe('Arrange validators', () => {
       let actualPrioritizedNumber = maxPrioritizedValidatorNumber - 1;
       let actualRegularNumber = maxRegularValidatorNumber;
 
-      let prioritizedValidators = validatorCandidates.slice(0, actualPrioritizedNumber);
-      let regularValidators = validatorCandidates.slice(
-        actualPrioritizedNumber,
-        actualPrioritizedNumber + actualRegularNumber
-      );
+      let prioritizedValidators = candidates.slice(0, actualPrioritizedNumber);
+      let regularValidators = candidates.slice(actualPrioritizedNumber, actualPrioritizedNumber + actualRegularNumber);
 
-      await setPriorityStatusForMany(prioritizedValidators, true);
-      await setPriorityStatusForMany(regularValidators, false);
+      let prioritizedWeights = await setPriorityStatusForMany(prioritizedValidators, true);
+      let regularWeights = await setPriorityStatusForMany(regularValidators, false);
 
-      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators].map((_) => _.address);
+      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators];
+      let inputTrustedWeights = [...regularWeights, ...prioritizedWeights];
       let expectingValidatorAddrs = [
         ...prioritizedValidators.slice(0, actualPrioritizedNumber),
         ...regularValidators.slice(0, maxRegularValidatorNumber),
-      ].map((_) => _.address);
+      ];
 
       let outputValidators = await validatorContract.arrangeValidatorCandidates(
         inputValidatorAddrs,
-        actualPrioritizedNumber + actualRegularNumber
+        inputTrustedWeights,
+        actualPrioritizedNumber + actualRegularNumber,
+        maxPrioritizedValidatorNumber
       );
       expect(outputValidators).eql(expectingValidatorAddrs);
     });
@@ -348,25 +352,25 @@ describe('Arrange validators', () => {
       let actualPrioritizedNumber = maxPrioritizedValidatorNumber - spareSlotNumber;
       let actualRegularNumber = maxRegularValidatorNumber + 10;
 
-      let prioritizedValidators = validatorCandidates.slice(0, actualPrioritizedNumber);
-      let regularValidators = validatorCandidates.slice(
-        actualPrioritizedNumber,
-        actualPrioritizedNumber + actualRegularNumber
-      );
+      let prioritizedValidators = candidates.slice(0, actualPrioritizedNumber);
+      let regularValidators = candidates.slice(actualPrioritizedNumber, actualPrioritizedNumber + actualRegularNumber);
 
-      await setPriorityStatusForMany(prioritizedValidators, true);
-      await setPriorityStatusForMany(regularValidators, false);
+      let prioritizedWeights = await setPriorityStatusForMany(prioritizedValidators, true);
+      let regularWeights = await setPriorityStatusForMany(regularValidators, false);
 
-      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators].map((_) => _.address);
+      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators];
+      let inputTrustedWeights = [...regularWeights, ...prioritizedWeights];
       let expectingValidatorAddrs = [
         ...prioritizedValidators.slice(0, maxPrioritizedValidatorNumber),
         ...regularValidators.slice(0, maxRegularValidatorNumber),
         ...regularValidators.slice(maxRegularValidatorNumber, maxRegularValidatorNumber + spareSlotNumber),
-      ].map((_) => _.address);
+      ];
 
       let outputValidators = await validatorContract.arrangeValidatorCandidates(
         inputValidatorAddrs,
-        maxValidatorNumber
+        inputTrustedWeights,
+        maxValidatorNumber,
+        maxPrioritizedValidatorNumber
       );
       expect(outputValidators).eql(expectingValidatorAddrs);
     });
@@ -375,24 +379,24 @@ describe('Arrange validators', () => {
       let actualPrioritizedNumber = maxPrioritizedValidatorNumber - 2;
       let actualRegularNumber = maxRegularValidatorNumber - 2;
 
-      let prioritizedValidators = validatorCandidates.slice(0, actualPrioritizedNumber);
-      let regularValidators = validatorCandidates.slice(
-        actualPrioritizedNumber,
-        actualPrioritizedNumber + actualRegularNumber
-      );
+      let prioritizedValidators = candidates.slice(0, actualPrioritizedNumber);
+      let regularValidators = candidates.slice(actualPrioritizedNumber, actualPrioritizedNumber + actualRegularNumber);
 
-      await setPriorityStatusForMany(prioritizedValidators, true);
-      await setPriorityStatusForMany(regularValidators, false);
+      let prioritizedWeights = await setPriorityStatusForMany(prioritizedValidators, true);
+      let regularWeights = await setPriorityStatusForMany(regularValidators, false);
 
-      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators].map((_) => _.address);
+      let inputValidatorAddrs = [...regularValidators, ...prioritizedValidators];
+      let inputTrustedWeights = [...regularWeights, ...prioritizedWeights];
       let expectingValidatorAddrs = [
         ...prioritizedValidators.slice(0, actualPrioritizedNumber),
         ...regularValidators.slice(0, actualRegularNumber),
-      ].map((_) => _.address);
+      ];
 
       let outputValidators = await validatorContract.arrangeValidatorCandidates(
         inputValidatorAddrs,
-        actualPrioritizedNumber + actualRegularNumber
+        inputTrustedWeights,
+        actualPrioritizedNumber + actualRegularNumber,
+        maxPrioritizedValidatorNumber
       );
       expect(outputValidators).eql(expectingValidatorAddrs);
     });
@@ -400,7 +404,7 @@ describe('Arrange validators', () => {
 
   describe('Arrange shuffled validators test', async () => {
     beforeEach(async () => {
-      let validators = validatorCandidates.slice(0, 15);
+      let validators = candidates.slice(0, 15);
       await setPriorityStatusForMany(validators, false);
     });
 
@@ -409,16 +413,18 @@ describe('Arrange validators', () => {
       let indexes = [0, 1, 2, 3, 4, 5, 6];
       let statuses = [true, false, true, true, false, true, false];
 
-      await setPriorityStatusByIndexes(indexes, statuses);
+      let inputTrustedWeights = await setPriorityStatusByIndexes(indexes, statuses);
 
-      let sortedIndexes = sortArrayByBoolean(indexes, statuses);
-      let expectingValidatorAddrs = sortedIndexes.map((i) => validatorCandidates[i].address);
+      let sortedIndexes = sortArrayByBoolean([...indexes], statuses);
+      let expectingValidatorAddrs = sortedIndexes.map((i) => candidates[i]);
 
-      let inputValidatorAddrs = indexes.map((i) => validatorCandidates[i].address);
+      let inputValidatorAddrs = indexes.map((i) => candidates[i]);
+
       let outputValidators = await validatorContract.arrangeValidatorCandidates(
         inputValidatorAddrs,
-
-        maxValidatorNumber
+        inputTrustedWeights,
+        maxValidatorNumber,
+        maxPrioritizedValidatorNumber
       );
       expect(outputValidators).eql(expectingValidatorAddrs);
     });
@@ -428,36 +434,37 @@ describe('Arrange validators', () => {
       let indexes = [0, 1, 2, 3, 4, 5, 6];
       let statuses = [true, false, true, true, false, true, true];
 
-      await setPriorityStatusByIndexes(indexes, statuses);
+      let inputTrustedWeights = await setPriorityStatusByIndexes(indexes, statuses);
 
       let sortedIndexes = [0, 2, 3, 5, 1, 4, 6];
-      let expectingValidatorAddrs = sortedIndexes.map((i) => validatorCandidates[i].address);
+      let expectingValidatorAddrs = sortedIndexes.map((i) => candidates[i]);
 
-      let inputValidatorAddrs = indexes.map((i) => validatorCandidates[i].address);
+      let inputValidatorAddrs = indexes.map((i) => candidates[i]);
       let outputValidators = await validatorContract.arrangeValidatorCandidates(
         inputValidatorAddrs,
-
-        maxValidatorNumber
+        inputTrustedWeights,
+        maxValidatorNumber,
+        maxPrioritizedValidatorNumber
       );
       expect(outputValidators).eql(expectingValidatorAddrs);
     });
 
     it('Shuffled: Actual(prioritized) <  MaxNum(prioritized); Actual(regular) >  MaxNum(regular)', async () => {
       // prettier-ignore
-      let indexes = [0, 1, 2, 3, 4, 5, 6, 7];
+      let indexes =  [0,    1,     2,     3,     4,     5,    6,    7    ];
       let statuses = [true, false, false, false, false, true, true, false];
 
-      await setPriorityStatusByIndexes(indexes, statuses);
+      let inputTrustedWeights = await setPriorityStatusByIndexes(indexes, statuses);
 
-      let sortedIndexes = sortArrayByBoolean(indexes, statuses);
-      let expectingValidatorAddrs = sortedIndexes
-        .map((i) => validatorCandidates[i].address)
-        .slice(0, maxValidatorNumber);
+      let sortedIndexes = sortArrayByBoolean([...indexes], statuses);
+      let expectingValidatorAddrs = sortedIndexes.map((i) => candidates[i]).slice(0, maxValidatorNumber);
 
-      let inputValidatorAddrs = indexes.map((i) => validatorCandidates[i].address).slice(0, maxValidatorNumber);
+      let inputValidatorAddrs = indexes.map((i) => candidates[i]).slice(0, maxValidatorNumber);
       let outputValidators = await validatorContract.arrangeValidatorCandidates(
         inputValidatorAddrs,
-        maxValidatorNumber
+        inputTrustedWeights,
+        maxValidatorNumber,
+        maxPrioritizedValidatorNumber
       );
       expect(outputValidators).eql(expectingValidatorAddrs);
     });
