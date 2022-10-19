@@ -2,11 +2,12 @@
 
 pragma solidity ^0.8.9;
 
+import "./MockPrecompile.sol";
 import "../libraries/Sorting.sol";
 import "../libraries/EnumFlags.sol";
 import "../ronin/validator/RoninValidatorSet.sol";
 
-contract MockRoninValidatorSetExtended is RoninValidatorSet {
+contract MockRoninValidatorSetExtended is RoninValidatorSet, MockPrecompile {
   uint256[] internal _epochs;
   uint256[] internal _periods;
 
@@ -68,12 +69,13 @@ contract MockRoninValidatorSetExtended is RoninValidatorSet {
     }
   }
 
-  function arrangeValidatorCandidates(address[] memory _candidates, uint _newValidatorCount)
-    external
-    view
-    returns (address[] memory)
-  {
-    _arrangeValidatorCandidates(_candidates, _newValidatorCount);
+  function arrangeValidatorCandidates(
+    address[] memory _candidates,
+    uint256[] memory _trustedWeights,
+    uint _newValidatorCount,
+    uint _maxPrioritizedValidatorNumber
+  ) external pure returns (address[] memory) {
+    _arrangeValidatorCandidates(_candidates, _trustedWeights, _newValidatorCount, _maxPrioritizedValidatorNumber);
 
     assembly {
       mstore(_candidates, _newValidatorCount)

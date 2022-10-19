@@ -15,11 +15,13 @@ import "../../libraries/Sorting.sol";
 import "../../libraries/Math.sol";
 import "../../libraries/EnumFlags.sol";
 import "../../precompile-usages/PrecompileUsageSortValidators.sol";
+import "../../precompile-usages/PrecompileUsagePickValidatorSet.sol";
 import "./CandidateManager.sol";
 
 contract RoninValidatorSet is
   IRoninValidatorSet,
   PrecompileUsageSortValidators,
+  PrecompileUsagePickValidatorSet,
   RONTransferHelper,
   HasStakingContract,
   HasStakingVestingContract,
@@ -32,7 +34,9 @@ contract RoninValidatorSet is
   using EnumFlags for EnumFlags.ValidatorFlag;
 
   /// @dev The address of the precompile of sorting validators
-  address internal constant _precompileSortValidatorAddress = address(0x66);
+  address internal constant _precompileSortValidatorsAddress = address(0x66);
+  /// @dev The address of the precompile of picking new validator set
+  address internal constant _precompilePickValidatorSetAddress = address(0x68);
   /// @dev The maximum number of validator.
   uint256 internal _maxValidatorNumber;
   /// @dev The number of blocks in a epoch
@@ -165,9 +169,9 @@ contract RoninValidatorSet is
     uint256 _period = periodOf(block.number);
     bool _periodEnding = periodEndingAt(block.number);
 
-    address[] memory _validators = getValidators();
-    for (uint _i = 0; _i < _validators.length; _i++) {
-      _validatorAddr = _validators[_i];
+    address[] memory _currentValidators = getValidators();
+    for (uint _i = 0; _i < _currentValidators.length; _i++) {
+      _validatorAddr = _currentValidators[_i];
 
       if (_jailed(_validatorAddr) || _rewardDeprecated(_validatorAddr, _period)) {
         continue;
@@ -199,7 +203,7 @@ contract RoninValidatorSet is
     }
 
     if (_periodEnding) {
-      _staking.settleRewardPools(_validators);
+      _staking.settleRewardPools(_currentValidators);
       if (_delegatingAmount > 0) {
         require(
           _sendRON(payable(address(_staking)), 0),
@@ -418,7 +422,14 @@ contract RoninValidatorSet is
    * @inheritdoc PrecompileUsageSortValidators
    */
   function precompileSortValidatorsAddress() public pure override returns (address) {
-    return _precompileSortValidatorAddress;
+    return _precompileSortValidatorsAddress;
+  }
+
+  /**
+   * @inheritdoc PrecompileUsagePickValidatorSet
+   */
+  function precompilePickValidatorSet() public pure override returns (address) {
+    return _precompilePickValidatorSetAddress;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -457,92 +468,48 @@ contract RoninValidatorSet is
    *
    */
   function _updateValidatorSet(bool _periodEnding) internal virtual {
-    address[] memory _candidates = _syncNewValidatorSet(_periodEnding);
-    uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
-    _arrangeValidatorCandidates(_candidates, _newValidatorCount);
-
-    assembly {
-      mstore(_candidates, _newValidatorCount)
+    if (_periodEnding) {
+      // This is a temporary approach since the slashing issue is still not finalized.
+      // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
+      uint256 _minBalance = _stakingContract.minValidatorBalance();
+      uint256[] memory _balanceWeights = _filterUnsatisfiedCandidates(_periodEnding ? _minBalance : 0);
+      uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getWeights(_candidates);
+      (address[] memory _newValidators, uint _newValidatorCount) = _pickValidatorSet(
+        _candidates,
+        _balanceWeights,
+        _trustedWeights,
+        _maxValidatorNumber,
+        _maxPrioritizedValidatorNumber
+      );
+      _setValidatorSet(_newValidators, _newValidatorCount);
     }
 
-    // for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
-    //   delete _validatorMap[_validators[_i]];
-    //   delete _validators[_i];
-    // }
-
-    // uint256 _count;
-    // bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
-    // for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
-    //   if (_maintainingList[_i]) {
-    //     continue;
-    //   }
-
-    //   address _newValidator = _candidates[_i];
-    //   if (_newValidator == _validators[_count]) {
-    //     _count++;
-    //     continue;
-    //   }
-
-    //   delete _validatorMap[_validators[_count]];
-    //   _validatorMap[_newValidator] = true;
-    //   _validators[_count] = _newValidator;
-    //   _count++;
-    // }
-
-    // validatorCount = _count;
-    // emit ValidatorSetUpdated(_candidates);
+    // TODO: filter jail
+    // TODO: filter maintaining
   }
 
-  /**
-   * @dev Returns validator candidates list.
-   */
-  function _syncNewValidatorSet(bool _periodEnding) internal returns (address[] memory _candidateList) {
-    // This is a temporary approach since the slashing issue is still not finalized.
-    // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
-    uint256 _minBalance = _stakingContract.minValidatorBalance();
-    uint256[] memory _weights = _filterUnsatisfiedCandidates(_periodEnding ? _minBalance : 0);
-    _candidateList = _candidates;
-
-    uint256 _length = _candidateList.length;
-    for (uint256 _i; _i < _candidateList.length; _i++) {
-      if (_jailed(_candidateList[_i]) || _weights[_i] < _minBalance) {
-        _length--;
-        _candidateList[_i] = _candidateList[_length];
-        _weights[_i] = _weights[_length];
-      }
+  function _setValidatorSet(address[] memory _newValidators, uint256 _newValidatorCount) private {
+    for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
+      delete _validatorMap[_validators[_i]];
+      delete _validators[_i];
     }
 
-    assembly {
-      mstore(_candidateList, _length)
-      mstore(_weights, _length)
-    }
-
-    _candidateList = _sortCandidates(_candidateList, _weights);
-  }
-
-  /**
-   * @dev Arranges the sorted candidates to list of validators, by asserting prioritized and non-prioritized candidates
-   *
-   * @param _candidates A sorted list of candidates
-   */
-  function _arrangeValidatorCandidates(address[] memory _candidates, uint _newValidatorCount) internal view {
-    address[] memory _waitingCandidates = new address[](_candidates.length);
-    uint _waitingCounter;
-    uint _prioritySlotCounter;
-
-    uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getWeights(_candidates);
-    for (uint _i = 0; _i < _candidates.length; _i++) {
-      if (_trustedWeights[_i] > 0 && _prioritySlotCounter < _maxPrioritizedValidatorNumber) {
-        _candidates[_prioritySlotCounter++] = _candidates[_i];
+    uint256 _count;
+    for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
+      address _newValidator = _newValidators[_i];
+      if (_newValidator == _validators[_count]) {
+        _count++;
         continue;
       }
-      _waitingCandidates[_waitingCounter++] = _candidates[_i];
+
+      delete _validatorMap[_validators[_count]];
+      _validatorMap[_newValidator] = EnumFlags.ValidatorFlag.Both;
+      _validators[_count] = _newValidator;
+      _count++;
     }
 
-    _waitingCounter = 0;
-    for (uint _i = _prioritySlotCounter; _i < _newValidatorCount; _i++) {
-      _candidates[_i] = _waitingCandidates[_waitingCounter++];
-    }
+    validatorCount = _count;
+    emit ValidatorSetUpdated(_newValidators);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
