@@ -20,6 +20,9 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   /// @dev Mapping from bridge voter address => weight
   mapping(address => uint256) internal _bridgeVoterWeight;
 
+  /// @dev Mapping from consensus address => added block
+  mapping(address => uint256) internal _addedBlock;
+
   /// @dev Consensus array
   address[] internal _consensusList;
   /// @dev Governors array
@@ -227,7 +230,14 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function getTrustedOrganizationAt(uint256 _idx) public view override returns (TrustedOrganization memory) {
     address _addr = _consensusList[_idx];
-    return TrustedOrganization(_addr, _governorList[_idx], _bridgeVoterList[_idx], _consensusWeight[_addr]);
+    return
+      TrustedOrganization(
+        _addr,
+        _governorList[_idx],
+        _bridgeVoterList[_idx],
+        _consensusWeight[_addr],
+        _addedBlock[_addr]
+      );
   }
 
   /**
@@ -297,6 +307,8 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
 
     _bridgeVoterList.push(_v.bridgeVoter);
     _bridgeVoterWeight[_v.bridgeVoter] = _v.weight;
+
+    _addedBlock[_v.consensusAddr] = block.number;
 
     _totalWeight += _v.weight;
   }
@@ -386,6 +398,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
 
     _totalWeight -= _weight;
 
+    delete _addedBlock[_addr];
     delete _consensusWeight[_addr];
     _consensusList[_index] = _consensusList[_count - 1];
     _consensusList.pop();

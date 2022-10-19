@@ -162,9 +162,12 @@ contract SlashIndicator is
   function slashBridgeVoting(address _consensusAddr) external {
     IRoninTrustedOrganization.TrustedOrganization memory _org = _roninTrustedOrganizationContract
       .getTrustedOrganization(_consensusAddr);
-    uint256 _lastVotedBlock = _roninGovernanceAdminContract.lastVotedBlock(_org.bridgeVoter);
-    if (block.number - _lastVotedBlock > bridgeVotingThreshold) {
-      uint256 _period = _validatorContract.periodOf(block.number);
+    uint256 _lastVotedBlock = Math.max(_roninGovernanceAdminContract.lastVotedBlock(_org.bridgeVoter), _org.addedBlock);
+    uint256 _period = _validatorContract.periodOf(block.number);
+    if (
+      block.number - _lastVotedBlock > bridgeVotingThreshold &&
+      _unavailabilitySlashed[_consensusAddr][_period] != SlashType.BRIDGE_VOTING
+    ) {
       _unavailabilitySlashed[_consensusAddr][_period] = SlashType.BRIDGE_VOTING;
       emit UnavailabilitySlashed(_consensusAddr, SlashType.BRIDGE_VOTING, _period);
       _validatorContract.slash(_consensusAddr, 0, bridgeVotingSlashAmount);

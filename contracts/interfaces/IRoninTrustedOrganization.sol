@@ -14,6 +14,8 @@ interface IRoninTrustedOrganization is IQuorum {
     address bridgeVoter;
     // Its Weight
     uint256 weight;
+    // The block that the organization was added
+    uint256 addedBlock;
   }
 
   /// @dev Emitted when the trusted organization is added.
