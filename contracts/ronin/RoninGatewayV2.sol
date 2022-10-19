@@ -8,7 +8,7 @@ import "../extensions/isolated-governance/IsolatedGovernance.sol";
 import "../extensions/MinimumWithdrawal.sol";
 import "../interfaces/IERC20Mintable.sol";
 import "../interfaces/IERC721Mintable.sol";
-import "./IRoninGatewayV2.sol";
+import "../interfaces/IRoninGatewayV2.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 import "../interfaces/collections/IHasValidatorContract.sol";
 

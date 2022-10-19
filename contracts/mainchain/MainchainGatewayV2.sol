@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../extensions/GatewayV2.sol";
 import "../extensions/WithdrawalLimitation.sol";
 import "../libraries/Transfer.sol";
-import "./IMainchainGatewayV2.sol";
+import "../interfaces/IMainchainGatewayV2.sol";
 
 contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessControlEnumerable, IMainchainGatewayV2 {
   using Token for Token.Info;

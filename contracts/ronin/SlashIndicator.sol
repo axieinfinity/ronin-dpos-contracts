@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/ISlashIndicator.sol";
 import "../extensions/collections/HasValidatorContract.sol";
 import "../extensions/collections/HasMaintenanceContract.sol";
+import "../extensions/collections/HasRoninTrustedOrganizationContract.sol";
+import "../extensions/collections/HasRoninGovernanceAdminContract.sol";
 import "../libraries/Math.sol";
 import "../precompile-usages/PrecompileUsageValidateDoubleSign.sol";
 
@@ -14,6 +16,8 @@ contract SlashIndicator is
   PrecompileUsageValidateDoubleSign,
   HasValidatorContract,
   HasMaintenanceContract,
+  HasRoninTrustedOrganizationContract,
+  HasRoninGovernanceAdminContract,
   Initializable
 {
   using Math for uint256;
@@ -33,11 +37,15 @@ contract SlashIndicator is
   uint256 public misdemeanorThreshold;
   /// @dev The threshold to slash when validator is unavailability reaches felony
   uint256 public felonyThreshold;
+  /// @dev The threshold to slash when a trusted organization does not vote for bridge operators
+  uint256 public bridgeVotingThreshold;
 
   /// @dev The amount of RON to slash felony.
   uint256 public slashFelonyAmount;
   /// @dev The amount of RON to slash double sign.
   uint256 public slashDoubleSignAmount;
+  /// @dev The amount of RON to slash bridge voting.
+  uint256 public bridgeVotingSlashAmount;
   /// @dev The block duration to jail a validator that reaches felony thresold.
   uint256 public felonyJailDuration;
   /// @dev The block number that the punished validator will be jailed until, due to double signing.
@@ -67,18 +75,26 @@ contract SlashIndicator is
   function initialize(
     address __validatorContract,
     address __maintenanceContract,
+    address __roninTrustedOrganizationContract,
+    address __roninGovernanceAdminContract,
     uint256 _misdemeanorThreshold,
     uint256 _felonyThreshold,
+    uint256 _bridgeVotingThreshold,
     uint256 _slashFelonyAmount,
     uint256 _slashDoubleSignAmount,
+    uint256 _bridgeVotingSlashAmount,
     uint256 _felonyJailBlocks,
     uint256 _doubleSigningConstrainBlocks
   ) external initializer {
     _setValidatorContract(__validatorContract);
     _setMaintenanceContract(__maintenanceContract);
+    _setRoninTrustedOrganizationContract(__roninTrustedOrganizationContract);
+    _setRoninGovernanceAdminContract(__roninGovernanceAdminContract);
     _setSlashThresholds(_felonyThreshold, _misdemeanorThreshold);
+    _setBridgeVotingThreshold(_bridgeVotingThreshold);
     _setSlashFelonyAmount(_slashFelonyAmount);
     _setSlashDoubleSignAmount(_slashDoubleSignAmount);
+    _setBridgeVotingSlashAmount(_bridgeVotingSlashAmount);
     _setFelonyJailDuration(_felonyJailBlocks);
     _setDoubleSigningConstrainBlocks(_doubleSigningConstrainBlocks);
     _setDoubleSigningJailUntilBlock(type(uint256).max);
@@ -140,6 +156,21 @@ contract SlashIndicator is
     }
   }
 
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function slashBridgeVoting(address _consensusAddr) external {
+    IRoninTrustedOrganization.TrustedOrganization memory _org = _roninTrustedOrganizationContract
+      .getTrustedOrganization(_consensusAddr);
+    uint256 _lastVotedBlock = _roninGovernanceAdminContract.lastVotedBlock(_org.bridgeVoter);
+    if (block.number - _lastVotedBlock > bridgeVotingThreshold) {
+      uint256 _period = _validatorContract.periodOf(block.number);
+      _unavailabilitySlashed[_consensusAddr][_period] = SlashType.BRIDGE_VOTING;
+      emit UnavailabilitySlashed(_consensusAddr, SlashType.BRIDGE_VOTING, _period);
+      _validatorContract.slash(_consensusAddr, 0, bridgeVotingSlashAmount);
+    }
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                               GOVERNANCE FUNCTIONS                                //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -170,6 +201,20 @@ contract SlashIndicator is
    */
   function setFelonyJailDuration(uint256 _felonyJailDuration) external override onlyAdmin {
     _setFelonyJailDuration(_felonyJailDuration);
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function setBridgeVotingThreshold(uint256 _threshold) external override onlyAdmin {
+    _setBridgeVotingThreshold(_threshold);
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function setBridgeVotingSlashAmount(uint256 _amount) external override onlyAdmin {
+    _setBridgeVotingSlashAmount(_amount);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -283,6 +328,22 @@ contract SlashIndicator is
   function _setDoubleSigningJailUntilBlock(uint256 _doubleSigningJailUntilBlock) internal {
     doubleSigningJailUntilBlock = _doubleSigningJailUntilBlock;
     emit DoubleSigningJailUntilBlockUpdated(_doubleSigningJailUntilBlock);
+  }
+
+  /**
+   * @dev Sets the threshold to slash when trusted organization does not vote for bridge operators.
+   */
+  function _setBridgeVotingThreshold(uint256 _threshold) internal {
+    bridgeVotingThreshold = _threshold;
+    emit BridgeVotingThresholdUpdated(_threshold);
+  }
+
+  /**
+   * @dev Sets the amount of RON to slash bridge voting.
+   */
+  function _setBridgeVotingSlashAmount(uint256 _amount) internal {
+    bridgeVotingSlashAmount = _amount;
+    emit BridgeVotingSlashAmountUpdated(_amount);
   }
 
   /**

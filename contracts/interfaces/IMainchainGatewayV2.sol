@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../interfaces/IBridge.sol";
-import "../interfaces/IWETH.sol";
+import "./IBridge.sol";
+import "./IWETH.sol";
+import "./consumers/SignatureConsumer.sol";
+import "./consumers/MappedTokenConsumer.sol";
 import "../libraries/Transfer.sol";
-import "../interfaces/consumers/SignatureConsumer.sol";
-import "../interfaces/consumers/MappedTokenConsumer.sol";
 
 interface IMainchainGatewayV2 is SignatureConsumer, MappedTokenConsumer, IBridge {
   /// @dev Emitted when the deposit is requested

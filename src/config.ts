@@ -84,8 +84,10 @@ export interface StakingVestingConfig {
 export interface SlashIndicatorArguments {
   misdemeanorThreshold?: BigNumberish;
   felonyThreshold?: BigNumberish;
+  bridgeVotingThreshold?: BigNumberish;
   slashFelonyAmount?: BigNumberish;
   slashDoubleSignAmount?: BigNumberish;
+  bridgeVotingSlashAmount?: BigNumberish;
   felonyJailBlocks?: BigNumberish;
   doubleSigningConstrainBlocks?: BigNumberish;
 }
@@ -167,8 +169,10 @@ export const slashIndicatorConf: SlashIndicatorConfig = {
   [Network.Devnet]: {
     misdemeanorThreshold: 50,
     felonyThreshold: 150,
+    bridgeVotingThreshold: 28800 * 3, // ~3 days
     slashFelonyAmount: BigNumber.from(10).pow(18).mul(1), // 1 RON
     slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10), // 10 RON
+    bridgeVotingSlashAmount: BigNumber.from(10).pow(18).mul(10_000), // 10.000 RON
     felonyJailBlocks: 28800 * 2, // jails for 2 days
     doubleSigningConstrainBlocks: 28800,
   },

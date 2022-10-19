@@ -40,6 +40,8 @@ export const defaultTestConfig = {
   slashFelonyAmount: BigNumber.from(10).pow(18).mul(1),
   slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10),
   doubleSigningConstrainBlocks: 28800,
+  bridgeVotingThreshold: 28800 * 3,
+  bridgeVotingSlashAmount: BigNumber.from(10).pow(18).mul(10_000),
 
   maxValidatorNumber: 4,
   maxPrioritizedValidatorNumber: 0,
@@ -86,6 +88,8 @@ export const initTest = (id: string) =>
         maxSchedules: options?.maxSchedules ?? defaultTestConfig.maxSchedules,
       };
       slashIndicatorConf[network.name] = {
+        bridgeVotingThreshold: options?.bridgeVotingThreshold ?? defaultTestConfig.bridgeVotingThreshold,
+        bridgeVotingSlashAmount: options?.bridgeVotingSlashAmount ?? defaultTestConfig.bridgeVotingSlashAmount,
         misdemeanorThreshold: options?.misdemeanorThreshold ?? defaultTestConfig.misdemeanorThreshold,
         felonyThreshold: options?.felonyThreshold ?? defaultTestConfig.felonyThreshold,
         slashFelonyAmount: options?.slashFelonyAmount ?? defaultTestConfig.slashFelonyAmount,

@@ -7,13 +7,18 @@ interface ISlashIndicator {
     UNKNOWN,
     MISDEMEANOR,
     FELONY,
-    DOUBLE_SIGNING
+    DOUBLE_SIGNING,
+    BRIDGE_VOTING
   }
 
   /// @dev Emitted when the validator is slashed for unavailability
   event UnavailabilitySlashed(address indexed validator, SlashType slashType, uint256 period);
   /// @dev Emitted when the thresholds updated
   event SlashThresholdsUpdated(uint256 felonyThreshold, uint256 misdemeanorThreshold);
+  /// @dev Emitted when the threshold to slash when trusted organization does not vote for bridge operators is updated
+  event BridgeVotingThresholdUpdated(uint256 threshold);
+  /// @dev Emitted when the amount of RON to slash bridge voting is updated
+  event BridgeVotingSlashAmountUpdated(uint256 amount);
   /// @dev Emitted when the amount of slashing felony updated
   event SlashFelonyAmountUpdated(uint256 slashFelonyAmount);
   /// @dev Emitted when the amount of slashing double sign updated
@@ -50,6 +55,13 @@ interface ISlashIndicator {
     bytes calldata _header1,
     bytes calldata _header2
   ) external;
+
+  /**
+   * @dev Slashes for bridge voter governance.
+   *
+   * Emits the event `UnavailabilitySlashed`.
+   */
+  function slashBridgeVoting(address _consensusAddr) external;
 
   /**
    * @dev Sets the slash thresholds
@@ -94,6 +106,28 @@ interface ISlashIndicator {
    *
    */
   function setFelonyJailDuration(uint256 _felonyJailDuration) external;
+
+  /**
+   * @dev Sets the threshold to slash when trusted organization does not vote for bridge operators.
+   *
+   * Requirements:
+   * - Only admin can call this method
+   *
+   * Emits the event `BridgeVotingThresholdUpdated`
+   *
+   */
+  function setBridgeVotingThreshold(uint256 _threshold) external;
+
+  /**
+   * @dev Sets the amount of RON to slash bridge voting.
+   *
+   * Requirements:
+   * - Only admin can call this method
+   *
+   * Emits the event `BridgeVotingSlashAmountUpdated`
+   *
+   */
+  function setBridgeVotingSlashAmount(uint256 _amount) external;
 
   /**
    * @dev Returns the current unavailability indicator of a validator.

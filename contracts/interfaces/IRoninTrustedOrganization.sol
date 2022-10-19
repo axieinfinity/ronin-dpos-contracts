@@ -10,7 +10,7 @@ interface IRoninTrustedOrganization is IQuorum {
     address consensusAddr;
     // Address to voting proposal
     address governor;
-    // Address to voting proposal
+    // Address to voting bridge operators
     address bridgeVoter;
     // Its Weight
     uint256 weight;
@@ -119,7 +119,14 @@ interface IRoninTrustedOrganization is IQuorum {
   function countTrustedOrganizations() external view returns (uint256);
 
   /**
-   * @dev Returns all of the trusted organization addresses.
+   * @dev Returns all of the trusted organizations.
    */
   function getAllTrustedOrganizations() external view returns (TrustedOrganization[] memory);
+
+  /**
+   * @dev Returns the trusted organization by consensus address.
+   *
+   * Reverts once the consensus address is non-existent.
+   */
+  function getTrustedOrganization(address _consensusAddr) external view returns (TrustedOrganization memory);
 }

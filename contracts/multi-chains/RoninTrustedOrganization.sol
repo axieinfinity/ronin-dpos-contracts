@@ -191,19 +191,6 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function getTrustedOrganizationAt(uint256 _idx) external view override returns (TrustedOrganization memory) {
-    return
-      TrustedOrganization(
-        _consensusList[_idx],
-        _governorList[_idx],
-        _bridgeVoterList[_idx],
-        _consensusWeight[_consensusList[_idx]]
-      );
-  }
-
-  /**
-   * @inheritdoc IRoninTrustedOrganization
-   */
   function countTrustedOrganizations() external view override returns (uint256) {
     return _consensusList.length;
   }
@@ -221,6 +208,26 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
       _list[_i].bridgeVoter = _bridgeVoterList[_i];
       _list[_i].weight = _consensusWeight[_addr];
     }
+  }
+
+  /**
+   * @inheritdoc IRoninTrustedOrganization
+   */
+  function getTrustedOrganization(address _consensusAddr) external view returns (TrustedOrganization memory) {
+    for (uint _i = 0; _i < _consensusList.length; _i++) {
+      if (_consensusList[_i] == _consensusAddr) {
+        return getTrustedOrganizationAt(_i);
+      }
+    }
+    revert("RoninTrustedOrganization: query for non-existent consensus address");
+  }
+
+  /**
+   * @inheritdoc IRoninTrustedOrganization
+   */
+  function getTrustedOrganizationAt(uint256 _idx) public view override returns (TrustedOrganization memory) {
+    address _addr = _consensusList[_idx];
+    return TrustedOrganization(_addr, _governorList[_idx], _bridgeVoterList[_idx], _consensusWeight[_addr]);
   }
 
   /**

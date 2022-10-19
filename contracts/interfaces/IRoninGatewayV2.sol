@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../libraries/Transfer.sol";
-import "../interfaces/consumers/MappedTokenConsumer.sol";
+import "./consumers/MappedTokenConsumer.sol";
 
 interface IRoninGatewayV2 is MappedTokenConsumer {
   /// @dev Emitted when the assets are depositted
