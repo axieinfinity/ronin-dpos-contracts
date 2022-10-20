@@ -312,6 +312,8 @@ contract RoninValidatorSet is
   }
 
   /**
+   * Notice: A validator is always a bride operator
+   *
    * @inheritdoc IRoninValidatorSet
    */
   function getBridgeOperators() public view override returns (address[] memory _bridgeOperatorList) {
@@ -319,6 +321,8 @@ contract RoninValidatorSet is
   }
 
   /**
+   * Notice: A validator is always a bride operator
+   *
    * @inheritdoc IRoninValidatorSet
    */
   function isBridgeOperator(address _addr) public view override returns (bool) {
@@ -326,6 +330,8 @@ contract RoninValidatorSet is
   }
 
   /**
+   * Notice: A validator is always a bride operator
+   *
    * @inheritdoc IRoninValidatorSet
    */
   function totalBridgeOperators() external view returns (uint256) {
