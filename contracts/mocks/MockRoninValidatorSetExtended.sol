@@ -76,11 +76,6 @@ contract MockRoninValidatorSetExtended is RoninValidatorSet, MockPrecompile {
     uint _maxPrioritizedValidatorNumber
   ) external pure returns (address[] memory) {
     _arrangeValidatorCandidates(_candidates, _trustedWeights, _newValidatorCount, _maxPrioritizedValidatorNumber);
-
-    assembly {
-      mstore(_candidates, _newValidatorCount)
-    }
-
     return _candidates;
   }
 

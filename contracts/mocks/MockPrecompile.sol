@@ -60,5 +60,9 @@ contract MockPrecompile {
     for (uint _i = _prioritySlotCounter; _i < _newValidatorCount; _i++) {
       _candidates[_i] = _waitingCandidates[_waitingCounter++];
     }
+
+    assembly {
+      mstore(_candidates, _newValidatorCount)
+    }
   }
 }
