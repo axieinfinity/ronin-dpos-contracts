@@ -546,11 +546,29 @@ contract RoninValidatorSet is
    */
   function _deactivateUnsatisfiedBlockProducers(address[] memory _currentValidators) private {
     bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
+    address[] memory _deactivatedBlockProducers = _currentValidators;
+    uint _deactivatedCount;
 
-    // for (uint _i = 0; _i < _validators.length; _i++) {}
+    for (uint _i = 0; _i < _currentValidators.length; _i++) {
+      address _currentValidator = _currentValidators[_i];
+      if (!isBlockProducer(_currentValidator)) {
+        continue;
+      }
 
-    // TODO: filter jail
-    // TODO: filter maintaining
+      if (_jailed(_currentValidator) || _maintainingList[_i]) {
+        _validatorMap[_currentValidator] = _validatorMap[_currentValidator].removeFlag(
+          EnumFlags.ValidatorFlag.BlockProducer
+        );
+
+        _deactivatedBlockProducers[_deactivatedCount++] = _currentValidator;
+      }
+    }
+
+    assembly {
+      mstore(_deactivatedBlockProducers, _deactivatedCount)
+    }
+
+    emit DeactivatedBlockProducers(_deactivatedBlockProducers);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
