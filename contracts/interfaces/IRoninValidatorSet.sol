@@ -15,6 +15,8 @@ interface IRoninValidatorSet is ICandidateManager {
   event NumberOfEpochsInPeriodUpdated(uint256);
   /// @dev Emitted when the validator set is updated
   event ValidatorSetUpdated(address[]);
+  /// @dev Emitted when the bridge operator set is updated
+  event BridgeOperatorSetUpdated(address[]);
   /// @dev Emitted when the reward of the valdiator is deprecated.
   event RewardDeprecated(address coinbaseAddr, uint256 rewardAmount);
   /// @dev Emitted when the block reward is submitted.

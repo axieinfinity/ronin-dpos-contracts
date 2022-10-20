@@ -312,21 +312,25 @@ contract RoninValidatorSet is
   }
 
   /**
-   * Notice: A validator is always a bride operator
-   *
    * @inheritdoc IRoninValidatorSet
    */
   function getBridgeOperators() public view override returns (address[] memory _bridgeOperatorList) {
-    return getValidators();
+    _bridgeOperatorList = new address[](validatorCount);
+    for (uint _i = 0; _i < _bridgeOperatorList.length; _i++) {
+      _bridgeOperatorList[_i] = _candidateInfo[_validators[_i]].bridgeOperatorAddr;
+    }
   }
 
   /**
-   * Notice: A validator is always a bride operator
-   *
    * @inheritdoc IRoninValidatorSet
    */
-  function isBridgeOperator(address _addr) public view override returns (bool) {
-    return isValidator(_addr);
+  function isBridgeOperator(address _bridgeOperatorAddr) external view override returns (bool _result) {
+    for (uint _i = 0; _i < validatorCount; _i++) {
+      if (_candidateInfo[_validators[_i]].bridgeOperatorAddr == _bridgeOperatorAddr) {
+        _result = true;
+        break;
+      }
+    }
   }
 
   /**
@@ -539,6 +543,7 @@ contract RoninValidatorSet is
 
     validatorCount = _count;
     emit ValidatorSetUpdated(_newValidators);
+    emit BridgeOperatorSetUpdated(getBridgeOperators());
   }
 
   /**
