@@ -27,6 +27,8 @@ interface IRoninValidatorSet is ICandidateManager {
   event BridgeOperatorRewardDistributed(address indexed validatorAddr, address indexed recipientAddr, uint256 amount);
   /// @dev Emitted when the amount of RON reward is distributed.
   event StakingRewardDistributed(uint256 amount);
+  /// @dev Emitted when the epoch is wrapped up.
+  event WrappedUpEpoch(bool periodEnding);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR COINBASE                               //
@@ -54,7 +56,8 @@ interface IRoninValidatorSet is ICandidateManager {
    *
    * Emits the event `MiningRewardDistributed` when some validator has reward distributed.
    * Emits the event `StakingRewardDistributed` when some staking pool has reward distributed.
-   * Emits the event `ValidatorSetUpdated`.
+   * Emits the event `ValidatorSetUpdated` when the epoch is wrapped up at period ending, and the validator set gets updated.
+   * Emits the event `WrappedUpEpoch`.
    *
    */
   function wrapUpEpoch() external payable;

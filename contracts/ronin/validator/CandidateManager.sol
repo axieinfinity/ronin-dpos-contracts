@@ -107,10 +107,12 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
   function numberOfBlocksInEpoch() public view virtual returns (uint256);
 
   /**
-   * @dev Removes unsastisfied candidates (the ones who have insufficient minimum candidate balance).
-   * Returns the total balance list of the new candidate list.
+   * @dev Removes unsastisfied candidates, the ones who have insufficient minimum candidate balance,
+   * or the ones who revoked their candidate role.
    *
    * Emits the event `CandidatesRevoked` when a candidate is revoked.
+   *
+   * @return _balances a list of balances of the new candidates.
    *
    */
   function _filterUnsatisfiedCandidates(uint256 _minBalance) internal returns (uint256[] memory _balances) {

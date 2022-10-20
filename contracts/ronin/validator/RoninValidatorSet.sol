@@ -163,57 +163,24 @@ contract RoninValidatorSet is
     );
     _lastUpdatedBlock = block.number;
 
-    IStaking _staking = IStaking(_stakingContract);
-    address _validatorAddr;
-    uint256 _delegatingAmount;
+    address[] memory _currentValidators = getValidators();
     uint256 _period = periodOf(block.number);
     bool _periodEnding = periodEndingAt(block.number);
 
-    address[] memory _currentValidators = getValidators();
-    for (uint _i = 0; _i < _currentValidators.length; _i++) {
-      _validatorAddr = _currentValidators[_i];
-
-      if (_jailed(_validatorAddr) || _rewardDeprecated(_validatorAddr, _period)) {
-        continue;
-      }
-
-      if (_periodEnding) {
-        uint256 _miningAmount = _miningReward[_validatorAddr];
-        delete _miningReward[_validatorAddr];
-        if (_miningAmount > 0) {
-          address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
-          require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
-          emit MiningRewardDistributed(_validatorAddr, _treasury, _miningAmount);
-        }
-
-        uint256 _bridgeOperatingAmount = _bridgeOperatingReward[_validatorAddr];
-        delete _bridgeOperatingReward[_validatorAddr];
-        if (_bridgeOperatingAmount > 0) {
-          address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
-          require(
-            _sendRON(_treasury, _bridgeOperatingAmount),
-            "RoninValidatorSet: could not transfer RON to bridge operator address"
-          );
-          emit BridgeOperatorRewardDistributed(_validatorAddr, _treasury, _bridgeOperatingAmount);
-        }
-      }
-
-      _delegatingAmount += _delegatingReward[_validatorAddr];
-      delete _delegatingReward[_validatorAddr];
-    }
+    uint256 _delegatingAmount = _distributeBonusAndCalculateDelegatingAmount(
+      _currentValidators,
+      _period,
+      _periodEnding
+    );
 
     if (_periodEnding) {
-      _staking.settleRewardPools(_currentValidators);
-      if (_delegatingAmount > 0) {
-        require(
-          _sendRON(payable(address(_staking)), 0),
-          "RoninValidatorSet: could not transfer RON to staking contract"
-        );
-        emit StakingRewardDistributed(_delegatingAmount);
-      }
+      _settleAndTransferStakingReward(_currentValidators, _delegatingAmount);
+      _currentValidators = _syncValidatorSet();
     }
 
-    _updateValidatorSet(_periodEnding);
+    _deactivateUnsatisfiedBlockProducers(_currentValidators);
+
+    emit WrappedUpEpoch(_periodEnding);
   }
 
   /**
@@ -458,8 +425,67 @@ contract RoninValidatorSet is
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
-  //                   HELPER FUNCTIONS OF UPDATE VALIDATOR SET                        //
+  //                         HELPER FUNCTIONS OF WRAPPING UP EPOCH                     //
   ///////////////////////////////////////////////////////////////////////////////////////
+
+  function _distributeBonusAndCalculateDelegatingAmount(
+    address[] memory _currentValidators,
+    uint256 _period,
+    bool _periodEnding
+  ) private returns (uint256 _delegatingAmount) {
+    for (uint _i = 0; _i < _currentValidators.length; _i++) {
+      address _validatorAddr = _currentValidators[_i];
+
+      if (_jailed(_validatorAddr) || _rewardDeprecated(_validatorAddr, _period)) {
+        continue;
+      }
+
+      if (_periodEnding) {
+        _distributeBonus(_validatorAddr);
+      }
+
+      _delegatingAmount += _delegatingReward[_validatorAddr];
+      delete _delegatingReward[_validatorAddr];
+    }
+  }
+
+  /**
+   * @dev Distribute bonus of staking vesting for block producer and bonus for bridge oparators to the treasury address
+   * of the validator
+   */
+  function _distributeBonus(address _validatorAddr) private {
+    uint256 _miningAmount = _miningReward[_validatorAddr];
+    delete _miningReward[_validatorAddr];
+    if (_miningAmount > 0) {
+      address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
+      require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
+      emit MiningRewardDistributed(_validatorAddr, _treasury, _miningAmount);
+    }
+
+    uint256 _bridgeOperatingAmount = _bridgeOperatingReward[_validatorAddr];
+    delete _bridgeOperatingReward[_validatorAddr];
+    if (_bridgeOperatingAmount > 0) {
+      address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
+      require(
+        _sendRON(_treasury, _bridgeOperatingAmount),
+        "RoninValidatorSet: could not transfer RON to bridge operator address"
+      );
+      emit BridgeOperatorRewardDistributed(_validatorAddr, _treasury, _bridgeOperatingAmount);
+    }
+  }
+
+  function _settleAndTransferStakingReward(address[] memory _currentValidators, uint256 _delegatingAmount) private {
+    IStaking _staking = IStaking(_stakingContract);
+
+    _staking.settleRewardPools(_currentValidators);
+    if (_delegatingAmount > 0) {
+      require(
+        _sendRON(payable(address(_staking)), _delegatingAmount),
+        "RoninValidatorSet: could not transfer RON to staking contract"
+      );
+      emit StakingRewardDistributed(_delegatingAmount);
+    }
+  }
 
   /**
    * @dev Updates the validator set based on the validator candidates from the Staking contract.
@@ -467,28 +493,25 @@ contract RoninValidatorSet is
    * Emits the `ValidatorSetUpdated` event.
    *
    */
-  function _updateValidatorSet(bool _periodEnding) internal virtual {
-    if (_periodEnding) {
-      // This is a temporary approach since the slashing issue is still not finalized.
-      // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
-      uint256 _minBalance = _stakingContract.minValidatorBalance();
-      uint256[] memory _balanceWeights = _filterUnsatisfiedCandidates(_periodEnding ? _minBalance : 0);
-      uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getWeights(_candidates);
-      (address[] memory _newValidators, uint _newValidatorCount) = _pickValidatorSet(
-        _candidates,
-        _balanceWeights,
-        _trustedWeights,
-        _maxValidatorNumber,
-        _maxPrioritizedValidatorNumber
-      );
-      _setValidatorSet(_newValidators, _newValidatorCount);
-    }
-
-    // TODO: filter jail
-    // TODO: filter maintaining
+  function _syncValidatorSet() internal virtual returns (address[] memory _newValidators) {
+    uint256[] memory _balanceWeights;
+    // This is a temporary approach since the slashing issue is still not finalized.
+    // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
+    uint256 _minBalance = _stakingContract.minValidatorBalance();
+    _balanceWeights = _filterUnsatisfiedCandidates(_minBalance);
+    uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getWeights(_candidates);
+    uint256 _newValidatorCount;
+    (_newValidators, _newValidatorCount) = _pickValidatorSet(
+      _candidates,
+      _balanceWeights,
+      _trustedWeights,
+      _maxValidatorNumber,
+      _maxPrioritizedValidatorNumber
+    );
+    _setNewValidatorSet(_newValidators, _newValidatorCount);
   }
 
-  function _setValidatorSet(address[] memory _newValidators, uint256 _newValidatorCount) private {
+  function _setNewValidatorSet(address[] memory _newValidators, uint256 _newValidatorCount) private {
     for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
       delete _validatorMap[_validators[_i]];
       delete _validators[_i];
@@ -510,6 +533,18 @@ contract RoninValidatorSet is
 
     validatorCount = _count;
     emit ValidatorSetUpdated(_newValidators);
+  }
+
+  /**
+   * @dev Deactivate the validators, who are either in jail or are under maintainance, from producing blocks
+   */
+  function _deactivateUnsatisfiedBlockProducers(address[] memory _currentValidators) private {
+    bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
+
+    // for (uint _i = 0; _i < _validators.length; _i++) {}
+
+    // TODO: filter jail
+    // TODO: filter maintaining
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
