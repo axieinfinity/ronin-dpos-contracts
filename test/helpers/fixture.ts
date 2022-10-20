@@ -51,7 +51,7 @@ export const defaultTestConfig = {
 
   validatorBonusPerBlock: BigNumber.from(1),
   bridgeOperatorBonusPerBlock: BigNumber.from(1),
-  topupAmount: BigNumber.from(10000),
+  topupAmount: BigNumber.from(100000000000),
   minMaintenanceBlockPeriod: 100,
   maxMaintenanceBlockPeriod: 1000,
   minOffset: 200,

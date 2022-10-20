@@ -181,4 +181,8 @@ export const expects = {
       1
     );
   },
+
+  emitWrappedUpEpochEvent: async function (tx: ContractTransaction) {
+    await expectEvent(contractInterface, 'WrappedUpEpoch', tx, () => {}, 1);
+  },
 };
