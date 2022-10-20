@@ -183,13 +183,6 @@ contract RoninValidatorSet is
     emit WrappedUpEpoch(_periodEnding);
   }
 
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function getLastUpdatedBlock() external view returns (uint256) {
-    return _lastUpdatedBlock;
-  }
-
   ///////////////////////////////////////////////////////////////////////////////////////
   //                            FUNCTIONS FOR SLASH INDICATOR                          //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -257,6 +250,13 @@ contract RoninValidatorSet is
    */
   function periodOf(uint256 _block) public view virtual override returns (uint256) {
     return _block == 0 ? 0 : _block / (_numberOfBlocksInEpoch * _numberOfEpochsInPeriod) + 1;
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function getLastUpdatedBlock() external view returns (uint256) {
+    return _lastUpdatedBlock;
   }
 
   /**
