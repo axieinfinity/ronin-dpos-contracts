@@ -90,6 +90,14 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
   /**
    * @inheritdoc ICandidateManager
    */
+  function getCandidateInfo(address _candidate) external view override returns (ValidatorCandidate memory) {
+    require(isValidatorCandidate(_candidate), "CandidateManager: query for non-existent candidate");
+    return _candidateInfo[_candidate];
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
   function getValidatorCandidates() public view override returns (address[] memory) {
     return _candidates;
   }

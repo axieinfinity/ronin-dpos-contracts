@@ -82,9 +82,14 @@ interface ICandidateManager {
   function getValidatorCandidates() external view returns (address[] memory);
 
   /**
-   * @dev Returns candidates info.
+   * @dev Returns all candidate info.
    */
   function getCandidateInfos() external view returns (ValidatorCandidate[] memory);
+
+  /**
+   * @dev Returns the info of a candidate.
+   */
+  function getCandidateInfo(address _candidate) external view returns (ValidatorCandidate memory);
 
   /**
    * @dev Returns whether the address is the candidate admin.
