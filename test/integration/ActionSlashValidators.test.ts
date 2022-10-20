@@ -122,8 +122,12 @@ describe('[Integration] Slash validators', () => {
 
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
+          await validatorContract.connect(coinbase).endPeriod();
           updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
+
+        const currentBlock = await ethers.provider.getBlockNumber();
+        period = await validatorContract.periodOf(currentBlock);
 
         expectingValidatorSet.push(slashee.address);
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
@@ -226,8 +230,13 @@ describe('[Integration] Slash validators', () => {
 
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
+          await validatorContract.connect(coinbase).endPeriod();
           updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
+
+        const currentBlock = await ethers.provider.getBlockNumber();
+        period = await validatorContract.periodOf(currentBlock);
+
         expectingValidatorSet.push(slashee.address);
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
 

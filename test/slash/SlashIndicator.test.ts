@@ -4,7 +4,7 @@ import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import {
-  MockRoninValidatorSetSorting__factory,
+  MockRoninValidatorSetOverridePrecompile__factory,
   MockSlashIndicatorExtended,
   MockSlashIndicatorExtended__factory,
   RoninGovernanceAdmin,
@@ -86,12 +86,12 @@ describe('Slash indicator test', () => {
       });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
-    validatorContract = MockRoninValidatorSetSorting__factory.connect(validatorContractAddress, deployer);
+    validatorContract = MockRoninValidatorSetOverridePrecompile__factory.connect(validatorContractAddress, deployer);
     slashContract = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, governor);
 
-    const mockValidatorLogic = await new MockRoninValidatorSetSorting__factory(deployer).deploy();
+    const mockValidatorLogic = await new MockRoninValidatorSetOverridePrecompile__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
 
