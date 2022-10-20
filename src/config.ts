@@ -203,6 +203,7 @@ export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
       governor: addr,
       bridgeVoter: addr,
       weight: 100,
+      addedBlock: 0,
     })),
     numerator: 0,
     denominator: 1,

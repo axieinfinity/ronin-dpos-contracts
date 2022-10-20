@@ -56,6 +56,7 @@ describe('[Integration] Wrap up epoch', () => {
           governor: v.address,
           bridgeVoter: v.address,
           weight: 100,
+          addedBlock: 0,
         })),
       });
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);

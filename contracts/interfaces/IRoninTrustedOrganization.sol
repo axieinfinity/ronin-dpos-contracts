@@ -31,6 +31,7 @@ interface IRoninTrustedOrganization is IQuorum {
    * Requirements:
    * - The weights should larger than 0.
    * - The method caller is admin.
+   * - The field `addedBlock` should be blank.
    *
    * Emits the event `TrustedOrganizationAdded` once an organization is added.
    *

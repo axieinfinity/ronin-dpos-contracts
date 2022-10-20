@@ -56,7 +56,13 @@ describe('[Integration] Slash validators', () => {
         slashDoubleSignAmount,
         minValidatorBalance,
         trustedOrganizations: [
-          { consensusAddr: governor.address, governor: governor.address, bridgeVoter: governor.address, weight: 100 },
+          {
+            consensusAddr: governor.address,
+            governor: governor.address,
+            bridgeVoter: governor.address,
+            weight: 100,
+            addedBlock: 0,
+          },
         ],
       });
 

@@ -261,6 +261,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    *
    */
   function _addTrustedOrganization(TrustedOrganization memory _v) internal virtual {
+    require(_v.addedBlock == 0, "RoninTrustedOrganization: invalid request");
     require(_v.weight > 0, "RoninTrustedOrganization: invalid weight");
 
     if (_consensusWeight[_v.consensusAddr] > 0) {

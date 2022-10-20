@@ -42,7 +42,7 @@ const setPriorityStatus = async (addrs: Address[], statuses: boolean[]): Promise
       addingTrustedOrgs.map(() => roninTrustedOrganization.address),
       addingTrustedOrgs.map((v) =>
         roninTrustedOrganization.interface.encodeFunctionData('addTrustedOrganizations', [
-          [{ consensusAddr: v, governor: v, bridgeVoter: v, weight: 100 }],
+          [{ consensusAddr: v, governor: v, bridgeVoter: v, weight: 100, addedBlock: 0 }],
         ])
       )
     );
@@ -102,6 +102,7 @@ describe('Arrange validators', () => {
         governor: v.address,
         bridgeVoter: v.address,
         weight: 100,
+        addedBlock: 0,
       })),
     });
 

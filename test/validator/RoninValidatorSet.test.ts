@@ -55,6 +55,7 @@ describe('Ronin Validator Set test', () => {
           governor: v.address,
           bridgeVoter: v.address,
           weight: 100,
+          addedBlock: 0,
         })),
         minValidatorBalance,
         maxValidatorNumber,
