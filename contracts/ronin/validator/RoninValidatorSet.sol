@@ -401,7 +401,7 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc PrecompileUsagePickValidatorSet
    */
-  function precompilePickValidatorSet() public pure override returns (address) {
+  function precompilePickValidatorSetAddress() public pure override returns (address) {
     return _precompilePickValidatorSetAddress;
   }
 
@@ -507,7 +507,7 @@ contract RoninValidatorSet is
     _balanceWeights = _filterUnsatisfiedCandidates(_minBalance);
     uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getWeights(_candidates);
     uint256 _newValidatorCount;
-    (_newValidators, _newValidatorCount) = _pickValidatorSet(
+    (_newValidators, _newValidatorCount) = _pcPickValidatorSet(
       _candidates,
       _balanceWeights,
       _trustedWeights,

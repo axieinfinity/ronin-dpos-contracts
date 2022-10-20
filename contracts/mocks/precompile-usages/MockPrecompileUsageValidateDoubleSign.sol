@@ -20,6 +20,6 @@ contract MockPrecompileUsageValidateDoubleSign is PrecompileUsageValidateDoubleS
   }
 
   function callPrecompile(bytes calldata _header1, bytes calldata _header2) public view returns (bool) {
-    return _validateEvidence(_header1, _header2);
+    return _pcValidateEvidence(_header1, _header2);
   }
 }

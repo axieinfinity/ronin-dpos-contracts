@@ -135,7 +135,7 @@ contract SlashIndicator is
       return;
     }
 
-    if (_validateEvidence(_header1, _header2)) {
+    if (_pcValidateEvidence(_header1, _header2)) {
       uint256 _period = _validatorContract.periodOf(block.number);
       _unavailabilitySlashed[_validatorAddr][_period] = SlashType.DOUBLE_SIGNING;
       emit UnavailabilitySlashed(_validatorAddr, SlashType.DOUBLE_SIGNING, _period);

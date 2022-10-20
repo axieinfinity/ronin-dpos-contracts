@@ -12,7 +12,7 @@ abstract contract PrecompileUsageValidateDoubleSign {
    * Note: The recover process is done by pre-compiled contract. This function is marked as
    * virtual for implementing mocking contract for testing purpose.
    */
-  function _validateEvidence(bytes calldata _header1, bytes calldata _header2)
+  function _pcValidateEvidence(bytes calldata _header1, bytes calldata _header2)
     internal
     view
     virtual

@@ -11,7 +11,7 @@ abstract contract PrecompileUsageSortValidators {
    *
    * Note: This function is marked as virtual for being wrapping in mock contract for testing purpose.
    */
-  function _sortCandidates(address[] memory _candidates, uint256[] memory _weights)
+  function _pcSortCandidates(address[] memory _candidates, uint256[] memory _weights)
     internal
     view
     virtual

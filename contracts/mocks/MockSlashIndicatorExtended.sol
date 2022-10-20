@@ -13,7 +13,7 @@ contract MockSlashIndicatorExtended is SlashIndicator {
     _validatorContract.slash(_validatorAddr, 0, 0);
   }
 
-  function _validateEvidence(
+  function _pcValidateEvidence(
     bytes calldata, /*_header1*/
     bytes calldata /*_header2*/
   ) internal pure override returns (bool _validEvidence) {

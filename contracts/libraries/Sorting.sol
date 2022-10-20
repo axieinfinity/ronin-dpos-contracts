@@ -119,14 +119,14 @@ library Sorting {
   //                                  NODE3 SORTING                                    //
   ///////////////////////////////////////////////////////////////////////////////////////
 
-  function sort(
+  function sortWithExternalKeys(
     address[] memory _keys,
     uint256[] memory _values,
     uint256[] memory _otherKeys
-  ) internal pure returns (address[] memory) {
+  ) internal pure returns (address[] memory keys_, uint256[] memory otherKeys_) {
     require((_values.length == _keys.length) && (_otherKeys.length == _keys.length), "Sorting: invalid array length");
     if (_keys.length == 0) {
-      return _keys;
+      return (_keys, _otherKeys);
     }
 
     Node3[] memory _nodes = new Node3[](_keys.length);
@@ -139,7 +139,7 @@ library Sorting {
       _keys[_i] = address(uint160(_nodes[_i].key)); // Casting?
     }
 
-    return _keys;
+    return (_keys, _otherKeys);
   }
 
   function sortNode3s(Node3[] memory nodes) internal pure returns (Node3[] memory) {

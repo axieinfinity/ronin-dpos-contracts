@@ -27,8 +27,8 @@ contract MockPrecompile {
     uint256[] memory _trustedWeights,
     uint256 _maxValidatorNumber,
     uint256 _maxPrioritizedValidatorNumber
-  ) external pure returns (address[] memory _result) {
-    _result = Sorting.sort(_candidates, _balanceWeights, _trustedWeights);
+  ) public pure returns (address[] memory _result) {
+    (_result, _trustedWeights) = Sorting.sortWithExternalKeys(_candidates, _balanceWeights, _trustedWeights);
     uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _result.length);
     _arrangeValidatorCandidates(_result, _trustedWeights, _newValidatorCount, _maxPrioritizedValidatorNumber);
   }

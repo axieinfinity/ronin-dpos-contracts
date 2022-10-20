@@ -8,7 +8,7 @@ import "../libraries/Sorting.sol";
 contract MockRoninValidatorSetSorting is RoninValidatorSet {
   constructor() {}
 
-  function _sortCandidates(address[] memory _candidates, uint256[] memory _weights)
+  function _pcSortCandidates(address[] memory _candidates, uint256[] memory _weights)
     internal
     pure
     override

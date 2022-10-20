@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 abstract contract PrecompileUsagePickValidatorSet {
   /// @dev Gets the address of the precompile of picking validator set
-  function precompilePickValidatorSet() public view virtual returns (address);
+  function precompilePickValidatorSetAddress() public view virtual returns (address);
 
   /**
    * @dev Sorting and arranging to return a new validator set.
@@ -12,14 +12,14 @@ abstract contract PrecompileUsagePickValidatorSet {
    * Note: The recover process is done by pre-compiled contract. This function is marked as
    * virtual for implementing mocking contract for testing purpose.
    */
-  function _pickValidatorSet(
+  function _pcPickValidatorSet(
     address[] memory _candidates,
     uint256[] memory _balanceWeights,
     uint256[] memory _trustedWeights,
     uint256 _maxValidatorNumber,
     uint256 _maxPrioritizedValidatorNumber
   ) internal view virtual returns (address[] memory _result, uint256 _newValidatorCount) {
-    address _smc = precompilePickValidatorSet();
+    address _smc = precompilePickValidatorSetAddress();
     bytes memory _payload = abi.encodeWithSignature(
       "pickValidatorSet(address[],uint256[],uint256[],uint256,uint256)",
       _candidates,
@@ -48,6 +48,6 @@ abstract contract PrecompileUsagePickValidatorSet {
       _newValidatorCount := _result
     }
 
-    require(_success, "PrecompileUsageSortValidators: call to precompile fails");
+    require(_success, "PrecompileUsagePickValidatorSet: call to precompile fails");
   }
 }
