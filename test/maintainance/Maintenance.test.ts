@@ -95,7 +95,7 @@ describe('Maintenance test', () => {
 
     await localEpochController.mineToBeforeEndOfPeriod();
     let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
-    ValidatorSetExpects.emitValidatorSetUpdatedEvent(
+    await ValidatorSetExpects.emitValidatorSetUpdatedEvent(
       tx,
       validatorCandidates.map((_) => _.address)
     );
@@ -263,7 +263,7 @@ describe('Maintenance test', () => {
       await localEpochController.mineToBeforeEndOfEpoch();
       let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
       expect(tx).not.emit(validatorContract, 'ActivatedBlockProducers');
-      ValidatorSetExpects.emitDeactivatedBlockProducersEvent(
+      await ValidatorSetExpects.emitDeactivatedBlockProducersEvent(
         tx,
         validatorCandidates.slice(0, 2).map((_) => _.address)
       );
@@ -294,7 +294,7 @@ describe('Maintenance test', () => {
       await localEpochController.mineToBeforeEndOfEpoch();
       let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
       expect(tx).not.emit(validatorContract, 'DeactivatedBlockProducers');
-      ValidatorSetExpects.emitActivatedBlockProducersEvent(
+      await ValidatorSetExpects.emitActivatedBlockProducersEvent(
         tx,
         validatorCandidates.slice(0, 2).map((_) => _.address)
       );
