@@ -17,7 +17,7 @@ contract MockPrecompile {
   function validatingDoubleSignProof(
     bytes calldata, /*_header1*/
     bytes calldata /*_header2*/
-  ) external pure returns (bool _validEvidence) {
+  ) public pure returns (bool _validEvidence) {
     return true;
   }
 
