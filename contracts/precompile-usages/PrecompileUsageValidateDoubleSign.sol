@@ -4,10 +4,12 @@ pragma solidity ^0.8.9;
 
 abstract contract PrecompileUsageValidateDoubleSign {
   /// @dev Gets the address of the precompile of validating double sign evidence
-  function precompileValidateDoubleSignAddress() public view virtual returns (address);
+  function precompileValidateDoubleSignAddress() public view virtual returns (address) {
+    return address(0x67);
+  }
 
   /**
-   * @dev Validate the two submitted block header if they are produced by the same address
+   * @dev Validates the two submitted block header if they are produced by the same address
    *
    * Note: The recover process is done by pre-compiled contract. This function is marked as
    * virtual for implementing mocking contract for testing purpose.

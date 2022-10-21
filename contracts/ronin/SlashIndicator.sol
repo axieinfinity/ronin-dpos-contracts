@@ -18,9 +18,6 @@ contract SlashIndicator is
 {
   using Math for uint256;
 
-  /// @dev The address of the precompile of sorting validators
-  address internal constant _precompileValidateDoubleSignAddress = address(0x67);
-
   /// @dev Mapping from validator address => period index => unavailability indicator
   mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
   /// @dev Maping from validator address => period index => slash type
@@ -233,13 +230,6 @@ contract SlashIndicator is
    */
   function getUnavailabilityIndicator(address _validator, uint256 _period) public view override returns (uint256) {
     return _unavailabilityIndicator[_validator][_period];
-  }
-
-  /**
-   * @inheritdoc PrecompileUsageValidateDoubleSign
-   */
-  function precompileValidateDoubleSignAddress() public pure override returns (address) {
-    return _precompileValidateDoubleSignAddress;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////

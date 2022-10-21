@@ -33,10 +33,6 @@ contract RoninValidatorSet is
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
-  /// @dev The address of the precompile of sorting validators
-  address internal constant _precompileSortValidatorsAddress = address(0x66);
-  /// @dev The address of the precompile of picking new validator set
-  address internal constant _precompilePickValidatorSetAddress = address(0x68);
   /// @dev The maximum number of validator.
   uint256 internal _maxValidatorNumber;
   /// @dev The number of blocks in a epoch
@@ -393,20 +389,6 @@ contract RoninValidatorSet is
    */
   function maxPrioritizedValidatorNumber() external view override returns (uint256 _maximumPrioritizedValidatorNumber) {
     return _maxPrioritizedValidatorNumber;
-  }
-
-  /**
-   * @inheritdoc PrecompileUsageSortValidators
-   */
-  function precompileSortValidatorsAddress() public pure override returns (address) {
-    return _precompileSortValidatorsAddress;
-  }
-
-  /**
-   * @inheritdoc PrecompileUsagePickValidatorSet
-   */
-  function precompilePickValidatorSetAddress() public pure override returns (address) {
-    return _precompilePickValidatorSetAddress;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////

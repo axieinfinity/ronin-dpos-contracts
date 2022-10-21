@@ -4,10 +4,12 @@ pragma solidity ^0.8.9;
 
 abstract contract PrecompileUsageSortValidators {
   /// @dev Gets the address of the precompile of sorting validators
-  function precompileSortValidatorsAddress() public view virtual returns (address);
+  function precompileSortValidatorsAddress() public view virtual returns (address) {
+    return address(0x66);
+  }
 
   /**
-   * @dev Sorting candidates descending by their weights by calling precompile contract.
+   * @dev Sorts candidates descending by their weights by calling precompile contract.
    *
    * Note: This function is marked as virtual for being wrapping in mock contract for testing purpose.
    */
