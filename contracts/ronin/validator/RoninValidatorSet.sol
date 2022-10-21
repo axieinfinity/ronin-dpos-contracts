@@ -176,7 +176,7 @@ contract RoninValidatorSet is
 
     _revampBlockProducers(_currentValidators);
 
-    emit WrappedUpEpoch(_periodEnding);
+    emit WrappedUpEpoch(_period, _periodEnding);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////

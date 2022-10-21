@@ -30,7 +30,7 @@ interface IRoninValidatorSet is ICandidateManager {
   /// @dev Emitted when the amount of RON reward is distributed.
   event StakingRewardDistributed(uint256 amount);
   /// @dev Emitted when the epoch is wrapped up.
-  event WrappedUpEpoch(bool periodEnding);
+  event WrappedUpEpoch(uint256 indexed periodNumber, bool periodEnding);
   /// @dev Emitted when validators get activated the block producer role after get out of jail or finish maintenance.
   event ActivatedBlockProducers(address[]);
   /// @dev Emitted when validators get deactivated the block producer role.
