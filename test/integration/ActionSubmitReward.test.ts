@@ -98,6 +98,7 @@ describe('[Integration] Submit Block Reward', () => {
         });
       await mineBatchTxs(async () => {
         await validatorContract.connect(coinbase).endEpoch();
+        await validatorContract.connect(coinbase).endPeriod();
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
     });
