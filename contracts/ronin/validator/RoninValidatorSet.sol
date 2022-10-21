@@ -163,14 +163,14 @@ contract RoninValidatorSet is
     uint256 _period = periodOf(block.number);
     bool _periodEnding = periodEndingAt(block.number);
 
-    uint256 _delegatingAmount = _distributeBonusAndCalculateTotalDelegatingReward(
-      _currentValidators,
-      _period,
-      _periodEnding
-    );
-
     if (_periodEnding) {
-      _settleAndTransferStakingReward(_currentValidators, _delegatingAmount);
+      uint256 _totalDelegatingReward = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
+        _currentValidators,
+        _period
+      );
+
+      _settleAndTransferDelegatingRewards(_currentValidators, _totalDelegatingReward);
+
       _currentValidators = _syncValidatorSet();
     }
 
@@ -421,15 +421,17 @@ contract RoninValidatorSet is
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev Update delegating reward for the all validators and calculate total delegating rewards to be sent to the
-   * staking contract. In case this is ending of a period, distribute the reward of block producers and bridge
-   * operators to their treasury addresses.
+   * @dev This loop over the all current validators to:
+   * - Update delegating reward for and calculate total delegating rewards to be sent to the staking contract,
+   * - Distribute the reward of block producers and bridge operators to their treasury addresses.
+   *
+   * Note: This method should be called once in the end of each period.
+   *
    */
-  function _distributeBonusAndCalculateTotalDelegatingReward(
+  function _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
     address[] memory _currentValidators,
-    uint256 _period,
-    bool _periodEnding
-  ) private returns (uint256 _delegatingAmount) {
+    uint256 _period
+  ) private returns (uint256 _totalDelegatingReward) {
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
       address _validatorAddr = _currentValidators[_i];
 
@@ -437,27 +439,24 @@ contract RoninValidatorSet is
         continue;
       }
 
-      if (_periodEnding) {
-        _distributeBonus(_validatorAddr);
-      }
-
-      _delegatingAmount += _delegatingReward[_validatorAddr];
+      _totalDelegatingReward += _delegatingReward[_validatorAddr];
       delete _delegatingReward[_validatorAddr];
+
+      _distributeRewardToTreasury(_validatorAddr);
     }
   }
 
   /**
-   * @dev Distribute bonus of staking vesting for block producer and bonus for bridge oparators to the treasury address
-   * of the validator.
-   *
-   * Requirements:
-   * - This method is called at the end of each period.
+   * @dev Distribute bonus of staking vesting and mining fee for block producer; and bonus of staking vesting for
+   * bridge oparators to the treasury address of a validator.
    *
    * Emits the `MiningRewardDistributed` event.
    * Emits the `BridgeOperatorRewardDistributed` event.
    *
+   * Note: This method should be called once in the end of each period.
+   *
    */
-  function _distributeBonus(address _validatorAddr) private {
+  function _distributeRewardToTreasury(address _validatorAddr) private {
     uint256 _miningAmount = _miningReward[_validatorAddr];
     delete _miningReward[_validatorAddr];
     if (_miningAmount > 0) {
@@ -479,35 +478,35 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @dev Helper function to settle rewards at the end of each period, then transfer the rewards from this contract to
-   * the staking contract, in order to finalize a period.
-   *
-   * Requirements:
-   * - This method is called at the end of each period.
+   * @dev Helper function to settle rewards for delegators of `_currentValidators` at the end of each period,
+   * then transfer the rewards from this contract to the staking contract, in order to finalize a period.
    *
    * Emit `StakingRewardDistributed` event.
    *
+   * Note: This method should be called once in the end of each period.
+   *
    */
-  function _settleAndTransferStakingReward(address[] memory _currentValidators, uint256 _delegatingAmount) private {
+  function _settleAndTransferDelegatingRewards(address[] memory _currentValidators, uint256 _totalDelegatingReward)
+    private
+  {
     IStaking _staking = IStaking(_stakingContract);
 
     _staking.settleRewardPools(_currentValidators);
-    if (_delegatingAmount > 0) {
+    if (_totalDelegatingReward > 0) {
       require(
-        _sendRON(payable(address(_staking)), _delegatingAmount),
+        _sendRON(payable(address(_staking)), _totalDelegatingReward),
         "RoninValidatorSet: could not transfer RON to staking contract"
       );
-      emit StakingRewardDistributed(_delegatingAmount);
+      emit StakingRewardDistributed(_totalDelegatingReward);
     }
   }
 
   /**
    * @dev Updates the validator set based on the validator candidates from the Staking contract.
    *
-   * Requirements:
-   * - This method is called at the end of each period.
-
    * Emits the `ValidatorSetUpdated` event.
+   *
+   * Note: This method should be called once in the end of each period.
    *
    */
   function _syncValidatorSet() private returns (address[] memory _newValidators) {
@@ -533,6 +532,9 @@ contract RoninValidatorSet is
    *
    * Emits the `ValidatorSetUpdated` event.
    * Emits the `BridgeOperatorSetUpdated` event.
+   *
+   * Note: This method should be called once in the end of each period.
+   *
    */
   function _setNewValidatorSet(address[] memory _newValidators, uint256 _newValidatorCount) private {
     for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
