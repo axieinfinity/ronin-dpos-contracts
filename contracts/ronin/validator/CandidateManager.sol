@@ -165,9 +165,12 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
     delete _candidateIndex[_addr];
 
     address _lastCandidate = _candidates[_candidates.length - 1];
-    _candidateIndex[_lastCandidate] = _idx;
 
-    _candidates[~_idx] = _lastCandidate;
+    if (_lastCandidate != _addr) {
+      _candidateIndex[_lastCandidate] = _idx;
+      _candidates[~_idx] = _lastCandidate;
+    }
+
     _candidates.pop();
   }
 
