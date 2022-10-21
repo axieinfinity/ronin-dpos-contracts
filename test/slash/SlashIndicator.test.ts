@@ -119,7 +119,7 @@ describe('Slash indicator test', () => {
     ]);
 
     localEpochController = new EpochController(minOffset, numberOfBlocksInEpoch, numberOfEpochsInPeriod);
-    await localEpochController.mineToBeforeEndOfEpoch();
+    await localEpochController.mineToBeforeEndOfPeriod();
 
     await validatorContract.connect(coinbase).wrapUpEpoch();
     expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
