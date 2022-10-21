@@ -19,8 +19,8 @@ interface IRewardPool {
     uint256 debited;
     // The amount rewards that user have already earned.
     uint256 credited;
-    // Last block number that the info updated.
-    uint256 lastSyncedBlock;
+    // Last period number that the info updated.
+    uint256 lastSyncedPeriod;
   }
 
   struct SettledRewardFields {
@@ -36,8 +36,8 @@ interface IRewardPool {
   }
 
   struct SettledPool {
-    // Last block number that the info updated.
-    uint256 lastSyncedBlock;
+    // Last period number that the info updated.
+    uint256 lastSyncedPeriod;
     // Accumulated of the amount rewards per share (one unit staking).
     uint256 accumulatedRps;
   }
