@@ -182,6 +182,30 @@ export const expects = {
     );
   },
 
+  emitActivatedBlockProducersEvent: async function (tx: ContractTransaction, expectingProducers: string[]) {
+    await expectEvent(
+      contractInterface,
+      'ActivatedBlockProducers',
+      tx,
+      (event) => {
+        expect(event.args[0], 'invalid activated producer set').eql(expectingProducers);
+      },
+      1
+    );
+  },
+
+  emitDeactivatedBlockProducersEvent: async function (tx: ContractTransaction, expectingProducers: string[]) {
+    await expectEvent(
+      contractInterface,
+      'DeactivatedBlockProducers',
+      tx,
+      (event) => {
+        expect(event.args[0], 'invalid deactivated producer set').eql(expectingProducers);
+      },
+      1
+    );
+  },
+
   emitWrappedUpEpochEvent: async function (tx: ContractTransaction) {
     await expectEvent(contractInterface, 'WrappedUpEpoch', tx, () => {}, 1);
   },

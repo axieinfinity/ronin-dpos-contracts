@@ -31,7 +31,9 @@ interface IRoninValidatorSet is ICandidateManager {
   event StakingRewardDistributed(uint256 amount);
   /// @dev Emitted when the epoch is wrapped up.
   event WrappedUpEpoch(bool periodEnding);
-  /// @dev Emitted when validators get deactivated the block producer role
+  /// @dev Emitted when validators get activated the block producer role after get out of jail or finish maintenance.
+  event ActivatedBlockProducers(address[]);
+  /// @dev Emitted when validators get deactivated the block producer role.
   event DeactivatedBlockProducers(address[]);
 
   ///////////////////////////////////////////////////////////////////////////////////////

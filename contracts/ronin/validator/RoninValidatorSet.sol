@@ -178,7 +178,7 @@ contract RoninValidatorSet is
       _currentValidators = _syncValidatorSet();
     }
 
-    _deactivateUnsatisfiedBlockProducers(_currentValidators);
+    _revampBlockProducers(_currentValidators);
 
     emit WrappedUpEpoch(_periodEnding);
   }
@@ -547,33 +547,51 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @dev Deactivate the validators, who are either in jail or are under maintainance, from producing blocks
+   * @dev Activate/Deactivate the validators from producing blocks, based on their in jail status and maintenance status.
    */
-  function _deactivateUnsatisfiedBlockProducers(address[] memory _currentValidators) private {
+  function _revampBlockProducers(address[] memory _currentValidators) private {
     bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
-    address[] memory _deactivatedBlockProducers = _currentValidators;
+
+    uint _activatedCount;
     uint _deactivatedCount;
+
+    address[] memory _activatedList = _currentValidators;
+    address[] memory _deactivatedList = _currentValidators;
 
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
       address _currentValidator = _currentValidators[_i];
-      if (!isBlockProducer(_currentValidator)) {
+      bool _isProducerBefore = isBlockProducer(_currentValidator);
+      bool _isProducerAfter = !(_jailed(_currentValidator) || _maintainingList[_i]);
+
+      if (!_isProducerBefore && _isProducerAfter) {
+        _validatorMap[_currentValidator] = _validatorMap[_currentValidator].addFlag(
+          EnumFlags.ValidatorFlag.BlockProducer
+        );
+        _activatedList[_activatedCount++] = _currentValidator;
         continue;
       }
 
-      if (_jailed(_currentValidator) || _maintainingList[_i]) {
+      if (_isProducerBefore && !_isProducerAfter) {
         _validatorMap[_currentValidator] = _validatorMap[_currentValidator].removeFlag(
           EnumFlags.ValidatorFlag.BlockProducer
         );
-
-        _deactivatedBlockProducers[_deactivatedCount++] = _currentValidator;
+        _deactivatedList[_deactivatedCount++] = _currentValidator;
       }
     }
 
-    assembly {
-      mstore(_deactivatedBlockProducers, _deactivatedCount)
+    if (_activatedCount > 0) {
+      assembly {
+        mstore(_activatedList, _activatedCount)
+      }
+      emit ActivatedBlockProducers(_activatedList);
     }
 
-    emit DeactivatedBlockProducers(_deactivatedBlockProducers);
+    if (_deactivatedCount > 0) {
+      assembly {
+        mstore(_deactivatedList, _deactivatedCount)
+      }
+      emit DeactivatedBlockProducers(_deactivatedList);
+    }
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
