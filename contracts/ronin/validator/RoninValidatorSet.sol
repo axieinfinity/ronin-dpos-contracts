@@ -273,7 +273,7 @@ contract RoninValidatorSet is
    * @inheritdoc IRoninValidatorSet
    */
   function isValidator(address _addr) public view override returns (bool) {
-    return !_validatorMap[_addr].hasFlag(EnumFlags.ValidatorFlag.None);
+    return !_validatorMap[_addr].isNone();
   }
 
   /**
