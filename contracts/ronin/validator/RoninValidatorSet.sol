@@ -163,7 +163,7 @@ contract RoninValidatorSet is
     uint256 _period = periodOf(block.number);
     bool _periodEnding = periodEndingAt(block.number);
 
-    uint256 _delegatingAmount = _distributeBonusAndCalculateDelegatingAmount(
+    uint256 _delegatingAmount = _distributeBonusAndCalculateTotalDelegatingReward(
       _currentValidators,
       _period,
       _periodEnding
@@ -417,10 +417,15 @@ contract RoninValidatorSet is
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
-  //                         HELPER FUNCTIONS OF WRAPPING UP EPOCH                     //
+  //                     PRIVATE HELPER FUNCTIONS OF WRAPPING UP EPOCH                 //
   ///////////////////////////////////////////////////////////////////////////////////////
 
-  function _distributeBonusAndCalculateDelegatingAmount(
+  /**
+   * @dev Update delegating reward for the all validators and calculate total delegating rewards to be sent to the
+   * staking contract. In case this is ending of a period, distribute the reward of block producers and bridge
+   * operators to their treasury addresses.
+   */
+  function _distributeBonusAndCalculateTotalDelegatingReward(
     address[] memory _currentValidators,
     uint256 _period,
     bool _periodEnding
@@ -443,7 +448,14 @@ contract RoninValidatorSet is
 
   /**
    * @dev Distribute bonus of staking vesting for block producer and bonus for bridge oparators to the treasury address
-   * of the validator
+   * of the validator.
+   *
+   * Requirements:
+   * - This method is called at the end of each period.
+   *
+   * Emits the `MiningRewardDistributed` event.
+   * Emits the `BridgeOperatorRewardDistributed` event.
+   *
    */
   function _distributeBonus(address _validatorAddr) private {
     uint256 _miningAmount = _miningReward[_validatorAddr];
@@ -466,6 +478,16 @@ contract RoninValidatorSet is
     }
   }
 
+  /**
+   * @dev Helper function to settle rewards at the end of each period, then transfer the rewards from this contract to
+   * the staking contract, in order to finalize a period.
+   *
+   * Requirements:
+   * - This method is called at the end of each period.
+   *
+   * Emit `StakingRewardDistributed` event.
+   *
+   */
   function _settleAndTransferStakingReward(address[] memory _currentValidators, uint256 _delegatingAmount) private {
     IStaking _staking = IStaking(_stakingContract);
 
@@ -482,10 +504,13 @@ contract RoninValidatorSet is
   /**
    * @dev Updates the validator set based on the validator candidates from the Staking contract.
    *
+   * Requirements:
+   * - This method is called at the end of each period.
+
    * Emits the `ValidatorSetUpdated` event.
    *
    */
-  function _syncValidatorSet() internal virtual returns (address[] memory _newValidators) {
+  function _syncValidatorSet() private returns (address[] memory _newValidators) {
     uint256[] memory _balanceWeights;
     // This is a temporary approach since the slashing issue is still not finalized.
     // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
@@ -503,6 +528,12 @@ contract RoninValidatorSet is
     _setNewValidatorSet(_newValidators, _newValidatorCount);
   }
 
+  /**
+   * @dev Private helper function helps writing the new validator set into the contract storage.
+   *
+   * Emits the `ValidatorSetUpdated` event.
+   * Emits the `BridgeOperatorSetUpdated` event.
+   */
   function _setNewValidatorSet(address[] memory _newValidators, uint256 _newValidatorCount) private {
     for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
       delete _validatorMap[_validators[_i]];
@@ -530,6 +561,13 @@ contract RoninValidatorSet is
 
   /**
    * @dev Activate/Deactivate the validators from producing blocks, based on their in jail status and maintenance status.
+   *
+   * Requirements:
+   * - This method is called at the end of each epoch
+   *
+   * Emits the `ActivatedBlockProducers` event, if the block producer list get updated
+   * Emits the `DeactivatedBlockProducers` event, if the block producer list get updated
+   *
    */
   function _revampBlockProducers(address[] memory _currentValidators) private {
     bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
