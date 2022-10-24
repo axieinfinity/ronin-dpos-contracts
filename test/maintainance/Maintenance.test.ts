@@ -209,7 +209,7 @@ describe('Maintenance test', () => {
 
     it('Should not be able to schedule maintenance for non-validator address', async () => {
       await expect(maintenanceContract.connect(validatorCandidates[0]).schedule(deployer.address, 0, 100)).revertedWith(
-        'Maintenance: consensus address must be a validator'
+        'Maintenance: consensus address must be a block producer'
       );
     });
 
