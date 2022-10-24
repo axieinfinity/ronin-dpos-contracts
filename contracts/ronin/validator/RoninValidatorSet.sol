@@ -457,18 +457,18 @@ contract RoninValidatorSet is
    *
    */
   function _distributeRewardToTreasury(address _validatorAddr) private {
+    address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
+
     uint256 _miningAmount = _miningReward[_validatorAddr];
     if (_miningAmount > 0) {
-        delete _miningReward[_validatorAddr];
-      address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
+      delete _miningReward[_validatorAddr];
       require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
       emit MiningRewardDistributed(_validatorAddr, _treasury, _miningAmount);
     }
 
     uint256 _bridgeOperatingAmount = _bridgeOperatingReward[_validatorAddr];
     if (_bridgeOperatingAmount > 0) {
-        delete _bridgeOperatingReward[_validatorAddr];
-      address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
+      delete _bridgeOperatingReward[_validatorAddr];
       require(
         _sendRON(_treasury, _bridgeOperatingAmount),
         "RoninValidatorSet: could not transfer RON to bridge operator address"
