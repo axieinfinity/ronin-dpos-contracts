@@ -159,6 +159,7 @@ contract RoninValidatorSet is
     _lastUpdatedBlock = block.number;
 
     address[] memory _currentValidators = getValidators();
+    uint256 _epoch = epochOf(block.number);
     uint256 _period = periodOf(block.number);
     bool _periodEnding = periodEndingAt(block.number);
 
@@ -175,7 +176,7 @@ contract RoninValidatorSet is
 
     _revampBlockProducers(_currentValidators);
 
-    emit WrappedUpEpoch(_period, _periodEnding);
+    emit WrappedUpEpoch(_period, _epoch, _periodEnding);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
