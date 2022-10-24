@@ -176,16 +176,6 @@ interface IRoninValidatorSet is ICandidateManager {
    */
   function periodEndingAt(uint256 _block) external view returns (bool);
 
-  /**
-   * @dev Returns whether an address is bridge operator.
-   */
-  function isBridgeOperator(address) external view returns (bool);
-
-  /**
-   * @dev Returns total numbers of the bridge operators.
-   */
-  function totalBridgeOperators() external view returns (uint256);
-
   ///////////////////////////////////////////////////////////////////////////////////////
   //                               FUNCTIONS FOR ADMIN                                 //
   ///////////////////////////////////////////////////////////////////////////////////////

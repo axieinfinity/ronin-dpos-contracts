@@ -55,6 +55,8 @@ const setPriorityStatus = async (addrs: Address[], statuses: boolean[]): Promise
       )
     );
   }
+
+  return statuses.map((stt) => (stt ? defaultTrustedWeight : 0));
 };
 
 const setPriorityStatusForMany = async (validators: Address[], status: boolean): Promise<BigNumberish[]> => {
