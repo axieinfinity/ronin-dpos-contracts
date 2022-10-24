@@ -132,7 +132,7 @@ interface IRoninValidatorSet is ICandidateManager {
   function getValidators() external view returns (address[] memory);
 
   /**
-   * @dev Returns whether the address is validator or not.
+   * @dev Returns whether the address is either a bridge operator or a block producer.
    */
   function isValidator(address _addr) external view returns (bool);
 
