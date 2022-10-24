@@ -27,15 +27,4 @@ library Math {
   ) internal pure returns (bool) {
     return a <= c && c <= b;
   }
-
-  /**
-   * @dev Returns the result from scaling c to ratio 1-a/b.
-   */
-  function scale(
-    uint256 c,
-    uint256 a,
-    uint256 b
-  ) internal pure returns (uint256) {
-    return (c * a) / b;
-  }
 }

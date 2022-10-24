@@ -32,14 +32,17 @@ contract RoninValidatorSet is
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
+  /// @dev The total seconds in a day
+  uint256 internal constant _SECS_IN_DAY = 86400;
+
   /// @dev The maximum number of validator.
   uint256 internal _maxValidatorNumber;
   /// @dev The number of blocks in a epoch
   uint256 internal _numberOfBlocksInEpoch;
-  /// @dev Returns the number of epochs in a period
-  uint256 internal _numberOfEpochsInPeriod;
   /// @dev The last updated block
   uint256 internal _lastUpdatedBlock;
+  /// @dev The last updated period
+  uint256 internal _lastUpdatedPeriod;
 
   /// @dev The total of validators
   uint256 public validatorCount;
@@ -96,8 +99,7 @@ contract RoninValidatorSet is
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
-    uint256 __numberOfBlocksInEpoch,
-    uint256 __numberOfEpochsInPeriod
+    uint256 __numberOfBlocksInEpoch
   ) external initializer {
     _setSlashIndicatorContract(__slashIndicatorContract);
     _setStakingContract(__stakingContract);
@@ -108,7 +110,6 @@ contract RoninValidatorSet is
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
     _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
-    _setNumberOfEpochsInPeriod(__numberOfEpochsInPeriod);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -129,7 +130,7 @@ contract RoninValidatorSet is
     if (
       !isBlockProducer(_coinbaseAddr) ||
       _jailed(_coinbaseAddr) ||
-      _rewardDeprecated(_coinbaseAddr, periodOf(block.number))
+      _rewardDeprecated(_coinbaseAddr, currentPeriod())
     ) {
       emit RewardDeprecated(_coinbaseAddr, _submittedReward);
       return;
@@ -138,7 +139,6 @@ contract RoninValidatorSet is
     (uint256 _validatorStakingVesting, uint256 _bridgeValidatorStakingVesting) = _stakingVestingContract.requestBonus();
     uint256 _reward = _submittedReward + _validatorStakingVesting;
 
-    IStaking _staking = _stakingContract;
     uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
     uint256 _miningAmount = (_rate * _reward) / 100_00;
     uint256 _delegatingAmount = _reward - _miningAmount;
@@ -146,7 +146,7 @@ contract RoninValidatorSet is
     _miningReward[_coinbaseAddr] += _miningAmount;
     _delegatingReward[_coinbaseAddr] += _delegatingAmount;
     _bridgeOperatingReward[_coinbaseAddr] += _bridgeValidatorStakingVesting;
-    _staking.recordReward(_coinbaseAddr, _delegatingAmount);
+    _stakingContract.recordReward(_coinbaseAddr, _delegatingAmount);
     emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _validatorStakingVesting);
   }
 
@@ -160,10 +160,13 @@ contract RoninValidatorSet is
     );
     _lastUpdatedBlock = block.number;
 
+    uint256 _computedPeriod = _computePeriod();
+    bool _periodEnding = _isPeriodEnding(_computedPeriod);
+    _lastUpdatedPeriod = _computedPeriod;
+
     address[] memory _currentValidators = getValidators();
     uint256 _epoch = epochOf(block.number);
-    uint256 _period = periodOf(block.number);
-    bool _periodEnding = periodEndingAt(block.number);
+    uint256 _period = currentPeriod();
 
     if (_periodEnding) {
       uint256 _totalDelegatingReward = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
@@ -193,7 +196,7 @@ contract RoninValidatorSet is
     uint256 _newJailedUntil,
     uint256 _slashAmount
   ) external onlySlashIndicatorContract {
-    _rewardDeprecatedAtPeriod[_validatorAddr][periodOf(block.number)] = true;
+    _rewardDeprecatedAtPeriod[_validatorAddr][currentPeriod()] = true;
     delete _miningReward[_validatorAddr];
     delete _delegatingReward[_validatorAddr];
     IStaking(_stakingContract).sinkPendingReward(_validatorAddr);
@@ -256,10 +259,10 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @inheritdoc IRoninValidatorSet
+   * @inheritdoc ICandidateManager
    */
-  function periodOf(uint256 _block) public view virtual override returns (uint256) {
-    return _block == 0 ? 0 : _block / (_numberOfBlocksInEpoch * _numberOfEpochsInPeriod) + 1;
+  function currentPeriod() public view virtual override(CandidateManager, ICandidateManager) returns (uint256) {
+    return _lastUpdatedPeriod;
   }
 
   /**
@@ -362,21 +365,8 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function periodEndingAt(uint256 _block) public view virtual returns (bool) {
-    uint256 _blockLength = _numberOfBlocksInEpoch * _numberOfEpochsInPeriod;
-    return _block % _blockLength == _blockLength - 1;
-  }
-
-  /**
-   * @inheritdoc ICandidateManager
-   */
-  function numberOfEpochsInPeriod()
-    public
-    view
-    override(CandidateManager, ICandidateManager)
-    returns (uint256 _numberOfEpochs)
-  {
-    return _numberOfEpochsInPeriod;
+  function isPeriodEnding() public view virtual returns (bool) {
+    return _isPeriodEnding(_computePeriod());
   }
 
   /**
@@ -421,13 +411,6 @@ contract RoninValidatorSet is
    */
   function setNumberOfBlocksInEpoch(uint256 _number) external override onlyAdmin {
     _setNumberOfBlocksInEpoch(_number);
-  }
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function setNumberOfEpochsInPeriod(uint256 _number) external override onlyAdmin {
-    _setNumberOfEpochsInPeriod(_number);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -663,14 +646,17 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @dev Updates the number of epochs in period
-   *
-   * Emits the event `NumberOfEpochsInPeriodUpdated`
-   *
+   * @dev Returns whether the period ending at the current block number.
    */
-  function _setNumberOfEpochsInPeriod(uint256 _number) internal {
-    _numberOfEpochsInPeriod = _number;
-    emit NumberOfEpochsInPeriodUpdated(_number);
+  function _isPeriodEnding(uint256 _computedPeriod) public view virtual returns (bool) {
+    return _computedPeriod > currentPeriod();
+  }
+
+  /**
+   * @dev Returns the calculated period.
+   */
+  function _computePeriod() internal view returns (uint256) {
+    return block.timestamp / _SECS_IN_DAY;
   }
 
   /**

@@ -11,8 +11,6 @@ interface IRoninValidatorSet is ICandidateManager {
   event MaxPrioritizedValidatorNumberUpdated(uint256);
   /// @dev Emitted when the number of blocks in epoch is updated
   event NumberOfBlocksInEpochUpdated(uint256);
-  /// @dev Emitted when the number of epochs in period is updated
-  event NumberOfEpochsInPeriodUpdated(uint256);
   /// @dev Emitted when the validator set is updated
   event ValidatorSetUpdated(address[]);
   /// @dev Emitted when the bridge operator set is updated, to mirror the in-jail and maintaining status of the validator.
@@ -127,11 +125,6 @@ interface IRoninValidatorSet is ICandidateManager {
   function epochOf(uint256 _block) external view returns (uint256);
 
   /**
-   * @dev Returns the period index from the block number.
-   */
-  function periodOf(uint256 _block) external view returns (uint256);
-
-  /**
    * @dev Returns the current validator list.
    */
   function getValidators() external view returns (address[] memory);
@@ -177,9 +170,9 @@ interface IRoninValidatorSet is ICandidateManager {
   function epochEndingAt(uint256 _block) external view returns (bool);
 
   /**
-   * @dev Returns whether the period ending is at the block number `_block`.
+   * @dev Returns whether the period ending at the current block number.
    */
-  function periodEndingAt(uint256 _block) external view returns (bool);
+  function isPeriodEnding() external view returns (bool);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                               FUNCTIONS FOR ADMIN                                 //
@@ -206,15 +199,4 @@ interface IRoninValidatorSet is ICandidateManager {
    *
    */
   function setNumberOfBlocksInEpoch(uint256 _numberOfBlocksInEpoch) external;
-
-  /**
-   * @dev Updates the number of epochs in period
-   *
-   * Requirements:
-   * - The method caller is admin
-   *
-   * Emits the event `NumberOfEpochsInPeriodUpdated`
-   *
-   */
-  function setNumberOfEpochsInPeriod(uint256 _numberOfEpochsInPeriod) external;
 }

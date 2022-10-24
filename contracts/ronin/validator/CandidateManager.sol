@@ -64,11 +64,10 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
    */
   function requestRevokeCandidate(address _consensusAddr) external override onlyStakingContract {
     require(isValidatorCandidate(_consensusAddr), "CandidateManager: query for non-existent candidate");
-    uint256 _blockLength = numberOfBlocksInEpoch() * numberOfEpochsInPeriod();
-    uint256 _revokedBlock = (block.number / _blockLength) * _blockLength + _blockLength * 2 - 1;
-    require(_revokedBlock < _candidateInfo[_consensusAddr].revokedBlock, "CandidateManager: invalid block number");
-    _candidateInfo[_consensusAddr].revokedBlock = _revokedBlock;
-    emit CandidateRevokedBlockUpdated(_consensusAddr, _revokedBlock);
+    uint256 _revokedPeriod = currentPeriod() + 1;
+    require(_revokedPeriod < _candidateInfo[_consensusAddr].revokedPeriod, "CandidateManager: invalid revoked period");
+    _candidateInfo[_consensusAddr].revokedPeriod = _revokedPeriod;
+    emit CandidateRevokedPeriodUpdated(_consensusAddr, _revokedPeriod);
   }
 
   /**
@@ -106,7 +105,7 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
   /**
    * @inheritdoc ICandidateManager
    */
-  function numberOfEpochsInPeriod() public view virtual returns (uint256);
+  function currentPeriod() public view virtual override returns (uint256);
 
   /**
    * @inheritdoc ICandidateManager
@@ -127,12 +126,13 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
     _balances = _staking.totalBalances(_candidates);
 
     uint256 _length = _candidates.length;
+    uint256 _period = currentPeriod();
     address[] memory _unsatisfiedCandidates = new address[](_length);
     uint256 _unsatisfiedCount;
     address _addr;
     for (uint _i = 0; _i < _length; _i++) {
       _addr = _candidates[_i];
-      if (_balances[_i] < _minBalance || _candidateInfo[_addr].revokedBlock <= block.number) {
+      if (_balances[_i] < _minBalance || _candidateInfo[_addr].revokedPeriod <= _period) {
         _balances[_i] = _balances[--_length];
         _unsatisfiedCandidates[_unsatisfiedCount++] = _addr;
         _removeCandidate(_addr);

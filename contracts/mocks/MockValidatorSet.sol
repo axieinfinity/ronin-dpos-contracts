@@ -11,25 +11,22 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   address public stakingVestingContract;
   address public slashIndicatorContract;
 
-  uint256 internal _numberOfEpochsInPeriod;
+  uint256 internal _lastUpdatedPeriod;
   uint256 internal _numberOfBlocksInEpoch;
   /// @dev Mapping from period number => slashed
   mapping(uint256 => bool) internal _periodSlashed;
-  uint256[] internal _periods;
 
   constructor(
     address __stakingContract,
     address _slashIndicatorContract,
     address _stakingVestingContract,
     uint256 __maxValidatorCandidate,
-    uint256 __numberOfEpochsInPeriod,
     uint256 __numberOfBlocksInEpoch
   ) {
     _setStakingContract(__stakingContract);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     slashIndicatorContract = _slashIndicatorContract;
     stakingVestingContract = _stakingVestingContract;
-    _numberOfEpochsInPeriod = __numberOfEpochsInPeriod;
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
   }
 
@@ -54,22 +51,11 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     _stakingContract.sinkPendingReward(_validator);
   }
 
-  function endPeriod() external {
-    _periods.push(block.number);
-  }
-
-  function periodOf(uint256 _block) external view override returns (uint256 _period) {
-    for (uint256 _i; _i < _periods.length; _i++) {
-      if (_block >= _periods[_i]) {
-        _period = _i + 1;
-      }
-    }
-  }
-
   function submitBlockReward() external payable override {}
 
   function wrapUpEpoch() external payable override {
     _filterUnsatisfiedCandidates(0);
+    _lastUpdatedPeriod = currentPeriod();
   }
 
   function getLastUpdatedBlock() external view override returns (uint256) {}
@@ -86,8 +72,6 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
 
-  function periodEndingAt(uint256 _block) external view override returns (bool) {}
-
   function slash(
     address _validatorAddr,
     uint256 _newJailedUntil,
@@ -97,8 +81,6 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   function setMaxValidatorNumber(uint256 _maxValidatorNumber) external override {}
 
   function setNumberOfBlocksInEpoch(uint256 _number) external override {}
-
-  function setNumberOfEpochsInPeriod(uint256 _number) external override {}
 
   function maxValidatorNumber() external view override returns (uint256 _maximumValidatorNumber) {}
 
@@ -111,10 +93,6 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function isValidator(address) external pure override returns (bool) {
     return true;
-  }
-
-  function numberOfEpochsInPeriod() public view override(CandidateManager, ICandidateManager) returns (uint256) {
-    return _numberOfEpochsInPeriod;
   }
 
   function numberOfBlocksInEpoch() public view override(CandidateManager, ICandidateManager) returns (uint256) {
@@ -136,4 +114,11 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   }
 
   function totalBlockProducers() external view override returns (uint256) {}
+  function isPeriodEnding() public view virtual returns (bool) {
+    return currentPeriod() > _lastUpdatedPeriod;
+  }
+
+  function currentPeriod() public view override(CandidateManager, ICandidateManager) returns (uint256) {
+    return block.timestamp / 86400;
+  }
 }

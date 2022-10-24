@@ -82,12 +82,6 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     require(_validator.epochEndingAt(_endedAtBlock), "Maintenance: end block is not at the end of an epoch");
 
     Schedule storage _sSchedule = _schedule[_consensusAddr];
-    uint256 _period = _validator.periodOf(block.number);
-    require(
-      _period > _validator.periodOf(_sSchedule.lastUpdatedBlock) && _period > _validator.periodOf(_sSchedule.to),
-      "Maintenance: schedule twice in a period is not allowed"
-    );
-
     _sSchedule.from = _startedAtBlock;
     _sSchedule.to = _endedAtBlock;
     _sSchedule.lastUpdatedBlock = block.number;

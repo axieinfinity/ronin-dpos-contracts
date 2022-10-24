@@ -8,24 +8,11 @@ import "../libraries/EnumFlags.sol";
 
 contract MockRoninValidatorSetExtended is MockRoninValidatorSetOverridePrecompile {
   uint256[] internal _epochs;
-  uint256[] internal _periods;
 
   constructor() {}
 
   function endEpoch() external {
     _epochs.push(block.number);
-  }
-
-  function endPeriod() external {
-    _periods.push(block.number);
-  }
-
-  function periodOf(uint256 _block) public view override returns (uint256 _period) {
-    for (uint256 _i = _periods.length; _i > 0; _i--) {
-      if (_block >= _periods[_i - 1]) {
-        return _i;
-      }
-    }
   }
 
   function epochOf(uint256 _block) public view override returns (uint256 _epoch) {
@@ -39,15 +26,6 @@ contract MockRoninValidatorSetExtended is MockRoninValidatorSetOverridePrecompil
   function epochEndingAt(uint256 _block) public view override returns (bool) {
     for (uint _i = 0; _i < _epochs.length; _i++) {
       if (_block == _epochs[_i]) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function periodEndingAt(uint256 _block) public view override returns (bool) {
-    for (uint _i = 0; _i < _periods.length; _i++) {
-      if (_block == _periods[_i]) {
         return true;
       }
     }
