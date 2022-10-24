@@ -127,7 +127,9 @@ contract RoninValidatorSet is
     address _coinbaseAddr = msg.sender;
     // Deprecates reward for non-validator or slashed validator
     if (
-      !isValidator(_coinbaseAddr) || _jailed(_coinbaseAddr) || _rewardDeprecated(_coinbaseAddr, periodOf(block.number))
+      !isBlockProducer(_coinbaseAddr) ||
+      _jailed(_coinbaseAddr) ||
+      _rewardDeprecated(_coinbaseAddr, periodOf(block.number))
     ) {
       emit RewardDeprecated(_coinbaseAddr, _submittedReward);
       return;

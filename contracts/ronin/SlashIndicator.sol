@@ -291,7 +291,7 @@ contract SlashIndicator is
   function _shouldSlash(address _addr) internal view returns (bool) {
     return
       (msg.sender != _addr) &&
-      _validatorContract.isValidator(_addr) &&
+      _validatorContract.isBlockProducer(_addr) &&
       !_maintenanceContract.maintaining(_addr, block.number);
   }
 }
