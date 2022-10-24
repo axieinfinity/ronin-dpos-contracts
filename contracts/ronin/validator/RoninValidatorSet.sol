@@ -450,7 +450,7 @@ contract RoninValidatorSet is
    * @dev Distribute bonus of staking vesting and mining fee for block producer; and bonus of staking vesting for
    * bridge oparators to the treasury address of a validator.
    *
-   * Emits the `MiningRewardDistributed` event.
+   * Emits the `MiningRewardDistributed` event once the validator has an amount of mining reward.
    * Emits the `BridgeOperatorRewardDistributed` event.
    *
    * Note: This method should be called once in the end of each period.
