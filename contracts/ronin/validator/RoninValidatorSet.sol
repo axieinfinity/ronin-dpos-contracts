@@ -136,7 +136,7 @@ contract RoninValidatorSet is
     (uint256 _validatorStakingVesting, uint256 _bridgeValidatorStakingVesting) = _stakingVestingContract.requestBonus();
     uint256 _reward = _submittedReward + _validatorStakingVesting;
 
-    IStaking _staking = IStaking(_stakingContract);
+    IStaking _staking = _stakingContract;
     uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
     uint256 _miningAmount = (_rate * _reward) / 100_00;
     uint256 _delegatingAmount = _reward - _miningAmount;
@@ -489,7 +489,7 @@ contract RoninValidatorSet is
   function _settleAndTransferDelegatingRewards(address[] memory _currentValidators, uint256 _totalDelegatingReward)
     private
   {
-    IStaking _staking = IStaking(_stakingContract);
+    IStaking _staking = _stakingContract;
 
     _staking.settleRewardPools(_currentValidators);
     if (_totalDelegatingReward > 0) {
