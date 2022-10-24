@@ -27,7 +27,7 @@ abstract contract RewardCalculation is IRewardPool {
     PendingPool memory _pool = _pendingPool[_poolAddr];
 
     uint256 _balance = balanceOf(_poolAddr, _user);
-    if (_rewardSinked(_poolAddr, _periodOf(_reward.lastSyncedBlock))) {
+    if (_rewardSinked(_poolAddr, _reward.lastSyncedPeriod)) {
       SettledRewardFields memory _sReward = _sUserReward[_poolAddr][_user];
       uint256 _diffRps = _pool.accumulatedRps - _sReward.accumulatedRps;
       return (_balance * _diffRps) / 1e18 + _sReward.debited;
@@ -45,10 +45,10 @@ abstract contract RewardCalculation is IRewardPool {
     SettledPool memory _sPool = _settledPool[_poolAddr];
 
     uint256 _diffRps = _sPool.accumulatedRps - _sReward.accumulatedRps;
-    if (_reward.lastSyncedBlock <= _sPool.lastSyncedBlock) {
+    if (_reward.lastSyncedPeriod <= _sPool.lastSyncedPeriod) {
       uint256 _currentBalance = balanceOf(_poolAddr, _user);
 
-      if (_rewardSinked(_poolAddr, _periodOf(_reward.lastSyncedBlock))) {
+      if (_rewardSinked(_poolAddr, _reward.lastSyncedPeriod)) {
         return (_currentBalance * _diffRps) / 1e18 + _sReward.debited;
       }
 
@@ -93,7 +93,7 @@ abstract contract RewardCalculation is IRewardPool {
     SettledPool memory _sPool = _settledPool[_poolAddr];
 
     // Syncs the reward once the last sync is settled.
-    if (_reward.lastSyncedBlock <= _sPool.lastSyncedBlock) {
+    if (_reward.lastSyncedPeriod <= _sPool.lastSyncedPeriod) {
       uint256 _claimableReward = getClaimableReward(_poolAddr, _user);
 
       SettledRewardFields storage _sReward = _sUserReward[_poolAddr][_user];
@@ -108,7 +108,7 @@ abstract contract RewardCalculation is IRewardPool {
 
     _reward.debited = _debited;
     _reward.credited = _credited;
-    _reward.lastSyncedBlock = block.number;
+    _reward.lastSyncedPeriod = _periodOf(block.number);
     emit PendingRewardUpdated(_poolAddr, _user, _debited, _credited);
   }
 
@@ -129,13 +129,13 @@ abstract contract RewardCalculation is IRewardPool {
     SettledRewardFields storage _sReward = _sUserReward[_poolAddr][_user];
 
     _sReward.debited = 0;
-    if (_reward.lastSyncedBlock <= _sPool.lastSyncedBlock) {
+    if (_reward.lastSyncedPeriod <= _sPool.lastSyncedPeriod) {
       _sReward.accumulatedRps = _sPool.accumulatedRps;
     }
     emit SettledRewardUpdated(_poolAddr, _user, 0, _sReward.accumulatedRps);
 
     _reward.credited += _amount;
-    _reward.lastSyncedBlock = block.number;
+    _reward.lastSyncedPeriod = _periodOf(block.number);
     emit PendingRewardUpdated(_poolAddr, _user, _reward.debited, _reward.credited);
   }
 
@@ -187,7 +187,7 @@ abstract contract RewardCalculation is IRewardPool {
       SettledPool storage _sPool = _settledPool[_poolAddr];
       if (_accumulatedRpsList[_i] != _sPool.accumulatedRps) {
         _sPool.accumulatedRps = _accumulatedRpsList[_i];
-        _sPool.lastSyncedBlock = block.number;
+        _sPool.lastSyncedPeriod = _periodOf(block.number);
       }
     }
     emit SettledPoolsUpdated(_poolList, _accumulatedRpsList);
