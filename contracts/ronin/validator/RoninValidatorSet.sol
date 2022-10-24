@@ -451,7 +451,7 @@ contract RoninValidatorSet is
    * bridge oparators to the treasury address of a validator.
    *
    * Emits the `MiningRewardDistributed` event once the validator has an amount of mining reward.
-   * Emits the `BridgeOperatorRewardDistributed` event.
+   * Emits the `BridgeOperatorRewardDistributed` once the validator has an amount of bridge reward.
    *
    * Note: This method should be called once in the end of each period.
    *
