@@ -98,6 +98,8 @@ describe('Ronin Validator Set test', () => {
         tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
       });
       await RoninValidatorSet.expects.emitWrappedUpEpochEvent(tx!);
+      expect(tx!).not.emit(RoninValidatorSet, 'ActivatedBlockProducers');
+      expect(tx!).not.emit(RoninValidatorSet, 'DeactivatedBlockProducers');
       expect(await roninValidatorSet.getValidators()).eql([]);
     });
   });
@@ -127,6 +129,7 @@ describe('Ronin Validator Set test', () => {
 
       await RoninValidatorSet.expects.emitWrappedUpEpochEvent(tx!);
       expect(await roninValidatorSet.getValidators()).eql([]);
+      expect(await roninValidatorSet.getBlockProducers()).eql([]);
       expect(tx!).not.emit(roninValidatorSet, 'ValidatorSetUpdated');
     });
   });
@@ -148,6 +151,7 @@ describe('Ronin Validator Set test', () => {
 
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, _expectingValidatorsAddr);
       expect(await roninValidatorSet.getValidators()).eql(_expectingValidatorsAddr);
+      expect(await roninValidatorSet.getBlockProducers()).eql(_expectingValidatorsAddr);
     });
 
     it('Should isValidator method returns `true` for validator', async () => {
@@ -204,6 +208,7 @@ describe('Ronin Validator Set test', () => {
       });
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
       expect(await roninValidatorSet.getValidators()).eql(currentValidatorSet);
+      expect(await roninValidatorSet.getBlockProducers()).eql(currentValidatorSet);
     });
   });
 
