@@ -181,10 +181,7 @@ describe('[Integration] Slash validators', () => {
         });
         expectingBlockProducerSet.pop();
         expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
-        await RoninValidatorSetExpects.emitDeactivatedBlockProducersEvent(
-          wrapUpEpochTx!,
-          expectingValidatorSet.slice(-1)
-        );
+        await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpEpochTx!, expectingBlockProducerSet);
         expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
       });
 
@@ -199,7 +196,6 @@ describe('[Integration] Slash validators', () => {
           wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
 
-        expect(wrapUpEpochTx).not.emit(validatorContract, 'DeactivatedBlockProducers');
         expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
       });
 
@@ -216,10 +212,7 @@ describe('[Integration] Slash validators', () => {
         expectingBlockProducerSet.push(slashee.address);
 
         expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
-        await RoninValidatorSetExpects.emitActivatedBlockProducersEvent(
-          wrapUpEpochTx!,
-          expectingValidatorSet.slice(-1)
-        );
+        await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpEpochTx!, expectingBlockProducerSet);
         expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
       });
     });
@@ -303,10 +296,7 @@ describe('[Integration] Slash validators', () => {
             wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
           });
           expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
-          await RoninValidatorSetExpects.emitDeactivatedBlockProducersEvent(
-            wrapUpEpochTx!,
-            expectingValidatorSet.slice(-1)
-          );
+          await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpEpochTx!, expectingBlockProducerSet);
         });
 
         it('Should the validator cannot re-join as a block producer when jail time is not over', async () => {
@@ -320,7 +310,6 @@ describe('[Integration] Slash validators', () => {
             wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
           });
 
-          expect(wrapUpEpochTx).not.emit(validatorContract, 'DeactivatedBlockProducers');
           expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
         });
 
@@ -337,10 +326,7 @@ describe('[Integration] Slash validators', () => {
           expectingBlockProducerSet.push(slashee.address);
 
           expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
-          await RoninValidatorSetExpects.emitActivatedBlockProducersEvent(
-            wrapUpEpochTx!,
-            expectingValidatorSet.slice(-1)
-          );
+          await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpEpochTx!, expectingBlockProducerSet);
           expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
         });
 
@@ -363,9 +349,6 @@ describe('[Integration] Slash validators', () => {
           expectingValidatorSet.pop();
 
           await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, expectingValidatorSet);
-
-          expect(wrapUpEpochTx).not.emit(validatorContract, 'DeactivatedBlockProducers');
-          expect(wrapUpEpochTx).not.emit(validatorContract, 'ActivatedBlockProducers');
 
           expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
           expect(await validatorContract.getValidators()).eql(expectingValidatorSet);

@@ -182,6 +182,18 @@ export const expects = {
     );
   },
 
+  emitBlockProducerSetUpdatedEvent: async function (tx: ContractTransaction, expectingBlockProducers: string[]) {
+    await expectEvent(
+      contractInterface,
+      'BlockProducerSetUpdated',
+      tx,
+      (event) => {
+        expect(event.args[0], 'invalid validator set').eql(expectingBlockProducers);
+      },
+      1
+    );
+  },
+
   emitActivatedBlockProducersEvent: async function (tx: ContractTransaction, expectingProducers: string[]) {
     await expectEvent(
       contractInterface,

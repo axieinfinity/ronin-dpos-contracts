@@ -507,6 +507,7 @@ contract RoninValidatorSet is
    * @dev Updates the validator set based on the validator candidates from the Staking contract.
    *
    * Emits the `ValidatorSetUpdated` event.
+   * Emits the `BridgeOperatorSetUpdated` event.
    *
    * Note: This method should be called once in the end of each period.
    *
@@ -527,13 +528,13 @@ contract RoninValidatorSet is
       _maxPrioritizedValidatorNumber
     );
     _setNewValidatorSet(_newValidators, _newValidatorCount);
+    emit BridgeOperatorSetUpdated(getBridgeOperators());
   }
 
   /**
    * @dev Private helper function helps writing the new validator set into the contract storage.
    *
    * Emits the `ValidatorSetUpdated` event.
-   * Emits the `BridgeOperatorSetUpdated` event.
    *
    * Note: This method should be called once in the end of each period.
    *
@@ -560,7 +561,6 @@ contract RoninValidatorSet is
 
     validatorCount = _count;
     emit ValidatorSetUpdated(_newValidators);
-    emit BridgeOperatorSetUpdated(getBridgeOperators());
   }
 
   /**
@@ -569,18 +569,11 @@ contract RoninValidatorSet is
    * Requirements:
    * - This method is called at the end of each epoch
    *
-   * Emits the `ActivatedBlockProducers` event, if the block producer list get updated
-   * Emits the `DeactivatedBlockProducers` event, if the block producer list get updated
+   * Emits the `BlockProducerSetUpdated` event.
    *
    */
   function _revampBlockProducers(address[] memory _currentValidators) private {
     bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
-
-    uint _activatedCount;
-    uint _deactivatedCount;
-
-    address[] memory _activatedList = _currentValidators;
-    address[] memory _deactivatedList = _currentValidators;
 
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
       address _currentValidator = _currentValidators[_i];
@@ -591,7 +584,6 @@ contract RoninValidatorSet is
         _validatorMap[_currentValidator] = _validatorMap[_currentValidator].addFlag(
           EnumFlags.ValidatorFlag.BlockProducer
         );
-        _activatedList[_activatedCount++] = _currentValidator;
         continue;
       }
 
@@ -599,23 +591,10 @@ contract RoninValidatorSet is
         _validatorMap[_currentValidator] = _validatorMap[_currentValidator].removeFlag(
           EnumFlags.ValidatorFlag.BlockProducer
         );
-        _deactivatedList[_deactivatedCount++] = _currentValidator;
       }
     }
 
-    if (_activatedCount > 0) {
-      assembly {
-        mstore(_activatedList, _activatedCount)
-      }
-      emit ActivatedBlockProducers(_activatedList);
-    }
-
-    if (_deactivatedCount > 0) {
-      assembly {
-        mstore(_deactivatedList, _deactivatedCount)
-      }
-      emit DeactivatedBlockProducers(_deactivatedList);
-    }
+    emit BlockProducerSetUpdated(getBlockProducers());
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////

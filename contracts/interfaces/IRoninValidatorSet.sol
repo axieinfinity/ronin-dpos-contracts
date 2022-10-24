@@ -15,7 +15,9 @@ interface IRoninValidatorSet is ICandidateManager {
   event NumberOfEpochsInPeriodUpdated(uint256);
   /// @dev Emitted when the validator set is updated
   event ValidatorSetUpdated(address[]);
-  /// @dev Emitted when the bridge operator set is updated
+  /// @dev Emitted when the bridge operator set is updated, to mirror the in-jail and maintaining status of the validator.
+  event BlockProducerSetUpdated(address[]);
+  /// @dev Emitted when the bridge operator set is updated.
   event BridgeOperatorSetUpdated(address[]);
   /// @dev Emitted when the reward of the valdiator is deprecated.
   event RewardDeprecated(address coinbaseAddr, uint256 rewardAmount);
@@ -31,10 +33,6 @@ interface IRoninValidatorSet is ICandidateManager {
   event StakingRewardDistributed(uint256 amount);
   /// @dev Emitted when the epoch is wrapped up.
   event WrappedUpEpoch(uint256 indexed periodNumber, uint256 indexed epochNumber, bool periodEnding);
-  /// @dev Emitted when validators get activated the block producer role after get out of jail or finish maintenance.
-  event ActivatedBlockProducers(address[]);
-  /// @dev Emitted when validators get deactivated the block producer role.
-  event DeactivatedBlockProducers(address[]);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR COINBASE                               //
@@ -62,6 +60,8 @@ interface IRoninValidatorSet is ICandidateManager {
    *
    * Emits the event `MiningRewardDistributed` when some validator has reward distributed.
    * Emits the event `StakingRewardDistributed` when some staking pool has reward distributed.
+   * Emits the event `BlockProducerSetUpdated` when the epoch is wrapped up.
+   * Emits the event `BridgeOperatorSetUpdated` when the epoch is wrapped up at period ending.
    * Emits the event `ValidatorSetUpdated` when the epoch is wrapped up at period ending, and the validator set gets updated.
    * Emits the event `WrappedUpEpoch`.
    *

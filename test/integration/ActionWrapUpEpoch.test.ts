@@ -254,15 +254,15 @@ describe('[Integration] Wrap up epoch', () => {
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
 
+        let expectingBlockProducerSet = [validators[2], validators[3]].map((_) => _.address).reverse();
+
         await ValidatorSetExpects.emitWrappedUpEpochEvent(wrapUpTx!);
-        await ValidatorSetExpects.emitDeactivatedBlockProducersEvent(wrapUpTx!, [slasheeAddress]);
+        await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpTx!, expectingBlockProducerSet);
 
         expect(await validatorContract.getValidators()).eql(
           [validators[1], validators[2], validators[3]].map((_) => _.address).reverse()
         );
-        expect(await validatorContract.getBlockProducers()).eql(
-          [validators[2], validators[3]].map((_) => _.address).reverse()
-        );
+        expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
       });
 
       it('Should the validators in the previous epoch (including slashed one) got slashing counter reset, when the epoch ends', async () => {

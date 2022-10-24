@@ -98,8 +98,7 @@ describe('Ronin Validator Set test', () => {
         tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
       });
       await RoninValidatorSet.expects.emitWrappedUpEpochEvent(tx!);
-      expect(tx!).not.emit(RoninValidatorSet, 'ActivatedBlockProducers');
-      expect(tx!).not.emit(RoninValidatorSet, 'DeactivatedBlockProducers');
+      await RoninValidatorSet.expects.emitBlockProducerSetUpdatedEvent(tx!, []);
       expect(await roninValidatorSet.getValidators()).eql([]);
     });
   });

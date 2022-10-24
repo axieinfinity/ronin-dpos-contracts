@@ -99,8 +99,6 @@ describe('Maintenance test', () => {
       tx,
       validatorCandidates.map((_) => _.address)
     );
-    expect(tx).not.emit(validatorCandidates, 'ActivatedBlockProducers');
-    expect(tx).not.emit(validatorCandidates, 'DeactivatedBlockProducers');
 
     expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
     expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.map((_) => _.address));
@@ -254,19 +252,14 @@ describe('Maintenance test', () => {
     it('Should the validator still appear in the block producer list since it is not maintenance time yet', async () => {
       await localEpochController.mineToBeforeEndOfEpoch();
       let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
-      expect(tx).not.emit(validatorContract, 'ActivatedBlockProducers');
-      expect(tx).not.emit(validatorContract, 'DeactivatedBlockProducers');
       expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.map((_) => _.address));
     });
 
     it('Should the validator not appear in the block producer list since the maintenance is started', async () => {
       await localEpochController.mineToBeforeEndOfEpoch();
       let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
-      expect(tx).not.emit(validatorContract, 'ActivatedBlockProducers');
-      await ValidatorSetExpects.emitDeactivatedBlockProducersEvent(
-        tx,
-        validatorCandidates.slice(0, 2).map((_) => _.address)
-      );
+      let expectingBlockProducerSet = validatorCandidates.slice(2).map((_) => _.address);
+      await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(tx!, expectingBlockProducerSet);
       expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.slice(2).map((_) => _.address));
     });
 
@@ -293,12 +286,9 @@ describe('Maintenance test', () => {
     it('Should the validator appear in the block producer list since the maintenance time is ended', async () => {
       await localEpochController.mineToBeforeEndOfEpoch();
       let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
-      expect(tx).not.emit(validatorContract, 'DeactivatedBlockProducers');
-      await ValidatorSetExpects.emitActivatedBlockProducersEvent(
-        tx,
-        validatorCandidates.slice(0, 2).map((_) => _.address)
-      );
-      expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.map((_) => _.address));
+      let expectingBlockProducerSet = validatorCandidates.map((_) => _.address);
+      await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(tx!, expectingBlockProducerSet);
+      expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
     });
 
     it('Should not be able to schedule maintenance twice in a period', async () => {
