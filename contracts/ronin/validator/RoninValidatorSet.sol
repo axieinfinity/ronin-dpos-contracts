@@ -518,7 +518,7 @@ contract RoninValidatorSet is
     // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
     uint256 _minBalance = _stakingContract.minValidatorBalance();
     _balanceWeights = _filterUnsatisfiedCandidates(_minBalance);
-    uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getWeights(_candidates);
+    uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getConsensusWeights(_candidates);
     uint256 _newValidatorCount;
     (_newValidators, _newValidatorCount) = _pcPickValidatorSet(
       _candidates,

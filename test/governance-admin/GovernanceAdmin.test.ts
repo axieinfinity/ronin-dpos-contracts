@@ -45,7 +45,13 @@ describe('Governance Admin test', () => {
     const { roninGovernanceAdminAddress, mainchainGovernanceAdminAddress, stakingContractAddress } = await initTest(
       'RoninGovernanceAdmin.test'
     )({
-      trustedOrganizations: governors.map((v) => ({ addr: v.address, weight: 100 })),
+      trustedOrganizations: governors.map((v) => ({
+        consensusAddr: v.address,
+        governor: v.address,
+        bridgeVoter: v.address,
+        weight: 100,
+        addedBlock: 0,
+      })),
       numerator: 1,
       denominator: 2,
       relayers: [relayer.address],
@@ -93,7 +99,7 @@ describe('Governance Admin test', () => {
   it('Should be able to vote bridge operators', async () => {
     ballot = {
       period: 10,
-      operators: governors.map((v) => ({ addr: v.address, weight: 100 })),
+      operators: governors.map((v) => v.address),
     };
     signatures = await Promise.all(
       governors.map((g) =>
@@ -103,11 +109,11 @@ describe('Governance Admin test', () => {
       )
     );
     await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures);
-    expect(await bridgeContract.getBridgeOperators()).eql(governors.map((v) => [v.address, BigNumber.from(100)]));
   });
 
   it('Should be able relay vote bridge operators', async () => {
     await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures);
+    expect(await bridgeContract.getBridgeOperators()).eql(governors.map((v) => v.address));
   });
 
   it('Should not able to relay again', async () => {
@@ -119,7 +125,7 @@ describe('Governance Admin test', () => {
   it('Should not be able to use the signatures for another period', async () => {
     ballot = {
       period: 100,
-      operators: governors.map((v) => ({ addr: v.address, weight: 100 })),
+      operators: governors.map((v) => v.address),
     };
     await expect(
       governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures)
@@ -129,7 +135,7 @@ describe('Governance Admin test', () => {
   it('Should not be able to vote bridge operators with a smaller period', async () => {
     ballot = {
       period: 5,
-      operators: governors.map((v) => ({ addr: v.address, weight: 100 })),
+      operators: governors.map((v) => v.address),
     };
     signatures = await Promise.all(
       governors.map((g) =>

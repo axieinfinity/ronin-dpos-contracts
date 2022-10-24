@@ -2,20 +2,27 @@
 pragma solidity ^0.8.0;
 
 import "../../../extensions/isolated-governance/IsolatedGovernance.sol";
-import "../../../interfaces/consumers/WeightedAddressConsumer.sol";
 import "../../../interfaces/consumers/SignatureConsumer.sol";
 import "../../../libraries/BridgeOperatorsBallot.sol";
+import "../../../interfaces/IRoninGovernanceAdmin.sol";
 
-abstract contract BOsGovernanceProposal is SignatureConsumer, WeightedAddressConsumer, IsolatedGovernance {
+abstract contract BOsGovernanceProposal is SignatureConsumer, IsolatedGovernance, IRoninGovernanceAdmin {
   /// @dev The last period that the brige operators synced.
   uint256 internal _lastSyncedPeriod;
   /// @dev Mapping from period index => bridge operators vote
   mapping(uint256 => IsolatedVote) internal _vote;
 
-  /// @dev Mapping from governor address => last block that the governor voted
+  /// @dev Mapping from bridge voter address => last block that the address voted
   mapping(address => uint256) internal _lastVotedBlock;
   /// @dev Mapping from period => voter => signatures
   mapping(uint256 => mapping(address => Signature)) internal _votingSig;
+
+  /**
+   * @inheritdoc IRoninGovernanceAdmin
+   */
+  function lastVotedBlock(address _bridgeVoter) external view returns (uint256) {
+    return _lastVotedBlock[_bridgeVoter];
+  }
 
   /**
    * @dev Votes for a set of bridge operators by signatures.
@@ -27,7 +34,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, WeightedAddressCon
    *
    */
   function _castVotesBySignatures(
-    WeightedAddress[] calldata _operators,
+    address[] calldata _operators,
     Signature[] calldata _signatures,
     uint256 _period,
     uint256 _minimumVoteWeight,
@@ -50,7 +57,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, WeightedAddressCon
       require(_lastSigner < _signer, "BOsGovernanceProposal: invalid order");
       _lastSigner = _signer;
 
-      uint256 _weight = _getWeight(_signer);
+      uint256 _weight = _getBridgeVoterWeight(_signer);
       if (_weight > 0) {
         _hasValidVotes = true;
         _lastVotedBlock[_signer] = block.number;
@@ -65,7 +72,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, WeightedAddressCon
   }
 
   /**
-   * @dev Returns the weight of a governor.
+   * @dev Returns the weight of a bridge voter.
    */
-  function _getWeight(address _governor) internal view virtual returns (uint256);
+  function _getBridgeVoterWeight(address _bridgeVoter) internal view virtual returns (uint256);
 }

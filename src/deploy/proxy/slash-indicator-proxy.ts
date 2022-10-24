@@ -18,10 +18,14 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const data = new SlashIndicator__factory().interface.encodeFunctionData('initialize', [
     roninInitAddress[network.name]!.validatorContract?.address,
     roninInitAddress[network.name]!.maintenanceContract?.address,
+    roninInitAddress[network.name]!.roninTrustedOrganizationContract?.address,
+    roninInitAddress[network.name]!.governanceAdmin?.address,
     slashIndicatorConf[network.name]!.misdemeanorThreshold,
     slashIndicatorConf[network.name]!.felonyThreshold,
+    slashIndicatorConf[network.name]!.bridgeVotingThreshold,
     slashIndicatorConf[network.name]!.slashFelonyAmount,
     slashIndicatorConf[network.name]!.slashDoubleSignAmount,
+    slashIndicatorConf[network.name]!.bridgeVotingSlashAmount,
     slashIndicatorConf[network.name]!.felonyJailBlocks,
     slashIndicatorConf[network.name]!.doubleSigningConstrainBlocks,
   ]);

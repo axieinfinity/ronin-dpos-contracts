@@ -1,7 +1,7 @@
 import { BigNumber, BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
-import { WeightedAddressStruct } from './types/IBridge';
+import { TrustedOrganizationStruct } from './types/IRoninTrustedOrganization';
 
 export enum Network {
   Hardhat = 'hardhat',
@@ -50,7 +50,7 @@ export interface MaintenanceArguments {
 }
 
 export interface RoninTrustedOrganizationArguments {
-  trustedOrganizations?: WeightedAddressStruct[];
+  trustedOrganizations?: TrustedOrganizationStruct[];
   numerator?: BigNumberish;
   denominator?: BigNumberish;
 }
@@ -84,8 +84,10 @@ export interface StakingVestingConfig {
 export interface SlashIndicatorArguments {
   misdemeanorThreshold?: BigNumberish;
   felonyThreshold?: BigNumberish;
+  bridgeVotingThreshold?: BigNumberish;
   slashFelonyAmount?: BigNumberish;
   slashDoubleSignAmount?: BigNumberish;
+  bridgeVotingSlashAmount?: BigNumberish;
   felonyJailBlocks?: BigNumberish;
   doubleSigningConstrainBlocks?: BigNumberish;
 }
@@ -167,8 +169,10 @@ export const slashIndicatorConf: SlashIndicatorConfig = {
   [Network.Devnet]: {
     misdemeanorThreshold: 50,
     felonyThreshold: 150,
+    bridgeVotingThreshold: 28800 * 3, // ~3 days
     slashFelonyAmount: BigNumber.from(10).pow(18).mul(1), // 1 RON
     slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10), // 10 RON
+    bridgeVotingSlashAmount: BigNumber.from(10).pow(18).mul(10_000), // 10.000 RON
     felonyJailBlocks: 28800 * 2, // jails for 2 days
     doubleSigningConstrainBlocks: 28800,
   },
@@ -194,8 +198,14 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
 export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
-    trustedOrganizations: ['0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1'].map((addr) => ({ addr, weight: 100 })),
-    numerator: 1,
+    trustedOrganizations: ['0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1'].map((addr) => ({
+      consensusAddr: addr,
+      governor: addr,
+      bridgeVoter: addr,
+      weight: 100,
+      addedBlock: 0,
+    })),
+    numerator: 0,
     denominator: 1,
   },
   [Network.Testnet]: undefined,

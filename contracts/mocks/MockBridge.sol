@@ -5,9 +5,9 @@ pragma solidity ^0.8.9;
 import "../interfaces/IBridge.sol";
 
 contract MockBridge is IBridge {
-  WeightedAddress[] public bridgeOperators;
+  address[] public bridgeOperators;
 
-  function replaceBridgeOperators(WeightedAddress[] calldata _list) external override {
+  function replaceBridgeOperators(address[] calldata _list) external override {
     while (bridgeOperators.length > 0) {
       bridgeOperators.pop();
     }
@@ -16,7 +16,7 @@ contract MockBridge is IBridge {
     }
   }
 
-  function getBridgeOperators() external view override returns (WeightedAddress[] memory) {
+  function getBridgeOperators() external view override returns (address[] memory) {
     return bridgeOperators;
   }
 }

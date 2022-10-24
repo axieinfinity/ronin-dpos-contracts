@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./consumers/WeightedAddressConsumer.sol";
-
-interface IBridge is WeightedAddressConsumer {
+interface IBridge {
   /**
    * @dev Replaces the old bridge operator list by the new one.
    *
@@ -13,10 +11,10 @@ interface IBridge is WeightedAddressConsumer {
    * Emitted the event `BridgeOperatorsReplaced`.
    *
    */
-  function replaceBridgeOperators(WeightedAddress[] calldata) external;
+  function replaceBridgeOperators(address[] calldata) external;
 
   /**
    * @dev Returns the bridge operator list.
    */
-  function getBridgeOperators() external view returns (WeightedAddress[] memory);
+  function getBridgeOperators() external view returns (address[] memory);
 }

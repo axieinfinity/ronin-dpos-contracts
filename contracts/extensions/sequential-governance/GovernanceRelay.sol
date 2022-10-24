@@ -58,7 +58,7 @@ abstract contract GovernanceRelay is CoreGovernance {
 
     ProposalVote storage _vote = vote[_proposal.chainId][_proposal.nonce];
     uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
-    uint256 _totalForVoteWeight = _getWeights(_forVoteSigners);
+    uint256 _totalForVoteWeight = _sumWeights(_forVoteSigners);
     if (_totalForVoteWeight >= _minimumForVoteWeight) {
       require(_totalForVoteWeight > 0, "GovernanceRelay: invalid vote weight");
       _vote.status = VoteStatus.Approved;
@@ -68,7 +68,7 @@ abstract contract GovernanceRelay is CoreGovernance {
     }
 
     uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;
-    uint256 _totalAgainstVoteWeight = _getWeights(_againstVoteSigners);
+    uint256 _totalAgainstVoteWeight = _sumWeights(_againstVoteSigners);
     if (_totalAgainstVoteWeight >= _minimumAgainstVoteWeight) {
       require(_totalAgainstVoteWeight > 0, "GovernanceRelay: invalid vote weight");
       _vote.status = VoteStatus.Rejected;
@@ -139,5 +139,5 @@ abstract contract GovernanceRelay is CoreGovernance {
   /**
    * @dev Returns the weight of the governor list.
    */
-  function _getWeights(address[] memory _governors) internal view virtual returns (uint256);
+  function _sumWeights(address[] memory _governors) internal view virtual returns (uint256);
 }
