@@ -466,8 +466,8 @@ contract RoninValidatorSet is
     }
 
     uint256 _bridgeOperatingAmount = _bridgeOperatingReward[_validatorAddr];
-    delete _bridgeOperatingReward[_validatorAddr];
     if (_bridgeOperatingAmount > 0) {
+        delete _bridgeOperatingReward[_validatorAddr];
       address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
       require(
         _sendRON(_treasury, _bridgeOperatingAmount),
