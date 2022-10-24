@@ -15,6 +15,10 @@ interface IRoninValidatorSet is ICandidateManager {
   event NumberOfEpochsInPeriodUpdated(uint256);
   /// @dev Emitted when the validator set is updated
   event ValidatorSetUpdated(address[]);
+  /// @dev Emitted when the bridge operator set is updated, to mirror the in-jail and maintaining status of the validator.
+  event BlockProducerSetUpdated(address[]);
+  /// @dev Emitted when the bridge operator set is updated.
+  event BridgeOperatorSetUpdated(address[]);
   /// @dev Emitted when the reward of the valdiator is deprecated.
   event RewardDeprecated(address coinbaseAddr, uint256 rewardAmount);
   /// @dev Emitted when the block reward is submitted.
@@ -22,9 +26,13 @@ interface IRoninValidatorSet is ICandidateManager {
   /// @dev Emitted when the validator is punished.
   event ValidatorPunished(address validatorAddr, uint256 jailedUntil, uint256 deductedStakingAmount);
   /// @dev Emitted when the validator reward is distributed.
-  event MiningRewardDistributed(address validatorAddr, uint256 amount);
+  event MiningRewardDistributed(address indexed validatorAddr, address indexed recipientAddr, uint256 amount);
+  /// @dev Emitted when the bridge operator reward is distributed.
+  event BridgeOperatorRewardDistributed(address indexed validatorAddr, address indexed recipientAddr, uint256 amount);
   /// @dev Emitted when the amount of RON reward is distributed.
   event StakingRewardDistributed(uint256 amount);
+  /// @dev Emitted when the epoch is wrapped up.
+  event WrappedUpEpoch(uint256 indexed periodNumber, uint256 indexed epochNumber, bool periodEnding);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              FUNCTIONS FOR COINBASE                               //
@@ -52,7 +60,10 @@ interface IRoninValidatorSet is ICandidateManager {
    *
    * Emits the event `MiningRewardDistributed` when some validator has reward distributed.
    * Emits the event `StakingRewardDistributed` when some staking pool has reward distributed.
-   * Emits the event `ValidatorSetUpdated`.
+   * Emits the event `BlockProducerSetUpdated` when the epoch is wrapped up.
+   * Emits the event `BridgeOperatorSetUpdated` when the epoch is wrapped up at period ending.
+   * Emits the event `ValidatorSetUpdated` when the epoch is wrapped up at period ending, and the validator set gets updated.
+   * Emits the event `WrappedUpEpoch`.
    *
    */
   function wrapUpEpoch() external payable;
@@ -121,9 +132,39 @@ interface IRoninValidatorSet is ICandidateManager {
   function getValidators() external view returns (address[] memory);
 
   /**
-   * @dev Returns whether the address is validator or not.
+   * @dev Returns whether the address is either a bridge operator or a block producer.
    */
   function isValidator(address _addr) external view returns (bool);
+
+  /**
+   * @dev Returns the current block producer list.
+   */
+  function getBlockProducers() external view returns (address[] memory);
+
+  /**
+   * @dev Returns whether the address is block producer or not.
+   */
+  function isBlockProducer(address _addr) external view returns (bool);
+
+  /**
+   * @dev Returns total numbers of the block producers.
+   */
+  function totalBlockProducers() external view returns (uint256);
+
+  /**
+   * @dev Returns the current bridge operator list.
+   */
+  function getBridgeOperators() external view returns (address[] memory);
+
+  /**
+   * @dev Returns whether the address is bridge operator or not.
+   */
+  function isBridgeOperator(address _addr) external view returns (bool);
+
+  /**
+   * @dev Returns total numbers of the bridge operators.
+   */
+  function totalBridgeOperators() external view returns (uint256);
 
   /**
    * @dev Returns whether the epoch ending is at the block number `_block`.

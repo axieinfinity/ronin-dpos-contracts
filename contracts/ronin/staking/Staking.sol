@@ -5,7 +5,6 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/IStaking.sol";
 import "../../interfaces/IRoninValidatorSet.sol";
-import "../../libraries/Sorting.sol";
 import "./StakingManager.sol";
 
 contract Staking is IStaking, StakingManager, Initializable {

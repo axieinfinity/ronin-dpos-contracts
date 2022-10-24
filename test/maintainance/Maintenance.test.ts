@@ -11,12 +11,12 @@ import {
   SlashIndicator__factory,
   Staking,
   Staking__factory,
-  MockRoninValidatorSetSorting__factory,
+  MockRoninValidatorSetOverridePrecompile__factory,
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
 } from '../../src/types';
 import { initTest } from '../helpers/fixture';
-import { EpochController } from '../helpers/ronin-validator-set';
+import { EpochController, expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 
 let coinbase: SignerWithAddress;
@@ -64,11 +64,11 @@ describe('Maintenance test', () => {
     maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
-    validatorContract = MockRoninValidatorSetSorting__factory.connect(validatorContractAddress, deployer);
+    validatorContract = MockRoninValidatorSetOverridePrecompile__factory.connect(validatorContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, governor);
 
-    const mockValidatorLogic = await new MockRoninValidatorSetSorting__factory(deployer).deploy();
+    const mockValidatorLogic = await new MockRoninValidatorSetOverridePrecompile__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
 
@@ -77,6 +77,7 @@ describe('Maintenance test', () => {
       await stakingContract
         .connect(validatorCandidates[i])
         .applyValidatorCandidate(
+          validatorCandidates[i].address,
           validatorCandidates[i].address,
           validatorCandidates[i].address,
           validatorCandidates[i].address,
@@ -92,10 +93,15 @@ describe('Maintenance test', () => {
 
     localEpochController = new EpochController(minOffset, numberOfBlocksInEpoch, numberOfEpochsInPeriod);
 
-    await localEpochController.mineToBeforeEndOfEpoch();
+    await localEpochController.mineToBeforeEndOfPeriod();
+    let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
+    await ValidatorSetExpects.emitValidatorSetUpdatedEvent(
+      tx,
+      validatorCandidates.map((_) => _.address)
+    );
 
-    await validatorContract.connect(coinbase).wrapUpEpoch();
     expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
+    expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.map((_) => _.address));
   });
 
   after(async () => {
@@ -201,7 +207,7 @@ describe('Maintenance test', () => {
 
     it('Should not be able to schedule maintenance for non-validator address', async () => {
       await expect(maintenanceContract.connect(validatorCandidates[0]).schedule(deployer.address, 0, 100)).revertedWith(
-        'Maintenance: consensus address must be a validator'
+        'Maintenance: consensus address must be a block producer'
       );
     });
 
@@ -229,7 +235,7 @@ describe('Maintenance test', () => {
       ).revertedWith('Maintenance: already scheduled');
     });
 
-    it('Should be able to schedule maintenance using another validator admin account', async () => {
+    it('Should be able to schedule maintenance for another validator using their admin account', async () => {
       await maintenanceContract
         .connect(validatorCandidates[1])
         .schedule(validatorCandidates[1].address, startedAtBlock, endedAtBlock);
@@ -243,16 +249,18 @@ describe('Maintenance test', () => {
       ).revertedWith('Maintenance: exceeds total of schedules');
     });
 
-    it('Should the validator still appear in the validator list since it is not maintenance time yet', async () => {
+    it('Should the validator still appear in the block producer list since it is not maintenance time yet', async () => {
       await localEpochController.mineToBeforeEndOfEpoch();
-      await validatorContract.connect(coinbase).wrapUpEpoch();
-      expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
+      let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
+      expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.map((_) => _.address));
     });
 
-    it('Should the validator not appear in the validator list since the maintenance is started', async () => {
+    it('Should the validator not appear in the block producer list since the maintenance is started', async () => {
       await localEpochController.mineToBeforeEndOfEpoch();
-      await validatorContract.connect(coinbase).wrapUpEpoch();
-      expect(await validatorContract.getValidators()).eql(validatorCandidates.slice(2).map((_) => _.address));
+      let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
+      let expectingBlockProducerSet = validatorCandidates.slice(2).map((_) => _.address);
+      await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(tx!, expectingBlockProducerSet);
+      expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.slice(2).map((_) => _.address));
     });
 
     it('[Slash Integration] Should not be able to slash the validator in maintenance time', async () => {
@@ -275,10 +283,12 @@ describe('Maintenance test', () => {
       ]);
     });
 
-    it('Should the validator appear in the validator list since the maintenance time is ended', async () => {
+    it('Should the validator appear in the block producer list since the maintenance time is ended', async () => {
       await localEpochController.mineToBeforeEndOfEpoch();
-      await validatorContract.connect(coinbase).wrapUpEpoch();
-      expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
+      let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
+      let expectingBlockProducerSet = validatorCandidates.map((_) => _.address);
+      await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(tx!, expectingBlockProducerSet);
+      expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
     });
 
     it('Should not be able to schedule maintenance twice in a period', async () => {

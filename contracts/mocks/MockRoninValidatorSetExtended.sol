@@ -2,10 +2,11 @@
 
 pragma solidity ^0.8.9;
 
-import "../libraries/Sorting.sol";
-import "../ronin/validator/RoninValidatorSet.sol";
+import "./MockRoninValidatorSetOverridePrecompile.sol";
+import "./libraries/Sorting.sol";
+import "../libraries/EnumFlags.sol";
 
-contract MockRoninValidatorSetExtended is RoninValidatorSet {
+contract MockRoninValidatorSetExtended is MockRoninValidatorSetOverridePrecompile {
   uint256[] internal _epochs;
   uint256[] internal _periods;
 
@@ -62,31 +63,8 @@ contract MockRoninValidatorSetExtended is RoninValidatorSet {
 
   function addValidators(address[] calldata _addrs) public {
     for (uint _i = 0; _i < _addrs.length; _i++) {
-      _validator[_i] = _addrs[_i];
-      _validatorMap[_addrs[_i]] = true;
+      _validators[_i] = _addrs[_i];
+      _validatorMap[_addrs[_i]] = EnumFlags.ValidatorFlag.Both;
     }
-  }
-
-  function arrangeValidatorCandidates(address[] memory _candidates, uint _newValidatorCount)
-    external
-    view
-    returns (address[] memory)
-  {
-    _arrangeValidatorCandidates(_candidates, _newValidatorCount);
-
-    assembly {
-      mstore(_candidates, _newValidatorCount)
-    }
-
-    return _candidates;
-  }
-
-  function _sortCandidates(address[] memory _candidates, uint256[] memory _weights)
-    internal
-    pure
-    override
-    returns (address[] memory _result)
-  {
-    return Sorting.sort(_candidates, _weights);
   }
 }

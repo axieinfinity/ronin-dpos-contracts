@@ -100,11 +100,20 @@ abstract contract StakingManager is
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
+    address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external payable override nonReentrant {
     uint256 _amount = msg.value;
     address payable _poolAdmin = payable(msg.sender);
-    _applyValidatorCandidate(_poolAdmin, _candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate, _amount);
+    _applyValidatorCandidate(
+      _poolAdmin,
+      _candidateAdmin,
+      _consensusAddr,
+      _treasuryAddr,
+      _bridgeOperatorAddr,
+      _commissionRate,
+      _amount
+    );
 
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
     _pool.admin = _poolAdmin;
@@ -162,6 +171,7 @@ abstract contract StakingManager is
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
+    address _bridgeOperatorAddr,
     uint256 _commissionRate,
     uint256 _amount
   ) internal {
@@ -169,7 +179,13 @@ abstract contract StakingManager is
     require(_sendRON(_treasuryAddr, 0), "StakingManager: treasury cannot receive RON");
     require(_amount >= minValidatorBalance(), "StakingManager: insufficient amount");
 
-    _validatorContract.grantValidatorCandidate(_candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate);
+    _validatorContract.grantValidatorCandidate(
+      _candidateAdmin,
+      _consensusAddr,
+      _treasuryAddr,
+      _bridgeOperatorAddr,
+      _commissionRate
+    );
   }
 
   /**

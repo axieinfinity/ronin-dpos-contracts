@@ -11,14 +11,16 @@ import "../../extensions/collections/HasSlashIndicatorContract.sol";
 import "../../extensions/collections/HasMaintenanceContract.sol";
 import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../../interfaces/IRoninValidatorSet.sol";
-import "../../libraries/Sorting.sol";
 import "../../libraries/Math.sol";
+import "../../libraries/EnumFlags.sol";
 import "../../precompile-usages/PrecompileUsageSortValidators.sol";
+import "../../precompile-usages/PrecompileUsagePickValidatorSet.sol";
 import "./CandidateManager.sol";
 
 contract RoninValidatorSet is
   IRoninValidatorSet,
   PrecompileUsageSortValidators,
+  PrecompileUsagePickValidatorSet,
   RONTransferHelper,
   HasStakingContract,
   HasStakingVestingContract,
@@ -28,8 +30,8 @@ contract RoninValidatorSet is
   CandidateManager,
   Initializable
 {
-  /// @dev The address of the precompile of sorting validators
-  address internal constant _precompileSortValidatorAddress = address(0x66);
+  using EnumFlags for EnumFlags.ValidatorFlag;
+
   /// @dev The maximum number of validator.
   uint256 internal _maxValidatorNumber;
   /// @dev The number of blocks in a epoch
@@ -42,9 +44,9 @@ contract RoninValidatorSet is
   /// @dev The total of validators
   uint256 public validatorCount;
   /// @dev Mapping from validator index => validator address
-  mapping(uint256 => address) internal _validator;
-  /// @dev Mapping from address => flag indicating whether the address is validator or not
-  mapping(address => bool) internal _validatorMap;
+  mapping(uint256 => address) internal _validators;
+  /// @dev Mapping from address => flag indicating the validator ability: producing block, operating bridge
+  mapping(address => EnumFlags.ValidatorFlag) internal _validatorMap;
   /// @dev The number of slot that is reserved for prioritized validators
   uint256 internal _maxPrioritizedValidatorNumber;
 
@@ -57,6 +59,8 @@ contract RoninValidatorSet is
   mapping(address => uint256) internal _miningReward;
   /// @dev Mapping from validator address => pending reward from delegating
   mapping(address => uint256) internal _delegatingReward;
+  /// @dev Mapping from validator address => pending reward for being bridge operator
+  mapping(address => uint256) internal _bridgeOperatingReward;
 
   modifier onlyCoinbase() {
     require(msg.sender == block.coinbase, "RoninValidatorSet: method caller must be coinbase");
@@ -123,24 +127,27 @@ contract RoninValidatorSet is
     address _coinbaseAddr = msg.sender;
     // Deprecates reward for non-validator or slashed validator
     if (
-      !isValidator(_coinbaseAddr) || _jailed(_coinbaseAddr) || _rewardDeprecated(_coinbaseAddr, periodOf(block.number))
+      !isBlockProducer(_coinbaseAddr) ||
+      _jailed(_coinbaseAddr) ||
+      _rewardDeprecated(_coinbaseAddr, periodOf(block.number))
     ) {
       emit RewardDeprecated(_coinbaseAddr, _submittedReward);
       return;
     }
 
-    uint256 _bonusReward = _stakingVestingContract.requestBlockBonus();
-    uint256 _reward = _submittedReward + _bonusReward;
+    (uint256 _validatorStakingVesting, uint256 _bridgeValidatorStakingVesting) = _stakingVestingContract.requestBonus();
+    uint256 _reward = _submittedReward + _validatorStakingVesting;
 
-    IStaking _staking = IStaking(_stakingContract);
+    IStaking _staking = _stakingContract;
     uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
     uint256 _miningAmount = (_rate * _reward) / 100_00;
     uint256 _delegatingAmount = _reward - _miningAmount;
 
     _miningReward[_coinbaseAddr] += _miningAmount;
     _delegatingReward[_coinbaseAddr] += _delegatingAmount;
+    _bridgeOperatingReward[_coinbaseAddr] += _bridgeValidatorStakingVesting;
     _staking.recordReward(_coinbaseAddr, _delegatingAmount);
-    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _bonusReward);
+    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _validatorStakingVesting);
   }
 
   /**
@@ -153,53 +160,25 @@ contract RoninValidatorSet is
     );
     _lastUpdatedBlock = block.number;
 
-    IStaking _staking = IStaking(_stakingContract);
-    address _validatorAddr;
-    uint256 _delegatingAmount;
+    address[] memory _currentValidators = getValidators();
+    uint256 _epoch = epochOf(block.number);
     uint256 _period = periodOf(block.number);
     bool _periodEnding = periodEndingAt(block.number);
 
-    address[] memory _validators = getValidators();
-    for (uint _i = 0; _i < _validators.length; _i++) {
-      _validatorAddr = _validators[_i];
-
-      if (_jailed(_validatorAddr) || _rewardDeprecated(_validatorAddr, _period)) {
-        continue;
-      }
-
-      if (_periodEnding) {
-        uint256 _miningAmount = _miningReward[_validatorAddr];
-        delete _miningReward[_validatorAddr];
-        if (_miningAmount > 0) {
-          address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
-          require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
-          emit MiningRewardDistributed(_validatorAddr, _miningAmount);
-        }
-      }
-
-      _delegatingAmount += _delegatingReward[_validatorAddr];
-      delete _delegatingReward[_validatorAddr];
-    }
-
     if (_periodEnding) {
-      _staking.settleRewardPools(_validators);
-      if (_delegatingAmount > 0) {
-        require(
-          _sendRON(payable(address(_staking)), 0),
-          "RoninValidatorSet: could not transfer RON to staking contract"
-        );
-        emit StakingRewardDistributed(_delegatingAmount);
-      }
+      uint256 _totalDelegatingReward = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
+        _currentValidators,
+        _period
+      );
+
+      _settleAndTransferDelegatingRewards(_currentValidators, _totalDelegatingReward);
+
+      _currentValidators = _syncValidatorSet();
     }
 
-    _updateValidatorSet(_periodEnding);
-  }
+    _revampBlockProducers(_currentValidators);
 
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function getLastUpdatedBlock() external view returns (uint256) {
-    return _lastUpdatedBlock;
+    emit WrappedUpEpoch(_period, _epoch, _periodEnding);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -274,18 +253,91 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
+  function getLastUpdatedBlock() external view returns (uint256) {
+    return _lastUpdatedBlock;
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
   function getValidators() public view override returns (address[] memory _validatorList) {
     _validatorList = new address[](validatorCount);
     for (uint _i = 0; _i < _validatorList.length; _i++) {
-      _validatorList[_i] = _validator[_i];
+      _validatorList[_i] = _validators[_i];
     }
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function isValidator(address _addr) public view returns (bool) {
-    return _validatorMap[_addr];
+  function isValidator(address _addr) public view override returns (bool) {
+    return !_validatorMap[_addr].isNone();
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function getBlockProducers() public view override returns (address[] memory _result) {
+    _result = new address[](validatorCount);
+    uint256 _count = 0;
+    for (uint _i = 0; _i < _result.length; _i++) {
+      if (isBlockProducer(_validators[_i])) {
+        _result[_count++] = _validators[_i];
+      }
+    }
+
+    assembly {
+      mstore(_result, _count)
+    }
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function isBlockProducer(address _addr) public view override returns (bool) {
+    return _validatorMap[_addr].hasFlag(EnumFlags.ValidatorFlag.BlockProducer);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function totalBlockProducers() external view returns (uint256 _total) {
+    for (uint _i = 0; _i < validatorCount; _i++) {
+      if (isBlockProducer(_validators[_i])) {
+        _total++;
+      }
+    }
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function getBridgeOperators() public view override returns (address[] memory _bridgeOperatorList) {
+    _bridgeOperatorList = new address[](validatorCount);
+    for (uint _i = 0; _i < _bridgeOperatorList.length; _i++) {
+      _bridgeOperatorList[_i] = _candidateInfo[_validators[_i]].bridgeOperatorAddr;
+    }
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function isBridgeOperator(address _bridgeOperatorAddr) external view override returns (bool _result) {
+    for (uint _i = 0; _i < validatorCount; _i++) {
+      if (_candidateInfo[_validators[_i]].bridgeOperatorAddr == _bridgeOperatorAddr) {
+        _result = true;
+        break;
+      }
+    }
+  }
+
+  /**
+   * Notice: A validator is always a bride operator
+   *
+   * @inheritdoc IRoninValidatorSet
+   */
+  function totalBridgeOperators() external view returns (uint256) {
+    return validatorCount;
   }
 
   /**
@@ -341,13 +393,6 @@ contract RoninValidatorSet is
     return _maxPrioritizedValidatorNumber;
   }
 
-  /**
-   * @inheritdoc PrecompileUsageSortValidators
-   */
-  function precompileSortValidatorsAddress() public pure override returns (address) {
-    return _precompileSortValidatorAddress;
-  }
-
   ///////////////////////////////////////////////////////////////////////////////////////
   //                               FUNCTIONS FOR ADMIN                                 //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -374,78 +419,187 @@ contract RoninValidatorSet is
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
-  //                                  HELPER FUNCTIONS                                 //
+  //                     PRIVATE HELPER FUNCTIONS OF WRAPPING UP EPOCH                 //
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev Returns validator candidates list.
+   * @dev This loop over the all current validators to:
+   * - Update delegating reward for and calculate total delegating rewards to be sent to the staking contract,
+   * - Distribute the reward of block producers and bridge operators to their treasury addresses.
+   *
+   * Note: This method should be called once in the end of each period.
+   *
    */
-  function _syncNewValidatorSet(bool _periodEnding) internal returns (address[] memory _candidateList) {
-    // This is a temporary approach since the slashing issue is still not finalized.
-    // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
-    uint256 _minBalance = _stakingContract.minValidatorBalance();
-    uint256[] memory _weights = _filterUnsatisfiedCandidates(_periodEnding ? _minBalance : 0);
-    _candidateList = _candidates;
+  function _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
+    address[] memory _currentValidators,
+    uint256 _period
+  ) private returns (uint256 _totalDelegatingReward) {
+    for (uint _i = 0; _i < _currentValidators.length; _i++) {
+      address _validatorAddr = _currentValidators[_i];
 
-    uint256 _length = _candidateList.length;
-    for (uint256 _i; _i < _candidateList.length; _i++) {
-      if (_jailed(_candidateList[_i]) || _weights[_i] < _minBalance) {
-        _length--;
-        _candidateList[_i] = _candidateList[_length];
-        _weights[_i] = _weights[_length];
+      if (_jailed(_validatorAddr) || _rewardDeprecated(_validatorAddr, _period)) {
+        continue;
       }
+
+      _totalDelegatingReward += _delegatingReward[_validatorAddr];
+      delete _delegatingReward[_validatorAddr];
+
+      _distributeRewardToTreasury(_validatorAddr);
+    }
+  }
+
+  /**
+   * @dev Distribute bonus of staking vesting and mining fee for block producer; and bonus of staking vesting for
+   * bridge oparators to the treasury address of a validator.
+   *
+   * Emits the `MiningRewardDistributed` event once the validator has an amount of mining reward.
+   * Emits the `BridgeOperatorRewardDistributed` once the validator has an amount of bridge reward.
+   *
+   * Note: This method should be called once in the end of each period.
+   *
+   */
+  function _distributeRewardToTreasury(address _validatorAddr) private {
+    address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
+
+    uint256 _miningAmount = _miningReward[_validatorAddr];
+    if (_miningAmount > 0) {
+      delete _miningReward[_validatorAddr];
+      require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
+      emit MiningRewardDistributed(_validatorAddr, _treasury, _miningAmount);
     }
 
-    assembly {
-      mstore(_candidateList, _length)
-      mstore(_weights, _length)
+    uint256 _bridgeOperatingAmount = _bridgeOperatingReward[_validatorAddr];
+    if (_bridgeOperatingAmount > 0) {
+      delete _bridgeOperatingReward[_validatorAddr];
+      require(
+        _sendRON(_treasury, _bridgeOperatingAmount),
+        "RoninValidatorSet: could not transfer RON to bridge operator address"
+      );
+      emit BridgeOperatorRewardDistributed(_validatorAddr, _treasury, _bridgeOperatingAmount);
     }
+  }
 
-    _candidateList = _sortCandidates(_candidateList, _weights);
+  /**
+   * @dev Helper function to settle rewards for delegators of `_currentValidators` at the end of each period,
+   * then transfer the rewards from this contract to the staking contract, in order to finalize a period.
+   *
+   * Emit `StakingRewardDistributed` event.
+   *
+   * Note: This method should be called once in the end of each period.
+   *
+   */
+  function _settleAndTransferDelegatingRewards(address[] memory _currentValidators, uint256 _totalDelegatingReward)
+    private
+  {
+    IStaking _staking = _stakingContract;
+
+    _staking.settleRewardPools(_currentValidators);
+    if (_totalDelegatingReward > 0) {
+      require(
+        _sendRON(payable(address(_staking)), _totalDelegatingReward),
+        "RoninValidatorSet: could not transfer RON to staking contract"
+      );
+      emit StakingRewardDistributed(_totalDelegatingReward);
+    }
   }
 
   /**
    * @dev Updates the validator set based on the validator candidates from the Staking contract.
    *
    * Emits the `ValidatorSetUpdated` event.
+   * Emits the `BridgeOperatorSetUpdated` event.
+   *
+   * Note: This method should be called once in the end of each period.
    *
    */
-  function _updateValidatorSet(bool _periodEnding) internal virtual {
-    address[] memory _candidates = _syncNewValidatorSet(_periodEnding);
-    uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _candidates.length);
-    _arrangeValidatorCandidates(_candidates, _newValidatorCount);
+  function _syncValidatorSet() private returns (address[] memory _newValidators) {
+    uint256[] memory _balanceWeights;
+    // This is a temporary approach since the slashing issue is still not finalized.
+    // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
+    uint256 _minBalance = _stakingContract.minValidatorBalance();
+    _balanceWeights = _filterUnsatisfiedCandidates(_minBalance);
+    uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getWeights(_candidates);
+    uint256 _newValidatorCount;
+    (_newValidators, _newValidatorCount) = _pcPickValidatorSet(
+      _candidates,
+      _balanceWeights,
+      _trustedWeights,
+      _maxValidatorNumber,
+      _maxPrioritizedValidatorNumber
+    );
+    _setNewValidatorSet(_newValidators, _newValidatorCount);
+    emit BridgeOperatorSetUpdated(getBridgeOperators());
+  }
 
-    assembly {
-      mstore(_candidates, _newValidatorCount)
-    }
-
+  /**
+   * @dev Private helper function helps writing the new validator set into the contract storage.
+   *
+   * Emits the `ValidatorSetUpdated` event.
+   *
+   * Note: This method should be called once in the end of each period.
+   *
+   */
+  function _setNewValidatorSet(address[] memory _newValidators, uint256 _newValidatorCount) private {
     for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
-      delete _validatorMap[_validator[_i]];
-      delete _validator[_i];
+      delete _validatorMap[_validators[_i]];
+      delete _validators[_i];
     }
 
     uint256 _count;
-    bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
     for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
-      if (_maintainingList[_i]) {
-        continue;
-      }
-
-      address _newValidator = _candidates[_i];
-      if (_newValidator == _validator[_count]) {
+      address _newValidator = _newValidators[_i];
+      if (_newValidator == _validators[_count]) {
         _count++;
         continue;
       }
 
-      delete _validatorMap[_validator[_count]];
-      _validatorMap[_newValidator] = true;
-      _validator[_count] = _newValidator;
+      delete _validatorMap[_validators[_count]];
+      _validatorMap[_newValidator] = EnumFlags.ValidatorFlag.Both;
+      _validators[_count] = _newValidator;
       _count++;
     }
 
     validatorCount = _count;
-    emit ValidatorSetUpdated(_candidates);
+    emit ValidatorSetUpdated(_newValidators);
   }
+
+  /**
+   * @dev Activate/Deactivate the validators from producing blocks, based on their in jail status and maintenance status.
+   *
+   * Requirements:
+   * - This method is called at the end of each epoch
+   *
+   * Emits the `BlockProducerSetUpdated` event.
+   *
+   */
+  function _revampBlockProducers(address[] memory _currentValidators) private {
+    bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
+
+    for (uint _i = 0; _i < _currentValidators.length; _i++) {
+      address _currentValidator = _currentValidators[_i];
+      bool _isProducerBefore = isBlockProducer(_currentValidator);
+      bool _isProducerAfter = !(_jailed(_currentValidator) || _maintainingList[_i]);
+
+      if (!_isProducerBefore && _isProducerAfter) {
+        _validatorMap[_currentValidator] = _validatorMap[_currentValidator].addFlag(
+          EnumFlags.ValidatorFlag.BlockProducer
+        );
+        continue;
+      }
+
+      if (_isProducerBefore && !_isProducerAfter) {
+        _validatorMap[_currentValidator] = _validatorMap[_currentValidator].removeFlag(
+          EnumFlags.ValidatorFlag.BlockProducer
+        );
+      }
+    }
+
+    emit BlockProducerSetUpdated(getBlockProducers());
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  //                             OTHER HELPER FUNCTIONS                                //
+  ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) during the current period.
@@ -459,38 +613,6 @@ contract RoninValidatorSet is
    */
   function _rewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
     return _rewardDeprecatedAtPeriod[_validatorAddr][_period];
-  }
-
-  /**
-   * @dev Returns whether the address `_addr` is validator or not.
-   */
-  function _isValidator(address _addr) internal view returns (bool) {
-    return _validatorMap[_addr];
-  }
-
-  /**
-   * @dev Arranges the sorted candidates to list of validators, by asserting prioritized and non-prioritized candidates
-   *
-   * @param _candidates A sorted list of candidates
-   */
-  function _arrangeValidatorCandidates(address[] memory _candidates, uint _newValidatorCount) internal view {
-    address[] memory _waitingCandidates = new address[](_candidates.length);
-    uint _waitingCounter;
-    uint _prioritySlotCounter;
-
-    uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getWeights(_candidates);
-    for (uint _i = 0; _i < _candidates.length; _i++) {
-      if (_trustedWeights[_i] > 0 && _prioritySlotCounter < _maxPrioritizedValidatorNumber) {
-        _candidates[_prioritySlotCounter++] = _candidates[_i];
-        continue;
-      }
-      _waitingCandidates[_waitingCounter++] = _candidates[_i];
-    }
-
-    _waitingCounter = 0;
-    for (uint _i = _prioritySlotCounter; _i < _newValidatorCount; _i++) {
-      _candidates[_i] = _waitingCandidates[_waitingCounter++];
-    }
   }
 
   /**

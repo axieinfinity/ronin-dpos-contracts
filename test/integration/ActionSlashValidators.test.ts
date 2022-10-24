@@ -16,6 +16,7 @@ import {
 } from '../../src/types';
 
 import { expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
+import { expects as CandidateManagerExpects } from '../helpers/candidate-manager';
 import { mineBatchTxs } from '../helpers/utils';
 import { SlashType } from '../../src/script/slash-indicator';
 import { initTest } from '../helpers/fixture';
@@ -74,6 +75,7 @@ describe('[Integration] Slash validators', () => {
 
   describe('Slash one validator', async () => {
     let expectingValidatorSet: Address[] = [];
+    let expectingBlockProducerSet: Address[] = [];
     let period: BigNumberish;
 
     before(async () => {
@@ -102,7 +104,7 @@ describe('[Integration] Slash validators', () => {
     });
 
     describe('Slash felony validator -- when the validators balance is sufficient after being slashed', async () => {
-      let updateValidatorTx: ContractTransaction;
+      let wrapUpEpochTx: ContractTransaction;
       let slashValidatorTx: ContractTransaction;
       let slasheeIdx: number;
       let slashee: SignerWithAddress;
@@ -114,7 +116,7 @@ describe('[Integration] Slash validators', () => {
         slasheeInitStakingAmount = minValidatorBalance.add(slashFelonyAmount.mul(10));
         await stakingContract
           .connect(slashee)
-          .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, 2_00, {
+          .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, slashee.address, 2_00, {
             value: slasheeInitStakingAmount,
           });
 
@@ -122,13 +124,19 @@ describe('[Integration] Slash validators', () => {
 
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
-          updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+          await validatorContract.connect(coinbase).endPeriod();
+          wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
 
+        const currentBlock = await ethers.provider.getBlockNumber();
+        period = await validatorContract.periodOf(currentBlock);
+
         expectingValidatorSet.push(slashee.address);
-        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
+        expectingBlockProducerSet.push(slashee.address);
+        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, expectingValidatorSet);
 
         expect(await validatorContract.getValidators()).eql(expectingValidatorSet);
+        expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
       });
 
       it('Should the ValidatorSet contract emit event', async () => {
@@ -166,16 +174,18 @@ describe('[Integration] Slash validators', () => {
         expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(_expectingSlasheeStakingAmount);
       });
 
-      it('Should the validator set exclude the jailed validator in the next epoch', async () => {
+      it('Should the block producer set exclude the jailed validator in the next epoch', async () => {
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
-          updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+          wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
-        expectingValidatorSet.pop();
-        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
+        expectingBlockProducerSet.pop();
+        expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
+        await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpEpochTx!, expectingBlockProducerSet);
+        expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
       });
 
-      it('Should the validator candidate cannot re-join as a validator when jail time is not over', async () => {
+      it('Should the validator cannot re-join as a block producer when jail time is not over', async () => {
         let _blockNumber = await network.provider.send('eth_blockNumber');
         let _jailUntil = await validatorContract.getJailUntils([slashee.address]);
         let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber).sub(100);
@@ -183,13 +193,13 @@ describe('[Integration] Slash validators', () => {
         await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString()]);
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
-          updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+          wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
 
-        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, []);
+        expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
       });
 
-      it('Should the validator candidate re-join as a validator when jail time is over', async () => {
+      it('Should the validator re-join as a block producer when jail time is over', async () => {
         let _blockNumber = await network.provider.send('eth_blockNumber');
         let _jailUntil = await validatorContract.getJailUntils([slashee.address]);
         let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber);
@@ -197,15 +207,18 @@ describe('[Integration] Slash validators', () => {
         await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString()]);
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
-          updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+          wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
-        expectingValidatorSet.push(slashee.address);
-        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
+        expectingBlockProducerSet.push(slashee.address);
+
+        expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
+        await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpEpochTx!, expectingBlockProducerSet);
+        expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
       });
     });
 
     describe('Slash felony validator -- when the validators balance is equal to minimum balance', async () => {
-      let updateValidatorTx: ContractTransaction;
+      let wrapUpEpochTx: ContractTransaction;
       let slashValidatorTx: ContractTransaction;
       let slasheeIdx: number;
       let slashee: SignerWithAddress;
@@ -218,7 +231,7 @@ describe('[Integration] Slash validators', () => {
 
         await stakingContract
           .connect(slashee)
-          .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, 2_00, {
+          .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, slashee.address, 2_00, {
             value: slasheeInitStakingAmount,
           });
 
@@ -226,104 +239,157 @@ describe('[Integration] Slash validators', () => {
 
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
-          updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+          await validatorContract.connect(coinbase).endPeriod();
+          wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
+
+        const currentBlock = await ethers.provider.getBlockNumber();
+        period = await validatorContract.periodOf(currentBlock);
+
         expectingValidatorSet.push(slashee.address);
-        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
+        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, expectingValidatorSet);
 
         expect(await validatorContract.getValidators()).eql(expectingValidatorSet);
       });
 
-      it('Should the ValidatorSet contract emit event', async () => {
-        for (let i = 0; i < felonyThreshold - 1; i++) {
-          await slashContract.connect(coinbase).slash(slashee.address);
-        }
-        slashValidatorTx = await slashContract.connect(coinbase).slash(slashee.address);
+      describe('Check effects on indicator and staked amount', async () => {
+        it('Should the ValidatorSet contract emit event', async () => {
+          for (let i = 0; i < felonyThreshold - 1; i++) {
+            await slashContract.connect(coinbase).slash(slashee.address);
+          }
+          slashValidatorTx = await slashContract.connect(coinbase).slash(slashee.address);
 
-        await expect(slashValidatorTx)
-          .to.emit(slashContract, 'UnavailabilitySlashed')
-          .withArgs(slashee.address, SlashType.FELONY, period);
+          await expect(slashValidatorTx)
+            .to.emit(slashContract, 'UnavailabilitySlashed')
+            .withArgs(slashee.address, SlashType.FELONY, period);
 
-        let blockNumber = await network.provider.send('eth_blockNumber');
+          let blockNumber = await network.provider.send('eth_blockNumber');
 
-        await expect(slashValidatorTx)
-          .to.emit(validatorContract, 'ValidatorPunished')
-          .withArgs(slashee.address, BigNumber.from(blockNumber).add(felonyJailBlocks), slashFelonyAmount);
-      });
-
-      it('Should the validator is put in jail', async () => {
-        let blockNumber = await network.provider.send('eth_blockNumber');
-        expect(await validatorContract.getJailUntils([slashee.address])).eql([
-          BigNumber.from(blockNumber).add(felonyJailBlocks),
-        ]);
-      });
-
-      it('Should the Staking contract emit Unstaked event', async () => {
-        await expect(slashValidatorTx)
-          .to.emit(stakingContract, 'Unstaked')
-          .withArgs(slashee.address, slashFelonyAmount);
-      });
-
-      it('Should the Staking contract subtract staked amount from validator', async () => {
-        let _expectingSlasheeStakingAmount = slasheeInitStakingAmount.sub(slashFelonyAmount);
-        expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(_expectingSlasheeStakingAmount);
-      });
-
-      it('Should the validator set exclude the jailed validator in the next epoch', async () => {
-        await mineBatchTxs(async () => {
-          await validatorContract.connect(coinbase).endEpoch();
-          updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
-        });
-        expectingValidatorSet.pop();
-        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
-      });
-
-      it('Should the validator candidate cannot re-join as a validator when jail time is not over', async () => {
-        let _blockNumber = await network.provider.send('eth_blockNumber');
-        let _jailUntil = await validatorContract.getJailUntils([slashee.address]);
-        let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber).sub(100);
-
-        await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString()]);
-        await mineBatchTxs(async () => {
-          await validatorContract.connect(coinbase).endEpoch();
-          updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+          await expect(slashValidatorTx)
+            .to.emit(validatorContract, 'ValidatorPunished')
+            .withArgs(slashee.address, BigNumber.from(blockNumber).add(felonyJailBlocks), slashFelonyAmount);
         });
 
-        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
-      });
-
-      it('Should the validator candidate cannot join as a validator when jail time is over, due to insufficient fund', async () => {
-        let _blockNumber = await network.provider.send('eth_blockNumber');
-        let _jailUntil = await validatorContract.getJailUntils([slashee.address]);
-        let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber);
-
-        await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString()]);
-        await mineBatchTxs(async () => {
-          await validatorContract.connect(coinbase).endEpoch();
-          updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
-        });
-        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
-      });
-
-      it('Should the validator top-up balance for being sufficient minimum balance of a validator', async () => {
-        let topUpTx = await stakingContract.connect(slashee).stake(slashee.address, {
-          value: slashFelonyAmount,
+        it('Should the validator is put in jail', async () => {
+          let blockNumber = await network.provider.send('eth_blockNumber');
+          expect(await validatorContract.getJailUntils([slashee.address])).eql([
+            BigNumber.from(blockNumber).add(felonyJailBlocks),
+          ]);
         });
 
-        await expect(topUpTx).to.emit(stakingContract, 'Staked').withArgs(slashee.address, slashFelonyAmount);
+        it('Should the Staking contract emit Unstaked event', async () => {
+          await expect(slashValidatorTx)
+            .to.emit(stakingContract, 'Unstaked')
+            .withArgs(slashee.address, slashFelonyAmount);
+        });
+
+        it('Should the Staking contract subtract staked amount from validator', async () => {
+          let _expectingSlasheeStakingAmount = slasheeInitStakingAmount.sub(slashFelonyAmount);
+          expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(_expectingSlasheeStakingAmount);
+        });
       });
 
-      // NOTE: the candidate is kicked right after the epoch is ended.
-      it.skip('Should the validator be able to re-join the validator set', async () => {
-        await mineBatchTxs(async () => {
-          await validatorContract.connect(coinbase).endEpoch();
-          updateValidatorTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+      describe('Check effects on validator set and producer set', async () => {
+        it('Should the block producer set exclude the jailed validator in the next epoch', async () => {
+          await mineBatchTxs(async () => {
+            await validatorContract.connect(coinbase).endEpoch();
+            wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+          });
+          expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
+          await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpEpochTx!, expectingBlockProducerSet);
         });
-        expectingValidatorSet.push(slashee.address);
-        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(updateValidatorTx!, expectingValidatorSet);
+
+        it('Should the validator cannot re-join as a block producer when jail time is not over', async () => {
+          let _blockNumber = await network.provider.send('eth_blockNumber');
+          let _jailUntil = await validatorContract.getJailUntils([slashee.address]);
+          let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber).sub(100);
+
+          await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString()]);
+          await mineBatchTxs(async () => {
+            await validatorContract.connect(coinbase).endEpoch();
+            wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+          });
+
+          expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
+        });
+
+        it('Should the validator can join as a validator when jail time is over, despite of insufficient fund', async () => {
+          let _blockNumber = await network.provider.send('eth_blockNumber');
+          let _jailUntil = await validatorContract.getJailUntils([slashee.address]);
+          let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber);
+
+          await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString()]);
+          await mineBatchTxs(async () => {
+            await validatorContract.connect(coinbase).endEpoch();
+            wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+          });
+          expectingBlockProducerSet.push(slashee.address);
+
+          expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
+          await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpEpochTx!, expectingBlockProducerSet);
+          expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
+        });
+
+        it.skip('Should the delegators cannot top-up for the under balance and to-be-kicked validator', async () => {
+          // TODO:
+        });
+      });
+
+      describe('Check effects on candidate list when the under balance candidates get kicked out', async () => {
+        let expectingRevokedCandidates: Address[];
+        it('Should the event of updating validator set emitted', async () => {
+          await mineBatchTxs(async () => {
+            await validatorContract.connect(coinbase).endEpoch();
+            await validatorContract.connect(coinbase).endPeriod();
+            wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+          });
+
+          expectingRevokedCandidates = expectingValidatorSet.slice(-1);
+          expectingBlockProducerSet.pop();
+          expectingValidatorSet.pop();
+
+          await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, expectingValidatorSet);
+
+          expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
+          expect(await validatorContract.getValidators()).eql(expectingValidatorSet);
+        });
+
+        it('Should the event of revoking under balance candidates emitted', async () => {
+          await CandidateManagerExpects.emitCandidatesRevokedEvent(wrapUpEpochTx, expectingRevokedCandidates);
+        });
+
+        it('Should the isValidatorCandidate method return false on kicked candidates', async () => {
+          for (let _addr of expectingRevokedCandidates) {
+            expect(await validatorContract.isValidatorCandidate(_addr)).eq(false);
+          }
+        });
+      });
+
+      describe('Kicked candidates re-join', async () => {
+        it('Should the kicked validators cannot top-up, since they are not candidates anymore', async () => {
+          let topUpTx = stakingContract.connect(slashee).stake(slashee.address, {
+            value: slashFelonyAmount,
+          });
+
+          await expect(topUpTx).revertedWith('StakingManager: query for non-existent pool');
+        });
+
+        it('Should the kicked validator be able to re-join as a candidate', async () => {
+          let applyCandidateTx = await stakingContract
+            .connect(slashee)
+            .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, slashee.address, 2_00, {
+              value: slasheeInitStakingAmount,
+            });
+
+          await CandidateManagerExpects.emitCandidateGrantedEvent(
+            applyCandidateTx!,
+            slashee.address,
+            slashee.address,
+            slashee.address,
+            slashee.address
+          );
+        });
       });
     });
   });
-
-  // TODO(Bao): Test for reward amount of validators and delegators
 });

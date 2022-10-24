@@ -118,4 +118,20 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   function numberOfBlocksInEpoch() public view override(CandidateManager, ICandidateManager) returns (uint256) {
     return _numberOfBlocksInEpoch;
   }
+
+  function getBridgeOperators() external view override returns (address[] memory) {}
+
+  function isBridgeOperator(address) external pure override returns (bool) {
+    return true;
+  }
+
+  function totalBridgeOperators() external view override returns (uint256) {}
+
+  function getBlockProducers() external view override returns (address[] memory) {}
+
+  function isBlockProducer(address) external pure override returns (bool) {
+    return true;
+  }
+
+  function totalBlockProducers() external view override returns (uint256) {}
 }

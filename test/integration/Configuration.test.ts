@@ -42,7 +42,7 @@ const numberOfEpochsInPeriod = 48;
 const minValidatorBalance = BigNumber.from(100);
 const maxValidatorCandidate = 10;
 
-const bonusPerBlock = BigNumber.from(1);
+const validatorBonusPerBlock = BigNumber.from(1);
 const topupAmount = BigNumber.from(10000);
 const minMaintenanceBlockPeriod = 100;
 const maxMaintenanceBlockPeriod = 1000;
@@ -70,7 +70,7 @@ describe('[Integration] Configuration check', () => {
       numberOfEpochsInPeriod,
       minValidatorBalance,
       maxValidatorCandidate,
-      bonusPerBlock,
+      validatorBonusPerBlock,
       topupAmount,
       minMaintenanceBlockPeriod,
       maxMaintenanceBlockPeriod,
@@ -105,8 +105,10 @@ describe('[Integration] Configuration check', () => {
     });
 
     it('Should the StakingVestingContract config the block bonus correctly', async () => {
-      expect(await stakingVestingContract.blockBonus(0)).eq(bonusPerBlock);
-      expect(await stakingVestingContract.blockBonus(Math.floor(Math.random() * 1_000_000))).eq(bonusPerBlock);
+      expect(await stakingVestingContract.validatorBlockBonus(0)).eq(validatorBonusPerBlock);
+      expect(await stakingVestingContract.validatorBlockBonus(Math.floor(Math.random() * 1_000_000))).eq(
+        validatorBonusPerBlock
+      );
     });
   });
 

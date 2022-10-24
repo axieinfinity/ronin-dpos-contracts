@@ -18,9 +18,6 @@ contract SlashIndicator is
 {
   using Math for uint256;
 
-  /// @dev The address of the precompile of sorting validators
-  address internal constant _precompileValidateDoubleSignAddress = address(0x67);
-
   /// @dev Mapping from validator address => period index => unavailability indicator
   mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
   /// @dev Maping from validator address => period index => slash type
@@ -135,7 +132,7 @@ contract SlashIndicator is
       return;
     }
 
-    if (_validateEvidence(_header1, _header2)) {
+    if (_pcValidateEvidence(_header1, _header2)) {
       uint256 _period = _validatorContract.periodOf(block.number);
       _unavailabilitySlashed[_validatorAddr][_period] = SlashType.DOUBLE_SIGNING;
       emit UnavailabilitySlashed(_validatorAddr, SlashType.DOUBLE_SIGNING, _period);
@@ -235,13 +232,6 @@ contract SlashIndicator is
     return _unavailabilityIndicator[_validator][_period];
   }
 
-  /**
-   * @inheritdoc PrecompileUsageValidateDoubleSign
-   */
-  function precompileValidateDoubleSignAddress() public pure override returns (address) {
-    return _precompileValidateDoubleSignAddress;
-  }
-
   ///////////////////////////////////////////////////////////////////////////////////////
   //                                 HELPER FUNCTIONS                                  //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -301,7 +291,7 @@ contract SlashIndicator is
   function _shouldSlash(address _addr) internal view returns (bool) {
     return
       (msg.sender != _addr) &&
-      _validatorContract.isValidator(_addr) &&
+      _validatorContract.isBlockProducer(_addr) &&
       !_maintenanceContract.maintaining(_addr, block.number);
   }
 }

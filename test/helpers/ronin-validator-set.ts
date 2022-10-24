@@ -105,7 +105,7 @@ export const expects = {
     tx: ContractTransaction,
     expectingCoinbaseAddr: string,
     expectingSubmittedReward: BigNumberish,
-    expectingBonusReward: BigNumberish
+    expectingStakingVesting: BigNumberish
   ) {
     await expectEvent(
       contractInterface,
@@ -114,7 +114,7 @@ export const expects = {
       (event) => {
         expect(event.args[0], 'invalid coinbase address').eq(expectingCoinbaseAddr);
         expect(event.args[1], 'invalid submitted reward').eq(expectingSubmittedReward);
-        expect(event.args[2], 'invalid bonus reward').eq(expectingBonusReward);
+        expect(event.args[2], 'invalid staking vesting').eq(expectingStakingVesting);
       },
       1
     );
@@ -123,6 +123,7 @@ export const expects = {
   emitMiningRewardDistributedEvent: async function (
     tx: ContractTransaction,
     expectingCoinbaseAddr: string,
+    expectingRecipientAddr: string,
     expectingAmount: BigNumberish
   ) {
     await expectEvent(
@@ -131,7 +132,27 @@ export const expects = {
       tx,
       (event) => {
         expect(event.args[0], 'invalid coinbase address').eq(expectingCoinbaseAddr);
-        expect(event.args[1], 'invalid amount').eq(expectingAmount);
+        expect(event.args[1], 'invalid recipient address').eq(expectingRecipientAddr);
+        expect(event.args[2], 'invalid amount').eq(expectingAmount);
+      },
+      1
+    );
+  },
+
+  emitBridgeOperatorRewardDistributedEvent: async function (
+    tx: ContractTransaction,
+    expectingCoinbaseAddr: string,
+    expectingRecipientAddr: string,
+    expectingAmount: BigNumberish
+  ) {
+    await expectEvent(
+      contractInterface,
+      'BridgeOperatorRewardDistributed',
+      tx,
+      (event) => {
+        expect(event.args[0], 'invalid coinbase address').eq(expectingCoinbaseAddr);
+        expect(event.args[1], 'invalid recipient address').eq(expectingRecipientAddr);
+        expect(event.args[2], 'invalid amount').eq(expectingAmount);
       },
       1
     );
@@ -159,5 +180,45 @@ export const expects = {
       },
       1
     );
+  },
+
+  emitBlockProducerSetUpdatedEvent: async function (tx: ContractTransaction, expectingBlockProducers: string[]) {
+    await expectEvent(
+      contractInterface,
+      'BlockProducerSetUpdated',
+      tx,
+      (event) => {
+        expect(event.args[0], 'invalid validator set').eql(expectingBlockProducers);
+      },
+      1
+    );
+  },
+
+  emitActivatedBlockProducersEvent: async function (tx: ContractTransaction, expectingProducers: string[]) {
+    await expectEvent(
+      contractInterface,
+      'ActivatedBlockProducers',
+      tx,
+      (event) => {
+        expect(event.args[0], 'invalid activated producer set').eql(expectingProducers);
+      },
+      1
+    );
+  },
+
+  emitDeactivatedBlockProducersEvent: async function (tx: ContractTransaction, expectingProducers: string[]) {
+    await expectEvent(
+      contractInterface,
+      'DeactivatedBlockProducers',
+      tx,
+      (event) => {
+        expect(event.args[0], 'invalid deactivated producer set').eql(expectingProducers);
+      },
+      1
+    );
+  },
+
+  emitWrappedUpEpochEvent: async function (tx: ContractTransaction) {
+    await expectEvent(contractInterface, 'WrappedUpEpoch', tx, () => {}, 1);
   },
 };

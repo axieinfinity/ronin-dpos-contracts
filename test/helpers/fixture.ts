@@ -49,8 +49,9 @@ export const defaultTestConfig = {
   minValidatorBalance: BigNumber.from(100),
   maxValidatorCandidate: 10,
 
-  bonusPerBlock: BigNumber.from(1),
-  topupAmount: BigNumber.from(10000),
+  validatorBonusPerBlock: BigNumber.from(1),
+  bridgeOperatorBonusPerBlock: BigNumber.from(1),
+  topupAmount: BigNumber.from(100000000000),
   minMaintenanceBlockPeriod: 100,
   maxMaintenanceBlockPeriod: 1000,
   minOffset: 200,
@@ -105,7 +106,9 @@ export const initTest = (id: string) =>
         minValidatorBalance: options?.minValidatorBalance ?? defaultTestConfig.minValidatorBalance,
       };
       stakingVestingConfig[network.name] = {
-        bonusPerBlock: options?.bonusPerBlock ?? defaultTestConfig.bonusPerBlock,
+        validatorBonusPerBlock: options?.validatorBonusPerBlock ?? defaultTestConfig.validatorBonusPerBlock,
+        bridgeOperatorBonusPerBlock:
+          options?.bridgeOperatorBonusPerBlock ?? defaultTestConfig.bridgeOperatorBonusPerBlock,
         topupAmount: options?.topupAmount ?? defaultTestConfig.topupAmount,
       };
       roninTrustedOrganizationConf[network.name] = {

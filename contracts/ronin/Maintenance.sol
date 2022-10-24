@@ -64,7 +64,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   ) external override {
     IRoninValidatorSet _validator = _validatorContract;
 
-    require(_validator.isValidator(_consensusAddr), "Maintenance: consensus address must be a validator");
+    require(_validator.isBlockProducer(_consensusAddr), "Maintenance: consensus address must be a block producer");
     require(
       _validator.isCandidateAdmin(_consensusAddr, msg.sender),
       "Maintenance: method caller must be a candidate admin"

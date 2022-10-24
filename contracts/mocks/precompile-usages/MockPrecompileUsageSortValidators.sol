@@ -24,6 +24,6 @@ contract MockPrecompileUsageSortValidators is PrecompileUsageSortValidators {
     view
     returns (address[] memory _result)
   {
-    return _sortCandidates(_validators, _weights);
+    return _pcSortCandidates(_validators, _weights);
   }
 }

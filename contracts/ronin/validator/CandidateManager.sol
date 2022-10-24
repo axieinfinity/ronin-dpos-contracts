@@ -5,7 +5,6 @@ pragma solidity ^0.8.9;
 import "../../extensions/collections/HasStakingContract.sol";
 import "../../interfaces/ICandidateManager.sol";
 import "../../interfaces/IStaking.sol";
-import "../../libraries/Sorting.sol";
 
 abstract contract CandidateManager is ICandidateManager, HasStakingContract {
   /// @dev Maximum number of validator candidate
@@ -39,6 +38,7 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
     address _admin,
     address _consensusAddr,
     address payable _treasuryAddr,
+    address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external override onlyStakingContract {
     uint256 _length = _candidates.length;
@@ -51,11 +51,12 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
       _admin,
       _consensusAddr,
       _treasuryAddr,
+      _bridgeOperatorAddr,
       _commissionRate,
       type(uint256).max,
       new bytes(0)
     );
-    emit CandidateGranted(_consensusAddr, _treasuryAddr, _admin);
+    emit CandidateGranted(_consensusAddr, _treasuryAddr, _admin, _bridgeOperatorAddr);
   }
 
   /**
@@ -113,10 +114,12 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
   function numberOfBlocksInEpoch() public view virtual returns (uint256);
 
   /**
-   * @dev Removes unsastisfied candidates (the ones who have insufficient minimum candidate balance).
-   * Returns the total balance list of the new candidate list.
+   * @dev Removes unsastisfied candidates, the ones who have insufficient minimum candidate balance,
+   * or the ones who revoked their candidate role.
    *
    * Emits the event `CandidatesRevoked` when a candidate is revoked.
+   *
+   * @return _balances a list of balances of the new candidates.
    *
    */
   function _filterUnsatisfiedCandidates(uint256 _minBalance) internal returns (uint256[] memory _balances) {
@@ -169,9 +172,12 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
     delete _candidateIndex[_addr];
 
     address _lastCandidate = _candidates[_candidates.length - 1];
-    _candidateIndex[_lastCandidate] = _idx;
 
-    _candidates[~_idx] = _lastCandidate;
+    if (_lastCandidate != _addr) {
+      _candidateIndex[_lastCandidate] = _idx;
+      _candidates[~_idx] = _lastCandidate;
+    }
+
     _candidates.pop();
   }
 

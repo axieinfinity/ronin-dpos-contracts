@@ -7,7 +7,7 @@ interface IHasStakingVestingContract {
   event StakingVestingContractUpdated(address);
 
   /**
-   * @dev Returns the staking contract.
+   * @dev Returns the staking vesting contract.
    */
   function stakingVestingContract() external view returns (address);
 

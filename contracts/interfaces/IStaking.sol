@@ -139,6 +139,7 @@ interface IStaking is IRewardPool {
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
+    address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external payable;
 

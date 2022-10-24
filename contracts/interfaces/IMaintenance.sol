@@ -85,7 +85,7 @@ interface IMaintenance {
    * @dev Schedules for maintenance from `_startedAtBlock` to `_startedAtBlock`.
    *
    * Requirements:
-   * - The candidate `_consensusAddr` is the validator.
+   * - The candidate `_consensusAddr` is the block producer.
    * - The method caller is candidate admin of the candidate `_consensusAddr`.
    * - The candidate `_consensusAddr` has no schedule yet or the previous is done.
    * - The total number of schedules is not larger than `maxSchedules()`.
