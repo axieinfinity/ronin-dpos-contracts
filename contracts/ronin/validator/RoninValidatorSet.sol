@@ -11,7 +11,6 @@ import "../../extensions/collections/HasSlashIndicatorContract.sol";
 import "../../extensions/collections/HasMaintenanceContract.sol";
 import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../../interfaces/IRoninValidatorSet.sol";
-import "../../libraries/Sorting.sol";
 import "../../libraries/Math.sol";
 import "../../libraries/EnumFlags.sol";
 import "../../precompile-usages/PrecompileUsageSortValidators.sol";

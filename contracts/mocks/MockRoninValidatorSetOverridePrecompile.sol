@@ -3,8 +3,8 @@
 pragma solidity ^0.8.9;
 
 import "./MockPrecompile.sol";
+import "./libraries/Sorting.sol";
 import "../ronin/validator/RoninValidatorSet.sol";
-import "../libraries/Sorting.sol";
 
 contract MockRoninValidatorSetOverridePrecompile is RoninValidatorSet, MockPrecompile {
   constructor() {}
