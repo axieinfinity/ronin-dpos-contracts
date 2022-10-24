@@ -49,8 +49,8 @@ abstract contract PrecompileUsagePickValidatorSet {
       _result := add(_result, 0x20)
     }
 
-    _newValidatorCount = _result.length;
-
     require(_success, "PrecompileUsagePickValidatorSet: call to precompile fails");
+
+    _newValidatorCount = _result.length;
   }
 }
