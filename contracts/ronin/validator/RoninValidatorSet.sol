@@ -458,8 +458,8 @@ contract RoninValidatorSet is
    */
   function _distributeRewardToTreasury(address _validatorAddr) private {
     uint256 _miningAmount = _miningReward[_validatorAddr];
-    delete _miningReward[_validatorAddr];
     if (_miningAmount > 0) {
+        delete _miningReward[_validatorAddr];
       address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
       require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
       emit MiningRewardDistributed(_validatorAddr, _treasury, _miningAmount);
