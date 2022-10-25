@@ -131,7 +131,7 @@ describe('Staking test', () => {
 
     it('Should not be able to request renounce again', async () => {
       await expect(stakingContract.connect(poolAddr).requestRenounce(poolAddr.address)).revertedWith(
-        'CandidateManager: invalid block number'
+        'CandidateManager: invalid revoked period'
       );
     });
 
