@@ -648,7 +648,7 @@ contract RoninValidatorSet is
    * @dev Returns whether the last period is ending when compared with the new period.
    */
   function _isPeriodEnding(uint256 _newPeriod) public view virtual returns (bool) {
-    return _newPeriod > _lastUpdatedBlock;
+    return _newPeriod > _lastUpdatedPeriod;
   }
 
   /**
