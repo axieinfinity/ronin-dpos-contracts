@@ -143,9 +143,9 @@ describe('Ronin Validator Set test', () => {
     let _expectingValidatorsAddr: Address[];
     it('Should be able to wrap up epoch at end of period and sync validator set from staking contract', async () => {
       let tx: ContractTransaction;
+      await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();
-        await roninValidatorSet.endPeriod();
         tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
       });
 
@@ -199,9 +199,9 @@ describe('Ronin Validator Set test', () => {
       expect((await roninValidatorSet.getValidatorCandidates()).length).eq(localValidatorCandidatesLength + 1);
 
       let tx: ContractTransaction;
+      await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();
-        await roninValidatorSet.endPeriod();
         tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
         currentValidatorSet = [
           coinbase.address,
@@ -232,9 +232,9 @@ describe('Ronin Validator Set test', () => {
     it('Should be able to get right reward at the end of period', async () => {
       const balance = await treasury.getBalance();
       let tx: ContractTransaction;
+      await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();
-        await roninValidatorSet.endPeriod();
         tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
       });
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
@@ -278,9 +278,9 @@ describe('Ronin Validator Set test', () => {
       {
         const balance = await treasury.getBalance();
         await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
+        await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
         await mineBatchTxs(async () => {
           await roninValidatorSet.endEpoch();
-          await roninValidatorSet.endPeriod();
           tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
         });
         const balanceDiff = (await treasury.getBalance()).sub(balance);
@@ -297,9 +297,9 @@ describe('Ronin Validator Set test', () => {
       let tx: ContractTransaction;
       const balance = await treasury.getBalance();
       await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
+      await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();
-        await roninValidatorSet.endPeriod();
         tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
       });
       await RoninValidatorSet.expects.emitWrappedUpEpochEvent(tx!);
@@ -323,9 +323,9 @@ describe('Ronin Validator Set test', () => {
       await slashIndicator.slashMisdemeanor(coinbase.address);
       tx = await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
       await RoninValidatorSet.expects.emitRewardDeprecatedEvent(tx!, coinbase.address, 100);
+      await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();
-        await roninValidatorSet.endPeriod();
         tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
       });
       const balanceDiff = (await treasury.getBalance()).sub(balance);

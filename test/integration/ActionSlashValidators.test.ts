@@ -15,7 +15,7 @@ import {
   RoninGovernanceAdmin__factory,
 } from '../../src/types';
 
-import { expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
+import { EpochController, expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { expects as CandidateManagerExpects } from '../helpers/candidate-manager';
 import { mineBatchTxs } from '../helpers/utils';
 import { SlashType } from '../../src/script/slash-indicator';
@@ -39,8 +39,6 @@ const felonyThreshold = 20;
 const slashFelonyAmount = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
 const minValidatorBalance = BigNumber.from(100);
-const numberOfBlocksInEpoch = 600;
-const numberOfEpochsInPeriod = 48;
 
 describe('[Integration] Slash validators', () => {
   before(async () => {
@@ -76,9 +74,12 @@ describe('[Integration] Slash validators', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
 
-    await network.provider.send('hardhat_mine', [
-      ethers.utils.hexStripZeros(BigNumber.from(numberOfBlocksInEpoch * numberOfEpochsInPeriod).toHexString()),
-    ]);
+    await EpochController.setTimestampToPeriodEnding();
+    await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+    await mineBatchTxs(async () => {
+      await validatorContract.endEpoch();
+      await validatorContract.connect(coinbase).wrapUpEpoch();
+    });
   });
 
   describe('Slash one validator', async () => {
@@ -87,10 +88,7 @@ describe('[Integration] Slash validators', () => {
     let period: BigNumberish;
 
     before(async () => {
-      const currentBlock = await ethers.provider.getBlockNumber();
-      period = await validatorContract.periodOf(currentBlock);
-      await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-
+      period = await validatorContract.currentPeriod();
       await validatorContract.addValidators([1, 2, 3].map((_) => validatorCandidates[_].address));
     });
 
@@ -130,15 +128,13 @@ describe('[Integration] Slash validators', () => {
 
         expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
 
+        await EpochController.setTimestampToPeriodEnding();
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
-          await validatorContract.connect(coinbase).endPeriod();
           wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
 
-        const currentBlock = await ethers.provider.getBlockNumber();
-        period = await validatorContract.periodOf(currentBlock);
-
+        period = await validatorContract.currentPeriod();
         expectingValidatorSet.push(slashee.address);
         expectingBlockProducerSet.push(slashee.address);
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, expectingValidatorSet);
@@ -198,7 +194,7 @@ describe('[Integration] Slash validators', () => {
         let _jailUntil = await validatorContract.getJailUntils([slashee.address]);
         let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber).sub(100);
 
-        await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString()]);
+        await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString(), '0x0']);
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
           wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
@@ -212,7 +208,7 @@ describe('[Integration] Slash validators', () => {
         let _jailUntil = await validatorContract.getJailUntils([slashee.address]);
         let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber);
 
-        await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString()]);
+        await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString(), '0x0']);
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
           wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
@@ -245,15 +241,13 @@ describe('[Integration] Slash validators', () => {
 
         expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
 
+        await EpochController.setTimestampToPeriodEnding();
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
-          await validatorContract.connect(coinbase).endPeriod();
           wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
 
-        const currentBlock = await ethers.provider.getBlockNumber();
-        period = await validatorContract.periodOf(currentBlock);
-
+        period = await validatorContract.currentPeriod();
         expectingValidatorSet.push(slashee.address);
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, expectingValidatorSet);
 
@@ -312,7 +306,7 @@ describe('[Integration] Slash validators', () => {
           let _jailUntil = await validatorContract.getJailUntils([slashee.address]);
           let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber).sub(100);
 
-          await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString()]);
+          await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString(), '0x0']);
           await mineBatchTxs(async () => {
             await validatorContract.connect(coinbase).endEpoch();
             wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
@@ -346,9 +340,9 @@ describe('[Integration] Slash validators', () => {
       describe('Check effects on candidate list when the under balance candidates get kicked out', async () => {
         let expectingRevokedCandidates: Address[];
         it('Should the event of updating validator set emitted', async () => {
+          await EpochController.setTimestampToPeriodEnding();
           await mineBatchTxs(async () => {
             await validatorContract.connect(coinbase).endEpoch();
-            await validatorContract.connect(coinbase).endPeriod();
             wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
           });
 

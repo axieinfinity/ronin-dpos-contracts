@@ -101,7 +101,6 @@ export interface RoninValidatorSetArguments {
   maxValidatorCandidate?: BigNumberish;
   maxPrioritizedValidatorNumber?: BigNumberish;
   numberOfBlocksInEpoch?: BigNumberish;
-  numberOfEpochsInPeriod?: BigNumberish;
 }
 
 export interface RoninValidatorSetConfig {
@@ -188,7 +187,6 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
     maxPrioritizedValidatorNumber: 11,
     maxValidatorCandidate: 100,
     numberOfBlocksInEpoch: 600,
-    numberOfEpochsInPeriod: 48, // 1 day
   },
   [Network.Testnet]: undefined,
   [Network.Mainnet]: undefined,

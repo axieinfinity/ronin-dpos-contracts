@@ -1,6 +1,8 @@
 import { BigNumber } from 'ethers';
 import { deployments, ethers, network } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
+
+import { EpochController } from './ronin-validator-set';
 import {
   MainchainGovernanceAdminArguments,
   mainchainGovernanceAdminConf,
@@ -46,7 +48,6 @@ export const defaultTestConfig = {
   maxValidatorNumber: 4,
   maxPrioritizedValidatorNumber: 0,
   numberOfBlocksInEpoch: 600,
-  numberOfEpochsInPeriod: 48,
 
   minValidatorBalance: BigNumber.from(100),
   maxValidatorCandidate: 10,
@@ -104,7 +105,6 @@ export const initTest = (id: string) =>
         maxPrioritizedValidatorNumber:
           options?.maxPrioritizedValidatorNumber ?? defaultTestConfig.maxPrioritizedValidatorNumber,
         numberOfBlocksInEpoch: options?.numberOfBlocksInEpoch ?? defaultTestConfig.numberOfBlocksInEpoch,
-        numberOfEpochsInPeriod: options?.numberOfEpochsInPeriod ?? defaultTestConfig.numberOfEpochsInPeriod,
       };
       stakingConfig[network.name] = {
         minValidatorBalance: options?.minValidatorBalance ?? defaultTestConfig.minValidatorBalance,
@@ -152,6 +152,7 @@ export const initTest = (id: string) =>
     const stakingContractDeployment = await deployments.get('StakingProxy');
     const stakingVestingContractDeployment = await deployments.get('StakingVestingProxy');
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
+    await EpochController.setTimestampToPeriodEnding();
 
     return {
       roninGovernanceAdminAddress: roninGovernanceAdminDeployment.address,

@@ -11,14 +11,10 @@ const contractInterface = RoninValidatorSet__factory.createInterface();
 export class EpochController {
   readonly minOffset: number;
   readonly numberOfBlocksInEpoch: number;
-  readonly numberOfEpochsInPeriod: number;
-  readonly numberOfBlocksInPeriod: number;
 
-  constructor(minOffset: number, numberOfBlocksInEpoch: number, numberOfEpochsInPeriod: number) {
+  constructor(minOffset: number, numberOfBlocksInEpoch: number) {
     this.minOffset = minOffset;
     this.numberOfBlocksInEpoch = numberOfBlocksInEpoch;
-    this.numberOfEpochsInPeriod = numberOfEpochsInPeriod;
-    this.numberOfBlocksInPeriod = numberOfBlocksInEpoch * numberOfEpochsInPeriod;
   }
 
   calculateStartOfEpoch(block: number): BigNumber {
@@ -31,29 +27,8 @@ export class EpochController {
     return BigNumber.from(this.numberOfBlocksInEpoch).sub(BigNumber.from(block).mod(this.numberOfBlocksInEpoch)).sub(1);
   }
 
-  diffToEndPeriod(block: BigNumberish): BigNumber {
-    return BigNumber.from(this.numberOfBlocksInPeriod)
-      .sub(BigNumber.from(block).mod(this.numberOfBlocksInPeriod))
-      .sub(1);
-  }
-
   calculateEndOfEpoch(block: BigNumberish): BigNumber {
     return BigNumber.from(block).add(this.diffToEndEpoch(block));
-  }
-
-  calculateEndOfPeriod(block: BigNumberish): BigNumber {
-    return BigNumber.from(block).add(this.diffToEndPeriod(block));
-  }
-
-  calculatePeriodOf(block: BigNumberish): BigNumber {
-    if (block == 0) {
-      return BigNumber.from(0);
-    }
-    return BigNumber.from(block).div(BigNumber.from(this.numberOfBlocksInPeriod)).add(1);
-  }
-
-  async currentPeriod(): Promise<BigNumber> {
-    return this.calculatePeriodOf(await ethers.provider.getBlockNumber());
   }
 
   async mineToBeforeEndOfEpoch() {
@@ -61,25 +36,23 @@ export class EpochController {
     if (number.lt(0)) {
       number = number.add(this.numberOfBlocksInEpoch);
     }
-    return network.provider.send('hardhat_mine', [ethers.utils.hexStripZeros(number.toHexString())]);
+    return network.provider.send('hardhat_mine', [ethers.utils.hexStripZeros(number.toHexString()), '0x0']);
   }
 
-  async mineToBeforeEndOfPeriod() {
-    let number = this.diffToEndPeriod(await ethers.provider.getBlockNumber()).sub(1);
-    if (number.lt(0)) {
-      number = number.add(this.numberOfBlocksInPeriod);
-    }
-    return network.provider.send('hardhat_mine', [ethers.utils.hexStripZeros(number.toHexString())]);
+  static async setTimestampToPeriodEnding(): Promise<void> {
+    const currentDate = new Date();
+    const currentTimestamp = currentDate.getTime();
+    const nextDate = new Date(currentDate.setDate(currentDate.getDate() + 1));
+    const nextBeginningDate = new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate());
+    const nextBeginningDateTimestamp = nextBeginningDate.getTime();
+    await network.provider.send('evm_increaseTime', [
+      86400 + Math.floor((nextBeginningDateTimestamp - currentTimestamp) / 1000),
+    ]);
   }
 
   async mineToBeginOfNewEpoch() {
     await this.mineToBeforeEndOfEpoch();
-    return network.provider.send('hardhat_mine', ['0x2']);
-  }
-
-  async mineToBeginOfNewPeriod() {
-    await this.mineToBeforeEndOfPeriod();
-    return network.provider.send('hardhat_mine', ['0x2']);
+    return network.provider.send('hardhat_mine', ['0x2', '0x0']);
   }
 }
 

@@ -24,6 +24,8 @@ contract SlashIndicator is
 
   /// @dev Mapping from validator address => period index => unavailability indicator
   mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
+  /// @dev Mapping from validator address => period index => bridge voting slashed
+  mapping(address => mapping(uint256 => bool)) internal _bridgeVotingSlashed;
 
   /// @dev The last block that a validator is slashed
   uint256 public lastSlashedBlock;
@@ -148,12 +150,9 @@ contract SlashIndicator is
     IRoninTrustedOrganization.TrustedOrganization memory _org = _roninTrustedOrganizationContract
       .getTrustedOrganization(_consensusAddr);
     uint256 _lastVotedBlock = Math.max(_roninGovernanceAdminContract.lastVotedBlock(_org.bridgeVoter), _org.addedBlock);
-    uint256 _period = _validatorContract.periodOf(block.number);
-    if (
-      block.number - _lastVotedBlock > bridgeVotingThreshold &&
-      _unavailabilitySlashed[_consensusAddr][_period] != SlashType.BRIDGE_VOTING
-    ) {
-      _unavailabilitySlashed[_consensusAddr][_period] = SlashType.BRIDGE_VOTING;
+    uint256 _period = _validatorContract.currentPeriod();
+    if (block.number - _lastVotedBlock > bridgeVotingThreshold && !_bridgeVotingSlashed[_consensusAddr][_period]) {
+      _bridgeVotingSlashed[_consensusAddr][_period] = true;
       emit UnavailabilitySlashed(_consensusAddr, SlashType.BRIDGE_VOTING, _period);
       _validatorContract.slash(_consensusAddr, 0, bridgeVotingSlashAmount);
     }

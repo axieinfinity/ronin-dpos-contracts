@@ -17,6 +17,7 @@ import {
 import { mineBatchTxs } from '../helpers/utils';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
+import { EpochController } from '../helpers/ronin-validator-set';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
@@ -102,9 +103,10 @@ describe('[Integration] Submit Block Reward', () => {
         .applyValidatorCandidate(validator.address, validator.address, validator.address, validator.address, 2_00, {
           value: initStakingAmount,
         });
+
+      await EpochController.setTimestampToPeriodEnding();
       await mineBatchTxs(async () => {
         await validatorContract.connect(coinbase).endEpoch();
-        await validatorContract.connect(coinbase).endPeriod();
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
     });
