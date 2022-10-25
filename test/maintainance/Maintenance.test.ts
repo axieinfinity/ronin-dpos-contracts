@@ -279,7 +279,7 @@ describe('Maintenance test', () => {
       expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
     });
 
-    it('Should be able to schedule in the next period', async () => {
+    it('Should be able to schedule again in current period when the previous maintenance is done', async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
       endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock);
