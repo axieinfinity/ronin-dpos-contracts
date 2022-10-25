@@ -128,9 +128,7 @@ contract RoninValidatorSet is
     address _coinbaseAddr = msg.sender;
     // Deprecates reward for non-validator or slashed validator
     if (
-      !isBlockProducer(_coinbaseAddr) ||
-      _jailed(_coinbaseAddr) ||
-      _rewardDeprecated(_coinbaseAddr, currentPeriod())
+      !isBlockProducer(_coinbaseAddr) || _jailed(_coinbaseAddr) || _rewardDeprecated(_coinbaseAddr, currentPeriod())
     ) {
       emit RewardDeprecated(_coinbaseAddr, _submittedReward);
       return;
@@ -227,8 +225,9 @@ contract RoninValidatorSet is
    */
   function rewardDeprecated(address[] memory _addrList) external view override returns (bool[] memory _result) {
     _result = new bool[](_addrList.length);
+    uint256 _period = currentPeriod();
     for (uint256 _i; _i < _addrList.length; _i++) {
-      _result[_i] = _rewardDeprecated(_addrList[_i], periodOf(block.number));
+      _result[_i] = _rewardDeprecated(_addrList[_i], _period);
     }
   }
 
