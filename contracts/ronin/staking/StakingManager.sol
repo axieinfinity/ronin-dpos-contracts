@@ -290,6 +290,9 @@ abstract contract StakingManager is
     returns (uint256[] memory _pendings, uint256[] memory _claimables)
   {
     address _consensusAddr;
+    _pendings = new uint256[](_poolAddrList.length);
+    _claimables = new uint256[](_poolAddrList.length);
+
     for (uint256 _i = 0; _i < _poolAddrList.length; _i++) {
       _consensusAddr = _poolAddrList[_i];
 

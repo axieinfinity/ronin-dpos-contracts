@@ -98,9 +98,14 @@ interface IRoninValidatorSet is ICandidateManager {
   function jailed(address[] memory) external view returns (bool[] memory);
 
   /**
-   * @dev Returns whether the incoming reward of the validators are deprecated during the period.
+   * @dev Returns whether the incoming reward of the validators are deprecated during the current period.
    */
-  function rewardDeprecated(address[] memory, uint256 _period) external view returns (bool[] memory);
+  function rewardDeprecated(address[] memory) external view returns (bool[] memory);
+
+  /**
+   * @dev Returns whether the incoming reward of the validators are deprecated during a period.
+   */
+  function rewardDeprecatedAtPeriod(address[] memory, uint256 _period) external view returns (bool[] memory);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                             FUNCTIONS FOR NORMAL USER                             //
