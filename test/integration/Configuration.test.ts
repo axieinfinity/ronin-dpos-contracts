@@ -37,7 +37,6 @@ const slashDoubleSignAmount = BigNumber.from(10).pow(18).mul(10);
 const maxValidatorNumber = 4;
 const maxPrioritizedValidatorNumber = 0;
 const numberOfBlocksInEpoch = 600;
-const numberOfEpochsInPeriod = 48;
 
 const minValidatorBalance = BigNumber.from(100);
 const maxValidatorCandidate = 10;
@@ -67,7 +66,6 @@ describe('[Integration] Configuration check', () => {
       maxValidatorNumber,
       maxPrioritizedValidatorNumber,
       numberOfBlocksInEpoch,
-      numberOfEpochsInPeriod,
       minValidatorBalance,
       maxValidatorCandidate,
       validatorBonusPerBlock,
@@ -142,11 +140,6 @@ describe('[Integration] Configuration check', () => {
     it('Should config the numberOfBlocksInEpoch correctly', async () => {
       let _numberOfBlocksInEpoch = await validatorContract.numberOfBlocksInEpoch();
       expect(_numberOfBlocksInEpoch).to.eq(numberOfBlocksInEpoch);
-    });
-
-    it('Should config the numberOfEpochsInPeriod correctly', async () => {
-      let _numberOfEpochsInPeriod = await validatorContract.numberOfEpochsInPeriod();
-      expect(_numberOfEpochsInPeriod).to.eq(numberOfEpochsInPeriod);
     });
   });
 

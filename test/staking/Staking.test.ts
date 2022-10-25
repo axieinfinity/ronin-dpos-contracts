@@ -20,7 +20,6 @@ let validatorCandidates: SignerWithAddress[];
 
 const minValidatorBalance = BigNumber.from(20);
 const maxValidatorCandidate = 50;
-const numberOfEpochsInPeriod = 10;
 const numberOfBlocksInEpoch = 2;
 
 describe('Staking test', () => {
@@ -35,7 +34,6 @@ describe('Staking test', () => {
       ethers.constants.AddressZero,
       stakingVestingContract.address,
       maxValidatorCandidate,
-      numberOfEpochsInPeriod,
       numberOfBlocksInEpoch
     );
     await validatorContract.deployed();
@@ -133,13 +131,15 @@ describe('Staking test', () => {
 
     it('Should not be able to request renounce again', async () => {
       await expect(stakingContract.connect(poolAddr).requestRenounce(poolAddr.address)).revertedWith(
-        'CandidateManager: invalid block number'
+        'CandidateManager: invalid revoked period'
       );
     });
 
     it('Should the consensus account is no longer be a candidate', async () => {
+      await network.provider.send('evm_increaseTime', [86400 * 2]);
       await network.provider.send('hardhat_mine', [
-        ethers.utils.hexStripZeros(BigNumber.from(numberOfBlocksInEpoch * numberOfEpochsInPeriod * 2).toHexString()),
+        ethers.utils.hexStripZeros(BigNumber.from(numberOfBlocksInEpoch).toHexString()),
+        '0x0',
       ]);
       const stakedAmount = minValidatorBalance.mul(2);
       expect(await stakingContract.getStakingPool(poolAddr.address)).eql([

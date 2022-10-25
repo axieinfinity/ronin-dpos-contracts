@@ -39,7 +39,6 @@ const felonyThreshold = 10;
 const maxValidatorNumber = 21;
 const maxValidatorCandidate = 50;
 const numberOfBlocksInEpoch = 600;
-const numberOfEpochsInPeriod = 48;
 const minValidatorBalance = BigNumber.from(100);
 
 const slashFelonyAmount = BigNumber.from(2);
@@ -85,7 +84,6 @@ describe('Slash indicator test', () => {
         maxValidatorNumber,
         maxValidatorCandidate,
         numberOfBlocksInEpoch,
-        numberOfEpochsInPeriod,
         minValidatorBalance,
         slashFelonyAmount,
         slashDoubleSignAmount,
@@ -120,13 +118,9 @@ describe('Slash indicator test', () => {
     }
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-    await network.provider.send('hardhat_mine', [
-      ethers.utils.hexStripZeros(BigNumber.from(numberOfBlocksInEpoch * numberOfEpochsInPeriod).toHexString()),
-    ]);
 
-    localEpochController = new EpochController(minOffset, numberOfBlocksInEpoch, numberOfEpochsInPeriod);
-    await localEpochController.mineToBeforeEndOfPeriod();
-
+    localEpochController = new EpochController(minOffset, numberOfBlocksInEpoch);
+    await localEpochController.mineToBeforeEndOfEpoch();
     await validatorContract.connect(coinbase).wrapUpEpoch();
     expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));
 
@@ -218,10 +212,10 @@ describe('Slash indicator test', () => {
             .slash(validatorCandidates[slasheeIdx].address);
         }
 
-        let _period = await localEpochController.currentPeriod();
+        let period = await validatorContract.currentPeriod();
         await expect(tx)
           .to.emit(slashContract, 'UnavailabilitySlashed')
-          .withArgs(validatorCandidates[slasheeIdx].address, SlashType.MISDEMEANOR, _period);
+          .withArgs(validatorCandidates[slasheeIdx].address, SlashType.MISDEMEANOR, period);
         setLocalCounterForValidatorAt(slasheeIdx, misdemeanorThreshold);
         await validateIndicatorAt(slasheeIdx);
       });
@@ -248,7 +242,7 @@ describe('Slash indicator test', () => {
 
         await network.provider.send('hardhat_setCoinbase', [validatorCandidates[slasherIdx].address]);
 
-        let _period = await localEpochController.currentPeriod();
+        let period = await validatorContract.currentPeriod();
 
         for (let i = 0; i < felonyThreshold; i++) {
           tx = await slashContract
@@ -258,13 +252,13 @@ describe('Slash indicator test', () => {
           if (i == misdemeanorThreshold - 1) {
             await expect(tx)
               .to.emit(slashContract, 'UnavailabilitySlashed')
-              .withArgs(validatorCandidates[slasheeIdx].address, SlashType.MISDEMEANOR, _period);
+              .withArgs(validatorCandidates[slasheeIdx].address, SlashType.MISDEMEANOR, period);
           }
         }
 
         await expect(tx)
           .to.emit(slashContract, 'UnavailabilitySlashed')
-          .withArgs(validatorCandidates[slasheeIdx].address, SlashType.FELONY, _period);
+          .withArgs(validatorCandidates[slasheeIdx].address, SlashType.FELONY, period);
         setLocalCounterForValidatorAt(slasheeIdx, felonyThreshold);
         await validateIndicatorAt(slasheeIdx);
       });
@@ -299,7 +293,9 @@ describe('Slash indicator test', () => {
         setLocalCounterForValidatorAt(slasheeIdx, numberOfSlashing);
         await validateIndicatorAt(slasheeIdx);
 
-        await localEpochController.mineToBeginOfNewPeriod();
+        await EpochController.setTimestampToPeriodEnding();
+        await localEpochController.mineToBeforeEndOfEpoch();
+        await validatorContract.connect(validatorCandidates[slasherIdx]).wrapUpEpoch();
 
         resetLocalCounterForValidatorAt(slasheeIdx);
         await validateIndicatorAt(slasheeIdx);
@@ -324,7 +320,9 @@ describe('Slash indicator test', () => {
           await validateIndicatorAt(slasheeIdxs[j]);
         }
 
-        await localEpochController.mineToBeginOfNewPeriod();
+        await EpochController.setTimestampToPeriodEnding();
+        await localEpochController.mineToBeforeEndOfEpoch();
+        await validatorContract.connect(validatorCandidates[slasherIdx]).wrapUpEpoch();
 
         for (let j = 0; j < slasheeIdxs.length; j++) {
           resetLocalCounterForValidatorAt(slasheeIdxs[j]);
@@ -338,7 +336,7 @@ describe('Slash indicator test', () => {
       let header2: BytesLike;
 
       before(async () => {
-        await network.provider.send('hardhat_mine', [doubleSigningConstrainBlocks.toHexString()]);
+        await network.provider.send('hardhat_mine', [doubleSigningConstrainBlocks.toHexString(), '0x0']);
       });
 
       it('Should not be able to slash themselves', async () => {
@@ -366,11 +364,11 @@ describe('Slash indicator test', () => {
           .connect(validatorCandidates[slasherIdx])
           .slashDoubleSign(validatorCandidates[slasheeIdx].address, header1, header2);
 
-        let _period = await localEpochController.currentPeriod();
+        let period = await validatorContract.currentPeriod();
 
         await expect(tx)
           .to.emit(slashContract, 'UnavailabilitySlashed')
-          .withArgs(validatorCandidates[slasheeIdx].address, SlashType.DOUBLE_SIGNING, _period);
+          .withArgs(validatorCandidates[slasheeIdx].address, SlashType.DOUBLE_SIGNING, period);
       });
     });
   });

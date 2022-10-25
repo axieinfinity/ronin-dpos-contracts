@@ -85,7 +85,7 @@ contract Staking is IStaking, StakingManager, Initializable {
    * @inheritdoc IStaking
    */
   function sinkPendingReward(address _consensusAddr) external onlyValidatorContract {
-    uint256 _period = _periodOf(block.number);
+    uint256 _period = _currentPeriod();
     _pRewardSinked[_consensusAddr][_period] = true;
     _sinkPendingReward(_consensusAddr);
   }
@@ -147,8 +147,8 @@ contract Staking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc RewardCalculation
    */
-  function _periodOf(uint256 _block) internal view virtual override returns (uint256) {
-    return IRoninValidatorSet(_validatorContract).periodOf(_block);
+  function _currentPeriod() internal view virtual override returns (uint256) {
+    return IRoninValidatorSet(_validatorContract).currentPeriod();
   }
 
   /**

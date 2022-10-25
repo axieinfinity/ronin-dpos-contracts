@@ -37,7 +37,6 @@ const misdemeanorThreshold = 50;
 const felonyThreshold = 150;
 const maxValidatorNumber = 4;
 const numberOfBlocksInEpoch = 600;
-const numberOfEpochsInPeriod = 48;
 const minValidatorBalance = BigNumber.from(100);
 const minMaintenanceBlockPeriod = 100;
 const maxMaintenanceBlockPeriod = 1000;
@@ -93,13 +92,9 @@ describe('Maintenance test', () => {
     }
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-    await network.provider.send('hardhat_mine', [
-      ethers.utils.hexStripZeros(BigNumber.from(numberOfBlocksInEpoch * numberOfEpochsInPeriod).toHexString()),
-    ]);
 
-    localEpochController = new EpochController(minOffset, numberOfBlocksInEpoch, numberOfEpochsInPeriod);
-
-    await localEpochController.mineToBeforeEndOfPeriod();
+    localEpochController = new EpochController(minOffset, numberOfBlocksInEpoch);
+    await localEpochController.mineToBeforeEndOfEpoch();
     let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
     await ValidatorSetExpects.emitValidatorSetUpdatedEvent(
       tx,
@@ -276,19 +271,6 @@ describe('Maintenance test', () => {
       expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[1].address)).eq(0);
     });
 
-    it('[Slash Integration] Should the unavailability thresholds of the validator is rescaled', async () => {
-      currentBlock = await ethers.provider.getBlockNumber();
-      const thresholds = await slashContract.unavailabilityThresholdsOf(validatorCandidates[0].address, currentBlock);
-
-      const blockLength = BigNumber.from(numberOfBlocksInEpoch * numberOfEpochsInPeriod);
-      const diff = blockLength.sub(BigNumber.from(endedAtBlock).sub(startedAtBlock).add(1));
-
-      expect(thresholds).eql([
-        diff.mul(misdemeanorThreshold).div(blockLength),
-        diff.mul(felonyThreshold).div(blockLength),
-      ]);
-    });
-
     it('Should the validator appear in the block producer list since the maintenance time is ended', async () => {
       await localEpochController.mineToBeforeEndOfEpoch();
       let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
@@ -297,27 +279,7 @@ describe('Maintenance test', () => {
       expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
     });
 
-    it('Should not be able to schedule maintenance twice in a period', async () => {
-      currentBlock = (await ethers.provider.getBlockNumber()) + 1;
-      startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
-      endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock);
-      await expect(
-        maintenanceContract
-          .connect(validatorCandidates[0])
-          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: schedule twice in a period is not allowed');
-    });
-
-    it('[Slash Integration] Should the unavailability thresholds reset in the next period', async () => {
-      await network.provider.send('hardhat_mine', [
-        ethers.utils.hexStripZeros(BigNumber.from(numberOfBlocksInEpoch * numberOfEpochsInPeriod).toHexString()),
-      ]);
-      currentBlock = await ethers.provider.getBlockNumber();
-      const thresholds = await slashContract.unavailabilityThresholdsOf(validatorCandidates[0].address, currentBlock);
-      expect(thresholds.map((v) => v.toNumber())).eql([misdemeanorThreshold, felonyThreshold]);
-    });
-
-    it('Should be able to schedule in the next period', async () => {
+    it('Should be able to schedule again in current period when the previous maintenance is done', async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
       endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock);

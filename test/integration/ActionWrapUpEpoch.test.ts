@@ -14,7 +14,7 @@ import {
   RoninGovernanceAdmin__factory,
 } from '../../src/types';
 import { expects as StakingExpects } from '../helpers/reward-calculation';
-import { expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
+import { EpochController, expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
@@ -124,9 +124,9 @@ describe('[Integration] Wrap up epoch', () => {
           );
       }
 
+      await EpochController.setTimestampToPeriodEnding();
       await mineBatchTxs(async () => {
         await validatorContract.connect(coinbase).endEpoch();
-        await validatorContract.connect(coinbase).endPeriod();
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
 
@@ -152,9 +152,9 @@ describe('[Integration] Wrap up epoch', () => {
       });
 
       it('Should validator be able to wrap up the epoch', async () => {
+        await network.provider.send('evm_increaseTime', [86400]);
         await mineBatchTxs(async () => {
           await validatorContract.endEpoch();
-          await validatorContract.endPeriod();
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
       });
@@ -191,9 +191,9 @@ describe('[Integration] Wrap up epoch', () => {
       });
 
       it('Should the ValidatorSet reset counter in SlashIndicator contract', async () => {
+        await network.provider.send('evm_increaseTime', [86400]);
         await mineBatchTxs(async () => {
           await validatorContract.endEpoch();
-          await validatorContract.endPeriod();
           wrapUpTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
         expect(
@@ -225,9 +225,9 @@ describe('[Integration] Wrap up epoch', () => {
           );
       }
 
+      await EpochController.setTimestampToPeriodEnding();
       await mineBatchTxs(async () => {
         await validatorContract.connect(coinbase).endEpoch();
-        await validatorContract.connect(coinbase).endPeriod();
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
 
@@ -272,9 +272,9 @@ describe('[Integration] Wrap up epoch', () => {
       });
 
       it('Should the validators in the previous epoch (including slashed one) got slashing counter reset, when the epoch ends', async () => {
+        await network.provider.send('evm_increaseTime', [86400]);
         await mineBatchTxs(async () => {
           await validatorContract.endEpoch();
-          await validatorContract.endPeriod();
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
         expect(

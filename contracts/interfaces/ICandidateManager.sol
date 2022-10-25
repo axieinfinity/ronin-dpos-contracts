@@ -15,8 +15,8 @@ interface ICandidateManager {
     // The percentile of reward that validators can be received, the rest goes to the delegators.
     // Values in range [0; 100_00] stands for 0-100%
     uint256 commissionRate;
-    // The block that the candidate to be revoked.
-    uint256 revokedBlock;
+    // The period that the candidate to be revoked.
+    uint256 revokedPeriod;
     // Extra data
     bytes extraData;
   }
@@ -31,7 +31,7 @@ interface ICandidateManager {
     address bridgeOperator
   );
   /// @dev Emitted when the revoked block of a candidate is updated.
-  event CandidateRevokedBlockUpdated(address indexed consensusAddr, uint256 revokedBlock);
+  event CandidateRevokedPeriodUpdated(address indexed consensusAddr, uint256 revokedPeriod);
   /// @dev Emitted when the validator candidate is revoked.
   event CandidatesRevoked(address[] consensusAddrs);
 
@@ -69,7 +69,7 @@ interface ICandidateManager {
   ) external;
 
   /**
-   * @dev Requests to revoke a validator candidate.
+   * @dev Requests to revoke a validator candidate at the next period ending.
    *
    * Requirements:
    * - The method caller is staking contract.
@@ -105,9 +105,9 @@ interface ICandidateManager {
   function isCandidateAdmin(address _candidate, address _admin) external view returns (bool);
 
   /**
-   * @dev Returns the number of epochs in a period.
+   * @dev Returns the period index from the current block.
    */
-  function numberOfEpochsInPeriod() external view returns (uint256 _numberOfEpochs);
+  function currentPeriod() external view returns (uint256);
 
   /**
    * @dev Returns the number of blocks in a epoch.

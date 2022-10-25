@@ -24,8 +24,8 @@ contract SlashIndicator is
 
   /// @dev Mapping from validator address => period index => unavailability indicator
   mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
-  /// @dev Maping from validator address => period index => slash type
-  mapping(address => mapping(uint256 => SlashType)) internal _unavailabilitySlashed;
+  /// @dev Mapping from validator address => period index => bridge voting slashed
+  mapping(address => mapping(uint256 => bool)) internal _bridgeVotingSlashed;
 
   /// @dev The last block that a validator is slashed
   uint256 public lastSlashedBlock;
@@ -112,27 +112,15 @@ contract SlashIndicator is
       return;
     }
 
-    uint256 _period = _validatorContract.periodOf(block.number);
+    uint256 _period = _validatorContract.currentPeriod();
     uint256 _count = ++_unavailabilityIndicator[_validatorAddr][_period];
-    (uint256 _misdemeanorThreshold, uint256 _felonyThreshold) = unavailabilityThresholdsOf(
-      _validatorAddr,
-      block.number
-    );
 
-    SlashType _slashType = getUnavailabilitySlashType(_validatorAddr, _period);
-
-    if (_count >= _felonyThreshold && _slashType < SlashType.FELONY) {
-      _unavailabilitySlashed[_validatorAddr][_period] = SlashType.FELONY;
+    if (_count == felonyThreshold) {
       emit UnavailabilitySlashed(_validatorAddr, SlashType.FELONY, _period);
       _validatorContract.slash(_validatorAddr, block.number + felonyJailDuration, slashFelonyAmount);
-      return;
-    }
-
-    if (_count >= _misdemeanorThreshold && _slashType < SlashType.MISDEMEANOR) {
-      _unavailabilitySlashed[_validatorAddr][_period] = SlashType.MISDEMEANOR;
+    } else if (_count == misdemeanorThreshold) {
       emit UnavailabilitySlashed(_validatorAddr, SlashType.MISDEMEANOR, _period);
       _validatorContract.slash(_validatorAddr, 0, 0);
-      return;
     }
   }
 
@@ -149,8 +137,7 @@ contract SlashIndicator is
     }
 
     if (_pcValidateEvidence(_header1, _header2)) {
-      uint256 _period = _validatorContract.periodOf(block.number);
-      _unavailabilitySlashed[_validatorAddr][_period] = SlashType.DOUBLE_SIGNING;
+      uint256 _period = _validatorContract.currentPeriod();
       emit UnavailabilitySlashed(_validatorAddr, SlashType.DOUBLE_SIGNING, _period);
       _validatorContract.slash(_validatorAddr, doubleSigningJailUntilBlock, slashDoubleSignAmount);
     }
@@ -163,12 +150,9 @@ contract SlashIndicator is
     IRoninTrustedOrganization.TrustedOrganization memory _org = _roninTrustedOrganizationContract
       .getTrustedOrganization(_consensusAddr);
     uint256 _lastVotedBlock = Math.max(_roninGovernanceAdminContract.lastVotedBlock(_org.bridgeVoter), _org.addedBlock);
-    uint256 _period = _validatorContract.periodOf(block.number);
-    if (
-      block.number - _lastVotedBlock > bridgeVotingThreshold &&
-      _unavailabilitySlashed[_consensusAddr][_period] != SlashType.BRIDGE_VOTING
-    ) {
-      _unavailabilitySlashed[_consensusAddr][_period] = SlashType.BRIDGE_VOTING;
+    uint256 _period = _validatorContract.currentPeriod();
+    if (block.number - _lastVotedBlock > bridgeVotingThreshold && !_bridgeVotingSlashed[_consensusAddr][_period]) {
+      _bridgeVotingSlashed[_consensusAddr][_period] = true;
       emit UnavailabilitySlashed(_consensusAddr, SlashType.BRIDGE_VOTING, _period);
       _validatorContract.slash(_consensusAddr, 0, bridgeVotingSlashAmount);
     }
@@ -224,46 +208,8 @@ contract SlashIndicator is
   //                                  QUERY FUNCTIONS                                  //
   ///////////////////////////////////////////////////////////////////////////////////////
 
-  /**
-   * @inheritdoc ISlashIndicator
-   */
-  function getUnavailabilitySlashType(address _validatorAddr, uint256 _period) public view returns (SlashType) {
-    return _unavailabilitySlashed[_validatorAddr][_period];
-  }
-
-  /**
-   * @inheritdoc ISlashIndicator
-   */
-  function unavailabilityThresholdsOf(address _addr, uint256 _block)
-    public
-    view
-    returns (uint256 _misdemeanorThreshold, uint256 _felonyThreshold)
-  {
-    uint256 _blockLength = _validatorContract.numberOfBlocksInEpoch() * _validatorContract.numberOfEpochsInPeriod();
-    uint256 _start = (_block / _blockLength) * _blockLength;
-    uint256 _end = _start + _blockLength - 1;
-    IMaintenance.Schedule memory _s = _maintenanceContract.getSchedule(_addr);
-
-    bool _fromInRange = _s.from.inRange(_start, _end);
-    bool _toInRange = _s.to.inRange(_start, _end);
-    uint256 _availableDuration = _blockLength;
-    if (_fromInRange && _toInRange) {
-      _availableDuration -= _s.to - _s.from + 1;
-    } else if (_fromInRange) {
-      _availableDuration -= _end - _s.from + 1;
-    } else if (_toInRange) {
-      _availableDuration -= _s.to - _start + 1;
-    }
-
-    _misdemeanorThreshold = misdemeanorThreshold.scale(_availableDuration, _blockLength);
-    _felonyThreshold = felonyThreshold.scale(_availableDuration, _blockLength);
-  }
-
-  /**
-   * @inheritdoc ISlashIndicator
-   */
   function currentUnavailabilityIndicator(address _validator) external view override returns (uint256) {
-    return getUnavailabilityIndicator(_validator, _validatorContract.periodOf(block.number));
+    return getUnavailabilityIndicator(_validator, _validatorContract.currentPeriod());
   }
 
   /**

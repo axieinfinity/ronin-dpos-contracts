@@ -108,7 +108,7 @@ abstract contract RewardCalculation is IRewardPool {
 
     _reward.debited = _debited;
     _reward.credited = _credited;
-    _reward.lastSyncedPeriod = _periodOf(block.number);
+    _reward.lastSyncedPeriod = _currentPeriod();
     emit PendingRewardUpdated(_poolAddr, _user, _debited, _credited);
   }
 
@@ -135,7 +135,7 @@ abstract contract RewardCalculation is IRewardPool {
     emit SettledRewardUpdated(_poolAddr, _user, 0, _sReward.accumulatedRps);
 
     _reward.credited += _amount;
-    _reward.lastSyncedPeriod = _periodOf(block.number);
+    _reward.lastSyncedPeriod = _currentPeriod();
     emit PendingRewardUpdated(_poolAddr, _user, _reward.debited, _reward.credited);
   }
 
@@ -187,7 +187,7 @@ abstract contract RewardCalculation is IRewardPool {
       SettledPool storage _sPool = _settledPool[_poolAddr];
       if (_accumulatedRpsList[_i] != _sPool.accumulatedRps) {
         _sPool.accumulatedRps = _accumulatedRpsList[_i];
-        _sPool.lastSyncedPeriod = _periodOf(block.number);
+        _sPool.lastSyncedPeriod = _currentPeriod();
       }
     }
     emit SettledPoolsUpdated(_poolList, _accumulatedRpsList);
@@ -199,7 +199,7 @@ abstract contract RewardCalculation is IRewardPool {
   function _rewardSinked(address _poolAddr, uint256 _period) internal view virtual returns (bool);
 
   /**
-   * @dev Returns the period from the block number.
+   * @dev Returns the current period.
    */
-  function _periodOf(uint256 _block) internal view virtual returns (uint256);
+  function _currentPeriod() internal view virtual returns (uint256);
 }
