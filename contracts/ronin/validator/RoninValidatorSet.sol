@@ -232,7 +232,7 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function rewardDeprecated(address[] memory _addrList, uint256 _period)
+  function rewardDeprecatedAtPeriod(address[] memory _addrList, uint256 _period)
     external
     view
     override
