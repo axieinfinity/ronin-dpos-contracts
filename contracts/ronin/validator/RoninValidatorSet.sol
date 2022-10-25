@@ -158,9 +158,9 @@ contract RoninValidatorSet is
     );
     _lastUpdatedBlock = block.number;
 
-    uint256 _computedPeriod = _computePeriod();
-    bool _periodEnding = _isPeriodEnding(_computedPeriod);
-    _lastUpdatedPeriod = _computedPeriod;
+    uint256 _newPeriod = _computePeriod(block.timestamp);
+    bool _periodEnding = _isPeriodEnding(_newPeriod);
+    _lastUpdatedPeriod = _newPeriod;
 
     address[] memory _currentValidators = getValidators();
     uint256 _epoch = epochOf(block.number);
@@ -357,15 +357,15 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function epochEndingAt(uint256 _block) public view virtual returns (bool) {
-    return _block % _numberOfBlocksInEpoch == _numberOfBlocksInEpoch - 1;
+  function isPeriodEnding() external view virtual returns (bool) {
+    return _isPeriodEnding(_computePeriod(block.timestamp));
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function isPeriodEnding() public view virtual returns (bool) {
-    return _isPeriodEnding(_computePeriod());
+  function epochEndingAt(uint256 _block) public view virtual returns (bool) {
+    return _block % _numberOfBlocksInEpoch == _numberOfBlocksInEpoch - 1;
   }
 
   /**
@@ -645,17 +645,17 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @dev Returns whether the period ending at the current block number.
+   * @dev Returns whether the last period is ending when compared with the new period.
    */
-  function _isPeriodEnding(uint256 _computedPeriod) public view virtual returns (bool) {
-    return _computedPeriod > currentPeriod();
+  function _isPeriodEnding(uint256 _newPeriod) public view virtual returns (bool) {
+    return _newPeriod > _lastUpdatedBlock;
   }
 
   /**
    * @dev Returns the calculated period.
    */
-  function _computePeriod() internal view returns (uint256) {
-    return block.timestamp / _SECS_IN_DAY;
+  function _computePeriod(uint256 _timestamp) internal pure returns (uint256) {
+    return _timestamp / _SECS_IN_DAY;
   }
 
   /**
