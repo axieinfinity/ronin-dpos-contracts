@@ -78,6 +78,8 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function rewardDeprecated(address[] memory, uint256 _period) external view override returns (bool[] memory) {}
 
+  function rewardDeprecated(address[] memory) external view override returns (bool[] memory) {}
+
   function epochOf(uint256 _block) external view override returns (uint256) {}
 
   function getValidators() external view override returns (address[] memory) {}
