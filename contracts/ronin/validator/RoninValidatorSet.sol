@@ -43,6 +43,8 @@ contract RoninValidatorSet is
   uint256 internal _lastUpdatedBlock;
   /// @dev The last updated period
   uint256 internal _lastUpdatedPeriod;
+  /// @dev The starting block of the last updated period
+  uint256 internal _currentPeriodStartAtBlock;
 
   /// @dev The total of validators
   uint256 public validatorCount;
@@ -310,8 +312,8 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc ICandidateManager
    */
-  function currentPeriodStartAt() public view virtual override returns (uint256) {
-    return _lastUpdatedBlock;
+  function currentPeriodStartAtBlock() public view virtual override returns (uint256) {
+    return _currentPeriodStartAtBlock;
   }
 
   /**

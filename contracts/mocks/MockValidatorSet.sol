@@ -141,5 +141,5 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     )
   {}
 
-  function currentPeriodStartAt() external view override returns (uint256) {}
+  function currentPeriodStartAtBlock() external view override returns (uint256) {}
 }

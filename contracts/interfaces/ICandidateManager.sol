@@ -112,7 +112,7 @@ interface ICandidateManager {
   /**
    * @dev Returns the block number that the current period starts at.
    */
-  function currentPeriodStartAt() external view returns (uint256);
+  function currentPeriodStartAtBlock() external view returns (uint256);
 
   /**
    * @dev Returns the number of blocks in a epoch.

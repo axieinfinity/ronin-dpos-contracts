@@ -119,7 +119,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     override
     returns (bool[] memory _resList)
   {
-    uint256 _periodStart = _validatorContract.currentPeriodStartAt();
+    uint256 _periodStart = _validatorContract.currentPeriodStartAtBlock();
     _resList = new bool[](_addrList.length);
     for (uint _i = 0; _i < _addrList.length; _i++) {
       _resList[_i] = _maintainingAtCurrentPeriod(_addrList[_i], _periodStart);
@@ -150,7 +150,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function maintainingAtCurrentPeriod(address _consensusAddr) public view override returns (bool) {
-    uint256 _periodStart = _validatorContract.currentPeriodStartAt();
+    uint256 _periodStart = _validatorContract.currentPeriodStartAtBlock();
     return _maintainingAtCurrentPeriod(_consensusAddr, _periodStart);
   }
 
