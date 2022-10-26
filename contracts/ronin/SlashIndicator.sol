@@ -89,10 +89,18 @@ contract SlashIndicator is
     address __roninTrustedOrganizationContract,
     address __roninGovernanceAdminContract,
     uint256[3] calldata _thresholdConfigs,
+    // _thresholdConfigs[0]: misdemeanorThreshold,
+    // _thresholdConfigs[1]: felonyThreshold,
+    // _thresholdConfigs[2]: bridgeVotingThreshold,
     uint256[3] calldata _slashAmountConfigs,
+    // _slashAmountConfigs[0]: slashFelonyAmount,
+    // _slashAmountConfigs[1]: slashDoubleSignAmount,
+    // _slashAmountConfigs[2]: bridgeVotingSlashAmount,
     uint256 _felonyJailBlocks,
     uint256 _doubleSigningConstrainBlocks,
     uint256[2] calldata _creditScoreConfigs,
+    // _creditScoreConfigs[0]: gainCreditScore,
+    // _creditScoreConfigs[1]: maxCreditScore,
     uint256 _bailOutCostMultiplier
   ) external initializer {
     _setValidatorContract(__validatorContract);
@@ -180,6 +188,7 @@ contract SlashIndicator is
   function updateCreditScore(address[] calldata _validators, uint256 _period) external override onlyValidatorContract {
     bool[] memory _jaileds = _validatorContract.bulkJailed(_validators);
     bool[] memory _maintaineds = _maintenanceContract.bulkMaintainingAtCurrentPeriod(_validators);
+    uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
 
     for (uint _i = 0; _i < _validators.length; _i++) {
       address _validator = _validators[_i];
@@ -197,16 +206,23 @@ contract SlashIndicator is
       if (_scoreBeforeGain != _scoreAfterGain) {
         _creditScore[_validator] = _scoreAfterGain;
       }
+
+      _updatedCreditScores[_i] = _creditScore[_validator];
     }
 
-    emit CreditScoreUpdated(_validators);
+    emit CreditScoresUpdated(_validators, _updatedCreditScores);
   }
 
   /**
    * @inheritdoc ISlashIndicator
    */
-  function bailOut() external override {
-    require(_validatorContract.isValidator(msg.sender), "SlashIndicator: caller must be the validator");
+  function bailOut(address _consensusAddr) external override {
+    require(_validatorContract.isValidator(_consensusAddr), "SlashIndicator: consensus address must be a validator");
+    require(
+      _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender),
+      "SlashIndicator: method caller must be a candidate admin"
+    );
+
     (bool _isJailed, , uint256 _jailedEpochLeft) = _validatorContract.jailedTimeLeft(msg.sender);
     require(_isJailed, "SlashIndicator: caller must be jailed in the current period");
 
@@ -317,8 +333,24 @@ contract SlashIndicator is
   /**
    * @inheritdoc ISlashIndicator
    */
-  function getCreditScore(address _validator) public view override returns (uint256) {
+  function getCreditScore(address _validator) external view override returns (uint256) {
     return _creditScore[_validator];
+  }
+
+  /**
+   * @inheritdoc ISlashIndicator
+   */
+  function getBulkCreditScore(address[] calldata _validators)
+    public
+    view
+    override
+    returns (uint256[] memory _resultList)
+  {
+    _resultList = new uint256[](_validators.length);
+
+    for (uint _i = 0; _i < _resultList.length; _i++) {
+      _resultList[_i] = _creditScore[_validators[_i]];
+    }
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////

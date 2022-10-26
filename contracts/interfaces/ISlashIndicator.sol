@@ -14,7 +14,7 @@ interface ISlashIndicator {
   /// @dev Emitted when the validator is slashed for unavailability
   event UnavailabilitySlashed(address indexed validator, SlashType slashType, uint256 period);
   /// @dev Emitted the credit score of validators is updated
-  event CreditScoreUpdated(address[] validators);
+  event CreditScoresUpdated(address[] validators, uint256[] creditScores);
   /// @dev Emitted when the thresholds updated
   event SlashThresholdsUpdated(uint256 misdemeanorThreshold, uint256 felonyThreshold);
   /// @dev Emitted when the threshold to slash when trusted organization does not vote for bridge operators is updated
@@ -80,7 +80,7 @@ interface ISlashIndicator {
    * - Only validator contract can call this method.
    * - This method is only called at the end of each period.
    *
-   * Emits the event `CreditScoreUpdated`.
+   * Emits the event `CreditScoresUpdated`.
    *
    */
   function updateCreditScore(address[] calldata _validators, uint256 _period) external;
@@ -89,10 +89,11 @@ interface ISlashIndicator {
    * @dev A slashed validator use this method to get out of jail.
    *
    * Requirements:
-   * - Only validator can call this method.
+   * - The `_consensusAddr` must be a validator.
+   * - Only validator's admin can call this method.
    *
    */
-  function bailOut() external;
+  function bailOut(address _consensusAddr) external;
 
   /**
    * @dev Sets the slash thresholds
@@ -204,9 +205,14 @@ interface ISlashIndicator {
   function getUnavailabilityIndicator(address _validator, uint256 _period) external view returns (uint256);
 
   /**
-   * @dev Returns the current credit score of the current validator.
+   * @dev Returns the current credit score of the validator.
    */
   function getCreditScore(address _validator) external view returns (uint256);
+
+  /**
+   * @dev Returns the current credit score of a list of validators.
+   */
+  function getBulkCreditScore(address[] calldata _validators) external view returns (uint256[] memory _resultList);
 
   /**
    * @dev Gets the unavailability thresholds.
