@@ -17,12 +17,13 @@ interface IRoninValidatorSet is ICandidateManager {
   event BlockProducerSetUpdated(address[]);
   /// @dev Emitted when the bridge operator set is updated.
   event BridgeOperatorSetUpdated(address[]);
-  /// @dev Emitted when the reward of the valdiator is deprecated.
-  event RewardDeprecated(address coinbaseAddr, uint256 rewardAmount);
-  /// @dev Emitted when the block reward is submitted.
-  event BlockRewardSubmitted(address coinbaseAddr, uint256 submittedAmount, uint256 bonusAmount);
+
   /// @dev Emitted when the validator is punished.
-  event ValidatorPunished(address validatorAddr, uint256 jailedUntil, uint256 deductedStakingAmount);
+  event ValidatorPunished(address indexed validatorAddr, uint256 jailedUntil, uint256 deductedStakingAmount);
+  /// @dev Emitted when the reward of the block producer is deprecated.
+  event MiningRewardDeprecated(address indexed coinbaseAddr, uint256 rewardAmount);
+  /// @dev Emitted when the block reward is submitted.
+  event BlockRewardSubmitted(address indexed coinbaseAddr, uint256 submittedAmount, uint256 bonusAmount);
 
   /// @dev Emitted when the block producer reward is distributed.
   event MiningRewardDistributed(address indexed consensusAddr, address indexed recipient, uint256 amount);
@@ -68,7 +69,7 @@ interface IRoninValidatorSet is ICandidateManager {
    * Requirements:
    * - The method caller is coinbase.
    *
-   * Emits the event `RewardDeprecated` if the coinbase is slashed or no longer be a validator.
+   * Emits the event `MiningRewardDeprecated` if the coinbase is slashed or no longer be a block producer.
    * Emits the event `BlockRewardSubmitted` for the valid call.
    *
    */
@@ -122,14 +123,17 @@ interface IRoninValidatorSet is ICandidateManager {
   function jailed(address[] memory) external view returns (bool[] memory);
 
   /**
-   * @dev Returns whether the incoming reward of the validators are deprecated during the current period.
+   * @dev Returns whether the incoming reward of the block producers are deprecated during the current period.
    */
-  function rewardDeprecated(address[] memory) external view returns (bool[] memory);
+  function miningRewardDeprecated(address[] memory _blockProducers) external view returns (bool[] memory);
 
   /**
-   * @dev Returns whether the incoming reward of the validators are deprecated during a period.
+   * @dev Returns whether the incoming reward of the block producers are deprecated during a specific period.
    */
-  function rewardDeprecatedAtPeriod(address[] memory, uint256 _period) external view returns (bool[] memory);
+  function miningRewardDeprecatedAtPeriod(address[] memory _blockProducers, uint256 _period)
+    external
+    view
+    returns (bool[] memory);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                             FUNCTIONS FOR NORMAL USER                             //

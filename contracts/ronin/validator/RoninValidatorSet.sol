@@ -55,16 +55,16 @@ contract RoninValidatorSet is
   /// @dev The number of slot that is reserved for prioritized validators
   uint256 internal _maxPrioritizedValidatorNumber;
 
-  /// @dev Mapping from validator address => the last period that the validator has no pending reward
-  mapping(address => mapping(uint256 => bool)) internal _rewardDeprecatedAtPeriod;
-  /// @dev Mapping from validator address => the last block that the validator is jailed
+  /// @dev Mapping from consensus address => the last period that the block producer has no pending reward
+  mapping(address => mapping(uint256 => bool)) internal _miningRewardDeprecatedAtPeriod;
+  /// @dev Mapping from consensus address => the last block that the validator is jailed
   mapping(address => uint256) internal _jailedUntil;
 
-  /// @dev Mapping from validator address => pending reward from producing block
+  /// @dev Mapping from consensus address => pending reward from producing block
   mapping(address => uint256) internal _miningReward;
-  /// @dev Mapping from validator address => pending reward from delegating
+  /// @dev Mapping from consensus address => pending reward from delegating
   mapping(address => uint256) internal _delegatingReward;
-  /// @dev Mapping from validator address => pending reward for being bridge operator
+  /// @dev Mapping from consensus address => pending reward for being bridge operator
   mapping(address => uint256) internal _bridgeOperatingReward;
 
   modifier onlyCoinbase() {
@@ -132,24 +132,27 @@ contract RoninValidatorSet is
     address _coinbaseAddr = msg.sender;
     // Deprecates reward for non-validator or slashed validator
     if (
-      !isBlockProducer(_coinbaseAddr) || _jailed(_coinbaseAddr) || _rewardDeprecated(_coinbaseAddr, currentPeriod())
+      !isBlockProducer(_coinbaseAddr) ||
+      _jailed(_coinbaseAddr) ||
+      _miningRewardDeprecated(_coinbaseAddr, currentPeriod())
     ) {
-      emit RewardDeprecated(_coinbaseAddr, _submittedReward);
+      emit MiningRewardDeprecated(_coinbaseAddr, _submittedReward);
       return;
     }
 
-    (uint256 _validatorStakingVesting, uint256 _bridgeValidatorStakingVesting) = _stakingVestingContract.requestBonus();
-    uint256 _reward = _submittedReward + _validatorStakingVesting;
-
+    (uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus) = _stakingVestingContract.requestBonus();
+    uint256 _reward = _submittedReward + _blockProducerBonus;
     uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
-    uint256 _miningAmount = (_rate * _reward) / 100_00;
-    uint256 _delegatingAmount = _reward - _miningAmount;
 
+    uint256 _miningAmount = (_rate * _reward) / 100_00;
     _miningReward[_coinbaseAddr] += _miningAmount;
+
+    uint256 _delegatingAmount = _reward - _miningAmount;
     _delegatingReward[_coinbaseAddr] += _delegatingAmount;
-    _bridgeOperatingReward[_coinbaseAddr] += _bridgeValidatorStakingVesting;
     _stakingContract.recordReward(_coinbaseAddr, _delegatingAmount);
-    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _validatorStakingVesting);
+    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _blockProducerBonus);
+
+    _bridgeOperatingReward[_coinbaseAddr] += _bridgeOperatorBonus;
   }
 
   /**
@@ -195,7 +198,7 @@ contract RoninValidatorSet is
     uint256 _newJailedUntil,
     uint256 _slashAmount
   ) external onlySlashIndicatorContract {
-    _rewardDeprecatedAtPeriod[_validatorAddr][currentPeriod()] = true;
+    _miningRewardDeprecatedAtPeriod[_validatorAddr][currentPeriod()] = true;
     delete _miningReward[_validatorAddr];
     delete _delegatingReward[_validatorAddr];
     IStaking(_stakingContract).sinkPendingReward(_validatorAddr);
@@ -224,26 +227,31 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function rewardDeprecated(address[] memory _addrList) external view override returns (bool[] memory _result) {
-    _result = new bool[](_addrList.length);
+  function miningRewardDeprecated(address[] memory _blockProducers)
+    external
+    view
+    override
+    returns (bool[] memory _result)
+  {
+    _result = new bool[](_blockProducers.length);
     uint256 _period = currentPeriod();
-    for (uint256 _i; _i < _addrList.length; _i++) {
-      _result[_i] = _rewardDeprecated(_addrList[_i], _period);
+    for (uint256 _i; _i < _blockProducers.length; _i++) {
+      _result[_i] = _miningRewardDeprecated(_blockProducers[_i], _period);
     }
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function rewardDeprecatedAtPeriod(address[] memory _addrList, uint256 _period)
+  function miningRewardDeprecatedAtPeriod(address[] memory _blockProducers, uint256 _period)
     external
     view
     override
     returns (bool[] memory _result)
   {
-    _result = new bool[](_addrList.length);
-    for (uint256 _i; _i < _addrList.length; _i++) {
-      _result[_i] = _rewardDeprecated(_addrList[_i], _period);
+    _result = new bool[](_blockProducers.length);
+    for (uint256 _i; _i < _blockProducers.length; _i++) {
+      _result[_i] = _miningRewardDeprecated(_blockProducers[_i], _period);
     }
   }
 
@@ -432,7 +440,7 @@ contract RoninValidatorSet is
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
       address _consensusAddr = _currentValidators[_i];
 
-      if (_jailed(_consensusAddr) || _rewardDeprecated(_consensusAddr, _period)) {
+      if (_jailed(_consensusAddr) || _miningRewardDeprecated(_consensusAddr, _period)) {
         continue;
       }
 
@@ -631,10 +639,10 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @dev Returns whether the validator has no pending reward in that period.
+   * @dev Returns whether the block producer has no pending reward in that period.
    */
-  function _rewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
-    return _rewardDeprecatedAtPeriod[_validatorAddr][_period];
+  function _miningRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
+    return _miningRewardDeprecatedAtPeriod[_validatorAddr][_period];
   }
 
   /**
