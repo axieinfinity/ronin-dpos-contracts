@@ -25,9 +25,19 @@ interface IMaintenance {
   function maintaining(address _consensusAddr, uint256 _block) external view returns (bool);
 
   /**
+   * @dev Returns whether the validator `_consensusAddr` was maintaining at the current period..
+   */
+  function maintainingAtCurrentPeriod(address _consensusAddr) external view returns (bool);
+
+  /**
    * @dev Returns the bool array indicating the validator is maintaining or not.
    */
   function bulkMaintaining(address[] calldata _addrList, uint256 _block) external view returns (bool[] memory);
+
+  /**
+   * @dev Returns a bool array indicating the validator was maintaining at the current period or not.
+   */
+  function bulkMaintainingAtCurrentPeriod(address[] calldata _addrList) external view returns (bool[] memory);
 
   /**
    * @dev Returns whether the validator `_consensusAddr` has scheduled.
