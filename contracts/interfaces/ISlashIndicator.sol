@@ -16,7 +16,7 @@ interface ISlashIndicator {
   /// @dev Emitted the credit score of validators is updated
   event CreditScoreUpdated(address[] validators);
   /// @dev Emitted when the thresholds updated
-  event SlashThresholdsUpdated(uint256 felonyThreshold, uint256 misdemeanorThreshold);
+  event SlashThresholdsUpdated(uint256 misdemeanorThreshold, uint256 felonyThreshold);
   /// @dev Emitted when the threshold to slash when trusted organization does not vote for bridge operators is updated
   event BridgeVotingThresholdUpdated(uint256 threshold);
   /// @dev Emitted when the amount of RON to slash bridge voting is updated
@@ -103,7 +103,7 @@ interface ISlashIndicator {
    * Emits the event `SlashThresholdsUpdated`
    *
    */
-  function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) external;
+  function setSlashThresholds(uint256 _misdemeanorThreshold, uint256 _felonyThreshold) external;
 
   /**
    * @dev Sets the slash felony amount

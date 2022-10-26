@@ -99,7 +99,7 @@ contract SlashIndicator is
     _setMaintenanceContract(__maintenanceContract);
     _setRoninTrustedOrganizationContract(__roninTrustedOrganizationContract);
     _setRoninGovernanceAdminContract(__roninGovernanceAdminContract);
-    _setSlashThresholds(_thresholdConfigs[1], _thresholdConfigs[0]);
+    _setSlashThresholds(_thresholdConfigs[0], _thresholdConfigs[1]);
     _setBridgeVotingThreshold(_thresholdConfigs[2]);
     _setSlashFelonyAmount(_slashAmountConfigs[0]);
     _setSlashDoubleSignAmount(_slashAmountConfigs[1]);
@@ -231,8 +231,8 @@ contract SlashIndicator is
   /**
    * @inheritdoc ISlashIndicator
    */
-  function setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) external override onlyAdmin {
-    _setSlashThresholds(_felonyThreshold, _misdemeanorThreshold);
+  function setSlashThresholds(uint256 _misdemeanorThreshold, uint256 _felonyThreshold) external override onlyAdmin {
+    _setSlashThresholds(_misdemeanorThreshold, _felonyThreshold);
   }
 
   /**
@@ -327,10 +327,10 @@ contract SlashIndicator is
   /**
    * @dev Sets the slash thresholds
    */
-  function _setSlashThresholds(uint256 _felonyThreshold, uint256 _misdemeanorThreshold) internal {
-    felonyThreshold = _felonyThreshold;
+  function _setSlashThresholds(uint256 _misdemeanorThreshold, uint256 _felonyThreshold) internal {
     misdemeanorThreshold = _misdemeanorThreshold;
-    emit SlashThresholdsUpdated(_felonyThreshold, _misdemeanorThreshold);
+    felonyThreshold = _felonyThreshold;
+    emit SlashThresholdsUpdated(_misdemeanorThreshold, _felonyThreshold);
   }
 
   /**
