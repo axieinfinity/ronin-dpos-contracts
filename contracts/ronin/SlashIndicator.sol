@@ -179,13 +179,14 @@ contract SlashIndicator is
    */
   function updateCreditScore(address[] calldata _validators, uint256 _period) external override onlyValidatorContract {
     bool[] memory _jaileds = _validatorContract.bulkJailed(_validators);
+    bool[] memory _maintaineds = _maintenanceContract.bulkMaintainingAtCurrentPeriod(_validators);
 
     for (uint _i = 0; _i < _validators.length; _i++) {
       address _validator = _validators[_i];
 
       uint256 _indicator = _unavailabilityIndicator[_validator][_period];
       bool _isJailedInPeriod = _jaileds[_i];
-      bool _isMaintainingInPeriod; // TODO: query maintaining status
+      bool _isMaintainingInPeriod = _maintaineds[_i];
 
       uint256 _actualGain = (_isJailedInPeriod || _isMaintainingInPeriod)
         ? 0

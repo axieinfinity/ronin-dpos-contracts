@@ -113,7 +113,23 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function totalSchedules() public view returns (uint256 _count) {
+  function bulkMaintainingAtCurrentPeriod(address[] calldata _addrList)
+    external
+    view
+    override
+    returns (bool[] memory _resList)
+  {
+    uint256 _periodStart = _validatorContract.currentPeriodStartAt();
+    _resList = new bool[](_addrList.length);
+    for (uint _i = 0; _i < _addrList.length; _i++) {
+      _resList[_i] = _maintainingAtCurrentPeriod(_addrList[_i], _periodStart);
+    }
+  }
+
+  /**
+   * @inheritdoc IMaintenance
+   */
+  function totalSchedules() public view override returns (uint256 _count) {
     address[] memory _validators = _validatorContract.getValidators();
     for (uint _i = 0; _i < _validators.length; _i++) {
       if (scheduled(_validators[_i])) {
@@ -128,6 +144,14 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   function maintaining(address _consensusAddr, uint256 _block) public view returns (bool) {
     Schedule storage _s = _schedule[_consensusAddr];
     return _s.from <= _block && _block <= _s.to;
+  }
+
+  /**
+   * @inheritdoc IMaintenance
+   */
+  function maintainingAtCurrentPeriod(address _consensusAddr) public view override returns (bool) {
+    uint256 _periodStart = _validatorContract.currentPeriodStartAt();
+    return _maintainingAtCurrentPeriod(_consensusAddr, _periodStart);
   }
 
   /**
@@ -158,5 +182,17 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     minOffset = _minOffset;
     maxSchedules = _maxSchedules;
     emit MaintenanceConfigUpdated(_minMaintenanceBlockPeriod, _maxMaintenanceBlockPeriod, _minOffset, _maxSchedules);
+  }
+
+  /**
+   * @dev Check if the validator was maintaining in the current period.
+   *
+   * Note: This method should be called at the end of the period.
+   *
+   * Warning: This method only works in case the window time of the schedule expands within two periods.
+   */
+  function _maintainingAtCurrentPeriod(address _consensusAddr, uint256 _periodStart) private view returns (bool) {
+    Schedule storage _s = _schedule[_consensusAddr];
+    return _s.from.inRange(_periodStart, block.number) || _s.to.inRange(_periodStart, block.number);
   }
 }

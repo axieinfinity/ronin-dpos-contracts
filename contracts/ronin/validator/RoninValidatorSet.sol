@@ -294,9 +294,16 @@ contract RoninValidatorSet is
   }
 
   /**
+   * @inheritdoc ICandidateManager
+   */
+  function currentPeriodStartAt() public view virtual override returns (uint256) {
+    return _lastUpdatedBlock;
+  }
+
+  /**
    * @inheritdoc IRoninValidatorSet
    */
-  function getLastUpdatedBlock() external view returns (uint256) {
+  function getLastUpdatedBlock() external view override returns (uint256) {
     return _lastUpdatedBlock;
   }
 
