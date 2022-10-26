@@ -222,8 +222,37 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function jailed(address[] memory _addrList) external view override returns (bool[] memory _result) {
-    _result = new bool[](_addrList.length);
+  function jailed(address _addr) external view override returns (bool) {
+    return _jailed(_addr);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function jailedTimeLeft(address _addr)
+    external
+    view
+    override
+    returns (
+      bool isJailed_,
+      uint256 blockLeft_,
+      uint256 epochLeft_
+    )
+  {
+    uint256 __jailedUntil = _jailedUntil[_addr];
+    if (__jailedUntil < block.number) {
+      return (false, 0, 0);
+    }
+
+    isJailed_ = true;
+    blockLeft_ = __jailedUntil - block.number + 1;
+    epochLeft_ = epochOf(__jailedUntil) - epochOf(block.number) + 1;
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function bulkJailed(address[] memory _addrList) external view override returns (bool[] memory _result) {
     for (uint256 _i; _i < _addrList.length; _i++) {
       _result[_i] = _jailed(_addrList[_i]);
     }

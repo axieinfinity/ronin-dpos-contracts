@@ -27,4 +27,17 @@ library Math {
   ) internal pure returns (bool) {
     return a <= c && c <= b;
   }
+
+  function addWithUpperbound(
+    uint256 a,
+    uint256 b,
+    uint256 upperbound
+  ) internal pure returns (uint256) {
+    uint256 _tmp = a + b;
+    return max(_tmp, upperbound);
+  }
+
+  function subNonNegative(uint256 a, uint256 b) internal pure returns (uint256) {
+    return a > b ? a - b : 0;
+  }
 }
