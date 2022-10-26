@@ -28,6 +28,18 @@ library Math {
     return a <= c && c <= b;
   }
 
+  /**
+   * @dev Returns whether two inclusive ranges [x1;x2] and [y1;y2] overlap.
+   */
+  function twoRangeOverlap(
+    uint256 x1,
+    uint256 x2,
+    uint256 y1,
+    uint256 y2
+  ) internal pure returns (bool) {
+    return x1 <= y2 && y1 <= x2;
+  }
+
   function addWithUpperbound(
     uint256 a,
     uint256 b,

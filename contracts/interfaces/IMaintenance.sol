@@ -26,6 +26,8 @@ interface IMaintenance {
 
   /**
    * @dev Returns whether the validator `_consensusAddr` was maintaining at the current period..
+   *
+   * Note: This method should be called at the end of the period.
    */
   function maintainingAtCurrentPeriod(address _consensusAddr) external view returns (bool);
 
@@ -36,6 +38,8 @@ interface IMaintenance {
 
   /**
    * @dev Returns a bool array indicating the validator was maintaining at the current period or not.
+   *
+   * Note: This method should be called at the end of the period.
    */
   function bulkMaintainingAtCurrentPeriod(address[] calldata _addrList) external view returns (bool[] memory);
 
