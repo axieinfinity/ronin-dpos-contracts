@@ -21,7 +21,7 @@ interface IRoninValidatorSet is ICandidateManager {
   /// @dev Emitted when the validator is punished.
   event ValidatorPunished(address indexed validatorAddr, uint256 jailedUntil, uint256 deductedStakingAmount);
   /// @dev Emitted when the reward of the block producer is deprecated.
-  event MiningRewardDeprecated(address indexed coinbaseAddr, uint256 rewardAmount);
+  event BlockRewardRewardDeprecated(address indexed coinbaseAddr, uint256 rewardAmount);
   /// @dev Emitted when the block reward is submitted.
   event BlockRewardSubmitted(address indexed coinbaseAddr, uint256 submittedAmount, uint256 bonusAmount);
 

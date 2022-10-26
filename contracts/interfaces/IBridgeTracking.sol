@@ -9,15 +9,20 @@ interface IBridgeTracking {
   }
 
   /**
-   * @dev Returns the total number of votes including deposits and withdrawals at the specific period `_period`.
+   * @dev Returns the total number of votes at the specific period `_period`.
    */
   function totalVotes(uint256 _period) external view returns (uint256);
 
   /**
-   * @dev Returns the total number of votes including deposits and withdrawals of a bridge operator at the specific
+   * @dev Returns the total number of ballots at the specific period `_period`.
+   */
+  function totalBallots(uint256 _period) external view returns (uint256);
+
+  /**
+   * @dev Returns the total number of ballots of a bridge operator at the specific
    * period `_period`.
    */
-  function totalVotesOf(uint256 _period, address _bridgeOperator) external view returns (uint256);
+  function totalBallotsOf(uint256 _period, address _bridgeOperator) external view returns (uint256);
 
   /**
    * @dev Records vote for a receipt and a operator.

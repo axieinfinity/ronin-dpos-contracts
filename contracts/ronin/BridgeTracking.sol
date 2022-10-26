@@ -8,10 +8,12 @@ import "../extensions/collections/HasValidatorContract.sol";
 import "../interfaces/IBridgeTracking.sol";
 
 contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializable, IBridgeTracking {
-  /// @dev Mapping from period number => total number of votes
+  /// @dev Mapping from period number => total number of all votes
   mapping(uint256 => uint256) internal _totalVotes;
-  /// @dev Mapping from period number => bridge operator address => total number of votes
-  mapping(uint256 => mapping(address => uint256)) internal _totalVotesOf;
+  /// @dev Mapping from period number => total number of all ballots
+  mapping(uint256 => uint256) internal _totalBallots;
+  /// @dev Mapping from period number => bridge operator address => total number of ballots
+  mapping(uint256 => mapping(address => uint256)) internal _totalBallotsOf;
 
   /// @dev Mapping from vote kind => request id => flag indicating whether the receipt is recorded or not
   mapping(VoteKind => mapping(uint256 => bool)) _receiptRecorded;
@@ -44,8 +46,15 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   /**
    * @inheritdoc IBridgeTracking
    */
-  function totalVotesOf(uint256 _period, address _bridgeOperator) external view override returns (uint256) {
-    return _totalVotesOf[_period][_bridgeOperator];
+  function totalBallots(uint256 _period) external view override returns (uint256) {
+    return _totalBallots[_period];
+  }
+
+  /**
+   * @inheritdoc IBridgeTracking
+   */
+  function totalBallotsOf(uint256 _period, address _bridgeOperator) external view override returns (uint256) {
+    return _totalBallotsOf[_period][_bridgeOperator];
   }
 
   /**
@@ -67,7 +76,8 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
     }
 
     if (!_receiptVoted[_kind][_requestId][_operator]) {
-      _totalVotesOf[_period][_operator]++;
+      _totalBallots[_period]++;
+      _totalBallotsOf[_period][_operator]++;
       _receiptVoted[_kind][_requestId][_operator] = true;
     }
   }
