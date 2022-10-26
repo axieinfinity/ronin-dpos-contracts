@@ -74,7 +74,7 @@ interface ISlashIndicator {
   function slashBridgeVoting(address _consensusAddr) external;
 
   /**
-   * @dev Update the credit score for the validators.
+   * @dev Updates the credit score for the validators.
    *
    * Requirements:
    * - Only validator contract can call this method.
