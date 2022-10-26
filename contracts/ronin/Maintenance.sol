@@ -188,11 +188,9 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    * @dev Check if the validator was maintaining in the current period.
    *
    * Note: This method should be called at the end of the period.
-   *
-   * Warning: This method only works in case the window time of the schedule expands within two periods.
    */
   function _maintainingAtCurrentPeriod(address _consensusAddr, uint256 _periodStart) private view returns (bool) {
     Schedule storage _s = _schedule[_consensusAddr];
-    return _s.from.inRange(_periodStart, block.number) || _s.to.inRange(_periodStart, block.number);
+    return Math.twoRangeOverlap(_periodStart, block.number, _s.from, _s.to);
   }
 }
