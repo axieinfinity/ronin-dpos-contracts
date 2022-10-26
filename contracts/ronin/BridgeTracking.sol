@@ -24,7 +24,13 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   /**
    * @dev Initializes the contract storage.
    */
-  function initialize(uint256 _startedAtBlock) external initializer {
+  function initialize(
+    address _bridgeContract,
+    address _validatorContract,
+    uint256 _startedAtBlock
+  ) external initializer {
+    _setBridgeContract(_bridgeContract);
+    _setValidatorContract(_validatorContract);
     startedAtBlock = _startedAtBlock;
   }
 
@@ -49,7 +55,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
     VoteKind _kind,
     uint256 _requestId,
     address _operator
-  ) external override {
+  ) external override onlyBridgeContract {
     if (block.number < startedAtBlock) {
       return;
     }
