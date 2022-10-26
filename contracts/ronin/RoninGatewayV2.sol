@@ -10,7 +10,9 @@ import "../interfaces/IERC20Mintable.sol";
 import "../interfaces/IERC721Mintable.sol";
 import "../interfaces/IRoninGatewayV2.sol";
 import "../interfaces/IRoninValidatorSet.sol";
+import "../interfaces/IBridgeTracking.sol";
 import "../interfaces/collections/IHasValidatorContract.sol";
+import "../interfaces/collections/IHasBridgeTrackingContract.sol";
 
 contract RoninGatewayV2 is
   GatewayV2,
@@ -19,7 +21,8 @@ contract RoninGatewayV2 is
   MinimumWithdrawal,
   AccessControlEnumerable,
   IRoninGatewayV2,
-  IHasValidatorContract
+  IHasValidatorContract,
+  IHasBridgeTrackingContract
 {
   using Token for Token.Info;
   using Transfer for Transfer.Request;
@@ -43,7 +46,10 @@ contract RoninGatewayV2 is
   /// @dev Mapping from token address => chain id => mainchain token address
   mapping(address => mapping(uint256 => MappedToken)) internal _mainchainToken;
 
+  /// @dev The ronin validator contract
   IRoninValidatorSet internal _validatorContract;
+  /// @dev The bridge tracking contract
+  IBridgeTracking internal _bridgeTrackingContract;
 
   fallback() external payable {
     _fallback();
@@ -96,17 +102,17 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @dev Sets the validator contract.
-   *
-   * Requirements:
-   * - The new address is a contract.
-   *
-   * Emits the event `ValidatorContractUpdated`.
-   *
+   * @inheritdoc IHasBridgeTrackingContract
    */
-  function _setValidatorContract(address _addr) internal {
-    _validatorContract = IRoninValidatorSet(_addr);
-    emit ValidatorContractUpdated(_addr);
+  function bridgeTrackingContract() external view override returns (address) {
+    return address(_bridgeTrackingContract);
+  }
+
+  /**
+   * @inheritdoc IHasBridgeTrackingContract
+   */
+  function setBridgeTrackingContract(address _addr) external override onlyAdmin {
+    _setBridgeTrackingContract(_addr);
   }
 
   /**
@@ -163,6 +169,7 @@ contract RoninGatewayV2 is
     address _sender = msg.sender;
     uint256 _weight = _getValidatorWeight(_sender);
     _depositFor(_receipt, _sender, _weight, minimumVoteWeight());
+    _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Deposit, _receipt.id, _sender);
   }
 
   /**
@@ -180,6 +187,7 @@ contract RoninGatewayV2 is
     _executedReceipts = new bool[](_withdrawalIds.length);
     for (uint256 _i; _i < _withdrawalIds.length; _i++) {
       _withdrawalId = _withdrawalIds[_i];
+      _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.MainchainWithdrawal, _withdrawalId, _governor);
       if (mainchainWithdrew(_withdrawalId)) {
         _executedReceipts[_i] = true;
       } else {
@@ -207,6 +215,7 @@ contract RoninGatewayV2 is
     uint256 _minVoteWeight = minimumVoteWeight();
     for (uint256 _i; _i < _receipts.length; _i++) {
       _receipt = _receipts[_i];
+      _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Deposit, _receipt.id, _sender);
       if (depositVote[_receipt.mainchain.chainId][_receipt.id].status == VoteStatus.Executed) {
         _executedReceipts[_i] = true;
       } else {
@@ -254,8 +263,12 @@ contract RoninGatewayV2 is
       _withdrawals.length > 0 && _withdrawals.length == _signatures.length,
       "RoninGatewayV2: invalid array length"
     );
+
+    uint256 _id;
     for (uint256 _i; _i < _withdrawals.length; _i++) {
-      _withdrawalSig[_withdrawals[_i]][_validator] = _signatures[_i];
+      _id = _withdrawals[_i];
+      _withdrawalSig[_id][_validator] = _signatures[_i];
+      _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Withdrawal, _id, _validator);
     }
   }
 
@@ -434,5 +447,33 @@ contract RoninGatewayV2 is
    */
   function _getTotalWeight() internal view virtual override returns (uint256) {
     return _validatorContract.totalBridgeOperators();
+  }
+
+  /**
+   * @dev Sets the validator contract.
+   *
+   * Requirements:
+   * - The new address is a contract.
+   *
+   * Emits the event `ValidatorContractUpdated`.
+   *
+   */
+  function _setValidatorContract(address _addr) internal {
+    _validatorContract = IRoninValidatorSet(_addr);
+    emit ValidatorContractUpdated(_addr);
+  }
+
+  /**
+   * @dev Sets the bridge tracking contract.
+   *
+   * Requirements:
+   * - The new address is a contract.
+   *
+   * Emits the event `BridgeTrackingContractUpdated`.
+   *
+   */
+  function _setBridgeTrackingContract(address _addr) internal {
+    _bridgeTrackingContract = IBridgeTracking(_addr);
+    emit BridgeTrackingContractUpdated(_addr);
   }
 }
