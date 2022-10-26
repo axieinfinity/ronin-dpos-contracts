@@ -90,6 +90,9 @@ export interface SlashIndicatorArguments {
   bridgeVotingSlashAmount?: BigNumberish;
   felonyJailBlocks?: BigNumberish;
   doubleSigningConstrainBlocks?: BigNumberish;
+  gainCreditScore?: BigNumberish;
+  maxCreditScore?: BigNumberish;
+  bailOutCostMultiplier?: BigNumberish;
 }
 
 export interface SlashIndicatorConfig {

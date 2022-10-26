@@ -20,14 +20,20 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     roninInitAddress[network.name]!.maintenanceContract?.address,
     roninInitAddress[network.name]!.roninTrustedOrganizationContract?.address,
     roninInitAddress[network.name]!.governanceAdmin?.address,
-    slashIndicatorConf[network.name]!.misdemeanorThreshold,
-    slashIndicatorConf[network.name]!.felonyThreshold,
-    slashIndicatorConf[network.name]!.bridgeVotingThreshold,
-    slashIndicatorConf[network.name]!.slashFelonyAmount,
-    slashIndicatorConf[network.name]!.slashDoubleSignAmount,
-    slashIndicatorConf[network.name]!.bridgeVotingSlashAmount,
+    [
+      slashIndicatorConf[network.name]!.misdemeanorThreshold,
+      slashIndicatorConf[network.name]!.felonyThreshold,
+      slashIndicatorConf[network.name]!.bridgeVotingThreshold,
+    ],
+    [
+      slashIndicatorConf[network.name]!.slashFelonyAmount,
+      slashIndicatorConf[network.name]!.slashDoubleSignAmount,
+      slashIndicatorConf[network.name]!.bridgeVotingSlashAmount,
+    ],
     slashIndicatorConf[network.name]!.felonyJailBlocks,
     slashIndicatorConf[network.name]!.doubleSigningConstrainBlocks,
+    [slashIndicatorConf[network.name]!.gainCreditScore, slashIndicatorConf[network.name]!.maxCreditScore],
+    slashIndicatorConf[network.name]!.bailOutCostMultiplier,
   ]);
 
   const deployment = await deploy('SlashIndicatorProxy', {

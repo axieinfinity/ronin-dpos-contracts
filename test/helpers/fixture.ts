@@ -44,6 +44,9 @@ export const defaultTestConfig = {
   doubleSigningConstrainBlocks: 28800,
   bridgeVotingThreshold: 28800 * 3,
   bridgeVotingSlashAmount: BigNumber.from(10).pow(18).mul(10_000),
+  gainCreditScore: 50,
+  maxCreditScore: 600,
+  bailOutCostMultiplier: 5,
 
   maxValidatorNumber: 4,
   maxPrioritizedValidatorNumber: 0,
@@ -98,6 +101,9 @@ export const initTest = (id: string) =>
         felonyJailBlocks: options?.felonyJailBlocks ?? defaultTestConfig.felonyJailBlocks,
         doubleSigningConstrainBlocks:
           options?.doubleSigningConstrainBlocks ?? defaultTestConfig.doubleSigningConstrainBlocks,
+        gainCreditScore: options?.gainCreditScore ?? defaultTestConfig.gainCreditScore,
+        maxCreditScore: options?.maxCreditScore ?? defaultTestConfig.maxCreditScore,
+        bailOutCostMultiplier: options?.bailOutCostMultiplier ?? defaultTestConfig.bailOutCostMultiplier,
       };
       roninValidatorSetConf[network.name] = {
         maxValidatorNumber: options?.maxValidatorNumber ?? defaultTestConfig.maxValidatorNumber,

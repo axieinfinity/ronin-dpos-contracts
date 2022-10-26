@@ -91,9 +91,26 @@ interface IRoninValidatorSet is ICandidateManager {
   ) external;
 
   /**
+   * @dev Returns whether the validator are put in jail (cannot join the set of validators) during the current period.
+   */
+  function jailed(address) external view returns (bool);
+
+  /**
+   * @dev Returns whether the validator are put in jail and the number of block and epoch that he still is in the jail.
+   */
+  function jailedTimeLeft(address _addr)
+    external
+    view
+    returns (
+      bool isJailed_,
+      uint256 blockLeft_,
+      uint256 epochLeft_
+    );
+
+  /**
    * @dev Returns whether the validators are put in jail (cannot join the set of validators) during the current period.
    */
-  function jailed(address[] memory) external view returns (bool[] memory);
+  function bulkJailed(address[] memory) external view returns (bool[] memory);
 
   /**
    * @dev Returns whether the incoming reward of the validators are deprecated during the current period.
