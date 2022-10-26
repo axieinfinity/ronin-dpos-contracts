@@ -10,6 +10,7 @@ import "../../extensions/collections/HasStakingContract.sol";
 import "../../extensions/collections/HasSlashIndicatorContract.sol";
 import "../../extensions/collections/HasMaintenanceContract.sol";
 import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
+import "../../extensions/collections/HasBridgeTrackingContract.sol";
 import "../../interfaces/IRoninValidatorSet.sol";
 import "../../libraries/Math.sol";
 import "../../libraries/EnumFlags.sol";
@@ -27,6 +28,7 @@ contract RoninValidatorSet is
   HasSlashIndicatorContract,
   HasMaintenanceContract,
   HasRoninTrustedOrganizationContract,
+  HasBridgeTrackingContract,
   CandidateManager,
   Initializable
 {
@@ -96,6 +98,7 @@ contract RoninValidatorSet is
     address __stakingVestingContract,
     address __maintenanceContract,
     address __roninTrustedOrganizationContract,
+    address __bridgeTrackingContract,
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
@@ -105,6 +108,7 @@ contract RoninValidatorSet is
     _setStakingContract(__stakingContract);
     _setStakingVestingContract(__stakingVestingContract);
     _setMaintenanceContract(__maintenanceContract);
+    _setBridgeTrackingContract(__bridgeTrackingContract);
     _setRoninTrustedOrganizationContract(__roninTrustedOrganizationContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
@@ -171,14 +175,11 @@ contract RoninValidatorSet is
         _currentValidators,
         _period
       );
-
       _settleAndTransferDelegatingRewards(_currentValidators, _totalDelegatingReward);
-
       _currentValidators = _syncValidatorSet();
     }
 
     _revampBlockProducers(_currentValidators);
-
     emit WrappedUpEpoch(_period, _epoch, _periodEnding);
   }
 
@@ -429,47 +430,72 @@ contract RoninValidatorSet is
     uint256 _period
   ) private returns (uint256 _totalDelegatingReward) {
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
-      address _validatorAddr = _currentValidators[_i];
+      address _consensusAddr = _currentValidators[_i];
 
-      if (_jailed(_validatorAddr) || _rewardDeprecated(_validatorAddr, _period)) {
+      if (_jailed(_consensusAddr) || _rewardDeprecated(_consensusAddr, _period)) {
         continue;
       }
 
-      _totalDelegatingReward += _delegatingReward[_validatorAddr];
-      delete _delegatingReward[_validatorAddr];
+      _totalDelegatingReward += _delegatingReward[_consensusAddr];
+      delete _delegatingReward[_consensusAddr];
 
-      _distributeRewardToTreasury(_validatorAddr);
+      _distributeMiningReward(_consensusAddr, _candidateInfo[_consensusAddr].treasuryAddr);
     }
   }
 
   /**
-   * @dev Distribute bonus of staking vesting and mining fee for block producer; and bonus of staking vesting for
-   * bridge oparators to the treasury address of a validator.
+   * @dev Distribute bonus of staking vesting and mining fee for the block producer.
    *
-   * Emits the `MiningRewardDistributed` event once the validator has an amount of mining reward.
-   * Emits the `BridgeOperatorRewardDistributed` once the validator has an amount of bridge reward.
+   * Emits the `MiningRewardDistributed` once the reward is distributed successfully.
+   * Emits the `MiningRewardDistributionFailed` once the contract fails to distribute reward.
    *
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _distributeRewardToTreasury(address _validatorAddr) private {
-    address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
+  function _distributeMiningReward(address _consensusAddr, address payable _treasury) private {
+    uint256 _amount = _miningReward[_consensusAddr];
+    if (_amount > 0) {
+      delete _miningReward[_consensusAddr];
 
-    uint256 _miningAmount = _miningReward[_validatorAddr];
-    if (_miningAmount > 0) {
-      delete _miningReward[_validatorAddr];
-      require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
-      emit MiningRewardDistributed(_validatorAddr, _treasury, _miningAmount);
+      if (_sendRON(_treasury, _amount)) {
+        emit MiningRewardDistributed(_consensusAddr, _treasury, _amount);
+        return;
+      }
+
+      emit MiningRewardDistributionFailed(_consensusAddr, _treasury, _amount, address(this).balance);
     }
+  }
 
-    uint256 _bridgeOperatingAmount = _bridgeOperatingReward[_validatorAddr];
-    if (_bridgeOperatingAmount > 0) {
-      delete _bridgeOperatingReward[_validatorAddr];
-      require(
-        _sendRON(_treasury, _bridgeOperatingAmount),
-        "RoninValidatorSet: could not transfer RON to bridge operator address"
+  /**
+   * @dev Distribute bonus of staking vesting for the bridge operator.
+   *
+   * Emits the `BridgeOperatorRewardDistributed` once the reward is distributed successfully.
+   * Emits the `BridgeOperatorRewardDistributionFailed` once the contract fails to distribute reward.
+   *
+   * Note: This method should be called once in the end of each period.
+   *
+   */
+  function _distributeBridgeOperatingReward(
+    address _consensusAddr,
+    address _bridgeOperator,
+    address payable _treasury
+  ) private {
+    uint256 _amount = _bridgeOperatingReward[_consensusAddr];
+    if (_amount > 0) {
+      delete _bridgeOperatingReward[_consensusAddr];
+
+      if (_sendRON(_treasury, _amount)) {
+        emit BridgeOperatorRewardDistributed(_consensusAddr, _bridgeOperator, _treasury, _amount);
+        return;
+      }
+
+      emit BridgeOperatorRewardDistributionFailed(
+        _consensusAddr,
+        _bridgeOperator,
+        _treasury,
+        _amount,
+        address(this).balance
       );
-      emit BridgeOperatorRewardDistributed(_validatorAddr, _treasury, _bridgeOperatingAmount);
     }
   }
 
@@ -477,7 +503,8 @@ contract RoninValidatorSet is
    * @dev Helper function to settle rewards for delegators of `_currentValidators` at the end of each period,
    * then transfer the rewards from this contract to the staking contract, in order to finalize a period.
    *
-   * Emit `StakingRewardDistributed` event.
+   * Emits the `StakingRewardDistributed` once the reward is distributed successfully.
+   * Emits the `StakingRewardDistributionFailed` once the contract fails to distribute reward.
    *
    * Note: This method should be called once in the end of each period.
    *
@@ -486,14 +513,15 @@ contract RoninValidatorSet is
     private
   {
     IStaking _staking = _stakingContract;
-
     _staking.settleRewardPools(_currentValidators);
+
     if (_totalDelegatingReward > 0) {
-      require(
-        _sendRON(payable(address(_staking)), _totalDelegatingReward),
-        "RoninValidatorSet: could not transfer RON to staking contract"
-      );
-      emit StakingRewardDistributed(_totalDelegatingReward);
+      if (_sendRON(payable(address(_staking)), _totalDelegatingReward)) {
+        emit StakingRewardDistributed(_totalDelegatingReward);
+        return;
+      }
+
+      emit StakingRewardDistributionFailed(_totalDelegatingReward, address(this).balance);
     }
   }
 
