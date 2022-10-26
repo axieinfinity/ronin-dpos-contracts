@@ -186,8 +186,14 @@ contract SlashIndicator is
    * @inheritdoc ISlashIndicator
    */
   function updateCreditScore(address[] calldata _validators, uint256 _period) external override onlyValidatorContract {
+    uint256 _periodStartAtBlock = _validatorContract.currentPeriodStartAtBlock();
+
     bool[] memory _jaileds = _validatorContract.bulkJailed(_validators);
-    bool[] memory _maintaineds = _maintenanceContract.bulkMaintainingAtCurrentPeriod(_validators);
+    bool[] memory _maintaineds = _maintenanceContract.bulkMaintainingInBlockRange(
+      _validators,
+      _periodStartAtBlock,
+      block.number
+    );
     uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
 
     for (uint _i = 0; _i < _validators.length; _i++) {

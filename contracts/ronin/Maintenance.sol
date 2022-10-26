@@ -113,16 +113,14 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function bulkMaintainingAtCurrentPeriod(address[] calldata _addrList)
-    external
-    view
-    override
-    returns (bool[] memory _resList)
-  {
-    uint256 _periodStart = _validatorContract.currentPeriodStartAtBlock();
+  function bulkMaintainingInBlockRange(
+    address[] calldata _addrList,
+    uint256 _fromBlock,
+    uint256 _toBlock
+  ) external view override returns (bool[] memory _resList) {
     _resList = new bool[](_addrList.length);
     for (uint _i = 0; _i < _addrList.length; _i++) {
-      _resList[_i] = _maintainingAtCurrentPeriod(_addrList[_i], _periodStart);
+      _resList[_i] = _maintainingInBlockRange(_addrList[_i], _fromBlock, _toBlock);
     }
   }
 
@@ -149,9 +147,12 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function maintainingAtCurrentPeriod(address _consensusAddr) public view override returns (bool) {
-    uint256 _periodStart = _validatorContract.currentPeriodStartAtBlock();
-    return _maintainingAtCurrentPeriod(_consensusAddr, _periodStart);
+  function maintainingInBlockRange(
+    address _consensusAddr,
+    uint256 _fromBlock,
+    uint256 _toBlock
+  ) public view override returns (bool) {
+    return _maintainingInBlockRange(_consensusAddr, _fromBlock, _toBlock);
   }
 
   /**
@@ -189,8 +190,12 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    *
    * Note: This method should be called at the end of the period.
    */
-  function _maintainingAtCurrentPeriod(address _consensusAddr, uint256 _periodStart) private view returns (bool) {
+  function _maintainingInBlockRange(
+    address _consensusAddr,
+    uint256 _fromBlock,
+    uint256 _toBlock
+  ) private view returns (bool) {
     Schedule storage _s = _schedule[_consensusAddr];
-    return Math.twoRangeOverlap(_periodStart, block.number, _s.from, _s.to);
+    return Math.twoRangeOverlap(_fromBlock, _toBlock, _s.from, _s.to);
   }
 }
