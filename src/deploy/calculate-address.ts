@@ -1,7 +1,7 @@
 import { ethers, network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { roninInitAddress, roninchainNetworks, mainchainNetworks, mainchainInitAddress } from '../config';
+import { generalRoninConf, roninchainNetworks, mainchainNetworks, generalMainchainConf } from '../config';
 
 const calculateAddress = (from: string, nonce: number) => ({
   nonce,
@@ -13,7 +13,8 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
   let nonce = await ethers.provider.getTransactionCount(deployer);
 
   if (roninchainNetworks.includes(network.name!)) {
-    roninInitAddress[network.name] = {
+    generalRoninConf[network.name] = {
+      ...generalRoninConf[network.name],
       governanceAdmin: calculateAddress(deployer, nonce++),
       roninTrustedOrganizationContract: calculateAddress(deployer, nonce++),
       maintenanceContract: calculateAddress(deployer, nonce++),
@@ -25,7 +26,8 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
   }
 
   if (mainchainNetworks.includes(network.name!)) {
-    mainchainInitAddress[network.name] = {
+    generalMainchainConf[network.name] = {
+      ...generalMainchainConf[network.name],
       governanceAdmin: calculateAddress(deployer, nonce++),
       roninTrustedOrganizationContract: calculateAddress(deployer, nonce++),
     };

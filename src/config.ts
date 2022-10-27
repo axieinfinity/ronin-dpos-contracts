@@ -14,9 +14,14 @@ export enum Network {
 
 export type LiteralNetwork = Network | string;
 
-export const commonNetworks: LiteralNetwork[] = [Network.Hardhat, Network.Devnet];
+export const commonNetworks: LiteralNetwork[] = [Network.Hardhat];
 export const mainchainNetworks: LiteralNetwork[] = [...commonNetworks, Network.Goerli, Network.Ethereum];
-export const roninchainNetworks: LiteralNetwork[] = [...commonNetworks, Network.Testnet, Network.Mainnet];
+export const roninchainNetworks: LiteralNetwork[] = [
+  ...commonNetworks,
+  Network.Devnet,
+  Network.Testnet,
+  Network.Mainnet,
+];
 export const allNetworks: LiteralNetwork[] = [
   ...commonNetworks,
   ...mainchainNetworks.slice(commonNetworks.length),
@@ -30,7 +35,7 @@ export interface AddressExtended {
   nonce?: number;
 }
 
-export interface InitAddr {
+export interface GeneralConfig {
   [network: LiteralNetwork]: {
     governanceAdmin?: AddressExtended;
     maintenanceContract?: AddressExtended;
@@ -39,6 +44,8 @@ export interface InitAddr {
     stakingContract?: AddressExtended;
     validatorContract?: AddressExtended;
     roninTrustedOrganizationContract?: AddressExtended;
+    startedAtBlock: BigNumberish;
+    bridgeContract: Address;
   };
 }
 
@@ -107,25 +114,36 @@ export interface RoninValidatorSetConfig {
   [network: LiteralNetwork]: RoninValidatorSetArguments | undefined;
 }
 
-export interface RoninGovernanceAdminArguments {
-  bridgeContract?: Address;
-}
+// export interface RoninGovernanceAdminArguments {
+//   bridgeContract?: Address;
+// }
 
-export interface RoninGovernanceAdminConfig {
-  [network: LiteralNetwork]: RoninGovernanceAdminArguments | undefined;
-}
+// export interface RoninGovernanceAdminConfig {
+//   [network: LiteralNetwork]: RoninGovernanceAdminArguments | undefined;
+// }
 
-export type MainchainGovernanceAdminArguments = RoninGovernanceAdminArguments & {
+export interface MainchainGovernanceAdminArguments {
   roleSetter?: Address;
   relayers?: Address[];
-};
+}
 
 export interface MainchainGovernanceAdminConfig {
   [network: LiteralNetwork]: MainchainGovernanceAdminArguments | undefined;
 }
 
-export const roninInitAddress: InitAddr = {};
-export const mainchainInitAddress: InitAddr = {};
+export const generalRoninConf: GeneralConfig = {
+  [Network.Devnet]: {
+    startedAtBlock: 0,
+    bridgeContract: ethers.constants.AddressZero,
+  },
+};
+
+export const generalMainchainConf: GeneralConfig = {
+  [Network.Devnet]: {
+    startedAtBlock: 0,
+    bridgeContract: ethers.constants.AddressZero,
+  },
+};
 
 // TODO: update config for testnet & mainnet
 export const maintenanceConf: MaintenanceConfig = {
@@ -212,22 +230,22 @@ export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
   [Network.Ethereum]: undefined,
 };
 
-// TODO: update config for testnet & mainnet
-export const roninGovernanceAdminConf: RoninGovernanceAdminConfig = {
-  [Network.Hardhat]: undefined,
-  [Network.Devnet]: {
-    bridgeContract: ethers.constants.AddressZero,
-  },
-  [Network.Goerli]: undefined,
-  [Network.Ethereum]: undefined,
-};
+// // TODO: update config for testnet & mainnet
+// export const roninGovernanceAdminConf: RoninGovernanceAdminConfig = {
+//   [Network.Hardhat]: undefined,
+//   [Network.Devnet]: {
+//     bridgeContract: ethers.constants.AddressZero,
+//   },
+//   [Network.Goerli]: undefined,
+//   [Network.Ethereum]: undefined,
+// };
 
 // TODO: update config for goerli, ethereum
 export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
     roleSetter: '0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1',
-    bridgeContract: ethers.constants.AddressZero,
+    // bridgeContract: ethers.constants.AddressZero,
     relayers: ['0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1'],
   },
   [Network.Goerli]: undefined,

@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { mainchainGovernanceAdminConf, mainchainInitAddress, mainchainNetworks } from '../config';
+import { mainchainGovernanceAdminConf, generalMainchainConf, mainchainNetworks } from '../config';
 import { verifyAddress } from '../script/verify-address';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
@@ -17,13 +17,13 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     log: true,
     args: [
       mainchainGovernanceAdminConf[network.name]?.roleSetter,
-      mainchainInitAddress[network.name].roninTrustedOrganizationContract?.address,
+      generalMainchainConf[network.name].roninTrustedOrganizationContract?.address,
       mainchainGovernanceAdminConf[network.name]?.bridgeContract,
       mainchainGovernanceAdminConf[network.name]?.relayers,
     ],
-    nonce: mainchainInitAddress[network.name].governanceAdmin?.nonce,
+    nonce: generalMainchainConf[network.name].governanceAdmin?.nonce,
   });
-  verifyAddress(deployment.address, mainchainInitAddress[network.name].governanceAdmin?.address);
+  verifyAddress(deployment.address, generalMainchainConf[network.name].governanceAdmin?.address);
 };
 
 deploy.tags = ['MainchainGovernanceAdmin'];

@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { roninValidatorSetConf, roninInitAddress, roninchainNetworks } from '../../config';
+import { roninValidatorSetConf, generalRoninConf, roninchainNetworks } from '../../config';
 import { verifyAddress } from '../../script/verify-address';
 import { RoninValidatorSet__factory } from '../../types';
 
@@ -16,11 +16,11 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const logicContract = await deployments.get('RoninValidatorSetLogic');
 
   const data = new RoninValidatorSet__factory().interface.encodeFunctionData('initialize', [
-    roninInitAddress[network.name]!.slashIndicatorContract?.address,
-    roninInitAddress[network.name]!.stakingContract?.address,
-    roninInitAddress[network.name]!.stakingVestingContract?.address,
-    roninInitAddress[network.name]!.maintenanceContract?.address,
-    roninInitAddress[network.name]!.roninTrustedOrganizationContract?.address,
+    generalRoninConf[network.name]!.slashIndicatorContract?.address,
+    generalRoninConf[network.name]!.stakingContract?.address,
+    generalRoninConf[network.name]!.stakingVestingContract?.address,
+    generalRoninConf[network.name]!.maintenanceContract?.address,
+    generalRoninConf[network.name]!.roninTrustedOrganizationContract?.address,
     roninValidatorSetConf[network.name]!.maxValidatorNumber,
     roninValidatorSetConf[network.name]!.maxValidatorCandidate,
     roninValidatorSetConf[network.name]!.maxPrioritizedValidatorNumber,
@@ -31,10 +31,10 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    args: [logicContract.address, roninInitAddress[network.name]!.governanceAdmin?.address, data],
-    nonce: roninInitAddress[network.name].validatorContract?.nonce,
+    args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, data],
+    nonce: generalRoninConf[network.name].validatorContract?.nonce,
   });
-  verifyAddress(deployment.address, roninInitAddress[network.name].validatorContract?.address);
+  verifyAddress(deployment.address, generalRoninConf[network.name].validatorContract?.address);
 };
 
 deploy.tags = ['RoninValidatorSetProxy'];

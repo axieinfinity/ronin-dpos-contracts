@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { roninGovernanceAdminConf, roninchainNetworks, roninInitAddress } from '../config';
+import { roninGovernanceAdminConf, roninchainNetworks, generalRoninConf } from '../config';
 import { verifyAddress } from '../script/verify-address';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
@@ -16,12 +16,12 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     from: deployer,
     log: true,
     args: [
-      roninInitAddress[network.name].roninTrustedOrganizationContract?.address,
+      generalRoninConf[network.name].roninTrustedOrganizationContract?.address,
       roninGovernanceAdminConf[network.name]?.bridgeContract,
     ],
-    nonce: roninInitAddress[network.name].governanceAdmin?.nonce,
+    nonce: generalRoninConf[network.name].governanceAdmin?.nonce,
   });
-  verifyAddress(deployment.address, roninInitAddress[network.name].governanceAdmin?.address);
+  verifyAddress(deployment.address, generalRoninConf[network.name].governanceAdmin?.address);
 };
 
 deploy.tags = ['RoninGovernanceAdmin'];

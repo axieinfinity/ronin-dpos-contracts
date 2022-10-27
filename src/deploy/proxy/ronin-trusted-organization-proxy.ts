@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { roninTrustedOrganizationConf, roninInitAddress, roninchainNetworks } from '../../config';
+import { roninTrustedOrganizationConf, generalRoninConf, roninchainNetworks } from '../../config';
 import { verifyAddress } from '../../script/verify-address';
 import { RoninTrustedOrganization__factory } from '../../types';
 
@@ -24,9 +24,9 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    args: [logicContract.address, roninInitAddress[network.name].governanceAdmin?.address, data],
+    args: [logicContract.address, generalRoninConf[network.name].governanceAdmin?.address, data],
   });
-  verifyAddress(deployment.address, roninInitAddress[network.name].roninTrustedOrganizationContract?.address);
+  verifyAddress(deployment.address, generalRoninConf[network.name].roninTrustedOrganizationContract?.address);
 };
 
 deploy.tags = ['RoninTrustedOrganizationProxy'];
