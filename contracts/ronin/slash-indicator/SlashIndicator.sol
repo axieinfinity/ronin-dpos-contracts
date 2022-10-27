@@ -19,8 +19,6 @@ contract SlashIndicator is
   HasMaintenanceContract,
   Initializable
 {
-  using Math for uint256;
-
   constructor() {
     _disableInitializers();
   }
