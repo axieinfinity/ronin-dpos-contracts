@@ -176,6 +176,7 @@ contract RoninValidatorSet is
       );
 
       _settleAndTransferDelegatingRewards(_currentValidators, _totalDelegatingReward);
+      _slashIndicatorContract.updateCreditScore(_currentValidators, _period);
 
       _currentValidators = _syncValidatorSet();
     }
@@ -247,6 +248,7 @@ contract RoninValidatorSet is
    * @inheritdoc IRoninValidatorSet
    */
   function bulkJailed(address[] memory _addrList) external view override returns (bool[] memory _result) {
+    _result = new bool[](_addrList.length);
     for (uint256 _i; _i < _addrList.length; _i++) {
       _result[_i] = _jailed(_addrList[_i]);
     }

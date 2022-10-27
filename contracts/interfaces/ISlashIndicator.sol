@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-interface ISlashIndicator {
+import "./ICreditScore.sol";
+
+interface ISlashIndicator is ICreditScore {
   enum SlashType {
     UNKNOWN,
     MISDEMEANOR,
