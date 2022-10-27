@@ -12,7 +12,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
-
   const logicContract = await deployments.get('RoninValidatorSetLogic');
 
   const data = new RoninValidatorSet__factory().interface.encodeFunctionData('initialize', [
@@ -21,6 +20,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     generalRoninConf[network.name]!.stakingVestingContract?.address,
     generalRoninConf[network.name]!.maintenanceContract?.address,
     generalRoninConf[network.name]!.roninTrustedOrganizationContract?.address,
+    generalRoninConf[network.name]!.bridgeTrackingContract?.address,
     roninValidatorSetConf[network.name]!.maxValidatorNumber,
     roninValidatorSetConf[network.name]!.maxValidatorCandidate,
     roninValidatorSetConf[network.name]!.maxPrioritizedValidatorNumber,

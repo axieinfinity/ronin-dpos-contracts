@@ -18,7 +18,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     args: [
       mainchainGovernanceAdminConf[network.name]?.roleSetter,
       generalMainchainConf[network.name].roninTrustedOrganizationContract?.address,
-      mainchainGovernanceAdminConf[network.name]?.bridgeContract,
+      generalMainchainConf[network.name].bridgeContract,
       mainchainGovernanceAdminConf[network.name]?.relayers,
     ],
     nonce: generalMainchainConf[network.name].governanceAdmin?.nonce,
@@ -27,6 +27,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['MainchainGovernanceAdmin'];
-deploy.dependencies = ['RoninValidatorSetProxy'];
+deploy.dependencies = ['BridgeTrackingProxy'];
 
 export default deploy;

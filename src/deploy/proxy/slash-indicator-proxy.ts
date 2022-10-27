@@ -20,14 +20,25 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     generalRoninConf[network.name]!.maintenanceContract?.address,
     generalRoninConf[network.name]!.roninTrustedOrganizationContract?.address,
     generalRoninConf[network.name]!.governanceAdmin?.address,
-    slashIndicatorConf[network.name]!.misdemeanorThreshold,
-    slashIndicatorConf[network.name]!.felonyThreshold,
-    slashIndicatorConf[network.name]!.bridgeVotingThreshold,
-    slashIndicatorConf[network.name]!.slashFelonyAmount,
-    slashIndicatorConf[network.name]!.slashDoubleSignAmount,
-    slashIndicatorConf[network.name]!.bridgeVotingSlashAmount,
-    slashIndicatorConf[network.name]!.felonyJailBlocks,
-    slashIndicatorConf[network.name]!.doubleSigningConstrainBlocks,
+    [
+      slashIndicatorConf[network.name]!.bridgeOperatorSlashing?.missingVotesRatioTier1,
+      slashIndicatorConf[network.name]!.bridgeOperatorSlashing?.missingVotesRatioTier2,
+      slashIndicatorConf[network.name]!.bridgeOperatorSlashing?.jailDurationForMissingVotesRatioTier2,
+    ],
+    [
+      slashIndicatorConf[network.name]!.bridgeVotingSlashing?.bridgeVotingThreshold,
+      slashIndicatorConf[network.name]!.bridgeVotingSlashing?.bridgeVotingSlashAmount,
+    ],
+    [
+      slashIndicatorConf[network.name]!.doubleSignSlashing?.slashDoubleSignAmount,
+      slashIndicatorConf[network.name]!.doubleSignSlashing?.doubleSigningJailUntilBlock,
+    ],
+    [
+      slashIndicatorConf[network.name]!.unavailabilitySlashing?.unavailabilityTier1Threshold,
+      slashIndicatorConf[network.name]!.unavailabilitySlashing?.unavailabilityTier2Threshold,
+      slashIndicatorConf[network.name]!.unavailabilitySlashing?.slashAmountForUnavailabilityTier2Threshold,
+      slashIndicatorConf[network.name]!.unavailabilitySlashing?.jailDurationForUnavailabilityTier2Threshold,
+    ],
   ]);
 
   const deployment = await deploy('SlashIndicatorProxy', {
