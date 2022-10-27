@@ -6,9 +6,9 @@ import "../../interfaces/ISlashUnavailability.sol";
 import "../../extensions/collections/HasValidatorContract.sol";
 
 abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContract {
-  /// @dev The last block that a validator is slashed for unavailability
-  uint256 internal _lastUnavailabilitySlashedBlock;
-  /// @dev Mapping from validator address => period index => unavailability indicator
+  /// @dev The last block that a validator is slashed for unavailability.
+  uint256 public lastUnavailabilitySlashedBlock;
+  /// @dev Mapping from validator address => period index => unavailability indicator.
   mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
 
   /// @dev The mining reward will be deprecated, if (s)he missed more than this threshold.
@@ -31,10 +31,10 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
 
   modifier oncePerBlock() {
     require(
-      block.number > _lastUnavailabilitySlashedBlock,
+      block.number > lastUnavailabilitySlashedBlock,
       "SlashIndicator: cannot slash a validator twice or slash more than one validator in one block"
     );
-    _lastUnavailabilitySlashedBlock = block.number;
+    lastUnavailabilitySlashedBlock = block.number;
     _;
   }
 

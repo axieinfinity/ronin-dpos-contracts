@@ -17,6 +17,11 @@ interface ISlashUnavailability is IBaseSlash {
   );
 
   /**
+   * @dev Returns the last block that a block producer is slashed for unavailability.
+   */
+  function lastUnavailabilitySlashedBlock() external view returns (uint256);
+
+  /**
    * @dev Slashes for unavailability by increasing the counter of block producer `_consensusAddr`.
    *
    * Requirements:
