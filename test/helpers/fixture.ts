@@ -1,27 +1,29 @@
-import { BigNumber } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import { deployments, ethers, network } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
 
 import { EpochController } from './ronin-validator-set';
 import {
-  MainchainGovernanceAdminArguments,
+  generalMainchainConf,
+  generalRoninConf,
   mainchainGovernanceAdminConf,
-  MaintenanceArguments,
   maintenanceConf,
-  Network,
-  RoninGovernanceAdminArguments,
-  roninGovernanceAdminConf,
-  RoninTrustedOrganizationArguments,
   roninTrustedOrganizationConf,
-  RoninValidatorSetArguments,
   roninValidatorSetConf,
-  SlashIndicatorArguments,
   slashIndicatorConf,
-  StakingArguments,
   stakingConfig,
-  StakingVestingArguments,
   stakingVestingConfig,
 } from '../../src/config';
+import {
+  MainchainGovernanceAdminArguments,
+  MaintenanceArguments,
+  Network,
+  RoninTrustedOrganizationArguments,
+  RoninValidatorSetArguments,
+  SlashIndicatorArguments,
+  StakingArguments,
+  StakingVestingArguments,
+} from '../../src/utils';
 
 export interface InitTestOutput {
   roninGovernanceAdminAddress: Address;
@@ -33,100 +35,118 @@ export interface InitTestOutput {
   stakingContractAddress: Address;
   stakingVestingContractAddress: Address;
   validatorContractAddress: Address;
+  bridgeTrackingAddress: Address;
 }
 
-export const defaultTestConfig = {
-  felonyJailBlocks: 28800 * 2,
-  misdemeanorThreshold: 5,
-  felonyThreshold: 10,
-  slashFelonyAmount: BigNumber.from(10).pow(18).mul(1),
-  slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10),
-  doubleSigningConstrainBlocks: 28800,
-  bridgeVotingThreshold: 28800 * 3,
-  bridgeVotingSlashAmount: BigNumber.from(10).pow(18).mul(10_000),
+export interface InitTestInput {
+  bridgeContract?: Address;
+  startedAtBlock?: BigNumberish;
+  maintenanceArguments?: MaintenanceArguments;
+  stakingArguments?: StakingArguments;
+  stakingVestingArguments?: StakingVestingArguments;
+  slashIndicatorArguments?: SlashIndicatorArguments;
+  roninValidatorSetArguments?: RoninValidatorSetArguments;
+  roninTrustedOrganizationArguments?: RoninTrustedOrganizationArguments;
+  mainchainGovernanceAdminArguments?: MainchainGovernanceAdminArguments;
+}
 
-  maxValidatorNumber: 4,
-  maxPrioritizedValidatorNumber: 0,
-  numberOfBlocksInEpoch: 600,
-
-  minValidatorBalance: BigNumber.from(100),
-  maxValidatorCandidate: 10,
-
-  validatorBonusPerBlock: BigNumber.from(1),
-  bridgeOperatorBonusPerBlock: BigNumber.from(1),
-  topupAmount: BigNumber.from(100000000000),
-  minMaintenanceBlockPeriod: 100,
-  maxMaintenanceBlockPeriod: 1000,
-  minOffset: 200,
-  maxSchedules: 2,
-
-  trustedOrganizations: [],
-  numerator: 0,
-  denominator: 1,
-
-  roleSetter: ethers.constants.AddressZero,
+export const defaultTestConfig: InitTestInput = {
   bridgeContract: ethers.constants.AddressZero,
-  relayers: [],
+  startedAtBlock: 0,
+
+  maintenanceArguments: {
+    minMaintenanceBlockPeriod: 100,
+    maxMaintenanceBlockPeriod: 1000,
+    minOffset: 200,
+    maxSchedules: 2,
+  },
+
+  stakingArguments: {
+    minValidatorBalance: BigNumber.from(100),
+  },
+  stakingVestingArguments: {
+    validatorBonusPerBlock: 1,
+    bridgeOperatorBonusPerBlock: 1,
+    topupAmount: BigNumber.from(100000000000),
+  },
+  slashIndicatorArguments: {
+    bridgeOperatorSlashing: {
+      missingVotesRatioTier1: 10_00, // 10%
+      missingVotesRatioTier2: 20_00, // 20%
+      jailDurationForMissingVotesRatioTier2: 28800 * 2,
+    },
+    bridgeVotingSlashing: {
+      bridgeVotingThreshold: 28800 * 3,
+      bridgeVotingSlashAmount: BigNumber.from(10).pow(18).mul(10_000),
+    },
+    doubleSignSlashing: {
+      slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10),
+      doubleSigningJailUntilBlock: ethers.constants.MaxUint256,
+    },
+    unavailabilitySlashing: {
+      unavailabilityTier1Threshold: 5,
+      unavailabilityTier2Threshold: 10,
+      slashAmountForUnavailabilityTier2Threshold: BigNumber.from(10).pow(18).mul(1),
+      jailDurationForUnavailabilityTier2Threshold: 28800 * 2,
+    },
+  },
+  roninValidatorSetArguments: {
+    maxValidatorNumber: 4,
+    maxPrioritizedValidatorNumber: 0,
+    numberOfBlocksInEpoch: 600,
+    maxValidatorCandidate: 10,
+  },
+  roninTrustedOrganizationArguments: {
+    trustedOrganizations: [],
+    numerator: 0,
+    denominator: 1,
+  },
+  mainchainGovernanceAdminArguments: {
+    roleSetter: ethers.constants.AddressZero,
+    relayers: [],
+  },
 };
 
 export const initTest = (id: string) =>
-  deployments.createFixture<
-    InitTestOutput,
-    MaintenanceArguments &
-      StakingArguments &
-      StakingVestingArguments &
-      SlashIndicatorArguments &
-      RoninValidatorSetArguments &
-      RoninTrustedOrganizationArguments &
-      RoninGovernanceAdminArguments &
-      MainchainGovernanceAdminArguments
-  >(async ({ deployments }, options) => {
+  deployments.createFixture<InitTestOutput, InitTestInput>(async ({ deployments }, options) => {
     if (network.name == Network.Hardhat) {
+      generalRoninConf[network.name] = {
+        ...generalRoninConf[network.name],
+        bridgeContract: options?.bridgeContract ?? defaultTestConfig.bridgeContract!,
+        startedAtBlock: options?.startedAtBlock ?? defaultTestConfig.startedAtBlock!,
+      };
+      generalMainchainConf[network.name] = {
+        ...generalMainchainConf[network.name],
+        bridgeContract: options?.bridgeContract ?? defaultTestConfig.bridgeContract!,
+        startedAtBlock: options?.startedAtBlock ?? defaultTestConfig.startedAtBlock!,
+      };
       maintenanceConf[network.name] = {
-        minMaintenanceBlockPeriod: options?.minMaintenanceBlockPeriod ?? defaultTestConfig.minMaintenanceBlockPeriod,
-        maxMaintenanceBlockPeriod: options?.maxMaintenanceBlockPeriod ?? defaultTestConfig.maxMaintenanceBlockPeriod,
-        minOffset: options?.minOffset ?? defaultTestConfig.minOffset,
-        maxSchedules: options?.maxSchedules ?? defaultTestConfig.maxSchedules,
+        ...defaultTestConfig?.maintenanceArguments,
+        ...options?.maintenanceArguments,
       };
       slashIndicatorConf[network.name] = {
-        bridgeVotingThreshold: options?.bridgeVotingThreshold ?? defaultTestConfig.bridgeVotingThreshold,
-        bridgeVotingSlashAmount: options?.bridgeVotingSlashAmount ?? defaultTestConfig.bridgeVotingSlashAmount,
-        misdemeanorThreshold: options?.misdemeanorThreshold ?? defaultTestConfig.misdemeanorThreshold,
-        felonyThreshold: options?.felonyThreshold ?? defaultTestConfig.felonyThreshold,
-        slashFelonyAmount: options?.slashFelonyAmount ?? defaultTestConfig.slashFelonyAmount,
-        slashDoubleSignAmount: options?.slashDoubleSignAmount ?? defaultTestConfig.slashDoubleSignAmount,
-        felonyJailBlocks: options?.felonyJailBlocks ?? defaultTestConfig.felonyJailBlocks,
-        doubleSigningConstrainBlocks:
-          options?.doubleSigningConstrainBlocks ?? defaultTestConfig.doubleSigningConstrainBlocks,
+        ...defaultTestConfig?.slashIndicatorArguments,
+        ...options?.slashIndicatorArguments,
       };
       roninValidatorSetConf[network.name] = {
-        maxValidatorNumber: options?.maxValidatorNumber ?? defaultTestConfig.maxValidatorNumber,
-        maxValidatorCandidate: options?.maxValidatorCandidate ?? defaultTestConfig.maxValidatorCandidate,
-        maxPrioritizedValidatorNumber:
-          options?.maxPrioritizedValidatorNumber ?? defaultTestConfig.maxPrioritizedValidatorNumber,
-        numberOfBlocksInEpoch: options?.numberOfBlocksInEpoch ?? defaultTestConfig.numberOfBlocksInEpoch,
+        ...defaultTestConfig?.roninValidatorSetArguments,
+        ...options?.roninValidatorSetArguments,
       };
       stakingConfig[network.name] = {
-        minValidatorBalance: options?.minValidatorBalance ?? defaultTestConfig.minValidatorBalance,
+        ...defaultTestConfig?.stakingArguments,
+        ...options?.stakingArguments,
       };
       stakingVestingConfig[network.name] = {
-        validatorBonusPerBlock: options?.validatorBonusPerBlock ?? defaultTestConfig.validatorBonusPerBlock,
-        bridgeOperatorBonusPerBlock:
-          options?.bridgeOperatorBonusPerBlock ?? defaultTestConfig.bridgeOperatorBonusPerBlock,
-        topupAmount: options?.topupAmount ?? defaultTestConfig.topupAmount,
+        ...defaultTestConfig?.stakingVestingArguments,
+        ...options?.stakingVestingArguments,
       };
       roninTrustedOrganizationConf[network.name] = {
-        trustedOrganizations: options?.trustedOrganizations ?? defaultTestConfig.trustedOrganizations,
-        numerator: options?.numerator ?? defaultTestConfig.numerator,
-        denominator: options?.denominator ?? defaultTestConfig.denominator,
-      };
-      roninGovernanceAdminConf[network.name] = {
-        bridgeContract: options?.bridgeContract ?? defaultTestConfig.bridgeContract,
+        ...defaultTestConfig?.roninTrustedOrganizationArguments,
+        ...options?.roninTrustedOrganizationArguments,
       };
       mainchainGovernanceAdminConf[network.name] = {
-        roleSetter: options?.roleSetter ?? defaultTestConfig.roleSetter,
-        bridgeContract: options?.bridgeContract ?? defaultTestConfig.bridgeContract,
-        relayers: options?.relayers ?? defaultTestConfig.relayers,
+        ...defaultTestConfig?.mainchainGovernanceAdminArguments,
+        ...options?.mainchainGovernanceAdminArguments,
       };
     }
 
@@ -134,6 +154,7 @@ export const initTest = (id: string) =>
       'CalculateAddresses',
       'RoninGovernanceAdmin',
       'RoninValidatorSetProxy',
+      'BridgeTrackingProxy',
       'SlashIndicatorProxy',
       'StakingProxy',
       'MaintenanceProxy',
@@ -152,6 +173,7 @@ export const initTest = (id: string) =>
     const stakingContractDeployment = await deployments.get('StakingProxy');
     const stakingVestingContractDeployment = await deployments.get('StakingVestingProxy');
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
+    const bridgeTrackingDeployment = await deployments.get('BridgeTrackingProxy');
     await EpochController.setTimestampToPeriodEnding();
 
     return {
@@ -164,5 +186,6 @@ export const initTest = (id: string) =>
       stakingContractAddress: stakingContractDeployment.address,
       stakingVestingContractAddress: stakingVestingContractDeployment.address,
       validatorContractAddress: validatorContractDeployment.address,
+      bridgeTrackingAddress: bridgeTrackingDeployment.address,
     };
   }, id);

@@ -177,7 +177,7 @@ describe('[Integration] Wrap up epoch', () => {
     describe('Wrap up epoch: at the end of the period', async () => {
       before(async () => {
         await validatorContract.addValidators(validators.map((v) => v.address));
-        await Promise.all(validators.map((v) => slashContract.connect(coinbase).slash(v.address)));
+        await Promise.all(validators.map((v) => slashContract.connect(coinbase).slashUnavailability(v.address)));
       });
 
       it('Should the ValidatorSet not reset counter, when the period is not ended', async () => {
@@ -250,7 +250,7 @@ describe('[Integration] Wrap up epoch', () => {
         });
 
         for (let i = 0; i < felonyThreshold; i++) {
-          await slashContract.connect(coinbase).slash(slasheeAddress);
+          await slashContract.connect(coinbase).slashUnavailability(slasheeAddress);
         }
       });
 

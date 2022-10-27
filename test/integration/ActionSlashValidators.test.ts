@@ -98,9 +98,9 @@ describe('[Integration] Slash validators', () => {
         let slashee = validatorCandidates[slasheeIdx];
 
         for (let i = 0; i < misdemeanorThreshold - 1; i++) {
-          await slashContract.connect(coinbase).slash(slashee.address);
+          await slashContract.connect(coinbase).slashUnavailability(slashee.address);
         }
-        let tx = slashContract.connect(coinbase).slash(slashee.address);
+        let tx = slashContract.connect(coinbase).slashUnavailability(slashee.address);
 
         await expect(tx)
           .to.emit(slashContract, 'UnavailabilitySlashed')
@@ -145,9 +145,9 @@ describe('[Integration] Slash validators', () => {
 
       it('Should the ValidatorSet contract emit event', async () => {
         for (let i = 0; i < felonyThreshold - 1; i++) {
-          await slashContract.connect(coinbase).slash(slashee.address);
+          await slashContract.connect(coinbase).slashUnavailability(slashee.address);
         }
-        slashValidatorTx = await slashContract.connect(coinbase).slash(slashee.address);
+        slashValidatorTx = await slashContract.connect(coinbase).slashUnavailability(slashee.address);
 
         await expect(slashValidatorTx)
           .to.emit(slashContract, 'UnavailabilitySlashed')
@@ -257,9 +257,9 @@ describe('[Integration] Slash validators', () => {
       describe('Check effects on indicator and staked amount', async () => {
         it('Should the ValidatorSet contract emit event', async () => {
           for (let i = 0; i < felonyThreshold - 1; i++) {
-            await slashContract.connect(coinbase).slash(slashee.address);
+            await slashContract.connect(coinbase).slashUnavailability(slashee.address);
           }
-          slashValidatorTx = await slashContract.connect(coinbase).slash(slashee.address);
+          slashValidatorTx = await slashContract.connect(coinbase).slashUnavailability(slashee.address);
 
           await expect(slashValidatorTx)
             .to.emit(slashContract, 'UnavailabilitySlashed')

@@ -159,7 +159,7 @@ describe('[Integration] Submit Block Reward', () => {
       });
 
       for (let i = 0; i < felonyThreshold; i++) {
-        await slashContract.connect(coinbase).slash(validator.address);
+        await slashContract.connect(coinbase).slashUnavailability(validator.address);
       }
     });
 

@@ -265,9 +265,9 @@ describe('Maintenance test', () => {
     });
 
     it('[Slash Integration] Should not be able to slash the validator in maintenance time', async () => {
-      await slashContract.connect(coinbase).slash(validatorCandidates[0].address);
+      await slashContract.connect(coinbase).slashUnavailability(validatorCandidates[0].address);
       expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[0].address)).eq(0);
-      await slashContract.connect(coinbase).slash(validatorCandidates[1].address);
+      await slashContract.connect(coinbase).slashUnavailability(validatorCandidates[1].address);
       expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[1].address)).eq(0);
     });
 

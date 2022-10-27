@@ -14,176 +14,225 @@ import {
   Maintenance,
   StakingVesting__factory,
   StakingVesting,
+  RoninTrustedOrganization__factory,
+  RoninTrustedOrganization,
+  RoninGovernanceAdmin__factory,
+  RoninGovernanceAdmin,
+  BridgeTracking__factory,
+  BridgeTracking,
 } from '../../src/types';
-import { initTest } from '../helpers/fixture';
+import { initTest, InitTestInput } from '../helpers/fixture';
+import { randomAddress } from '../../src/utils';
+import { Address } from 'hardhat-deploy/dist/types';
 
 let stakingVestingContract: StakingVesting;
 let maintenanceContract: Maintenance;
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: RoninValidatorSet;
+let roninTrustedOrganizationContract: RoninTrustedOrganization;
+let roninGovernanceAdminContract: RoninGovernanceAdmin;
+let bridgeTrackingContract: BridgeTracking;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
 let governor: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
-const felonyJailBlocks = 28800 * 2;
-const misdemeanorThreshold = 5;
-const felonyThreshold = 10;
-const slashFelonyAmount = BigNumber.from(10).pow(18).mul(1);
-const slashDoubleSignAmount = BigNumber.from(10).pow(18).mul(10);
+const config: InitTestInput = {
+  bridgeContract: randomAddress(),
+  startedAtBlock: Math.floor(Math.random() * 1_000_000),
 
-const maxValidatorNumber = 4;
-const maxPrioritizedValidatorNumber = 0;
-const numberOfBlocksInEpoch = 600;
+  maintenanceArguments: {
+    minMaintenanceBlockPeriod: 100,
+    maxMaintenanceBlockPeriod: 1000,
+    minOffset: 200,
+    maxSchedules: 2,
+  },
 
-const minValidatorBalance = BigNumber.from(100);
-const maxValidatorCandidate = 10;
-
-const validatorBonusPerBlock = BigNumber.from(1);
-const topupAmount = BigNumber.from(10000);
-const minMaintenanceBlockPeriod = 100;
-const maxMaintenanceBlockPeriod = 1000;
-const minOffset = 200;
-const maxSchedules = 2;
+  stakingArguments: {
+    minValidatorBalance: BigNumber.from(100),
+  },
+  stakingVestingArguments: {
+    validatorBonusPerBlock: 1,
+    bridgeOperatorBonusPerBlock: 1,
+    topupAmount: BigNumber.from(10000),
+  },
+  slashIndicatorArguments: {
+    bridgeOperatorSlashing: {
+      missingVotesRatioTier1: 10_00, // 10%
+      missingVotesRatioTier2: 20_00, // 20%
+      jailDurationForMissingVotesRatioTier2: 28800 * 2,
+    },
+    bridgeVotingSlashing: {
+      bridgeVotingThreshold: 28800 * 3,
+      bridgeVotingSlashAmount: BigNumber.from(10).pow(18).mul(10_000),
+    },
+    doubleSignSlashing: {
+      slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10),
+      doubleSigningJailUntilBlock: ethers.constants.MaxUint256,
+    },
+    unavailabilitySlashing: {
+      unavailabilityTier1Threshold: 5,
+      unavailabilityTier2Threshold: 10,
+      slashAmountForUnavailabilityTier2Threshold: BigNumber.from(10).pow(18).mul(1),
+      jailDurationForUnavailabilityTier2Threshold: 28800 * 2,
+    },
+  },
+  roninValidatorSetArguments: {
+    maxValidatorNumber: 4,
+    maxPrioritizedValidatorNumber: 0,
+    numberOfBlocksInEpoch: 600,
+    maxValidatorCandidate: 10,
+  },
+  roninTrustedOrganizationArguments: {
+    trustedOrganizations: [],
+    numerator: 0,
+    denominator: 1,
+  },
+  mainchainGovernanceAdminArguments: {
+    roleSetter: ethers.constants.AddressZero,
+    relayers: [],
+  },
+};
 
 describe('[Integration] Configuration check', () => {
   before(async () => {
     [coinbase, deployer, governor, ...validatorCandidates] = await ethers.getSigners();
+    config.roninTrustedOrganizationArguments!.trustedOrganizations = [governor].map((v) => ({
+      consensusAddr: v.address,
+      governor: v.address,
+      bridgeVoter: v.address,
+      weight: 100,
+      addedBlock: 0,
+    }));
     const {
       maintenanceContractAddress,
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
       stakingVestingContractAddress,
-    } = await initTest('Configuration')({
-      felonyJailBlocks,
-      misdemeanorThreshold,
-      felonyThreshold,
-      slashFelonyAmount,
-      slashDoubleSignAmount,
-      maxValidatorNumber,
-      maxPrioritizedValidatorNumber,
-      numberOfBlocksInEpoch,
-      minValidatorBalance,
-      maxValidatorCandidate,
-      validatorBonusPerBlock,
-      topupAmount,
-      minMaintenanceBlockPeriod,
-      maxMaintenanceBlockPeriod,
-      minOffset,
-      maxSchedules,
-      trustedOrganizations: [governor].map((v) => ({
+      roninTrustedOrganizationAddress,
+      roninGovernanceAdminAddress,
+      bridgeTrackingAddress,
+    } = await initTest('Configuration')(config);
+
+    roninGovernanceAdminContract = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
+    maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
+    roninTrustedOrganizationContract = RoninTrustedOrganization__factory.connect(
+      roninTrustedOrganizationAddress,
+      deployer
+    );
+    slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
+    stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
+    stakingVestingContract = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);
+    validatorContract = RoninValidatorSet__factory.connect(validatorContractAddress, deployer);
+    bridgeTrackingContract = BridgeTracking__factory.connect(bridgeTrackingAddress, deployer);
+  });
+
+  it('Should the RoninGovernanceAdmin contract set configs correctly', async () => {
+    expect(await roninGovernanceAdminContract.roninTrustedOrganizationContract()).eq(
+      roninTrustedOrganizationContract.address
+    );
+    expect(await roninGovernanceAdminContract.bridgeContract()).eq(config.bridgeContract);
+  });
+
+  it('Should the Maintenance contract set configs correctly', async () => {
+    expect(await maintenanceContract.validatorContract()).eq(validatorContract.address);
+    expect(await maintenanceContract.minMaintenanceBlockPeriod()).eq(
+      config.maintenanceArguments?.minMaintenanceBlockPeriod
+    );
+    expect(await maintenanceContract.maxMaintenanceBlockPeriod()).eq(
+      config.maintenanceArguments?.maxMaintenanceBlockPeriod
+    );
+    expect(await maintenanceContract.minOffset()).eq(config.maintenanceArguments!.minOffset);
+    expect(await maintenanceContract.maxSchedules()).eq(config.maintenanceArguments!.maxSchedules);
+  });
+
+  it('Should the RoninTrustedOrganization contract set configs correctly', async () => {
+    expect(
+      (await roninTrustedOrganizationContract.getAllTrustedOrganizations()).map(
+        ({ consensusAddr, governor, bridgeVoter, weight }) => ({
+          consensusAddr,
+          governor,
+          bridgeVoter,
+          weight,
+          addedBlock: undefined,
+        })
+      )
+    ).eql(
+      [governor].map((v) => ({
         consensusAddr: v.address,
         governor: v.address,
         bridgeVoter: v.address,
-        weight: 100,
-        addedBlock: 0,
-      })),
-    });
-
-    stakingVestingContract = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);
-    maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
-    slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
-    stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
-    validatorContract = RoninValidatorSet__factory.connect(validatorContractAddress, deployer);
+        weight: BigNumber.from(100),
+        addedBlock: undefined,
+      }))
+    );
+    expect(await roninTrustedOrganizationContract.getThreshold()).eql(
+      [config.roninTrustedOrganizationArguments?.numerator, config.roninTrustedOrganizationArguments?.denominator].map(
+        BigNumber.from
+      )
+    );
   });
 
-  describe('Maintenance configuration', () => {
-    it('Should the MaintenanceContract config the validator contract correctly', async () => {
-      expect(await maintenanceContract.validatorContract()).eq(validatorContract.address);
-    });
-
-    it('Should the MaintenanceContract set the maintenance config correctly', async () => {
-      expect(await maintenanceContract.minMaintenanceBlockPeriod()).eq(minMaintenanceBlockPeriod);
-      expect(await maintenanceContract.maxMaintenanceBlockPeriod()).eq(maxMaintenanceBlockPeriod);
-      expect(await maintenanceContract.minOffset()).eq(minOffset);
-      expect(await maintenanceContract.maxSchedules()).eq(maxSchedules);
-    });
+  it('Should the SlashIndicatorContract contract set configs correctly', async () => {
+    expect(await slashContract.validatorContract()).to.eq(validatorContract.address);
+    expect(await slashContract.maintenanceContract()).to.eq(maintenanceContract.address);
+    expect(await slashContract.roninTrustedOrganizationContract()).to.eq(roninTrustedOrganizationContract.address);
+    expect(await slashContract.roninGovernanceAdminContract()).to.eq(roninGovernanceAdminContract.address);
+    expect(await slashContract.getBridgeOperatorSlashingConfigs()).to.eql(
+      [
+        config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier1,
+        config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier2,
+        config.slashIndicatorArguments?.bridgeOperatorSlashing?.jailDurationForMissingVotesRatioTier2,
+      ].map(BigNumber.from)
+    );
   });
 
-  describe('StakingVesting configuration', () => {
-    it('Should the StakingVestingContract config the validator contract correctly', async () => {
-      expect(await stakingVestingContract.validatorContract()).eq(validatorContract.address);
-    });
-
-    it('Should the StakingVestingContract config the block bonus correctly', async () => {
-      expect(await stakingVestingContract.validatorBlockBonus(0)).eq(validatorBonusPerBlock);
-      expect(await stakingVestingContract.validatorBlockBonus(Math.floor(Math.random() * 1_000_000))).eq(
-        validatorBonusPerBlock
-      );
-    });
+  it('Should the StakingContract contract set configs correctly', async () => {
+    expect(await stakingContract.validatorContract()).to.eq(validatorContract.address);
+    expect(await stakingContract.minValidatorBalance()).to.eq(config.stakingArguments?.minValidatorBalance);
   });
 
-  describe('ValidatorSetContract configuration', async () => {
-    it('Should the ValidatorSetContract config the StakingContract correctly', async () => {
-      let _stakingContract = await validatorContract.stakingContract();
-      expect(_stakingContract).to.eq(stakingContract.address);
-    });
-
-    it('Should the ValidatorSetContract config the Slashing correctly', async () => {
-      let _slashingContract = await validatorContract.slashIndicatorContract();
-      expect(_slashingContract).to.eq(slashContract.address);
-    });
-
-    it('Should config the maxValidatorNumber correctly', async () => {
-      let _maxValidatorNumber = await validatorContract.maxValidatorNumber();
-      expect(_maxValidatorNumber).to.eq(maxValidatorNumber);
-    });
-
-    it('Should config the maxValidatorCandidate correctly', async () => {
-      let _maxValidatorCandidate = await validatorContract.maxValidatorCandidate();
-      expect(_maxValidatorCandidate).to.eq(maxValidatorCandidate);
-    });
-
-    it('Should config the numberOfBlocksInEpoch correctly', async () => {
-      let _numberOfBlocksInEpoch = await validatorContract.numberOfBlocksInEpoch();
-      expect(_numberOfBlocksInEpoch).to.eq(numberOfBlocksInEpoch);
-    });
+  it('Should the StakingVestingContract contract set configs correctly', async () => {
+    expect(await stakingVestingContract.validatorContract()).eq(validatorContract.address);
+    expect(await stakingVestingContract.validatorBlockBonus(0)).eq(
+      config.stakingVestingArguments?.validatorBonusPerBlock
+    );
+    expect(await stakingVestingContract.validatorBlockBonus(Math.floor(Math.random() * 1_000_000))).eq(
+      config.stakingVestingArguments?.validatorBonusPerBlock
+    );
+    expect(await stakingVestingContract.bridgeOperatorBlockBonus(0)).eq(
+      config.stakingVestingArguments?.bridgeOperatorBonusPerBlock
+    );
+    expect(await stakingVestingContract.bridgeOperatorBlockBonus(Math.floor(Math.random() * 1_000_000))).eq(
+      config.stakingVestingArguments?.bridgeOperatorBonusPerBlock
+    );
   });
 
-  describe('StakingContract configuration', async () => {
-    it('Should the StakingContract config the ValidatorSetContract correctly', async () => {
-      let _validatorSetContract = await stakingContract.validatorContract();
-      expect(_validatorSetContract).to.eq(validatorContract.address);
-    });
-
-    it('Should config the minValidatorBalance correctly', async () => {
-      let _minValidatorBalance = await stakingContract.minValidatorBalance();
-      expect(_minValidatorBalance).to.eq(minValidatorBalance);
-    });
+  it('Should the ValidatorSetContract contract set configs correctly', async () => {
+    expect(await validatorContract.slashIndicatorContract()).to.eq(slashContract.address);
+    expect(await validatorContract.stakingContract()).to.eq(stakingContract.address);
+    expect(await validatorContract.stakingVestingContract()).to.eq(stakingVestingContract.address);
+    expect(await validatorContract.maintenanceContract()).to.eq(maintenanceContract.address);
+    expect(await validatorContract.roninTrustedOrganizationContract()).to.eq(roninTrustedOrganizationContract.address);
+    expect(await validatorContract.bridgeTrackingContract()).to.eq(bridgeTrackingContract.address);
+    expect(await validatorContract.maxValidatorNumber()).to.eq(config.roninValidatorSetArguments?.maxValidatorNumber);
+    expect(await validatorContract.maxValidatorCandidate()).to.eq(
+      config.roninValidatorSetArguments?.maxValidatorCandidate
+    );
+    expect(await validatorContract.maxPrioritizedValidatorNumber()).to.eq(
+      config.roninValidatorSetArguments?.maxPrioritizedValidatorNumber
+    );
+    expect(await validatorContract.numberOfBlocksInEpoch()).to.eq(
+      config.roninValidatorSetArguments?.numberOfBlocksInEpoch
+    );
   });
 
-  describe('SlashIndicatorContract configuration', async () => {
-    it('Should the SlashIndicatorContract config the ValidatorSetContract correctly', async () => {
-      let _validatorSetContract = await slashContract.validatorContract();
-      expect(_validatorSetContract).to.eq(validatorContract.address);
-    });
-
-    it('Should config the misdemeanorThreshold correctly', async () => {
-      let _misdemeanorThreshold = await slashContract.misdemeanorThreshold();
-      expect(_misdemeanorThreshold).to.eq(misdemeanorThreshold);
-    });
-
-    it('Should config the felonyThreshold correctly', async () => {
-      let _felonyThreshold = await slashContract.felonyThreshold();
-      expect(_felonyThreshold).to.eq(felonyThreshold);
-    });
-
-    it('Should config the slashFelonyAmount correctly', async () => {
-      let _slashFelonyAmount = await slashContract.slashFelonyAmount();
-      expect(_slashFelonyAmount).to.eq(slashFelonyAmount);
-    });
-
-    it('Should config the slashDoubleSignAmount correctly', async () => {
-      let _slashDoubleSignAmount = await slashContract.slashDoubleSignAmount();
-      expect(_slashDoubleSignAmount).to.eq(slashDoubleSignAmount);
-    });
-
-    it('Should config the felonyJailDuration correctly', async () => {
-      let _felonyJailDuration = await slashContract.felonyJailDuration();
-      expect(_felonyJailDuration).to.eq(felonyJailBlocks);
-    });
+  it('Should the BridgeTracking contract set configs correctly', async () => {
+    expect(await bridgeTrackingContract.bridgeContract()).to.eq(config.bridgeContract);
+    expect(await bridgeTrackingContract.validatorContract()).to.eq(validatorContract.address);
+    expect(await bridgeTrackingContract.startedAtBlock()).to.eq(config.startedAtBlock);
   });
 });

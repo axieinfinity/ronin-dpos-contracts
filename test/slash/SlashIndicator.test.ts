@@ -134,9 +134,9 @@ describe('Slash indicator test', () => {
   describe('Single flow test', async () => {
     describe('Unauthorized test', async () => {
       it('Should non-coinbase cannot call slash', async () => {
-        await expect(slashContract.connect(vagabond).slash(validatorCandidates[0].address)).to.revertedWith(
-          'SlashIndicator: method caller must be coinbase'
-        );
+        await expect(
+          slashContract.connect(vagabond).slashUnavailability(validatorCandidates[0].address)
+        ).to.revertedWith('SlashIndicator: method caller must be coinbase');
       });
     });
 
@@ -149,7 +149,7 @@ describe('Slash indicator test', () => {
 
         let tx = await slashContract
           .connect(validatorCandidates[slasherIdx])
-          .slash(validatorCandidates[slasheeIdx].address);
+          .slashUnavailability(validatorCandidates[slasheeIdx].address);
         await expect(tx).to.not.emit(slashContract, 'UnavailabilitySlashed');
         setLocalCounterForValidatorAt(slasheeIdx, 1);
         await validateIndicatorAt(slasheeIdx);
@@ -157,7 +157,9 @@ describe('Slash indicator test', () => {
 
       it('Should validator not be able to slash themselves', async () => {
         const slasherIdx = 0;
-        await slashContract.connect(validatorCandidates[slasherIdx]).slash(validatorCandidates[slasherIdx].address);
+        await slashContract
+          .connect(validatorCandidates[slasherIdx])
+          .slashUnavailability(validatorCandidates[slasherIdx].address);
 
         resetLocalCounterForValidatorAt(slasherIdx);
         await validateIndicatorAt(slasherIdx);
@@ -167,8 +169,12 @@ describe('Slash indicator test', () => {
         const slasherIdx = 0;
         const slasheeIdx = 2;
         await network.provider.send('evm_setAutomine', [false]);
-        await slashContract.connect(validatorCandidates[slasherIdx]).slash(validatorCandidates[slasheeIdx].address);
-        let tx = slashContract.connect(validatorCandidates[slasherIdx]).slash(validatorCandidates[slasheeIdx].address);
+        await slashContract
+          .connect(validatorCandidates[slasherIdx])
+          .slashUnavailability(validatorCandidates[slasheeIdx].address);
+        let tx = slashContract
+          .connect(validatorCandidates[slasherIdx])
+          .slashUnavailability(validatorCandidates[slasheeIdx].address);
         await expect(tx).to.be.revertedWith(
           'SlashIndicator: cannot slash a validator twice or slash more than one validator in one block'
         );
@@ -184,8 +190,12 @@ describe('Slash indicator test', () => {
         const slasheeIdx1 = 1;
         const slasheeIdx2 = 2;
         await network.provider.send('evm_setAutomine', [false]);
-        await slashContract.connect(validatorCandidates[slasherIdx]).slash(validatorCandidates[slasheeIdx1].address);
-        let tx = slashContract.connect(validatorCandidates[slasherIdx]).slash(validatorCandidates[slasheeIdx2].address);
+        await slashContract
+          .connect(validatorCandidates[slasherIdx])
+          .slashUnavailability(validatorCandidates[slasheeIdx1].address);
+        let tx = slashContract
+          .connect(validatorCandidates[slasherIdx])
+          .slashUnavailability(validatorCandidates[slasheeIdx2].address);
         await expect(tx).to.be.revertedWith(
           'SlashIndicator: cannot slash a validator twice or slash more than one validator in one block'
         );
@@ -209,7 +219,7 @@ describe('Slash indicator test', () => {
         for (let i = 0; i < misdemeanorThreshold; i++) {
           tx = await slashContract
             .connect(validatorCandidates[slasherIdx])
-            .slash(validatorCandidates[slasheeIdx].address);
+            .slashUnavailability(validatorCandidates[slasheeIdx].address);
         }
 
         let period = await validatorContract.currentPeriod();
@@ -228,7 +238,7 @@ describe('Slash indicator test', () => {
 
         tx = await slashContract
           .connect(validatorCandidates[slasherIdx])
-          .slash(validatorCandidates[slasheeIdx].address);
+          .slashUnavailability(validatorCandidates[slasheeIdx].address);
         increaseLocalCounterForValidatorAt(slasheeIdx);
         await validateIndicatorAt(slasheeIdx);
 
@@ -247,7 +257,7 @@ describe('Slash indicator test', () => {
         for (let i = 0; i < felonyThreshold; i++) {
           tx = await slashContract
             .connect(validatorCandidates[slasherIdx])
-            .slash(validatorCandidates[slasheeIdx].address);
+            .slashUnavailability(validatorCandidates[slasheeIdx].address);
 
           if (i == misdemeanorThreshold - 1) {
             await expect(tx)
@@ -271,7 +281,7 @@ describe('Slash indicator test', () => {
 
         tx = await slashContract
           .connect(validatorCandidates[slasherIdx])
-          .slash(validatorCandidates[slasheeIdx].address);
+          .slashUnavailability(validatorCandidates[slasheeIdx].address);
         increaseLocalCounterForValidatorAt(slasheeIdx);
         await validateIndicatorAt(slasheeIdx);
 
@@ -287,7 +297,9 @@ describe('Slash indicator test', () => {
         await network.provider.send('hardhat_setCoinbase', [validatorCandidates[slasherIdx].address]);
 
         for (let i = 0; i < numberOfSlashing; i++) {
-          await slashContract.connect(validatorCandidates[slasherIdx]).slash(validatorCandidates[slasheeIdx].address);
+          await slashContract
+            .connect(validatorCandidates[slasherIdx])
+            .slashUnavailability(validatorCandidates[slasheeIdx].address);
         }
 
         setLocalCounterForValidatorAt(slasheeIdx, numberOfSlashing);
@@ -311,7 +323,7 @@ describe('Slash indicator test', () => {
           for (let j = 0; j < slasheeIdxs.length; j++) {
             await slashContract
               .connect(validatorCandidates[slasherIdx])
-              .slash(validatorCandidates[slasheeIdxs[j]].address);
+              .slashUnavailability(validatorCandidates[slasheeIdxs[j]].address);
           }
         }
 
