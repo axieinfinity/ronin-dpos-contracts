@@ -5,9 +5,9 @@ pragma solidity ^0.8.9;
 interface ISlashBridgeOperator {
   /**
    * @dev Emitted when the configs to slash bridge operator is updated. See the method
-   * `getBridgeOperatorMissingConfigs` for param details.
+   * `getBridgeOperatorSlashingConfigs` for param details.
    */
-  event BridgeOperatorSlashConfigsUpdated(
+  event BridgeOperatorSlashingConfigsUpdated(
     uint256 missingVotesRatioTier1,
     uint256 missingVotesRatioTier2,
     uint256 jailDurationForMissingVotesRatioTier2
@@ -23,7 +23,7 @@ interface ISlashBridgeOperator {
    * its bridge operator is slashed tier-2.
    *
    */
-  function getBridgeOperatorMissingConfigs()
+  function getBridgeOperatorSlashingConfigs()
     external
     view
     returns (
@@ -38,7 +38,7 @@ interface ISlashBridgeOperator {
    * Requirements:
    * - The method caller is admin.
    *
-   * Emits the event `BridgeOperatorSlashConfigsUpdated`.
+   * Emits the event `BridgeOperatorSlashingConfigsUpdated`.
    *
    * @param _ratioTier1 The bridge reward will be deprecated if (s)he missed more than this ratio. Values 0-10,000 map
    * to 0%-100%.
@@ -48,7 +48,7 @@ interface ISlashBridgeOperator {
    * slashed tier-2.
    *
    */
-  function setBridgeOperatorSlashConfigs(
+  function setBridgeOperatorSlashingConfigs(
     uint256 _ratioTier1,
     uint256 _ratioTier2,
     uint256 _jailDurationTier2

@@ -66,13 +66,13 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
   /**
    * @inheritdoc ISlashUnavailability
    */
-  function setUnavailabilitySlashConfigs(
+  function setUnavailabilitySlashingConfigs(
     uint256 _tier1Threshold,
     uint256 _tier2Threshold,
     uint256 _slashAmountForTier2Threshold,
     uint256 _jailDurationForTier2Threshold
-  ) external override {
-    _setUnavailabilitySlashConfigs(
+  ) external override onlyAdmin {
+    _setUnavailabilitySlashingConfigs(
       _tier1Threshold,
       _tier2Threshold,
       _slashAmountForTier2Threshold,
@@ -83,7 +83,7 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
   /**
    * @inheritdoc ISlashUnavailability
    */
-  function getUnavailabilitySlashConfigs()
+  function getUnavailabilitySlashingConfigs()
     external
     view
     override
@@ -117,9 +117,9 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
   }
 
   /**
-   * @dev See `ISlashUnavailability-setUnavailabilitySlashConfigs`.
+   * @dev See `ISlashUnavailability-setUnavailabilitySlashingConfigs`.
    */
-  function _setUnavailabilitySlashConfigs(
+  function _setUnavailabilitySlashingConfigs(
     uint256 _tier1Threshold,
     uint256 _tier2Threshold,
     uint256 _slashAmountForTier2Threshold,
@@ -130,7 +130,7 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
     _unavailabilityTier2Threshold = _tier2Threshold;
     _slashAmountForUnavailabilityTier2Threshold = _slashAmountForTier2Threshold;
     _jailDurationForUnavailabilityTier2Threshold = _jailDurationForTier2Threshold;
-    emit UnavailabilitySlashConfigsUpdated(
+    emit UnavailabilitySlashingConfigsUpdated(
       _tier1Threshold,
       _tier2Threshold,
       _slashAmountForTier2Threshold,

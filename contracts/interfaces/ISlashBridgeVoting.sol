@@ -6,10 +6,10 @@ import "./IBaseSlash.sol";
 
 interface ISlashBridgeVoting is IBaseSlash {
   /**
-   * @dev Emitted when the configs to slash bridge voting is updated. See the method `getBridgeVotingConfigs` for param
+   * @dev Emitted when the configs to slash bridge voting is updated. See the method `getBridgeVotingSlashingConfigs` for param
    * details.
    */
-  event BridgeVotingSlashConfigsUpdated(uint256 bridgeVotingThreshold, uint256 bridgeVotingSlashAmount);
+  event BridgeVotingSlashingConfigsUpdated(uint256 bridgeVotingThreshold, uint256 bridgeVotingSlashAmount);
 
   /**
    * @dev Slashes for bridge voter governance.
@@ -26,7 +26,7 @@ interface ISlashBridgeVoting is IBaseSlash {
    * @return _bridgeVotingSlashAmount The amount of RON to slash bridge voting.
    *
    */
-  function getBridgeVotingConfigs()
+  function getBridgeVotingSlashingConfigs()
     external
     view
     returns (uint256 _bridgeVotingThreshold, uint256 _bridgeVotingSlashAmount);
@@ -37,11 +37,11 @@ interface ISlashBridgeVoting is IBaseSlash {
    * Requirements:
    * - The method caller is admin.
    *
-   * Emits the event `BridgeVotingSlashConfigsUpdated`.
+   * Emits the event `BridgeVotingSlashingConfigsUpdated`.
    *
    * @param _threshold The threshold to slash when a trusted organization does not vote for bridge operators.
    * @param _slashAmount The amount of RON to slash bridge voting.
    *
    */
-  function setBridgeVotingSlashConfigs(uint256 _threshold, uint256 _slashAmount) external;
+  function setBridgeVotingSlashingConfigs(uint256 _threshold, uint256 _slashAmount) external;
 }

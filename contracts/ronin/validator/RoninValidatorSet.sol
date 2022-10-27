@@ -453,7 +453,7 @@ contract RoninValidatorSet is
       uint256 _missingVotesRatioTier1,
       uint256 _missingVotesRatioTier2,
       uint256 _jailDurationForMissingVotesRatioTier2
-    ) = _slashIndicatorContract.getBridgeOperatorMissingConfigs();
+    ) = _slashIndicatorContract.getBridgeOperatorSlashingConfigs();
 
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
       _consensusAddr = _currentValidators[_i];

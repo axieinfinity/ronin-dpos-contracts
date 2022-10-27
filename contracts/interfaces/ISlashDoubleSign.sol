@@ -6,14 +6,10 @@ import "./IBaseSlash.sol";
 
 interface ISlashDoubleSign is IBaseSlash {
   /**
-   * @dev Emitted when the configs to slash double sign is updated. See the method `getDoubleSignSlashConfigs`
+   * @dev Emitted when the configs to slash double sign is updated. See the method `getDoubleSignSlashingConfigs`
    * for param details.
    */
-  event DoubleSignSlashConfigsUpdated(
-    uint256 doubleSigningConstrainBlocks,
-    uint256 slashDoubleSignAmount,
-    uint256 doubleSigningJailUntilBlock
-  );
+  event DoubleSignSlashingConfigsUpdated(uint256 slashDoubleSignAmount, uint256 doubleSigningJailUntilBlock);
 
   /**
    * @dev Slashes for double signing.
@@ -32,21 +28,15 @@ interface ISlashDoubleSign is IBaseSlash {
   /**
    * @dev Returns the configs related to block producer slashing.
    *
-   * @return _doubleSigningConstrainBlocks The number of blocks that the current block can be ahead of the double signed
-   * blocks.
    * @return _slashDoubleSignAmount The amount of RON to slash double sign.
    * @return _doubleSigningJailUntilBlock The block number that the punished validator will be jailed until, due to
    * double signing.
    *
    */
-  function getDoubleSignSlashConfigs()
+  function getDoubleSignSlashingConfigs()
     external
     view
-    returns (
-      uint256 _doubleSigningConstrainBlocks,
-      uint256 _slashDoubleSignAmount,
-      uint256 _doubleSigningJailUntilBlock
-    );
+    returns (uint256 _slashDoubleSignAmount, uint256 _doubleSigningJailUntilBlock);
 
   /**
    * @dev Sets the configs to slash block producers.
@@ -54,16 +44,11 @@ interface ISlashDoubleSign is IBaseSlash {
    * Requirements:
    * - The method caller is admin.
    *
-   * Emits the event `DoubleSignSlashConfigsUpdated`.
+   * Emits the event `DoubleSignSlashingConfigsUpdated`.
    *
-   * @param _constrainBlocks The number of blocks that the current block can be ahead of the double signed blocks.
    * @param _slashAmount The amount of RON to slash double sign.
    * @param _jailUntilBlock The block number that the punished validator will be jailed until, due to double signing.
    *
    */
-  function setDoubleSignSlashConfigs(
-    uint256 _constrainBlocks,
-    uint256 _slashAmount,
-    uint256 _jailUntilBlock
-  ) external;
+  function setDoubleSignSlashingConfigs(uint256 _slashAmount, uint256 _jailUntilBlock) external;
 }

@@ -6,10 +6,10 @@ import "./IBaseSlash.sol";
 
 interface ISlashUnavailability is IBaseSlash {
   /**
-   * @dev Emitted when the configs to slash bridge operator is updated. See the method `getUnavailabilitySlashConfigs`
+   * @dev Emitted when the configs to slash bridge operator is updated. See the method `getUnavailabilitySlashingConfigs`
    * for param details.
    */
-  event UnavailabilitySlashConfigsUpdated(
+  event UnavailabilitySlashingConfigsUpdated(
     uint256 unavailabilityTier1Threshold,
     uint256 unavailabilityTier2Threshold,
     uint256 slashAmountForUnavailabilityTier2Threshold,
@@ -55,7 +55,7 @@ interface ISlashUnavailability is IBaseSlash {
    * slashed tier-2.
    *
    */
-  function getUnavailabilitySlashConfigs()
+  function getUnavailabilitySlashingConfigs()
     external
     view
     returns (
@@ -71,7 +71,7 @@ interface ISlashUnavailability is IBaseSlash {
    * Requirements:
    * - The method caller is admin.
    *
-   * Emits the event `BridgeOperatorSlashConfigsUpdated`.
+   * Emits the event `BridgeOperatorSlashingConfigsUpdated`.
    *
    * @param _tier1Threshold The mining reward will be deprecated, if (s)he missed more than this threshold.
    * @param _tier2Threshold The mining reward will be deprecated, (s)he will be put in jailed, and will be deducted
@@ -81,7 +81,7 @@ interface ISlashUnavailability is IBaseSlash {
    * @param _jailDurationForTier2Threshold The number of blocks to jail a block producer when (s)he is slashed tier-2.
    *
    */
-  function setUnavailabilitySlashConfigs(
+  function setUnavailabilitySlashingConfigs(
     uint256 _tier1Threshold,
     uint256 _tier2Threshold,
     uint256 _slashAmountForTier2Threshold,

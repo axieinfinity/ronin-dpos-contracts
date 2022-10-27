@@ -29,7 +29,7 @@ contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, PercentageC
   /**
    * @inheritdoc ISlashBridgeOperator
    */
-  function getBridgeOperatorMissingConfigs()
+  function getBridgeOperatorSlashingConfigs()
     external
     view
     override
@@ -45,18 +45,18 @@ contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, PercentageC
   /**
    * @inheritdoc ISlashBridgeOperator
    */
-  function setBridgeOperatorSlashConfigs(
+  function setBridgeOperatorSlashingConfigs(
     uint256 _ratioTier1,
     uint256 _ratioTier2,
     uint256 _jailDurationTier2
   ) external override onlyAdmin {
-    _setBridgeOperatorSlashConfigs(_ratioTier1, _ratioTier2, _jailDurationTier2);
+    _setBridgeOperatorSlashingConfigs(_ratioTier1, _ratioTier2, _jailDurationTier2);
   }
 
   /**
-   * @dev See `ISlashBridgeOperator-setBridgeOperatorSlashConfigs`.
+   * @dev See `ISlashBridgeOperator-setBridgeOperatorSlashingConfigs`.
    */
-  function _setBridgeOperatorSlashConfigs(
+  function _setBridgeOperatorSlashingConfigs(
     uint256 _ratioTier1,
     uint256 _ratioTier2,
     uint256 _jailDurationTier2
@@ -68,6 +68,6 @@ contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, PercentageC
     _missingVotesRatioTier1 = _ratioTier1;
     _missingVotesRatioTier2 = _ratioTier2;
     _jailDurationForMissingVotesRatioTier2 = _jailDurationTier2;
-    emit BridgeOperatorSlashConfigsUpdated(_ratioTier1, _ratioTier2, _jailDurationTier2);
+    emit BridgeOperatorSlashingConfigsUpdated(_ratioTier1, _ratioTier2, _jailDurationTier2);
   }
 }

@@ -7,8 +7,6 @@ import "../../precompile-usages/PrecompileUsageValidateDoubleSign.sol";
 import "../../extensions/collections/HasValidatorContract.sol";
 
 abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PrecompileUsageValidateDoubleSign {
-  /// @dev The number of blocks that the current block can be ahead of the double signed blocks.
-  uint256 internal _doubleSigningConstrainBlocks;
   /// @dev The amount of RON to slash double sign.
   uint256 internal _slashDoubleSignAmount;
   /// @dev The block number that the punished validator will be jailed until, due to double signing.
@@ -43,42 +41,24 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, Pre
   /**
    * @inheritdoc ISlashDoubleSign
    */
-  function getDoubleSignSlashConfigs()
-    external
-    view
-    override
-    returns (
-      uint256,
-      uint256,
-      uint256
-    )
-  {
-    return (_doubleSigningConstrainBlocks, _slashDoubleSignAmount, _doubleSigningJailUntilBlock);
+  function getDoubleSignSlashingConfigs() external view override returns (uint256, uint256) {
+    return (_slashDoubleSignAmount, _doubleSigningJailUntilBlock);
   }
 
   /**
    * @inheritdoc ISlashDoubleSign
    */
-  function setDoubleSignSlashConfigs(
-    uint256 _constrainBlocks,
-    uint256 _slashAmount,
-    uint256 _jailUntilBlock
-  ) external override {
-    _setDoubleSignSlashConfigs(_constrainBlocks, _slashAmount, _jailUntilBlock);
+  function setDoubleSignSlashingConfigs(uint256 _slashAmount, uint256 _jailUntilBlock) external override onlyAdmin {
+    _setDoubleSignSlashingConfigs(_slashAmount, _jailUntilBlock);
   }
 
   /**
-   * @dev See `ISlashDoubleSign-setDoubleSignSlashConfigs`.
+   * @dev See `ISlashDoubleSign-setDoubleSignSlashingConfigs`.
    */
-  function _setDoubleSignSlashConfigs(
-    uint256 _constrainBlocks,
-    uint256 _slashAmount,
-    uint256 _jailUntilBlock
-  ) internal {
-    _doubleSigningConstrainBlocks = _constrainBlocks;
+  function _setDoubleSignSlashingConfigs(uint256 _slashAmount, uint256 _jailUntilBlock) internal {
     _slashDoubleSignAmount = _slashAmount;
     _doubleSigningJailUntilBlock = _jailUntilBlock;
-    emit DoubleSignSlashConfigsUpdated(_constrainBlocks, _slashAmount, _jailUntilBlock);
+    emit DoubleSignSlashingConfigsUpdated(_slashAmount, _jailUntilBlock);
   }
 
   /**

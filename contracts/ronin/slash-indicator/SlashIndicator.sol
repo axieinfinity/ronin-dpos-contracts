@@ -31,35 +31,38 @@ contract SlashIndicator is
     address __maintenanceContract,
     address __roninTrustedOrganizationContract,
     address __roninGovernanceAdminContract,
-    // _bridgeOperatorConfigs[0]: _missingVotesRatioTier1
-    // _bridgeOperatorConfigs[1]: _missingVotesRatioTier2
-    // _bridgeOperatorConfigs[2]: _jailDurationForMissingVotesRatioTier2
-    uint256[3] calldata _bridgeOperatorConfigs,
-    // _bridgeVotingConfigs[0]: _bridgeVotingThreshold
-    // _bridgeVotingConfigs[1]: _bridgeVotingSlashAmount
-    uint256[2] calldata _bridgeVotingConfigs,
-    // _doubleSignConfigs[0]: _doubleSigningConstrainBlocks
-    // _doubleSignConfigs[1]: _slashDoubleSignAmount
-    // _doubleSignConfigs[2]: _doubleSigningJailUntilBlock
-    uint256[3] calldata _doubleSignConfigs,
-    // _unavailabilitySlashConfigs[0]: _unavailabilityTier1Threshold
-    // _unavailabilitySlashConfigs[1]: _unavailabilityTier2Threshold
-    // _unavailabilitySlashConfigs[2]: _slashAmountForUnavailabilityTier2Threshold
-    // _unavailabilitySlashConfigs[3]: _jailDurationForUnavailabilityTier2Threshold
-    uint256[4] calldata _unavailabilitySlashConfigs
+    // _bridgeOperatorSlashingConfigs[0]: _missingVotesRatioTier1
+    // _bridgeOperatorSlashingConfigs[1]: _missingVotesRatioTier2
+    // _bridgeOperatorSlashingConfigs[2]: _jailDurationForMissingVotesRatioTier2
+    uint256[3] calldata _bridgeOperatorSlashingConfigs,
+    // _bridgeVotingSlashingConfigs[0]: _bridgeVotingThreshold
+    // _bridgeVotingSlashingConfigs[1]: _bridgeVotingSlashAmount
+    uint256[2] calldata _bridgeVotingSlashingConfigs,
+    // _doubleSignSlashingConfigs[0]: _slashDoubleSignAmount
+    // _doubleSignSlashingConfigs[1]: _doubleSigningJailUntilBlock
+    uint256[2] calldata _doubleSignSlashingConfigs,
+    // _unavailabilitySlashingConfigs[0]: _unavailabilityTier1Threshold
+    // _unavailabilitySlashingConfigs[1]: _unavailabilityTier2Threshold
+    // _unavailabilitySlashingConfigs[2]: _slashAmountForUnavailabilityTier2Threshold
+    // _unavailabilitySlashingConfigs[3]: _jailDurationForUnavailabilityTier2Threshold
+    uint256[4] calldata _unavailabilitySlashingConfigs
   ) external initializer {
     _setValidatorContract(__validatorContract);
     _setMaintenanceContract(__maintenanceContract);
     _setRoninTrustedOrganizationContract(__roninTrustedOrganizationContract);
     _setRoninGovernanceAdminContract(__roninGovernanceAdminContract);
-    _setBridgeOperatorSlashConfigs(_bridgeOperatorConfigs[0], _bridgeOperatorConfigs[1], _bridgeOperatorConfigs[2]);
-    _setBridgeVotingSlashConfigs(_bridgeVotingConfigs[0], _bridgeVotingConfigs[1]);
-    _setDoubleSignSlashConfigs(_doubleSignConfigs[0], _doubleSignConfigs[1], _doubleSignConfigs[2]);
-    _setUnavailabilitySlashConfigs(
-      _unavailabilitySlashConfigs[0],
-      _unavailabilitySlashConfigs[1],
-      _unavailabilitySlashConfigs[2],
-      _unavailabilitySlashConfigs[3]
+    _setBridgeOperatorSlashingConfigs(
+      _bridgeOperatorSlashingConfigs[0],
+      _bridgeOperatorSlashingConfigs[1],
+      _bridgeOperatorSlashingConfigs[2]
+    );
+    _setBridgeVotingSlashingConfigs(_bridgeVotingSlashingConfigs[0], _bridgeVotingSlashingConfigs[1]);
+    _setDoubleSignSlashingConfigs(_doubleSignSlashingConfigs[0], _doubleSignSlashingConfigs[1]);
+    _setUnavailabilitySlashingConfigs(
+      _unavailabilitySlashingConfigs[0],
+      _unavailabilitySlashingConfigs[1],
+      _unavailabilitySlashingConfigs[2],
+      _unavailabilitySlashingConfigs[3]
     );
   }
 

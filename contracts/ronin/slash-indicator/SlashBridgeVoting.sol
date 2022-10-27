@@ -45,23 +45,23 @@ contract SlashBridgeVoting is
   /**
    * @inheritdoc ISlashBridgeVoting
    */
-  function getBridgeVotingConfigs() external view override returns (uint256, uint256) {
+  function getBridgeVotingSlashingConfigs() external view override returns (uint256, uint256) {
     return (_bridgeVotingThreshold, _bridgeVotingSlashAmount);
   }
 
   /**
    * @inheritdoc ISlashBridgeVoting
    */
-  function setBridgeVotingSlashConfigs(uint256 _threshold, uint256 _slashAmount) external override onlyAdmin {
-    _setBridgeVotingSlashConfigs(_threshold, _slashAmount);
+  function setBridgeVotingSlashingConfigs(uint256 _threshold, uint256 _slashAmount) external override onlyAdmin {
+    _setBridgeVotingSlashingConfigs(_threshold, _slashAmount);
   }
 
   /**
-   * @dev See `ISlashBridgeVoting-setBridgeVotingSlashConfigs`.
+   * @dev See `ISlashBridgeVoting-setBridgeVotingSlashingConfigs`.
    */
-  function _setBridgeVotingSlashConfigs(uint256 _threshold, uint256 _slashAmount) internal {
+  function _setBridgeVotingSlashingConfigs(uint256 _threshold, uint256 _slashAmount) internal {
     _bridgeVotingThreshold = _threshold;
     _slashAmount = _bridgeVotingSlashAmount;
-    emit BridgeVotingSlashConfigsUpdated(_threshold, _slashAmount);
+    emit BridgeVotingSlashingConfigsUpdated(_threshold, _slashAmount);
   }
 }
