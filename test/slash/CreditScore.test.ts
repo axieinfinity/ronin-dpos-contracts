@@ -13,7 +13,6 @@ import {
   Staking,
   Staking__factory,
 } from '../../src/types';
-import { SlashType } from '../../src/script/slash-indicator';
 import { initTest } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
 import { IndicatorController, ScoreController } from '../helpers/slash';
@@ -67,7 +66,7 @@ describe('Credit score and bail out test', () => {
     validatorCandidates = validatorCandidates.slice(maxValidatorNumber, maxValidatorNumber * 2);
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
-      await initTest('SlashIndicator')({
+      await initTest('CreditScore')({
         trustedOrganizations: [governor].map((v) => ({
           consensusAddr: v.address,
           governor: v.address,
