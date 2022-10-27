@@ -53,7 +53,22 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   /**
    * @inheritdoc IBridgeTracking
    */
-  function totalBallotsOf(uint256 _period, address _bridgeOperator) external view override returns (uint256) {
+  function bulkTotalBallotsOf(uint256 _period, address[] calldata _bridgeOperators)
+    external
+    view
+    override
+    returns (uint256[] memory _res)
+  {
+    _res = new uint256[](_bridgeOperators.length);
+    for (uint _i = 0; _i < _bridgeOperators.length; _i++) {
+      _res[_i] = totalBallotsOf(_period, _bridgeOperators[_i]);
+    }
+  }
+
+  /**
+   * @inheritdoc IBridgeTracking
+   */
+  function totalBallotsOf(uint256 _period, address _bridgeOperator) public view override returns (uint256) {
     return _totalBallotsOf[_period][_bridgeOperator];
   }
 

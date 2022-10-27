@@ -19,7 +19,14 @@ interface IRoninValidatorSet is ICandidateManager {
   event BridgeOperatorSetUpdated(address[]);
 
   /// @dev Emitted when the validator is punished.
-  event ValidatorPunished(address indexed validatorAddr, uint256 jailedUntil, uint256 deductedStakingAmount);
+  event ValidatorPunished(
+    address indexed consensusAddr,
+    uint256 indexed period,
+    uint256 jailedUntil,
+    uint256 deductedStakingAmount,
+    bool blockProducerRewardDeprecated,
+    bool bridgeOperatorRewardDeprecated
+  );
   /// @dev Emitted when the reward of the block producer is deprecated.
   event BlockRewardRewardDeprecated(address indexed coinbaseAddr, uint256 rewardAmount);
   /// @dev Emitted when the block reward is submitted.

@@ -10,6 +10,7 @@ import "../../extensions/collections/HasSlashIndicatorContract.sol";
 import "../../extensions/collections/HasMaintenanceContract.sol";
 import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../../extensions/collections/HasBridgeTrackingContract.sol";
+import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/IRoninValidatorSet.sol";
 import "../../libraries/Math.sol";
 import "../../libraries/EnumFlags.sol";
@@ -29,6 +30,7 @@ contract RoninValidatorSet is
   HasRoninTrustedOrganizationContract,
   HasBridgeTrackingContract,
   CandidateManager,
+  PercentageConsumer,
   Initializable
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
@@ -176,8 +178,8 @@ contract RoninValidatorSet is
 
     if (_periodEnding) {
       uint256 _totalDelegatingReward = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
-        _currentValidators,
-        _period
+        _period,
+        _currentValidators
       );
       _settleAndTransferDelegatingRewards(_currentValidators, _totalDelegatingReward);
       _currentValidators = _syncValidatorSet();
@@ -200,7 +202,8 @@ contract RoninValidatorSet is
     uint256 _newJailedUntil,
     uint256 _slashAmount
   ) external onlySlashIndicatorContract {
-    _miningRewardDeprecatedAtPeriod[_validatorAddr][currentPeriod()] = true;
+    uint256 _period = currentPeriod();
+    _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = true;
     delete _miningReward[_validatorAddr];
     delete _delegatingReward[_validatorAddr];
     IStaking(_stakingContract).sinkPendingReward(_validatorAddr);
@@ -213,7 +216,7 @@ contract RoninValidatorSet is
       IStaking(_stakingContract).deductStakedAmount(_validatorAddr, _slashAmount);
     }
 
-    emit ValidatorPunished(_validatorAddr, _jailedUntil[_validatorAddr], _slashAmount);
+    emit ValidatorPunished(_validatorAddr, _period, _jailedUntil[_validatorAddr], _slashAmount, true, false);
   }
 
   /**
@@ -436,21 +439,34 @@ contract RoninValidatorSet is
    *
    */
   function _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
-    address[] memory _currentValidators,
-    uint256 _period
+    uint256 _period,
+    address[] memory _currentValidators
   ) private returns (uint256 _totalDelegatingReward) {
+    address _consensusAddr;
+    address payable _treasury;
     IBridgeTracking _bridgeTracking = _bridgeTrackingContract;
+
     uint256 _totalBridgeBallots = _bridgeTracking.totalBallots(_period);
     uint256 _totalBridgeVotes = _bridgeTracking.totalVotes(_period);
+    uint256[] memory _bridgeBallots = _bridgeTracking.bulkTotalBallotsOf(_period, _currentValidators);
+    (
+      uint256 _missingVotesRatioTier1,
+      uint256 _missingVotesRatioTier2,
+      uint256 _jailDurationForMissingVotesRatioTier2
+    ) = _slashIndicatorContract.getBridgeOperatorMissingConfigs();
+
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
-      address _consensusAddr = _currentValidators[_i];
-      address payable _treasury = _candidateInfo[_consensusAddr].treasuryAddr;
+      _consensusAddr = _currentValidators[_i];
+      _treasury = _candidateInfo[_consensusAddr].treasuryAddr;
       _updateValidatorReward(
+        _period,
         _consensusAddr,
+        _bridgeBallots[_i],
         _totalBridgeVotes,
         _totalBridgeBallots,
-        _bridgeTracking.totalBallotsOf(_period, _consensusAddr),
-        _period
+        _missingVotesRatioTier1,
+        _missingVotesRatioTier2,
+        _jailDurationForMissingVotesRatioTier2
       );
 
       if (!_bridgeRewardDeprecated(_consensusAddr, _period)) {
@@ -469,44 +485,37 @@ contract RoninValidatorSet is
     }
   }
 
-  /// @dev The ratio of missing votes for bridge operator to be deprecated reward.
-  /// The value of ratio is exclusive. Values 0-10,000 map to 0%-100%.
-  /// TODO:
-  /// - Add this into the interface.
-  /// - Add this init fn.
-  /// - Add setter.
-  uint256 public missingVotesRatioToDeprecateBridgeReward;
-  /// @dev The ratio of missing votes for bridge operator to be deprecated all rewards including bridge reward and mining reward.
-  /// The value of ratio is exclusive. Values 0-10,000 map to 0%-100%.
-  /// TODO:
-  /// - Add this into the interface.
-  /// - Add this init fn.
-  /// - Add setter.
-  uint256 public missingVotesRatioToDeprecateAllRewardsAndPutInJail;
-
-  // TODO: Comments
+  /**
+   * @dev Updates validator reward based on the corresponding bridge operator performance.
+   */
   function _updateValidatorReward(
+    uint256 _period,
     address _validator,
+    uint256 _validatorBallots,
     uint256 _totalVotes,
     uint256 _totalBallots,
-    uint256 _validatorBallots,
-    uint256 _period
+    uint256 _ratioTier1,
+    uint256 _ratioTier2,
+    uint256 _jailDurationTier2
   ) internal {
-    uint256 _missingRatio = 100_00 - (_validatorBallots * 100_00) / _totalVotes;
-    if (_missingRatio > missingVotesRatioToDeprecateAllRewardsAndPutInJail) {
+    uint256 _votedRatio = _totalVotes == 0 ? _MAX_PERCENTAGE : (_validatorBallots * _MAX_PERCENTAGE) / _totalVotes;
+    uint256 _missedRatio = _MAX_PERCENTAGE - _votedRatio;
+    if (_missedRatio > _ratioTier2) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
-      _jailedUntil[_validator] = Math.max(block.number + 57600, _jailedUntil[_validator]);
-    } else if (_missingRatio > missingVotesRatioToDeprecateBridgeReward) {
+      _jailedUntil[_validator] = Math.max(block.number + _jailDurationTier2, _jailedUntil[_validator]);
+      emit ValidatorPunished(_validator, _period, _jailedUntil[_validator], 0, true, true);
+    } else if (_missedRatio > _ratioTier1) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
+      emit ValidatorPunished(_validator, _period, _jailedUntil[_validator], 0, false, true);
     } else {
-      uint256 _shareRatio = (_validatorBallots * 100_00) / _totalBallots;
-      _bridgeOperatingReward[_validator] = (_shareRatio * _totalBridgeReward) / 100_00;
+      uint256 _shareRatio = (_validatorBallots * _MAX_PERCENTAGE) / _totalBallots;
+      _bridgeOperatingReward[_validator] = (_shareRatio * _totalBridgeReward) / _MAX_PERCENTAGE;
     }
   }
 
   /**
-   * @dev Distribute bonus of staking vesting and mining fee for the block producer.
+   * @dev Distributes bonus of staking vesting and mining fee for the block producer.
    *
    * Emits the `MiningRewardDistributed` once the reward is distributed successfully.
    * Emits the `MiningRewardDistributionFailed` once the contract fails to distribute reward.
