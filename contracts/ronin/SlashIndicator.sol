@@ -10,6 +10,7 @@ import "../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../extensions/collections/HasRoninGovernanceAdminContract.sol";
 import "../libraries/Math.sol";
 import "../precompile-usages/PrecompileUsageValidateDoubleSign.sol";
+import "./slash/CreditScore.sol";
 
 contract SlashIndicator is
   ISlashIndicator,
@@ -18,6 +19,7 @@ contract SlashIndicator is
   HasMaintenanceContract,
   HasRoninTrustedOrganizationContract,
   HasRoninGovernanceAdminContract,
+  CreditScore,
   Initializable
 {
   using Math for uint256;
@@ -26,10 +28,6 @@ contract SlashIndicator is
   mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
   /// @dev Mapping from validator address => period index => bridge voting slashed
   mapping(address => mapping(uint256 => bool)) internal _bridgeVotingSlashed;
-  /// @dev Mapping from validator address => period index => whether bailed out before
-  mapping(address => mapping(uint256 => bool)) internal _bailedOutStatus;
-  /// @dev Mapping from validator address => credit score
-  mapping(address => uint256) internal _creditScore;
 
   /// @dev The last block that a validator is slashed
   uint256 public lastSlashedBlock;
@@ -54,13 +52,6 @@ contract SlashIndicator is
   uint256 public felonyJailDuration;
   /// @dev The block number that the punished validator will be jailed until, due to double signing.
   uint256 public doubleSigningJailUntilBlock;
-
-  /// @dev The max gained number of credit score per period.
-  uint256 public gainCreditScore;
-  /// @dev The max number of credit score that a validator can hold.
-  uint256 public maxCreditScore;
-  /// @dev The number that will be multiplied with the remaining jailed time to get the cost of bailing out.
-  uint256 public bailOutCostMultiplier;
 
   modifier onlyCoinbase() {
     require(msg.sender == block.coinbase, "SlashIndicator: method caller must be coinbase");
@@ -179,75 +170,6 @@ contract SlashIndicator is
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
-  //                              CREDIT SCORE FUNCTIONS                               //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
-  /**
-   * @inheritdoc ISlashIndicator
-   */
-  function updateCreditScore(address[] calldata _validators, uint256 _period) external override onlyValidatorContract {
-    uint256 _periodStartAtBlock = _validatorContract.currentPeriodStartAtBlock();
-
-    bool[] memory _jaileds = _validatorContract.bulkJailed(_validators);
-    bool[] memory _maintaineds = _maintenanceContract.bulkMaintainingInBlockRange(
-      _validators,
-      _periodStartAtBlock,
-      block.number
-    );
-    uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
-
-    for (uint _i = 0; _i < _validators.length; _i++) {
-      address _validator = _validators[_i];
-
-      uint256 _indicator = _unavailabilityIndicator[_validator][_period];
-      bool _isJailedInPeriod = _jaileds[_i];
-      bool _isMaintainingInPeriod = _maintaineds[_i];
-
-      uint256 _actualGain = (_isJailedInPeriod || _isMaintainingInPeriod)
-        ? 0
-        : Math.subNonNegative(gainCreditScore, _indicator);
-      uint256 _scoreBeforeGain = _creditScore[_validator];
-      uint256 _scoreAfterGain = Math.addWithUpperbound(_creditScore[_validator], _actualGain, maxCreditScore);
-
-      if (_scoreBeforeGain != _scoreAfterGain) {
-        _creditScore[_validator] = _scoreAfterGain;
-      }
-
-      _updatedCreditScores[_i] = _creditScore[_validator];
-    }
-
-    emit CreditScoresUpdated(_validators, _updatedCreditScores);
-  }
-
-  /**
-   * @inheritdoc ISlashIndicator
-   */
-  function bailOut(address _consensusAddr) external override {
-    require(_validatorContract.isValidator(_consensusAddr), "SlashIndicator: consensus address must be a validator");
-    require(
-      _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender),
-      "SlashIndicator: method caller must be a candidate admin"
-    );
-
-    (bool _isJailed, , uint256 _jailedEpochLeft) = _validatorContract.jailedTimeLeft(msg.sender);
-    require(_isJailed, "SlashIndicator: caller must be jailed in the current period");
-
-    uint256 _period = _validatorContract.currentPeriod();
-    require(!_bailedOutStatus[msg.sender][_period], "SlashIndicator: validator has bailed out previously");
-
-    uint256 _score = _creditScore[msg.sender];
-    uint256 _cost = _jailedEpochLeft * bailOutCostMultiplier;
-    require(_score >= _cost, "SlashIndicator: insufficient credit score to bail out");
-
-    _creditScore[msg.sender] -= _cost;
-    _unavailabilityIndicator[msg.sender][_period] = 0;
-    _bailedOutStatus[msg.sender][_period] = true;
-
-    // TODO: - Remove all rewards of the validator before the bailout
-    // TODO: - After the bailout, the validator gets 50% of the rewards until the end of the period.
-  }
-
-  ///////////////////////////////////////////////////////////////////////////////////////
   //                               GOVERNANCE FUNCTIONS                                //
   ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -293,27 +215,6 @@ contract SlashIndicator is
     _setBridgeVotingSlashAmount(_amount);
   }
 
-  /**
-   * @inheritdoc ISlashIndicator
-   */
-  function setGainCreditScore(uint256 _gainCreditScore) external override onlyAdmin {
-    _setGainCreditScore(_gainCreditScore);
-  }
-
-  /**
-   * @inheritdoc ISlashIndicator
-   */
-  function setMaxCreditScore(uint256 _maxCreditScore) external override onlyAdmin {
-    _setMaxCreditScore(_maxCreditScore);
-  }
-
-  /**
-   * @inheritdoc ISlashIndicator
-   */
-  function setBailOutCostMultiplier(uint256 _bailOutCostMultiplier) external override onlyAdmin {
-    _setBailOutCostMultiplier(_bailOutCostMultiplier);
-  }
-
   ///////////////////////////////////////////////////////////////////////////////////////
   //                                  QUERY FUNCTIONS                                  //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -332,31 +233,13 @@ contract SlashIndicator is
   /**
    * @inheritdoc ISlashIndicator
    */
-  function getUnavailabilityIndicator(address _validator, uint256 _period) public view override returns (uint256) {
-    return _unavailabilityIndicator[_validator][_period];
-  }
-
-  /**
-   * @inheritdoc ISlashIndicator
-   */
-  function getCreditScore(address _validator) external view override returns (uint256) {
-    return _creditScore[_validator];
-  }
-
-  /**
-   * @inheritdoc ISlashIndicator
-   */
-  function getBulkCreditScore(address[] calldata _validators)
+  function getUnavailabilityIndicator(address _validator, uint256 _period)
     public
     view
-    override
-    returns (uint256[] memory _resultList)
+    override(ISlashIndicator, CreditScore)
+    returns (uint256)
   {
-    _resultList = new uint256[](_validators.length);
-
-    for (uint _i = 0; _i < _resultList.length; _i++) {
-      _resultList[_i] = _creditScore[_validators[_i]];
-    }
+    return _unavailabilityIndicator[_validator][_period];
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -428,19 +311,15 @@ contract SlashIndicator is
     emit BridgeVotingSlashAmountUpdated(_amount);
   }
 
-  function _setGainCreditScore(uint256 _gainCreditScore) internal {
-    gainCreditScore = _gainCreditScore;
-    emit GainCreditScoreUpdated(_gainCreditScore);
-  }
-
-  function _setMaxCreditScore(uint256 _maxCreditScore) internal {
-    maxCreditScore = _maxCreditScore;
-    emit MaxCreditScoreUpdated(_maxCreditScore);
-  }
-
-  function _setBailOutCostMultiplier(uint256 _bailOutCostMultiplier) internal {
-    bailOutCostMultiplier = _bailOutCostMultiplier;
-    emit BailOutCostMultiplierUpdated(_bailOutCostMultiplier);
+  /**
+   * @dev Sets the unavailability indicator of the `_validator` at `_period`.
+   */
+  function _setUnavailabilityIndicator(
+    address _validator,
+    uint256 _period,
+    uint256 _indicator
+  ) internal override(CreditScore) {
+    _unavailabilityIndicator[_validator][_period] = _indicator;
   }
 
   /**
