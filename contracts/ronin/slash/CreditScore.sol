@@ -71,19 +71,19 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
       "SlashIndicator: method caller must be a candidate admin"
     );
 
-    (bool _isJailed, , uint256 _jailedEpochLeft) = _validatorContract.jailedTimeLeft(msg.sender);
+    (bool _isJailed, , uint256 _jailedEpochLeft) = _validatorContract.jailedTimeLeft(_consensusAddr);
     require(_isJailed, "SlashIndicator: caller must be jailed in the current period");
 
     uint256 _period = _validatorContract.currentPeriod();
-    require(!_bailedOutStatus[msg.sender][_period], "SlashIndicator: validator has bailed out previously");
+    require(!_bailedOutStatus[_consensusAddr][_period], "SlashIndicator: validator has bailed out previously");
 
-    uint256 _score = _creditScore[msg.sender];
+    uint256 _score = _creditScore[_consensusAddr];
     uint256 _cost = _jailedEpochLeft * bailOutCostMultiplier;
     require(_score >= _cost, "SlashIndicator: insufficient credit score to bail out");
 
-    _creditScore[msg.sender] -= _cost;
-    _setUnavailabilityIndicator(msg.sender, _period, 0);
-    _bailedOutStatus[msg.sender][_period] = true;
+    _creditScore[_consensusAddr] -= _cost;
+    _setUnavailabilityIndicator(_consensusAddr, _period, 0);
+    _bailedOutStatus[_consensusAddr][_period] = true;
 
     // TODO: - Remove all rewards of the validator before the bailout
     // TODO: - After the bailout, the validator gets 50% of the rewards until the end of the period.
