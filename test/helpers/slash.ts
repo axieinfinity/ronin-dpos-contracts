@@ -1,24 +1,58 @@
 export class IndicatorController {
-  private localIndicators: number[];
+  private _indicators: number[];
 
-  constructor(indicatorSize: number) {
-    this.localIndicators = new Array(indicatorSize).fill(0);
+  constructor(_size: number) {
+    this._indicators = new Array(_size).fill(0);
   }
 
-  increaseLocalCounterForValidatorAt(idx: number, value?: number) {
+  increaseAt(idx: number, value?: number) {
     value = value ?? 1;
-    this.localIndicators[idx] += value;
+    this._indicators[idx] += value;
   }
 
-  setLocalCounterForValidatorAt(idx: number, value: number) {
-    this.localIndicators[idx] = value;
+  setAt(idx: number, value: number) {
+    this._indicators[idx] = value;
   }
 
-  resetLocalCounterForValidatorAt(idx: number) {
-    this.localIndicators[idx] = 0;
+  resetAt(idx: number) {
+    this._indicators[idx] = 0;
   }
 
-  getLocalCounterForValidatorAt(idx: number): number {
-    return this.localIndicators[idx];
+  getAt(idx: number): number {
+    return this._indicators[idx];
+  }
+}
+
+export class ScoreController {
+  private _scores: number[];
+
+  constructor(_size: number) {
+    this._scores = new Array(_size).fill(0);
+  }
+
+  increaseAt(idx: number, value?: number) {
+    value = value ?? 1;
+    this._scores[idx] += value;
+  }
+
+  increaseAtWithUpperbound(idx: number, upperbound: number, value?: number) {
+    value = value ?? 1;
+    this._scores[idx] += value;
+
+    if (this._scores[idx] > upperbound) {
+      this._scores[idx] = upperbound;
+    }
+  }
+
+  setAt(idx: number, value: number) {
+    this._scores[idx] = value;
+  }
+
+  resetAt(idx: number) {
+    this._scores[idx] = 0;
+  }
+
+  getAt(idx: number): number {
+    return this._scores[idx];
   }
 }

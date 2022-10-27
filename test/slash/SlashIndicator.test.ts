@@ -48,7 +48,7 @@ const minOffset = 200;
 
 const validateIndicatorAt = async (idx: number) => {
   expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[idx].address)).to.eq(
-    localIndicators.getLocalCounterForValidatorAt(idx)
+    localIndicators.getAt(idx)
   );
 };
 
@@ -162,7 +162,7 @@ describe('Slash indicator test', () => {
           .connect(validatorCandidates[slasherIdx])
           .slashUnavailability(validatorCandidates[slasherIdx].address);
 
-        localIndicators.resetLocalCounterForValidatorAt(slasherIdx);
+        localIndicators.resetAt(slasherIdx);
         await validateIndicatorAt(slasherIdx);
       });
 
@@ -182,7 +182,7 @@ describe('Slash indicator test', () => {
         await network.provider.send('evm_mine');
         await network.provider.send('evm_setAutomine', [true]);
 
-        localIndicators.increaseLocalCounterForValidatorAt(slasheeIdx);
+        localIndicators.increaseAt(slasheeIdx);
         await validateIndicatorAt(slasheeIdx);
       });
 
@@ -203,9 +203,9 @@ describe('Slash indicator test', () => {
         await network.provider.send('evm_mine');
         await network.provider.send('evm_setAutomine', [true]);
 
-        localIndicators.increaseLocalCounterForValidatorAt(slasheeIdx1);
+        localIndicators.increaseAt(slasheeIdx1);
         await validateIndicatorAt(slasheeIdx1);
-        localIndicators.setLocalCounterForValidatorAt(slasheeIdx2, 1);
+        localIndicators.setAt(slasheeIdx2, 1);
         await validateIndicatorAt(slasheeIdx1);
       });
     });
@@ -303,14 +303,14 @@ describe('Slash indicator test', () => {
             .slashUnavailability(validatorCandidates[slasheeIdx].address);
         }
 
-        localIndicators.setLocalCounterForValidatorAt(slasheeIdx, numberOfSlashing);
+        localIndicators.setAt(slasheeIdx, numberOfSlashing);
         await validateIndicatorAt(slasheeIdx);
 
         await EpochController.setTimestampToPeriodEnding();
         await localEpochController.mineToBeforeEndOfEpoch();
         await validatorContract.connect(validatorCandidates[slasherIdx]).wrapUpEpoch();
 
-        localIndicators.resetLocalCounterForValidatorAt(slasheeIdx);
+        localIndicators.resetAt(slasheeIdx);
         await validateIndicatorAt(slasheeIdx);
       });
 
@@ -329,7 +329,7 @@ describe('Slash indicator test', () => {
         }
 
         for (let j = 0; j < slasheeIdxs.length; j++) {
-          localIndicators.setLocalCounterForValidatorAt(slasheeIdxs[j], numberOfSlashing);
+          localIndicators.setAt(slasheeIdxs[j], numberOfSlashing);
           await validateIndicatorAt(slasheeIdxs[j]);
         }
 
@@ -338,7 +338,7 @@ describe('Slash indicator test', () => {
         await validatorContract.connect(validatorCandidates[slasherIdx]).wrapUpEpoch();
 
         for (let j = 0; j < slasheeIdxs.length; j++) {
-          localIndicators.resetLocalCounterForValidatorAt(slasheeIdxs[j]);
+          localIndicators.resetAt(slasheeIdxs[j]);
           await validateIndicatorAt(slasheeIdxs[j]);
         }
       });
