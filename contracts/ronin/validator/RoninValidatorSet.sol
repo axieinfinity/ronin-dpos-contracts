@@ -198,7 +198,7 @@ contract RoninValidatorSet is
     address _validatorAddr,
     uint256 _newJailedUntil,
     uint256 _slashAmount
-  ) external onlySlashIndicatorContract {
+  ) external override onlySlashIndicatorContract {
     _rewardDeprecatedAtPeriod[_validatorAddr][currentPeriod()] = true;
     delete _miningReward[_validatorAddr];
     delete _delegatingReward[_validatorAddr];
@@ -213,6 +213,15 @@ contract RoninValidatorSet is
     }
 
     emit ValidatorPunished(_validatorAddr, _jailedUntil[_validatorAddr], _slashAmount);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function bailOut(address _validatorAddr) external override onlySlashIndicatorContract {
+    _jailedUntil[_validatorAddr] = block.number - 1;
+
+    emit ValidatorLiberated(_validatorAddr);
   }
 
   /**

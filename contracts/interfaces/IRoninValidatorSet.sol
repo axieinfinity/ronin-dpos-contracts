@@ -23,6 +23,8 @@ interface IRoninValidatorSet is ICandidateManager {
   event BlockRewardSubmitted(address coinbaseAddr, uint256 submittedAmount, uint256 bonusAmount);
   /// @dev Emitted when the validator is punished.
   event ValidatorPunished(address validatorAddr, uint256 jailedUntil, uint256 deductedStakingAmount);
+  /// @dev Emitted when the validator get out of jail by bailout.
+  event ValidatorLiberated(address indexed validator);
   /// @dev Emitted when the validator reward is distributed.
   event MiningRewardDistributed(address indexed validatorAddr, address indexed recipientAddr, uint256 amount);
   /// @dev Emitted when the bridge operator reward is distributed.
@@ -89,6 +91,17 @@ interface IRoninValidatorSet is ICandidateManager {
     uint256 _newJailedUntil,
     uint256 _slashAmount
   ) external;
+
+  /**
+   * @dev Bailout the validator.
+   *
+   * Requirements:
+   * - The method caller is slash indicator contract.
+   *
+   * Emits the event `ValidatorLiberated`.
+   *
+   */
+  function bailOut(address _validatorAddr) external;
 
   /**
    * @dev Returns whether the validator are put in jail (cannot join the set of validators) during the current period.
