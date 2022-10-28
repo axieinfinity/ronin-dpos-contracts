@@ -162,7 +162,6 @@ contract RoninValidatorSet is
 
     uint256 _newPeriod = _computePeriod(block.timestamp);
     bool _periodEnding = _isPeriodEnding(_newPeriod);
-    _lastUpdatedPeriod = _newPeriod;
     _currentPeriodStartAtBlock = block.number + 1;
 
     address[] memory _currentValidators = getValidators();
@@ -184,6 +183,8 @@ contract RoninValidatorSet is
     _revampBlockProducers(_currentValidators);
 
     emit WrappedUpEpoch(_period, _epoch, _periodEnding);
+
+    _lastUpdatedPeriod = _newPeriod;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
