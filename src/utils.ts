@@ -89,26 +89,26 @@ export interface StakingVestingConfig {
 }
 
 export interface BridgeOperatorSlashingConfig {
-  missingVotesRatioTier1: BigNumberish;
-  missingVotesRatioTier2: BigNumberish;
-  jailDurationForMissingVotesRatioTier2: BigNumberish;
+  missingVotesRatioTier1?: BigNumberish;
+  missingVotesRatioTier2?: BigNumberish;
+  jailDurationForMissingVotesRatioTier2?: BigNumberish;
 }
 
 export interface BridgeVotingSlashingConfig {
-  bridgeVotingThreshold: BigNumberish;
-  bridgeVotingSlashAmount: BigNumberish;
+  bridgeVotingThreshold?: BigNumberish;
+  bridgeVotingSlashAmount?: BigNumberish;
 }
 
 export interface DoubleSignSlashingConfig {
-  slashDoubleSignAmount: BigNumberish;
-  doubleSigningJailUntilBlock: BigNumberish;
+  slashDoubleSignAmount?: BigNumberish;
+  doubleSigningJailUntilBlock?: BigNumberish;
 }
 
 export interface UnavailabilitySlashing {
-  unavailabilityTier1Threshold: BigNumberish;
-  unavailabilityTier2Threshold: BigNumberish;
-  slashAmountForUnavailabilityTier2Threshold: BigNumberish;
-  jailDurationForUnavailabilityTier2Threshold: BigNumberish;
+  unavailabilityTier1Threshold?: BigNumberish;
+  unavailabilityTier2Threshold?: BigNumberish;
+  slashAmountForUnavailabilityTier2Threshold?: BigNumberish;
+  jailDurationForUnavailabilityTier2Threshold?: BigNumberish;
 }
 
 export interface SlashIndicatorArguments {

@@ -33,8 +33,8 @@ let governanceAdminInterface: GovernanceAdminInterface;
 
 let localEpochController: EpochController;
 
-const misdemeanorThreshold = 50;
-const felonyThreshold = 150;
+const unavailabilityTier1Threshold = 50;
+const unavailabilityTier2Threshold = 150;
 const maxValidatorNumber = 4;
 const numberOfBlocksInEpoch = 600;
 const minValidatorBalance = BigNumber.from(100);
@@ -56,15 +56,33 @@ describe('Maintenance test', () => {
       validatorContractAddress,
       roninGovernanceAdminAddress,
     } = await initTest('Maintenance')({
-      trustedOrganizations: [governor].map((v) => ({
-        consensusAddr: v.address,
-        governor: v.address,
-        bridgeVoter: v.address,
-        weight: 100,
-        addedBlock: 0,
-      })),
-      misdemeanorThreshold,
-      felonyThreshold,
+      slashIndicatorArguments: {
+        unavailabilitySlashing: {
+          unavailabilityTier1Threshold,
+          unavailabilityTier2Threshold,
+        },
+      },
+      stakingArguments: {
+        minValidatorBalance,
+      },
+      roninValidatorSetArguments: {
+        maxValidatorNumber,
+        numberOfBlocksInEpoch,
+      },
+      maintenanceArguments: {
+        minOffset,
+        minMaintenanceBlockPeriod,
+        maxMaintenanceBlockPeriod,
+      },
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: [governor].map((v) => ({
+          consensusAddr: v.address,
+          governor: v.address,
+          bridgeVoter: v.address,
+          weight: 100,
+          addedBlock: 0,
+        })),
+      },
     });
     maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);

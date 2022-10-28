@@ -64,11 +64,13 @@ export const defaultTestConfig: InitTestInput = {
   stakingArguments: {
     minValidatorBalance: BigNumber.from(100),
   },
+
   stakingVestingArguments: {
     validatorBonusPerBlock: 1,
     bridgeOperatorBonusPerBlock: 1,
     topupAmount: BigNumber.from(100000000000),
   },
+
   slashIndicatorArguments: {
     bridgeOperatorSlashing: {
       missingVotesRatioTier1: 10_00, // 10%
@@ -90,17 +92,20 @@ export const defaultTestConfig: InitTestInput = {
       jailDurationForUnavailabilityTier2Threshold: 28800 * 2,
     },
   },
+
   roninValidatorSetArguments: {
     maxValidatorNumber: 4,
     maxPrioritizedValidatorNumber: 0,
     numberOfBlocksInEpoch: 600,
     maxValidatorCandidate: 10,
   },
+
   roninTrustedOrganizationArguments: {
     trustedOrganizations: [],
     numerator: 0,
     denominator: 1,
   },
+
   mainchainGovernanceAdminArguments: {
     roleSetter: ethers.constants.AddressZero,
     relayers: [],
@@ -125,8 +130,22 @@ export const initTest = (id: string) =>
         ...options?.maintenanceArguments,
       };
       slashIndicatorConf[network.name] = {
-        ...defaultTestConfig?.slashIndicatorArguments,
-        ...options?.slashIndicatorArguments,
+        bridgeOperatorSlashing: {
+          ...defaultTestConfig?.slashIndicatorArguments?.bridgeOperatorSlashing,
+          ...options?.slashIndicatorArguments?.bridgeOperatorSlashing,
+        },
+        bridgeVotingSlashing: {
+          ...defaultTestConfig?.slashIndicatorArguments?.bridgeVotingSlashing,
+          ...options?.slashIndicatorArguments?.bridgeVotingSlashing,
+        },
+        doubleSignSlashing: {
+          ...defaultTestConfig?.slashIndicatorArguments?.doubleSignSlashing,
+          ...options?.slashIndicatorArguments?.doubleSignSlashing,
+        },
+        unavailabilitySlashing: {
+          ...defaultTestConfig?.slashIndicatorArguments?.unavailabilitySlashing,
+          ...options?.slashIndicatorArguments?.unavailabilitySlashing,
+        },
       };
       roninValidatorSetConf[network.name] = {
         ...defaultTestConfig?.roninValidatorSetArguments,

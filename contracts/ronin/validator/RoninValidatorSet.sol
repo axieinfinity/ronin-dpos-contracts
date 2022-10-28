@@ -360,15 +360,6 @@ contract RoninValidatorSet is
   }
 
   /**
-   * Notice: A validator is always a bride operator
-   *
-   * @inheritdoc IRoninValidatorSet
-   */
-  function totalBridgeOperators() external view returns (uint256) {
-    return validatorCount;
-  }
-
-  /**
    * @inheritdoc IRoninValidatorSet
    */
   function isPeriodEnding() external view virtual returns (bool) {
@@ -406,6 +397,15 @@ contract RoninValidatorSet is
    */
   function maxPrioritizedValidatorNumber() external view override returns (uint256 _maximumPrioritizedValidatorNumber) {
     return _maxPrioritizedValidatorNumber;
+  }
+
+  /**
+   * Notice: A validator is always a bride operator
+   *
+   * @inheritdoc IRoninValidatorSet
+   */
+  function totalBridgeOperators() public view returns (uint256) {
+    return validatorCount;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -479,10 +479,10 @@ contract RoninValidatorSet is
       }
 
       delete _delegatingReward[_consensusAddr];
-      delete _totalBridgeReward;
       delete _miningReward[_consensusAddr];
       delete _bridgeOperatingReward[_consensusAddr];
     }
+    delete _totalBridgeReward;
   }
 
   /**
@@ -498,7 +498,14 @@ contract RoninValidatorSet is
     uint256 _ratioTier2,
     uint256 _jailDurationTier2
   ) internal {
-    uint256 _votedRatio = _totalVotes == 0 ? _MAX_PERCENTAGE : (_validatorBallots * _MAX_PERCENTAGE) / _totalVotes;
+    // Shares equally in case the bridge has nothing to votes
+    if (_totalBallots == 0 && _totalVotes == 0) {
+      uint256 _shareRatio = _MAX_PERCENTAGE / totalBridgeOperators();
+      _bridgeOperatingReward[_validator] = (_shareRatio * _totalBridgeReward) / _MAX_PERCENTAGE;
+      return;
+    }
+
+    uint256 _votedRatio = (_validatorBallots * _MAX_PERCENTAGE) / _totalVotes;
     uint256 _missedRatio = _MAX_PERCENTAGE - _votedRatio;
     if (_missedRatio > _ratioTier2) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
@@ -508,7 +515,7 @@ contract RoninValidatorSet is
     } else if (_missedRatio > _ratioTier1) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       emit ValidatorPunished(_validator, _period, _jailedUntil[_validator], 0, false, true);
-    } else {
+    } else if (_totalBallots > 0) {
       uint256 _shareRatio = (_validatorBallots * _MAX_PERCENTAGE) / _totalBallots;
       _bridgeOperatingReward[_validator] = (_shareRatio * _totalBridgeReward) / _MAX_PERCENTAGE;
     }

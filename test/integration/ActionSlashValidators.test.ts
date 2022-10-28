@@ -33,10 +33,10 @@ let deployer: SignerWithAddress;
 let governor: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
-const felonyJailBlocks = 28800 * 2;
-const misdemeanorThreshold = 10;
-const felonyThreshold = 20;
-const slashFelonyAmount = BigNumber.from(1);
+const jailDurationForUnavailabilityTier2Threshold = 28800 * 2;
+const unavailabilityTier1Threshold = 10;
+const unavailabilityTier2Threshold = 20;
+const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
 const minValidatorBalance = BigNumber.from(100);
 
@@ -47,21 +47,31 @@ describe('[Integration] Slash validators', () => {
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
       await initTest('ActionSlashValidators')({
-        felonyJailBlocks,
-        misdemeanorThreshold,
-        felonyThreshold,
-        slashFelonyAmount,
-        slashDoubleSignAmount,
-        minValidatorBalance,
-        trustedOrganizations: [
-          {
-            consensusAddr: governor.address,
-            governor: governor.address,
-            bridgeVoter: governor.address,
-            weight: 100,
-            addedBlock: 0,
+        slashIndicatorArguments: {
+          unavailabilitySlashing: {
+            unavailabilityTier1Threshold,
+            unavailabilityTier2Threshold,
+            slashAmountForUnavailabilityTier2Threshold,
+            jailDurationForUnavailabilityTier2Threshold,
           },
-        ],
+          doubleSignSlashing: {
+            slashDoubleSignAmount,
+          },
+        },
+        stakingArguments: {
+          minValidatorBalance,
+        },
+        roninTrustedOrganizationArguments: {
+          trustedOrganizations: [
+            {
+              consensusAddr: governor.address,
+              governor: governor.address,
+              bridgeVoter: governor.address,
+              weight: 100,
+              addedBlock: 0,
+            },
+          ],
+        },
       });
 
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
@@ -97,15 +107,15 @@ describe('[Integration] Slash validators', () => {
         let slasheeIdx = 1;
         let slashee = validatorCandidates[slasheeIdx];
 
-        for (let i = 0; i < misdemeanorThreshold - 1; i++) {
+        for (let i = 0; i < unavailabilityTier1Threshold - 1; i++) {
           await slashContract.connect(coinbase).slashUnavailability(slashee.address);
         }
         let tx = slashContract.connect(coinbase).slashUnavailability(slashee.address);
 
+        await expect(tx).to.emit(slashContract, 'Slashed').withArgs(slashee.address, SlashType.MISDEMEANOR, period);
         await expect(tx)
-          .to.emit(slashContract, 'UnavailabilitySlashed')
-          .withArgs(slashee.address, SlashType.MISDEMEANOR, period);
-        await expect(tx).to.emit(validatorContract, 'ValidatorPunished').withArgs(slashee.address, 0, 0);
+          .to.emit(validatorContract, 'ValidatorPunished')
+          .withArgs(slashee.address, period, 0, 0, true, false);
       });
     });
 
@@ -119,7 +129,7 @@ describe('[Integration] Slash validators', () => {
       before(async () => {
         slasheeIdx = 2;
         slashee = validatorCandidates[slasheeIdx];
-        slasheeInitStakingAmount = minValidatorBalance.add(slashFelonyAmount.mul(10));
+        slasheeInitStakingAmount = minValidatorBalance.add(slashAmountForUnavailabilityTier2Threshold.mul(10));
         await stakingContract
           .connect(slashee)
           .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, slashee.address, 2_00, {
@@ -144,37 +154,44 @@ describe('[Integration] Slash validators', () => {
       });
 
       it('Should the ValidatorSet contract emit event', async () => {
-        for (let i = 0; i < felonyThreshold - 1; i++) {
+        for (let i = 0; i < unavailabilityTier2Threshold - 1; i++) {
           await slashContract.connect(coinbase).slashUnavailability(slashee.address);
         }
         slashValidatorTx = await slashContract.connect(coinbase).slashUnavailability(slashee.address);
 
         await expect(slashValidatorTx)
-          .to.emit(slashContract, 'UnavailabilitySlashed')
+          .to.emit(slashContract, 'Slashed')
           .withArgs(slashee.address, SlashType.FELONY, period);
 
         let blockNumber = await network.provider.send('eth_blockNumber');
 
         await expect(slashValidatorTx)
           .to.emit(validatorContract, 'ValidatorPunished')
-          .withArgs(slashee.address, BigNumber.from(blockNumber).add(felonyJailBlocks), slashFelonyAmount);
+          .withArgs(
+            slashee.address,
+            period,
+            BigNumber.from(blockNumber).add(jailDurationForUnavailabilityTier2Threshold),
+            slashAmountForUnavailabilityTier2Threshold,
+            true,
+            false
+          );
       });
 
       it('Should the validator is put in jail', async () => {
         let blockNumber = await network.provider.send('eth_blockNumber');
         expect(await validatorContract.getJailUntils(expectingValidatorSet)).eql([
-          BigNumber.from(blockNumber).add(felonyJailBlocks),
+          BigNumber.from(blockNumber).add(jailDurationForUnavailabilityTier2Threshold),
         ]);
       });
 
       it('Should the Staking contract emit Unstaked event', async () => {
         await expect(slashValidatorTx)
           .to.emit(stakingContract, 'Unstaked')
-          .withArgs(slashee.address, slashFelonyAmount);
+          .withArgs(slashee.address, slashAmountForUnavailabilityTier2Threshold);
       });
 
       it('Should the Staking contract subtract staked amount from validator', async () => {
-        let _expectingSlasheeStakingAmount = slasheeInitStakingAmount.sub(slashFelonyAmount);
+        let _expectingSlasheeStakingAmount = slasheeInitStakingAmount.sub(slashAmountForUnavailabilityTier2Threshold);
         expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(_expectingSlasheeStakingAmount);
       });
 
@@ -256,37 +273,44 @@ describe('[Integration] Slash validators', () => {
 
       describe('Check effects on indicator and staked amount', async () => {
         it('Should the ValidatorSet contract emit event', async () => {
-          for (let i = 0; i < felonyThreshold - 1; i++) {
+          for (let i = 0; i < unavailabilityTier2Threshold - 1; i++) {
             await slashContract.connect(coinbase).slashUnavailability(slashee.address);
           }
           slashValidatorTx = await slashContract.connect(coinbase).slashUnavailability(slashee.address);
 
           await expect(slashValidatorTx)
-            .to.emit(slashContract, 'UnavailabilitySlashed')
+            .to.emit(slashContract, 'Slashed')
             .withArgs(slashee.address, SlashType.FELONY, period);
 
           let blockNumber = await network.provider.send('eth_blockNumber');
 
           await expect(slashValidatorTx)
             .to.emit(validatorContract, 'ValidatorPunished')
-            .withArgs(slashee.address, BigNumber.from(blockNumber).add(felonyJailBlocks), slashFelonyAmount);
+            .withArgs(
+              slashee.address,
+              period,
+              BigNumber.from(blockNumber).add(jailDurationForUnavailabilityTier2Threshold),
+              slashAmountForUnavailabilityTier2Threshold,
+              true,
+              false
+            );
         });
 
         it('Should the validator is put in jail', async () => {
           let blockNumber = await network.provider.send('eth_blockNumber');
           expect(await validatorContract.getJailUntils([slashee.address])).eql([
-            BigNumber.from(blockNumber).add(felonyJailBlocks),
+            BigNumber.from(blockNumber).add(jailDurationForUnavailabilityTier2Threshold),
           ]);
         });
 
         it('Should the Staking contract emit Unstaked event', async () => {
           await expect(slashValidatorTx)
             .to.emit(stakingContract, 'Unstaked')
-            .withArgs(slashee.address, slashFelonyAmount);
+            .withArgs(slashee.address, slashAmountForUnavailabilityTier2Threshold);
         });
 
         it('Should the Staking contract subtract staked amount from validator', async () => {
-          let _expectingSlasheeStakingAmount = slasheeInitStakingAmount.sub(slashFelonyAmount);
+          let _expectingSlasheeStakingAmount = slasheeInitStakingAmount.sub(slashAmountForUnavailabilityTier2Threshold);
           expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(_expectingSlasheeStakingAmount);
         });
       });
@@ -370,7 +394,7 @@ describe('[Integration] Slash validators', () => {
       describe('Kicked candidates re-join', async () => {
         it('Should the kicked validators cannot top-up, since they are not candidates anymore', async () => {
           let topUpTx = stakingContract.connect(slashee).stake(slashee.address, {
-            value: slashFelonyAmount,
+            value: slashAmountForUnavailabilityTier2Threshold,
           });
 
           await expect(topUpTx).revertedWith('StakingManager: query for non-existent pool');

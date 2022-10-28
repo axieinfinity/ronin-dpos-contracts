@@ -35,7 +35,7 @@ let currentValidatorSet: string[];
 
 const localValidatorCandidatesLength = 5;
 
-const slashFelonyAmount = 100;
+const slashAmountForUnavailabilityTier2Threshold = 100;
 const maxValidatorNumber = 4;
 const maxValidatorCandidate = 100;
 const minValidatorBalance = BigNumber.from(20000);
@@ -50,19 +50,31 @@ describe('Ronin Validator Set test', () => {
 
     const { slashContractAddress, validatorContractAddress, stakingContractAddress, roninGovernanceAdminAddress } =
       await initTest('RoninValidatorSet')({
-        trustedOrganizations: [governor].map((v) => ({
-          consensusAddr: v.address,
-          governor: v.address,
-          bridgeVoter: v.address,
-          weight: 100,
-          addedBlock: 0,
-        })),
-        minValidatorBalance,
-        maxValidatorNumber,
-        maxValidatorCandidate,
-        slashFelonyAmount,
-        validatorBonusPerBlock,
-        bridgeOperatorBonusPerBlock,
+        slashIndicatorArguments: {
+          unavailabilitySlashing: {
+            slashAmountForUnavailabilityTier2Threshold,
+          },
+        },
+        stakingArguments: {
+          minValidatorBalance,
+        },
+        stakingVestingArguments: {
+          validatorBonusPerBlock,
+          bridgeOperatorBonusPerBlock,
+        },
+        roninValidatorSetArguments: {
+          maxValidatorNumber,
+          maxValidatorCandidate,
+        },
+        roninTrustedOrganizationArguments: {
+          trustedOrganizations: [governor].map((v) => ({
+            consensusAddr: v.address,
+            governor: v.address,
+            bridgeVoter: v.address,
+            weight: 100,
+            addedBlock: 0,
+          })),
+        },
       });
 
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
@@ -240,14 +252,16 @@ describe('Ronin Validator Set test', () => {
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, currentValidatorSet);
       await RoninValidatorSet.expects.emitStakingRewardDistributedEvent(tx!, 5049); // (5000 + 100) * 99%
       await RoninValidatorSet.expects.emitMiningRewardDistributedEvent(tx!, coinbase.address, treasury.address, 51); // (5000 + 100) * 1%
-      await RoninValidatorSet.expects.emitBridgeOperatorRewardDistributedEvent(
-        tx!,
-        coinbase.address,
-        treasury.address,
-        37
-      );
+      expect(tx!)
+        .emit(roninValidatorSet, 'BridgeOperatorRewardDistributed')
+        .withArgs(
+          coinbase.address,
+          bridgeOperator.address,
+          treasury.address,
+          BigNumber.from(37).div(await roninValidatorSet.totalBridgeOperators())
+        );
       const balanceDiff = (await treasury.getBalance()).sub(balance);
-      expect(balanceDiff).eq(88); // = (5000 + 100) * 1% + 37 = (51 + 37)
+      expect(balanceDiff).eq(60); // = (5000 + 100) * 1% + 9 = (51 + 9)
       expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
         5049 // (5000 + 100) * 99% = 99% of the reward, since the pool is only staked by the coinbase
       );
@@ -284,7 +298,8 @@ describe('Ronin Validator Set test', () => {
           tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
         });
         const balanceDiff = (await treasury.getBalance()).sub(balance);
-        expect(balanceDiff).eq(bridgeOperatorBonusPerBlock); // bridge bonus
+        const totalBridgeReward = bridgeOperatorBonusPerBlock.mul(2); // called submitBlockReward 2 times
+        expect(balanceDiff).eq(totalBridgeReward.div(await roninValidatorSet.totalBlockProducers()));
         expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
           5049 // (5000 + 100) * 99% = 99% of the reward, since the pool is only staked by the coinbase
         );
@@ -310,7 +325,10 @@ describe('Ronin Validator Set test', () => {
       );
 
       const balanceDiff = (await treasury.getBalance()).sub(balance);
-      const expectingBalanceDiff = validatorBonusPerBlock.add(100).div(100).add(bridgeOperatorBonusPerBlock);
+      const expectingBalanceDiff = validatorBonusPerBlock
+        .add(100)
+        .div(100)
+        .add(bridgeOperatorBonusPerBlock.div(await roninValidatorSet.totalBlockProducers()));
       expect(balanceDiff).eq(expectingBalanceDiff);
       expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
         validatorBonusPerBlock.add(100).div(100).mul(99).mul(2)
@@ -322,14 +340,14 @@ describe('Ronin Validator Set test', () => {
       const balance = await treasury.getBalance();
       await slashIndicator.slashMisdemeanor(coinbase.address);
       tx = await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
-      await RoninValidatorSet.expects.emitRewardDeprecatedEvent(tx!, coinbase.address, 100);
+      await expect(tx).to.emit(roninValidatorSet, 'BlockRewardRewardDeprecated').withArgs(coinbase.address, 100);
       await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();
         tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
       });
       const balanceDiff = (await treasury.getBalance()).sub(balance);
-      expect(balanceDiff).eq(0);
+      expect(balanceDiff).eq(bridgeOperatorBonusPerBlock.div(await roninValidatorSet.totalBlockProducers()));
       expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
         validatorBonusPerBlock.add(100).div(100).mul(99).mul(2)
       );

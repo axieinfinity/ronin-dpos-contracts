@@ -31,8 +31,8 @@ let deployer: SignerWithAddress;
 let governor: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
-const felonyThreshold = 10;
-const slashFelonyAmount = BigNumber.from(1);
+const unavailabilityTier2Threshold = 10;
+const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
 const minValidatorBalance = BigNumber.from(100);
 const maxValidatorNumber = 3;
@@ -46,18 +46,30 @@ describe('[Integration] Wrap up epoch', () => {
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
       await initTest('ActionWrapUpEpoch')({
-        felonyThreshold,
-        slashFelonyAmount,
-        slashDoubleSignAmount,
-        minValidatorBalance,
-        maxValidatorNumber,
-        trustedOrganizations: [governor].map((v) => ({
-          consensusAddr: v.address,
-          governor: v.address,
-          bridgeVoter: v.address,
-          weight: 100,
-          addedBlock: 0,
-        })),
+        slashIndicatorArguments: {
+          unavailabilitySlashing: {
+            unavailabilityTier2Threshold,
+            slashAmountForUnavailabilityTier2Threshold,
+          },
+          doubleSignSlashing: {
+            slashDoubleSignAmount,
+          },
+        },
+        stakingArguments: {
+          minValidatorBalance,
+        },
+        roninTrustedOrganizationArguments: {
+          trustedOrganizations: [governor].map((v) => ({
+            consensusAddr: v.address,
+            governor: v.address,
+            bridgeVoter: v.address,
+            weight: 100,
+            addedBlock: 0,
+          })),
+        },
+        roninValidatorSetArguments: {
+          maxValidatorNumber,
+        },
       });
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -249,7 +261,7 @@ describe('[Integration] Wrap up epoch', () => {
           await validatorContract.wrapUpEpoch();
         });
 
-        for (let i = 0; i < felonyThreshold; i++) {
+        for (let i = 0; i < unavailabilityTier2Threshold; i++) {
           await slashContract.connect(coinbase).slashUnavailability(slasheeAddress);
         }
       });

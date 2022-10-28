@@ -23,7 +23,6 @@ import {
 } from '../../src/types';
 import { initTest, InitTestInput } from '../helpers/fixture';
 import { randomAddress } from '../../src/utils';
-import { Address } from 'hardhat-deploy/dist/types';
 
 let stakingVestingContract: StakingVesting;
 let maintenanceContract: Maintenance;

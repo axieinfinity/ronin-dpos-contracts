@@ -27,7 +27,7 @@ let deployer: SignerWithAddress;
 let governor: SignerWithAddress;
 let candidates: Address[];
 
-const slashFelonyAmount = 100;
+const slashAmountForUnavailabilityTier2Threshold = 100;
 const maxValidatorNumber = 7;
 const maxPrioritizedValidatorNumber = 4;
 const maxValidatorCandidate = 100;
@@ -95,19 +95,26 @@ describe('Arrange validators', () => {
       roninTrustedOrganizationAddress,
       roninGovernanceAdminAddress,
     } = await initTest('ArrangeValidators')({
-      maxValidatorNumber,
-      maxValidatorCandidate,
-      maxPrioritizedValidatorNumber,
-      slashFelonyAmount,
-      trustedOrganizations: [governor].map((v) => ({
-        consensusAddr: v.address,
-        governor: v.address,
-        bridgeVoter: v.address,
-        weight: 100,
-        addedBlock: 0,
-      })),
+      slashIndicatorArguments: {
+        unavailabilitySlashing: {
+          slashAmountForUnavailabilityTier2Threshold,
+        },
+      },
+      roninValidatorSetArguments: {
+        maxValidatorCandidate,
+        maxValidatorNumber,
+        maxPrioritizedValidatorNumber,
+      },
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: [governor].map((v) => ({
+          consensusAddr: v.address,
+          governor: v.address,
+          bridgeVoter: v.address,
+          weight: 100,
+          addedBlock: 0,
+        })),
+      },
     });
-
     validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
     roninTrustedOrganization = RoninTrustedOrganization__factory.connect(roninTrustedOrganizationAddress, deployer);
