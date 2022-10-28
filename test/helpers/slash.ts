@@ -44,6 +44,14 @@ export class ScoreController {
     }
   }
 
+  subAtNonNegative(idx: number, value: number) {
+    this._scores[idx] -= value;
+
+    if (this._scores[idx] < 0) {
+      this._scores[idx] = 0;
+    }
+  }
+
   setAt(idx: number, value: number) {
     this._scores[idx] = value;
   }
