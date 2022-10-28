@@ -83,6 +83,8 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     uint256 _slashAmount
   ) external override {}
 
+  function bailOut(address) external override {}
+
   function setMaxValidatorNumber(uint256 _maxValidatorNumber) external override {}
 
   function setNumberOfBlocksInEpoch(uint256 _number) external override {}

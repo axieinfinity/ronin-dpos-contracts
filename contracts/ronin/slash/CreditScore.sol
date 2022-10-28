@@ -65,7 +65,10 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
    * @inheritdoc ICreditScore
    */
   function bailOut(address _consensusAddr) external override {
-    require(_validatorContract.isValidator(_consensusAddr), "SlashIndicator: consensus address must be a validator");
+    require(
+      _validatorContract.isValidatorCandidate(_consensusAddr),
+      "SlashIndicator: consensus address must be a validator candidate"
+    );
     require(
       _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender),
       "SlashIndicator: method caller must be a candidate admin"
@@ -80,6 +83,8 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     uint256 _score = _creditScore[_consensusAddr];
     uint256 _cost = _jailedEpochLeft * bailOutCostMultiplier;
     require(_score >= _cost, "SlashIndicator: insufficient credit score to bail out");
+
+    _validatorContract.bailOut(_consensusAddr);
 
     _creditScore[_consensusAddr] -= _cost;
     _setUnavailabilityIndicator(_consensusAddr, _period, 0);

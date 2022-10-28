@@ -224,6 +224,15 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
+  function bailOut(address _validatorAddr) external override onlySlashIndicatorContract {
+    _jailedUntil[_validatorAddr] = block.number - 1;
+
+    emit ValidatorLiberated(_validatorAddr);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
   function jailed(address _addr) external view override returns (bool) {
     return _jailed(_addr);
   }

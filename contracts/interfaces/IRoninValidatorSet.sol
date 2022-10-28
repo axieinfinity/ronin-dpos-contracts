@@ -125,6 +125,17 @@ interface IRoninValidatorSet is ICandidateManager {
   ) external;
 
   /**
+   * @dev Bailout the validator.
+   *
+   * Requirements:
+   * - The method caller is slash indicator contract.
+   *
+   * Emits the event `ValidatorLiberated`.
+   *
+   */
+  function bailOut(address _validatorAddr) external;
+
+  /**
    * @dev Returns whether the validator are put in jail (cannot join the set of validators) during the current period.
    */
   function jailed(address) external view returns (bool);
