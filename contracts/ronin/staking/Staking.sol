@@ -116,7 +116,7 @@ contract Staking is IStaking, StakingManager, Initializable {
         }
       }
 
-      delete _stakingPool[_pool.addr];
+      delete _stakingPool[_pool.addr].stakedAmount;
     }
 
     emit PoolsDeprecated(_pools);
