@@ -30,8 +30,8 @@ let deployer: SignerWithAddress;
 let governor: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 
-const felonyThreshold = 10;
-const slashFelonyAmount = BigNumber.from(1);
+const unavailabilityTier2Threshold = 10;
+const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
 const minValidatorBalance = BigNumber.from(100);
 const validatorBonusPerBlock = BigNumber.from(1);
@@ -45,18 +45,30 @@ describe('[Integration] Submit Block Reward', () => {
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
       await initTest('ActionSubmitReward')({
-        felonyThreshold,
-        minValidatorBalance,
-        validatorBonusPerBlock,
-        slashFelonyAmount,
-        slashDoubleSignAmount,
-        trustedOrganizations: [governor].map((v) => ({
-          consensusAddr: v.address,
-          governor: v.address,
-          bridgeVoter: v.address,
-          weight: 100,
-          addedBlock: 0,
-        })),
+        slashIndicatorArguments: {
+          unavailabilitySlashing: {
+            unavailabilityTier2Threshold,
+            slashAmountForUnavailabilityTier2Threshold,
+          },
+          doubleSignSlashing: {
+            slashDoubleSignAmount,
+          },
+        },
+        stakingArguments: {
+          minValidatorBalance,
+        },
+        stakingVestingArguments: {
+          validatorBonusPerBlock,
+        },
+        roninTrustedOrganizationArguments: {
+          trustedOrganizations: [governor].map((v) => ({
+            consensusAddr: v.address,
+            governor: v.address,
+            bridgeVoter: v.address,
+            weight: 100,
+            addedBlock: 0,
+          })),
+        },
       });
 
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
@@ -158,8 +170,8 @@ describe('[Integration] Submit Block Reward', () => {
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
 
-      for (let i = 0; i < felonyThreshold; i++) {
-        await slashContract.connect(coinbase).slash(validator.address);
+      for (let i = 0; i < unavailabilityTier2Threshold; i++) {
+        await slashContract.connect(coinbase).slashUnavailability(validator.address);
       }
     });
 
@@ -174,7 +186,7 @@ describe('[Integration] Submit Block Reward', () => {
 
     it('Should the ValidatorSetContract emit event of deprecating reward', async () => {
       await expect(submitRewardTx)
-        .to.emit(validatorContract, 'RewardDeprecated')
+        .to.emit(validatorContract, 'BlockRewardRewardDeprecated')
         .withArgs(validator.address, blockRewardAmount);
     });
 

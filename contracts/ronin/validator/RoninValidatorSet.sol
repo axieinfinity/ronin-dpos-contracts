@@ -3,13 +3,14 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../../extensions/RONTransferHelper.sol";
 import "../../extensions/collections/HasStakingVestingContract.sol";
 import "../../extensions/collections/HasStakingContract.sol";
 import "../../extensions/collections/HasSlashIndicatorContract.sol";
 import "../../extensions/collections/HasMaintenanceContract.sol";
 import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
+import "../../extensions/collections/HasBridgeTrackingContract.sol";
+import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/IRoninValidatorSet.sol";
 import "../../libraries/Math.sol";
 import "../../libraries/EnumFlags.sol";
@@ -27,13 +28,12 @@ contract RoninValidatorSet is
   HasSlashIndicatorContract,
   HasMaintenanceContract,
   HasRoninTrustedOrganizationContract,
+  HasBridgeTrackingContract,
   CandidateManager,
+  PercentageConsumer,
   Initializable
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
-
-  /// @dev The total seconds in a day
-  uint256 internal constant _SECS_IN_DAY = 86400;
 
   /// @dev The maximum number of validator.
   uint256 internal _maxValidatorNumber;
@@ -53,16 +53,21 @@ contract RoninValidatorSet is
   /// @dev The number of slot that is reserved for prioritized validators
   uint256 internal _maxPrioritizedValidatorNumber;
 
-  /// @dev Mapping from validator address => the last period that the validator has no pending reward
-  mapping(address => mapping(uint256 => bool)) internal _rewardDeprecatedAtPeriod;
-  /// @dev Mapping from validator address => the last block that the validator is jailed
+  /// @dev Mapping from consensus address => the last period that the block producer has no pending reward
+  mapping(address => mapping(uint256 => bool)) internal _miningRewardDeprecatedAtPeriod;
+  /// @dev Mapping from consensus address => the last period that the block operator has no pending reward
+  mapping(address => mapping(uint256 => bool)) internal _bridgeRewardDeprecatedAtPeriod;
+  /// @dev Mapping from consensus address => the last block that the validator is jailed
   mapping(address => uint256) internal _jailedUntil;
 
-  /// @dev Mapping from validator address => pending reward from producing block
+  /// @dev Mapping from consensus address => pending reward from producing block
   mapping(address => uint256) internal _miningReward;
-  /// @dev Mapping from validator address => pending reward from delegating
+  /// @dev Mapping from consensus address => pending reward from delegating
   mapping(address => uint256) internal _delegatingReward;
-  /// @dev Mapping from validator address => pending reward for being bridge operator
+
+  /// @dev The total reward for bridge operators
+  uint256 internal _totalBridgeReward;
+  /// @dev Mapping from consensus address => pending reward for being bridge operator
   mapping(address => uint256) internal _bridgeOperatingReward;
 
   modifier onlyCoinbase() {
@@ -72,6 +77,15 @@ contract RoninValidatorSet is
 
   modifier whenEpochEnding() {
     require(epochEndingAt(block.number), "RoninValidatorSet: only allowed at the end of epoch");
+    _;
+  }
+
+  modifier oncePerEpoch() {
+    require(
+      epochOf(_lastUpdatedBlock) < epochOf(block.number),
+      "RoninValidatorSet: query for already wrapped up epoch"
+    );
+    _lastUpdatedBlock = block.number;
     _;
   }
 
@@ -96,6 +110,7 @@ contract RoninValidatorSet is
     address __stakingVestingContract,
     address __maintenanceContract,
     address __roninTrustedOrganizationContract,
+    address __bridgeTrackingContract,
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
@@ -105,6 +120,7 @@ contract RoninValidatorSet is
     _setStakingContract(__stakingContract);
     _setStakingVestingContract(__stakingVestingContract);
     _setMaintenanceContract(__maintenanceContract);
+    _setBridgeTrackingContract(__bridgeTrackingContract);
     _setRoninTrustedOrganizationContract(__roninTrustedOrganizationContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
@@ -121,46 +137,40 @@ contract RoninValidatorSet is
    */
   function submitBlockReward() external payable override onlyCoinbase {
     uint256 _submittedReward = msg.value;
-    if (_submittedReward == 0) {
-      return;
-    }
-
     address _coinbaseAddr = msg.sender;
+
+    uint256 _bridgeOperatorBonus = _stakingVestingContract.requestBridgeOperatorBonus();
+    _totalBridgeReward += _bridgeOperatorBonus;
+
     // Deprecates reward for non-validator or slashed validator
     if (
-      !isBlockProducer(_coinbaseAddr) || _jailed(_coinbaseAddr) || _rewardDeprecated(_coinbaseAddr, currentPeriod())
+      !isBlockProducer(_coinbaseAddr) ||
+      _jailed(_coinbaseAddr) ||
+      _miningRewardDeprecated(_coinbaseAddr, currentPeriod())
     ) {
-      emit RewardDeprecated(_coinbaseAddr, _submittedReward);
+      emit BlockRewardRewardDeprecated(_coinbaseAddr, _submittedReward);
       return;
     }
 
-    (uint256 _validatorStakingVesting, uint256 _bridgeValidatorStakingVesting) = _stakingVestingContract.requestBonus();
-    uint256 _reward = _submittedReward + _validatorStakingVesting;
-
+    uint256 _blockProducerBonus = _stakingVestingContract.requestValidatorBonus();
+    uint256 _reward = _submittedReward + _blockProducerBonus;
     uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
-    uint256 _miningAmount = (_rate * _reward) / 100_00;
-    uint256 _delegatingAmount = _reward - _miningAmount;
 
+    uint256 _miningAmount = (_rate * _reward) / 100_00;
     _miningReward[_coinbaseAddr] += _miningAmount;
+
+    uint256 _delegatingAmount = _reward - _miningAmount;
     _delegatingReward[_coinbaseAddr] += _delegatingAmount;
-    _bridgeOperatingReward[_coinbaseAddr] += _bridgeValidatorStakingVesting;
     _stakingContract.recordReward(_coinbaseAddr, _delegatingAmount);
-    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _validatorStakingVesting);
+    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _blockProducerBonus);
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function wrapUpEpoch() external payable virtual override onlyCoinbase whenEpochEnding {
-    require(
-      epochOf(_lastUpdatedBlock) < epochOf(block.number),
-      "RoninValidatorSet: query for already wrapped up epoch"
-    );
-    _lastUpdatedBlock = block.number;
-
+  function wrapUpEpoch() external payable virtual override onlyCoinbase whenEpochEnding oncePerEpoch {
     uint256 _newPeriod = _computePeriod(block.timestamp);
     bool _periodEnding = _isPeriodEnding(_newPeriod);
-    _lastUpdatedPeriod = _newPeriod;
 
     address[] memory _currentValidators = getValidators();
     uint256 _epoch = epochOf(block.number);
@@ -168,18 +178,16 @@ contract RoninValidatorSet is
 
     if (_periodEnding) {
       uint256 _totalDelegatingReward = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
-        _currentValidators,
-        _period
+        _period,
+        _currentValidators
       );
-
       _settleAndTransferDelegatingRewards(_currentValidators, _totalDelegatingReward);
-
       _currentValidators = _syncValidatorSet();
     }
 
     _revampBlockProducers(_currentValidators);
-
     emit WrappedUpEpoch(_period, _epoch, _periodEnding);
+    _lastUpdatedPeriod = _newPeriod;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -194,7 +202,8 @@ contract RoninValidatorSet is
     uint256 _newJailedUntil,
     uint256 _slashAmount
   ) external onlySlashIndicatorContract {
-    _rewardDeprecatedAtPeriod[_validatorAddr][currentPeriod()] = true;
+    uint256 _period = currentPeriod();
+    _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = true;
     delete _miningReward[_validatorAddr];
     delete _delegatingReward[_validatorAddr];
     IStaking(_stakingContract).sinkPendingReward(_validatorAddr);
@@ -207,7 +216,7 @@ contract RoninValidatorSet is
       IStaking(_stakingContract).deductStakedAmount(_validatorAddr, _slashAmount);
     }
 
-    emit ValidatorPunished(_validatorAddr, _jailedUntil[_validatorAddr], _slashAmount);
+    emit ValidatorPunished(_validatorAddr, _period, _jailedUntil[_validatorAddr], _slashAmount, true, false);
   }
 
   /**
@@ -223,26 +232,31 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function rewardDeprecated(address[] memory _addrList) external view override returns (bool[] memory _result) {
-    _result = new bool[](_addrList.length);
+  function miningRewardDeprecated(address[] memory _blockProducers)
+    external
+    view
+    override
+    returns (bool[] memory _result)
+  {
+    _result = new bool[](_blockProducers.length);
     uint256 _period = currentPeriod();
-    for (uint256 _i; _i < _addrList.length; _i++) {
-      _result[_i] = _rewardDeprecated(_addrList[_i], _period);
+    for (uint256 _i; _i < _blockProducers.length; _i++) {
+      _result[_i] = _miningRewardDeprecated(_blockProducers[_i], _period);
     }
   }
 
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function rewardDeprecatedAtPeriod(address[] memory _addrList, uint256 _period)
+  function miningRewardDeprecatedAtPeriod(address[] memory _blockProducers, uint256 _period)
     external
     view
     override
     returns (bool[] memory _result)
   {
-    _result = new bool[](_addrList.length);
-    for (uint256 _i; _i < _addrList.length; _i++) {
-      _result[_i] = _rewardDeprecated(_addrList[_i], _period);
+    _result = new bool[](_blockProducers.length);
+    for (uint256 _i; _i < _blockProducers.length; _i++) {
+      _result[_i] = _miningRewardDeprecated(_blockProducers[_i], _period);
     }
   }
 
@@ -346,15 +360,6 @@ contract RoninValidatorSet is
   }
 
   /**
-   * Notice: A validator is always a bride operator
-   *
-   * @inheritdoc IRoninValidatorSet
-   */
-  function totalBridgeOperators() external view returns (uint256) {
-    return validatorCount;
-  }
-
-  /**
    * @inheritdoc IRoninValidatorSet
    */
   function isPeriodEnding() external view virtual returns (bool) {
@@ -394,6 +399,15 @@ contract RoninValidatorSet is
     return _maxPrioritizedValidatorNumber;
   }
 
+  /**
+   * Notice: A validator is always a bride operator
+   *
+   * @inheritdoc IRoninValidatorSet
+   */
+  function totalBridgeOperators() public view returns (uint256) {
+    return validatorCount;
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                               FUNCTIONS FOR ADMIN                                 //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -425,51 +439,137 @@ contract RoninValidatorSet is
    *
    */
   function _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
-    address[] memory _currentValidators,
-    uint256 _period
+    uint256 _period,
+    address[] memory _currentValidators
   ) private returns (uint256 _totalDelegatingReward) {
-    for (uint _i = 0; _i < _currentValidators.length; _i++) {
-      address _validatorAddr = _currentValidators[_i];
+    address _consensusAddr;
+    address payable _treasury;
+    IBridgeTracking _bridgeTracking = _bridgeTrackingContract;
 
-      if (_jailed(_validatorAddr) || _rewardDeprecated(_validatorAddr, _period)) {
-        continue;
+    uint256 _totalBridgeBallots = _bridgeTracking.totalBallots(_period);
+    uint256 _totalBridgeVotes = _bridgeTracking.totalVotes(_period);
+    uint256[] memory _bridgeBallots = _bridgeTracking.bulkTotalBallotsOf(_period, _currentValidators);
+    (
+      uint256 _missingVotesRatioTier1,
+      uint256 _missingVotesRatioTier2,
+      uint256 _jailDurationForMissingVotesRatioTier2
+    ) = _slashIndicatorContract.getBridgeOperatorSlashingConfigs();
+
+    for (uint _i = 0; _i < _currentValidators.length; _i++) {
+      _consensusAddr = _currentValidators[_i];
+      _treasury = _candidateInfo[_consensusAddr].treasuryAddr;
+      _updateValidatorReward(
+        _period,
+        _consensusAddr,
+        _bridgeBallots[_i],
+        _totalBridgeVotes,
+        _totalBridgeBallots,
+        _missingVotesRatioTier1,
+        _missingVotesRatioTier2,
+        _jailDurationForMissingVotesRatioTier2
+      );
+
+      if (!_bridgeRewardDeprecated(_consensusAddr, _period)) {
+        _distributeBridgeOperatingReward(_consensusAddr, _candidateInfo[_consensusAddr].bridgeOperatorAddr, _treasury);
       }
 
-      _totalDelegatingReward += _delegatingReward[_validatorAddr];
-      delete _delegatingReward[_validatorAddr];
+      if (!_jailed(_consensusAddr) && !_miningRewardDeprecated(_consensusAddr, _period)) {
+        _totalDelegatingReward += _delegatingReward[_consensusAddr];
+        _distributeMiningReward(_consensusAddr, _treasury);
+      }
 
-      _distributeRewardToTreasury(_validatorAddr);
+      delete _delegatingReward[_consensusAddr];
+      delete _miningReward[_consensusAddr];
+      delete _bridgeOperatingReward[_consensusAddr];
+    }
+    delete _totalBridgeReward;
+  }
+
+  /**
+   * @dev Updates validator reward based on the corresponding bridge operator performance.
+   */
+  function _updateValidatorReward(
+    uint256 _period,
+    address _validator,
+    uint256 _validatorBallots,
+    uint256 _totalVotes,
+    uint256 _totalBallots,
+    uint256 _ratioTier1,
+    uint256 _ratioTier2,
+    uint256 _jailDurationTier2
+  ) internal {
+    // Shares equally in case the bridge has nothing to votes
+    if (_totalBallots == 0 && _totalVotes == 0) {
+      uint256 _shareRatio = _MAX_PERCENTAGE / totalBridgeOperators();
+      _bridgeOperatingReward[_validator] = (_shareRatio * _totalBridgeReward) / _MAX_PERCENTAGE;
+      return;
+    }
+
+    uint256 _votedRatio = (_validatorBallots * _MAX_PERCENTAGE) / _totalVotes;
+    uint256 _missedRatio = _MAX_PERCENTAGE - _votedRatio;
+    if (_missedRatio > _ratioTier2) {
+      _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
+      _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
+      _jailedUntil[_validator] = Math.max(block.number + _jailDurationTier2, _jailedUntil[_validator]);
+      emit ValidatorPunished(_validator, _period, _jailedUntil[_validator], 0, true, true);
+    } else if (_missedRatio > _ratioTier1) {
+      _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
+      emit ValidatorPunished(_validator, _period, _jailedUntil[_validator], 0, false, true);
+    } else if (_totalBallots > 0) {
+      uint256 _shareRatio = (_validatorBallots * _MAX_PERCENTAGE) / _totalBallots;
+      _bridgeOperatingReward[_validator] = (_shareRatio * _totalBridgeReward) / _MAX_PERCENTAGE;
     }
   }
 
   /**
-   * @dev Distribute bonus of staking vesting and mining fee for block producer; and bonus of staking vesting for
-   * bridge oparators to the treasury address of a validator.
+   * @dev Distributes bonus of staking vesting and mining fee for the block producer.
    *
-   * Emits the `MiningRewardDistributed` event once the validator has an amount of mining reward.
-   * Emits the `BridgeOperatorRewardDistributed` once the validator has an amount of bridge reward.
+   * Emits the `MiningRewardDistributed` once the reward is distributed successfully.
+   * Emits the `MiningRewardDistributionFailed` once the contract fails to distribute reward.
    *
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _distributeRewardToTreasury(address _validatorAddr) private {
-    address payable _treasury = _candidateInfo[_validatorAddr].treasuryAddr;
+  function _distributeMiningReward(address _consensusAddr, address payable _treasury) private {
+    uint256 _amount = _miningReward[_consensusAddr];
+    if (_amount > 0) {
+      if (_sendRON(_treasury, _amount)) {
+        emit MiningRewardDistributed(_consensusAddr, _treasury, _amount);
+        return;
+      }
 
-    uint256 _miningAmount = _miningReward[_validatorAddr];
-    if (_miningAmount > 0) {
-      delete _miningReward[_validatorAddr];
-      require(_sendRON(_treasury, _miningAmount), "RoninValidatorSet: could not transfer RON treasury address");
-      emit MiningRewardDistributed(_validatorAddr, _treasury, _miningAmount);
+      emit MiningRewardDistributionFailed(_consensusAddr, _treasury, _amount, address(this).balance);
     }
+  }
 
-    uint256 _bridgeOperatingAmount = _bridgeOperatingReward[_validatorAddr];
-    if (_bridgeOperatingAmount > 0) {
-      delete _bridgeOperatingReward[_validatorAddr];
-      require(
-        _sendRON(_treasury, _bridgeOperatingAmount),
-        "RoninValidatorSet: could not transfer RON to bridge operator address"
+  /**
+   * @dev Distribute bonus of staking vesting for the bridge operator.
+   *
+   * Emits the `BridgeOperatorRewardDistributed` once the reward is distributed successfully.
+   * Emits the `BridgeOperatorRewardDistributionFailed` once the contract fails to distribute reward.
+   *
+   * Note: This method should be called once in the end of each period.
+   *
+   */
+  function _distributeBridgeOperatingReward(
+    address _consensusAddr,
+    address _bridgeOperator,
+    address payable _treasury
+  ) private {
+    uint256 _amount = _bridgeOperatingReward[_consensusAddr];
+    if (_amount > 0) {
+      if (_sendRON(_treasury, _amount)) {
+        emit BridgeOperatorRewardDistributed(_consensusAddr, _bridgeOperator, _treasury, _amount);
+        return;
+      }
+
+      emit BridgeOperatorRewardDistributionFailed(
+        _consensusAddr,
+        _bridgeOperator,
+        _treasury,
+        _amount,
+        address(this).balance
       );
-      emit BridgeOperatorRewardDistributed(_validatorAddr, _treasury, _bridgeOperatingAmount);
     }
   }
 
@@ -477,7 +577,8 @@ contract RoninValidatorSet is
    * @dev Helper function to settle rewards for delegators of `_currentValidators` at the end of each period,
    * then transfer the rewards from this contract to the staking contract, in order to finalize a period.
    *
-   * Emit `StakingRewardDistributed` event.
+   * Emits the `StakingRewardDistributed` once the reward is distributed successfully.
+   * Emits the `StakingRewardDistributionFailed` once the contract fails to distribute reward.
    *
    * Note: This method should be called once in the end of each period.
    *
@@ -486,14 +587,15 @@ contract RoninValidatorSet is
     private
   {
     IStaking _staking = _stakingContract;
-
     _staking.settleRewardPools(_currentValidators);
+
     if (_totalDelegatingReward > 0) {
-      require(
-        _sendRON(payable(address(_staking)), _totalDelegatingReward),
-        "RoninValidatorSet: could not transfer RON to staking contract"
-      );
-      emit StakingRewardDistributed(_totalDelegatingReward);
+      if (_sendRON(payable(address(_staking)), _totalDelegatingReward)) {
+        emit StakingRewardDistributed(_totalDelegatingReward);
+        return;
+      }
+
+      emit StakingRewardDistributionFailed(_totalDelegatingReward, address(this).balance);
     }
   }
 
@@ -603,10 +705,17 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @dev Returns whether the validator has no pending reward in that period.
+   * @dev Returns whether the block producer has no pending reward in that period.
    */
-  function _rewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
-    return _rewardDeprecatedAtPeriod[_validatorAddr][_period];
+  function _miningRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
+    return _miningRewardDeprecatedAtPeriod[_validatorAddr][_period];
+  }
+
+  /**
+   * @dev Returns whether the bridge operator has no pending reward in the period.
+   */
+  function _bridgeRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
+    return _bridgeRewardDeprecatedAtPeriod[_validatorAddr][_period];
   }
 
   /**
@@ -655,7 +764,7 @@ contract RoninValidatorSet is
    * @dev Returns the calculated period.
    */
   function _computePeriod(uint256 _timestamp) internal pure returns (uint256) {
-    return _timestamp / _SECS_IN_DAY;
+    return _timestamp / 1 days;
   }
 
   /**

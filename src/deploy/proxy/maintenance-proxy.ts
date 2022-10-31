@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { maintenanceConf, roninInitAddress, roninchainNetworks } from '../../config';
+import { maintenanceConf, generalRoninConf, roninchainNetworks } from '../../config';
 import { verifyAddress } from '../../script/verify-address';
 import { Maintenance__factory } from '../../types';
 
@@ -16,7 +16,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const logicContract = await deployments.get('MaintenanceLogic');
 
   const data = new Maintenance__factory().interface.encodeFunctionData('initialize', [
-    roninInitAddress[network.name]!.validatorContract?.address,
+    generalRoninConf[network.name]!.validatorContract?.address,
     maintenanceConf[network.name]!.minMaintenanceBlockPeriod,
     maintenanceConf[network.name]!.maxMaintenanceBlockPeriod,
     maintenanceConf[network.name]!.minOffset,
@@ -27,10 +27,10 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    args: [logicContract.address, roninInitAddress[network.name]!.governanceAdmin?.address, data],
-    nonce: roninInitAddress[network.name].maintenanceContract?.nonce,
+    args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, data],
+    nonce: generalRoninConf[network.name].maintenanceContract?.nonce,
   });
-  verifyAddress(deployment.address, roninInitAddress[network.name].maintenanceContract?.address);
+  verifyAddress(deployment.address, generalRoninConf[network.name].maintenanceContract?.address);
 };
 
 deploy.tags = ['MaintenanceProxy'];

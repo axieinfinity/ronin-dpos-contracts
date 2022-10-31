@@ -57,23 +57,6 @@ export class EpochController {
 }
 
 export const expects = {
-  emitRewardDeprecatedEvent: async function (
-    tx: ContractTransaction,
-    expectingCoinbaseAddr: string,
-    expectingDeprecatedReward: BigNumberish
-  ) {
-    await expectEvent(
-      contractInterface,
-      'RewardDeprecated',
-      tx,
-      (event) => {
-        expect(event.args[0], 'invalid coinbase address').eq(expectingCoinbaseAddr);
-        expect(event.args[1], 'invalid reward').eq(expectingDeprecatedReward);
-      },
-      1
-    );
-  },
-
   emitBlockRewardSubmittedEvent: async function (
     tx: ContractTransaction,
     expectingCoinbaseAddr: string,
@@ -115,6 +98,7 @@ export const expects = {
   emitBridgeOperatorRewardDistributedEvent: async function (
     tx: ContractTransaction,
     expectingCoinbaseAddr: string,
+    expectingBridgeOperator: string,
     expectingRecipientAddr: string,
     expectingAmount: BigNumberish
   ) {
@@ -124,8 +108,9 @@ export const expects = {
       tx,
       (event) => {
         expect(event.args[0], 'invalid coinbase address').eq(expectingCoinbaseAddr);
-        expect(event.args[1], 'invalid recipient address').eq(expectingRecipientAddr);
-        expect(event.args[2], 'invalid amount').eq(expectingAmount);
+        expect(event.args[1], 'invalid bridge operator').eq(expectingBridgeOperator);
+        expect(event.args[2], 'invalid recipient address').eq(expectingRecipientAddr);
+        expect(event.args[3], 'invalid amount').eq(expectingAmount);
       },
       1
     );
@@ -162,30 +147,6 @@ export const expects = {
       tx,
       (event) => {
         expect(event.args[0], 'invalid validator set').eql(expectingBlockProducers);
-      },
-      1
-    );
-  },
-
-  emitActivatedBlockProducersEvent: async function (tx: ContractTransaction, expectingProducers: string[]) {
-    await expectEvent(
-      contractInterface,
-      'ActivatedBlockProducers',
-      tx,
-      (event) => {
-        expect(event.args[0], 'invalid activated producer set').eql(expectingProducers);
-      },
-      1
-    );
-  },
-
-  emitDeactivatedBlockProducersEvent: async function (tx: ContractTransaction, expectingProducers: string[]) {
-    await expectEvent(
-      contractInterface,
-      'DeactivatedBlockProducers',
-      tx,
-      (event) => {
-        expect(event.args[0], 'invalid deactivated producer set').eql(expectingProducers);
       },
       1
     );

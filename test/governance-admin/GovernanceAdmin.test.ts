@@ -45,17 +45,22 @@ describe('Governance Admin test', () => {
     const { roninGovernanceAdminAddress, mainchainGovernanceAdminAddress, stakingContractAddress } = await initTest(
       'RoninGovernanceAdmin.test'
     )({
-      trustedOrganizations: governors.map((v) => ({
-        consensusAddr: v.address,
-        governor: v.address,
-        bridgeVoter: v.address,
-        weight: 100,
-        addedBlock: 0,
-      })),
-      numerator: 1,
-      denominator: 2,
-      relayers: [relayer.address],
       bridgeContract: bridgeContract.address,
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: governors.map((v) => ({
+          consensusAddr: v.address,
+          governor: v.address,
+          bridgeVoter: v.address,
+          weight: 100,
+          addedBlock: 0,
+        })),
+
+        numerator: 1,
+        denominator: 2,
+      },
+      mainchainGovernanceAdminArguments: {
+        relayers: [relayer.address],
+      },
     });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);

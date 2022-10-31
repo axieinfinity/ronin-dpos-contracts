@@ -31,21 +31,19 @@ let validatorContract: RoninValidatorSet;
 let vagabond: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 let localIndicators: number[];
-
 let localEpochController: EpochController;
 
-const misdemeanorThreshold = 5;
-const felonyThreshold = 10;
+const unavailabilityTier1Threshold = 5;
+const unavailabilityTier2Threshold = 10;
 const maxValidatorNumber = 21;
 const maxValidatorCandidate = 50;
 const numberOfBlocksInEpoch = 600;
 const minValidatorBalance = BigNumber.from(100);
 
-const slashFelonyAmount = BigNumber.from(2);
+const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(2);
 const slashDoubleSignAmount = BigNumber.from(5);
 
 const minOffset = 200;
-const doubleSigningConstrainBlocks = BigNumber.from(28800);
 
 const increaseLocalCounterForValidatorAt = (idx: number, value?: number) => {
   value = value ?? 1;
@@ -72,21 +70,36 @@ describe('Slash indicator test', () => {
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
       await initTest('SlashIndicator')({
-        trustedOrganizations: [governor].map((v) => ({
-          consensusAddr: v.address,
-          governor: v.address,
-          bridgeVoter: v.address,
-          weight: 100,
-          addedBlock: 0,
-        })),
-        misdemeanorThreshold,
-        felonyThreshold,
-        maxValidatorNumber,
-        maxValidatorCandidate,
-        numberOfBlocksInEpoch,
-        minValidatorBalance,
-        slashFelonyAmount,
-        slashDoubleSignAmount,
+        slashIndicatorArguments: {
+          unavailabilitySlashing: {
+            unavailabilityTier1Threshold,
+            unavailabilityTier2Threshold,
+            slashAmountForUnavailabilityTier2Threshold,
+          },
+          doubleSignSlashing: {
+            slashDoubleSignAmount,
+          },
+        },
+        stakingArguments: {
+          minValidatorBalance,
+        },
+        roninValidatorSetArguments: {
+          maxValidatorNumber,
+          numberOfBlocksInEpoch,
+          maxValidatorCandidate,
+        },
+        maintenanceArguments: {
+          minOffset,
+        },
+        roninTrustedOrganizationArguments: {
+          trustedOrganizations: [governor].map((v) => ({
+            consensusAddr: v.address,
+            governor: v.address,
+            bridgeVoter: v.address,
+            weight: 100,
+            addedBlock: 0,
+          })),
+        },
       });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -134,9 +147,9 @@ describe('Slash indicator test', () => {
   describe('Single flow test', async () => {
     describe('Unauthorized test', async () => {
       it('Should non-coinbase cannot call slash', async () => {
-        await expect(slashContract.connect(vagabond).slash(validatorCandidates[0].address)).to.revertedWith(
-          'SlashIndicator: method caller must be coinbase'
-        );
+        await expect(
+          slashContract.connect(vagabond).slashUnavailability(validatorCandidates[0].address)
+        ).to.revertedWith('SlashUnavailability: method caller must be coinbase');
       });
     });
 
@@ -149,15 +162,17 @@ describe('Slash indicator test', () => {
 
         let tx = await slashContract
           .connect(validatorCandidates[slasherIdx])
-          .slash(validatorCandidates[slasheeIdx].address);
-        await expect(tx).to.not.emit(slashContract, 'UnavailabilitySlashed');
+          .slashUnavailability(validatorCandidates[slasheeIdx].address);
+        await expect(tx).to.not.emit(slashContract, 'Slashed');
         setLocalCounterForValidatorAt(slasheeIdx, 1);
         await validateIndicatorAt(slasheeIdx);
       });
 
       it('Should validator not be able to slash themselves', async () => {
         const slasherIdx = 0;
-        await slashContract.connect(validatorCandidates[slasherIdx]).slash(validatorCandidates[slasherIdx].address);
+        await slashContract
+          .connect(validatorCandidates[slasherIdx])
+          .slashUnavailability(validatorCandidates[slasherIdx].address);
 
         resetLocalCounterForValidatorAt(slasherIdx);
         await validateIndicatorAt(slasherIdx);
@@ -167,8 +182,12 @@ describe('Slash indicator test', () => {
         const slasherIdx = 0;
         const slasheeIdx = 2;
         await network.provider.send('evm_setAutomine', [false]);
-        await slashContract.connect(validatorCandidates[slasherIdx]).slash(validatorCandidates[slasheeIdx].address);
-        let tx = slashContract.connect(validatorCandidates[slasherIdx]).slash(validatorCandidates[slasheeIdx].address);
+        await slashContract
+          .connect(validatorCandidates[slasherIdx])
+          .slashUnavailability(validatorCandidates[slasheeIdx].address);
+        let tx = slashContract
+          .connect(validatorCandidates[slasherIdx])
+          .slashUnavailability(validatorCandidates[slasheeIdx].address);
         await expect(tx).to.be.revertedWith(
           'SlashIndicator: cannot slash a validator twice or slash more than one validator in one block'
         );
@@ -184,8 +203,12 @@ describe('Slash indicator test', () => {
         const slasheeIdx1 = 1;
         const slasheeIdx2 = 2;
         await network.provider.send('evm_setAutomine', [false]);
-        await slashContract.connect(validatorCandidates[slasherIdx]).slash(validatorCandidates[slasheeIdx1].address);
-        let tx = slashContract.connect(validatorCandidates[slasherIdx]).slash(validatorCandidates[slasheeIdx2].address);
+        await slashContract
+          .connect(validatorCandidates[slasherIdx])
+          .slashUnavailability(validatorCandidates[slasheeIdx1].address);
+        let tx = slashContract
+          .connect(validatorCandidates[slasherIdx])
+          .slashUnavailability(validatorCandidates[slasheeIdx2].address);
         await expect(tx).to.be.revertedWith(
           'SlashIndicator: cannot slash a validator twice or slash more than one validator in one block'
         );
@@ -206,17 +229,17 @@ describe('Slash indicator test', () => {
         const slasheeIdx = 3;
         await network.provider.send('hardhat_setCoinbase', [validatorCandidates[slasherIdx].address]);
 
-        for (let i = 0; i < misdemeanorThreshold; i++) {
+        for (let i = 0; i < unavailabilityTier1Threshold; i++) {
           tx = await slashContract
             .connect(validatorCandidates[slasherIdx])
-            .slash(validatorCandidates[slasheeIdx].address);
+            .slashUnavailability(validatorCandidates[slasheeIdx].address);
         }
 
         let period = await validatorContract.currentPeriod();
         await expect(tx)
-          .to.emit(slashContract, 'UnavailabilitySlashed')
+          .to.emit(slashContract, 'Slashed')
           .withArgs(validatorCandidates[slasheeIdx].address, SlashType.MISDEMEANOR, period);
-        setLocalCounterForValidatorAt(slasheeIdx, misdemeanorThreshold);
+        setLocalCounterForValidatorAt(slasheeIdx, unavailabilityTier1Threshold);
         await validateIndicatorAt(slasheeIdx);
       });
 
@@ -228,11 +251,11 @@ describe('Slash indicator test', () => {
 
         tx = await slashContract
           .connect(validatorCandidates[slasherIdx])
-          .slash(validatorCandidates[slasheeIdx].address);
+          .slashUnavailability(validatorCandidates[slasheeIdx].address);
         increaseLocalCounterForValidatorAt(slasheeIdx);
         await validateIndicatorAt(slasheeIdx);
 
-        await expect(tx).not.to.emit(slashContract, 'UnavailabilitySlashed');
+        await expect(tx).not.to.emit(slashContract, 'Slashed');
       });
 
       it('Should sync with validator set for felony (slash tier-2)', async () => {
@@ -244,22 +267,22 @@ describe('Slash indicator test', () => {
 
         let period = await validatorContract.currentPeriod();
 
-        for (let i = 0; i < felonyThreshold; i++) {
+        for (let i = 0; i < unavailabilityTier2Threshold; i++) {
           tx = await slashContract
             .connect(validatorCandidates[slasherIdx])
-            .slash(validatorCandidates[slasheeIdx].address);
+            .slashUnavailability(validatorCandidates[slasheeIdx].address);
 
-          if (i == misdemeanorThreshold - 1) {
+          if (i == unavailabilityTier1Threshold - 1) {
             await expect(tx)
-              .to.emit(slashContract, 'UnavailabilitySlashed')
+              .to.emit(slashContract, 'Slashed')
               .withArgs(validatorCandidates[slasheeIdx].address, SlashType.MISDEMEANOR, period);
           }
         }
 
         await expect(tx)
-          .to.emit(slashContract, 'UnavailabilitySlashed')
+          .to.emit(slashContract, 'Slashed')
           .withArgs(validatorCandidates[slasheeIdx].address, SlashType.FELONY, period);
-        setLocalCounterForValidatorAt(slasheeIdx, felonyThreshold);
+        setLocalCounterForValidatorAt(slasheeIdx, unavailabilityTier2Threshold);
         await validateIndicatorAt(slasheeIdx);
       });
 
@@ -271,11 +294,11 @@ describe('Slash indicator test', () => {
 
         tx = await slashContract
           .connect(validatorCandidates[slasherIdx])
-          .slash(validatorCandidates[slasheeIdx].address);
+          .slashUnavailability(validatorCandidates[slasheeIdx].address);
         increaseLocalCounterForValidatorAt(slasheeIdx);
         await validateIndicatorAt(slasheeIdx);
 
-        await expect(tx).not.to.emit(slashContract, 'UnavailabilitySlashed');
+        await expect(tx).not.to.emit(slashContract, 'Slashed');
       });
     });
 
@@ -283,11 +306,13 @@ describe('Slash indicator test', () => {
       it('Should the counter reset for one validator when the period ended', async () => {
         const slasherIdx = 0;
         const slasheeIdx = 5;
-        let numberOfSlashing = felonyThreshold - 1;
+        let numberOfSlashing = unavailabilityTier2Threshold - 1;
         await network.provider.send('hardhat_setCoinbase', [validatorCandidates[slasherIdx].address]);
 
         for (let i = 0; i < numberOfSlashing; i++) {
-          await slashContract.connect(validatorCandidates[slasherIdx]).slash(validatorCandidates[slasheeIdx].address);
+          await slashContract
+            .connect(validatorCandidates[slasherIdx])
+            .slashUnavailability(validatorCandidates[slasheeIdx].address);
         }
 
         setLocalCounterForValidatorAt(slasheeIdx, numberOfSlashing);
@@ -304,14 +329,14 @@ describe('Slash indicator test', () => {
       it('Should the counter reset for multiple validators when the period ended', async () => {
         const slasherIdx = 0;
         const slasheeIdxs = [6, 7, 8, 9, 10];
-        let numberOfSlashing = felonyThreshold - 1;
+        let numberOfSlashing = unavailabilityTier2Threshold - 1;
         await network.provider.send('hardhat_setCoinbase', [validatorCandidates[slasherIdx].address]);
 
         for (let i = 0; i < numberOfSlashing; i++) {
           for (let j = 0; j < slasheeIdxs.length; j++) {
             await slashContract
               .connect(validatorCandidates[slasherIdx])
-              .slash(validatorCandidates[slasheeIdxs[j]].address);
+              .slashUnavailability(validatorCandidates[slasheeIdxs[j]].address);
           }
         }
 
@@ -335,10 +360,6 @@ describe('Slash indicator test', () => {
       let header1: BytesLike;
       let header2: BytesLike;
 
-      before(async () => {
-        await network.provider.send('hardhat_mine', [doubleSigningConstrainBlocks.toHexString(), '0x0']);
-      });
-
       it('Should not be able to slash themselves', async () => {
         const slasherIdx = 0;
         await network.provider.send('hardhat_setCoinbase', [validatorCandidates[slasherIdx].address]);
@@ -350,7 +371,7 @@ describe('Slash indicator test', () => {
           .connect(validatorCandidates[slasherIdx])
           .slashDoubleSign(validatorCandidates[slasherIdx].address, header1, header2);
 
-        await expect(tx).to.not.emit(slashContract, 'UnavailabilitySlashed');
+        await expect(tx).to.not.emit(slashContract, 'Slashed');
       });
 
       it('Should be able to slash validator with double signing', async () => {
@@ -367,7 +388,7 @@ describe('Slash indicator test', () => {
         let period = await validatorContract.currentPeriod();
 
         await expect(tx)
-          .to.emit(slashContract, 'UnavailabilitySlashed')
+          .to.emit(slashContract, 'Slashed')
           .withArgs(validatorCandidates[slasheeIdx].address, SlashType.DOUBLE_SIGNING, period);
       });
     });
