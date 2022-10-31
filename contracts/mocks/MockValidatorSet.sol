@@ -127,4 +127,6 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   function currentPeriod() public view override(CandidateManager, ICandidateManager) returns (uint256) {
     return block.timestamp / 86400;
   }
+
+  function startedAtBlock() external view override returns (uint256) {}
 }
