@@ -267,6 +267,8 @@ describe('[Integration] Wrap up epoch', () => {
       });
 
       it('Should the block producer set get updated (excluding the slashed validator)', async () => {
+        const lastPeriod = await validatorContract.currentPeriod();
+        const epoch = (await validatorContract.epochOf(await ethers.provider.getBlockNumber())).add(1);
         await mineBatchTxs(async () => {
           await validatorContract.endEpoch();
           wrapUpTx = await validatorContract.wrapUpEpoch();
@@ -274,8 +276,8 @@ describe('[Integration] Wrap up epoch', () => {
 
         let expectingBlockProducerSet = [validators[2], validators[3]].map((_) => _.address).reverse();
 
-        await ValidatorSetExpects.emitWrappedUpEpochEvent(wrapUpTx!);
-        await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpTx!, expectingBlockProducerSet);
+        await expect(wrapUpTx!).emit(validatorContract, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, false);
+        await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpTx!, lastPeriod, expectingBlockProducerSet);
 
         expect(await validatorContract.getValidators()).eql(
           [validators[1], validators[2], validators[3]].map((_) => _.address).reverse()

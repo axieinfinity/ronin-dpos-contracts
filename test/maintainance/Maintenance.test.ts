@@ -116,6 +116,7 @@ describe('Maintenance test', () => {
     let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
     await ValidatorSetExpects.emitValidatorSetUpdatedEvent(
       tx,
+      await validatorContract.currentPeriod(),
       validatorCandidates.map((_) => _.address)
     );
 
@@ -278,7 +279,11 @@ describe('Maintenance test', () => {
       await localEpochController.mineToBeforeEndOfEpoch();
       let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
       let expectingBlockProducerSet = validatorCandidates.slice(2).map((_) => _.address);
-      await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(tx!, expectingBlockProducerSet);
+      await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
+        tx!,
+        await validatorContract.currentPeriod(),
+        expectingBlockProducerSet
+      );
       expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.slice(2).map((_) => _.address));
     });
 
@@ -293,7 +298,11 @@ describe('Maintenance test', () => {
       await localEpochController.mineToBeforeEndOfEpoch();
       let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
       let expectingBlockProducerSet = validatorCandidates.map((_) => _.address);
-      await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(tx!, expectingBlockProducerSet);
+      await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
+        tx!,
+        await validatorContract.currentPeriod(),
+        expectingBlockProducerSet
+      );
       expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
     });
 

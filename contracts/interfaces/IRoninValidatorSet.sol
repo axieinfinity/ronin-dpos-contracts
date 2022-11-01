@@ -12,11 +12,11 @@ interface IRoninValidatorSet is ICandidateManager {
   /// @dev Emitted when the number of blocks in epoch is updated
   event NumberOfBlocksInEpochUpdated(uint256);
   /// @dev Emitted when the validator set is updated
-  event ValidatorSetUpdated(address[]);
+  event ValidatorSetUpdated(uint256 indexed period, address[] consensusAddrs);
   /// @dev Emitted when the bridge operator set is updated, to mirror the in-jail and maintaining status of the validator.
-  event BlockProducerSetUpdated(address[]);
+  event BlockProducerSetUpdated(uint256 indexed period, address[] consensusAddrs);
   /// @dev Emitted when the bridge operator set is updated.
-  event BridgeOperatorSetUpdated(address[]);
+  event BridgeOperatorSetUpdated(uint256 indexed period, address[] bridgeOperators);
 
   /// @dev Emitted when the validator is punished.
   event ValidatorPunished(

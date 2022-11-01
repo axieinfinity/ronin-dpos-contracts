@@ -128,31 +128,37 @@ export const expects = {
     );
   },
 
-  emitValidatorSetUpdatedEvent: async function (tx: ContractTransaction, expectingValidators: string[]) {
+  emitValidatorSetUpdatedEvent: async function (
+    tx: ContractTransaction,
+    expectingPeriod: BigNumberish,
+    expectingValidators: string[]
+  ) {
     await expectEvent(
       contractInterface,
       'ValidatorSetUpdated',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid validator set').eql(expectingValidators);
+        expect(event.args[0], 'invalid period').eq(expectingPeriod);
+        expect(event.args[1], 'invalid validator set').eql(expectingValidators);
       },
       1
     );
   },
 
-  emitBlockProducerSetUpdatedEvent: async function (tx: ContractTransaction, expectingBlockProducers: string[]) {
+  emitBlockProducerSetUpdatedEvent: async function (
+    tx: ContractTransaction,
+    expectingPeriod: BigNumberish,
+    expectingBlockProducers: string[]
+  ) {
     await expectEvent(
       contractInterface,
       'BlockProducerSetUpdated',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid validator set').eql(expectingBlockProducers);
+        expect(event.args[0], 'invalid period').eq(expectingPeriod);
+        expect(event.args[1], 'invalid validator set').eql(expectingBlockProducers);
       },
       1
     );
-  },
-
-  emitWrappedUpEpochEvent: async function (tx: ContractTransaction) {
-    await expectEvent(contractInterface, 'WrappedUpEpoch', tx, () => {}, 1);
   },
 };
