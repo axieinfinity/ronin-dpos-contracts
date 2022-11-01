@@ -25,13 +25,13 @@ interface IStaking is IRewardPool {
   /// @dev Emitted when the staked amount is deprecated.
   event StakedAmountDeprecated(address indexed validator, address indexed admin, uint256 amount);
   /// @dev Emitted when the pool admin staked for themself.
-  event Staked(address indexed validator, uint256 amount);
+  event Staked(address indexed consensuAddr, uint256 amount);
   /// @dev Emitted when the pool admin unstaked the amount of RON from themself.
-  event Unstaked(address indexed validator, uint256 amount);
-  /// @dev Emitted when the delegator staked for a validator.
-  event Delegated(address indexed delegator, address indexed validator, uint256 amount);
-  /// @dev Emitted when the delegator unstaked from a validator.
-  event Undelegated(address indexed delegator, address indexed validator, uint256 amount);
+  event Unstaked(address indexed consensuAddr, uint256 amount);
+  /// @dev Emitted when the delegator staked for a validator candidate.
+  event Delegated(address indexed delegator, address indexed consensuAddr, uint256 amount);
+  /// @dev Emitted when the delegator unstaked from a validator candidate.
+  event Undelegated(address indexed delegator, address indexed consensuAddr, uint256 amount);
   /// @dev Emitted when the minimum balance for being a validator is updated.
   event MinValidatorBalanceUpdated(uint256 threshold);
 
@@ -176,7 +176,7 @@ interface IStaking is IRewardPool {
    * - The method caller is the pool admin.
    *
    */
-  function requestRenounce(address consensusAddr) external;
+  function requestRenounce(address _consensusAddr) external;
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                             FUNCTIONS FOR DELEGATOR                               //
