@@ -232,10 +232,12 @@ describe('Credit score and bail out test', () => {
       });
 
       it('Should the bailing out cost subtracted correctly', async () => {
-        // HACK: Workaround for bug of hardhat-ethers, that value of `block.number` in view function is the block number of the latest block.
-        await network.provider.send('hardhat_mine', ['0x1', '0x0']);
+        let _latestBlockNum = BigNumber.from(await network.provider.send('eth_blockNumber'));
+        let _jailLeft = await validatorContract.jailedTimeLeftAtBlock(
+          validatorCandidates[0].address,
+          _latestBlockNum.add(1)
+        );
 
-        let _jailLeft = await validatorContract.jailedTimeLeft(validatorCandidates[0].address);
         let tx = await slashContract.connect(candidateAdmins[0]).bailOut(validatorCandidates[0].address);
         let _period = validatorContract.currentPeriod();
 
@@ -334,10 +336,14 @@ describe('Credit score and bail out test', () => {
         await slashUntilValidatorTier(1, 0, 2);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].address)).eq(true);
 
-        let _jailEpochLeft = (await validatorContract.jailedTimeLeft(validatorCandidates[0].address)).epochLeft_;
-        // HACK: The subtraction in the next line should be 1, but it is set to 2 to workaround for bug of hardhat-ethers,
-        // that value of `block.number` in view function is the block number of the latest block.
-        await localEpochController.mineToBeforeEndOfEpoch(_jailEpochLeft.sub(2));
+        let _latestBlockNum = BigNumber.from(await network.provider.send('eth_blockNumber'));
+        let _jailLeft = await validatorContract.jailedTimeLeftAtBlock(
+          validatorCandidates[0].address,
+          _latestBlockNum.add(1)
+        );
+
+        let _jailEpochLeft = _jailLeft.epochLeft_;
+        await localEpochController.mineToBeforeEndOfEpoch(_jailEpochLeft.sub(1));
         await wrapUpEpoch();
 
         let tx = await slashContract.connect(candidateAdmins[0]).bailOut(validatorCandidates[0].address);
@@ -368,10 +374,13 @@ describe('Credit score and bail out test', () => {
       it('Should the bailed-out-validator be able to bail out in the next periods', async () => {
         await endPeriodAndWrapUpAndResetIndicators();
 
-        // HACK: Workaround for bug of hardhat-ethers, that value of `block.number` in view function is the block number of the latest block.
-        await network.provider.send('hardhat_mine', ['0x1', '0x0']);
+        let _latestBlockNum = BigNumber.from(await network.provider.send('eth_blockNumber'));
+        let _jailLeft = await validatorContract.jailedTimeLeftAtBlock(
+          validatorCandidates[0].address,
+          _latestBlockNum.add(1)
+        );
 
-        let _jailEpochLeft = (await validatorContract.jailedTimeLeft(validatorCandidates[0].address)).epochLeft_;
+        let _jailEpochLeft = _jailLeft.epochLeft_;
         let tx = await slashContract.connect(candidateAdmins[0]).bailOut(validatorCandidates[0].address);
         let _period = validatorContract.currentPeriod();
 

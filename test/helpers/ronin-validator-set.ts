@@ -37,8 +37,8 @@ export class EpochController {
       number = number.add(this.numberOfBlocksInEpoch);
     }
 
-    if (includingEpochsNum! > 0) {
-      number = number.add(BigNumber.from(includingEpochsNum).mul(this.numberOfBlocksInEpoch));
+    if (includingEpochsNum! > 1) {
+      number = number.add(BigNumber.from(includingEpochsNum).sub(1).mul(this.numberOfBlocksInEpoch));
     }
 
     let numberHex = number.eq(0) ? '0x0' : ethers.utils.hexStripZeros(number.toHexString());
