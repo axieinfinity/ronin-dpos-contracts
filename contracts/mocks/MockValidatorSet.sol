@@ -144,4 +144,17 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   {}
 
   function currentPeriodStartAtBlock() external view override returns (uint256) {}
+
+  function jailedAtBlock(address _addr, uint256 _blockNum) external view override returns (bool) {}
+
+  function jailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
+    external
+    view
+    override
+    returns (
+      bool isJailed_,
+      uint256 blockLeft_,
+      uint256 epochLeft_
+    )
+  {}
 }
