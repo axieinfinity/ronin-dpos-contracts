@@ -147,7 +147,7 @@ describe('[Integration] Slash validators', () => {
         period = await validatorContract.currentPeriod();
         expectingValidatorSet.push(slashee.address);
         expectingBlockProducerSet.push(slashee.address);
-        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, expectingValidatorSet);
+        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
 
         expect(await validatorContract.getValidators()).eql(expectingValidatorSet);
         expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
@@ -202,7 +202,11 @@ describe('[Integration] Slash validators', () => {
         });
         expectingBlockProducerSet.pop();
         expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
-        await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpEpochTx!, expectingBlockProducerSet);
+        await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
+          wrapUpEpochTx!,
+          period,
+          expectingBlockProducerSet
+        );
         expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
       });
 
@@ -233,7 +237,11 @@ describe('[Integration] Slash validators', () => {
         expectingBlockProducerSet.push(slashee.address);
 
         expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
-        await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpEpochTx!, expectingBlockProducerSet);
+        await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
+          wrapUpEpochTx!,
+          period,
+          expectingBlockProducerSet
+        );
         expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
       });
     });
@@ -266,7 +274,7 @@ describe('[Integration] Slash validators', () => {
 
         period = await validatorContract.currentPeriod();
         expectingValidatorSet.push(slashee.address);
-        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, expectingValidatorSet);
+        await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
 
         expect(await validatorContract.getValidators()).eql(expectingValidatorSet);
       });
@@ -322,7 +330,11 @@ describe('[Integration] Slash validators', () => {
             wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
           });
           expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
-          await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpEpochTx!, expectingBlockProducerSet);
+          await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
+            wrapUpEpochTx!,
+            period,
+            expectingBlockProducerSet
+          );
         });
 
         it('Should the validator cannot re-join as a block producer when jail time is not over', async () => {
@@ -352,7 +364,11 @@ describe('[Integration] Slash validators', () => {
           expectingBlockProducerSet.push(slashee.address);
 
           expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
-          await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpEpochTx!, expectingBlockProducerSet);
+          await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
+            wrapUpEpochTx!,
+            period,
+            expectingBlockProducerSet
+          );
           expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
         });
 
@@ -370,12 +386,12 @@ describe('[Integration] Slash validators', () => {
             wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
           });
 
+          period = await validatorContract.currentPeriod();
           expectingRevokedCandidates = expectingValidatorSet.slice(-1);
           expectingBlockProducerSet.pop();
           expectingValidatorSet.pop();
 
-          await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, expectingValidatorSet);
-
+          await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
           expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
           expect(await validatorContract.getValidators()).eql(expectingValidatorSet);
         });

@@ -174,19 +174,19 @@ contract RoninValidatorSet is
 
     address[] memory _currentValidators = getValidators();
     uint256 _epoch = epochOf(block.number);
-    uint256 _period = currentPeriod();
+    uint256 _lastPeriod = currentPeriod();
 
     if (_periodEnding) {
       uint256 _totalDelegatingReward = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
-        _period,
+        _lastPeriod,
         _currentValidators
       );
       _settleAndTransferDelegatingRewards(_currentValidators, _totalDelegatingReward);
-      _currentValidators = _syncValidatorSet();
+      _currentValidators = _syncValidatorSet(_newPeriod);
     }
 
-    _revampBlockProducers(_currentValidators);
-    emit WrappedUpEpoch(_period, _epoch, _periodEnding);
+    _revampBlockProducers(_newPeriod, _currentValidators);
+    emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
     _lastUpdatedPeriod = _newPeriod;
   }
 
@@ -439,16 +439,16 @@ contract RoninValidatorSet is
    *
    */
   function _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
-    uint256 _period,
+    uint256 _lastPeriod,
     address[] memory _currentValidators
   ) private returns (uint256 _totalDelegatingReward) {
     address _consensusAddr;
     address payable _treasury;
     IBridgeTracking _bridgeTracking = _bridgeTrackingContract;
 
-    uint256 _totalBridgeBallots = _bridgeTracking.totalBallots(_period);
-    uint256 _totalBridgeVotes = _bridgeTracking.totalVotes(_period);
-    uint256[] memory _bridgeBallots = _bridgeTracking.bulkTotalBallotsOf(_period, _currentValidators);
+    uint256 _totalBridgeBallots = _bridgeTracking.totalBallots(_lastPeriod);
+    uint256 _totalBridgeVotes = _bridgeTracking.totalVotes(_lastPeriod);
+    uint256[] memory _bridgeBallots = _bridgeTracking.bulkTotalBallotsOf(_lastPeriod, _currentValidators);
     (
       uint256 _missingVotesRatioTier1,
       uint256 _missingVotesRatioTier2,
@@ -459,7 +459,7 @@ contract RoninValidatorSet is
       _consensusAddr = _currentValidators[_i];
       _treasury = _candidateInfo[_consensusAddr].treasuryAddr;
       _updateValidatorReward(
-        _period,
+        _lastPeriod,
         _consensusAddr,
         _bridgeBallots[_i],
         _totalBridgeVotes,
@@ -469,11 +469,11 @@ contract RoninValidatorSet is
         _jailDurationForMissingVotesRatioTier2
       );
 
-      if (!_bridgeRewardDeprecated(_consensusAddr, _period)) {
+      if (!_bridgeRewardDeprecated(_consensusAddr, _lastPeriod)) {
         _distributeBridgeOperatingReward(_consensusAddr, _candidateInfo[_consensusAddr].bridgeOperatorAddr, _treasury);
       }
 
-      if (!_jailed(_consensusAddr) && !_miningRewardDeprecated(_consensusAddr, _period)) {
+      if (!_jailed(_consensusAddr) && !_miningRewardDeprecated(_consensusAddr, _lastPeriod)) {
         _totalDelegatingReward += _delegatingReward[_consensusAddr];
         _distributeMiningReward(_consensusAddr, _treasury);
       }
@@ -608,7 +608,7 @@ contract RoninValidatorSet is
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _syncValidatorSet() private returns (address[] memory _newValidators) {
+  function _syncValidatorSet(uint256 _newPeriod) private returns (address[] memory _newValidators) {
     uint256[] memory _balanceWeights;
     // This is a temporary approach since the slashing issue is still not finalized.
     // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
@@ -623,8 +623,8 @@ contract RoninValidatorSet is
       _maxValidatorNumber,
       _maxPrioritizedValidatorNumber
     );
-    _setNewValidatorSet(_newValidators, _newValidatorCount);
-    emit BridgeOperatorSetUpdated(getBridgeOperators());
+    _setNewValidatorSet(_newValidators, _newValidatorCount, _newPeriod);
+    emit BridgeOperatorSetUpdated(_newPeriod, getBridgeOperators());
   }
 
   /**
@@ -635,7 +635,11 @@ contract RoninValidatorSet is
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _setNewValidatorSet(address[] memory _newValidators, uint256 _newValidatorCount) private {
+  function _setNewValidatorSet(
+    address[] memory _newValidators,
+    uint256 _newValidatorCount,
+    uint256 _newPeriod
+  ) private {
     for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
       delete _validatorMap[_validators[_i]];
       delete _validators[_i];
@@ -656,7 +660,7 @@ contract RoninValidatorSet is
     }
 
     validatorCount = _count;
-    emit ValidatorSetUpdated(_newValidators);
+    emit ValidatorSetUpdated(_newPeriod, _newValidators);
   }
 
   /**
@@ -668,7 +672,7 @@ contract RoninValidatorSet is
    * Emits the `BlockProducerSetUpdated` event.
    *
    */
-  function _revampBlockProducers(address[] memory _currentValidators) private {
+  function _revampBlockProducers(uint256 _newPeriod, address[] memory _currentValidators) private {
     bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
 
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
@@ -690,7 +694,7 @@ contract RoninValidatorSet is
       }
     }
 
-    emit BlockProducerSetUpdated(getBlockProducers());
+    emit BlockProducerSetUpdated(_newPeriod, getBlockProducers());
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
