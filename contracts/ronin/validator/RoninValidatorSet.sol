@@ -228,7 +228,7 @@ contract RoninValidatorSet is
    * @inheritdoc IRoninValidatorSet
    */
   function jailed(address _addr) external view override returns (bool) {
-    return _jailed(_addr);
+    return jailedAtBlock(_addr, block.number);
   }
 
   /**
@@ -244,14 +244,37 @@ contract RoninValidatorSet is
       uint256 epochLeft_
     )
   {
+    return jailedTimeLeftAtBlock(_addr, block.number);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function jailedAtBlock(address _addr, uint256 _blockNum) public view override returns (bool) {
+    return _jailedAtBlock(_addr, _blockNum);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function jailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
+    public
+    view
+    override
+    returns (
+      bool isJailed_,
+      uint256 blockLeft_,
+      uint256 epochLeft_
+    )
+  {
     uint256 __jailedUntil = _jailedUntil[_addr];
-    if (__jailedUntil < block.number) {
+    if (__jailedUntil < _blockNum) {
       return (false, 0, 0);
     }
 
     isJailed_ = true;
-    blockLeft_ = __jailedUntil - block.number + 1;
-    epochLeft_ = epochOf(__jailedUntil) - epochOf(block.number) + 1;
+    blockLeft_ = __jailedUntil - _blockNum + 1;
+    epochLeft_ = epochOf(__jailedUntil) - epochOf(_blockNum) + 1;
   }
 
   /**
@@ -650,7 +673,14 @@ contract RoninValidatorSet is
    * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) during the current period.
    */
   function _jailed(address _validatorAddr) internal view returns (bool) {
-    return block.number <= _jailedUntil[_validatorAddr];
+    return _jailedAtBlock(_validatorAddr, block.number);
+  }
+
+  /**
+   * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) at a specific block.
+   */
+  function _jailedAtBlock(address _validatorAddr, uint256 _blockNum) internal view returns (bool) {
+    return _blockNum <= _jailedUntil[_validatorAddr];
   }
 
   /**
