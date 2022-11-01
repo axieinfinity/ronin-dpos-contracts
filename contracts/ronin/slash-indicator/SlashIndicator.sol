@@ -9,6 +9,7 @@ import "./SlashDoubleSign.sol";
 import "./SlashBridgeVoting.sol";
 import "./SlashBridgeOperator.sol";
 import "./SlashUnavailability.sol";
+import "./CreditScore.sol";
 
 contract SlashIndicator is
   ISlashIndicator,
@@ -16,7 +17,7 @@ contract SlashIndicator is
   SlashBridgeVoting,
   SlashBridgeOperator,
   SlashUnavailability,
-  HasMaintenanceContract,
+  CreditScore,
   Initializable
 {
   constructor() {
@@ -64,6 +65,29 @@ contract SlashIndicator is
       _unavailabilitySlashingConfigs[2],
       _unavailabilitySlashingConfigs[3]
     );
+  }
+
+  /**
+   * @dev Sets the unavailability indicator of the `_validator` at `_period`.
+   */
+  function _setUnavailabilityIndicator(
+    address _validator,
+    uint256 _period,
+    uint256 _indicator
+  ) internal override {
+    _unavailabilityIndicator[_validator][_period] = _indicator;
+  }
+
+  /**
+   * @inheritdoc ISlashUnavailability
+   */
+  function getUnavailabilityIndicator(address _validator, uint256 _period)
+    public
+    view
+    override(CreditScore, ISlashUnavailability, SlashUnavailability)
+    returns (uint256)
+  {
+    return SlashUnavailability.getUnavailabilityIndicator(_validator, _period);
   }
 
   /**

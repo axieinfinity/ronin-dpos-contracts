@@ -41,9 +41,9 @@ const gainCreditScore = 50;
 const maxCreditScore = 600;
 const bailOutCostMultiplier = 5;
 
-const misdemeanorThreshold = 5;
-const felonyThreshold = 15;
-const slashFelonyAmount = 2;
+const unavailabilityTier1Threshold = 5;
+const unavailabilityTier2Threshold = 15;
+const slashAmountForUnavailabilityTier2Threshold = 2;
 
 const minValidatorBalance = BigNumber.from(100);
 const maxValidatorCandidate = 3;
@@ -74,7 +74,7 @@ const slashUntilValidatorTier = async (slasherIdx: number, slasheeIdx: number, t
     return;
   }
 
-  let _threshold = tier == 1 ? misdemeanorThreshold : felonyThreshold;
+  let _threshold = tier == 1 ? unavailabilityTier1Threshold : unavailabilityTier2Threshold;
   let _slashType = tier == 1 ? SlashType.MISDEMEANOR : SlashType.FELONY;
 
   let tx;
@@ -86,7 +86,7 @@ const slashUntilValidatorTier = async (slasherIdx: number, slasheeIdx: number, t
   let _toSlashTimes = _threshold - localIndicatorController.getAt(slasheeIdx);
 
   for (let i = 0; i < _toSlashTimes; i++) {
-    tx = await slashContract.connect(slasher).slash(slashee.address);
+    tx = await slashContract.connect(slasher).slashUnavailability(slashee.address);
   }
 
   let period = await validatorContract.currentPeriod();
@@ -112,24 +112,34 @@ describe('Credit score and bail out test', () => {
     validatorCandidates = validatorCandidates.slice(maxValidatorCandidate, maxValidatorCandidate * 2);
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
-      await initTest('CreditScore')({
-        trustedOrganizations: [governor].map((v) => ({
-          consensusAddr: v.address,
-          governor: v.address,
-          bridgeVoter: v.address,
-          weight: 100,
-          addedBlock: 0,
-        })),
-        gainCreditScore,
-        maxCreditScore,
-        bailOutCostMultiplier,
-        minValidatorBalance,
-        maxValidatorNumber,
-        numberOfBlocksInEpoch,
-        minOffset,
-        misdemeanorThreshold,
-        felonyThreshold,
-        slashFelonyAmount,
+      await initTest('SlashIndicator')({
+        slashIndicatorArguments: {
+          unavailabilitySlashing: {
+            unavailabilityTier1Threshold,
+            unavailabilityTier2Threshold,
+            slashAmountForUnavailabilityTier2Threshold,
+          },
+        },
+        stakingArguments: {
+          minValidatorBalance,
+        },
+        roninValidatorSetArguments: {
+          maxValidatorNumber,
+          numberOfBlocksInEpoch,
+          maxValidatorCandidate,
+        },
+        maintenanceArguments: {
+          minOffset,
+        },
+        roninTrustedOrganizationArguments: {
+          trustedOrganizations: [governor].map((v) => ({
+            consensusAddr: v.address,
+            governor: v.address,
+            bridgeVoter: v.address,
+            weight: 100,
+            addedBlock: 0,
+          })),
+        },
       });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -183,7 +193,7 @@ describe('Credit score and bail out test', () => {
     });
     it('Should the score updated correctly, case: max score (N), in jail (N), unavailability (y)', async () => {
       await network.provider.send('hardhat_setCoinbase', [validatorCandidates[1].address]);
-      await slashContract.connect(validatorCandidates[1]).slash(validatorCandidates[0].address);
+      await slashContract.connect(validatorCandidates[1]).slashUnavailability(validatorCandidates[0].address);
       localIndicatorController.increaseAt(1);
       await endPeriodAndWrapUpAndResetIndicators();
       localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore - 1);

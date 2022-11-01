@@ -27,6 +27,8 @@ interface IRoninValidatorSet is ICandidateManager {
     bool blockProducerRewardDeprecated,
     bool bridgeOperatorRewardDeprecated
   );
+  /// @dev Emitted when the validator get out of jail by bailout.
+  event ValidatorLiberated(address indexed validator);
   /// @dev Emitted when the reward of the block producer is deprecated.
   event BlockRewardRewardDeprecated(address indexed coinbaseAddr, uint256 rewardAmount);
   /// @dev Emitted when the block reward is submitted.

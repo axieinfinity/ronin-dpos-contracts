@@ -99,24 +99,14 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @inheritdoc ICreditScore
+   * @dev See `ICreditScore`.
    */
-  function setGainCreditScore(uint256 _gainCreditScore) external override onlyAdmin {
-    _setGainCreditScore(_gainCreditScore);
-  }
-
-  /**
-   * @inheritdoc ICreditScore
-   */
-  function setMaxCreditScore(uint256 _maxCreditScore) external override onlyAdmin {
-    _setMaxCreditScore(_maxCreditScore);
-  }
-
-  /**
-   * @inheritdoc ICreditScore
-   */
-  function setBailOutCostMultiplier(uint256 _bailOutCostMultiplier) external override onlyAdmin {
-    _setBailOutCostMultiplier(_bailOutCostMultiplier);
+  function setCreditScoreConfigs(
+    uint256 _gainCreditScore,
+    uint256 _maxCreditScore,
+    uint256 _bailOutCostMultiplier
+  ) external override onlyAdmin {
+    _setCreditScoreConfigs(_gainCreditScore, _maxCreditScore, _bailOutCostMultiplier);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -124,6 +114,24 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   ///////////////////////////////////////////////////////////////////////////////////////
 
   function getUnavailabilityIndicator(address _validator, uint256 _period) public view virtual returns (uint256);
+
+  /**
+   * @dev See `ICreditScore`.
+   */
+  function getCreditScoreConfigs()
+    external
+    view
+    override
+    returns (
+      uint256 _gainCreditScore,
+      uint256 _maxCreditScore,
+      uint256 _bailOutCostMultiplier
+    )
+  {
+    _gainCreditScore = gainCreditScore;
+    _maxCreditScore = maxCreditScore;
+    _bailOutCostMultiplier = bailOutCostMultiplier;
+  }
 
   /**
    * @inheritdoc ICreditScore
@@ -159,26 +167,18 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   ) internal virtual;
 
   /**
-   * @dev Sets the gain credit score
+   * @dev See `ICreditScore-CreditScoreConfigsUpdated`.
    */
-  function _setGainCreditScore(uint256 _gainCreditScore) internal {
+  function _setCreditScoreConfigs(
+    uint256 _gainCreditScore,
+    uint256 _maxCreditScore,
+    uint256 _bailOutCostMultiplier
+  ) internal {
+    require(_gainCreditScore <= _maxCreditScore, "CreditScore: invalid credit score config");
+
     gainCreditScore = _gainCreditScore;
-    emit GainCreditScoreUpdated(_gainCreditScore);
-  }
-
-  /**
-   * @dev Sets the max credit score
-   */
-  function _setMaxCreditScore(uint256 _maxCreditScore) internal {
     maxCreditScore = _maxCreditScore;
-    emit MaxCreditScoreUpdated(_maxCreditScore);
-  }
-
-  /**
-   * @dev Sets the bail out cost multiplier
-   */
-  function _setBailOutCostMultiplier(uint256 _bailOutCostMultiplier) internal {
     bailOutCostMultiplier = _bailOutCostMultiplier;
-    emit BailOutCostMultiplierUpdated(_bailOutCostMultiplier);
+    emit CreditScoreConfigsUpdated(_gainCreditScore, _maxCreditScore, _bailOutCostMultiplier);
   }
 }

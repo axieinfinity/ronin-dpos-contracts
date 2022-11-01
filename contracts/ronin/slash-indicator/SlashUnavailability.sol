@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.9;
 
+import "./CreditScore.sol";
 import "../../interfaces/ISlashUnavailability.sol";
 import "../../extensions/collections/HasValidatorContract.sol";
 
@@ -112,7 +113,13 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
   /**
    * @inheritdoc ISlashUnavailability
    */
-  function getUnavailabilityIndicator(address _validator, uint256 _period) public view override returns (uint256) {
+  function getUnavailabilityIndicator(address _validator, uint256 _period)
+    public
+    view
+    virtual
+    override
+    returns (uint256)
+  {
     return _unavailabilityIndicator[_validator][_period];
   }
 

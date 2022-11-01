@@ -6,5 +6,12 @@ import "./ISlashDoubleSign.sol";
 import "./ISlashBridgeVoting.sol";
 import "./ISlashBridgeOperator.sol";
 import "./ISlashUnavailability.sol";
+import "./ICreditScore.sol";
 
-interface ISlashIndicator is ISlashDoubleSign, ISlashBridgeVoting, ISlashBridgeOperator, ISlashUnavailability {}
+interface ISlashIndicator is
+  ISlashDoubleSign,
+  ISlashBridgeVoting,
+  ISlashBridgeOperator,
+  ISlashUnavailability,
+  ICreditScore
+{}
