@@ -235,7 +235,8 @@ describe('Ronin Validator Set test', () => {
         ];
       });
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
-      await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod.add(1), currentValidatorSet);
+      lastPeriod = await roninValidatorSet.currentPeriod();
+      await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, currentValidatorSet);
       expect(await roninValidatorSet.getValidators()).eql(currentValidatorSet);
       expect(await roninValidatorSet.getBlockProducers()).eql(currentValidatorSet);
     });
@@ -324,7 +325,8 @@ describe('Ronin Validator Set test', () => {
           5049 // (5000 + 100) * 99% = 99% of the reward, since the pool is only staked by the coinbase
         );
         await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
-        await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod.add(1), currentValidatorSet);
+        lastPeriod = await roninValidatorSet.currentPeriod();
+        await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, currentValidatorSet);
       }
     });
 
@@ -340,7 +342,8 @@ describe('Ronin Validator Set test', () => {
         tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
       });
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
-      await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod.add(1), currentValidatorSet);
+      lastPeriod = await roninValidatorSet.currentPeriod();
+      await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, currentValidatorSet);
       await RoninValidatorSet.expects.emitStakingRewardDistributedEvent(
         tx!,
         validatorBonusPerBlock.add(100).div(100).mul(99)
