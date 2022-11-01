@@ -35,6 +35,9 @@ contract RoninValidatorSet is
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
+  /// @dev The block that the contract allows incoming mutable calls.
+  uint256 public startedAtBlock;
+
   /// @dev The maximum number of validator.
   uint256 internal _maxValidatorNumber;
   /// @dev The number of blocks in a epoch
@@ -89,6 +92,11 @@ contract RoninValidatorSet is
     _;
   }
 
+  modifier whenStarted() {
+    require(block.number >= startedAtBlock, "RoninValidatorSet: contract is not started yet");
+    _;
+  }
+
   constructor() {
     _disableInitializers();
   }
@@ -114,7 +122,8 @@ contract RoninValidatorSet is
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
-    uint256 __numberOfBlocksInEpoch
+    uint256 __numberOfBlocksInEpoch,
+    uint256 _startedAtBlock
   ) external initializer {
     _setSlashIndicatorContract(__slashIndicatorContract);
     _setStakingContract(__stakingContract);
@@ -126,6 +135,7 @@ contract RoninValidatorSet is
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
     _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
+    startedAtBlock = _startedAtBlock;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -135,7 +145,7 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function submitBlockReward() external payable override onlyCoinbase {
+  function submitBlockReward() external payable override onlyCoinbase whenStarted {
     uint256 _submittedReward = msg.value;
     address _coinbaseAddr = msg.sender;
 
@@ -168,7 +178,7 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function wrapUpEpoch() external payable virtual override onlyCoinbase whenEpochEnding oncePerEpoch {
+  function wrapUpEpoch() external payable virtual override onlyCoinbase whenStarted whenEpochEnding oncePerEpoch {
     uint256 _newPeriod = _computePeriod(block.timestamp);
     bool _periodEnding = _isPeriodEnding(_newPeriod);
 

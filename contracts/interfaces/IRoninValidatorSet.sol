@@ -75,6 +75,7 @@ interface IRoninValidatorSet is ICandidateManager {
    *
    * Requirements:
    * - The method caller is coinbase.
+   * - The method must be called after the started block `startedAtBlock()`.
    *
    * Emits the event `MiningRewardDeprecated` if the coinbase is slashed or no longer be a block producer.
    * Emits the event `BlockRewardSubmitted` for the valid call.
@@ -89,6 +90,7 @@ interface IRoninValidatorSet is ICandidateManager {
    * - The method must be called when the current epoch is ending.
    * - The epoch is not wrapped yet.
    * - The method caller is coinbase.
+   * - The method must be called after the started block `startedAtBlock()`.
    *
    * Emits the event `MiningRewardDistributed` when some validator has reward distributed.
    * Emits the event `StakingRewardDistributed` when some staking pool has reward distributed.
@@ -145,6 +147,11 @@ interface IRoninValidatorSet is ICandidateManager {
   ///////////////////////////////////////////////////////////////////////////////////////
   //                             FUNCTIONS FOR NORMAL USER                             //
   ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @dev Returns the block that the contract allows incoming mutable calls.
+   */
+  function startedAtBlock() external view returns (uint256);
 
   /**
    * @dev Returns the maximum number of validators in the epoch
