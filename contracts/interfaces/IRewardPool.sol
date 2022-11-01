@@ -3,83 +3,56 @@
 pragma solidity ^0.8.9;
 
 interface IRewardPool {
-  /// @dev Emitted when the settled pool is updated.
-  event SettledPoolsUpdated(address[] poolAddress, uint256[] accumulatedRps);
-  /// @dev Emitted when the pending pool is updated.
-  event PendingPoolUpdated(address poolAddress, uint256 accumulatedRps);
-  /// @dev Emitted when the fields to calculate settled reward for the user is updated.
-  event SettledRewardUpdated(address poolAddress, address user, uint256 debited, uint256 accumulatedRps);
+  /// @dev Emitted when a pool is updated.
+  event PoolUpdated(address indexed poolAddr, uint256 accumulatedRps);
   /// @dev Emitted when the fields to calculate pending reward for the user is updated.
-  event PendingRewardUpdated(address poolAddress, address user, uint256 debited, uint256 credited);
+  event UserRewardUpdated(address indexed poolAddr, address indexed user, uint256 debited, uint256 credited);
   /// @dev Emitted when the user claimed their reward
-  event RewardClaimed(address poolAddress, address user, uint256 amount);
+  event RewardClaimed(address indexed poolAddr, address indexed user, uint256 amount);
 
-  struct PendingRewardFields {
+  struct UserRewardFields {
     // Recorded reward amount.
     uint256 debited;
     // The amount rewards that user have already earned.
     uint256 credited;
     // Last period number that the info updated.
     uint256 lastSyncedPeriod;
+    // Min staking amount in the period
+    uint256 minStakingAmount;
   }
 
-  struct SettledRewardFields {
-    // Recorded reward amount.
-    uint256 debited;
+  struct Pool {
     // Accumulated of the amount rewards per share (one unit staking).
     uint256 accumulatedRps;
+    // Last total staking amount of the previous period.
+    uint256 lastTotalStaking;
   }
-
-  struct PendingPool {
-    // Accumulated of the amount rewards per share (one unit staking).
-    uint256 accumulatedRps;
-  }
-
-  struct SettledPool {
-    // Last period number that the info updated.
-    uint256 lastSyncedPeriod;
-    // Accumulated of the amount rewards per share (one unit staking).
-    uint256 accumulatedRps;
-  }
-
-  /**
-   * @dev Returns total rewards from scratch including pending reward and claimable reward except the claimed amount.
-   *
-   * Note: Do not use this function to get claimable reward, consider using the method `getClaimableReward` instead.
-   *
-   */
-  function getTotalReward(address _poolAddr, address _user) external view returns (uint256);
 
   /**
    * @dev Returns the reward amount that user claimable.
    */
-  function getClaimableReward(address _poolAddr, address _user) external view returns (uint256);
+  function getReward(address _poolAddr, address _user) external view returns (uint256);
 
   /**
-   * @dev Returns the pending reward.
+   * @dev Returns the staking amount of an user.
    */
-  function getPendingReward(address _poolAddr, address _user) external view returns (uint256 _amount);
+  function stakingAmountOf(address _poolAddr, address _user) external view returns (uint256);
 
   /**
-   * @dev Returns the staked amount of the user.
+   * @dev Returns the staking amounts of the users.
    */
-  function balanceOf(address _poolAddr, address _user) external view returns (uint256);
-
-  /**
-   * @dev Returns the staked amounts of the users.
-   */
-  function bulkBalanceOf(address[] calldata _poolAddrs, address[] calldata _userList)
+  function bulkStakingAmountOf(address[] calldata _poolAddrs, address[] calldata _userList)
     external
     view
     returns (uint256[] memory);
 
   /**
-   * @dev Returns the total staked amount of all users.
+   * @dev Returns the total staking amount of all users for a pool.
    */
-  function totalBalance(address _poolAddr) external view returns (uint256);
+  function stakingTotal(address _poolAddr) external view returns (uint256);
 
   /**
-   * @dev Returns the total staked amount of all users.
+   * @dev Returns the total staking amounts of all users for the pools `_poolAddrs`.
    */
-  function totalBalances(address[] calldata _poolAddr) external view returns (uint256[] memory);
+  function bulkStakingTotal(address[] calldata _poolAddrs) external view returns (uint256[] memory);
 }
