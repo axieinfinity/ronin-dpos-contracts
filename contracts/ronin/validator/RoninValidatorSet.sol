@@ -173,6 +173,7 @@ contract RoninValidatorSet is
   function wrapUpEpoch() external payable virtual override onlyCoinbase whenEpochEnding oncePerEpoch {
     uint256 _newPeriod = _computePeriod(block.timestamp);
     bool _periodEnding = _isPeriodEnding(_newPeriod);
+    _currentPeriodStartAtBlock = block.number + 1;
 
     address[] memory _currentValidators = getValidators();
     uint256 _epoch = epochOf(block.number);
@@ -184,6 +185,7 @@ contract RoninValidatorSet is
         _currentValidators
       );
       _settleAndTransferDelegatingRewards(_currentValidators, _totalDelegatingReward);
+      _slashIndicatorContract.updateCreditScore(_currentValidators, _lastPeriod);
       _currentValidators = _syncValidatorSet(_newPeriod);
     }
 
@@ -203,7 +205,7 @@ contract RoninValidatorSet is
     address _validatorAddr,
     uint256 _newJailedUntil,
     uint256 _slashAmount
-  ) external onlySlashIndicatorContract {
+  ) external override onlySlashIndicatorContract {
     uint256 _period = currentPeriod();
     _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = true;
     delete _miningReward[_validatorAddr];
