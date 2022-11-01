@@ -39,6 +39,11 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
       slashIndicatorConf[network.name]!.unavailabilitySlashing?.slashAmountForUnavailabilityTier2Threshold,
       slashIndicatorConf[network.name]!.unavailabilitySlashing?.jailDurationForUnavailabilityTier2Threshold,
     ],
+    [
+      slashIndicatorConf[network.name]!.creditScore?.gainCreditScore,
+      slashIndicatorConf[network.name]!.creditScore?.maxCreditScore,
+      slashIndicatorConf[network.name]!.creditScore?.bailOutCostMultiplier,
+    ],
   ]);
 
   const deployment = await deploy('SlashIndicatorProxy', {

@@ -75,7 +75,7 @@ const slashUntilValidatorTier = async (slasherIdx: number, slasheeIdx: number, t
   }
 
   let _threshold = tier == 1 ? unavailabilityTier1Threshold : unavailabilityTier2Threshold;
-  let _slashType = tier == 1 ? SlashType.MISDEMEANOR : SlashType.FELONY;
+  let _slashType = tier == 1 ? SlashType.UNAVAILABILITY_TIER_1 : SlashType.UNAVAILABILITY_TIER_2;
 
   let tx;
   let slasher = validatorCandidates[slasherIdx];
@@ -90,7 +90,7 @@ const slashUntilValidatorTier = async (slasherIdx: number, slasheeIdx: number, t
   }
 
   let period = await validatorContract.currentPeriod();
-  await expect(tx).to.emit(slashContract, 'UnavailabilitySlashed').withArgs(slashee.address, _slashType, period);
+  await expect(tx).to.emit(slashContract, 'Slashed').withArgs(slashee.address, _slashType, period);
   localIndicatorController.setAt(slasheeIdx, _threshold);
 };
 
@@ -118,6 +118,11 @@ describe('Credit score and bail out test', () => {
             unavailabilityTier1Threshold,
             unavailabilityTier2Threshold,
             slashAmountForUnavailabilityTier2Threshold,
+          },
+          creditScore: {
+            gainCreditScore,
+            maxCreditScore,
+            bailOutCostMultiplier,
           },
         },
         stakingArguments: {

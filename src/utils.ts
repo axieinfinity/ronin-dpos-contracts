@@ -111,11 +111,18 @@ export interface UnavailabilitySlashing {
   jailDurationForUnavailabilityTier2Threshold?: BigNumberish;
 }
 
+export interface CreditScoreConfig {
+  gainCreditScore?: BigNumberish;
+  maxCreditScore?: BigNumberish;
+  bailOutCostMultiplier?: BigNumberish;
+}
+
 export interface SlashIndicatorArguments {
   bridgeOperatorSlashing?: BridgeOperatorSlashingConfig;
   bridgeVotingSlashing?: BridgeVotingSlashingConfig;
   doubleSignSlashing?: DoubleSignSlashingConfig;
   unavailabilitySlashing?: UnavailabilitySlashing;
+  creditScore?: CreditScoreConfig;
 }
 
 export interface SlashIndicatorConfig {

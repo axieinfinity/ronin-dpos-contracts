@@ -226,7 +226,7 @@ describe('Slash indicator test', () => {
         let period = await validatorContract.currentPeriod();
         await expect(tx)
           .to.emit(slashContract, 'Slashed')
-          .withArgs(validatorCandidates[slasheeIdx].address, SlashType.MISDEMEANOR, period);
+          .withArgs(validatorCandidates[slasheeIdx].address, SlashType.UNAVAILABILITY_TIER_1, period);
         localIndicators.setAt(slasheeIdx, unavailabilityTier1Threshold);
         await validateIndicatorAt(slasheeIdx);
       });
@@ -263,13 +263,13 @@ describe('Slash indicator test', () => {
           if (i == unavailabilityTier1Threshold - 1) {
             await expect(tx)
               .to.emit(slashContract, 'Slashed')
-              .withArgs(validatorCandidates[slasheeIdx].address, SlashType.MISDEMEANOR, period);
+              .withArgs(validatorCandidates[slasheeIdx].address, SlashType.UNAVAILABILITY_TIER_1, period);
           }
         }
 
         await expect(tx)
           .to.emit(slashContract, 'Slashed')
-          .withArgs(validatorCandidates[slasheeIdx].address, SlashType.FELONY, period);
+          .withArgs(validatorCandidates[slasheeIdx].address, SlashType.UNAVAILABILITY_TIER_2, period);
         localIndicators.setAt(slasheeIdx, unavailabilityTier2Threshold);
         await validateIndicatorAt(slasheeIdx);
       });
