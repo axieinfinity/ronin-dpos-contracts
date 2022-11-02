@@ -41,7 +41,7 @@ export class EpochController {
       number = number.add(BigNumber.from(includingEpochsNum).sub(1).mul(this.numberOfBlocksInEpoch));
     }
 
-    let numberHex = number.eq(0) ? '0x0' : ethers.utils.hexStripZeros(number.toHexString());
+    const numberHex = number.eq(0) ? '0x0' : ethers.utils.hexStripZeros(number.toHexString());
     return network.provider.send('hardhat_mine', [numberHex, '0x0']);
   }
 
