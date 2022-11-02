@@ -8,14 +8,12 @@ import "../extensions/collections/HasValidatorContract.sol";
 import "../extensions/RONTransferHelper.sol";
 
 contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHelper, Initializable {
-  /// @dev The block bonus for the validator whenever a new block is mined.
-  uint256 internal _validatorBonusPerBlock;
+  /// @dev The block bonus for the block producer whenever a new block is mined.
+  uint256 internal _blockProducerBonusPerBlock;
   /// @dev The block bonus for the bridge operator whenever a new block is mined.
   uint256 internal _bridgeOperatorBonusPerBlock;
-  /// @dev The last block number that the staking vesting for validator sent.
-  uint256 public lastBlockSendingValidatorBonus;
-  /// @dev The last block number that the staking vesting for bridge operator sent.
-  uint256 public lastBlockSendingBridgeOperatorBonus;
+  /// @dev The last block number that the staking vesting sent.
+  uint256 public lastBlockSendingBonus;
 
   constructor() {
     _disableInitializers();
@@ -26,11 +24,11 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
    */
   function initialize(
     address __validatorContract,
-    uint256 __validatorBonusPerBlock,
+    uint256 __blockProducerBonusPerBlock,
     uint256 __bridgeOperatorBonusPerBlock
   ) external payable initializer {
     _setValidatorContract(__validatorContract);
-    _setValidatorBonusPerBlock(__validatorBonusPerBlock);
+    _setBlockProducerBonusPerBlock(__blockProducerBonusPerBlock);
     _setBridgeOperatorBonusPerBlock(__bridgeOperatorBonusPerBlock);
   }
 
@@ -42,10 +40,10 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
   /**
    * @inheritdoc IStakingVesting
    */
-  function validatorBlockBonus(
+  function blockProducerBlockBonus(
     uint256 /* _block */
-  ) public view returns (uint256) {
-    return _validatorBonusPerBlock;
+  ) public view override returns (uint256) {
+    return _blockProducerBonusPerBlock;
   }
 
   /**
@@ -53,70 +51,60 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
    */
   function bridgeOperatorBlockBonus(
     uint256 /* _block */
-  ) public view returns (uint256) {
+  ) public view override returns (uint256) {
     return _bridgeOperatorBonusPerBlock;
   }
 
   /**
    * @inheritdoc IStakingVesting
    */
-  function requestBonus()
+  function requestBonus(bool _forBlockProducer, bool _forBridgeOperator)
     external
+    override
     onlyValidatorContract
-    returns (uint256 _validatorBonus, uint256 _bridgeOperatorBonus)
+    returns (
+      bool _success,
+      uint256 _blockProducerBonus,
+      uint256 _bridgeOperatorBonus
+    )
   {
-    _validatorBonus = requestValidatorBonus();
-    _bridgeOperatorBonus = requestBridgeOperatorBonus();
-  }
+    require(block.number > lastBlockSendingBonus, "StakingVesting: bonus for already sent");
+    lastBlockSendingBonus = block.number;
 
-  /**
-   * @inheritdoc IStakingVesting
-   */
-  function requestValidatorBonus() public onlyValidatorContract returns (uint256 _amount) {
-    require(block.number > lastBlockSendingValidatorBonus, "StakingVesting: bonus for validator already sent");
-    lastBlockSendingValidatorBonus = block.number;
-    _amount = validatorBlockBonus(block.number);
+    _blockProducerBonus = _forBlockProducer ? blockProducerBlockBonus(block.number) : 0;
+    _bridgeOperatorBonus = _forBridgeOperator ? bridgeOperatorBlockBonus(block.number) : 0;
 
-    if (_amount > 0) {
+    uint256 _totalAmount = _blockProducerBonus + _bridgeOperatorBonus;
+
+    if (_totalAmount > 0) {
       address payable _validatorContractAddr = payable(validatorContract());
-      require(
-        _sendRON(_validatorContractAddr, _amount),
-        "StakingVesting: could not transfer RON to validator contract"
-      );
-      emit ValidatorBonusTransferred(block.number, _validatorContractAddr, _amount);
+
+      _success = _unsafeSendRON(_validatorContractAddr, _totalAmount);
+
+      if (!_success) {
+        emit BonusTransferFailed(
+          block.number,
+          _validatorContractAddr,
+          _blockProducerBonus,
+          _bridgeOperatorBonus,
+          address(this).balance
+        );
+        return (_success, 0, 0);
+      }
+
+      emit BonusTransferred(block.number, _validatorContractAddr, _blockProducerBonus, _bridgeOperatorBonus);
     }
   }
 
   /**
-   * @inheritdoc IStakingVesting
-   */
-  function requestBridgeOperatorBonus() public onlyValidatorContract returns (uint256 _amount) {
-    require(
-      block.number > lastBlockSendingBridgeOperatorBonus,
-      "StakingVesting: bonus for bridge operator already sent"
-    );
-    lastBlockSendingBridgeOperatorBonus = block.number;
-    _amount = bridgeOperatorBlockBonus(block.number);
-
-    if (_amount > 0) {
-      address payable _validatorContractAddr = payable(validatorContract());
-      require(
-        _sendRON(_validatorContractAddr, _amount),
-        "StakingVesting: could not transfer RON to validator contract"
-      );
-      emit BridgeOperatorBonusTransferred(block.number, _validatorContractAddr, _amount);
-    }
-  }
-
-  /**
-   * @dev Sets the bonus amount per block for validator.
+   * @dev Sets the bonus amount per block for block producer.
    *
-   * Emits the event `ValidatorBonusPerBlockUpdated`.
+   * Emits the event `BlockProducerBonusPerBlockUpdated`.
    *
    */
-  function _setValidatorBonusPerBlock(uint256 _amount) internal {
-    _validatorBonusPerBlock = _amount;
-    emit ValidatorBonusPerBlockUpdated(_amount);
+  function _setBlockProducerBonusPerBlock(uint256 _amount) internal {
+    _blockProducerBonusPerBlock = _amount;
+    emit BlockProducerBonusPerBlockUpdated(_amount);
   }
 
   /**

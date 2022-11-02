@@ -34,7 +34,7 @@ const unavailabilityTier2Threshold = 10;
 const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
 const minValidatorBalance = BigNumber.from(100);
-const validatorBonusPerBlock = BigNumber.from(1);
+const blockProducerBonusPerBlock = BigNumber.from(1);
 
 describe('[Integration] Submit Block Reward', () => {
   const blockRewardAmount = BigNumber.from(2);
@@ -58,7 +58,7 @@ describe('[Integration] Submit Block Reward', () => {
           minValidatorBalance,
         },
         stakingVestingArguments: {
-          validatorBonusPerBlock,
+          blockProducerBonusPerBlock,
         },
         roninTrustedOrganizationArguments: {
           trustedOrganizations: [governor].map((v) => ({
@@ -139,7 +139,7 @@ describe('[Integration] Submit Block Reward', () => {
     it('Should the ValidatorSetContract emit event of submitting reward', async () => {
       await expect(submitRewardTx)
         .to.emit(validatorContract, 'BlockRewardSubmitted')
-        .withArgs(validator.address, blockRewardAmount, validatorBonusPerBlock);
+        .withArgs(validator.address, blockRewardAmount, blockProducerBonusPerBlock);
     });
 
     it.skip('Should the ValidatorSetContract update mining reward', async () => {});

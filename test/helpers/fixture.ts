@@ -66,7 +66,7 @@ export const defaultTestConfig: InitTestInput = {
   },
 
   stakingVestingArguments: {
-    validatorBonusPerBlock: 1,
+    blockProducerBonusPerBlock: 1,
     bridgeOperatorBonusPerBlock: 1,
     topupAmount: BigNumber.from(100000000000),
   },
