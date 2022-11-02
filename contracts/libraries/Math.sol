@@ -49,6 +49,6 @@ library Math {
   }
 
   function subNonNegative(uint256 a, uint256 b) internal pure returns (uint256) {
-    return a > b ? a - b : 0;
+    return a - min(a, b);
   }
 }
