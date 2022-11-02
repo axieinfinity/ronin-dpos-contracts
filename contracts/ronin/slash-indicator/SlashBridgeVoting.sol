@@ -8,7 +8,7 @@ import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../../extensions/collections/HasRoninGovernanceAdminContract.sol";
 import "../../extensions/collections/HasValidatorContract.sol";
 
-contract SlashBridgeVoting is
+abstract contract SlashBridgeVoting is
   ISlashBridgeVoting,
   HasValidatorContract,
   HasRoninTrustedOrganizationContract,
