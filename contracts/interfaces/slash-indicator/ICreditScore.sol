@@ -40,7 +40,7 @@ interface ICreditScore {
    * Requirements:
    * - The method caller is admin.
    *
-   * Emits the event `DoubleSignSlashingConfigsUpdated`.
+   * Emits the event `CreditScoreConfigsUpdated`.
    *
    * @param _gainCreditScore The max gained number of credit score per period.
    * @param _maxCreditScore The max number of credit score that a validator can hold.
