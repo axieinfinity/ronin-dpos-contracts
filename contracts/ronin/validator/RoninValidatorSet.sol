@@ -139,7 +139,8 @@ contract RoninValidatorSet is
     uint256 _submittedReward = msg.value;
     address _coinbaseAddr = msg.sender;
 
-    uint256 _bridgeOperatorBonus = _stakingVestingContract.requestBridgeOperatorBonus();
+    (, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus) = _stakingVestingContract.requestBonus();
+
     _totalBridgeReward += _bridgeOperatorBonus;
 
     // Deprecates reward for non-validator or slashed validator
@@ -152,7 +153,6 @@ contract RoninValidatorSet is
       return;
     }
 
-    uint256 _blockProducerBonus = _stakingVestingContract.requestValidatorBonus();
     uint256 _reward = _submittedReward + _blockProducerBonus;
     uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
 
