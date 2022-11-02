@@ -29,6 +29,8 @@ interface ICreditScore {
    * - The `_consensusAddr` must be a validator.
    * - Only validator's admin can call this method.
    *
+   * Emits the event `BailedOut`.
+   *
    */
   function bailOut(address _consensusAddr) external;
 
