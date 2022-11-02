@@ -138,31 +138,33 @@ contract RoninValidatorSet is
   function submitBlockReward() external payable override onlyCoinbase {
     uint256 _submittedReward = msg.value;
     address _coinbaseAddr = msg.sender;
+    bool _requestForBlockProducer = isBlockProducer(_coinbaseAddr) &&
+      !_jailed(_coinbaseAddr) &&
+      !_miningRewardDeprecated(_coinbaseAddr, currentPeriod());
+    bool _requestForBridgeOperator = true;
 
-    (, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus) = _stakingVestingContract.requestBonus();
+    (, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus) = _stakingVestingContract.requestBonus(
+      _requestForBlockProducer,
+      _requestForBridgeOperator
+    );
 
     _totalBridgeReward += _bridgeOperatorBonus;
 
     // Deprecates reward for non-validator or slashed validator
-    if (
-      !isBlockProducer(_coinbaseAddr) ||
-      _jailed(_coinbaseAddr) ||
-      _miningRewardDeprecated(_coinbaseAddr, currentPeriod())
-    ) {
+    if (_requestForBlockProducer) {
+      uint256 _reward = _submittedReward + _blockProducerBonus;
+      uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
+
+      uint256 _miningAmount = (_rate * _reward) / 100_00;
+      _miningReward[_coinbaseAddr] += _miningAmount;
+
+      uint256 _delegatingAmount = _reward - _miningAmount;
+      _delegatingReward[_coinbaseAddr] += _delegatingAmount;
+      _stakingContract.recordReward(_coinbaseAddr, _delegatingAmount);
+      emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _blockProducerBonus);
+    } else {
       emit BlockRewardRewardDeprecated(_coinbaseAddr, _submittedReward);
-      return;
     }
-
-    uint256 _reward = _submittedReward + _blockProducerBonus;
-    uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
-
-    uint256 _miningAmount = (_rate * _reward) / 100_00;
-    _miningReward[_coinbaseAddr] += _miningAmount;
-
-    uint256 _delegatingAmount = _reward - _miningAmount;
-    _delegatingReward[_coinbaseAddr] += _delegatingAmount;
-    _stakingContract.recordReward(_coinbaseAddr, _delegatingAmount);
-    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _blockProducerBonus);
   }
 
   /**

@@ -58,7 +58,7 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
   /**
    * @inheritdoc IStakingVesting
    */
-  function requestBonus()
+  function requestBonus(bool _forBlockProducer, bool _forBridgeOperator)
     external
     override
     onlyValidatorContract
@@ -71,8 +71,8 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
     require(block.number > lastBlockSendingBonus, "StakingVesting: bonus for already sent");
     lastBlockSendingBonus = block.number;
 
-    _blockProducerBonus = blockProducerBlockBonus(block.number);
-    _bridgeOperatorBonus = bridgeOperatorBlockBonus(block.number);
+    _blockProducerBonus = _forBlockProducer ? blockProducerBlockBonus(block.number) : 0;
+    _bridgeOperatorBonus = _forBridgeOperator ? bridgeOperatorBlockBonus(block.number) : 0;
 
     uint256 _totalAmount = _blockProducerBonus + _bridgeOperatorBonus;
 
