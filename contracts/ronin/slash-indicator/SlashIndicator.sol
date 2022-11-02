@@ -4,7 +4,6 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/ISlashIndicator.sol";
-import "../../extensions/collections/HasMaintenanceContract.sol";
 import "./SlashDoubleSign.sol";
 import "./SlashBridgeVoting.sol";
 import "./SlashBridgeOperator.sol";
@@ -73,7 +72,7 @@ contract SlashIndicator is
   }
 
   /**
-   * @dev Sets the unavailability indicator of the `_validator` at `_period`.
+   * @dev Helper for CreditScore contract to reset the indicator of the validator after bailing out.
    */
   function _setUnavailabilityIndicator(
     address _validator,
@@ -84,7 +83,7 @@ contract SlashIndicator is
   }
 
   /**
-   * @inheritdoc ISlashUnavailability
+   * @dev Helper for CreditScore contract to query indicator of the validator.
    */
   function getUnavailabilityIndicator(address _validator, uint256 _period)
     public

@@ -99,7 +99,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev See `ICreditScore`.
+   * @inheritdoc ICreditScore
    */
   function setCreditScoreConfigs(
     uint256 _gainCreditScore,
@@ -113,10 +113,13 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   //                                  QUERY FUNCTIONS                                  //
   ///////////////////////////////////////////////////////////////////////////////////////
 
+  /**
+   * @dev See `ISlashUnavailability`
+   */
   function getUnavailabilityIndicator(address _validator, uint256 _period) public view virtual returns (uint256);
 
   /**
-   * @dev See `ICreditScore`.
+   * @inheritdoc ICreditScore
    */
   function getCreditScoreConfigs()
     external
@@ -160,6 +163,9 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   //                                 HELPER FUNCTIONS                                  //
   ///////////////////////////////////////////////////////////////////////////////////////
 
+  /**
+   * @dev See `ISlashUnavailability`
+   */
   function _setUnavailabilityIndicator(
     address _validator,
     uint256 _period,
