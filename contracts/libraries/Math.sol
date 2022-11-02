@@ -45,8 +45,7 @@ library Math {
     uint256 b,
     uint256 upperbound
   ) internal pure returns (uint256) {
-    uint256 _tmp = a + b;
-    return min(_tmp, upperbound);
+    return min(a + b, upperbound);
   }
 
   function subNonNegative(uint256 a, uint256 b) internal pure returns (uint256) {
