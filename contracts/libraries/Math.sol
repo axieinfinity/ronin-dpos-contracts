@@ -40,6 +40,9 @@ library Math {
     return x1 <= y2 && y1 <= x2;
   }
 
+  /**
+   * @dev Returns value of a + b; in case result is larger than upperbound, upperbound is returned.
+   */
   function addWithUpperbound(
     uint256 a,
     uint256 b,
@@ -48,6 +51,9 @@ library Math {
     return min(a + b, upperbound);
   }
 
+  /**
+   * @dev Returns value of a - b; in case of negative result, 0 is returned.
+   */
   function subNonNegative(uint256 a, uint256 b) internal pure returns (uint256) {
     return a - min(a, b);
   }
