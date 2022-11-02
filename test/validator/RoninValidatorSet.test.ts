@@ -41,7 +41,7 @@ const slashAmountForUnavailabilityTier2Threshold = 100;
 const maxValidatorNumber = 4;
 const maxValidatorCandidate = 100;
 const minValidatorBalance = BigNumber.from(20000);
-const validatorBonusPerBlock = BigNumber.from(5000);
+const blockProducerBonusPerBlock = BigNumber.from(5000);
 const bridgeOperatorBonusPerBlock = BigNumber.from(37);
 
 describe('Ronin Validator Set test', () => {
@@ -61,7 +61,7 @@ describe('Ronin Validator Set test', () => {
           minValidatorBalance,
         },
         stakingVestingArguments: {
-          validatorBonusPerBlock,
+          blockProducerBonusPerBlock,
           bridgeOperatorBonusPerBlock,
         },
         roninValidatorSetArguments: {
@@ -251,7 +251,12 @@ describe('Ronin Validator Set test', () => {
 
     it('Should be able to submit block reward using coinbase account', async () => {
       const tx = await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
-      await RoninValidatorSet.expects.emitBlockRewardSubmittedEvent(tx, coinbase.address, 100, validatorBonusPerBlock);
+      await RoninValidatorSet.expects.emitBlockRewardSubmittedEvent(
+        tx,
+        coinbase.address,
+        100,
+        blockProducerBonusPerBlock
+      );
     });
 
     it('Should be able to get right reward at the end of period', async () => {
@@ -346,17 +351,17 @@ describe('Ronin Validator Set test', () => {
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, currentValidatorSet);
       await RoninValidatorSet.expects.emitStakingRewardDistributedEvent(
         tx!,
-        validatorBonusPerBlock.add(100).div(100).mul(99)
+        blockProducerBonusPerBlock.add(100).div(100).mul(99)
       );
 
       const balanceDiff = (await treasury.getBalance()).sub(balance);
-      const expectingBalanceDiff = validatorBonusPerBlock
+      const expectingBalanceDiff = blockProducerBonusPerBlock
         .add(100)
         .div(100)
         .add(bridgeOperatorBonusPerBlock.div(await roninValidatorSet.totalBlockProducers()));
       expect(balanceDiff).eq(expectingBalanceDiff);
       expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
-        validatorBonusPerBlock.add(100).div(100).mul(99).mul(2)
+        blockProducerBonusPerBlock.add(100).div(100).mul(99).mul(2)
       );
     });
 
@@ -376,7 +381,7 @@ describe('Ronin Validator Set test', () => {
       const balanceDiff = (await treasury.getBalance()).sub(balance);
       expect(balanceDiff).eq(bridgeOperatorBonusPerBlock.div(await roninValidatorSet.totalBlockProducers()));
       expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
-        validatorBonusPerBlock.add(100).div(100).mul(99).mul(2)
+        blockProducerBonusPerBlock.add(100).div(100).mul(99).mul(2)
       );
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();

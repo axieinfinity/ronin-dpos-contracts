@@ -53,7 +53,7 @@ const config: InitTestInput = {
     minValidatorBalance: BigNumber.from(100),
   },
   stakingVestingArguments: {
-    validatorBonusPerBlock: 1,
+    blockProducerBonusPerBlock: 1,
     bridgeOperatorBonusPerBlock: 1,
     topupAmount: BigNumber.from(10000),
   },
@@ -197,10 +197,10 @@ describe('[Integration] Configuration check', () => {
   it('Should the StakingVestingContract contract set configs correctly', async () => {
     expect(await stakingVestingContract.validatorContract()).eq(validatorContract.address);
     expect(await stakingVestingContract.validatorBlockBonus(0)).eq(
-      config.stakingVestingArguments?.validatorBonusPerBlock
+      config.stakingVestingArguments?.blockProducerBonusPerBlock
     );
     expect(await stakingVestingContract.validatorBlockBonus(Math.floor(Math.random() * 1_000_000))).eq(
-      config.stakingVestingArguments?.validatorBonusPerBlock
+      config.stakingVestingArguments?.blockProducerBonusPerBlock
     );
     expect(await stakingVestingContract.bridgeOperatorBlockBonus(0)).eq(
       config.stakingVestingArguments?.bridgeOperatorBonusPerBlock

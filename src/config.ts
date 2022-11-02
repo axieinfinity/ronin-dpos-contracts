@@ -73,7 +73,7 @@ export const stakingConfig: StakingConfig = {
 export const stakingVestingConfig: StakingVestingConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
-    validatorBonusPerBlock: BigNumber.from(10).pow(18), // 1 RON per block
+    blockProducerBonusPerBlock: BigNumber.from(10).pow(18), // 1 RON per block
     bridgeOperatorBonusPerBlock: BigNumber.from(10).pow(18), // 1 RON per block
     topupAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(4)), // 10.000 RON
   },

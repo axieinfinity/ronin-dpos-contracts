@@ -79,7 +79,7 @@ export interface StakingConfig {
 }
 
 export interface StakingVestingArguments {
-  validatorBonusPerBlock?: BigNumberish;
+  blockProducerBonusPerBlock?: BigNumberish;
   bridgeOperatorBonusPerBlock?: BigNumberish;
   topupAmount?: BigNumberish;
 }
