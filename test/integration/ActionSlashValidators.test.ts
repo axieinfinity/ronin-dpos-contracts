@@ -112,7 +112,9 @@ describe('[Integration] Slash validators', () => {
         }
         let tx = slashContract.connect(coinbase).slashUnavailability(slashee.address);
 
-        await expect(tx).to.emit(slashContract, 'Slashed').withArgs(slashee.address, SlashType.MISDEMEANOR, period);
+        await expect(tx)
+          .to.emit(slashContract, 'Slashed')
+          .withArgs(slashee.address, SlashType.UNAVAILABILITY_TIER_1, period);
         await expect(tx)
           .to.emit(validatorContract, 'ValidatorPunished')
           .withArgs(slashee.address, period, 0, 0, true, false);
@@ -161,7 +163,7 @@ describe('[Integration] Slash validators', () => {
 
         await expect(slashValidatorTx)
           .to.emit(slashContract, 'Slashed')
-          .withArgs(slashee.address, SlashType.FELONY, period);
+          .withArgs(slashee.address, SlashType.UNAVAILABILITY_TIER_2, period);
 
         let blockNumber = await network.provider.send('eth_blockNumber');
 
@@ -288,7 +290,7 @@ describe('[Integration] Slash validators', () => {
 
           await expect(slashValidatorTx)
             .to.emit(slashContract, 'Slashed')
-            .withArgs(slashee.address, SlashType.FELONY, period);
+            .withArgs(slashee.address, SlashType.UNAVAILABILITY_TIER_2, period);
 
           let blockNumber = await network.provider.send('eth_blockNumber');
 
