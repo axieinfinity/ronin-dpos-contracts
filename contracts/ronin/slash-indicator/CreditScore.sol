@@ -20,6 +20,12 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   /// @dev The number that will be multiplied with the remaining jailed time to get the cost of bailing out.
   uint256 public bailOutCostMultiplier;
 
+  /**
+   * @dev This empty reserved space is put in place to allow future versions to add new
+   * variables without shifting down storage in the inheritance chain.
+   */
+  uint256[50] private ______gap;
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                              CREDIT SCORE FUNCTIONS                               //
   ///////////////////////////////////////////////////////////////////////////////////////
