@@ -43,7 +43,8 @@ export const expects = {
     blockNumber?: BigNumberish,
     recipient?: Address,
     blockProducerBonus?: BigNumberish,
-    bridgeOperatorBonus?: BigNumberish
+    bridgeOperatorBonus?: BigNumberish,
+    contractBalance?: BigNumberish
   ) {
     const eventName = 'BonusTransferFailed';
     await expectEvent(
@@ -62,6 +63,9 @@ export const expects = {
         }
         if (bridgeOperatorBonus) {
           expect(event.args[3], eventName + ': invalid bridge operator bonus').eql(bridgeOperatorBonus);
+        }
+        if (bridgeOperatorBonus) {
+          expect(event.args[4], eventName + ': invalid contract balance').eql(contractBalance);
         }
       },
       1

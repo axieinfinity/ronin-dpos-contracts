@@ -278,7 +278,8 @@ describe('Ronin Validator Set test', () => {
           undefined,
           roninValidatorSet.address,
           blockProducerBonusPerBlock,
-          bridgeOperatorBonusPerBlock
+          bridgeOperatorBonusPerBlock,
+          BigNumber.from(0)
         );
       });
     });

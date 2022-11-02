@@ -15,7 +15,8 @@ interface IStakingVesting {
     uint256 indexed blockNumber,
     address indexed recipient,
     uint256 blockProducerAmount,
-    uint256 bridgeOperatorAmount
+    uint256 bridgeOperatorAmount,
+    uint256 contractBalance
   );
   /// @dev Emitted when the block bonus for block producer is updated
   event BlockProducerBonusPerBlockUpdated(uint256);
