@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../extensions/collections/HasProxyAdmin.sol";
-import "../../interfaces/ISlashBridgeOperator.sol";
+import "../../interfaces/slash-indicator/ISlashBridgeOperator.sol";
 
 abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, PercentageConsumer {
   /**

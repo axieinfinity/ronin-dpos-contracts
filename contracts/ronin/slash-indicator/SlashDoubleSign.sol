@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../../interfaces/ISlashDoubleSign.sol";
+import "../../interfaces/slash-indicator/ISlashDoubleSign.sol";
 import "../../precompile-usages/PrecompileUsageValidateDoubleSign.sol";
 import "../../extensions/collections/HasValidatorContract.sol";
 

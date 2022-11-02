@@ -3,7 +3,7 @@
 pragma solidity ^0.8.9;
 
 import "../../libraries/Math.sol";
-import "../../interfaces/ISlashBridgeVoting.sol";
+import "../../interfaces/slash-indicator/ISlashBridgeVoting.sol";
 import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../../extensions/collections/HasRoninGovernanceAdminContract.sol";
 import "../../extensions/collections/HasValidatorContract.sol";

@@ -3,7 +3,7 @@
 pragma solidity ^0.8.9;
 
 import "./CreditScore.sol";
-import "../../interfaces/ISlashUnavailability.sol";
+import "../../interfaces/slash-indicator/ISlashUnavailability.sol";
 import "../../extensions/collections/HasValidatorContract.sol";
 
 abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContract {

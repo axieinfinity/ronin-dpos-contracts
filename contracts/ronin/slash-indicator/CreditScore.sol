@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../../interfaces/ICreditScore.sol";
+import "../../interfaces/slash-indicator/ICreditScore.sol";
 import "../../extensions/collections/HasMaintenanceContract.sol";
 import "../../extensions/collections/HasValidatorContract.sol";
 import "../../libraries/Math.sol";
