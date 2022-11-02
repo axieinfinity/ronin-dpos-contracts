@@ -112,7 +112,7 @@ describe('Credit score and bail out test', () => {
     validatorCandidates = validatorCandidates.slice(maxValidatorCandidate, maxValidatorCandidate * 2);
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
-      await initTest('SlashIndicator')({
+      await initTest('CreditScore')({
         slashIndicatorArguments: {
           unavailabilitySlashing: {
             unavailabilityTier1Threshold,
