@@ -51,6 +51,10 @@ interface IStakingVesting {
    *
    * Emits the event `BonusTransferred` or `BonusTransferFailed`.
    *
+   * Notes:
+   * - The method does not revert when the contract balance is insufficient to send bonus. This assure the submit reward method
+   * will not be reverted, and the underlying nodes does not hang.
+   *
    * @return _success Whether the transfer is successfully. This returns false mostly because this contract is out of balance.
    * @return _blockProducerBonus The amount of bonus actually sent for the block producer, returns 0 when the transfer is failed.
    * @return _bridgeOperatorBonus The amount of bonus actually sent for the bridge operator, returns 0 when the transfer is failed.

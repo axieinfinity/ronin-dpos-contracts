@@ -79,7 +79,7 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
     if (_totalAmount > 0) {
       address payable _validatorContractAddr = payable(validatorContract());
 
-      _success = _sendRON(_validatorContractAddr, _totalAmount);
+      _success = _unsafeSendRON(_validatorContractAddr, _totalAmount);
 
       if (!_success) {
         emit BonusTransferFailed(block.number, _validatorContractAddr, _blockProducerBonus, _bridgeOperatorBonus);
