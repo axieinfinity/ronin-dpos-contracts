@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../interfaces/ISlashIndicator.sol";
+import "../interfaces/slash-indicator/ISlashIndicator.sol";
 import "../interfaces/IRoninValidatorSet.sol";
 import "../interfaces/IStaking.sol";
 import "../ronin/validator/CandidateManager.sol";
@@ -60,7 +60,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function getLastUpdatedBlock() external view override returns (uint256) {}
 
-  function jailed(address[] memory) external view override returns (bool[] memory) {}
+  function bulkJailed(address[] memory) external view override returns (bool[] memory) {}
 
   function miningRewardDeprecatedAtPeriod(address[] memory, uint256 _period)
     external
@@ -82,6 +82,8 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     uint256 _newJailedUntil,
     uint256 _slashAmount
   ) external override {}
+
+  function bailOut(address) external override {}
 
   function setMaxValidatorNumber(uint256 _maxValidatorNumber) external override {}
 
@@ -127,4 +129,32 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   function currentPeriod() public view override(CandidateManager, ICandidateManager) returns (uint256) {
     return block.timestamp / 86400;
   }
+
+  function jailed(address) external view override returns (bool) {}
+
+  function jailedTimeLeft(address)
+    external
+    view
+    override
+    returns (
+      bool,
+      uint256,
+      uint256
+    )
+  {}
+
+  function currentPeriodStartAtBlock() external view override returns (uint256) {}
+
+  function jailedAtBlock(address _addr, uint256 _blockNum) external view override returns (bool) {}
+
+  function jailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
+    external
+    view
+    override
+    returns (
+      bool isJailed_,
+      uint256 blockLeft_,
+      uint256 epochLeft_
+    )
+  {}
 }

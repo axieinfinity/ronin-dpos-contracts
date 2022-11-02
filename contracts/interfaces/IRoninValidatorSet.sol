@@ -27,6 +27,8 @@ interface IRoninValidatorSet is ICandidateManager {
     bool blockProducerRewardDeprecated,
     bool bridgeOperatorRewardDeprecated
   );
+  /// @dev Emitted when the validator get out of jail by bailout.
+  event ValidatorLiberated(address indexed validator);
   /// @dev Emitted when the reward of the block producer is deprecated.
   event BlockRewardRewardDeprecated(address indexed coinbaseAddr, uint256 rewardAmount);
   /// @dev Emitted when the block reward is submitted.
@@ -125,9 +127,54 @@ interface IRoninValidatorSet is ICandidateManager {
   ) external;
 
   /**
+   * @dev Bailout the validator.
+   *
+   * Requirements:
+   * - The method caller is slash indicator contract.
+   *
+   * Emits the event `ValidatorLiberated`.
+   *
+   */
+  function bailOut(address _validatorAddr) external;
+
+  /**
+   * @dev Returns whether the validator are put in jail (cannot join the set of validators) during the current period.
+   */
+  function jailed(address) external view returns (bool);
+
+  /**
+   * @dev Returns whether the validator are put in jail and the number of block and epoch that he still is in the jail.
+   */
+  function jailedTimeLeft(address _addr)
+    external
+    view
+    returns (
+      bool isJailed_,
+      uint256 blockLeft_,
+      uint256 epochLeft_
+    );
+
+  /**
+   * @dev Returns whether the validator are put in jail (cannot join the set of validators) at a specific block.
+   */
+  function jailedAtBlock(address _addr, uint256 _blockNum) external view returns (bool);
+
+  /**
+   * @dev Returns whether the validator are put in jail at a specific block and the number of block and epoch that he still is in the jail.
+   */
+  function jailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
+    external
+    view
+    returns (
+      bool isJailed_,
+      uint256 blockLeft_,
+      uint256 epochLeft_
+    );
+
+  /**
    * @dev Returns whether the validators are put in jail (cannot join the set of validators) during the current period.
    */
-  function jailed(address[] memory) external view returns (bool[] memory);
+  function bulkJailed(address[] memory) external view returns (bool[] memory);
 
   /**
    * @dev Returns whether the incoming reward of the block producers are deprecated during the current period.

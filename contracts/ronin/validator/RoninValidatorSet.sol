@@ -43,6 +43,8 @@ contract RoninValidatorSet is
   uint256 internal _lastUpdatedBlock;
   /// @dev The last updated period
   uint256 internal _lastUpdatedPeriod;
+  /// @dev The starting block of the last updated period
+  uint256 internal _currentPeriodStartAtBlock;
 
   /// @dev The total of validators
   uint256 public validatorCount;
@@ -171,6 +173,7 @@ contract RoninValidatorSet is
   function wrapUpEpoch() external payable virtual override onlyCoinbase whenEpochEnding oncePerEpoch {
     uint256 _newPeriod = _computePeriod(block.timestamp);
     bool _periodEnding = _isPeriodEnding(_newPeriod);
+    _currentPeriodStartAtBlock = block.number + 1;
 
     address[] memory _currentValidators = getValidators();
     uint256 _epoch = epochOf(block.number);
@@ -182,6 +185,7 @@ contract RoninValidatorSet is
         _currentValidators
       );
       _settleAndTransferDelegatingRewards(_currentValidators, _totalDelegatingReward);
+      _slashIndicatorContract.updateCreditScore(_currentValidators, _lastPeriod);
       _currentValidators = _syncValidatorSet(_newPeriod);
     }
 
@@ -201,7 +205,7 @@ contract RoninValidatorSet is
     address _validatorAddr,
     uint256 _newJailedUntil,
     uint256 _slashAmount
-  ) external onlySlashIndicatorContract {
+  ) external override onlySlashIndicatorContract {
     uint256 _period = currentPeriod();
     _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = true;
     delete _miningReward[_validatorAddr];
@@ -222,7 +226,69 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function jailed(address[] memory _addrList) external view override returns (bool[] memory _result) {
+  function bailOut(address _validatorAddr) external override onlySlashIndicatorContract {
+    _jailedUntil[_validatorAddr] = block.number - 1;
+
+    emit ValidatorLiberated(_validatorAddr);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function jailed(address _addr) external view override returns (bool) {
+    return jailedAtBlock(_addr, block.number);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function jailedTimeLeft(address _addr)
+    external
+    view
+    override
+    returns (
+      bool isJailed_,
+      uint256 blockLeft_,
+      uint256 epochLeft_
+    )
+  {
+    return jailedTimeLeftAtBlock(_addr, block.number);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function jailedAtBlock(address _addr, uint256 _blockNum) public view override returns (bool) {
+    return _jailedAtBlock(_addr, _blockNum);
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function jailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
+    public
+    view
+    override
+    returns (
+      bool isJailed_,
+      uint256 blockLeft_,
+      uint256 epochLeft_
+    )
+  {
+    uint256 __jailedUntil = _jailedUntil[_addr];
+    if (__jailedUntil < _blockNum) {
+      return (false, 0, 0);
+    }
+
+    isJailed_ = true;
+    blockLeft_ = __jailedUntil - _blockNum + 1;
+    epochLeft_ = epochOf(__jailedUntil) - epochOf(_blockNum) + 1;
+  }
+
+  /**
+   * @inheritdoc IRoninValidatorSet
+   */
+  function bulkJailed(address[] memory _addrList) external view override returns (bool[] memory _result) {
     _result = new bool[](_addrList.length);
     for (uint256 _i; _i < _addrList.length; _i++) {
       _result[_i] = _jailed(_addrList[_i]);
@@ -279,9 +345,16 @@ contract RoninValidatorSet is
   }
 
   /**
+   * @inheritdoc ICandidateManager
+   */
+  function currentPeriodStartAtBlock() public view virtual override returns (uint256) {
+    return _currentPeriodStartAtBlock;
+  }
+
+  /**
    * @inheritdoc IRoninValidatorSet
    */
-  function getLastUpdatedBlock() external view returns (uint256) {
+  function getLastUpdatedBlock() external view override returns (uint256) {
     return _lastUpdatedBlock;
   }
 
@@ -705,7 +778,14 @@ contract RoninValidatorSet is
    * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) during the current period.
    */
   function _jailed(address _validatorAddr) internal view returns (bool) {
-    return block.number <= _jailedUntil[_validatorAddr];
+    return _jailedAtBlock(_validatorAddr, block.number);
+  }
+
+  /**
+   * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) at a specific block.
+   */
+  function _jailedAtBlock(address _validatorAddr, uint256 _blockNum) internal view returns (bool) {
+    return _blockNum <= _jailedUntil[_validatorAddr];
   }
 
   /**

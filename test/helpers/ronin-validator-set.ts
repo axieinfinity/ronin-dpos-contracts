@@ -31,12 +31,18 @@ export class EpochController {
     return BigNumber.from(block).add(this.diffToEndEpoch(block));
   }
 
-  async mineToBeforeEndOfEpoch() {
+  async mineToBeforeEndOfEpoch(includingEpochsNum?: BigNumberish) {
     let number = this.diffToEndEpoch(await ethers.provider.getBlockNumber()).sub(1);
     if (number.lt(0)) {
       number = number.add(this.numberOfBlocksInEpoch);
     }
-    return network.provider.send('hardhat_mine', [ethers.utils.hexStripZeros(number.toHexString()), '0x0']);
+
+    if (includingEpochsNum! > 1) {
+      number = number.add(BigNumber.from(includingEpochsNum).sub(1).mul(this.numberOfBlocksInEpoch));
+    }
+
+    const numberHex = number.eq(0) ? '0x0' : ethers.utils.hexStripZeros(number.toHexString());
+    return network.provider.send('hardhat_mine', [numberHex, '0x0']);
   }
 
   static async setTimestampToPeriodEnding(): Promise<void> {

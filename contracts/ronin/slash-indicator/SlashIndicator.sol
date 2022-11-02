@@ -3,12 +3,12 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../../interfaces/ISlashIndicator.sol";
-import "../../extensions/collections/HasMaintenanceContract.sol";
+import "../../interfaces/slash-indicator/ISlashIndicator.sol";
 import "./SlashDoubleSign.sol";
 import "./SlashBridgeVoting.sol";
 import "./SlashBridgeOperator.sol";
 import "./SlashUnavailability.sol";
+import "./CreditScore.sol";
 
 contract SlashIndicator is
   ISlashIndicator,
@@ -16,7 +16,7 @@ contract SlashIndicator is
   SlashBridgeVoting,
   SlashBridgeOperator,
   SlashUnavailability,
-  HasMaintenanceContract,
+  CreditScore,
   Initializable
 {
   constructor() {
@@ -45,7 +45,11 @@ contract SlashIndicator is
     // _unavailabilitySlashingConfigs[1]: _unavailabilityTier2Threshold
     // _unavailabilitySlashingConfigs[2]: _slashAmountForUnavailabilityTier2Threshold
     // _unavailabilitySlashingConfigs[3]: _jailDurationForUnavailabilityTier2Threshold
-    uint256[4] calldata _unavailabilitySlashingConfigs
+    uint256[4] calldata _unavailabilitySlashingConfigs,
+    // _creditScoreConfigs[0]: _gainCreditScore
+    // _creditScoreConfigs[1]: _maxCreditScore
+    // _creditScoreConfigs[2]: _bailOutCostMultiplier
+    uint256[3] calldata _creditScoreConfigs
   ) external initializer {
     _setValidatorContract(__validatorContract);
     _setMaintenanceContract(__maintenanceContract);
@@ -64,6 +68,30 @@ contract SlashIndicator is
       _unavailabilitySlashingConfigs[2],
       _unavailabilitySlashingConfigs[3]
     );
+    _setCreditScoreConfigs(_creditScoreConfigs[0], _creditScoreConfigs[1], _creditScoreConfigs[2]);
+  }
+
+  /**
+   * @dev Helper for CreditScore contract to reset the indicator of the validator after bailing out.
+   */
+  function _setUnavailabilityIndicator(
+    address _validator,
+    uint256 _period,
+    uint256 _indicator
+  ) internal override(CreditScore, SlashUnavailability) {
+    SlashUnavailability._setUnavailabilityIndicator(_validator, _period, _indicator);
+  }
+
+  /**
+   * @dev Helper for CreditScore contract to query indicator of the validator.
+   */
+  function getUnavailabilityIndicator(address _validator, uint256 _period)
+    public
+    view
+    override(CreditScore, ISlashUnavailability, SlashUnavailability)
+    returns (uint256)
+  {
+    return SlashUnavailability.getUnavailabilityIndicator(_validator, _period);
   }
 
   /**

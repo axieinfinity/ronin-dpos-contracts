@@ -27,4 +27,34 @@ library Math {
   ) internal pure returns (bool) {
     return a <= c && c <= b;
   }
+
+  /**
+   * @dev Returns whether two inclusive ranges [x1;x2] and [y1;y2] overlap.
+   */
+  function twoRangeOverlap(
+    uint256 x1,
+    uint256 x2,
+    uint256 y1,
+    uint256 y2
+  ) internal pure returns (bool) {
+    return x1 <= y2 && y1 <= x2;
+  }
+
+  /**
+   * @dev Returns value of a + b; in case result is larger than upperbound, upperbound is returned.
+   */
+  function addWithUpperbound(
+    uint256 a,
+    uint256 b,
+    uint256 upperbound
+  ) internal pure returns (uint256) {
+    return min(a + b, upperbound);
+  }
+
+  /**
+   * @dev Returns value of a - b; in case of negative result, 0 is returned.
+   */
+  function subNonNegative(uint256 a, uint256 b) internal pure returns (uint256) {
+    return a - min(a, b);
+  }
 }

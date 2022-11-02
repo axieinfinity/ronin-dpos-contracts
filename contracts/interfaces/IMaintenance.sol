@@ -25,9 +25,27 @@ interface IMaintenance {
   function maintaining(address _consensusAddr, uint256 _block) external view returns (bool);
 
   /**
+   * @dev Returns whether the validator `_consensusAddr` was maintaining in the inclusive range [`_fromBlock`, `_toBlock`] of blocks.
+   */
+  function maintainingInBlockRange(
+    address _consensusAddr,
+    uint256 _fromBlock,
+    uint256 _toBlock
+  ) external view returns (bool);
+
+  /**
    * @dev Returns the bool array indicating the validator is maintaining or not.
    */
   function bulkMaintaining(address[] calldata _addrList, uint256 _block) external view returns (bool[] memory);
+
+  /**
+   * @dev Returns a bool array indicating the validator was maintaining in the inclusive range [`_fromBlock`, `_toBlock`] of blocks or not.
+   */
+  function bulkMaintainingInBlockRange(
+    address[] calldata _addrList,
+    uint256 _fromBlock,
+    uint256 _toBlock
+  ) external view returns (bool[] memory);
 
   /**
    * @dev Returns whether the validator `_consensusAddr` has scheduled.

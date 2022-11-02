@@ -91,6 +91,11 @@ export const defaultTestConfig: InitTestInput = {
       slashAmountForUnavailabilityTier2Threshold: BigNumber.from(10).pow(18).mul(1),
       jailDurationForUnavailabilityTier2Threshold: 28800 * 2,
     },
+    creditScore: {
+      gainCreditScore: 50,
+      maxCreditScore: 600,
+      bailOutCostMultiplier: 5,
+    },
   },
 
   roninValidatorSetArguments: {
@@ -145,6 +150,10 @@ export const initTest = (id: string) =>
         unavailabilitySlashing: {
           ...defaultTestConfig?.slashIndicatorArguments?.unavailabilitySlashing,
           ...options?.slashIndicatorArguments?.unavailabilitySlashing,
+        },
+        creditScore: {
+          ...defaultTestConfig?.slashIndicatorArguments?.creditScore,
+          ...options?.slashIndicatorArguments?.creditScore,
         },
       };
       roninValidatorSetConf[network.name] = {
