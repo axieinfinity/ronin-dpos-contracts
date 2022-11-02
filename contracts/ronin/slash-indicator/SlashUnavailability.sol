@@ -124,6 +124,17 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
   }
 
   /**
+   * @dev Sets the unavailability indicator of the `_validator` at `_period`.
+   */
+  function _setUnavailabilityIndicator(
+    address _validator,
+    uint256 _period,
+    uint256 _indicator
+  ) internal virtual {
+    _unavailabilityIndicator[_validator][_period] = _indicator;
+  }
+
+  /**
    * @dev See `ISlashUnavailability-setUnavailabilitySlashingConfigs`.
    */
   function _setUnavailabilitySlashingConfigs(

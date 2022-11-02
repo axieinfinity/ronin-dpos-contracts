@@ -79,8 +79,8 @@ contract SlashIndicator is
     address _validator,
     uint256 _period,
     uint256 _indicator
-  ) internal override {
-    _unavailabilityIndicator[_validator][_period] = _indicator;
+  ) internal override(CreditScore, SlashUnavailability) {
+    SlashUnavailability._setUnavailabilityIndicator(_validator, _period, _indicator);
   }
 
   /**
