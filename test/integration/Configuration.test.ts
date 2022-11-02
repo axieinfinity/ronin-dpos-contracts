@@ -196,10 +196,10 @@ describe('[Integration] Configuration check', () => {
 
   it('Should the StakingVestingContract contract set configs correctly', async () => {
     expect(await stakingVestingContract.validatorContract()).eq(validatorContract.address);
-    expect(await stakingVestingContract.validatorBlockBonus(0)).eq(
+    expect(await stakingVestingContract.blockProducerBlockBonus(0)).eq(
       config.stakingVestingArguments?.blockProducerBonusPerBlock
     );
-    expect(await stakingVestingContract.validatorBlockBonus(Math.floor(Math.random() * 1_000_000))).eq(
+    expect(await stakingVestingContract.blockProducerBlockBonus(Math.floor(Math.random() * 1_000_000))).eq(
       config.stakingVestingArguments?.blockProducerBonusPerBlock
     );
     expect(await stakingVestingContract.bridgeOperatorBlockBonus(0)).eq(
