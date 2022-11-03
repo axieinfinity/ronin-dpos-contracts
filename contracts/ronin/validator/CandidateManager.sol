@@ -3,10 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "../../extensions/collections/HasStakingContract.sol";
+import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/ICandidateManager.sol";
 import "../../interfaces/IStaking.sol";
 
-abstract contract CandidateManager is ICandidateManager, HasStakingContract {
+abstract contract CandidateManager is ICandidateManager, HasStakingContract, PercentageConsumer {
   /// @dev Maximum number of validator candidate
   uint256 private _maxValidatorCandidate;
 
@@ -50,6 +51,7 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
     uint256 _length = _candidates.length;
     require(_length < maxValidatorCandidate(), "CandidateManager: exceeds maximum number of candidates");
     require(!isValidatorCandidate(_consensusAddr), "CandidateManager: query for already existent candidate");
+    require(_commissionRate <= _MAX_PERCENTAGE, "CandidateManager: invalid comission rate");
 
     _candidateIndex[_consensusAddr] = ~_length;
     _candidates.push(_consensusAddr);
@@ -119,29 +121,38 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
   function numberOfBlocksInEpoch() public view virtual returns (uint256);
 
   /**
-   * @dev Removes unsastisfied candidates, the ones who have insufficient minimum candidate balance,
+   * @dev Removes unsastisfied candidates, the ones who have insufficient minimum candidate staking amount,
    * or the ones who revoked their candidate role.
    *
    * Emits the event `CandidatesRevoked` when a candidate is revoked.
    *
-   * @return _balances a list of balances of the new candidates.
+   * @return _stakingTotals a list of staking totals of the new candidates.
    *
    */
-  function _filterUnsatisfiedCandidates(uint256 _minBalance) internal returns (uint256[] memory _balances) {
+  function _filterUnsatisfiedCandidates() internal returns (uint256[] memory _stakingTotals) {
     IStaking _staking = _stakingContract;
-    _balances = _staking.totalBalances(_candidates);
+    // NOTE: we should filter the ones who does not keep the minium candidate staking amount here
+    // IE: _staking.bulkSelftStakingAmount(_candidates);
+    _stakingTotals = _staking.bulkStakingTotal(_candidates);
 
+    uint256 _minStakingAmount = _stakingContract.minValidatorStakingAmount();
     uint256 _length = _candidates.length;
     uint256 _period = currentPeriod();
     address[] memory _unsatisfiedCandidates = new address[](_length);
     uint256 _unsatisfiedCount;
     address _addr;
-    for (uint _i = 0; _i < _length; _i++) {
-      _addr = _candidates[_i];
-      if (_balances[_i] < _minBalance || _candidateInfo[_addr].revokedPeriod <= _period) {
-        _balances[_i] = _balances[--_length];
-        _unsatisfiedCandidates[_unsatisfiedCount++] = _addr;
-        _removeCandidate(_addr);
+
+    {
+      uint256 _i;
+      while (_i < _length) {
+        _addr = _candidates[_i];
+        if (_stakingTotals[_i] < _minStakingAmount || _candidateInfo[_addr].revokedPeriod <= _period) {
+          _stakingTotals[_i] = _stakingTotals[--_length];
+          _unsatisfiedCandidates[_unsatisfiedCount++] = _addr;
+          _removeCandidate(_addr);
+          continue;
+        }
+        _i++;
       }
     }
 
@@ -154,7 +165,7 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract {
     }
 
     assembly {
-      mstore(_balances, _length)
+      mstore(_stakingTotals, _length)
     }
   }
 

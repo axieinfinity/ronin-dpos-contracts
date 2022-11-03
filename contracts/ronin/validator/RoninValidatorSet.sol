@@ -10,7 +10,6 @@ import "../../extensions/collections/HasSlashIndicatorContract.sol";
 import "../../extensions/collections/HasMaintenanceContract.sol";
 import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../../extensions/collections/HasBridgeTrackingContract.sol";
-import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/IRoninValidatorSet.sol";
 import "../../libraries/Math.sol";
 import "../../libraries/EnumFlags.sol";
@@ -30,7 +29,6 @@ contract RoninValidatorSet is
   HasRoninTrustedOrganizationContract,
   HasBridgeTrackingContract,
   CandidateManager,
-  PercentageConsumer,
   Initializable
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
@@ -153,20 +151,21 @@ contract RoninValidatorSet is
     _totalBridgeReward += _bridgeOperatorBonus;
 
     // Deprecates reward for non-validator or slashed validator
-    if (_requestForBlockProducer) {
-      uint256 _reward = _submittedReward + _blockProducerBonus;
-      uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
-
-      uint256 _miningAmount = (_rate * _reward) / 100_00;
-      _miningReward[_coinbaseAddr] += _miningAmount;
-
-      uint256 _delegatingAmount = _reward - _miningAmount;
-      _delegatingReward[_coinbaseAddr] += _delegatingAmount;
-      _stakingContract.recordReward(_coinbaseAddr, _delegatingAmount);
-      emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _blockProducerBonus);
-    } else {
+    if (!_requestForBlockProducer) {
       emit BlockRewardRewardDeprecated(_coinbaseAddr, _submittedReward);
+      return;
     }
+
+    uint256 _reward = _submittedReward + _blockProducerBonus;
+    uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
+
+    uint256 _miningAmount = (_rate * _reward) / _MAX_PERCENTAGE;
+    _miningReward[_coinbaseAddr] += _miningAmount;
+
+    uint256 _delegatingAmount = _reward - _miningAmount;
+    _delegatingReward[_coinbaseAddr] += _delegatingAmount;
+    _stakingContract.recordReward(_coinbaseAddr, _delegatingAmount);
+    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _blockProducerBonus);
   }
 
   /**
@@ -182,11 +181,11 @@ contract RoninValidatorSet is
     uint256 _lastPeriod = currentPeriod();
 
     if (_periodEnding) {
-      uint256 _totalDelegatingReward = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
-        _lastPeriod,
-        _currentValidators
-      );
-      _settleAndTransferDelegatingRewards(_currentValidators, _totalDelegatingReward);
+      (
+        uint256 _totalDelegatingReward,
+        uint256[] memory _delegatingRewards
+      ) = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(_lastPeriod, _currentValidators);
+      _settleAndTransferDelegatingRewards(_lastPeriod, _currentValidators, _totalDelegatingReward, _delegatingRewards);
       _slashIndicatorContract.updateCreditScore(_currentValidators, _lastPeriod);
       _currentValidators = _syncValidatorSet(_newPeriod);
     }
@@ -212,14 +211,13 @@ contract RoninValidatorSet is
     _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = true;
     delete _miningReward[_validatorAddr];
     delete _delegatingReward[_validatorAddr];
-    IStaking(_stakingContract).sinkPendingReward(_validatorAddr);
 
     if (_newJailedUntil > 0) {
       _jailedUntil[_validatorAddr] = Math.max(_newJailedUntil, _jailedUntil[_validatorAddr]);
     }
 
     if (_slashAmount > 0) {
-      IStaking(_stakingContract).deductStakedAmount(_validatorAddr, _slashAmount);
+      IStaking(_stakingContract).deductStakingAmount(_validatorAddr, _slashAmount);
     }
 
     emit ValidatorPunished(_validatorAddr, _period, _jailedUntil[_validatorAddr], _slashAmount, true, false);
@@ -516,7 +514,8 @@ contract RoninValidatorSet is
   function _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
     uint256 _lastPeriod,
     address[] memory _currentValidators
-  ) private returns (uint256 _totalDelegatingReward) {
+  ) private returns (uint256 _totalDelegatingReward, uint256[] memory _delegatingRewards) {
+    _delegatingRewards = new uint256[](_currentValidators.length);
     address _consensusAddr;
     address payable _treasury;
     IBridgeTracking _bridgeTracking = _bridgeTrackingContract;
@@ -550,6 +549,7 @@ contract RoninValidatorSet is
 
       if (!_jailed(_consensusAddr) && !_miningRewardDeprecated(_consensusAddr, _lastPeriod)) {
         _totalDelegatingReward += _delegatingReward[_consensusAddr];
+        _delegatingRewards[_i] = _delegatingReward[_consensusAddr];
         _distributeMiningReward(_consensusAddr, _treasury);
       }
 
@@ -658,11 +658,14 @@ contract RoninValidatorSet is
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _settleAndTransferDelegatingRewards(address[] memory _currentValidators, uint256 _totalDelegatingReward)
-    private
-  {
+  function _settleAndTransferDelegatingRewards(
+    uint256 _period,
+    address[] memory _currentValidators,
+    uint256 _totalDelegatingReward,
+    uint256[] memory _delegatingRewards
+  ) private {
     IStaking _staking = _stakingContract;
-    _staking.settleRewardPools(_currentValidators);
+    _staking.recordRewards(_period, _currentValidators, _delegatingRewards);
 
     if (_totalDelegatingReward > 0) {
       if (_sendRON(payable(address(_staking)), _totalDelegatingReward)) {
@@ -684,16 +687,14 @@ contract RoninValidatorSet is
    *
    */
   function _syncValidatorSet(uint256 _newPeriod) private returns (address[] memory _newValidators) {
-    uint256[] memory _balanceWeights;
-    // This is a temporary approach since the slashing issue is still not finalized.
+    // NOTE: This is a temporary approach since the slashing issue is still not finalized.
     // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
-    uint256 _minBalance = _stakingContract.minValidatorBalance();
-    _balanceWeights = _filterUnsatisfiedCandidates(_minBalance);
+    uint256[] memory _weights = _filterUnsatisfiedCandidates();
     uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getConsensusWeights(_candidates);
     uint256 _newValidatorCount;
     (_newValidators, _newValidatorCount) = _pcPickValidatorSet(
       _candidates,
-      _balanceWeights,
+      _weights,
       _trustedWeights,
       _maxValidatorNumber,
       _maxPrioritizedValidatorNumber

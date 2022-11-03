@@ -10,20 +10,20 @@ interface IStaking is IRewardPool {
     address addr;
     // Pool admin address
     address admin;
-    // Self-staked amount
-    uint256 stakedAmount;
-    // Total balance of the pool
-    uint256 totalBalance;
-    // Mapping from delegator => delegated amount
-    mapping(address => uint256) delegatedAmount;
+    // Self-staking amount
+    uint256 stakingAmount;
+    // Total number of RON staking for the pool
+    uint256 stakingTotal;
+    // Mapping from delegator => delegating amount
+    mapping(address => uint256) delegatingAmount;
   }
 
   /// @dev Emitted when the validator pool is approved.
   event PoolApproved(address indexed validator, address indexed admin);
   /// @dev Emitted when the validator pool is deprecated.
   event PoolsDeprecated(address[] validator);
-  /// @dev Emitted when the staked amount is deprecated.
-  event StakedAmountDeprecated(address indexed validator, address indexed admin, uint256 amount);
+  /// @dev Emitted when the staking amount is deprecated.
+  event StakingAmountDeprecated(address indexed validator, address indexed admin, uint256 amount);
   /// @dev Emitted when the pool admin staked for themself.
   event Staked(address indexed consensuAddr, uint256 amount);
   /// @dev Emitted when the pool admin unstaked the amount of RON from themself.
@@ -32,8 +32,8 @@ interface IStaking is IRewardPool {
   event Delegated(address indexed delegator, address indexed consensuAddr, uint256 amount);
   /// @dev Emitted when the delegator unstaked from a validator candidate.
   event Undelegated(address indexed delegator, address indexed consensuAddr, uint256 amount);
-  /// @dev Emitted when the minimum balance for being a validator is updated.
-  event MinValidatorBalanceUpdated(uint256 threshold);
+  /// @dev Emitted when the minimum staking amount for being a validator is updated.
+  event MinValidatorStakingAmountUpdated(uint256 threshold);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                             FUNCTIONS FOR GOVERNANCE                              //
@@ -42,7 +42,7 @@ interface IStaking is IRewardPool {
   /**
    * @dev Returns the minimum threshold for being a validator candidate.
    */
-  function minValidatorBalance() external view returns (uint256);
+  function minValidatorStakingAmount() external view returns (uint256);
 
   /**
    * @dev Sets the minimum threshold for being a validator candidate.
@@ -50,52 +50,36 @@ interface IStaking is IRewardPool {
    * Requirements:
    * - The method caller is admin.
    *
-   * Emits the `MinValidatorBalanceUpdated` event.
+   * Emits the `MinValidatorStakingAmountUpdated` event.
    *
    */
-  function setMinValidatorBalance(uint256) external;
+  function setMinValidatorStakingAmount(uint256) external;
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                         FUNCTIONS FOR VALIDATOR CONTRACT                           //
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev Records the amount of reward `_reward` for the pending pool `_poolAddr`.
+   * @dev Records the amount of rewards `_rewards` for the pools `_poolAddrs`.
    *
    * Requirements:
    * - The method caller is validator contract.
    *
-   * Emits the `PendingPoolUpdated` event.
+   * Emits the event `PoolsUpdated` once the contract recorded the rewards successfully.
+   * Emits the event `PoolsUpdateFailed` once the input array lengths are not equal.
+   * Emits the event `PoolUpdateConflicted` when the pool is already updated in the period.
    *
-   * Note: This method should not be called after the pending pool is sinked.
-   *
-   */
-  function recordReward(address _consensusAddr, uint256 _reward) external payable;
-
-  /**
-   * @dev Settles the pending pool and allocates rewards for the pool `_consensusAddr`.
-   *
-   * Requirements:
-   * - The method caller is validator contract.
-   *
-   * Emits the `SettledPoolsUpdated` event.
+   * Note: This method should be called once at the period ending.
    *
    */
-  function settleRewardPools(address[] calldata _consensusAddrs) external;
+  function recordRewards(
+    uint256 _period,
+    address[] calldata _consensusAddrs,
+    uint256[] calldata _rewards
+  ) external payable;
 
   /**
-   * @dev Handles when the pending reward pool of the validator is sinked.
-   *
-   * Requirements:
-   * - The method caller is validator contract.
-   *
-   * Emits the `PendingPoolUpdated` event.
-   *
-   */
-  function sinkPendingReward(address _consensusAddr) external;
-
-  /**
-   * @dev Deducts from staked amount of the validator `_consensusAddr` for `_amount`.
+   * @dev Deducts from staking amount of the validator `_consensusAddr` for `_amount`.
    *
    * Requirements:
    * - The method caller is validator contract.
@@ -103,7 +87,7 @@ interface IStaking is IRewardPool {
    * Emits the event `Unstaked`.
    *
    */
-  function deductStakedAmount(address _consensusAddr, uint256 _amount) external;
+  function deductStakingAmount(address _consensusAddr, uint256 _amount) external;
 
   /**
    * @dev Deprecates the pool.
@@ -112,7 +96,7 @@ interface IStaking is IRewardPool {
    * - The method caller is validator contract.
    *
    * Emits the event `PoolsDeprecated` and `Unstaked` events.
-   * Emits the event `StakedAmountDeprecated` if the contract cannot transfer RON back to the pool admin.
+   * Emits the event `StakingAmountDeprecated` if the contract cannot transfer RON back to the pool admin.
    *
    */
   function deprecatePools(address[] calldata _pools) external;
@@ -127,7 +111,7 @@ interface IStaking is IRewardPool {
    * Requirements:
    * - The method caller is able to receive RON.
    * - The treasury is able to receive RON.
-   * - The amount is larger than or equal to the minimum validator balance `minValidatorBalance()`.
+   * - The amount is larger than or equal to the minimum validator staking amount `minValidatorStakingAmount()`.
    *
    * Emits the event `PoolApproved`.
    *
@@ -169,7 +153,7 @@ interface IStaking is IRewardPool {
   function unstake(address _consensusAddr, uint256 _amount) external;
 
   /**
-   * @dev Renounces being a validator candidate and takes back the delegated/staked amount.
+   * @dev Renounces being a validator candidate and takes back the delegating/staking amount.
    *
    * Requirements:
    * - The consensus address is a validator candidate.
@@ -233,12 +217,12 @@ interface IStaking is IRewardPool {
   ) external;
 
   /**
-   * @dev Returns the pending reward and the claimable reward of the user `_user`.
+   * @dev Returns the claimable reward of the user `_user`.
    */
   function getRewards(address _user, address[] calldata _poolAddrList)
     external
     view
-    returns (uint256[] memory _pendings, uint256[] memory _claimables);
+    returns (uint256[] memory _rewards);
 
   /**
    * @dev Claims the reward of method caller.
@@ -270,7 +254,7 @@ interface IStaking is IRewardPool {
     view
     returns (
       address _admin,
-      uint256 _stakedAmount,
-      uint256 _totalBalance
+      uint256 _stakingAmount,
+      uint256 _stakingTotal
     );
 }

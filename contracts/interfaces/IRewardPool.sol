@@ -3,29 +3,40 @@
 pragma solidity ^0.8.9;
 
 interface IRewardPool {
-  /// @dev Emitted when a pool is updated.
-  event PoolUpdated(address indexed poolAddr, uint256 accumulatedRps);
   /// @dev Emitted when the fields to calculate pending reward for the user is updated.
-  event UserRewardUpdated(address indexed poolAddr, address indexed user, uint256 debited, uint256 credited);
+  event UserRewardUpdated(address indexed poolAddr, address indexed user, uint256 debited);
   /// @dev Emitted when the user claimed their reward
   event RewardClaimed(address indexed poolAddr, address indexed user, uint256 amount);
+
+  /// @dev Emitted when the pool shares are updated
+  event PoolSharesUpdated(uint256 indexed period, address indexed poolAddr, uint256 shares);
+  /// @dev Emitted when the pools are updated
+  event PoolsUpdated(uint256 indexed period, address[] poolAddrs, uint256[] aRps, uint256[] shares);
+  /// @dev Emitted when the contract fails when updating the pools
+  event PoolsUpdateFailed(uint256 indexed period, address[] poolAddrs, uint256[] aRps);
+  /// @dev Emitted when the contract fails when updating a pool that already set
+  event PoolUpdateConflicted(uint256 indexed period, address indexed poolAddr);
 
   struct UserRewardFields {
     // Recorded reward amount.
     uint256 debited;
-    // The amount rewards that user have already earned.
-    uint256 credited;
+    // The last accumulated of the amount rewards per share (one unit staking) that the info updated.
+    uint256 aRps;
+    // Min staking amount in the period.
+    uint256 minAmount;
     // Last period number that the info updated.
-    uint256 lastSyncedPeriod;
-    // Min staking amount in the period
-    uint256 minStakingAmount;
+    uint256 lastPeriod;
+    // Pool period
+    uint256 poolPeriod;
   }
 
   struct Pool {
     // Accumulated of the amount rewards per share (one unit staking).
-    uint256 accumulatedRps;
-    // Last total staking amount of the previous period.
-    uint256 lastTotalStaking;
+    uint256 aRps;
+    // The staking total to share reward of the current period.
+    uint256 shares;
+    // Last period number that the info updated.
+    uint256 lastPeriod;
   }
 
   /**

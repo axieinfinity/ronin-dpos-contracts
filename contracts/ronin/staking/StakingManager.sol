@@ -42,52 +42,52 @@ abstract contract StakingManager is
   /**
    * @inheritdoc IRewardPool
    */
-  function balanceOf(address _poolAddr, address _user)
+  function stakingAmountOf(address _poolAddr, address _user)
     public
     view
     override(IRewardPool, RewardCalculation)
     returns (uint256)
   {
-    return _stakingPool[_poolAddr].delegatedAmount[_user];
+    return _stakingPool[_poolAddr].delegatingAmount[_user];
   }
 
   /**
    * @inheritdoc IRewardPool
    */
-  function bulkBalanceOf(address[] calldata _poolAddrs, address[] calldata _userList)
+  function bulkStakingAmountOf(address[] calldata _poolAddrs, address[] calldata _userList)
     external
     view
     override
-    returns (uint256[] memory _balances)
+    returns (uint256[] memory _stakingAmounts)
   {
     require(_poolAddrs.length > 0 && _poolAddrs.length == _userList.length, "StakingManager: invalid input array");
-    _balances = new uint256[](_poolAddrs.length);
-    for (uint _i = 0; _i < _balances.length; _i++) {
-      _balances[_i] = _stakingPool[_poolAddrs[_i]].delegatedAmount[_userList[_i]];
+    _stakingAmounts = new uint256[](_poolAddrs.length);
+    for (uint _i = 0; _i < _stakingAmounts.length; _i++) {
+      _stakingAmounts[_i] = _stakingPool[_poolAddrs[_i]].delegatingAmount[_userList[_i]];
     }
   }
 
   /**
    * @inheritdoc IRewardPool
    */
-  function totalBalance(address _poolAddr) public view override(IRewardPool, RewardCalculation) returns (uint256) {
-    return _stakingPool[_poolAddr].totalBalance;
+  function stakingTotal(address _poolAddr) public view override(IRewardPool, RewardCalculation) returns (uint256) {
+    return _stakingPool[_poolAddr].stakingTotal;
   }
 
   /**
    * @inheritdoc IRewardPool
    */
-  function totalBalances(address[] calldata _poolList) public view override returns (uint256[] memory _balances) {
-    _balances = new uint256[](_poolList.length);
+  function bulkStakingTotal(address[] calldata _poolList) public view override returns (uint256[] memory _stakingAmounts) {
+    _stakingAmounts = new uint256[](_poolList.length);
     for (uint _i = 0; _i < _poolList.length; _i++) {
-      _balances[_i] = totalBalance(_poolList[_i]);
+      _stakingAmounts[_i] = stakingTotal(_poolList[_i]);
     }
   }
 
   /**
    * @inheritdoc IStaking
    */
-  function minValidatorBalance() public view virtual returns (uint256);
+  function minValidatorStakingAmount() public view virtual returns (uint256);
 
   ///////////////////////////////////////////////////////////////////////////////////////
   //                          FUNCTIONS FOR VALIDATOR CANDIDATE                        //
@@ -136,8 +136,8 @@ abstract contract StakingManager is
     require(_amount > 0, "StakingManager: invalid amount");
     address _delegator = msg.sender;
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
-    uint256 _remainAmount = _pool.stakedAmount - _amount;
-    require(_remainAmount >= minValidatorBalance(), "StakingManager: invalid staked amount left");
+    uint256 _remainAmount = _pool.stakingAmount - _amount;
+    require(_remainAmount >= minValidatorStakingAmount(), "StakingManager: invalid staking amount left");
 
     _unstake(_pool, _delegator, _amount);
     require(_sendRON(payable(_delegator), _amount), "StakingManager: could not transfer RON");
@@ -160,7 +160,7 @@ abstract contract StakingManager is
    * Requirements:
    * - The pool admin is able to receive RON.
    * - The treasury is able to receive RON.
-   * - The amount is larger than or equal to the minimum validator balance `minValidatorBalance()`.
+   * - The amount is larger than or equal to the minimum validator staking amount `minValidatorStakingAmount()`.
    *
    * @param _candidateAdmin the candidate admin will be stored in the validator contract, used for calling function that affects
    * to its candidate. IE: scheduling maintenance.
@@ -177,7 +177,7 @@ abstract contract StakingManager is
   ) internal {
     require(_sendRON(_poolAdmin, 0), "StakingManager: pool admin cannot receive RON");
     require(_sendRON(_treasuryAddr, 0), "StakingManager: treasury cannot receive RON");
-    require(_amount >= minValidatorBalance(), "StakingManager: insufficient amount");
+    require(_amount >= minValidatorStakingAmount(), "StakingManager: insufficient amount");
 
     _validatorContract.grantValidatorCandidate(
       _candidateAdmin,
@@ -202,13 +202,13 @@ abstract contract StakingManager is
     address _requester,
     uint256 _amount
   ) internal onlyPoolAdmin(_pool, _requester) {
-    _pool.stakedAmount += _amount;
-    _changeDelegatedAmount(_pool, _requester, _pool.stakedAmount, _pool.totalBalance + _amount);
+    _pool.stakingAmount += _amount;
+    _changeDelegatingAmount(_pool, _requester, _pool.stakingAmount, _pool.stakingTotal + _amount);
     emit Staked(_pool.addr, _amount);
   }
 
   /**
-   * @dev Withdraws the staked amount `_amount` for the validator candidate.
+   * @dev Withdraws the staking amount `_amount` for the validator candidate.
    *
    * Requirements:
    * - The address `_requester` must be the pool admin.
@@ -221,10 +221,10 @@ abstract contract StakingManager is
     address _requester,
     uint256 _amount
   ) internal onlyPoolAdmin(_pool, _requester) {
-    require(_amount <= _pool.stakedAmount, "StakingManager: insufficient staked amount");
+    require(_amount <= _pool.stakingAmount, "StakingManager: insufficient staking amount");
 
-    _pool.stakedAmount -= _amount;
-    _changeDelegatedAmount(_pool, _requester, _pool.stakedAmount, _pool.totalBalance - _amount);
+    _pool.stakingAmount -= _amount;
+    _changeDelegatingAmount(_pool, _requester, _pool.stakingAmount, _pool.stakingTotal - _amount);
     emit Unstaked(_pool.addr, _amount);
   }
 
@@ -287,19 +287,15 @@ abstract contract StakingManager is
   function getRewards(address _user, address[] calldata _poolAddrList)
     external
     view
-    returns (uint256[] memory _pendings, uint256[] memory _claimables)
+    returns (uint256[] memory _rewards)
   {
     address _consensusAddr;
-    _pendings = new uint256[](_poolAddrList.length);
-    _claimables = new uint256[](_poolAddrList.length);
+    uint256 _period = _validatorContract.currentPeriod();
+    _rewards = new uint256[](_poolAddrList.length);
 
     for (uint256 _i = 0; _i < _poolAddrList.length; _i++) {
       _consensusAddr = _poolAddrList[_i];
-
-      uint256 _totalReward = getTotalReward(_consensusAddr, _user);
-      uint256 _claimableReward = getClaimableReward(_consensusAddr, _user);
-      _pendings[_i] = _totalReward - _claimableReward;
-      _claimables[_i] = _claimableReward;
+      _rewards[_i] = _getReward(_consensusAddr, _user, _period, stakingAmountOf(_consensusAddr, _user));
     }
   }
 
@@ -308,7 +304,7 @@ abstract contract StakingManager is
    */
   function claimRewards(address[] calldata _consensusAddrList) external nonReentrant returns (uint256 _amount) {
     _amount = _claimRewards(msg.sender, _consensusAddrList);
-    require(_sendRON(payable(msg.sender), _amount), "StakingManager: could not transfer RON");
+    _transferRON(payable(msg.sender), _amount);
   }
 
   /**
@@ -340,11 +336,11 @@ abstract contract StakingManager is
     address _delegator,
     uint256 _amount
   ) internal notPoolAdmin(_pool, _delegator) {
-    _changeDelegatedAmount(
+    _changeDelegatingAmount(
       _pool,
       _delegator,
-      _pool.delegatedAmount[_delegator] + _amount,
-      _pool.totalBalance + _amount
+      _pool.delegatingAmount[_delegator] + _amount,
+      _pool.stakingTotal + _amount
     );
     emit Delegated(_delegator, _pool.addr, _amount);
   }
@@ -355,7 +351,7 @@ abstract contract StakingManager is
    * Requirements:
    * - The delegator is not the pool admin.
    * - The amount is larger than 0.
-   * - The delegated amount is larger than or equal to the undelegated amount.
+   * - The delegating amount is larger than or equal to the undelegating amount.
    *
    * Emits the `Undelegated` event.
    *
@@ -368,12 +364,12 @@ abstract contract StakingManager is
     uint256 _amount
   ) private notPoolAdmin(_pool, _delegator) {
     require(_amount > 0, "StakingManager: invalid amount");
-    require(_pool.delegatedAmount[_delegator] >= _amount, "StakingManager: insufficient amount to undelegate");
-    _changeDelegatedAmount(
+    require(_pool.delegatingAmount[_delegator] >= _amount, "StakingManager: insufficient amount to undelegate");
+    _changeDelegatingAmount(
       _pool,
       _delegator,
-      _pool.delegatedAmount[_delegator] - _amount,
-      _pool.totalBalance - _amount
+      _pool.delegatingAmount[_delegator] - _amount,
+      _pool.stakingTotal - _amount
     );
     emit Undelegated(_delegator, _pool.addr, _amount);
   }
@@ -381,15 +377,15 @@ abstract contract StakingManager is
   /**
    * @dev Changes the delelgate amount.
    */
-  function _changeDelegatedAmount(
+  function _changeDelegatingAmount(
     PoolDetail storage _pool,
     address _delegator,
-    uint256 _newDelegateBalance,
-    uint256 _newTotalBalance
+    uint256 _newDelegatingAmount,
+    uint256 _newStakingTotal
   ) internal {
-    _syncUserReward(_pool.addr, _delegator, _newDelegateBalance);
-    _pool.totalBalance = _newTotalBalance;
-    _pool.delegatedAmount[_delegator] = _newDelegateBalance;
+    _syncUserReward(_pool.addr, _delegator, _newDelegatingAmount);
+    _pool.stakingTotal = _newStakingTotal;
+    _pool.delegatingAmount[_delegator] = _newDelegatingAmount;
   }
 
   /**

@@ -38,7 +38,7 @@ const unavailabilityTier1Threshold = 10;
 const unavailabilityTier2Threshold = 20;
 const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
-const minValidatorBalance = BigNumber.from(100);
+const minValidatorStakingAmount = BigNumber.from(100);
 
 describe('[Integration] Slash validators', () => {
   before(async () => {
@@ -59,7 +59,7 @@ describe('[Integration] Slash validators', () => {
           },
         },
         stakingArguments: {
-          minValidatorBalance,
+          minValidatorStakingAmount,
         },
         roninTrustedOrganizationArguments: {
           trustedOrganizations: [
@@ -131,14 +131,14 @@ describe('[Integration] Slash validators', () => {
       before(async () => {
         slasheeIdx = 2;
         slashee = validatorCandidates[slasheeIdx];
-        slasheeInitStakingAmount = minValidatorBalance.add(slashAmountForUnavailabilityTier2Threshold.mul(10));
+        slasheeInitStakingAmount = minValidatorStakingAmount.add(slashAmountForUnavailabilityTier2Threshold.mul(10));
         await stakingContract
           .connect(slashee)
           .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, slashee.address, 2_00, {
             value: slasheeInitStakingAmount,
           });
 
-        expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
+        expect(await stakingContract.stakingAmountOf(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
 
         await EpochController.setTimestampToPeriodEnding();
         await mineBatchTxs(async () => {
@@ -192,9 +192,11 @@ describe('[Integration] Slash validators', () => {
           .withArgs(slashee.address, slashAmountForUnavailabilityTier2Threshold);
       });
 
-      it('Should the Staking contract subtract staked amount from validator', async () => {
+      it('Should the Staking contract subtract staking amount from validator', async () => {
         let _expectingSlasheeStakingAmount = slasheeInitStakingAmount.sub(slashAmountForUnavailabilityTier2Threshold);
-        expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(_expectingSlasheeStakingAmount);
+        expect(await stakingContract.stakingAmountOf(slashee.address, slashee.address)).eq(
+          _expectingSlasheeStakingAmount
+        );
       });
 
       it('Should the block producer set exclude the jailed validator in the next epoch', async () => {
@@ -258,7 +260,7 @@ describe('[Integration] Slash validators', () => {
       before(async () => {
         slasheeIdx = 3;
         slashee = validatorCandidates[slasheeIdx];
-        slasheeInitStakingAmount = minValidatorBalance;
+        slasheeInitStakingAmount = minValidatorStakingAmount;
 
         await stakingContract
           .connect(slashee)
@@ -266,7 +268,7 @@ describe('[Integration] Slash validators', () => {
             value: slasheeInitStakingAmount,
           });
 
-        expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
+        expect(await stakingContract.stakingAmountOf(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
 
         await EpochController.setTimestampToPeriodEnding();
         await mineBatchTxs(async () => {
@@ -281,7 +283,7 @@ describe('[Integration] Slash validators', () => {
         expect(await validatorContract.getValidators()).eql(expectingValidatorSet);
       });
 
-      describe('Check effects on indicator and staked amount', async () => {
+      describe('Check effects on indicator and staking amount', async () => {
         it('Should the ValidatorSet contract emit event', async () => {
           for (let i = 0; i < unavailabilityTier2Threshold - 1; i++) {
             await slashContract.connect(coinbase).slashUnavailability(slashee.address);
@@ -319,9 +321,11 @@ describe('[Integration] Slash validators', () => {
             .withArgs(slashee.address, slashAmountForUnavailabilityTier2Threshold);
         });
 
-        it('Should the Staking contract subtract staked amount from validator', async () => {
+        it('Should the Staking contract subtract staking amount from validator', async () => {
           let _expectingSlasheeStakingAmount = slasheeInitStakingAmount.sub(slashAmountForUnavailabilityTier2Threshold);
-          expect(await stakingContract.balanceOf(slashee.address, slashee.address)).eq(_expectingSlasheeStakingAmount);
+          expect(await stakingContract.stakingAmountOf(slashee.address, slashee.address)).eq(
+            _expectingSlasheeStakingAmount
+          );
         });
       });
 

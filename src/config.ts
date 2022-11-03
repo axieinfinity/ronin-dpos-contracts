@@ -63,7 +63,7 @@ export const maintenanceConf: MaintenanceConfig = {
 export const stakingConfig: StakingConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
-    minValidatorBalance: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5)), // 100.000 RON
+    minValidatorStakingAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5)), // 100.000 RON
   },
   [Network.Testnet]: undefined,
   [Network.Mainnet]: undefined,
@@ -147,7 +147,6 @@ export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
     roleSetter: '0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1',
-    // bridgeContract: ethers.constants.AddressZero,
     relayers: ['0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1'],
   },
   [Network.Goerli]: undefined,

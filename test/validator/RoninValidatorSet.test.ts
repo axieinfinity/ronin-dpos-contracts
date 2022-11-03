@@ -151,7 +151,7 @@ describe('Ronin Validator Set test', () => {
             validatorCandidates[i].address,
             2_00,
             {
-              value: minValidatorBalance.add(i),
+              value: minValidatorStakingAmount.add(i),
             }
           );
       }
@@ -213,7 +213,7 @@ describe('Ronin Validator Set test', () => {
           bridgeOperator.address,
           1_00 /* 1% */,
           {
-            value: minValidatorBalance.mul(100),
+            value: minValidatorStakingAmount.mul(100),
           }
         );
       for (let i = 4; i < localValidatorCandidatesLength; i++) {
@@ -226,7 +226,7 @@ describe('Ronin Validator Set test', () => {
             validatorCandidates[i].address,
             2_00,
             {
-              value: minValidatorBalance.add(i),
+              value: minValidatorStakingAmount.add(i),
             }
           );
       }
