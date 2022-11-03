@@ -164,7 +164,6 @@ contract RoninValidatorSet is
 
     uint256 _delegatingAmount = _reward - _miningAmount;
     _delegatingReward[_coinbaseAddr] += _delegatingAmount;
-    _stakingContract.recordReward(_coinbaseAddr, _delegatingAmount);
     emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _blockProducerBonus);
   }
 

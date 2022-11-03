@@ -44,7 +44,7 @@ const localValidatorCandidatesLength = 5;
 const slashAmountForUnavailabilityTier2Threshold = 100;
 const maxValidatorNumber = 4;
 const maxValidatorCandidate = 100;
-const minValidatorBalance = BigNumber.from(20000);
+const minValidatorStakingAmount = BigNumber.from(20000);
 const blockProducerBonusPerBlock = BigNumber.from(5000);
 const bridgeOperatorBonusPerBlock = BigNumber.from(37);
 const zeroTopUpAmount = 0;
@@ -69,7 +69,7 @@ describe('Ronin Validator Set test', () => {
         },
       },
       stakingArguments: {
-        minValidatorBalance,
+        minValidatorStakingAmount,
       },
       stakingVestingArguments: {
         blockProducerBonusPerBlock,
@@ -339,7 +339,7 @@ describe('Ronin Validator Set test', () => {
           );
         const balanceDiff = (await treasury.getBalance()).sub(balance);
         expect(balanceDiff).eq(61); // = (5000 + 100 + 100) * 1% + 9 = (52 + 9)
-        expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
+        expect(await stakingContract.getReward(coinbase.address, coinbase.address)).eq(
           5148 // (5000 + 100 + 100) * 99% = 99% of the reward, since the pool is only staked by the coinbase
         );
       });
@@ -361,7 +361,7 @@ describe('Ronin Validator Set test', () => {
           const balanceDiff = (await treasury.getBalance()).sub(balance);
           expect(balanceDiff).eq(0);
           // The delegators don't receives the new rewards until the period is ended
-          expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
+          expect(await stakingContract.getReward(coinbase.address, coinbase.address)).eq(
             5148 // (5000 + 100 + 100) * 99% = 99% of the reward, since the pool is only staked by the coinbase
           );
           await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, false);
@@ -383,7 +383,7 @@ describe('Ronin Validator Set test', () => {
           const balanceDiff = (await treasury.getBalance()).sub(balance);
           const totalBridgeReward = bridgeOperatorBonusPerBlock.mul(2); // called submitBlockReward 2 times
           expect(balanceDiff).eq(totalBridgeReward.div(await roninValidatorSet.totalBlockProducers()));
-          expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
+          expect(await stakingContract.getReward(coinbase.address, coinbase.address)).eq(
             5148 // (5000 + 100 + 100) * 99% = 99% of the reward, since the pool is only staked by the coinbase
           );
           await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
@@ -422,7 +422,7 @@ describe('Ronin Validator Set test', () => {
 
         let _rewardFromBonus = blockProducerBonusPerBlock.div(100).mul(99).mul(2);
         let _rewardFromSubmission = BigNumber.from(100).div(100).mul(99).mul(3);
-        expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
+        expect(await stakingContract.getReward(coinbase.address, coinbase.address)).eq(
           _rewardFromBonus.add(_rewardFromSubmission)
         );
       });
@@ -447,7 +447,7 @@ describe('Ronin Validator Set test', () => {
 
         let _rewardFromBonus = blockProducerBonusPerBlock.div(100).mul(99).mul(2);
         let _rewardFromSubmission = BigNumber.from(100).div(100).mul(99).mul(3);
-        expect(await stakingContract.getClaimableReward(coinbase.address, coinbase.address)).eq(
+        expect(await stakingContract.getReward(coinbase.address, coinbase.address)).eq(
           _rewardFromBonus.add(_rewardFromSubmission)
         );
 

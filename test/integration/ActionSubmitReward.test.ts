@@ -32,7 +32,7 @@ let validatorCandidates: SignerWithAddress[];
 const unavailabilityTier2Threshold = 10;
 const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
-const minValidatorBalance = BigNumber.from(100);
+const minValidatorStakingAmount = BigNumber.from(100);
 const blockProducerBonusPerBlock = BigNumber.from(1);
 
 describe('[Integration] Submit Block Reward', () => {
