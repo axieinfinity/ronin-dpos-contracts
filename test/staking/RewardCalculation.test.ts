@@ -32,6 +32,7 @@ describe('Reward Calculation test', () => {
       await expect(txs[0]).not.emit(stakingContract, 'UserRewardUpdated');
       txs[0] = await stakingContract.stake(userA.address, 50);
       await expect(txs[0]).not.emit(stakingContract, 'UserRewardUpdated');
+      expect(await stakingContract.stakingAmountOf(poolAddr, userA.address)).eq(100);
     });
 
     it('Should be able to wrap up period for the first period', async () => {
@@ -41,14 +42,23 @@ describe('Reward Calculation test', () => {
   });
 
   describe('Period: x+0 -> x+1', () => {
+    it('Should be able to unstake/stake at the first period', async () => {
+      txs[0] = await stakingContract.unstake(userA.address, 50);
+      await expect(txs[0]).not.emit(stakingContract, 'UserRewardUpdated');
+      await expect(txs[0]).emit(stakingContract, 'PoolSharesUpdated').withArgs(period, poolAddr, 50);
+      txs[0] = await stakingContract.stake(userA.address, 50);
+      await expect(txs[0]).not.emit(stakingContract, 'UserRewardUpdated');
+      expect(await stakingContract.stakingAmountOf(poolAddr, userA.address)).eq(100);
+    });
+
     it('Should be able to record reward for the pool', async () => {
       await stakingContract.increaseReward(1000);
       await stakingContract.decreaseReward(500);
-      aRps = MASK.mul(500 / 100);
+      aRps = MASK.mul(500 / 50);
       tx = await stakingContract.endPeriod(); // period = 1
       await expect(tx)
         .emit(stakingContract, 'PoolsUpdated')
-        .withArgs(period++, [poolAddr], [aRps], [await stakingContract.stakingTotal(poolAddr)]);
+        .withArgs(period++, [poolAddr], [aRps], [100]);
       expect(await stakingContract.getReward(poolAddr, userA.address)).eq(500);
     });
   });
@@ -62,9 +72,7 @@ describe('Reward Calculation test', () => {
     it('Should not be able to record reward more than once for a pool', async () => {
       aRps = aRps.add(MASK.mul(1000 / 100));
       tx = await stakingContract.recordRewards([poolAddr], [1000]);
-      await expect(tx)
-        .emit(stakingContract, 'PoolsUpdated')
-        .withArgs(period, [poolAddr], [aRps], [await stakingContract.stakingTotal(poolAddr)]);
+      await expect(tx).emit(stakingContract, 'PoolsUpdated').withArgs(period, [poolAddr], [aRps], [100]);
       tx = await stakingContract.recordRewards([poolAddr], [1000]);
       await expect(tx).emit(stakingContract, 'PoolUpdateConflicted').withArgs(period, poolAddr);
       await stakingContract.increasePeriod(); // period = 2
@@ -92,6 +100,7 @@ describe('Reward Calculation test', () => {
       await expect(txs[0]).not.emit(stakingContract, 'UserRewardUpdated');
       txs[0] = await stakingContract.unstake(userA.address, 350);
       await expect(txs[0]).not.emit(stakingContract, 'UserRewardUpdated');
+      await expect(txs[0]).emit(stakingContract, 'PoolSharesUpdated').withArgs(period, poolAddr, 50);
       expect(await stakingContract.stakingAmountOf(poolAddr, userA.address)).eq(50);
       txs[0] = await stakingContract.stake(userA.address, 250);
       await expect(txs[0]).not.emit(stakingContract, 'UserRewardUpdated');
@@ -119,7 +128,7 @@ describe('Reward Calculation test', () => {
       tx = await stakingContract.endPeriod(); // period 4
       await expect(tx)
         .emit(stakingContract, 'PoolsUpdated')
-        .withArgs(period++, [poolAddr], [aRps], [await stakingContract.stakingTotal(poolAddr)]);
+        .withArgs(period++, [poolAddr], [aRps], [500]);
 
       expect(await stakingContract.getReward(poolAddr, userA.address)).eq(1600); // 3/5 of 1000 + 1000 from the last period
       expect(await stakingContract.getReward(poolAddr, userB.address)).eq(400); // 2/5 of 1000
@@ -128,10 +137,12 @@ describe('Reward Calculation test', () => {
     it('Should be able to unstake and receives reward based on the smallest amount in the last period', async () => {
       txs[0] = await stakingContract.unstake(userA.address, 250);
       await expect(txs[0]).emit(stakingContract, 'UserRewardUpdated').withArgs(poolAddr, userA.address, 1600);
+      await expect(txs[0]).emit(stakingContract, 'PoolSharesUpdated').withArgs(period, poolAddr, 250);
       expect(await stakingContract.stakingAmountOf(poolAddr, userA.address)).eq(50);
 
       txs[1] = await stakingContract.unstake(userB.address, 150);
       await expect(txs[1]).emit(stakingContract, 'UserRewardUpdated').withArgs(poolAddr, userB.address, 400);
+      await expect(txs[1]).emit(stakingContract, 'PoolSharesUpdated').withArgs(period, poolAddr, 100);
       expect(await stakingContract.stakingAmountOf(poolAddr, userB.address)).eq(50);
 
       aRps = aRps.add(MASK.mul(1000 / 100));
@@ -144,8 +155,9 @@ describe('Reward Calculation test', () => {
       expect(await stakingContract.getReward(poolAddr, userB.address)).eq(900); // 50% of 1000 + 400 from the last period
     });
 
-    it('Should not distribute reward for ones who unstake all in the period', async () => {
+    it('Should not distribute reward for the ones who unstake all in the period', async () => {
       txs[1] = await stakingContract.unstake(userB.address, 50);
+      await expect(txs[1]).emit(stakingContract, 'PoolSharesUpdated').withArgs(period, poolAddr, 50);
       await expect(txs[1]).emit(stakingContract, 'UserRewardUpdated').withArgs(poolAddr, userB.address, 900);
       expect(await stakingContract.stakingAmountOf(poolAddr, userB.address)).eq(0);
 
@@ -160,6 +172,7 @@ describe('Reward Calculation test', () => {
 
     it('The pool should be fine when no one stakes', async () => {
       txs[0] = await stakingContract.unstake(userA.address, 50);
+      await expect(txs[0]).emit(stakingContract, 'PoolSharesUpdated').withArgs(period, poolAddr, 0);
       await expect(txs[0]).emit(stakingContract, 'UserRewardUpdated').withArgs(poolAddr, userA.address, 3100);
       expect(await stakingContract.stakingAmountOf(poolAddr, userA.address)).eq(0);
       expect(await stakingContract.stakingAmountOf(poolAddr, userB.address)).eq(0);

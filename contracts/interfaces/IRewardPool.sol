@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-interface IRewardPool {
+import "../interfaces/consumers/PeriodWrapperConsumer.sol";
+
+interface IRewardPool is PeriodWrapperConsumer {
   /// @dev Emitted when the fields to calculate pending reward for the user is updated.
   event UserRewardUpdated(address indexed poolAddr, address indexed user, uint256 debited);
   /// @dev Emitted when the user claimed their reward
@@ -13,7 +15,7 @@ interface IRewardPool {
   /// @dev Emitted when the pools are updated
   event PoolsUpdated(uint256 indexed period, address[] poolAddrs, uint256[] aRps, uint256[] shares);
   /// @dev Emitted when the contract fails when updating the pools
-  event PoolsUpdateFailed(uint256 indexed period, address[] poolAddrs, uint256[] aRps);
+  event PoolsUpdateFailed(uint256 indexed period, address[] poolAddrs, uint256[] rewards);
   /// @dev Emitted when the contract fails when updating a pool that already set
   event PoolUpdateConflicted(uint256 indexed period, address indexed poolAddr);
 
@@ -28,13 +30,11 @@ interface IRewardPool {
     uint256 lastPeriod;
   }
 
-  struct Pool {
+  struct PoolFields {
     // Accumulated of the amount rewards per share (one unit staking).
     uint256 aRps;
     // The staking total to share reward of the current period.
-    uint256 shares;
-    // Last period number that the info updated.
-    uint256 lastPeriod;
+    PeriodWrapper shares;
   }
 
   /**
