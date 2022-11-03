@@ -24,8 +24,8 @@ describe('Reward Calculation test', () => {
     stakingContract = await new MockStaking__factory(deployer).deploy(poolAddr);
   });
 
-  describe('Period: 0 -> 1', () => {
-    it('Should be able to stake/unstake at the very first period', async () => {
+  describe('Before the first wrap up', () => {
+    it('Should be able to stake/unstake before the first period', async () => {
       txs[0] = await stakingContract.stake(userA.address, 500);
       await expect(txs[0]).not.emit(stakingContract, 'UserRewardUpdated');
       txs[0] = await stakingContract.unstake(userA.address, 450);
@@ -34,6 +34,13 @@ describe('Reward Calculation test', () => {
       await expect(txs[0]).not.emit(stakingContract, 'UserRewardUpdated');
     });
 
+    it('Should be able to wrap up period for the first period', async () => {
+      await stakingContract.firstEverWrapup();
+      period = (await stakingContract.lastUpdatedPeriod()).toNumber();
+    });
+  });
+
+  describe('Period: x+0 -> x+1', () => {
     it('Should be able to record reward for the pool', async () => {
       await stakingContract.increaseReward(1000);
       await stakingContract.decreaseReward(500);
@@ -46,7 +53,7 @@ describe('Reward Calculation test', () => {
     });
   });
 
-  describe('Period: 1 -> 2', () => {
+  describe('Period: x+1 -> x+2', () => {
     it('Should not be able to record reward with invalid arguments', async () => {
       tx = await stakingContract.recordRewards([poolAddr], [100, 100]);
       await expect(tx).emit(stakingContract, 'PoolsUpdateFailed').withArgs(period, [poolAddr], [100, 100]);
@@ -66,7 +73,7 @@ describe('Reward Calculation test', () => {
     });
   });
 
-  describe('Period: 2 -> 3', () => {
+  describe('Period: x+2 -> x+3', () => {
     it('Should be able to change the staking amount and the reward moved into the debited part', async () => {
       txs[0] = await stakingContract.stake(userA.address, 200);
       await expect(txs[0]).emit(stakingContract, 'UserRewardUpdated').withArgs(poolAddr, userA.address, 1500);
@@ -105,7 +112,7 @@ describe('Reward Calculation test', () => {
     });
   });
 
-  describe('Period: 3 -> 10', () => {
+  describe('Period: x+3 -> x+10', () => {
     it('Should be able to get right reward', async () => {
       aRps = aRps.add(MASK.mul(1000 / 500));
       await stakingContract.increaseReward(1000);

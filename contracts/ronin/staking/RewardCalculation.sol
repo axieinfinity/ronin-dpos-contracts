@@ -49,15 +49,8 @@ abstract contract RewardCalculation is IRewardPool {
       return _reward.debited;
     }
 
-    uint256 _minAmount;
-    if (_reward.poolPeriod == 0) {
-      // The very first period will share for the latest amount
-      _minAmount = _latestStakingAmount;
-    } else {
-      _minAmount = _reward.minAmount;
-    }
-
     Pool storage _pool = _stakingPool[_poolAddr];
+    uint256 _minAmount = _reward.minAmount;
     uint256 _aRps = _accumulatedRpsAt[_reward.lastPeriod];
     uint256 _lastPeriodReward = _minAmount * (_aRps - _reward.aRps);
     uint256 _newPeriodsReward = _latestStakingAmount * (_pool.aRps - _aRps);
@@ -105,7 +98,6 @@ abstract contract RewardCalculation is IRewardPool {
 
     _reward.aRps = _pool.aRps;
     _reward.lastPeriod = _period;
-    _reward.poolPeriod = _pool.lastPeriod;
   }
 
   /**

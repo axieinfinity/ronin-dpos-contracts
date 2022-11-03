@@ -9,15 +9,20 @@ contract MockStaking is RewardCalculation {
   mapping(address => uint256) internal _stakingAmount;
   /// @dev Mapping from period number => slashed
   mapping(uint256 => bool) internal _periodSlashed;
-  uint256 internal _lastUpdatedPeriod;
+
   uint256 internal _stakingTotal;
 
+  uint256 public lastUpdatedPeriod;
   uint256 public pendingReward;
   address public poolAddr;
 
   constructor(address _poolAddr) {
     poolAddr = _poolAddr;
-    _lastUpdatedPeriod++;
+  }
+
+  function firstEverWrapup() external {
+    delete pendingReward;
+    lastUpdatedPeriod = block.timestamp / 1 days + 1;
   }
 
   function endPeriod() external {
@@ -28,11 +33,11 @@ contract MockStaking is RewardCalculation {
     this.recordRewards(_addrs, _rewards);
 
     pendingReward = 0;
-    _lastUpdatedPeriod++;
+    lastUpdatedPeriod++;
   }
 
   function increasePeriod() external {
-    _lastUpdatedPeriod++;
+    lastUpdatedPeriod++;
   }
 
   function stake(address _user, uint256 _amount) external {
@@ -87,7 +92,7 @@ contract MockStaking is RewardCalculation {
   }
 
   function _currentPeriod() internal view override returns (uint256 _period) {
-    return _lastUpdatedPeriod;
+    return lastUpdatedPeriod;
   }
 
   function bulkStakingTotal(address[] calldata _poolAddr) external view override returns (uint256[] memory) {}

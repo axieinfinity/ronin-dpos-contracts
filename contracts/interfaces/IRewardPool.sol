@@ -26,8 +26,6 @@ interface IRewardPool {
     uint256 minAmount;
     // Last period number that the info updated.
     uint256 lastPeriod;
-    // Pool period
-    uint256 poolPeriod;
   }
 
   struct Pool {
