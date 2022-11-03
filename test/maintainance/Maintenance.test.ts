@@ -37,7 +37,7 @@ const unavailabilityTier1Threshold = 50;
 const unavailabilityTier2Threshold = 150;
 const maxValidatorNumber = 4;
 const numberOfBlocksInEpoch = 600;
-const minValidatorBalance = BigNumber.from(100);
+const minValidatorStakingAmount = BigNumber.from(100);
 const minMaintenanceBlockPeriod = 100;
 const maxMaintenanceBlockPeriod = 1000;
 const minOffset = 200;
@@ -63,7 +63,7 @@ describe('Maintenance test', () => {
         },
       },
       stakingArguments: {
-        minValidatorBalance,
+        minValidatorStakingAmount,
       },
       roninValidatorSetArguments: {
         maxValidatorNumber,
@@ -105,7 +105,7 @@ describe('Maintenance test', () => {
           validatorCandidates[i].address,
           validatorCandidates[i].address,
           1,
-          { value: minValidatorBalance.add(maxValidatorNumber).sub(i) }
+          { value: minValidatorStakingAmount.add(maxValidatorNumber).sub(i) }
         );
     }
 

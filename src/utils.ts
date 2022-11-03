@@ -71,7 +71,7 @@ export interface MaintenanceConfig {
 }
 
 export interface StakingArguments {
-  minValidatorBalance?: BigNumberish;
+  minValidatorStakingAmount?: BigNumberish;
 }
 
 export interface StakingConfig {

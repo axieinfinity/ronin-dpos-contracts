@@ -665,10 +665,9 @@ contract RoninValidatorSet is
     uint256[] memory _delegatingRewards
   ) private {
     IStaking _staking = _stakingContract;
-    _staking.recordRewards(_period, _currentValidators, _delegatingRewards);
-
     if (_totalDelegatingReward > 0) {
       if (_sendRON(payable(address(_staking)), _totalDelegatingReward)) {
+        _staking.recordRewards(_period, _currentValidators, _delegatingRewards);
         emit StakingRewardDistributed(_totalDelegatingReward);
         return;
       }

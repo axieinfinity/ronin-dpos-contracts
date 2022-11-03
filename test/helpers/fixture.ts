@@ -62,7 +62,7 @@ export const defaultTestConfig: InitTestInput = {
   },
 
   stakingArguments: {
-    minValidatorBalance: BigNumber.from(100),
+    minValidatorStakingAmount: BigNumber.from(100),
   },
 
   stakingVestingArguments: {

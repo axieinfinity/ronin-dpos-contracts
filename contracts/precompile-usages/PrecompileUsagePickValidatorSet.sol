@@ -16,7 +16,7 @@ abstract contract PrecompileUsagePickValidatorSet {
    */
   function _pcPickValidatorSet(
     address[] memory _candidates,
-    uint256[] memory _balanceWeights,
+    uint256[] memory _weights,
     uint256[] memory _trustedWeights,
     uint256 _maxValidatorNumber,
     uint256 _maxPrioritizedValidatorNumber
@@ -25,7 +25,7 @@ abstract contract PrecompileUsagePickValidatorSet {
     bytes memory _payload = abi.encodeWithSignature(
       "pickValidatorSet(address[],uint256[],uint256[],uint256,uint256)",
       _candidates,
-      _balanceWeights,
+      _weights,
       _trustedWeights,
       _maxValidatorNumber,
       _maxPrioritizedValidatorNumber

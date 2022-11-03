@@ -30,14 +30,14 @@ contract MockRoninValidatorSetOverridePrecompile is RoninValidatorSet, MockPreco
 
   function _pcPickValidatorSet(
     address[] memory _candidates,
-    uint256[] memory _balanceWeights,
+    uint256[] memory _weights,
     uint256[] memory _trustedWeights,
     uint256 _maxValidatorNumber,
     uint256 _maxPrioritizedValidatorNumber
   ) internal pure override returns (address[] memory _result, uint256 _newValidatorCount) {
     _result = pickValidatorSet(
       _candidates,
-      _balanceWeights,
+      _weights,
       _trustedWeights,
       _maxValidatorNumber,
       _maxPrioritizedValidatorNumber
