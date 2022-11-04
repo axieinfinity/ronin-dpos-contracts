@@ -9,8 +9,8 @@ interface IMaintenance {
     uint256 lastUpdatedBlock;
   }
 
-  /// @dev Emitted when the maintenance is scheduled.
-  event MaintenanceScheduled(address consensusAddr, Schedule);
+  /// @dev Emitted when a maintenance is scheduled.
+  event MaintenanceScheduled(address indexed consensusAddr, Schedule);
   /// @dev Emitted when the maintenance config is updated.
   event MaintenanceConfigUpdated(
     uint256 minMaintenanceBlockPeriod,
