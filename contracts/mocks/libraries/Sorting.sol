@@ -137,6 +137,7 @@ library Sorting {
 
     for (uint256 _i; _i < _nodes.length; _i++) {
       _keys[_i] = address(uint160(_nodes[_i].key)); // Casting?
+      _otherKeys[_i] = _nodes[_i].otherKey;
     }
 
     return (_keys, _otherKeys);
