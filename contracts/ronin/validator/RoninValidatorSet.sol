@@ -607,7 +607,7 @@ contract RoninValidatorSet is
   function _distributeMiningReward(address _consensusAddr, address payable _treasury) private {
     uint256 _amount = _miningReward[_consensusAddr];
     if (_amount > 0) {
-      if (_sendRON(_treasury, _amount)) {
+      if (_unsafeSendRON(_treasury, _amount)) {
         emit MiningRewardDistributed(_consensusAddr, _treasury, _amount);
         return;
       }
@@ -632,7 +632,7 @@ contract RoninValidatorSet is
   ) private {
     uint256 _amount = _bridgeOperatingReward[_consensusAddr];
     if (_amount > 0) {
-      if (_sendRON(_treasury, _amount)) {
+      if (_unsafeSendRON(_treasury, _amount)) {
         emit BridgeOperatorRewardDistributed(_consensusAddr, _bridgeOperator, _treasury, _amount);
         return;
       }
@@ -665,7 +665,7 @@ contract RoninValidatorSet is
   ) private {
     IStaking _staking = _stakingContract;
     if (_totalDelegatingReward > 0) {
-      if (_sendRON(payable(address(_staking)), _totalDelegatingReward)) {
+      if (_unsafeSendRON(payable(address(_staking)), _totalDelegatingReward)) {
         _staking.recordRewards(_period, _currentValidators, _delegatingRewards);
         emit StakingRewardDistributed(_totalDelegatingReward);
         return;
