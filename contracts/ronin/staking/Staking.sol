@@ -72,7 +72,7 @@ contract Staking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function deductStakingAmount(address _consensusAddr, uint256 _amount) public onlyValidatorContract {
+  function deductStakingAmount(address _consensusAddr, uint256 _amount) external onlyValidatorContract {
     return _deductStakingAmount(_stakingPool[_consensusAddr], _amount);
   }
 
@@ -88,8 +88,8 @@ contract Staking is IStaking, StakingManager, Initializable {
     for (uint _i = 0; _i < _pools.length; _i++) {
       PoolDetail storage _pool = _stakingPool[_pools[_i]];
       _amount = _pool.stakingAmount;
-      _deductStakingAmount(_pool, _pool.stakingAmount);
       if (_amount > 0) {
+        _deductStakingAmount(_pool, _amount);
         if (!_sendRON(payable(_pool.admin), _amount)) {
           emit StakingAmountDeprecated(_pool.addr, _pool.admin, _amount);
         }
