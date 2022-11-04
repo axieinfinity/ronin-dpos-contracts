@@ -18,6 +18,12 @@ abstract contract RewardCalculation is IRewardPool {
   mapping(address => PoolFields) private _stakingPool;
 
   /**
+   * @dev This empty reserved space is put in place to allow future versions to add new
+   * variables without shifting down storage in the inheritance chain.
+   */
+  uint256[50] private ______gap;
+  
+  /**
    * @inheritdoc IRewardPool
    */
   function getReward(address _poolAddr, address _user) external view returns (uint256) {

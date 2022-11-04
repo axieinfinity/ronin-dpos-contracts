@@ -19,6 +19,12 @@ abstract contract StakingManager is
   /// @dev Mapping from pool address => staking pool detail
   mapping(address => PoolDetail) internal _stakingPool;
 
+  /**
+   * @dev This empty reserved space is put in place to allow future versions to add new
+   * variables without shifting down storage in the inheritance chain.
+   */
+  uint256[50] private ______gap;
+  
   modifier noEmptyValue() {
     require(msg.value > 0, "StakingManager: query with empty value");
     _;
