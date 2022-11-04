@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import { network, ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { BigNumber, ContractTransaction } from 'ethers';
 
 import {
@@ -33,7 +32,7 @@ let validatorCandidates: SignerWithAddress[];
 const unavailabilityTier2Threshold = 10;
 const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
-const minValidatorBalance = BigNumber.from(100);
+const minValidatorStakingAmount = BigNumber.from(100);
 const blockProducerBonusPerBlock = BigNumber.from(1);
 
 describe('[Integration] Submit Block Reward', () => {
@@ -55,7 +54,7 @@ describe('[Integration] Submit Block Reward', () => {
           },
         },
         stakingArguments: {
-          minValidatorBalance,
+          minValidatorStakingAmount,
         },
         stakingVestingArguments: {
           blockProducerBonusPerBlock,
@@ -108,7 +107,7 @@ describe('[Integration] Submit Block Reward', () => {
     let submitRewardTx: ContractTransaction;
 
     before(async () => {
-      let initStakingAmount = minValidatorBalance.mul(2);
+      let initStakingAmount = minValidatorStakingAmount.mul(2);
       validator = validatorCandidates[0];
       await stakingContract
         .connect(validator)
@@ -144,10 +143,6 @@ describe('[Integration] Submit Block Reward', () => {
 
     it.skip('Should the ValidatorSetContract update mining reward', async () => {});
 
-    it('Should the StakingContract emit event of recording reward', async () => {
-      await expect(submitRewardTx).to.emit(stakingContract, 'PendingPoolUpdated').withArgs(validator.address, anyValue);
-    });
-
     it.skip('Should the StakingContract record update for new block reward', async () => {});
   });
 
@@ -156,7 +151,7 @@ describe('[Integration] Submit Block Reward', () => {
     let submitRewardTx: ContractTransaction;
 
     before(async () => {
-      let initStakingAmount = minValidatorBalance.mul(2);
+      let initStakingAmount = minValidatorStakingAmount.mul(2);
       validator = validatorCandidates[1];
 
       await stakingContract

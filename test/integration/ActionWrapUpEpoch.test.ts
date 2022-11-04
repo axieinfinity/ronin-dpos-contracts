@@ -13,7 +13,7 @@ import {
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
 } from '../../src/types';
-import { expects as StakingExpects } from '../helpers/reward-calculation';
+import { expects as StakingExpects } from '../helpers/staking';
 import { EpochController, expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
 import { initTest } from '../helpers/fixture';
@@ -34,7 +34,7 @@ let validatorCandidates: SignerWithAddress[];
 const unavailabilityTier2Threshold = 10;
 const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(1);
 const slashDoubleSignAmount = 1000;
-const minValidatorBalance = BigNumber.from(100);
+const minValidatorStakingAmount = BigNumber.from(100);
 const maxValidatorNumber = 3;
 
 describe('[Integration] Wrap up epoch', () => {
@@ -56,7 +56,7 @@ describe('[Integration] Wrap up epoch', () => {
           },
         },
         stakingArguments: {
-          minValidatorBalance,
+          minValidatorStakingAmount,
         },
         roninTrustedOrganizationArguments: {
           trustedOrganizations: [governor].map((v) => ({
@@ -131,7 +131,7 @@ describe('[Integration] Wrap up epoch', () => {
             validatorCandidates[i].address,
             2_00,
             {
-              value: minValidatorBalance.mul(2).add(i),
+              value: minValidatorStakingAmount.mul(2).add(i),
             }
           );
       }
@@ -158,7 +158,6 @@ describe('[Integration] Wrap up epoch', () => {
           await validatorContract.endEpoch();
           await validatorContract.wrapUpEpoch();
           let duplicatedWrapUpTx = validatorContract.wrapUpEpoch();
-
           await expect(duplicatedWrapUpTx).to.be.revertedWith('RoninValidatorSet: query for already wrapped up epoch');
         });
       });
@@ -175,8 +174,9 @@ describe('[Integration] Wrap up epoch', () => {
 
       describe('StakingContract internal actions: settle reward pool', async () => {
         it('Should the StakingContract emit event of settling reward', async () => {
-          await StakingExpects.emitSettledPoolsUpdatedEvent(
+          await StakingExpects.emitPoolsUpdatedEvent(
             wrapUpTx,
+            undefined,
             validators
               .slice(1, 4)
               .map((_) => _.address)
@@ -232,7 +232,7 @@ describe('[Integration] Wrap up epoch', () => {
             validators[i].address,
             2_00,
             {
-              value: minValidatorBalance.mul(3).add(i),
+              value: minValidatorStakingAmount.mul(3).add(i),
             }
           );
       }

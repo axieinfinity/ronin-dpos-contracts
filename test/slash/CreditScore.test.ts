@@ -45,7 +45,7 @@ const unavailabilityTier1Threshold = 5;
 const unavailabilityTier2Threshold = 15;
 const slashAmountForUnavailabilityTier2Threshold = 2;
 
-const minValidatorBalance = BigNumber.from(100);
+const minValidatorStakingAmount = BigNumber.from(100);
 const maxValidatorCandidate = 3;
 const maxValidatorNumber = 2;
 const numberOfBlocksInEpoch = 600;
@@ -126,7 +126,7 @@ describe('Credit score and bail out test', () => {
           },
         },
         stakingArguments: {
-          minValidatorBalance,
+          minValidatorStakingAmount,
         },
         roninValidatorSetArguments: {
           maxValidatorNumber,
@@ -170,7 +170,7 @@ describe('Credit score and bail out test', () => {
           validatorCandidates[i].address,
           validatorCandidates[i].address,
           1,
-          { value: minValidatorBalance.mul(2).sub(i) }
+          { value: minValidatorStakingAmount.mul(2).sub(i) }
         );
     }
 

@@ -21,14 +21,14 @@ contract MockPrecompileUsagePickValidatorSet is PrecompileUsagePickValidatorSet 
 
   function callPrecompile(
     address[] memory _candidates,
-    uint256[] memory _balanceWeights,
+    uint256[] memory _weights,
     uint256[] memory _trustedWeights,
     uint256 _maxValidatorNumber,
     uint256 _maxPrioritizedValidatorNumber
   ) public view returns (address[] memory _result) {
     (_result, ) = _pcPickValidatorSet(
       _candidates,
-      _balanceWeights,
+      _weights,
       _trustedWeights,
       _maxValidatorNumber,
       _maxPrioritizedValidatorNumber

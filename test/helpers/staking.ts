@@ -7,18 +7,26 @@ import { Staking__factory } from '../../src/types';
 const contractInterface = Staking__factory.createInterface();
 
 export const expects = {
-  emitSettledPoolsUpdatedEvent: async function (
+  emitPoolsUpdatedEvent: async function (
     tx: ContractTransaction,
-    expectingPoolAddressList: string[],
-    expectingAccumulatedRpsList: BigNumberish[]
+    expectingPeriod?: BigNumberish,
+    expectingPoolAddressList?: string[],
+    expectingAccumulatedRpsList?: BigNumberish[]
   ) {
     await expectEvent(
       contractInterface,
-      'SettledPoolsUpdated',
+      'PoolsUpdated',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid pool address list').eql(expectingPoolAddressList);
-        expect(event.args[1], 'invalid accumulated rps list').eql(expectingAccumulatedRpsList);
+        if (!!expectingPeriod) {
+          expect(event.args[0], 'invalid period').eql(expectingPeriod);
+        }
+        if (!!expectingPoolAddressList) {
+          expect(event.args[1], 'invalid pool address list').eql(expectingPoolAddressList);
+        }
+        if (!!expectingAccumulatedRpsList) {
+          expect(event.args[2], 'invalid accumulated rps list').eql(expectingAccumulatedRpsList);
+        }
       },
       1
     );

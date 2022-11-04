@@ -50,7 +50,7 @@ const config: InitTestInput = {
   },
 
   stakingArguments: {
-    minValidatorBalance: BigNumber.from(100),
+    minValidatorStakingAmount: BigNumber.from(100),
   },
   stakingVestingArguments: {
     blockProducerBonusPerBlock: 1,
@@ -191,7 +191,7 @@ describe('[Integration] Configuration check', () => {
 
   it('Should the StakingContract contract set configs correctly', async () => {
     expect(await stakingContract.validatorContract()).to.eq(validatorContract.address);
-    expect(await stakingContract.minValidatorBalance()).to.eq(config.stakingArguments?.minValidatorBalance);
+    expect(await stakingContract.minValidatorStakingAmount()).to.eq(config.stakingArguments?.minValidatorStakingAmount);
   });
 
   it('Should the StakingVestingContract contract set configs correctly', async () => {

@@ -30,31 +30,10 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
   }
 
-  function depositReward() external payable {
-    _stakingContract.recordReward{ value: msg.value }(msg.sender, msg.value);
-  }
-
-  function settledReward(address[] calldata _validatorList) external {
-    _stakingContract.settleRewardPools(_validatorList);
-  }
-
-  function slashMisdemeanor(address _validator) external {
-    _stakingContract.sinkPendingReward(_validator);
-  }
-
-  function slashFelony(address _validator) external {
-    _stakingContract.sinkPendingReward(_validator);
-    _stakingContract.deductStakedAmount(_validator, 1);
-  }
-
-  function slashDoubleSign(address _validator) external {
-    _stakingContract.sinkPendingReward(_validator);
-  }
-
   function submitBlockReward() external payable override {}
 
   function wrapUpEpoch() external payable override {
-    _filterUnsatisfiedCandidates(0);
+    _filterUnsatisfiedCandidates();
     _lastUpdatedPeriod = currentPeriod();
   }
 

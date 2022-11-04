@@ -3,113 +3,122 @@
 pragma solidity ^0.8.9;
 
 import "../../interfaces/IRewardPool.sol";
+import "../../libraries/Math.sol";
 
 /**
  * @title RewardCalculation contract
  * @dev This contract mainly contains the methods to calculate reward for staking contract.
  */
 abstract contract RewardCalculation is IRewardPool {
-  /// @dev Mapping from the pool address => user address => settled reward info of the user
-  mapping(address => mapping(address => SettledRewardFields)) internal _sUserReward;
-  /// @dev Mapping from the pool address => user address => pending reward info of the user
-  mapping(address => mapping(address => PendingRewardFields)) internal _pUserReward;
-
-  /// @dev Mapping from the pool address => pending pool data
-  mapping(address => PendingPool) internal _pendingPool;
-  /// @dev Mapping from the pool address => settled pool data
-  mapping(address => SettledPool) internal _settledPool;
+  /// @dev Mapping from period number => accumulated rewards per share (one unit staking)
+  mapping(uint256 => PeriodWrapper) private _accumulatedRps;
+  /// @dev Mapping from the pool address => user address => the reward info of the user
+  mapping(address => mapping(address => UserRewardFields)) private _userReward;
+  /// @dev Mapping from the pool address => reward pool fields
+  mapping(address => PoolFields) private _stakingPool;
 
   /**
    * @inheritdoc IRewardPool
    */
-  function getTotalReward(address _poolAddr, address _user) public view returns (uint256) {
-    PendingRewardFields memory _reward = _pUserReward[_poolAddr][_user];
-    PendingPool memory _pool = _pendingPool[_poolAddr];
+  function getReward(address _poolAddr, address _user) external view returns (uint256) {
+    return _getReward(_poolAddr, _user, _currentPeriod(), stakingAmountOf(_poolAddr, _user));
+  }
 
-    uint256 _balance = balanceOf(_poolAddr, _user);
-    if (_rewardSinked(_poolAddr, _reward.lastSyncedPeriod)) {
-      SettledRewardFields memory _sReward = _sUserReward[_poolAddr][_user];
-      uint256 _diffRps = _pool.accumulatedRps - _sReward.accumulatedRps;
-      return (_balance * _diffRps) / 1e18 + _sReward.debited;
+  /**
+   * @inheritdoc IRewardPool
+   */
+  function stakingAmountOf(address _poolAddr, address _user) public view virtual returns (uint256);
+
+  /**
+   * @inheritdoc IRewardPool
+   */
+  function stakingTotal(address _poolAddr) public view virtual returns (uint256);
+
+  /**
+   * @dev Returns the reward amount that user claimable.
+   */
+  function _getReward(
+    address _poolAddr,
+    address _user,
+    uint256 _latestPeriod,
+    uint256 _latestStakingAmount
+  ) internal view returns (uint256) {
+    UserRewardFields storage _reward = _userReward[_poolAddr][_user];
+
+    if (_reward.lastPeriod == _latestPeriod) {
+      return _reward.debited;
     }
 
-    return (_balance * _pool.accumulatedRps) / 1e18 + _reward.debited - _reward.credited;
+    PoolFields storage _pool = _stakingPool[_poolAddr];
+    uint256 _minAmount = _reward.minAmount;
+    uint256 _aRps = _accumulatedRps[_reward.lastPeriod].inner;
+    uint256 _lastPeriodReward = _minAmount * (_aRps - _reward.aRps);
+    uint256 _newPeriodsReward = _latestStakingAmount * (_pool.aRps - _aRps);
+    return _reward.debited + (_lastPeriodReward + _newPeriodsReward) / 1e18;
   }
-
-  /**
-   * @inheritdoc IRewardPool
-   */
-  function getClaimableReward(address _poolAddr, address _user) public view returns (uint256) {
-    PendingRewardFields memory _reward = _pUserReward[_poolAddr][_user];
-    SettledRewardFields memory _sReward = _sUserReward[_poolAddr][_user];
-    SettledPool memory _sPool = _settledPool[_poolAddr];
-
-    uint256 _diffRps = _sPool.accumulatedRps - _sReward.accumulatedRps;
-    if (_reward.lastSyncedPeriod <= _sPool.lastSyncedPeriod) {
-      uint256 _currentBalance = balanceOf(_poolAddr, _user);
-
-      if (_rewardSinked(_poolAddr, _reward.lastSyncedPeriod)) {
-        return (_currentBalance * _diffRps) / 1e18 + _sReward.debited;
-      }
-
-      return (_currentBalance * _sPool.accumulatedRps) / 1e18 + _reward.debited - _reward.credited;
-    }
-
-    return _sReward.debited;
-  }
-
-  /**
-   * @inheritdoc IRewardPool
-   */
-  function getPendingReward(address _poolAddr, address _user) external view returns (uint256 _amount) {
-    _amount = getTotalReward(_poolAddr, _user) - getClaimableReward(_poolAddr, _user);
-  }
-
-  /**
-   * @inheritdoc IRewardPool
-   */
-  function balanceOf(address _poolAddr, address _user) public view virtual returns (uint256);
-
-  /**
-   * @inheritdoc IRewardPool
-   */
-  function totalBalance(address _poolAddr) public view virtual returns (uint256);
 
   /**
    * @dev Syncs the user reward.
    *
-   * Emits the `SettledRewardUpdated` event if the last block user made changes is recorded in the settled period.
-   * Emits the `PendingRewardUpdated` event.
+   * Emits the event `UserRewardUpdated` once the debit amount is updated.
+   * Emits the event `PoolSharesUpdated` once the pool share is updated.
    *
-   * Note: The method should be called whenever the user's balance changes.
+   * Note: The method should be called whenever the user's staking amount changes.
    *
    */
   function _syncUserReward(
     address _poolAddr,
     address _user,
-    uint256 _newBalance
+    uint256 _newStakingAmount
   ) internal {
-    PendingRewardFields storage _reward = _pUserReward[_poolAddr][_user];
-    SettledPool memory _sPool = _settledPool[_poolAddr];
+    uint256 _period = _currentPeriod();
+    PoolFields storage _pool = _stakingPool[_poolAddr];
+    uint256 _lastShares = _pool.shares.inner;
 
-    // Syncs the reward once the last sync is settled.
-    if (_reward.lastSyncedPeriod <= _sPool.lastSyncedPeriod) {
-      uint256 _claimableReward = getClaimableReward(_poolAddr, _user);
-
-      SettledRewardFields storage _sReward = _sUserReward[_poolAddr][_user];
-      _sReward.debited = _claimableReward;
-      _sReward.accumulatedRps = _sPool.accumulatedRps;
-      emit SettledRewardUpdated(_poolAddr, _user, _claimableReward, _sPool.accumulatedRps);
+    // Updates the pool shares if it is outdated
+    if (_pool.shares.lastPeriod < _period) {
+      _pool.shares = PeriodWrapper(stakingTotal(_poolAddr), _period);
     }
 
-    PendingPool memory _pool = _pendingPool[_poolAddr];
-    uint256 _debited = getTotalReward(_poolAddr, _user);
-    uint256 _credited = (_newBalance * _pool.accumulatedRps) / 1e18;
+    UserRewardFields storage _reward = _userReward[_poolAddr][_user];
+    uint256 _currentStakingAmount = stakingAmountOf(_poolAddr, _user);
+    uint256 _debited = _getReward(_poolAddr, _user, _period, _currentStakingAmount);
 
-    _reward.debited = _debited;
-    _reward.credited = _credited;
-    _reward.lastSyncedPeriod = _currentPeriod();
-    emit PendingRewardUpdated(_poolAddr, _user, _debited, _credited);
+    if (_reward.debited != _debited) {
+      _reward.debited = _debited;
+      emit UserRewardUpdated(_poolAddr, _user, _debited);
+    }
+
+    _syncMinStakingAmount(_pool, _reward, _period, _newStakingAmount, _currentStakingAmount);
+    _reward.aRps = _pool.aRps;
+    _reward.lastPeriod = _period;
+
+    if (_pool.shares.inner != _lastShares) {
+      emit PoolSharesUpdated(_period, _poolAddr, _pool.shares.inner);
+    }
+  }
+
+  /**
+   * @dev Syncs the minimum staking amount of an user in the current period.
+   */
+  function _syncMinStakingAmount(
+    PoolFields storage _pool,
+    UserRewardFields storage _reward,
+    uint256 _latestPeriod,
+    uint256 _newStakingAmount,
+    uint256 _currentStakingAmount
+  ) internal {
+    if (_reward.lastPeriod < _latestPeriod) {
+      _reward.minAmount = _currentStakingAmount;
+    }
+
+    uint256 _minAmount = Math.min(_reward.minAmount, _newStakingAmount);
+    uint256 _diffAmount = _reward.minAmount - _minAmount;
+    if (_diffAmount > 0) {
+      _reward.minAmount = _minAmount;
+      require(_pool.shares.inner >= _diffAmount, "RewardCalculation: invalid pool shares");
+      _pool.shares.inner -= _diffAmount;
+    }
   }
 
   /**
@@ -121,82 +130,73 @@ abstract contract RewardCalculation is IRewardPool {
    *
    */
   function _claimReward(address _poolAddr, address _user) internal returns (uint256 _amount) {
-    _amount = getClaimableReward(_poolAddr, _user);
+    uint256 _latestPeriod = _currentPeriod();
+    _amount = _getReward(_poolAddr, _user, _latestPeriod, stakingAmountOf(_poolAddr, _user));
     emit RewardClaimed(_poolAddr, _user, _amount);
 
-    SettledPool memory _sPool = _settledPool[_poolAddr];
-    PendingRewardFields storage _reward = _pUserReward[_poolAddr][_user];
-    SettledRewardFields storage _sReward = _sUserReward[_poolAddr][_user];
+    UserRewardFields storage _reward = _userReward[_poolAddr][_user];
+    _reward.debited = 0;
+    _reward.lastPeriod = _latestPeriod;
+    _reward.aRps = _stakingPool[_poolAddr].aRps;
+    emit UserRewardUpdated(_poolAddr, _user, 0);
+  }
 
-    _sReward.debited = 0;
-    if (_reward.lastSyncedPeriod <= _sPool.lastSyncedPeriod) {
-      _sReward.accumulatedRps = _sPool.accumulatedRps;
+  /**
+   * @dev Records the amount of rewards `_rewards` for the pools `_poolAddrs`.
+   *
+   * Emits the event `PoolsUpdated` once the contract recorded the rewards successfully.
+   * Emits the event `PoolsUpdateFailed` once the input array lengths are not equal.
+   * Emits the event `PoolUpdateConflicted` when the pool is already updated in the period.
+   *
+   * Note: This method should be called once at the period ending.
+   *
+   */
+  function _recordRewards(
+    uint256 _period,
+    address[] calldata _poolAddrs,
+    uint256[] calldata _rewards
+  ) internal {
+    if (_poolAddrs.length != _rewards.length) {
+      emit PoolsUpdateFailed(_period, _poolAddrs, _rewards);
+      return;
     }
-    emit SettledRewardUpdated(_poolAddr, _user, 0, _sReward.accumulatedRps);
 
-    _reward.credited += _amount;
-    _reward.lastSyncedPeriod = _currentPeriod();
-    emit PendingRewardUpdated(_poolAddr, _user, _reward.debited, _reward.credited);
-  }
-
-  /**
-   * @dev Records the amount of reward `_reward` for the pending pool `_poolAddr`.
-   *
-   * Emits the `PendingPoolUpdated` event.
-   *
-   * Note: This method should not be called after the pending pool is sinked.
-   *
-   */
-  function _recordReward(address _poolAddr, uint256 _reward) internal {
-    PendingPool storage _pool = _pendingPool[_poolAddr];
-    uint256 _accumulatedRps = _pool.accumulatedRps + (_reward * 1e18) / totalBalance(_poolAddr);
-    _pool.accumulatedRps = _accumulatedRps;
-    emit PendingPoolUpdated(_poolAddr, _accumulatedRps);
-  }
-
-  /**
-   * @dev Handles when the pool `_poolAddr` is sinked.
-   *
-   * Emits the `PendingPoolUpdated` event.
-   *
-   * Note: This method should be called when the pool is sinked.
-   *
-   */
-  function _sinkPendingReward(address _poolAddr) internal {
-    uint256 _accumulatedRps = _settledPool[_poolAddr].accumulatedRps;
-    PendingPool storage _pool = _pendingPool[_poolAddr];
-    _pool.accumulatedRps = _accumulatedRps;
-    emit PendingPoolUpdated(_poolAddr, _accumulatedRps);
-  }
-
-  /**
-   * @dev Handles when the pool `_poolAddr` is settled.
-   *
-   * Emits the `SettledPoolsUpdated` event.
-   *
-   * Note: This method should be called once in the end of each period.
-   *
-   */
-  function _onPoolsSettled(address[] calldata _poolList) internal {
-    uint256[] memory _accumulatedRpsList = new uint256[](_poolList.length);
+    uint256 _rps;
     address _poolAddr;
-    for (uint256 _i; _i < _poolList.length; _i++) {
-      _poolAddr = _poolList[_i];
-      _accumulatedRpsList[_i] = _pendingPool[_poolAddr].accumulatedRps;
+    uint256 _stakingTotal;
+    uint256[] memory _aRps = new uint256[](_poolAddrs.length);
+    uint256[] memory _shares = new uint256[](_poolAddrs.length);
 
-      SettledPool storage _sPool = _settledPool[_poolAddr];
-      if (_accumulatedRpsList[_i] != _sPool.accumulatedRps) {
-        _sPool.accumulatedRps = _accumulatedRpsList[_i];
-        _sPool.lastSyncedPeriod = _currentPeriod();
+    for (uint _i = 0; _i < _poolAddrs.length; _i++) {
+      _poolAddr = _poolAddrs[_i];
+      PoolFields storage _pool = _stakingPool[_poolAddr];
+      _stakingTotal = stakingTotal(_poolAddr);
+
+      if (_accumulatedRps[_period].lastPeriod == _period) {
+        _aRps[_i] = _pool.aRps;
+        _shares[_i] = _pool.shares.inner;
+        emit PoolUpdateConflicted(_period, _poolAddr);
+        continue;
       }
-    }
-    emit SettledPoolsUpdated(_poolList, _accumulatedRpsList);
-  }
 
-  /**
-   * @dev Returns whether the pool is slashed in the period `_period`.
-   */
-  function _rewardSinked(address _poolAddr, uint256 _period) internal view virtual returns (bool);
+      // Updates the pool shares if it is outdated
+      if (_pool.shares.lastPeriod < _period) {
+        _pool.shares = PeriodWrapper(_stakingTotal, _period);
+      }
+
+      // The rps is 0 if no one stakes for the pool
+      _rps = _pool.shares.inner == 0 ? 0 : (_rewards[_i] * 1e18) / _pool.shares.inner;
+
+      _aRps[_i] = _pool.aRps += _rps;
+      _accumulatedRps[_period] = PeriodWrapper(_aRps[_i], _period);
+      if (_pool.shares.inner != _stakingTotal) {
+        _pool.shares.inner = _stakingTotal;
+      }
+      _shares[_i] = _pool.shares.inner;
+    }
+
+    emit PoolsUpdated(_period, _poolAddrs, _aRps, _shares);
+  }
 
   /**
    * @dev Returns the current period.

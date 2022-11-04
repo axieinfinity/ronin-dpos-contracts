@@ -23,12 +23,12 @@ contract MockPrecompile {
 
   function pickValidatorSet(
     address[] memory _candidates,
-    uint256[] memory _balanceWeights,
+    uint256[] memory _weights,
     uint256[] memory _trustedWeights,
     uint256 _maxValidatorNumber,
     uint256 _maxPrioritizedValidatorNumber
   ) public pure returns (address[] memory _result) {
-    (_result, _trustedWeights) = Sorting.sortWithExternalKeys(_candidates, _balanceWeights, _trustedWeights);
+    (_result, _trustedWeights) = Sorting.sortWithExternalKeys(_candidates, _weights, _trustedWeights);
     uint256 _newValidatorCount = Math.min(_maxValidatorNumber, _result.length);
     _arrangeValidatorCandidates(_result, _trustedWeights, _newValidatorCount, _maxPrioritizedValidatorNumber);
   }

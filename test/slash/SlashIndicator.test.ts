@@ -39,7 +39,7 @@ const unavailabilityTier2Threshold = 10;
 const maxValidatorNumber = 21;
 const maxValidatorCandidate = 50;
 const numberOfBlocksInEpoch = 600;
-const minValidatorBalance = BigNumber.from(100);
+const minValidatorStakingAmount = BigNumber.from(100);
 
 const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(2);
 const slashDoubleSignAmount = BigNumber.from(5);
@@ -69,7 +69,7 @@ describe('Slash indicator test', () => {
           },
         },
         stakingArguments: {
-          minValidatorBalance,
+          minValidatorStakingAmount,
         },
         roninValidatorSetArguments: {
           maxValidatorNumber,
@@ -114,7 +114,7 @@ describe('Slash indicator test', () => {
           validatorCandidates[i].address,
           validatorCandidates[i].address,
           1,
-          { value: minValidatorBalance.mul(2).add(maxValidatorNumber).sub(i) }
+          { value: minValidatorStakingAmount.mul(2).add(maxValidatorNumber).sub(i) }
         );
     }
 

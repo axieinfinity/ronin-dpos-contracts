@@ -74,7 +74,7 @@ describe('Governance Admin test', () => {
       stakingContract.address,
       0,
       governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
-        stakingContract.interface.encodeFunctionData('setMinValidatorBalance', [555]),
+        stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [555]),
       ]),
       500_000
     );
@@ -82,7 +82,7 @@ describe('Governance Admin test', () => {
     supports = signatures.map(() => VoteType.For);
 
     await governanceAdmin.connect(governors[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);
-    expect(await stakingContract.minValidatorBalance()).eq(555);
+    expect(await stakingContract.minValidatorStakingAmount()).eq(555);
   });
 
   it('Should not be able to reuse already voted signatures or proposals', async () => {
