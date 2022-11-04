@@ -2,7 +2,6 @@
 
 The next version of smart contracts that power Ronin DPoS network.
 
-_NOTE: This smart contract version does not includes method to prevent the 51% attack. It is not finalized at the implementation time._
 
 - [Overview](#ronin-dpos-contracts)
   - [Staking contract](#staking-contract)
