@@ -5,18 +5,18 @@ pragma solidity ^0.8.9;
 import "../../precompile-usages/PrecompileUsagePickValidatorSet.sol";
 
 contract MockPrecompileUsagePickValidatorSet is PrecompileUsagePickValidatorSet {
-  address internal _precompileSortValidatorAddress;
+  address internal _precompilePickValidatorSetAddress;
 
   constructor(address _precompile) {
-    setPrecompileSortValidatorAddress(_precompile);
+    setPrecompilePickValidatorSetAddress(_precompile);
   }
 
-  function setPrecompileSortValidatorAddress(address _addr) public {
-    _precompileSortValidatorAddress = _addr;
+  function setPrecompilePickValidatorSetAddress(address _addr) public {
+    _precompilePickValidatorSetAddress = _addr;
   }
 
   function precompilePickValidatorSetAddress() public view override returns (address) {
-    return _precompileSortValidatorAddress;
+    return _precompilePickValidatorSetAddress;
   }
 
   function callPrecompile(
