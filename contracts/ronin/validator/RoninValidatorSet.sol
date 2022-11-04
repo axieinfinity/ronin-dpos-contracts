@@ -211,8 +211,8 @@ contract RoninValidatorSet is
     delete _miningReward[_validatorAddr];
     delete _delegatingReward[_validatorAddr];
 
-    if (_newJailedUntil > 0) {
-      _jailedUntil[_validatorAddr] = Math.max(_newJailedUntil, _jailedUntil[_validatorAddr]);
+    if (_newJailedUntil > _jailedUntil[_validatorAddr]) {
+      _jailedUntil[_validatorAddr] = _newJailedUntil;
     }
 
     if (_slashAmount > 0) {
