@@ -155,7 +155,7 @@ abstract contract StakingManager is
   }
 
   /**
-   * @dev Proposes a candidate to become a valdiator.
+   * @dev Proposes a candidate to become a validator.
    *
    * Requirements:
    * - The pool admin is able to receive RON.
