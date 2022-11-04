@@ -8,6 +8,7 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
+    "test:precompile-integration": "hardhat test test/precompile-integration/** --network ronin-devnet",
     "clean": "hardhat clean && rimraf dist cache",
     "lint:fix": "lint-staged",
     "docgen": "solidity-docgen -t templates/docs -H templates/docs/helper.js -i contracts -e contracts/mocks -o docs --solc-module solc-0.8",
