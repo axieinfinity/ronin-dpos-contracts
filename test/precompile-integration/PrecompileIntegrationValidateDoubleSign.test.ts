@@ -22,7 +22,7 @@ describe('[Precompile Integration] Validate double sign test', function (this: M
     if (network.name != Network.Devnet) {
       console.log(
         '\x1b[35m ',
-        `> Skipped due to wrong network. Current network: ${network.name}. Expected network: ${Network.Devnet}.`
+        `> Skipped due to wrong network. Current network: "${network.name}". Expected network: "${Network.Devnet}".`
       );
       suite.ctx.skip();
     }
