@@ -5,7 +5,7 @@ pragma solidity ^0.8.9;
 import "./ICandidateManager.sol";
 
 interface IRoninValidatorSet is ICandidateManager {
-  enum BlockRewardDeprecatedEnum {
+  enum BlockRewardDeprecatedType {
     UNKNOWN,
     SLASHED,
     AT_BAILOUT,
@@ -40,7 +40,7 @@ interface IRoninValidatorSet is ICandidateManager {
   event BlockRewardDeprecated(
     address indexed coinbaseAddr,
     uint256 rewardAmount,
-    BlockRewardDeprecatedEnum deprecatedType
+    BlockRewardDeprecatedType deprecatedType
   );
   /// @dev Emitted when the block reward is submitted.
   event BlockRewardSubmitted(address indexed coinbaseAddr, uint256 submittedAmount, uint256 bonusAmount);

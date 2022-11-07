@@ -154,7 +154,7 @@ contract RoninValidatorSet is
 
     // Deprecates reward for non-validator or slashed validator
     if (!_requestForBlockProducer) {
-      emit BlockRewardDeprecated(_coinbaseAddr, _submittedReward, BlockRewardDeprecatedEnum.SLASHED);
+      emit BlockRewardDeprecated(_coinbaseAddr, _submittedReward, BlockRewardDeprecatedType.SLASHED);
       return;
     }
 
@@ -166,7 +166,7 @@ contract RoninValidatorSet is
 
       _reward = _submittedReward + _blockProducerBonus;
       _cutOffReward = _reward * _cutOffPercentageAfterBailout;
-      emit BlockRewardDeprecated(_coinbaseAddr, _cutOffReward, BlockRewardDeprecatedEnum.AFTER_BAILOUT);
+      emit BlockRewardDeprecated(_coinbaseAddr, _cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
     }
 
     uint256 _rewardAfterCutOff = _reward - _cutOffReward;
@@ -247,7 +247,7 @@ contract RoninValidatorSet is
     _miningReward[_validatorAddr] = 0;
     _delegatingReward[_validatorAddr] = 0;
 
-    emit BlockRewardDeprecated(_validatorAddr, _totalRemovedReward, BlockRewardDeprecatedEnum.AT_BAILOUT);
+    emit BlockRewardDeprecated(_validatorAddr, _totalRemovedReward, BlockRewardDeprecatedType.AT_BAILOUT);
     emit ValidatorLiberated(_validatorAddr, _period);
   }
 
