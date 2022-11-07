@@ -15,8 +15,8 @@ interface ICandidateManager {
     // The percentage of reward that validators can be received, the rest goes to the delegators.
     // Values in range [0; 100_00] stands for 0-100%
     uint256 commissionRate;
-    // The period that the candidate to be revoked.
-    uint256 revokedPeriod;
+    // The timestamp that the candidate to be revoked.
+    uint256 revokedTimestamp;
     // Extra data
     bytes extraData;
   }
@@ -30,8 +30,8 @@ interface ICandidateManager {
     address indexed admin,
     address bridgeOperator
   );
-  /// @dev Emitted when the revoked block of a candidate is updated.
-  event CandidateRevokedPeriodUpdated(address indexed consensusAddr, uint256 revokedPeriod);
+  /// @dev Emitted when the revoked timestamp of a candidate is updated.
+  event CandidateRevokedTimestampUpdated(address indexed consensusAddr, uint256 revokedTimestamp);
   /// @dev Emitted when the validator candidate is revoked.
   event CandidatesRevoked(address[] consensusAddrs);
 
@@ -69,15 +69,15 @@ interface ICandidateManager {
   ) external;
 
   /**
-   * @dev Requests to revoke a validator candidate at the next period ending.
+   * @dev Requests to revoke a validator candidate in next `_secsLeft` seconds.
    *
    * Requirements:
    * - The method caller is staking contract.
    *
-   * Emits the event `CandidateRevokedBlockUpdated`.
+   * Emits the event `CandidateRevokedTimestampUpdated`.
    *
    */
-  function requestRevokeCandidate(address) external;
+  function requestRevokeCandidate(address, uint256 _secsLeft) external;
 
   /**
    * @dev Returns whether the address is a validator (candidate).

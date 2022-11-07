@@ -51,6 +51,8 @@ const config: InitTestInput = {
 
   stakingArguments: {
     minValidatorStakingAmount: BigNumber.from(100),
+    minPeriodsToUndelegate: 100,
+    revokePeriods: 1000,
   },
   stakingVestingArguments: {
     blockProducerBonusPerBlock: 1,
@@ -192,6 +194,8 @@ describe('[Integration] Configuration check', () => {
   it('Should the StakingContract contract set configs correctly', async () => {
     expect(await stakingContract.validatorContract()).to.eq(validatorContract.address);
     expect(await stakingContract.minValidatorStakingAmount()).to.eq(config.stakingArguments?.minValidatorStakingAmount);
+    expect(await stakingContract.minPeriodsToUndelegate()).to.eq(config.stakingArguments?.minPeriodsToUndelegate);
+    expect(await stakingContract.revokePeriods()).to.eq(config.stakingArguments?.revokePeriods);
   });
 
   it('Should the StakingVestingContract contract set configs correctly', async () => {

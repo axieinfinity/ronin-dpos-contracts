@@ -72,6 +72,8 @@ export interface MaintenanceConfig {
 
 export interface StakingArguments {
   minValidatorStakingAmount?: BigNumberish;
+  minPeriodsToUndelegate?: BigNumberish;
+  revokePeriods?: BigNumberish;
 }
 
 export interface StakingConfig {

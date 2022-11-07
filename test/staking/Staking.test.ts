@@ -42,7 +42,12 @@ describe('Staking test', () => {
     const proxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       logicContract.address,
       proxyAdmin.address,
-      logicContract.interface.encodeFunctionData('initialize', [validatorContract.address, minValidatorStakingAmount])
+      logicContract.interface.encodeFunctionData('initialize', [
+        validatorContract.address,
+        minValidatorStakingAmount,
+        0,
+        0,
+      ])
     );
     await proxyContract.deployed();
     stakingContract = Staking__factory.connect(proxyContract.address, deployer);
@@ -111,7 +116,9 @@ describe('Staking test', () => {
       tx = await stakingContract.connect(poolAddr).unstake(poolAddr.address, 1);
       await expect(tx!).emit(stakingContract, 'Unstaked').withArgs(poolAddr.address, 1);
       expect(await stakingContract.stakingTotal(poolAddr.address)).eq(minValidatorStakingAmount.mul(2));
-      expect(await stakingContract.stakingAmountOf(poolAddr.address, poolAddr.address)).eq(minValidatorStakingAmount.mul(2));
+      expect(await stakingContract.stakingAmountOf(poolAddr.address, poolAddr.address)).eq(
+        minValidatorStakingAmount.mul(2)
+      );
     });
 
     it('[Delegator] Should be able to delegate/undelegate to a validator candidate', async () => {

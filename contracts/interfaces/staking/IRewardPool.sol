@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../interfaces/consumers/PeriodWrapperConsumer.sol";
+import "../../interfaces/consumers/PeriodWrapperConsumer.sol";
 
 interface IRewardPool is PeriodWrapperConsumer {
   /// @dev Emitted when the fields to calculate pending reward for the user is updated.

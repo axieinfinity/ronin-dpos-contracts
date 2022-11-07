@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../../interfaces/IRewardPool.sol";
+import "../../interfaces/staking/IRewardPool.sol";
 import "../../libraries/Math.sol";
 
 /**
