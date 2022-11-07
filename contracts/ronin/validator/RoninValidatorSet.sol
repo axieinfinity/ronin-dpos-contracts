@@ -159,23 +159,20 @@ contract RoninValidatorSet is
     }
 
     uint256 _period = currentPeriod();
-    uint256 _reward;
+    uint256 _reward = _submittedReward + _blockProducerBonus;
     uint256 _cutOffReward;
     if (_miningRewardBailoutCutOffAtPeriod[_coinbaseAddr][_period]) {
-      (, , , uint256 _cutOffPercentageAfterBailout) = _slashIndicatorContract.getCreditScoreConfigs();
-
-      _reward = _submittedReward + _blockProducerBonus;
-      _cutOffReward = _reward * _cutOffPercentageAfterBailout;
+      (, , , uint256 _cutOffPercentage) = _slashIndicatorContract.getCreditScoreConfigs();
+      _cutOffReward = (_reward * _cutOffPercentage) / _MAX_PERCENTAGE;
       emit BlockRewardDeprecated(_coinbaseAddr, _cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
     }
 
-    uint256 _rewardAfterCutOff = _reward - _cutOffReward;
+    _reward -= _cutOffReward;
     uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
-
-    uint256 _miningAmount = (_rate * _rewardAfterCutOff) / _MAX_PERCENTAGE;
+    uint256 _miningAmount = (_rate * _reward) / _MAX_PERCENTAGE;
     _miningReward[_coinbaseAddr] += _miningAmount;
 
-    uint256 _delegatingAmount = _rewardAfterCutOff - _miningAmount;
+    uint256 _delegatingAmount = _reward - _miningAmount;
     _delegatingReward[_coinbaseAddr] += _delegatingAmount;
     emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _blockProducerBonus);
   }
@@ -239,15 +236,13 @@ contract RoninValidatorSet is
    * @inheritdoc IRoninValidatorSet
    */
   function bailOut(address _validatorAddr, uint256 _period) external override onlySlashIndicatorContract {
+    /// Note: Removing rewards of validator in `bailOut` function is not needed, since the rewards have been
+    /// removed previously in the `slash` function.
+
     _miningRewardBailoutCutOffAtPeriod[_validatorAddr][_period] = true;
+    _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = false;
     _jailedUntil[_validatorAddr] = block.number - 1;
 
-    uint256 _totalRemovedReward = _miningReward[_validatorAddr] + _delegatingReward[_validatorAddr];
-
-    _miningReward[_validatorAddr] = 0;
-    _delegatingReward[_validatorAddr] = 0;
-
-    emit BlockRewardDeprecated(_validatorAddr, _totalRemovedReward, BlockRewardDeprecatedType.AT_BAILOUT);
     emit ValidatorLiberated(_validatorAddr, _period);
   }
 
