@@ -181,7 +181,7 @@ describe('[Integration] Submit Block Reward', () => {
 
     it('Should the ValidatorSetContract emit event of deprecating reward', async () => {
       await expect(submitRewardTx)
-        .to.emit(validatorContract, 'BlockRewardRewardDeprecated')
+        .to.emit(validatorContract, 'BlockRewardDeprecated')
         .withArgs(validator.address, blockRewardAmount);
     });
 
