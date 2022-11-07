@@ -8,7 +8,6 @@ interface IRoninValidatorSet is ICandidateManager {
   enum BlockRewardDeprecatedType {
     UNKNOWN,
     SLASHED,
-    AT_BAILOUT,
     AFTER_BAILOUT
   }
 
