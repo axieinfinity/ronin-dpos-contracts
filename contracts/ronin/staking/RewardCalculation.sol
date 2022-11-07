@@ -10,8 +10,8 @@ import "../../libraries/Math.sol";
  * @dev This contract mainly contains the methods to calculate reward for staking contract.
  */
 abstract contract RewardCalculation is IRewardPool {
-  /// @dev Mapping from period number => accumulated rewards per share (one unit staking)
-  mapping(uint256 => PeriodWrapper) private _accumulatedRps;
+  /// @dev Mapping from pool address => period number => accumulated rewards per share (one unit staking)
+  mapping(address => mapping(uint256 => PeriodWrapper)) private _accumulatedRps;
   /// @dev Mapping from the pool address => user address => the reward info of the user
   mapping(address => mapping(address => UserRewardFields)) private _userReward;
   /// @dev Mapping from the pool address => reward pool fields
@@ -22,7 +22,7 @@ abstract contract RewardCalculation is IRewardPool {
    * variables without shifting down storage in the inheritance chain.
    */
   uint256[50] private ______gap;
-  
+
   /**
    * @inheritdoc IRewardPool
    */
@@ -57,7 +57,7 @@ abstract contract RewardCalculation is IRewardPool {
 
     PoolFields storage _pool = _stakingPool[_poolAddr];
     uint256 _minAmount = _reward.minAmount;
-    uint256 _aRps = _accumulatedRps[_reward.lastPeriod].inner;
+    uint256 _aRps = _accumulatedRps[_poolAddr][_reward.lastPeriod].inner;
     uint256 _lastPeriodReward = _minAmount * (_aRps - _reward.aRps);
     uint256 _newPeriodsReward = _latestStakingAmount * (_pool.aRps - _aRps);
     return _reward.debited + (_lastPeriodReward + _newPeriodsReward) / 1e18;
@@ -178,7 +178,7 @@ abstract contract RewardCalculation is IRewardPool {
       PoolFields storage _pool = _stakingPool[_poolAddr];
       _stakingTotal = stakingTotal(_poolAddr);
 
-      if (_accumulatedRps[_period].lastPeriod == _period) {
+      if (_accumulatedRps[_poolAddr][_period].lastPeriod == _period) {
         _aRps[_i] = _pool.aRps;
         _shares[_i] = _pool.shares.inner;
         emit PoolUpdateConflicted(_period, _poolAddr);
@@ -194,7 +194,7 @@ abstract contract RewardCalculation is IRewardPool {
       _rps = _pool.shares.inner == 0 ? 0 : (_rewards[_i] * 1e18) / _pool.shares.inner;
 
       _aRps[_i] = _pool.aRps += _rps;
-      _accumulatedRps[_period] = PeriodWrapper(_aRps[_i], _period);
+      _accumulatedRps[_poolAddr][_period] = PeriodWrapper(_aRps[_i], _period);
       if (_pool.shares.inner != _stakingTotal) {
         _pool.shares.inner = _stakingTotal;
       }
