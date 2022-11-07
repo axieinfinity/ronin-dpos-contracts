@@ -16,6 +16,8 @@ interface IStaking is IRewardPool {
     uint256 stakingTotal;
     // Mapping from delegator => delegating amount
     mapping(address => uint256) delegatingAmount;
+    // Mapping from delegator => the last period that delegator staked
+    mapping(address => uint256) lastDelegatingPeriod;
   }
 
   /// @dev Emitted when the validator pool is approved.
@@ -170,6 +172,9 @@ interface IStaking is IRewardPool {
   ///////////////////////////////////////////////////////////////////////////////////////
   //                             FUNCTIONS FOR DELEGATOR                               //
   ///////////////////////////////////////////////////////////////////////////////////////
+
+  function setRevokePeriod(uint256 _periods) external;
+  function setMinPeriodsToUndelegate(uint256 _minPeriods) external;
 
   /**
    * @dev Stakes for a validator candidate `_consensusAddr`.

@@ -24,7 +24,9 @@ abstract contract StakingManager is
    * variables without shifting down storage in the inheritance chain.
    */
   uint256[50] private ______gap;
-  
+
+  function _minPeriodsToUndelegate000() internal virtual returns(uint256);
+
   modifier noEmptyValue() {
     require(msg.value > 0, "StakingManager: query with empty value");
     _;
@@ -83,7 +85,12 @@ abstract contract StakingManager is
   /**
    * @inheritdoc IRewardPool
    */
-  function bulkStakingTotal(address[] calldata _poolList) public view override returns (uint256[] memory _stakingAmounts) {
+  function bulkStakingTotal(address[] calldata _poolList)
+    public
+    view
+    override
+    returns (uint256[] memory _stakingAmounts)
+  {
     _stakingAmounts = new uint256[](_poolList.length);
     for (uint _i = 0; _i < _poolList.length; _i++) {
       _stakingAmounts[_i] = stakingTotal(_poolList[_i]);
@@ -210,6 +217,7 @@ abstract contract StakingManager is
   ) internal onlyPoolAdmin(_pool, _requester) {
     _pool.stakingAmount += _amount;
     _changeDelegatingAmount(_pool, _requester, _pool.stakingAmount, _pool.stakingTotal + _amount);
+    _pool.lastDelegatingPeriod[_requester] = _currentPeriod();
     emit Staked(_pool.addr, _amount);
   }
 
@@ -228,6 +236,10 @@ abstract contract StakingManager is
     uint256 _amount
   ) internal onlyPoolAdmin(_pool, _requester) {
     require(_amount <= _pool.stakingAmount, "StakingManager: insufficient staking amount");
+    require(
+      _pool.lastDelegatingPeriod[_requester] + _minPeriodsToUndelegate000() < _currentPeriod(),
+      "StakingManager: unstake too early"
+    );
 
     _pool.stakingAmount -= _amount;
     _changeDelegatingAmount(_pool, _requester, _pool.stakingAmount, _pool.stakingTotal - _amount);
@@ -348,6 +360,7 @@ abstract contract StakingManager is
       _pool.delegatingAmount[_delegator] + _amount,
       _pool.stakingTotal + _amount
     );
+    _pool.lastDelegatingPeriod[_delegator] = _currentPeriod();
     emit Delegated(_delegator, _pool.addr, _amount);
   }
 
@@ -371,6 +384,10 @@ abstract contract StakingManager is
   ) private notPoolAdmin(_pool, _delegator) {
     require(_amount > 0, "StakingManager: invalid amount");
     require(_pool.delegatingAmount[_delegator] >= _amount, "StakingManager: insufficient amount to undelegate");
+    require(
+      _pool.lastDelegatingPeriod[_delegator] + _minPeriodsToUndelegate000() < _currentPeriod(),
+      "StakingManager: unstake too early"
+    );
     _changeDelegatingAmount(
       _pool,
       _delegator,

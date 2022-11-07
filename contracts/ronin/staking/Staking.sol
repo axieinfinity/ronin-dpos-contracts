@@ -10,6 +10,10 @@ import "./StakingManager.sol";
 contract Staking is IStaking, StakingManager, Initializable {
   /// @dev The minimum threshold for being a validator candidate.
   uint256 internal _minValidatorStakingAmount;
+  /// @dev The minium number of periods to undelegate from the last period (s)he delegated.
+  uint256 internal _minPeriodsToUndelegate;
+  /// @dev The number of periods that the candidate must wait to be revoked and take the self-staking amount back.
+  uint256 internal _revokePeriods;
 
   constructor() {
     _disableInitializers();
@@ -22,9 +26,16 @@ contract Staking is IStaking, StakingManager, Initializable {
   /**
    * @dev Initializes the contract storage.
    */
-  function initialize(address __validatorContract, uint256 __minValidatorStakingAmount) external initializer {
+  function initialize(
+    address __validatorContract,
+    uint256 __minValidatorStakingAmount,
+    uint256 __minPeriodsToUndelegate,
+    uint256 __revokePeriods
+  ) external initializer {
     _setValidatorContract(__validatorContract);
     _setMinValidatorStakingAmount(__minValidatorStakingAmount);
+    _setMinPeriodsToUndelegate(__minPeriodsToUndelegate);
+    _setRevokePeriod(__revokePeriods);
   }
 
   /**
@@ -56,6 +67,28 @@ contract Staking is IStaking, StakingManager, Initializable {
    */
   function setMinValidatorStakingAmount(uint256 _threshold) external override onlyAdmin {
     _setMinValidatorStakingAmount(_threshold);
+  }
+
+  /**
+   * @inheritdoc IStaking
+   */
+  function setMinPeriodsToUndelegate(uint256 _minPeriods) external override onlyAdmin {
+    _setMinPeriodsToUndelegate(_minPeriods);
+  }
+
+  /**
+   * @inheritdoc IStaking
+   */
+  function setRevokePeriod(uint256 _periods) external override onlyAdmin {
+    _setRevokePeriod(_periods);
+  }
+
+  function _setMinPeriodsToUndelegate(uint256 _minPeriods) internal {
+    // TODO
+  }
+
+  function _setRevokePeriod(uint256 _periods) internal {
+    // TODO
   }
 
   /**
@@ -130,4 +163,6 @@ contract Staking is IStaking, StakingManager, Initializable {
     _changeDelegatingAmount(_pool, _pool.admin, _pool.stakingAmount, _pool.stakingTotal - _amount);
     emit Unstaked(_pool.addr, _amount);
   }
+
+  function _minPeriodsToUndelegate000() internal virtual override returns (uint256) { return _minPeriodsToUndelegate; }
 }
