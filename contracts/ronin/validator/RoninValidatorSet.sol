@@ -53,9 +53,11 @@ contract RoninValidatorSet is
   /// @dev The number of slot that is reserved for prioritized validators
   uint256 internal _maxPrioritizedValidatorNumber;
 
-  /// @dev Mapping from consensus address => the last period that the block producer has no pending reward
+  /// @dev Mapping from consensus address => period number => block producer has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _miningRewardDeprecatedAtPeriod;
-  /// @dev Mapping from consensus address => the last period that the block operator has no pending reward
+  /// @dev Mapping from consensus address => period number => whether the block producer get cut off reward, due to bailout
+  mapping(address => mapping(uint256 => bool)) internal _miningRewardBailoutCutOffAtPeriod;
+  /// @dev Mapping from consensus address => period number => block operator has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _bridgeRewardDeprecatedAtPeriod;
   /// @dev Mapping from consensus address => the last block that the validator is jailed
   mapping(address => uint256) internal _jailedUntil;
@@ -152,17 +154,28 @@ contract RoninValidatorSet is
 
     // Deprecates reward for non-validator or slashed validator
     if (!_requestForBlockProducer) {
-      emit BlockRewardRewardDeprecated(_coinbaseAddr, _submittedReward);
+      emit BlockRewardDeprecated(_coinbaseAddr, _submittedReward, BlockRewardDeprecatedEnum.SLASHED);
       return;
     }
 
-    uint256 _reward = _submittedReward + _blockProducerBonus;
+    uint256 _period = currentPeriod();
+    uint256 _reward;
+    uint256 _cutOffReward;
+    if (_miningRewardBailoutCutOffAtPeriod[_coinbaseAddr][_period]) {
+      (, , , uint256 _cutOffPercentageAfterBailout) = _slashIndicatorContract.getCreditScoreConfigs();
+
+      _reward = _submittedReward + _blockProducerBonus;
+      _cutOffReward = _reward * _cutOffPercentageAfterBailout;
+      emit BlockRewardDeprecated(_coinbaseAddr, _cutOffReward, BlockRewardDeprecatedEnum.AFTER_BAILOUT);
+    }
+
+    uint256 _rewardAfterCutOff = _reward - _cutOffReward;
     uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
 
-    uint256 _miningAmount = (_rate * _reward) / _MAX_PERCENTAGE;
+    uint256 _miningAmount = (_rate * _rewardAfterCutOff) / _MAX_PERCENTAGE;
     _miningReward[_coinbaseAddr] += _miningAmount;
 
-    uint256 _delegatingAmount = _reward - _miningAmount;
+    uint256 _delegatingAmount = _rewardAfterCutOff - _miningAmount;
     _delegatingReward[_coinbaseAddr] += _delegatingAmount;
     emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _blockProducerBonus);
   }
@@ -225,10 +238,17 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function bailOut(address _validatorAddr) external override onlySlashIndicatorContract {
+  function bailOut(address _validatorAddr, uint256 _period) external override onlySlashIndicatorContract {
+    _miningRewardBailoutCutOffAtPeriod[_validatorAddr][_period] = true;
     _jailedUntil[_validatorAddr] = block.number - 1;
 
-    emit ValidatorLiberated(_validatorAddr);
+    uint256 _totalRemovedReward = _miningReward[_validatorAddr] + _delegatingReward[_validatorAddr];
+
+    _miningReward[_validatorAddr] = 0;
+    _delegatingReward[_validatorAddr] = 0;
+
+    emit BlockRewardDeprecated(_validatorAddr, _totalRemovedReward, BlockRewardDeprecatedEnum.AT_BAILOUT);
+    emit ValidatorLiberated(_validatorAddr, _period);
   }
 
   /**

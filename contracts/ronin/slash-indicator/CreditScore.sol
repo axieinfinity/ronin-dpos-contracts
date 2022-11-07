@@ -5,11 +5,12 @@ pragma solidity ^0.8.9;
 import "../../interfaces/slash-indicator/ICreditScore.sol";
 import "../../extensions/collections/HasMaintenanceContract.sol";
 import "../../extensions/collections/HasValidatorContract.sol";
+import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../libraries/Math.sol";
 
-abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintenanceContract {
+abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintenanceContract, PercentageConsumer {
   /// @dev Mapping from validator address => period index => whether bailed out before
-  mapping(address => mapping(uint256 => bool)) internal _bailedOutStatus;
+  mapping(address => mapping(uint256 => bool)) internal _bailedOutAtPeriod;
   /// @dev Mapping from validator address => credit score
   mapping(address => uint256) internal _creditScore;
 
@@ -19,6 +20,8 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   uint256 public maxCreditScore;
   /// @dev The number that will be multiplied with the remaining jailed time to get the cost of bailing out.
   uint256 public bailOutCostMultiplier;
+  /// @dev The percentage of reward to be cut off from the validator in the rest of the period after bailed out.
+  uint256 public cutOffPercentageAfterBailout;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
@@ -84,20 +87,17 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     require(_isJailed, "SlashIndicator: caller must be jailed in the current period");
 
     uint256 _period = _validatorContract.currentPeriod();
-    require(!_bailedOutStatus[_consensusAddr][_period], "SlashIndicator: validator has bailed out previously");
+    require(!_bailedOutAtPeriod[_consensusAddr][_period], "SlashIndicator: validator has bailed out previously");
 
     uint256 _score = _creditScore[_consensusAddr];
     uint256 _cost = _jailedEpochLeft * bailOutCostMultiplier;
     require(_score >= _cost, "SlashIndicator: insufficient credit score to bail out");
 
-    _validatorContract.bailOut(_consensusAddr);
+    _validatorContract.bailOut(_consensusAddr, _period);
 
     _creditScore[_consensusAddr] -= _cost;
     _setUnavailabilityIndicator(_consensusAddr, _period, 0);
-    _bailedOutStatus[_consensusAddr][_period] = true;
-
-    // TODO: - Remove all rewards of the validator before the bailout
-    // TODO: - After the bailout, the validator gets 50% of the rewards until the end of the period.
+    _bailedOutAtPeriod[_consensusAddr][_period] = true;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -110,9 +110,10 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   function setCreditScoreConfigs(
     uint256 _gainCreditScore,
     uint256 _maxCreditScore,
-    uint256 _bailOutCostMultiplier
+    uint256 _bailOutCostMultiplier,
+    uint256 _cutOffPercentageAfterBailout
   ) external override onlyAdmin {
-    _setCreditScoreConfigs(_gainCreditScore, _maxCreditScore, _bailOutCostMultiplier);
+    _setCreditScoreConfigs(_gainCreditScore, _maxCreditScore, _bailOutCostMultiplier, _cutOffPercentageAfterBailout);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -134,12 +135,14 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     returns (
       uint256 _gainCreditScore,
       uint256 _maxCreditScore,
-      uint256 _bailOutCostMultiplier
+      uint256 _bailOutCostMultiplier,
+      uint256 _cutOffPercentageAfterBailout
     )
   {
     _gainCreditScore = gainCreditScore;
     _maxCreditScore = maxCreditScore;
     _bailOutCostMultiplier = bailOutCostMultiplier;
+    _cutOffPercentageAfterBailout = cutOffPercentageAfterBailout;
   }
 
   /**
@@ -165,6 +168,13 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     }
   }
 
+  /**
+   * @inheritdoc ICreditScore
+   */
+  function bailedOutAtPeriod(address _validator, uint256 _period) external view override returns (bool) {
+    return _bailedOutAtPeriod[_validator][_period];
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////
   //                                 HELPER FUNCTIONS                                  //
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -184,13 +194,21 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   function _setCreditScoreConfigs(
     uint256 _gainCreditScore,
     uint256 _maxCreditScore,
-    uint256 _bailOutCostMultiplier
+    uint256 _bailOutCostMultiplier,
+    uint256 _cutOffPercentageAfterBailout
   ) internal {
     require(_gainCreditScore <= _maxCreditScore, "CreditScore: invalid credit score config");
+    require(_cutOffPercentageAfterBailout <= _MAX_PERCENTAGE, "CreditScore: invalid cut off percentage config");
 
     gainCreditScore = _gainCreditScore;
     maxCreditScore = _maxCreditScore;
     bailOutCostMultiplier = _bailOutCostMultiplier;
-    emit CreditScoreConfigsUpdated(_gainCreditScore, _maxCreditScore, _bailOutCostMultiplier);
+    cutOffPercentageAfterBailout = _cutOffPercentageAfterBailout;
+    emit CreditScoreConfigsUpdated(
+      _gainCreditScore,
+      _maxCreditScore,
+      _bailOutCostMultiplier,
+      _cutOffPercentageAfterBailout
+    );
   }
 }

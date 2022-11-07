@@ -12,7 +12,7 @@ interface ICandidateManager {
     address payable treasuryAddr;
     // Address of the bridge operator corresponding to the candidate
     address bridgeOperatorAddr;
-    // The percentile of reward that validators can be received, the rest goes to the delegators.
+    // The percentage of reward that validators can be received, the rest goes to the delegators.
     // Values in range [0; 100_00] stands for 0-100%
     uint256 commissionRate;
     // The period that the candidate to be revoked.

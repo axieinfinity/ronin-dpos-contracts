@@ -49,7 +49,8 @@ contract SlashIndicator is
     // _creditScoreConfigs[0]: _gainCreditScore
     // _creditScoreConfigs[1]: _maxCreditScore
     // _creditScoreConfigs[2]: _bailOutCostMultiplier
-    uint256[3] calldata _creditScoreConfigs
+    // _creditScoreConfigs[3]: _cutOffPercentageAfterBailout
+    uint256[4] calldata _creditScoreConfigs
   ) external initializer {
     _setValidatorContract(__validatorContract);
     _setMaintenanceContract(__maintenanceContract);
@@ -68,7 +69,12 @@ contract SlashIndicator is
       _unavailabilitySlashingConfigs[2],
       _unavailabilitySlashingConfigs[3]
     );
-    _setCreditScoreConfigs(_creditScoreConfigs[0], _creditScoreConfigs[1], _creditScoreConfigs[2]);
+    _setCreditScoreConfigs(
+      _creditScoreConfigs[0],
+      _creditScoreConfigs[1],
+      _creditScoreConfigs[2],
+      _creditScoreConfigs[3]
+    );
   }
 
   /**
