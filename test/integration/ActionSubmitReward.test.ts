@@ -17,6 +17,7 @@ import { mineBatchTxs } from '../helpers/utils';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import { EpochController } from '../helpers/ronin-validator-set';
+import { BlockRewardDeprecatedType } from '../../src/script/ronin-validator-set';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
@@ -182,7 +183,7 @@ describe('[Integration] Submit Block Reward', () => {
     it('Should the ValidatorSetContract emit event of deprecating reward', async () => {
       await expect(submitRewardTx)
         .to.emit(validatorContract, 'BlockRewardDeprecated')
-        .withArgs(validator.address, blockRewardAmount);
+        .withArgs(validator.address, blockRewardAmount, BlockRewardDeprecatedType.SLASHED);
     });
 
     it('Should the StakingContract not emit event of recording reward', async () => {
