@@ -93,7 +93,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     uint256 _cost = _jailedEpochLeft * bailOutCostMultiplier;
     require(_score >= _cost, "SlashIndicator: insufficient credit score to bail out");
 
-    _validatorContract.bailOut(_consensusAddr, _period);
+    _validatorContract.execBailOut(_consensusAddr, _period);
 
     _creditScore[_consensusAddr] -= _cost;
     _setUnavailabilityIndicator(_consensusAddr, _period, 0);

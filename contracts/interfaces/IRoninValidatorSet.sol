@@ -137,7 +137,7 @@ interface IRoninValidatorSet is ICandidateManager {
   ) external;
 
   /**
-   * @dev Bailout the validator.
+   * @dev Finalize the bailout request from slash indicator contract.
    *
    * Requirements:
    * - The method caller is slash indicator contract.
@@ -145,7 +145,7 @@ interface IRoninValidatorSet is ICandidateManager {
    * Emits the event `ValidatorUnjailed`.
    *
    */
-  function bailOut(address _validatorAddr, uint256 _period) external;
+  function execBailOut(address _validatorAddr, uint256 _period) external;
 
   /**
    * @dev Returns whether the validator are put in jail (cannot join the set of validators) during the current period.

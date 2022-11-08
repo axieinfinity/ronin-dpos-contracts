@@ -235,7 +235,7 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function bailOut(address _validatorAddr, uint256 _period) external override onlySlashIndicatorContract {
+  function execBailOut(address _validatorAddr, uint256 _period) external override onlySlashIndicatorContract {
     /// Note: Removing rewards of validator in `bailOut` function is not needed, since the rewards have been
     /// removed previously in the `slash` function.
 
