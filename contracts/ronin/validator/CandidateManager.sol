@@ -129,27 +129,23 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract, Per
    *
    * Emits the event `CandidatesRevoked` when a candidate is revoked.
    *
-   * @return _stakingTotals a list of staking totals of the new candidates.
-   *
    */
-  function _filterUnsatisfiedCandidates() internal returns (uint256[] memory _stakingTotals) {
+  function _filterUnsatisfiedCandidates() internal {
     IStaking _staking = _stakingContract;
-    // NOTE: we should filter the ones who does not keep the minium candidate staking amount here
-    // IE: _staking.bulkSelftStakingAmount(_candidates);
-    _stakingTotals = _staking.bulkStakingTotal(_candidates);
-
     uint256 _minStakingAmount = _stakingContract.minValidatorStakingAmount();
+    uint256[] memory _selfStakings = _staking.bulkSelfStaking(_candidates);
+
     uint256 _length = _candidates.length;
-    address[] memory _unsatisfiedCandidates = new address[](_length);
     uint256 _unsatisfiedCount;
-    address _addr;
+    address[] memory _unsatisfiedCandidates = new address[](_length);
 
     {
+      address _addr;
       uint256 _i;
       while (_i < _length) {
         _addr = _candidates[_i];
-        if (_stakingTotals[_i] < _minStakingAmount || _candidateInfo[_addr].revokedTimestamp <= block.timestamp) {
-          _stakingTotals[_i] = _stakingTotals[--_length];
+        if (_selfStakings[_i] < _minStakingAmount || _candidateInfo[_addr].revokedTimestamp <= block.timestamp) {
+          _selfStakings[_i] = _selfStakings[--_length];
           _unsatisfiedCandidates[_unsatisfiedCount++] = _addr;
           _removeCandidate(_addr);
           continue;
@@ -164,10 +160,6 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract, Per
       }
       emit CandidatesRevoked(_unsatisfiedCandidates);
       _staking.deprecatePools(_unsatisfiedCandidates);
-    }
-
-    assembly {
-      mstore(_stakingTotals, _length)
     }
   }
 
