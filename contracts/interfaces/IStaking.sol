@@ -22,7 +22,7 @@ interface IStaking is IRewardPool {
   event PoolApproved(address indexed validator, address indexed admin);
   /// @dev Emitted when the validator pool is deprecated.
   event PoolsDeprecated(address[] validator);
-  /// @dev Emitted when the staking amount transfer failed is deprecated.
+  /// @dev Emitted when the staking amount transfer failed.
   event StakingAmountTransferFailed(
     address indexed validator,
     address indexed admin,
