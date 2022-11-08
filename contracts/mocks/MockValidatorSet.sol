@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../interfaces/slash-indicator/ISlashIndicator.sol";
 import "../interfaces/IRoninValidatorSet.sol";
-import "../interfaces/IStaking.sol";
+import "../interfaces/staking/IStaking.sol";
 import "../ronin/validator/CandidateManager.sol";
 
 contract MockValidatorSet is IRoninValidatorSet, CandidateManager {

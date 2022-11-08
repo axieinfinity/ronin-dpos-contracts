@@ -3,14 +3,12 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../../interfaces/IStaking.sol";
+import "../../interfaces/staking/IStaking.sol";
 import "../../interfaces/IRoninValidatorSet.sol";
-import "./StakingManager.sol";
+import "./CandidateStaking.sol";
+import "./DelegatorStaking.sol";
 
-contract Staking is IStaking, StakingManager, Initializable {
-  /// @dev The minimum threshold for being a validator candidate.
-  uint256 internal _minValidatorStakingAmount;
-
+contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable {
   constructor() {
     _disableInitializers();
   }
@@ -22,9 +20,16 @@ contract Staking is IStaking, StakingManager, Initializable {
   /**
    * @dev Initializes the contract storage.
    */
-  function initialize(address __validatorContract, uint256 __minValidatorStakingAmount) external initializer {
+  function initialize(
+    address __validatorContract,
+    uint256 __minValidatorStakingAmount,
+    uint256 __cooldownSecsToUndelegate,
+    uint256 __waitingSecsToRevoke
+  ) external initializer {
     _setValidatorContract(__validatorContract);
     _setMinValidatorStakingAmount(__minValidatorStakingAmount);
+    _setCooldownSecsToUndelegate(__cooldownSecsToUndelegate);
+    _setWaitingSecsToRevoke(__waitingSecsToRevoke);
   }
 
   /**
@@ -47,26 +52,12 @@ contract Staking is IStaking, StakingManager, Initializable {
   /**
    * @inheritdoc IStaking
    */
-  function minValidatorStakingAmount() public view override(IStaking, StakingManager) returns (uint256) {
-    return _minValidatorStakingAmount;
-  }
-
-  /**
-   * @inheritdoc IStaking
-   */
-  function setMinValidatorStakingAmount(uint256 _threshold) external override onlyAdmin {
-    _setMinValidatorStakingAmount(_threshold);
-  }
-
-  /**
-   * @inheritdoc IStaking
-   */
   function recordRewards(
-    uint256 _period,
     address[] calldata _consensusAddrs,
-    uint256[] calldata _rewards
+    uint256[] calldata _rewards,
+    uint256 _period
   ) external payable onlyValidatorContract {
-    _recordRewards(_period, _consensusAddrs, _rewards);
+    _recordRewards(_consensusAddrs, _rewards, _period);
   }
 
   /**
@@ -77,40 +68,6 @@ contract Staking is IStaking, StakingManager, Initializable {
   }
 
   /**
-   * @inheritdoc IStaking
-   */
-  function deprecatePools(address[] calldata _pools) external override onlyValidatorContract {
-    if (_pools.length == 0) {
-      return;
-    }
-
-    uint256 _amount;
-    for (uint _i = 0; _i < _pools.length; _i++) {
-      PoolDetail storage _pool = _stakingPool[_pools[_i]];
-      _amount = _pool.stakingAmount;
-      if (_amount > 0) {
-        _deductStakingAmount(_pool, _amount);
-        if (!_unsafeSendRON(payable(_pool.admin), _amount)) {
-          emit StakingAmountTransferFailed(_pool.addr, _pool.admin, _amount, address(this).balance);
-        }
-      }
-    }
-
-    emit PoolsDeprecated(_pools);
-  }
-
-  /**
-   * @dev Sets the minimum threshold for being a validator candidate.
-   *
-   * Emits the `MinValidatorStakingAmountUpdated` event.
-   *
-   */
-  function _setMinValidatorStakingAmount(uint256 _threshold) internal {
-    _minValidatorStakingAmount = _threshold;
-    emit MinValidatorStakingAmountUpdated(_threshold);
-  }
-
-  /**
    * @inheritdoc RewardCalculation
    */
   function _currentPeriod() internal view virtual override returns (uint256) {
@@ -118,12 +75,9 @@ contract Staking is IStaking, StakingManager, Initializable {
   }
 
   /**
-   * @dev Deducts from staking amount of the validator `_consensusAddr` for `_amount`.
-   *
-   * Emits the event `Unstaked`.
-   *
+   * @inheritdoc CandidateStaking
    */
-  function _deductStakingAmount(PoolDetail storage _pool, uint256 _amount) internal {
+  function _deductStakingAmount(PoolDetail storage _pool, uint256 _amount) internal override {
     _amount = Math.min(_pool.stakingAmount, _amount);
 
     _pool.stakingAmount -= _amount;

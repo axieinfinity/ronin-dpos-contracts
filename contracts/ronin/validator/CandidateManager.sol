@@ -5,7 +5,7 @@ pragma solidity ^0.8.9;
 import "../../extensions/collections/HasStakingContract.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/ICandidateManager.sol";
-import "../../interfaces/IStaking.sol";
+import "../../interfaces/staking/IStaking.sol";
 
 abstract contract CandidateManager is ICandidateManager, HasStakingContract, PercentageConsumer {
   /// @dev Maximum number of validator candidate
@@ -70,12 +70,15 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract, Per
   /**
    * @inheritdoc ICandidateManager
    */
-  function requestRevokeCandidate(address _consensusAddr) external override onlyStakingContract {
+  function requestRevokeCandidate(address _consensusAddr, uint256 _secsLeft) external override onlyStakingContract {
     require(isValidatorCandidate(_consensusAddr), "CandidateManager: query for non-existent candidate");
-    uint256 _revokedPeriod = currentPeriod() + 1;
-    require(_revokedPeriod < _candidateInfo[_consensusAddr].revokedPeriod, "CandidateManager: invalid revoked period");
-    _candidateInfo[_consensusAddr].revokedPeriod = _revokedPeriod;
-    emit CandidateRevokedPeriodUpdated(_consensusAddr, _revokedPeriod);
+    uint256 _revokedTimestamp = block.timestamp + _secsLeft;
+    require(
+      _revokedTimestamp < _candidateInfo[_consensusAddr].revokedTimestamp,
+      "CandidateManager: invalid revoked timestamp"
+    );
+    _candidateInfo[_consensusAddr].revokedTimestamp = _revokedTimestamp;
+    emit CandidateRevokedTimestampUpdated(_consensusAddr, _revokedTimestamp);
   }
 
   /**
@@ -137,7 +140,6 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract, Per
 
     uint256 _minStakingAmount = _stakingContract.minValidatorStakingAmount();
     uint256 _length = _candidates.length;
-    uint256 _period = currentPeriod();
     address[] memory _unsatisfiedCandidates = new address[](_length);
     uint256 _unsatisfiedCount;
     address _addr;
@@ -146,7 +148,7 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract, Per
       uint256 _i;
       while (_i < _length) {
         _addr = _candidates[_i];
-        if (_stakingTotals[_i] < _minStakingAmount || _candidateInfo[_addr].revokedPeriod <= _period) {
+        if (_stakingTotals[_i] < _minStakingAmount || _candidateInfo[_addr].revokedTimestamp <= block.timestamp) {
           _stakingTotals[_i] = _stakingTotals[--_length];
           _unsatisfiedCandidates[_unsatisfiedCount++] = _addr;
           _removeCandidate(_addr);

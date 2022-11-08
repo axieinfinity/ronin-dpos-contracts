@@ -51,6 +51,8 @@ const config: InitTestInput = {
 
   stakingArguments: {
     minValidatorStakingAmount: BigNumber.from(100),
+    cooldownSecsToUndelegate: 100,
+    waitingSecsToRevoke: 1000,
   },
   stakingVestingArguments: {
     blockProducerBonusPerBlock: 1,
@@ -192,6 +194,8 @@ describe('[Integration] Configuration check', () => {
   it('Should the StakingContract contract set configs correctly', async () => {
     expect(await stakingContract.validatorContract()).to.eq(validatorContract.address);
     expect(await stakingContract.minValidatorStakingAmount()).to.eq(config.stakingArguments?.minValidatorStakingAmount);
+    expect(await stakingContract.cooldownSecsToUndelegate()).to.eq(config.stakingArguments?.cooldownSecsToUndelegate);
+    expect(await stakingContract.waitingSecsToRevoke()).to.eq(config.stakingArguments?.waitingSecsToRevoke);
   });
 
   it('Should the StakingVestingContract contract set configs correctly', async () => {

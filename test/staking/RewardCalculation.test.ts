@@ -4,6 +4,7 @@ import { ethers } from 'hardhat';
 import { expect } from 'chai';
 
 import { MockStaking, MockStaking__factory } from '../../src/types';
+import { randomAddress } from '../../src/utils';
 
 const MASK = BigNumber.from(10).pow(18);
 const poolAddr = ethers.constants.AddressZero;
@@ -73,11 +74,35 @@ describe('Reward Calculation test', () => {
       aRps = aRps.add(MASK.mul(1000 / 100));
       tx = await stakingContract.recordRewards([poolAddr], [1000]);
       await expect(tx).emit(stakingContract, 'PoolsUpdated').withArgs(period, [poolAddr], [aRps], [100]);
+
       tx = await stakingContract.recordRewards([poolAddr], [1000]);
-      await expect(tx).emit(stakingContract, 'PoolUpdateConflicted').withArgs(period, poolAddr);
+      await expect(tx).emit(stakingContract, 'PoolsUpdateConflicted').withArgs(period, [poolAddr]);
+      await expect(tx).not.emit(stakingContract, 'PoolsUpdated');
       await stakingContract.increasePeriod(); // period = 2
       period++;
       expect(await stakingContract.getReward(poolAddr, userA.address)).eq(1500); // 1000 + 500 from the last period
+    });
+
+    it('Should not able to reward reward more than once for multiple pools', async () => {
+      let addrList = Array.from(Array(10).keys()).map(randomAddress);
+      let arr = addrList.map(() => 0);
+      tx = await stakingContract.recordRewards(
+        addrList,
+        addrList.map(() => 1000)
+      );
+      await expect(tx).emit(stakingContract, 'PoolsUpdated').withArgs(period, addrList, arr, arr);
+
+      const conflictNumber = 7;
+      arr = arr.slice(conflictNumber);
+      addrList = addrList.map((_, i) => (i >= conflictNumber ? randomAddress() : _));
+      tx = await stakingContract.recordRewards(
+        addrList,
+        addrList.map(() => 1000)
+      );
+      await expect(tx).emit(stakingContract, 'PoolsUpdated').withArgs(period, addrList.slice(conflictNumber), arr, arr);
+      await expect(tx)
+        .emit(stakingContract, 'PoolsUpdateConflicted')
+        .withArgs(period, addrList.slice(0, conflictNumber));
     });
   });
 

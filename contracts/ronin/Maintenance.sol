@@ -5,7 +5,6 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IMaintenance.sol";
 import "../interfaces/IRoninValidatorSet.sol";
-import "../interfaces/IStaking.sol";
 import "../extensions/collections/HasValidatorContract.sol";
 import "../libraries/Math.sol";
 
