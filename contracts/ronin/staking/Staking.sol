@@ -68,40 +68,6 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   }
 
   /**
-   * @inheritdoc IStaking
-   */
-  function deprecatePools(address[] calldata _pools) external override onlyValidatorContract {
-    if (_pools.length == 0) {
-      return;
-    }
-
-    uint256 _amount;
-    for (uint _i = 0; _i < _pools.length; _i++) {
-      PoolDetail storage _pool = _stakingPool[_pools[_i]];
-      _amount = _pool.stakingAmount;
-      if (_amount > 0) {
-        _deductStakingAmount(_pool, _amount);
-        if (!_unsafeSendRON(payable(_pool.admin), _amount)) {
-          emit StakingAmountTransferFailed(_pool.addr, _pool.admin, _amount, address(this).balance);
-        }
-      }
-    }
-
-    emit PoolsDeprecated(_pools);
-  }
-
-  /**
-   * @dev Sets the minimum threshold for being a validator candidate.
-   *
-   * Emits the `MinValidatorStakingAmountUpdated` event.
-   *
-   */
-  function _setMinValidatorStakingAmount(uint256 _threshold) internal {
-    _minValidatorStakingAmount = _threshold;
-    emit MinValidatorStakingAmountUpdated(_threshold);
-  }
-
-  /**
    * @inheritdoc RewardCalculation
    */
   function _currentPeriod() internal view virtual override returns (uint256) {

@@ -17,8 +17,13 @@ interface ICandidateStaking is IRewardPool {
   event PoolApproved(address indexed validator, address indexed admin);
   /// @dev Emitted when the validator pool is deprecated.
   event PoolsDeprecated(address[] validator);
-  /// @dev Emitted when the staking amount is deprecated.
-  event StakingAmountDeprecated(address indexed validator, address indexed admin, uint256 amount);
+  /// @dev Emitted when the staking amount transfer failed.
+  event StakingAmountTransferFailed(
+    address indexed validator,
+    address indexed admin,
+    uint256 amount,
+    uint256 contractBalance
+  );
 
   /**
    * @dev Returns the minimum threshold for being a validator candidate.
@@ -65,7 +70,7 @@ interface ICandidateStaking is IRewardPool {
    * - The method caller is validator contract.
    *
    * Emits the event `PoolsDeprecated` and `Unstaked` events.
-   * Emits the event `StakingAmountDeprecated` if the contract cannot transfer RON back to the pool admin.
+   * Emits the event `StakingAmountTransferFailed` if the contract cannot transfer RON back to the pool admin.
    *
    */
   function deprecatePools(address[] calldata _pools) external;
