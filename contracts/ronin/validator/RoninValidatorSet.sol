@@ -154,7 +154,7 @@ contract RoninValidatorSet is
 
     // Deprecates reward for non-validator or slashed validator
     if (!_requestForBlockProducer) {
-      emit BlockRewardDeprecated(_coinbaseAddr, _submittedReward, BlockRewardDeprecatedType.SLASHED);
+      emit BlockRewardDeprecated(_coinbaseAddr, _submittedReward, BlockRewardDeprecatedType.UNAVAILABILITY);
       return;
     }
 

@@ -7,7 +7,7 @@ import "./ICandidateManager.sol";
 interface IRoninValidatorSet is ICandidateManager {
   enum BlockRewardDeprecatedType {
     UNKNOWN,
-    SLASHED,
+    UNAVAILABILITY,
     AFTER_BAILOUT
   }
 

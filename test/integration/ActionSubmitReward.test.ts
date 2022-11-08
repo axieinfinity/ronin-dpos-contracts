@@ -183,7 +183,7 @@ describe('[Integration] Submit Block Reward', () => {
     it('Should the ValidatorSetContract emit event of deprecating reward', async () => {
       await expect(submitRewardTx)
         .to.emit(validatorContract, 'BlockRewardDeprecated')
-        .withArgs(validator.address, blockRewardAmount, BlockRewardDeprecatedType.SLASHED);
+        .withArgs(validator.address, blockRewardAmount, BlockRewardDeprecatedType.UNAVAILABILITY);
     });
 
     it('Should the StakingContract not emit event of recording reward', async () => {

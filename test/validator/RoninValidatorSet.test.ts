@@ -435,7 +435,7 @@ describe('Ronin Validator Set test', () => {
         tx = await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
         await expect(tx)
           .to.emit(roninValidatorSet, 'BlockRewardDeprecated')
-          .withArgs(coinbase.address, 100, BlockRewardDeprecatedType.SLASHED);
+          .withArgs(coinbase.address, 100, BlockRewardDeprecatedType.UNAVAILABILITY);
         await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
 
         epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
