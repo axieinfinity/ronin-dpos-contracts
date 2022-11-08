@@ -88,7 +88,7 @@ abstract contract BaseStaking is
     override
     returns (uint256[] memory _stakingAmounts)
   {
-    require(_poolAddrs.length > 0 && _poolAddrs.length == _userList.length, "BaseStaking: invalid input array");
+    require(_poolAddrs.length == _userList.length, "BaseStaking: invalid input array");
     _stakingAmounts = new uint256[](_poolAddrs.length);
     for (uint _i = 0; _i < _stakingAmounts.length; _i++) {
       _stakingAmounts[_i] = _stakingPool[_poolAddrs[_i]].delegatingAmount[_userList[_i]];

@@ -48,4 +48,9 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
       uint256 _stakingAmount,
       uint256 _stakingTotal
     );
+
+  /**
+   * @dev Returns the self-staking amounts of the pools.
+   */
+  function bulkSelfStaking(address[] calldata) external view returns (uint256[] memory);
 }
