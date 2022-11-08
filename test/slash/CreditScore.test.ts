@@ -285,7 +285,7 @@ describe('Credit score and bail out test', () => {
         let _period = validatorContract.currentPeriod();
 
         expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].address, _period]);
-        expect(tx).emit(validatorContract, 'ValidatorLiberated').withArgs([validatorCandidates[0].address]);
+        expect(tx).emit(validatorContract, 'ValidatorUnjailed').withArgs([validatorCandidates[0].address]);
 
         localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber());
         await validateScoreAt(0);
@@ -386,7 +386,7 @@ describe('Credit score and bail out test', () => {
         let _period = validatorContract.currentPeriod();
 
         expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].address, _period]);
-        expect(tx).emit(validatorContract, 'ValidatorLiberated').withArgs([validatorCandidates[0].address]);
+        expect(tx).emit(validatorContract, 'ValidatorUnjailed').withArgs([validatorCandidates[0].address]);
 
         localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber());
         await validateScoreAt(0);
@@ -470,7 +470,7 @@ describe('Credit score and bail out test', () => {
         let _period = validatorContract.currentPeriod();
 
         expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].address, _period]);
-        expect(tx).emit(validatorContract, 'ValidatorLiberated').withArgs([validatorCandidates[0].address]);
+        expect(tx).emit(validatorContract, 'ValidatorUnjailed').withArgs([validatorCandidates[0].address]);
 
         localIndicatorController.resetAt(0);
         await validateIndicatorAt(0);
@@ -505,7 +505,7 @@ describe('Credit score and bail out test', () => {
         let _period = validatorContract.currentPeriod();
 
         expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].address, _period]);
-        expect(tx).emit(validatorContract, 'ValidatorLiberated').withArgs([validatorCandidates[0].address]);
+        expect(tx).emit(validatorContract, 'ValidatorUnjailed').withArgs([validatorCandidates[0].address]);
 
         localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailEpochLeft.toNumber());
         await validateScoreAt(0);

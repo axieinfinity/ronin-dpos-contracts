@@ -34,7 +34,7 @@ interface IRoninValidatorSet is ICandidateManager {
     bool bridgeOperatorRewardDeprecated
   );
   /// @dev Emitted when the validator get out of jail by bailout.
-  event ValidatorLiberated(address indexed validator, uint256 period);
+  event ValidatorUnjailed(address indexed validator, uint256 period);
   /// @dev Emitted when the reward of the block producer is deprecated.
   event BlockRewardDeprecated(
     address indexed coinbaseAddr,
@@ -142,7 +142,7 @@ interface IRoninValidatorSet is ICandidateManager {
    * Requirements:
    * - The method caller is slash indicator contract.
    *
-   * Emits the event `ValidatorLiberated`.
+   * Emits the event `ValidatorUnjailed`.
    *
    */
   function bailOut(address _validatorAddr, uint256 _period) external;

@@ -243,7 +243,7 @@ contract RoninValidatorSet is
     _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = false;
     _jailedUntil[_validatorAddr] = block.number - 1;
 
-    emit ValidatorLiberated(_validatorAddr, _period);
+    emit ValidatorUnjailed(_validatorAddr, _period);
   }
 
   /**
