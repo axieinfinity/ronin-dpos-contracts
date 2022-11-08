@@ -64,8 +64,8 @@ export const stakingConfig: StakingConfig = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
     minValidatorStakingAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5)), // 100.000 RON
-    minSecsToUndelegate: 3 * 84600, // at least 3 days
-    secsForRevoking: 7 * 84600, // at least 7 days
+    minSecsToUndelegate: 3 * 86400, // at least 3 days
+    secsForRevoking: 7 * 86400, // at least 7 days
   },
   [Network.Testnet]: undefined,
   [Network.Mainnet]: undefined,

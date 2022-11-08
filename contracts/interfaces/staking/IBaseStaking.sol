@@ -9,7 +9,7 @@ interface IBaseStaking {
   event SecsForRevokingUpdated(uint256 secs);
 
   struct PoolDetail {
-    // Address of the pool
+    // Address of the pool i.e. consensus address of the validator
     address addr;
     // Pool admin address
     address admin;
@@ -24,12 +24,12 @@ interface IBaseStaking {
   }
 
   /**
-   * @dev Returns the minium number of seconds to undelegate.
+   * @dev Returns the minimum number of seconds to wait until the next undelegate.
    */
   function minSecsToUndelegate() external view returns (uint256);
 
   /**
-   * @dev Returns the number of seconds that a candidate must wait to be revoked.
+   * @dev Returns the number of seconds that a candidate must wait for the renounce request gets affected.
    */
   function secsForRevoking() external view returns (uint256);
 

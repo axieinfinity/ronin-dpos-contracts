@@ -82,7 +82,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function claimRewards(address[] calldata _consensusAddrList) external nonReentrant returns (uint256 _amount) {
+  function claimRewards(address[] calldata _consensusAddrList) external override nonReentrant returns (uint256 _amount) {
     _amount = _claimRewards(msg.sender, _consensusAddrList);
     _transferRON(payable(msg.sender), _amount);
   }

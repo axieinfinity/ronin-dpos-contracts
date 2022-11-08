@@ -19,10 +19,10 @@ abstract contract BaseStaking is
   /// @dev Mapping from pool address => staking pool detail
   mapping(address => PoolDetail) internal _stakingPool;
 
-  /// @dev The minium number of seconds to undelegate from the last timestamp (s)he delegated.
-  uint256 internal _minSecsToUndelegate;
-  /// @dev the number of seconds that a candidate must wait to be revoked and take the self-staking amount back.
-  uint256 internal _secsForRevoking;
+  /// @dev The cooldown time in seconds between two undelegate requests of a delegator.
+  uint256 internal _cooldownSecsToUndelegate;
+  /// @dev The number of seconds that a candidate must wait to be revoked and take the self-staking amount back.
+  uint256 internal _waitingSecsToRevoke;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
