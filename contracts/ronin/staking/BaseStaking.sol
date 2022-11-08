@@ -146,7 +146,7 @@ abstract contract BaseStaking is
   }
 
   /**
-   * @dev Changes the delelgate amount.
+   * @dev Changes the delegate amount.
    */
   function _changeDelegatingAmount(
     PoolDetail storage _pool,
