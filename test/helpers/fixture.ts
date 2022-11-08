@@ -63,8 +63,8 @@ export const defaultTestConfig: InitTestInput = {
 
   stakingArguments: {
     minValidatorStakingAmount: BigNumber.from(100),
-    minPeriodsToUndelegate: 0,
-    revokePeriods: 0,
+    minSecsToUndelegate: 0,
+    secsForRevoking: 0,
   },
 
   stakingVestingArguments: {

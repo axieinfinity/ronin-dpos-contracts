@@ -9,7 +9,7 @@ import "../../interfaces/staking/IBaseStaking.sol";
 import "../../libraries/Math.sol";
 import "./RewardCalculation.sol";
 
-abstract contract SharedStakingFragment is
+abstract contract BaseStaking is
   RONTransferHelper,
   ReentrancyGuard,
   RewardCalculation,
@@ -31,22 +31,22 @@ abstract contract SharedStakingFragment is
   uint256[50] private ______gap;
 
   modifier noEmptyValue() {
-    require(msg.value > 0, "StakingManager: query with empty value");
+    require(msg.value > 0, "BaseStaking: query with empty value");
     _;
   }
 
   modifier notPoolAdmin(PoolDetail storage _pool, address _delegator) {
-    require(_pool.admin != _delegator, "StakingManager: delegator must not be the pool admin");
+    require(_pool.admin != _delegator, "BaseStaking: delegator must not be the pool admin");
     _;
   }
 
   modifier onlyPoolAdmin(PoolDetail storage _pool, address _requester) {
-    require(_pool.admin == _requester, "StakingManager: requester must be the pool admin");
+    require(_pool.admin == _requester, "BaseStaking: requester must be the pool admin");
     _;
   }
 
   modifier poolExists(address _poolAddr) {
-    require(_validatorContract.isValidatorCandidate(_poolAddr), "StakingManager: query for non-existent pool");
+    require(_validatorContract.isValidatorCandidate(_poolAddr), "BaseStaking: query for non-existent pool");
     _;
   }
 
@@ -66,7 +66,7 @@ abstract contract SharedStakingFragment is
     override
     returns (uint256[] memory _stakingAmounts)
   {
-    require(_poolAddrs.length > 0 && _poolAddrs.length == _userList.length, "StakingManager: invalid input array");
+    require(_poolAddrs.length > 0 && _poolAddrs.length == _userList.length, "BaseStaking: invalid input array");
     _stakingAmounts = new uint256[](_poolAddrs.length);
     for (uint _i = 0; _i < _stakingAmounts.length; _i++) {
       _stakingAmounts[_i] = _stakingPool[_poolAddrs[_i]].delegatingAmount[_userList[_i]];

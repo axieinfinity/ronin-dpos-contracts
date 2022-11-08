@@ -3,9 +3,9 @@
 pragma solidity ^0.8.9;
 
 import "../../interfaces/staking/IDelegatorStaking.sol";
-import "./SharedStakingFragment.sol";
+import "./BaseStaking.sol";
 
-abstract contract DelegatorStaking is SharedStakingFragment, IDelegatorStaking {
+abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.

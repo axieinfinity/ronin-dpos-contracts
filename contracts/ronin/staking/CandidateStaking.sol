@@ -3,9 +3,9 @@
 pragma solidity ^0.8.9;
 
 import "../../interfaces/staking/ICandidateStaking.sol";
-import "./SharedStakingFragment.sol";
+import "./BaseStaking.sol";
 
-abstract contract CandidateStaking is SharedStakingFragment, ICandidateStaking {
+abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   /// @dev The minimum threshold for being a validator candidate.
   uint256 internal _minValidatorStakingAmount;
 

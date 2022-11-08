@@ -419,7 +419,7 @@ describe('[Integration] Slash validators', () => {
             value: slashAmountForUnavailabilityTier2Threshold,
           });
 
-          await expect(topUpTx).revertedWith('StakingManager: query for non-existent pool');
+          await expect(topUpTx).revertedWith('BaseStaking: query for non-existent pool');
         });
 
         it('Should the kicked validator be able to re-join as a candidate', async () => {

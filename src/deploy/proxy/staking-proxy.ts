@@ -18,8 +18,8 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const data = new Staking__factory().interface.encodeFunctionData('initialize', [
     generalRoninConf[network.name]!.validatorContract?.address,
     stakingConfig[network.name]!.minValidatorStakingAmount,
-    stakingConfig[network.name]!.minPeriodsToUndelegate,
-    stakingConfig[network.name]!.revokePeriods,
+    stakingConfig[network.name]!.minSecsToUndelegate,
+    stakingConfig[network.name]!.secsForRevoking,
   ]);
 
   const deployment = await deploy('StakingProxy', {
