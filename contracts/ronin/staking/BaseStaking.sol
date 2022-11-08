@@ -19,7 +19,7 @@ abstract contract BaseStaking is
   /// @dev Mapping from pool address => staking pool detail
   mapping(address => PoolDetail) internal _stakingPool;
 
-  /// @dev The cooldown time in seconds between two undelegate requests of a delegator.
+  /// @dev The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.
   uint256 internal _cooldownSecsToUndelegate;
   /// @dev The number of seconds that a candidate must wait to be revoked and take the self-staking amount back.
   uint256 internal _waitingSecsToRevoke;
@@ -98,51 +98,51 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IBaseStaking
    */
-  function minSecsToUndelegate() external view returns (uint256) {
-    return _minSecsToUndelegate;
+  function cooldownSecsToUndelegate() external view returns (uint256) {
+    return _cooldownSecsToUndelegate;
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
-  function secsForRevoking() external view returns (uint256) {
-    return _secsForRevoking;
+  function waitingSecsToRevoke() external view returns (uint256) {
+    return _waitingSecsToRevoke;
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
-  function setMinSecsToUndelegate(uint256 _minSecs) external override onlyAdmin {
-    _setMinSecsToUndelegate(_minSecs);
+  function setCooldownSecsToUndelegate(uint256 _cooldownSecs) external override onlyAdmin {
+    _setCooldownSecsToUndelegate(_cooldownSecs);
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
-  function setSecsForRevoking(uint256 _secs) external override onlyAdmin {
-    _setSecsForRevoking(_secs);
+  function setWaitingSecsToRevoke(uint256 _secs) external override onlyAdmin {
+    _setWaitingSecsToRevoke(_secs);
   }
 
   /**
    * @dev Sets the minium number of seconds to undelegate.
    *
-   * Emits the event `MinSecsToUndelegateUpdated`.
+   * Emits the event `CooldownSecsToUndelegateUpdated`.
    *
    */
-  function _setMinSecsToUndelegate(uint256 _minSecs) internal {
-    _minSecsToUndelegate = _minSecs;
-    emit MinSecsToUndelegateUpdated(_minSecs);
+  function _setCooldownSecsToUndelegate(uint256 _cooldownSecs) internal {
+    _cooldownSecsToUndelegate = _cooldownSecs;
+    emit CooldownSecsToUndelegateUpdated(_cooldownSecs);
   }
 
   /**
    * @dev Sets the number of seconds that a candidate must wait to be revoked.
    *
-   * Emits the event `SecsForRevokingUpdated`.
+   * Emits the event `WaitingSecsToRevokeUpdated`.
    *
    */
-  function _setSecsForRevoking(uint256 _secs) internal {
-    _secsForRevoking = _secs;
-    emit SecsForRevokingUpdated(_secs);
+  function _setWaitingSecsToRevoke(uint256 _secs) internal {
+    _waitingSecsToRevoke = _secs;
+    emit WaitingSecsToRevokeUpdated(_secs);
   }
 
   /**

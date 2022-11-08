@@ -82,7 +82,12 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function claimRewards(address[] calldata _consensusAddrList) external override nonReentrant returns (uint256 _amount) {
+  function claimRewards(address[] calldata _consensusAddrList)
+    external
+    override
+    nonReentrant
+    returns (uint256 _amount)
+  {
     _amount = _claimRewards(msg.sender, _consensusAddrList);
     _transferRON(payable(msg.sender), _amount);
   }
@@ -147,7 +152,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     require(_amount > 0, "DelegatorStaking: invalid amount");
     require(_pool.delegatingAmount[_delegator] >= _amount, "DelegatorStaking: insufficient amount to undelegate");
     require(
-      _pool.lastDelegatingTimestamp[_delegator] + _minSecsToUndelegate < block.timestamp,
+      _pool.lastDelegatingTimestamp[_delegator] + _cooldownSecsToUndelegate < block.timestamp,
       "DelegatorStaking: undelegate too early"
     );
     _changeDelegatingAmount(

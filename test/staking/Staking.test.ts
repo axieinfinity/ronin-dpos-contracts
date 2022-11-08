@@ -21,6 +21,8 @@ let validatorCandidates: SignerWithAddress[];
 const minValidatorStakingAmount = BigNumber.from(20);
 const maxValidatorCandidate = 50;
 const numberOfBlocksInEpoch = 2;
+const cooldownSecsToUndelegate = 3 * 86400;
+const waitingSecsToRevoke = 7 * 86400;
 
 describe('Staking test', () => {
   before(async () => {
@@ -45,8 +47,8 @@ describe('Staking test', () => {
       logicContract.interface.encodeFunctionData('initialize', [
         validatorContract.address,
         minValidatorStakingAmount,
-        0,
-        0,
+        cooldownSecsToUndelegate,
+        waitingSecsToRevoke,
       ])
     );
     await proxyContract.deployed();

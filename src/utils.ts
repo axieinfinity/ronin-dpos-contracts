@@ -72,8 +72,8 @@ export interface MaintenanceConfig {
 
 export interface StakingArguments {
   minValidatorStakingAmount?: BigNumberish;
-  minSecsToUndelegate?: BigNumberish;
-  secsForRevoking?: BigNumberish;
+  cooldownSecsToUndelegate?: BigNumberish;
+  waitingSecsToRevoke?: BigNumberish;
 }
 
 export interface StakingConfig {

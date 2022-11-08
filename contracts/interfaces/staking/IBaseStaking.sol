@@ -4,9 +4,9 @@ pragma solidity ^0.8.9;
 
 interface IBaseStaking {
   /// @dev Emitted when the minium number of seconds to undelegate is updated.
-  event MinSecsToUndelegateUpdated(uint256 minSecs);
+  event CooldownSecsToUndelegateUpdated(uint256 minSecs);
   /// @dev Emitted when the number of seconds that a candidate must wait to be revoked.
-  event SecsForRevokingUpdated(uint256 secs);
+  event WaitingSecsToRevokeUpdated(uint256 secs);
 
   struct PoolDetail {
     // Address of the pool i.e. consensus address of the validator
@@ -24,25 +24,25 @@ interface IBaseStaking {
   }
 
   /**
-   * @dev Returns the minimum number of seconds to wait until the next undelegate.
+   * @dev Returns The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.
    */
-  function minSecsToUndelegate() external view returns (uint256);
+  function cooldownSecsToUndelegate() external view returns (uint256);
 
   /**
    * @dev Returns the number of seconds that a candidate must wait for the renounce request gets affected.
    */
-  function secsForRevoking() external view returns (uint256);
+  function waitingSecsToRevoke() external view returns (uint256);
 
   /**
-   * @dev Sets the minium number of seconds to undelegate.
+   * @dev Sets the cooldown time in seconds to undelegate from the last timestamp (s)he delegated.
    *
    * Requirements:
    * - The method caller is admin.
    *
-   * Emits the event `MinSecsToUndelegateUpdated`.
+   * Emits the event `CooldownSecsToUndelegateUpdated`.
    *
    */
-  function setMinSecsToUndelegate(uint256 _minSecs) external;
+  function setCooldownSecsToUndelegate(uint256 _cooldownSecs) external;
 
   /**
    * @dev Sets the number of seconds that a candidate must wait to be revoked.
@@ -50,8 +50,8 @@ interface IBaseStaking {
    * Requirements:
    * - The method caller is admin.
    *
-   * Emits the event `SecsForRevokingUpdated`.
+   * Emits the event `WaitingSecsToRevokeUpdated`.
    *
    */
-  function setSecsForRevoking(uint256 _secs) external;
+  function setWaitingSecsToRevoke(uint256 _secs) external;
 }

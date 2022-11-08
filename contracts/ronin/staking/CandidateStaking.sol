@@ -110,7 +110,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     poolExists(_consensusAddr)
     onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
   {
-    _validatorContract.requestRevokeCandidate(_consensusAddr, _secsForRevoking);
+    _validatorContract.requestRevokeCandidate(_consensusAddr, _waitingSecsToRevoke);
   }
 
   /**
@@ -183,7 +183,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   ) internal onlyPoolAdmin(_pool, _requester) {
     require(_amount <= _pool.stakingAmount, "CandidateStaking: insufficient staking amount");
     require(
-      _pool.lastDelegatingTimestamp[_requester] + _minSecsToUndelegate <= block.timestamp,
+      _pool.lastDelegatingTimestamp[_requester] + _cooldownSecsToUndelegate <= block.timestamp,
       "CandidateStaking: unstake too early"
     );
 
