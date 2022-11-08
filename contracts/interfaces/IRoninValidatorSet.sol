@@ -5,6 +5,12 @@ pragma solidity ^0.8.9;
 import "./ICandidateManager.sol";
 
 interface IRoninValidatorSet is ICandidateManager {
+  enum BlockRewardDeprecatedType {
+    UNKNOWN,
+    UNAVAILABILITY,
+    AFTER_BAILOUT
+  }
+
   /// @dev Emitted when the number of max validator is updated
   event MaxValidatorNumberUpdated(uint256);
   /// @dev Emitted when the number of reserved slots for prioritized validators is updated
@@ -28,9 +34,13 @@ interface IRoninValidatorSet is ICandidateManager {
     bool bridgeOperatorRewardDeprecated
   );
   /// @dev Emitted when the validator get out of jail by bailout.
-  event ValidatorLiberated(address indexed validator);
+  event ValidatorUnjailed(address indexed validator, uint256 period);
   /// @dev Emitted when the reward of the block producer is deprecated.
-  event BlockRewardRewardDeprecated(address indexed coinbaseAddr, uint256 rewardAmount);
+  event BlockRewardDeprecated(
+    address indexed coinbaseAddr,
+    uint256 rewardAmount,
+    BlockRewardDeprecatedType deprecatedType
+  );
   /// @dev Emitted when the block reward is submitted.
   event BlockRewardSubmitted(address indexed coinbaseAddr, uint256 submittedAmount, uint256 bonusAmount);
 
@@ -112,7 +122,7 @@ interface IRoninValidatorSet is ICandidateManager {
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev Slashes the validator.
+   * @dev Finalize the slash request from slash indicator contract.
    *
    * Requirements:
    * - The method caller is slash indicator contract.
@@ -120,22 +130,22 @@ interface IRoninValidatorSet is ICandidateManager {
    * Emits the event `ValidatorPunished`.
    *
    */
-  function slash(
+  function execSlash(
     address _validatorAddr,
     uint256 _newJailedUntil,
     uint256 _slashAmount
   ) external;
 
   /**
-   * @dev Bailout the validator.
+   * @dev Finalize the bailout request from slash indicator contract.
    *
    * Requirements:
    * - The method caller is slash indicator contract.
    *
-   * Emits the event `ValidatorLiberated`.
+   * Emits the event `ValidatorUnjailed`.
    *
    */
-  function bailOut(address _validatorAddr) external;
+  function execBailOut(address _validatorAddr, uint256 _period) external;
 
   /**
    * @dev Returns whether the validator are put in jail (cannot join the set of validators) during the current period.

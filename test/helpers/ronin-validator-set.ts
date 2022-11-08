@@ -5,6 +5,7 @@ import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
 
 import { expectEvent } from './utils';
 import { RoninValidatorSet__factory } from '../../src/types';
+import { BlockRewardDeprecatedType } from '../../src/script/ronin-validator-set';
 
 const contractInterface = RoninValidatorSet__factory.createInterface();
 
@@ -67,7 +68,7 @@ export const expects = {
     tx: ContractTransaction,
     expectingCoinbaseAddr: string,
     expectingSubmittedReward: BigNumberish,
-    expectingStakingVesting: BigNumberish
+    expectingBlockProducerBonus: BigNumberish
   ) {
     await expectEvent(
       contractInterface,
@@ -76,7 +77,7 @@ export const expects = {
       (event) => {
         expect(event.args[0], 'invalid coinbase address').eq(expectingCoinbaseAddr);
         expect(event.args[1], 'invalid submitted reward').eq(expectingSubmittedReward);
-        expect(event.args[2], 'invalid staking vesting').eq(expectingStakingVesting);
+        expect(event.args[2], 'invalid staking vesting').eq(expectingBlockProducerBonus);
       },
       1
     );
@@ -163,6 +164,25 @@ export const expects = {
       (event) => {
         expect(event.args[0], 'invalid period').eq(expectingPeriod);
         expect(event.args[1], 'invalid validator set').eql(expectingBlockProducers);
+      },
+      1
+    );
+  },
+
+  emitBlockRewardDeprecatedEvent: async function (
+    tx: ContractTransaction,
+    expectingValidator: string,
+    expectingRemovedReward: BigNumberish,
+    expectingDeprecatedType: BlockRewardDeprecatedType
+  ) {
+    await expectEvent(
+      contractInterface,
+      'BlockRewardDeprecated',
+      tx,
+      (event) => {
+        expect(event.args[0], 'invalid validator').eq(expectingValidator);
+        expect(event.args[1], 'invalid removed reward').eql(expectingRemovedReward);
+        expect(event.args[2], 'invalid deprecated type').eql(expectingDeprecatedType);
       },
       1
     );

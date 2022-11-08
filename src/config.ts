@@ -104,6 +104,12 @@ export const slashIndicatorConf: SlashIndicatorConfig = {
       slashAmountForUnavailabilityTier2Threshold: BigNumber.from(10).pow(18).mul(1), // 1 RON
       jailDurationForUnavailabilityTier2Threshold: 2 * 28800, // jails for 2 days
     },
+    creditScore: {
+      gainCreditScore: 50,
+      maxCreditScore: 600,
+      bailOutCostMultiplier: 5,
+      cutOffPercentageAfterBailout: 50_00, // 50%
+    },
   },
   [Network.Testnet]: undefined,
   [Network.Mainnet]: undefined,

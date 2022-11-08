@@ -1,7 +1,8 @@
-import { BigNumber, BytesLike, Transaction } from 'ethers';
+import { BigNumber, BytesLike, ContractTransaction, Transaction } from 'ethers';
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 
 import {
   MockRoninValidatorSetOverridePrecompile__factory,
@@ -14,10 +15,11 @@ import {
   Staking__factory,
 } from '../../src/types';
 import { initTest } from '../helpers/fixture';
-import { EpochController } from '../helpers/ronin-validator-set';
+import { EpochController, expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { IndicatorController, ScoreController } from '../helpers/slash';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import { SlashType } from '../../src/script/slash-indicator';
+import { BlockRewardDeprecatedType } from '../../src/script/ronin-validator-set';
 
 let slashContract: MockSlashIndicatorExtended;
 let mockSlashLogic: MockSlashIndicatorExtended;
@@ -51,6 +53,9 @@ const maxValidatorNumber = 2;
 const numberOfBlocksInEpoch = 600;
 const minOffset = 200;
 
+const blockProducerBonusPerBlock = BigNumber.from(5000);
+const submittedRewardEachBlock = BigNumber.from(60);
+
 const wrapUpEpoch = async () => {
   await localEpochController.mineToBeforeEndOfEpoch();
   await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
@@ -64,9 +69,11 @@ const endPeriodAndWrapUpAndResetIndicators = async (includingEpochsNum?: number)
 
   await localEpochController.mineToBeforeEndOfEpoch(includingEpochsNum);
   await EpochController.setTimestampToPeriodEnding();
-  await wrapUpEpoch();
+  let wrapUpTx = await wrapUpEpoch();
 
   validatorCandidates.map((_, i) => localIndicatorController.resetAt(i));
+
+  return wrapUpTx;
 };
 
 const slashUntilValidatorTier = async (slasherIdx: number, slasheeIdx: number, tier: number) => {
@@ -128,6 +135,9 @@ describe('Credit score and bail out test', () => {
         stakingArguments: {
           minValidatorStakingAmount,
         },
+        stakingVestingArguments: {
+          blockProducerBonusPerBlock,
+        },
         roninValidatorSetArguments: {
           maxValidatorNumber,
           numberOfBlocksInEpoch,
@@ -169,7 +179,7 @@ describe('Credit score and bail out test', () => {
           validatorCandidates[i].address,
           validatorCandidates[i].address,
           validatorCandidates[i].address,
-          1,
+          100_00,
           { value: minValidatorStakingAmount.mul(2).sub(i) }
         );
     }
@@ -239,12 +249,30 @@ describe('Credit score and bail out test', () => {
 
     describe('Bailing out from a validator but non-block-producer', async () => {
       before(async () => {
+        await network.provider.send('hardhat_setCoinbase', [validatorCandidates[0].address]);
+
+        let submitRewardTx = await validatorContract
+          .connect(validatorCandidates[0])
+          .submitBlockReward({ value: submittedRewardEachBlock });
+        await RoninValidatorSetExpects.emitBlockRewardSubmittedEvent(
+          submitRewardTx,
+          validatorCandidates[0].address,
+          submittedRewardEachBlock,
+          blockProducerBonusPerBlock
+        );
+
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].address)).eq(true);
 
+        await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+
         await slashUntilValidatorTier(1, 0, 2);
-        await wrapUpEpoch();
+        let wrapUpTx = await wrapUpEpoch();
+        expect(wrapUpTx).emit(validatorContract, 'WrappedUpEpoch').withArgs([anyValue, anyValue, false]);
+
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].address)).eq(false);
       });
+
+      let tx: ContractTransaction;
 
       it('Should the bailing out cost subtracted correctly', async () => {
         let _latestBlockNum = BigNumber.from(await network.provider.send('eth_blockNumber'));
@@ -253,11 +281,11 @@ describe('Credit score and bail out test', () => {
           _latestBlockNum.add(1)
         );
 
-        let tx = await slashContract.connect(candidateAdmins[0]).bailOut(validatorCandidates[0].address);
+        tx = await slashContract.connect(candidateAdmins[0]).bailOut(validatorCandidates[0].address);
         let _period = validatorContract.currentPeriod();
 
         expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].address, _period]);
-        expect(tx).emit(validatorContract, 'ValidatorLiberated').withArgs([validatorCandidates[0].address]);
+        expect(tx).emit(validatorContract, 'ValidatorUnjailed').withArgs([validatorCandidates[0].address]);
 
         localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber());
         await validateScoreAt(0);
@@ -267,12 +295,51 @@ describe('Credit score and bail out test', () => {
         localIndicatorController.resetAt(0);
         await validateIndicatorAt(0);
       });
-      it.skip('Should the rewards of the validator before the bailout get removed', async () => {});
-      it.skip('Should the rewards of the validator after the bailout get cut in half', async () => {});
+
+      it.skip('Should the rewards of the validator before the bailout get removed', async () => {
+        /// Rewards have been removed in `slash` function
+      });
 
       it('Should the bailed out validator becomes block producer in the next epoch', async () => {
         await wrapUpEpoch();
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].address)).eq(true);
+      });
+
+      it('Should the rewards of the validator after the bailout get cut in half', async () => {
+        await network.provider.send('hardhat_setCoinbase', [validatorCandidates[0].address]);
+
+        let submitRewardTx = await validatorContract
+          .connect(validatorCandidates[0])
+          .submitBlockReward({ value: submittedRewardEachBlock });
+
+        await RoninValidatorSetExpects.emitBlockRewardSubmittedEvent(
+          submitRewardTx,
+          validatorCandidates[0].address,
+          submittedRewardEachBlock,
+          blockProducerBonusPerBlock
+        );
+
+        await RoninValidatorSetExpects.emitBlockRewardDeprecatedEvent(
+          submitRewardTx,
+          validatorCandidates[0].address,
+          submittedRewardEachBlock.add(blockProducerBonusPerBlock).div(2),
+          BlockRewardDeprecatedType.AFTER_BAILOUT
+        );
+
+        await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+      });
+
+      it('Should the wrapping up period tx distribute correct reward amount', async () => {
+        let tx = await endPeriodAndWrapUpAndResetIndicators();
+        await localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
+
+        expect(tx)
+          .emit(validatorContract, 'MiningRewardDistributed')
+          .withArgs(
+            validatorCandidates[0].address,
+            validatorCandidates[0].address,
+            submittedRewardEachBlock.add(blockProducerBonusPerBlock).div(2)
+          );
       });
     });
 
@@ -319,7 +386,7 @@ describe('Credit score and bail out test', () => {
         let _period = validatorContract.currentPeriod();
 
         expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].address, _period]);
-        expect(tx).emit(validatorContract, 'ValidatorLiberated').withArgs([validatorCandidates[0].address]);
+        expect(tx).emit(validatorContract, 'ValidatorUnjailed').withArgs([validatorCandidates[0].address]);
 
         localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber());
         await validateScoreAt(0);
@@ -329,16 +396,54 @@ describe('Credit score and bail out test', () => {
         localIndicatorController.resetAt(0);
         await validateIndicatorAt(0);
       });
-      it.skip('Should the rewards of the validator before the bailout get removed', async () => {});
-      it.skip('Should the rewards of the validator after the bailout get cut in half', async () => {});
+
+      it.skip('Should the rewards of the validator before the bailout get removed', async () => {
+        /// Rewards have been removed in `slash` function
+      });
+
+      it('Should the rewards of the validator after the bailout get cut in half', async () => {
+        await network.provider.send('hardhat_setCoinbase', [validatorCandidates[0].address]);
+
+        let submitRewardTx = await validatorContract
+          .connect(validatorCandidates[0])
+          .submitBlockReward({ value: submittedRewardEachBlock });
+
+        await RoninValidatorSetExpects.emitBlockRewardSubmittedEvent(
+          submitRewardTx,
+          validatorCandidates[0].address,
+          submittedRewardEachBlock,
+          blockProducerBonusPerBlock
+        );
+
+        await RoninValidatorSetExpects.emitBlockRewardDeprecatedEvent(
+          submitRewardTx,
+          validatorCandidates[0].address,
+          submittedRewardEachBlock.add(blockProducerBonusPerBlock).div(2),
+          BlockRewardDeprecatedType.AFTER_BAILOUT
+        );
+
+        await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+      });
 
       it('Should the bailed out validator still is block producer in the next epoch', async () => {
         await wrapUpEpoch();
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].address)).eq(true);
       });
+
+      it('Should the wrapping up period tx distribute correct reward amount', async () => {
+        let tx = await endPeriodAndWrapUpAndResetIndicators();
+        await localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
+
+        expect(tx)
+          .emit(validatorContract, 'MiningRewardDistributed')
+          .withArgs(
+            validatorCandidates[0].address,
+            validatorCandidates[0].address,
+            submittedRewardEachBlock.add(blockProducerBonusPerBlock).div(2)
+          );
+      });
     });
 
-    describe('Bailing out from a kicked validator', async () => {});
     describe('Bailing out from a validator that has been bailed out previously', async () => {
       before(async () => {
         for (let i = 0; i < maxCreditScore / gainCreditScore + 1; i++) {
@@ -365,7 +470,7 @@ describe('Credit score and bail out test', () => {
         let _period = validatorContract.currentPeriod();
 
         expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].address, _period]);
-        expect(tx).emit(validatorContract, 'ValidatorLiberated').withArgs([validatorCandidates[0].address]);
+        expect(tx).emit(validatorContract, 'ValidatorUnjailed').withArgs([validatorCandidates[0].address]);
 
         localIndicatorController.resetAt(0);
         await validateIndicatorAt(0);
@@ -400,7 +505,7 @@ describe('Credit score and bail out test', () => {
         let _period = validatorContract.currentPeriod();
 
         expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].address, _period]);
-        expect(tx).emit(validatorContract, 'ValidatorLiberated').withArgs([validatorCandidates[0].address]);
+        expect(tx).emit(validatorContract, 'ValidatorUnjailed').withArgs([validatorCandidates[0].address]);
 
         localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailEpochLeft.toNumber());
         await validateScoreAt(0);

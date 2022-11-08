@@ -20,6 +20,7 @@ import { expects as StakingVestingExpects } from '../helpers/staking-vesting';
 import { mineBatchTxs } from '../helpers/utils';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
+import { BlockRewardDeprecatedType } from '../../src/script/ronin-validator-set';
 import { Address } from 'hardhat-deploy/dist/types';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
@@ -432,7 +433,9 @@ describe('Ronin Validator Set test', () => {
         const balance = await treasury.getBalance();
         await slashIndicator.slashMisdemeanor(coinbase.address);
         tx = await roninValidatorSet.connect(coinbase).submitBlockReward({ value: 100 });
-        await expect(tx).to.emit(roninValidatorSet, 'BlockRewardRewardDeprecated').withArgs(coinbase.address, 100);
+        await expect(tx)
+          .to.emit(roninValidatorSet, 'BlockRewardDeprecated')
+          .withArgs(coinbase.address, 100, BlockRewardDeprecatedType.UNAVAILABILITY);
         await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
 
         epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);

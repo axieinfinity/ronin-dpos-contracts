@@ -115,6 +115,7 @@ export interface CreditScoreConfig {
   gainCreditScore?: BigNumberish;
   maxCreditScore?: BigNumberish;
   bailOutCostMultiplier?: BigNumberish;
+  cutOffPercentageAfterBailout?: BigNumberish;
 }
 
 export interface SlashIndicatorArguments {

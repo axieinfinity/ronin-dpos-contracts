@@ -43,6 +43,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
       slashIndicatorConf[network.name]!.creditScore?.gainCreditScore,
       slashIndicatorConf[network.name]!.creditScore?.maxCreditScore,
       slashIndicatorConf[network.name]!.creditScore?.bailOutCostMultiplier,
+      slashIndicatorConf[network.name]!.creditScore?.cutOffPercentageAfterBailout,
     ],
   ]);
 
