@@ -8,7 +8,7 @@ import "./IDelegatorStaking.sol";
 
 interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorStaking {
   /**
-   * @dev Records the amount of rewards `_rewards` for the pools `_poolAddrs`.
+   * @dev Records the amount of rewards `_rewards` for the pools `_consensusAddrs`.
    *
    * Requirements:
    * - The method caller is validator contract.
@@ -21,9 +21,9 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
    *
    */
   function recordRewards(
-    uint256 _period,
     address[] calldata _consensusAddrs,
-    uint256[] calldata _rewards
+    uint256[] calldata _rewards,
+    uint256 _period
   ) external payable;
 
   /**

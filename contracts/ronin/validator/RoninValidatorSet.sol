@@ -682,7 +682,7 @@ contract RoninValidatorSet is
     IStaking _staking = _stakingContract;
     if (_totalDelegatingReward > 0) {
       if (_unsafeSendRON(payable(address(_staking)), _totalDelegatingReward)) {
-        _staking.recordRewards(_period, _currentValidators, _delegatingRewards);
+        _staking.recordRewards(_currentValidators, _delegatingRewards, _period);
         emit StakingRewardDistributed(_totalDelegatingReward);
         return;
       }

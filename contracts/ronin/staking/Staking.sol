@@ -53,11 +53,11 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
    * @inheritdoc IStaking
    */
   function recordRewards(
-    uint256 _period,
     address[] calldata _consensusAddrs,
-    uint256[] calldata _rewards
+    uint256[] calldata _rewards,
+    uint256 _period
   ) external payable onlyValidatorContract {
-    _recordRewards(_period, _consensusAddrs, _rewards);
+    _recordRewards(_consensusAddrs, _rewards, _period);
   }
 
   /**

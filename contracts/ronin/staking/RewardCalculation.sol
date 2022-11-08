@@ -158,9 +158,9 @@ abstract contract RewardCalculation is IRewardPool {
    *
    */
   function _recordRewards(
-    uint256 _period,
-    address[] calldata _poolAddrs,
-    uint256[] calldata _rewards
+    address[] memory _poolAddrs,
+    uint256[] calldata _rewards,
+    uint256 _period
   ) internal {
     if (_poolAddrs.length != _rewards.length) {
       emit PoolsUpdateFailed(_period, _poolAddrs, _rewards);
@@ -168,10 +168,12 @@ abstract contract RewardCalculation is IRewardPool {
     }
 
     uint256 _rps;
+    uint256 _count;
     address _poolAddr;
     uint256 _stakingTotal;
     uint256[] memory _aRps = new uint256[](_poolAddrs.length);
     uint256[] memory _shares = new uint256[](_poolAddrs.length);
+    address[] memory _conflicted = new address[](_poolAddrs.length);
 
     for (uint _i = 0; _i < _poolAddrs.length; _i++) {
       _poolAddr = _poolAddrs[_i];
@@ -179,9 +181,7 @@ abstract contract RewardCalculation is IRewardPool {
       _stakingTotal = stakingTotal(_poolAddr);
 
       if (_accumulatedRps[_poolAddr][_period].lastPeriod == _period) {
-        _aRps[_i] = _pool.aRps;
-        _shares[_i] = _pool.shares.inner;
-        emit PoolUpdateConflicted(_period, _poolAddr);
+        _conflicted[_count++] = _poolAddr;
         continue;
       }
 
@@ -192,16 +192,26 @@ abstract contract RewardCalculation is IRewardPool {
 
       // The rps is 0 if no one stakes for the pool
       _rps = _pool.shares.inner == 0 ? 0 : (_rewards[_i] * 1e18) / _pool.shares.inner;
-
-      _aRps[_i] = _pool.aRps += _rps;
-      _accumulatedRps[_poolAddr][_period] = PeriodWrapper(_aRps[_i], _period);
+      _aRps[_i - _count] = _pool.aRps += _rps;
+      _accumulatedRps[_poolAddr][_period] = PeriodWrapper(_pool.aRps, _period);
       if (_pool.shares.inner != _stakingTotal) {
         _pool.shares.inner = _stakingTotal;
       }
-      _shares[_i] = _pool.shares.inner;
+      _shares[_i - _count] = _pool.shares.inner;
+      _poolAddrs[_i - _count] = _poolAddr;
     }
 
-    emit PoolsUpdated(_period, _poolAddrs, _aRps, _shares);
+    if (_count > 0) {
+      assembly {
+        mstore(_conflicted, _count)
+        mstore(_poolAddrs, sub(mload(_poolAddrs), _count))
+      }
+      emit PoolsUpdateConflicted(_period, _conflicted);
+    }
+
+    if (_poolAddrs.length > 0) {
+      emit PoolsUpdated(_period, _poolAddrs, _aRps, _shares);
+    }
   }
 
   /**

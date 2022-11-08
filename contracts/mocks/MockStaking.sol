@@ -65,7 +65,7 @@ contract MockStaking is RewardCalculation {
   }
 
   function recordRewards(address[] calldata _addrList, uint256[] calldata _rewards) external {
-    _recordRewards(_currentPeriod(), _addrList, _rewards);
+    _recordRewards(_addrList, _rewards, _currentPeriod());
   }
 
   function getPeriod() public view returns (uint256) {
@@ -87,8 +87,8 @@ contract MockStaking is RewardCalculation {
     returns (uint256[] memory)
   {}
 
-  function stakingTotal(address) public view virtual override returns (uint256) {
-    return _stakingTotal;
+  function stakingTotal(address _addr) public view virtual override returns (uint256) {
+    return _addr == poolAddr ? _stakingTotal : 0;
   }
 
   function _currentPeriod() internal view override returns (uint256 _period) {
