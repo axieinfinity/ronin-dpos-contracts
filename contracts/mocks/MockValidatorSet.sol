@@ -56,7 +56,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
 
-  function slash(
+  function execSlash(
     address _validatorAddr,
     uint256 _newJailedUntil,
     uint256 _slashAmount

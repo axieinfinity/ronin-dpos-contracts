@@ -53,14 +53,14 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
 
     if (_count == _unavailabilityTier2Threshold) {
       emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_2, _period);
-      _validatorContract.slash(
+      _validatorContract.execSlash(
         _validatorAddr,
         block.number + _jailDurationForUnavailabilityTier2Threshold,
         _slashAmountForUnavailabilityTier2Threshold
       );
     } else if (_count == _unavailabilityTier1Threshold) {
       emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_1, _period);
-      _validatorContract.slash(_validatorAddr, 0, 0);
+      _validatorContract.execSlash(_validatorAddr, 0, 0);
     }
   }
 

@@ -211,7 +211,7 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function slash(
+  function execSlash(
     address _validatorAddr,
     uint256 _newJailedUntil,
     uint256 _slashAmount

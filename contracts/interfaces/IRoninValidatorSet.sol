@@ -122,7 +122,7 @@ interface IRoninValidatorSet is ICandidateManager {
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev Slashes the validator.
+   * @dev Finalize the slash request from slash indicator contract.
    *
    * Requirements:
    * - The method caller is slash indicator contract.
@@ -130,7 +130,7 @@ interface IRoninValidatorSet is ICandidateManager {
    * Emits the event `ValidatorPunished`.
    *
    */
-  function slash(
+  function execSlash(
     address _validatorAddr,
     uint256 _newJailedUntil,
     uint256 _slashAmount

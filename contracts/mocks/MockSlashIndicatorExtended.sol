@@ -7,11 +7,11 @@ import "../ronin/slash-indicator/SlashIndicator.sol";
 
 contract MockSlashIndicatorExtended is SlashIndicator, MockPrecompile {
   function slashFelony(address _validatorAddr) external {
-    _validatorContract.slash(_validatorAddr, 0, 0);
+    _validatorContract.execSlash(_validatorAddr, 0, 0);
   }
 
   function slashMisdemeanor(address _validatorAddr) external {
-    _validatorContract.slash(_validatorAddr, 0, 0);
+    _validatorContract.execSlash(_validatorAddr, 0, 0);
   }
 
   function _pcValidateEvidence(bytes calldata _header1, bytes calldata _header2)
