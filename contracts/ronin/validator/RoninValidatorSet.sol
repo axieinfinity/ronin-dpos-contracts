@@ -158,6 +158,8 @@ contract RoninValidatorSet is
       return;
     }
 
+    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _blockProducerBonus);
+
     uint256 _period = currentPeriod();
     uint256 _reward = _submittedReward + _blockProducerBonus;
     uint256 _cutOffReward;
@@ -174,7 +176,6 @@ contract RoninValidatorSet is
 
     uint256 _delegatingAmount = _reward - _miningAmount;
     _delegatingReward[_coinbaseAddr] += _delegatingAmount;
-    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _blockProducerBonus);
   }
 
   /**
