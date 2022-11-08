@@ -97,6 +97,20 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
   }
 
   /**
+   * @inheritdoc IStakingVesting
+   */
+  function setBlockProducerBonusPerBlock(uint256 _amount) external override onlyAdmin {
+    _setBlockProducerBonusPerBlock(_amount);
+  }
+
+  /**
+   * @inheritdoc IStakingVesting
+   */
+  function setBridgeOperatorBonusPerBlock(uint256 _amount) external override onlyAdmin {
+    _setBridgeOperatorBonusPerBlock(_amount);
+  }
+
+  /**
    * @dev Sets the bonus amount per block for block producer.
    *
    * Emits the event `BlockProducerBonusPerBlockUpdated`.

@@ -71,4 +71,26 @@ interface IStakingVesting {
       uint256 _blockProducerBonus,
       uint256 _bridgeOperatorBonus
     );
+
+  /**
+   * @dev Sets the bonus amount per block for block producer.
+   *
+   * Emits the event `BlockProducerBonusPerBlockUpdated`.
+   *
+   * Requirements:
+   * - The method caller is admin.
+   *
+   */
+  function setBlockProducerBonusPerBlock(uint256 _amount) external;
+
+  /**
+   * @dev Sets the bonus amount per block for bridge operator.
+   *
+   * Emits the event `BridgeOperatorBonusPerBlockUpdated`.
+   *
+   * Requirements:
+   * - The method caller is admin.
+   *
+   */
+  function setBridgeOperatorBonusPerBlock(uint256 _amount) external;
 }
