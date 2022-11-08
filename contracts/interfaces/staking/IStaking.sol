@@ -15,7 +15,7 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
    *
    * Emits the event `PoolsUpdated` once the contract recorded the rewards successfully.
    * Emits the event `PoolsUpdateFailed` once the input array lengths are not equal.
-   * Emits the event `PoolUpdateConflicted` when the pool is already updated in the period.
+   * Emits the event `PoolsUpdateConflicted` when there are some pools which already updated in the period.
    *
    * Note: This method should be called once at the period ending.
    *
