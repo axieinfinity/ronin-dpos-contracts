@@ -50,7 +50,7 @@ interface ICreditScore {
    * @param _gainCreditScore The max gained number of credit score per period.
    * @param _maxCreditScore The max number of credit score that a validator can hold.
    * @param _bailOutCostMultiplier The number that will be multiplied with the remaining jailed time to get the cost of bailing out.
-   * @param _cutOffPercentageAfterBailout The percentage of reward that the validator will be cut off from until the end of the period after bailing out.
+   * @param _cutOffPercentageAfterBailout The percentage of reward that the block producer will be cut off from until the end of the period after bailing out.
    *
    */
   function setCreditScoreConfigs(
