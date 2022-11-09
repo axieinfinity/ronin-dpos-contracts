@@ -222,8 +222,7 @@ export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
   },
   [Network.Goerli]: {
     roleSetter: '', // TODO
-    relayers: [''],
-    TODO,
+    relayers: [''], // TODO,
   },
   [Network.Ethereum]: undefined,
 };
