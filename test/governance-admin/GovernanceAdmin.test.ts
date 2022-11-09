@@ -13,10 +13,12 @@ import {
   RoninGovernanceAdmin__factory,
   Staking,
   Staking__factory,
+  TransparentUpgradeableProxyV2__factory,
 } from '../../src/types';
 import { MockBridge__factory } from '../../src/types/factories/MockBridge__factory';
 import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
 import { SignatureStruct } from '../../src/types/RoninGovernanceAdmin';
+import { randomAddress } from '../../src/utils';
 import { initTest } from '../helpers/fixture';
 
 let deployer: SignerWithAddress;
@@ -37,10 +39,16 @@ let ballot: BOsBallot;
 describe('Governance Admin test', () => {
   before(async () => {
     [deployer, relayer, ...governors] = await ethers.getSigners();
-    governors = governors.slice(0, 10);
+    governors = governors.slice(0, 21);
     governors = governors.sort((v1, v2) => v1.address.toLowerCase().localeCompare(v2.address.toLowerCase()));
 
-    bridgeContract = await new MockBridge__factory(deployer).deploy();
+    const logic = await new MockBridge__factory(deployer).deploy();
+    const proxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
+      logic.address,
+      deployer.address,
+      []
+    );
+    bridgeContract = MockBridge__factory.connect(proxy.address, deployer);
 
     const { roninGovernanceAdminAddress, mainchainGovernanceAdminAddress, stakingContractAddress } = await initTest(
       'RoninGovernanceAdmin.test'
@@ -67,6 +75,9 @@ describe('Governance Admin test', () => {
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, ...governors);
     mainchainGovernanceAdmin = MainchainGovernanceAdmin__factory.connect(mainchainGovernanceAdminAddress, deployer);
+    await TransparentUpgradeableProxyV2__factory.connect(proxy.address, deployer).changeAdmin(
+      mainchainGovernanceAdmin.address
+    );
   });
 
   it('Should be able to propose to change staking config', async () => {
@@ -152,5 +163,26 @@ describe('Governance Admin test', () => {
     await expect(
       governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures)
     ).revertedWith('BOsGovernanceProposal: query for outdated period');
+  });
+
+  it('Should be able to vote bridge operators with a larger period', async () => {
+    const duplicatedNumber = 11;
+    ballot = {
+      period: 100,
+      operators: governors.map((v, i) => (i < duplicatedNumber ? v.address : randomAddress())),
+    };
+    signatures = await Promise.all(
+      governors.map((g) =>
+        g
+          ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
+          .then(mapByteSigToSigStruct)
+      )
+    );
+    await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures);
+  });
+
+  it('Should be able relay vote bridge operators', async () => {
+    await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures);
+    expect(await bridgeContract.getBridgeOperators()).have.same.members(ballot.operators);
   });
 });
