@@ -2,6 +2,7 @@ import { ethers, network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { generalRoninConf, roninchainNetworks, mainchainNetworks, generalMainchainConf } from '../config';
+import { Network } from '../utils';
 
 const calculateAddress = (from: string, nonce: number) => ({
   nonce,
@@ -33,6 +34,10 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
       roninTrustedOrganizationContract: calculateAddress(deployer, nonce++),
     };
   }
+
+  if ([Network.Local.toString()].includes(network.name)) {
+    generalMainchainConf[network.name].bridgeContract = calculateAddress(deployer, nonce++).address;
+  }
 };
 
 deploy.tags = ['CalculateAddresses'];
@@ -44,6 +49,7 @@ deploy.dependencies = [
   'RoninValidatorSetLogic',
   'RoninTrustedOrganizationLogic',
   'BridgeTrackingLogic',
+  'MainchainGatewayV2Logic', // only for local
 ];
 
 export default deploy;

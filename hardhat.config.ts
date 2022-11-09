@@ -26,6 +26,11 @@ if (!MAINNET_PK) {
   console.warn('MAINNET_PK is unset. Using DEFAULT_MNEMONIC');
 }
 
+const local: NetworkUserConfig = {
+  url: 'http://localhost:8545',
+  accounts: { mnemonic: DEFAULT_MNEMONIC },
+};
+
 const devnet: NetworkUserConfig = {
   url: DEVNET_URL || 'http://localhost:8545',
   accounts: DEVNET_PK ? [DEVNET_PK] : { mnemonic: DEFAULT_MNEMONIC },
@@ -78,6 +83,7 @@ const config: HardhatUserConfig = {
         accountsBalance: '1000000000000000000000000000', // 1B RON
       },
     },
+    local,
     'ronin-devnet': devnet,
     'ronin-testnet': testnet,
     'ronin-mainnet': mainnet,
