@@ -68,7 +68,10 @@ const defaultMaintenanceConf: MaintenanceArguments = {
 export const maintenanceConf: MaintenanceConfig = {
   [Network.Local]: defaultMaintenanceConf,
   [Network.Devnet]: defaultMaintenanceConf,
-  [Network.Testnet]: defaultMaintenanceConf,
+  [Network.Testnet]: {
+    ...defaultMaintenanceConf,
+    minMaintenanceDurationInBlock: 200,
+  },
   [Network.Mainnet]: undefined,
 };
 
