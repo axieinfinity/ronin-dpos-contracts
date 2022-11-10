@@ -166,7 +166,9 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
   [Network.Local]: defaultRoninValidatorSetConf,
   [Network.Devnet]: defaultRoninValidatorSetConf,
   [Network.Testnet]: {
-    ...defaultRoninValidatorSetConf,
+    maxValidatorNumber: 42,
+    maxPrioritizedValidatorNumber: 22,
+    maxValidatorCandidate: 100,
     numberOfBlocksInEpoch: 200,
   },
   [Network.Mainnet]: undefined,
