@@ -50,7 +50,7 @@ export const generalMainchainConf: GeneralConfig = {
   [Network.Local]: defaultGeneralConf,
   [Network.Hardhat]: defaultGeneralConf,
   [Network.Devnet]: defaultGeneralConf,
-  [Network.Testnet]: {
+  [Network.Goerli]: {
     startedAtBlock: 0,
     bridgeContract: '0xFc4319Ae9e6134C708b88D5Ad5Da1A4a83372502',
   }
@@ -83,8 +83,8 @@ export const stakingConfig: StakingConfig = {
   [Network.Local]: defaultStakingConf,
   [Network.Devnet]: defaultStakingConf,
   [Network.Testnet]: {
+    ...defaultStakingConf,
     minValidatorStakingAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5).mul(5)), // 500.000 RON
-    ...defaultStakingConf
   },
   [Network.Mainnet]: undefined,
 };
@@ -100,8 +100,8 @@ export const stakingVestingConfig: StakingVestingConfig = {
   [Network.Local]: defaultStakingVestingConf,
   [Network.Devnet]: defaultStakingVestingConf,
   [Network.Testnet]: {
+    ...defaultStakingVestingConf,
     topupAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5)), // 100.000 RON
-    ...defaultStakingVestingConf
   },
   [Network.Mainnet]: undefined,
 };
@@ -139,6 +139,7 @@ export const slashIndicatorConf: SlashIndicatorConfig = {
   [Network.Local]: defaultSlashIndicatorConf,
   [Network.Devnet]: defaultSlashIndicatorConf,
   [Network.Testnet]: {
+    ...defaultSlashIndicatorConf,
     doubleSignSlashing: {
       slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5).mul(5)), // 500.000 RON
       doubleSigningJailUntilBlock: ethers.constants.MaxUint256,
@@ -149,7 +150,6 @@ export const slashIndicatorConf: SlashIndicatorConfig = {
       slashAmountForUnavailabilityTier2Threshold: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(4)), // 10.000 RON
       jailDurationForUnavailabilityTier2Threshold: 2 * 28800, // jails for 2 days
     },
-    ...defaultSlashIndicatorConf
   },
   [Network.Mainnet]: undefined,
 };
@@ -166,8 +166,8 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
   [Network.Local]: defaultRoninValidatorSetConf,
   [Network.Devnet]: defaultRoninValidatorSetConf,
   [Network.Testnet]: {
+    ...defaultRoninValidatorSetConf,
     numberOfBlocksInEpoch: 200,
-    ...defaultRoninValidatorSetConf
   },
   [Network.Mainnet]: undefined,
 };
