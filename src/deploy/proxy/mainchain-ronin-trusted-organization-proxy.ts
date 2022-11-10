@@ -31,6 +31,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['MainchainRoninTrustedOrganizationProxy'];
-deploy.dependencies = ['RoninTrustedOrganizationLogic', 'MainchainGovernanceAdmin'];
+deploy.dependencies = ['RoninTrustedOrganizationLogic', 'CalculateAddresses', 'MainchainGovernanceAdmin'];
 
 export default deploy;

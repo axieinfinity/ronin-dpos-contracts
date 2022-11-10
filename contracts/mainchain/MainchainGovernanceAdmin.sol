@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "../extensions/isolated-governance/bridge-operator-governance/BOsGovernanceRelay.sol";
 import "../extensions/sequential-governance/GovernanceRelay.sol";
+import "../extensions/TransparentUpgradeableProxyV2.sol";
 import "../extensions/GovernanceAdmin.sol";
 import "../interfaces/IBridge.sol";
 
@@ -73,7 +74,9 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
     Signature[] calldata _signatures
   ) external onlyRole(RELAYER_ROLE) {
     _relayVotesBySignatures(_operators, _signatures, _period, _getMinimumVoteWeight(), DOMAIN_SEPARATOR);
-    _bridgeContract.replaceBridgeOperators(_operators);
+    TransparentUpgradeableProxyV2(payable(bridgeContract())).functionDelegateCall(
+      abi.encodeWithSelector(_bridgeContract.replaceBridgeOperators.selector, _operators)
+    );
   }
 
   /**

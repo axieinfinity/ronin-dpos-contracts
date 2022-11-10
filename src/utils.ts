@@ -8,6 +8,7 @@ export const DEFAULT_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 export enum Network {
+  Local = 'local',
   Hardhat = 'hardhat',
   Devnet = 'ronin-devnet',
   Testnet = 'ronin-testnet',
