@@ -32,6 +32,15 @@ interface IBridgeTracking {
   function totalBallotsOf(uint256 _period, address _bridgeOperator) external view returns (uint256);
 
   /**
+   * @dev Handles the request once it is approved.
+   *
+   * Requirements:
+   * - The method caller is the bridge contract.
+   *
+   */
+  function handleVoteApproved(VoteKind _kind, uint256 _requestId) external;
+
+  /**
    * @dev Records vote for a receipt and a operator.
    *
    * Requirements:

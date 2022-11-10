@@ -196,6 +196,7 @@ contract RoninGatewayV2 is
         bytes32 _hash = _withdrawal.hash();
         VoteStatus _status = _castVote(_proposal, _governor, _weight, _minVoteWeight, _hash);
         if (_status == VoteStatus.Approved) {
+          _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.MainchainWithdrawal, _withdrawalId);
           _proposal.status = VoteStatus.Executed;
           emit MainchainWithdrew(_hash, _withdrawal);
         }
@@ -372,6 +373,7 @@ contract RoninGatewayV2 is
     bytes32 _receiptHash = _receipt.hash();
     VoteStatus _status = _castVote(_proposal, _validator, _weight, _minVoteWeight, _receiptHash);
     if (_status == VoteStatus.Approved) {
+      _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Deposit, _receipt.id);
       _proposal.status = VoteStatus.Executed;
       _receipt.info.handleAssetTransfer(payable(_receipt.ronin.addr), _receipt.ronin.tokenAddr, IWETH(address(0)));
       emit Deposited(_receiptHash, _receipt);
@@ -409,7 +411,8 @@ contract RoninGatewayV2 is
     MappedToken memory _token = getMainchainToken(_request.tokenAddr, _chainId);
     require(_request.info.erc == _token.erc, "RoninGatewayV2: invalid token standard");
     _request.info.transferFrom(_requester, address(this), _request.tokenAddr);
-    _storeAsReceipt(_request, _chainId, _requester, _token.tokenAddr);
+    uint256 _id = _storeAsReceipt(_request, _chainId, _requester, _token.tokenAddr);
+    _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, _id);
   }
 
   /**
@@ -423,8 +426,8 @@ contract RoninGatewayV2 is
     uint256 _chainId,
     address _requester,
     address _mainchainTokenAddr
-  ) internal {
-    uint256 _withdrawalId = withdrawalCount++;
+  ) internal returns (uint256 _withdrawalId) {
+    _withdrawalId = withdrawalCount++;
     Transfer.Receipt memory _receipt = _request.into_withdrawal_receipt(
       _requester,
       _withdrawalId,
