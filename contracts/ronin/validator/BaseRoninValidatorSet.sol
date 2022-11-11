@@ -2,22 +2,15 @@
 
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../../extensions/RONTransferHelper.sol";
-import "../../extensions/collections/HasStakingVestingContract.sol";
-import "../../extensions/collections/HasStakingContract.sol";
-import "../../extensions/collections/HasSlashIndicatorContract.sol";
-import "../../extensions/collections/HasMaintenanceContract.sol";
 import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
-import "../../extensions/collections/HasBridgeTrackingContract.sol";
 import "../../interfaces/validator/IBaseRoninValidatorSet.sol";
-import "../../libraries/Math.sol";
-import "../../libraries/EnumFlags.sol";
-import "../../precompile-usages/PrecompileUsageSortValidators.sol";
-import "../../precompile-usages/PrecompileUsagePickValidatorSet.sol";
 import "./CandidateManager.sol";
 
-abstract contract BaseRoninValidatorSet is IBaseRoninValidatorSet, HasRoninTrustedOrganizationContract {
+abstract contract BaseRoninValidatorSet is
+  IBaseRoninValidatorSet,
+  HasRoninTrustedOrganizationContract,
+  CandidateManager
+{
   /// @dev The number of blocks in a epoch
   uint256 internal _numberOfBlocksInEpoch;
 
@@ -38,6 +31,13 @@ abstract contract BaseRoninValidatorSet is IBaseRoninValidatorSet, HasRoninTrust
    */
   function maxPrioritizedValidatorNumber() external view override returns (uint256 _maximumPrioritizedValidatorNumber) {
     return _maxPrioritizedValidatorNumber;
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
+  function numberOfBlocksInEpoch() public view override(CandidateManager) returns (uint256 _numberOfBlocks) {
+    return _numberOfBlocksInEpoch;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////

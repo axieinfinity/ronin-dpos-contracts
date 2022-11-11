@@ -19,15 +19,6 @@ contract MockRoninValidatorSetOverridePrecompile is RoninValidatorSet, MockPreco
     return _candidates;
   }
 
-  function _pcSortCandidates(address[] memory _candidates, uint256[] memory _weights)
-    internal
-    pure
-    override
-    returns (address[] memory _result)
-  {
-    return sortValidators(_candidates, _weights);
-  }
-
   function _pcPickValidatorSet(
     address[] memory _candidates,
     uint256[] memory _weights,
