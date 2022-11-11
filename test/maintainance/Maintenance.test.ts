@@ -41,7 +41,7 @@ const minValidatorStakingAmount = BigNumber.from(100);
 const minMaintenanceDurationInBlock = 100;
 const maxMaintenanceDurationInBlock = 1000;
 const minOffsetToStartSchedule = 200;
-const maxOffsetToStartSchedule = 200;
+const maxOffsetToStartSchedule = 200 * 7;
 
 let startedAtBlock: BigNumberish = 0;
 let endedAtBlock: BigNumberish = 0;
