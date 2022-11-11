@@ -593,8 +593,7 @@ contract RoninValidatorSet is
   ) internal {
     // Shares equally in case the bridge has nothing to votes
     if (_totalBallots == 0 && _totalVotes == 0) {
-      uint256 _shareRatio = _MAX_PERCENTAGE / totalBridgeOperators();
-      _bridgeOperatingReward[_validator] = (_shareRatio * _totalBridgeReward) / _MAX_PERCENTAGE;
+      _bridgeOperatingReward[_validator] = _totalBridgeReward / totalBridgeOperators();
       return;
     }
 
