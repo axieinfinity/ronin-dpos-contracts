@@ -81,7 +81,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
    * @inheritdoc RewardCalculation
    */
   function _currentPeriod() internal view virtual override returns (uint256) {
-    return IRoninValidatorSet(_validatorContract).currentPeriod();
+    return _validatorContract.currentPeriod();
   }
 
   /**

@@ -230,7 +230,7 @@ contract RoninValidatorSet is
     }
 
     if (_slashAmount > 0) {
-      IStaking(_stakingContract).deductStakingAmount(_validatorAddr, _slashAmount);
+      _stakingContract.deductStakingAmount(_validatorAddr, _slashAmount);
     }
 
     emit ValidatorPunished(_validatorAddr, _period, _jailedUntil[_validatorAddr], _slashAmount, true, false);
