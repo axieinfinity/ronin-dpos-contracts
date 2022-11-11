@@ -66,6 +66,8 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function setMaxValidatorNumber(uint256 _maxValidatorNumber) external override {}
 
+  function setMaxPrioritizedValidatorNumber(uint256 _maxPrioritizedValidatorNumber) external override {}
+
   function maxValidatorNumber() external view override returns (uint256 _maximumValidatorNumber) {}
 
   function maxPrioritizedValidatorNumber()
