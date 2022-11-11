@@ -3,20 +3,15 @@
 pragma solidity ^0.8.9;
 
 import "./ICandidateManager.sol";
+import "./IBaseRoninValidatorSet.sol";
 
-interface IRoninValidatorSet is ICandidateManager {
+interface IRoninValidatorSet is ICandidateManager, IBaseRoninValidatorSet {
   enum BlockRewardDeprecatedType {
     UNKNOWN,
     UNAVAILABILITY,
     AFTER_BAILOUT
   }
 
-  /// @dev Emitted when the number of max validator is updated
-  event MaxValidatorNumberUpdated(uint256);
-  /// @dev Emitted when the number of reserved slots for prioritized validators is updated
-  event MaxPrioritizedValidatorNumberUpdated(uint256);
-  /// @dev Emitted when the number of blocks in epoch is updated
-  event NumberOfBlocksInEpochUpdated(uint256);
   /// @dev Emitted when the validator set is updated
   event ValidatorSetUpdated(uint256 indexed period, address[] consensusAddrs);
   /// @dev Emitted when the bridge operator set is updated, to mirror the in-jail and maintaining status of the validator.
@@ -204,16 +199,6 @@ interface IRoninValidatorSet is ICandidateManager {
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev Returns the maximum number of validators in the epoch
-   */
-  function maxValidatorNumber() external view returns (uint256 _maximumValidatorNumber);
-
-  /**
-   * @dev Returns the number of reserved slots for prioritized validators
-   */
-  function maxPrioritizedValidatorNumber() external view returns (uint256 _maximumPrioritizedValidatorNumber);
-
-  /**
    * @dev Returns the epoch index from the block number.
    */
   function epochOf(uint256 _block) external view returns (uint256);
@@ -267,30 +252,4 @@ interface IRoninValidatorSet is ICandidateManager {
    * @dev Returns whether the period ending at the current block number.
    */
   function isPeriodEnding() external view returns (bool);
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                               FUNCTIONS FOR ADMIN                                 //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
-  /**
-   * @dev Updates the max validator number
-   *
-   * Requirements:
-   * - The method caller is admin
-   *
-   * Emits the event `MaxValidatorNumberUpdated`
-   *
-   */
-  function setMaxValidatorNumber(uint256 _maxValidatorNumber) external;
-
-  /**
-   * @dev Updates the number of reserved slots for prioritized validators
-   *
-   * Requirements:
-   * - The method caller is admin
-   *
-   * Emits the event `MaxPrioritizedValidatorNumberUpdated`
-   *
-   */
-  function setMaxPrioritizedValidatorNumber(uint256 _maxPrioritizedValidatorNumber) external;
 }

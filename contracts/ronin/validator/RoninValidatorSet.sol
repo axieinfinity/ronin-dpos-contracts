@@ -16,6 +16,7 @@ import "../../libraries/EnumFlags.sol";
 import "../../precompile-usages/PrecompileUsageSortValidators.sol";
 import "../../precompile-usages/PrecompileUsagePickValidatorSet.sol";
 import "./CandidateManager.sol";
+import "./BaseRoninValidatorSet.sol";
 
 contract RoninValidatorSet is
   IRoninValidatorSet,
@@ -29,14 +30,11 @@ contract RoninValidatorSet is
   HasRoninTrustedOrganizationContract,
   HasBridgeTrackingContract,
   CandidateManager,
+  BaseRoninValidatorSet,
   Initializable
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
-  /// @dev The maximum number of validator.
-  uint256 internal _maxValidatorNumber;
-  /// @dev The number of blocks in a epoch
-  uint256 internal _numberOfBlocksInEpoch;
   /// @dev The last updated block
   uint256 internal _lastUpdatedBlock;
   /// @dev The last updated period
@@ -50,8 +48,6 @@ contract RoninValidatorSet is
   mapping(uint256 => address) internal _validators;
   /// @dev Mapping from address => flag indicating the validator ability: producing block, operating bridge
   mapping(address => EnumFlags.ValidatorFlag) internal _validatorMap;
-  /// @dev The number of slot that is reserved for prioritized validators
-  uint256 internal _maxPrioritizedValidatorNumber;
 
   /// @dev Mapping from consensus address => period number => block producer has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _miningRewardDeprecatedAtPeriod;
@@ -474,44 +470,12 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function maxValidatorNumber() external view override returns (uint256 _maximumValidatorNumber) {
-    return _maxValidatorNumber;
-  }
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function maxPrioritizedValidatorNumber() external view override returns (uint256 _maximumPrioritizedValidatorNumber) {
-    return _maxPrioritizedValidatorNumber;
-  }
-
-  /**
    * Notice: A validator is always a bride operator
    *
    * @inheritdoc IRoninValidatorSet
    */
   function totalBridgeOperators() public view returns (uint256) {
     return validatorCount;
-  }
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                               FUNCTIONS FOR ADMIN                                 //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function setMaxValidatorNumber(uint256 _max) external override onlyAdmin {
-    _setMaxValidatorNumber(_max);
-  }
-
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function setMaxPrioritizedValidatorNumber(uint256 _number) external override onlyAdmin {
-    _setMaxPrioritizedValidatorNumber(_number);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -818,38 +782,6 @@ contract RoninValidatorSet is
    */
   function _bridgeRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
     return _bridgeRewardDeprecatedAtPeriod[_validatorAddr][_period];
-  }
-
-  /**
-   * @dev See {IRoninValidatorSet-setMaxValidatorNumber}
-   */
-  function _setMaxValidatorNumber(uint256 _number) internal {
-    _maxValidatorNumber = _number;
-    emit MaxValidatorNumberUpdated(_number);
-  }
-
-  /**
-   * @dev See {IRoninValidatorSet-setMaxPrioritizedValidatorNumber}
-   */
-  function _setMaxPrioritizedValidatorNumber(uint256 _number) internal {
-    require(
-      _number <= _maxValidatorNumber,
-      "RoninValidatorSet: cannot set number of prioritized greater than number of max validators"
-    );
-
-    _maxPrioritizedValidatorNumber = _number;
-    emit MaxPrioritizedValidatorNumberUpdated(_number);
-  }
-
-  /**
-   * @dev Updates the number of blocks in epoch
-   *
-   * Emits the event `NumberOfBlocksInEpochUpdated`
-   *
-   */
-  function _setNumberOfBlocksInEpoch(uint256 _number) internal {
-    _numberOfBlocksInEpoch = _number;
-    emit NumberOfBlocksInEpochUpdated(_number);
   }
 
   /**
