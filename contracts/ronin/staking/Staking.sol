@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/staking/IStaking.sol";
-import "../../interfaces/IRoninValidatorSet.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "./CandidateStaking.sol";
 import "./DelegatorStaking.sol";
 

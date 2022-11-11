@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../../extensions/collections/HasStakingContract.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
-import "../../interfaces/ICandidateManager.sol";
+import "../../interfaces/validator/ICandidateManager.sol";
 import "../../interfaces/staking/IStaking.sol";
 
 abstract contract CandidateManager is ICandidateManager, HasStakingContract, PercentageConsumer {

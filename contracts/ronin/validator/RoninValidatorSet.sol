@@ -10,7 +10,7 @@ import "../../extensions/collections/HasSlashIndicatorContract.sol";
 import "../../extensions/collections/HasMaintenanceContract.sol";
 import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../../extensions/collections/HasBridgeTrackingContract.sol";
-import "../../interfaces/IRoninValidatorSet.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../libraries/Math.sol";
 import "../../libraries/EnumFlags.sol";
 import "../../precompile-usages/PrecompileUsageSortValidators.sol";
