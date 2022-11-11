@@ -40,7 +40,7 @@ const numberOfBlocksInEpoch = 600;
 const minValidatorStakingAmount = BigNumber.from(100);
 const minMaintenanceBlockPeriod = 100;
 const maxMaintenanceBlockPeriod = 1000;
-const minOffset = 200;
+const minOffsetToStartSchedule = 200;
 
 let startedAtBlock: BigNumberish = 0;
 let endedAtBlock: BigNumberish = 0;
@@ -70,7 +70,7 @@ describe('Maintenance test', () => {
         numberOfBlocksInEpoch,
       },
       maintenanceArguments: {
-        minOffset,
+        minOffsetToStartSchedule,
         minMaintenanceBlockPeriod,
         maxMaintenanceBlockPeriod,
       },
@@ -111,7 +111,7 @@ describe('Maintenance test', () => {
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-    localEpochController = new EpochController(minOffset, numberOfBlocksInEpoch);
+    localEpochController = new EpochController(minOffsetToStartSchedule, numberOfBlocksInEpoch);
     await localEpochController.mineToBeforeEndOfEpoch();
     let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
     await ValidatorSetExpects.emitValidatorSetUpdatedEvent(
@@ -136,7 +136,7 @@ describe('Maintenance test', () => {
     it('Should be not able to schedule maintenance with invalid offset', async () => {
       startedAtBlock = 0;
       endedAtBlock = 100;
-      expect(startedAtBlock - currentBlock).lt(minOffset);
+      expect(startedAtBlock - currentBlock).lt(minOffsetToStartSchedule);
       await expect(
         maintenanceContract
           .connect(validatorCandidates[0])
@@ -145,7 +145,7 @@ describe('Maintenance test', () => {
 
       startedAtBlock = currentBlock;
       endedAtBlock = currentBlock + 1000;
-      expect(startedAtBlock - currentBlock).lt(minOffset);
+      expect(startedAtBlock - currentBlock).lt(minOffsetToStartSchedule);
       await expect(
         maintenanceContract
           .connect(validatorCandidates[0])
@@ -154,7 +154,7 @@ describe('Maintenance test', () => {
     });
 
     it('Should be not able to schedule maintenance in case of: start block >= end block', async () => {
-      startedAtBlock = currentBlock + minOffset;
+      startedAtBlock = currentBlock + minOffsetToStartSchedule;
       endedAtBlock = currentBlock;
       expect(endedAtBlock).lte(startedAtBlock);
       await expect(

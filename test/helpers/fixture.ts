@@ -57,7 +57,7 @@ export const defaultTestConfig: InitTestInput = {
   maintenanceArguments: {
     minMaintenanceBlockPeriod: 100,
     maxMaintenanceBlockPeriod: 1000,
-    minOffset: 200,
+    minOffsetToStartSchedule: 200,
     maxSchedules: 2,
   },
 

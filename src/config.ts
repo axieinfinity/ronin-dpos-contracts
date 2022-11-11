@@ -51,7 +51,7 @@ export const generalMainchainConf: GeneralConfig = {
 const defaultMaintenanceConf: MaintenanceArguments = {
   minMaintenanceBlockPeriod: 600, // 600 blocks
   maxMaintenanceBlockPeriod: 28800, // ~1 day
-  minOffset: 28800, // requests before maintaining at least ~1 day
+  minOffsetToStartSchedule: 28800, // requests before maintaining at least ~1 day
   maxSchedules: 3, // only 3 schedules are happening|in the futures
 };
 

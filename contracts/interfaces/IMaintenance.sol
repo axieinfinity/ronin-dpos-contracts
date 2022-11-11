@@ -15,7 +15,7 @@ interface IMaintenance {
   event MaintenanceConfigUpdated(
     uint256 minMaintenanceBlockPeriod,
     uint256 maxMaintenanceBlockPeriod,
-    uint256 minOffset,
+    uint256 minOffsetToStartSchedule,
     uint256 maxSchedules
   );
 
@@ -80,13 +80,15 @@ interface IMaintenance {
   function setMaintenanceConfig(
     uint256 _minMaintenanceBlockPeriod,
     uint256 _maxMaintenanceBlockPeriod,
-    uint256 _minOffset,
+    uint256 _minOffsetToStartSchedule,
     uint256 _maxSchedules
   ) external;
 
   /**
-   * @dev Returns the min blocks from current block to the maintenance start block.
+   * @dev The offset to the min block number that the schedule can start
    */
+  function minOffsetToStartSchedule() external view returns (uint256);
+
   function minOffset() external view returns (uint256);
 
   /**
@@ -107,7 +109,7 @@ interface IMaintenance {
    * - The method caller is candidate admin of the candidate `_consensusAddr`.
    * - The candidate `_consensusAddr` has no schedule yet or the previous is done.
    * - The total number of schedules is not larger than `maxSchedules()`.
-   * - The start block must be at least `minOffset()` blocks from the current block.
+   * - The start block must be at least `minOffsetToStartSchedule()` blocks from the current block.
    * - The end block is larger than the start block.
    * - The scheduled block period is larger than the `minMaintenanceBlockPeriod()` and less than the `maxMaintenanceBlockPeriod()`.
    * - The start block is at the start of an epoch.

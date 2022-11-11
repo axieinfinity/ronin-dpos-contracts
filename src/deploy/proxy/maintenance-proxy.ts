@@ -19,7 +19,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     generalRoninConf[network.name]!.validatorContract?.address,
     maintenanceConf[network.name]!.minMaintenanceBlockPeriod,
     maintenanceConf[network.name]!.maxMaintenanceBlockPeriod,
-    maintenanceConf[network.name]!.minOffset,
+    maintenanceConf[network.name]!.minOffsetToStartSchedule,
     maintenanceConf[network.name]!.maxSchedules,
   ]);
 

@@ -51,7 +51,7 @@ const minValidatorStakingAmount = BigNumber.from(100);
 const maxValidatorCandidate = 3;
 const maxValidatorNumber = 2;
 const numberOfBlocksInEpoch = 600;
-const minOffset = 200;
+const minOffsetToStartSchedule = 200;
 
 const blockProducerBonusPerBlock = BigNumber.from(5000);
 const submittedRewardEachBlock = BigNumber.from(60);
@@ -144,7 +144,7 @@ describe('Credit score and bail out test', () => {
           maxValidatorCandidate,
         },
         maintenanceArguments: {
-          minOffset,
+          minOffsetToStartSchedule,
         },
         roninTrustedOrganizationArguments: {
           trustedOrganizations: [governor].map((v) => ({
@@ -186,7 +186,7 @@ describe('Credit score and bail out test', () => {
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-    localEpochController = new EpochController(minOffset, numberOfBlocksInEpoch);
+    localEpochController = new EpochController(minOffsetToStartSchedule, numberOfBlocksInEpoch);
     await localEpochController.mineToBeforeEndOfEpoch();
     await validatorContract.connect(coinbase).wrapUpEpoch();
     expect(await validatorContract.getValidators()).eql(
