@@ -39,16 +39,16 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function getLastUpdatedBlock() external view override returns (uint256) {}
 
-  function bulkJailed(address[] memory) external view override returns (bool[] memory) {}
+  function bulkJailed(address[] calldata) external view override returns (bool[] memory) {}
 
-  function miningRewardDeprecatedAtPeriod(address[] memory, uint256 _period)
+  function miningRewardDeprecatedAtPeriod(address[] calldata, uint256 _period)
     external
     view
     override
     returns (bool[] memory)
   {}
 
-  function miningRewardDeprecated(address[] memory) external view override returns (bool[] memory) {}
+  function miningRewardDeprecated(address[] calldata) external view override returns (bool[] memory) {}
 
   function epochOf(uint256 _block) external view override returns (uint256) {}
 

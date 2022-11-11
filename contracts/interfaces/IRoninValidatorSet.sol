@@ -184,17 +184,17 @@ interface IRoninValidatorSet is ICandidateManager {
   /**
    * @dev Returns whether the validators are put in jail (cannot join the set of validators) during the current period.
    */
-  function bulkJailed(address[] memory) external view returns (bool[] memory);
+  function bulkJailed(address[] calldata) external view returns (bool[] memory);
 
   /**
    * @dev Returns whether the incoming reward of the block producers are deprecated during the current period.
    */
-  function miningRewardDeprecated(address[] memory _blockProducers) external view returns (bool[] memory);
+  function miningRewardDeprecated(address[] calldata _blockProducers) external view returns (bool[] memory);
 
   /**
    * @dev Returns whether the incoming reward of the block producers are deprecated during a specific period.
    */
-  function miningRewardDeprecatedAtPeriod(address[] memory _blockProducers, uint256 _period)
+  function miningRewardDeprecatedAtPeriod(address[] calldata _blockProducers, uint256 _period)
     external
     view
     returns (bool[] memory);

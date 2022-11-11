@@ -306,7 +306,7 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function bulkJailed(address[] memory _addrList) external view override returns (bool[] memory _result) {
+  function bulkJailed(address[] calldata _addrList) external view override returns (bool[] memory _result) {
     _result = new bool[](_addrList.length);
     for (uint256 _i; _i < _addrList.length; _i++) {
       _result[_i] = _jailed(_addrList[_i]);
@@ -316,7 +316,7 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function miningRewardDeprecated(address[] memory _blockProducers)
+  function miningRewardDeprecated(address[] calldata _blockProducers)
     external
     view
     override
@@ -332,7 +332,7 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function miningRewardDeprecatedAtPeriod(address[] memory _blockProducers, uint256 _period)
+  function miningRewardDeprecatedAtPeriod(address[] calldata _blockProducers, uint256 _period)
     external
     view
     override
