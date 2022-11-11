@@ -59,7 +59,7 @@ abstract contract BaseRoninValidatorSet is
   }
 
   /**
-   * @dev See {IRoninValidatorSet-setMaxValidatorNumber}
+   * @dev See {IBaseRoninValidatorSet-setMaxValidatorNumber}
    */
   function _setMaxValidatorNumber(uint256 _number) internal {
     _maxValidatorNumber = _number;
@@ -67,7 +67,7 @@ abstract contract BaseRoninValidatorSet is
   }
 
   /**
-   * @dev See {IRoninValidatorSet-setMaxPrioritizedValidatorNumber}
+   * @dev See {IBaseRoninValidatorSet-setMaxPrioritizedValidatorNumber}
    */
   function _setMaxPrioritizedValidatorNumber(uint256 _number) internal {
     require(

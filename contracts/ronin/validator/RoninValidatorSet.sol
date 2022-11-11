@@ -54,7 +54,7 @@ contract RoninValidatorSet is RoninValidatorSetCoinbase, RoninValidatorSetSlashi
     public
     view
     virtual
-    override(RoninValidatorSetCommon, RoninValidatorSetCoinbase)
+    override(RoninValidatorSetCommon, RoninValidatorSetCoinbaseHelper)
     returns (uint256)
   {
     return RoninValidatorSetCommon.currentPeriod();
