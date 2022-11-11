@@ -33,6 +33,9 @@ contract RoninValidatorSet is
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
+  /// @dev Length of period in seconds
+  uint256 internal constant _periodLength = 1 days;
+
   /// @dev The maximum number of validator.
   uint256 internal _maxValidatorNumber;
   /// @dev The number of blocks in a epoch
@@ -863,7 +866,7 @@ contract RoninValidatorSet is
    * @dev Returns the calculated period.
    */
   function _computePeriod(uint256 _timestamp) internal pure returns (uint256) {
-    return _timestamp / 1 days;
+    return _timestamp / _periodLength;
   }
 
   /**
