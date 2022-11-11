@@ -58,8 +58,9 @@ interface IRoninTrustedOrganization is IQuorum {
    *
    * Emits the event `TrustedOrganizationRemoved` once an organization is removed.
    *
+   * @param _consensusAddrs The list of consensus addresses linked to corresponding trusted organization that to be removed.
    */
-  function removeTrustedOrganizations(address[] calldata) external;
+  function removeTrustedOrganizations(address[] calldata _consensusAddrs) external;
 
   /**
    * @dev Returns total weights.
