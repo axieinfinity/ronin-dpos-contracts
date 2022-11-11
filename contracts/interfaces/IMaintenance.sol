@@ -16,6 +16,7 @@ interface IMaintenance {
     uint256 minMaintenanceDurationInBlock,
     uint256 maxMaintenanceDurationInBlock,
     uint256 minOffsetToStartSchedule,
+    uint256 maxOffsetToStartSchedule,
     uint256 maxSchedules
   );
 
@@ -68,11 +69,12 @@ interface IMaintenance {
   function maxMaintenanceDurationInBlock() external view returns (uint256);
 
   /**
-   * @dev Sets the min block period and max block period for maintenance.
+   * @dev Sets the duration restriction, start time restriction, and max allowed for maintenance.
    *
    * Requirements:
    * - The method caller is admin.
-   * - The max period is larger than the min period.
+   * - The max duration is larger than the min duration.
+   * - The max offset is larger than the min offset.
    *
    * Emits the event `MaintenanceConfigUpdated`.
    *
@@ -81,6 +83,7 @@ interface IMaintenance {
     uint256 _minMaintenanceDurationInBlock,
     uint256 _maxMaintenanceDurationInBlock,
     uint256 _minOffsetToStartSchedule,
+    uint256 _maxOffsetToStartSchedule,
     uint256 _maxSchedules
   ) external;
 
@@ -89,7 +92,10 @@ interface IMaintenance {
    */
   function minOffsetToStartSchedule() external view returns (uint256);
 
-  function minOffset() external view returns (uint256);
+  /**
+   * @dev The offset to the max block number that the schedule can start
+   */
+  function maxOffsetToStartSchedule() external view returns (uint256);
 
   /**
    * @dev Returns the max number of scheduled maintenances.
@@ -109,7 +115,7 @@ interface IMaintenance {
    * - The method caller is candidate admin of the candidate `_consensusAddr`.
    * - The candidate `_consensusAddr` has no schedule yet or the previous is done.
    * - The total number of schedules is not larger than `maxSchedules()`.
-   * - The start block must be at least `minOffsetToStartSchedule()` blocks from the current block.
+   * - The start block must be at least `minOffsetToStartSchedule()` at at most `maxOffsetToStartSchedule()` blocks from the current block.
    * - The end block is larger than the start block.
    * - The scheduled duration is larger than the `minMaintenanceDurationInBlock()` and less than the `maxMaintenanceDurationInBlock()`.
    * - The start block is at the start of an epoch.

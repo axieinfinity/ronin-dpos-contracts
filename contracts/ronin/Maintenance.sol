@@ -20,8 +20,8 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   uint256 public maxMaintenanceDurationInBlock;
   /// @dev The offset to the min block number that the schedule can start
   uint256 public minOffsetToStartSchedule;
-  /// @dev The min blocks from the current block to the start block
-  uint256 public minOffset;
+  /// @dev The offset to the max block number that the schedule can start
+  uint256 public maxOffsetToStartSchedule;
   /// @dev The max number of scheduled maintenances
   uint256 public maxSchedules;
 
@@ -37,6 +37,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     uint256 _minMaintenanceDurationInBlock,
     uint256 _maxMaintenanceDurationInBlock,
     uint256 _minOffsetToStartSchedule,
+    uint256 _maxOffsetToStartSchedule,
     uint256 _maxSchedules
   ) external initializer {
     _setValidatorContract(__validatorContract);
@@ -44,6 +45,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
       _minMaintenanceDurationInBlock,
       _maxMaintenanceDurationInBlock,
       _minOffsetToStartSchedule,
+      _maxOffsetToStartSchedule,
       _maxSchedules
     );
   }
@@ -55,12 +57,14 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     uint256 _minMaintenanceDurationInBlock,
     uint256 _maxMaintenanceDurationInBlock,
     uint256 _minOffsetToStartSchedule,
+    uint256 _maxOffsetToStartSchedule,
     uint256 _maxSchedules
   ) external onlyAdmin {
     _setMaintenanceConfig(
       _minMaintenanceDurationInBlock,
       _maxMaintenanceDurationInBlock,
       _minOffsetToStartSchedule,
+      _maxOffsetToStartSchedule,
       _maxSchedules
     );
   }
@@ -82,7 +86,10 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     );
     require(!scheduled(_consensusAddr), "Maintenance: already scheduled");
     require(totalSchedules() < maxSchedules, "Maintenance: exceeds total of schedules");
-    require(block.number + minOffsetToStartSchedule <= _startedAtBlock, "Maintenance: invalid offset size");
+    require(
+      _startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule),
+      "Maintenance: start block is out of offset"
+    );
     require(_startedAtBlock < _endedAtBlock, "Maintenance: start block must be less than end block");
     uint256 _blockPeriod = _endedAtBlock - _startedAtBlock;
     require(
@@ -186,6 +193,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     uint256 _minMaintenanceDurationInBlock,
     uint256 _maxMaintenanceDurationInBlock,
     uint256 _minOffsetToStartSchedule,
+    uint256 _maxOffsetToStartSchedule,
     uint256 _maxSchedules
   ) internal {
     require(
@@ -195,11 +203,13 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     minMaintenanceDurationInBlock = _minMaintenanceDurationInBlock;
     maxMaintenanceDurationInBlock = _maxMaintenanceDurationInBlock;
     minOffsetToStartSchedule = _minOffsetToStartSchedule;
+    maxOffsetToStartSchedule = _maxOffsetToStartSchedule;
     maxSchedules = _maxSchedules;
     emit MaintenanceConfigUpdated(
       _minMaintenanceDurationInBlock,
       _maxMaintenanceDurationInBlock,
       _minOffsetToStartSchedule,
+      _maxOffsetToStartSchedule,
       _maxSchedules
     );
   }
