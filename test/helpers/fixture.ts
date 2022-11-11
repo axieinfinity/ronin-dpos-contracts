@@ -58,6 +58,7 @@ export const defaultTestConfig: InitTestInput = {
     minMaintenanceDurationInBlock: 100,
     maxMaintenanceDurationInBlock: 1000,
     minOffsetToStartSchedule: 200,
+    maxOffsetToStartSchedule: 200 * 7,
     maxSchedules: 2,
   },
 

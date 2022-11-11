@@ -54,6 +54,7 @@ export interface MaintenanceArguments {
   minMaintenanceDurationInBlock?: BigNumberish;
   maxMaintenanceDurationInBlock?: BigNumberish;
   minOffsetToStartSchedule?: BigNumberish;
+  maxOffsetToStartSchedule?: BigNumberish;
   maxSchedules?: BigNumberish;
 }
 

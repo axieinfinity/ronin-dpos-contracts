@@ -20,6 +20,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     maintenanceConf[network.name]!.minMaintenanceDurationInBlock,
     maintenanceConf[network.name]!.maxMaintenanceDurationInBlock,
     maintenanceConf[network.name]!.minOffsetToStartSchedule,
+    maintenanceConf[network.name]!.maxOffsetToStartSchedule,
     maintenanceConf[network.name]!.maxSchedules,
   ]);
 

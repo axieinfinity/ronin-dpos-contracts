@@ -46,6 +46,7 @@ const config: InitTestInput = {
     minMaintenanceDurationInBlock: 100,
     maxMaintenanceDurationInBlock: 1000,
     minOffsetToStartSchedule: 200,
+    maxOffsetToStartSchedule: 200 * 7,
     maxSchedules: 2,
   },
 
@@ -148,6 +149,9 @@ describe('[Integration] Configuration check', () => {
     );
     expect(await maintenanceContract.minOffsetToStartSchedule()).eq(
       config.maintenanceArguments!.minOffsetToStartSchedule
+    );
+    expect(await maintenanceContract.maxOffsetToStartSchedule()).eq(
+      config.maintenanceArguments!.maxOffsetToStartSchedule
     );
     expect(await maintenanceContract.maxSchedules()).eq(config.maintenanceArguments!.maxSchedules);
   });

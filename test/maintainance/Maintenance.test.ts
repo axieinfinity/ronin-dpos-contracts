@@ -41,6 +41,7 @@ const minValidatorStakingAmount = BigNumber.from(100);
 const minMaintenanceDurationInBlock = 100;
 const maxMaintenanceDurationInBlock = 1000;
 const minOffsetToStartSchedule = 200;
+const maxOffsetToStartSchedule = 200;
 
 let startedAtBlock: BigNumberish = 0;
 let endedAtBlock: BigNumberish = 0;
@@ -71,6 +72,7 @@ describe('Maintenance test', () => {
       },
       maintenanceArguments: {
         minOffsetToStartSchedule,
+        maxOffsetToStartSchedule,
         minMaintenanceDurationInBlock,
         maxMaintenanceDurationInBlock,
       },
@@ -141,7 +143,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0])
           .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: invalid offset size');
+      ).revertedWith('Maintenance: start block is out of offset');
 
       startedAtBlock = currentBlock;
       endedAtBlock = currentBlock + 1000;
@@ -150,7 +152,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0])
           .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: invalid offset size');
+      ).revertedWith('Maintenance: start block is out of offset');
     });
 
     it('Should be not able to schedule maintenance in case of: start block >= end block', async () => {
