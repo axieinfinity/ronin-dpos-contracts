@@ -282,15 +282,4 @@ interface IRoninValidatorSet is ICandidateManager {
    *
    */
   function setMaxValidatorNumber(uint256 _maxValidatorNumber) external;
-
-  /**
-   * @dev Updates the number of blocks in epoch
-   *
-   * Requirements:
-   * - The method caller is admin
-   *
-   * Emits the event `NumberOfBlocksInEpochUpdated`
-   *
-   */
-  function setNumberOfBlocksInEpoch(uint256 _numberOfBlocksInEpoch) external;
 }

@@ -507,13 +507,6 @@ contract RoninValidatorSet is
     _setMaxValidatorNumber(_max);
   }
 
-  /**
-   * @inheritdoc IRoninValidatorSet
-   */
-  function setNumberOfBlocksInEpoch(uint256 _number) external override onlyAdmin {
-    _setNumberOfBlocksInEpoch(_number);
-  }
-
   ///////////////////////////////////////////////////////////////////////////////////////
   //                     PRIVATE HELPER FUNCTIONS OF WRAPPING UP EPOCH                 //
   ///////////////////////////////////////////////////////////////////////////////////////
