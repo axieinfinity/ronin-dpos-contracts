@@ -11,18 +11,18 @@ import "../libraries/Math.sol";
 contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   using Math for uint256;
 
-  /// @dev Mapping from consensus address => maintenance schedule
+  /// @dev Mapping from consensus address => maintenance schedule.
   mapping(address => Schedule) internal _schedule;
 
-  /// @dev The min block period to maintenance
+  /// @dev The min duration to maintenance in blocks.
   uint256 public minMaintenanceDurationInBlock;
-  /// @dev The max block period to maintenance
+  /// @dev The max duration to maintenance in blocks.
   uint256 public maxMaintenanceDurationInBlock;
-  /// @dev The offset to the min block number that the schedule can start
+  /// @dev The offset to the min block number that the schedule can start.
   uint256 public minOffsetToStartSchedule;
-  /// @dev The offset to the max block number that the schedule can start
+  /// @dev The offset to the max block number that the schedule can start.
   uint256 public maxOffsetToStartSchedule;
-  /// @dev The max number of scheduled maintenances
+  /// @dev The max number of scheduled maintenances.
   uint256 public maxSchedules;
 
   constructor() {
