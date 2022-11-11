@@ -135,7 +135,7 @@ describe('Maintenance test', () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
     });
 
-    it('Should be not able to schedule maintenance with invalid offset', async () => {
+    it('Should be not able to schedule maintenance with invalid start block', async () => {
       startedAtBlock = 0;
       endedAtBlock = 100;
       expect(startedAtBlock - currentBlock).lt(minOffsetToStartSchedule);
@@ -148,6 +148,15 @@ describe('Maintenance test', () => {
       startedAtBlock = currentBlock;
       endedAtBlock = currentBlock + 1000;
       expect(startedAtBlock - currentBlock).lt(minOffsetToStartSchedule);
+      await expect(
+        maintenanceContract
+          .connect(validatorCandidates[0])
+          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
+      ).revertedWith('Maintenance: start block is out of offset');
+
+      startedAtBlock = currentBlock + maxOffsetToStartSchedule + 1;
+      endedAtBlock = startedAtBlock + 1000;
+      expect(startedAtBlock - currentBlock).gt(maxOffsetToStartSchedule);
       await expect(
         maintenanceContract
           .connect(validatorCandidates[0])
