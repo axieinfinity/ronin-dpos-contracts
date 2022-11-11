@@ -43,8 +43,8 @@ const config: InitTestInput = {
   startedAtBlock: Math.floor(Math.random() * 1_000_000),
 
   maintenanceArguments: {
-    minMaintenanceBlockPeriod: 100,
-    maxMaintenanceBlockPeriod: 1000,
+    minMaintenanceDurationInBlock: 100,
+    maxMaintenanceDurationInBlock: 1000,
     minOffsetToStartSchedule: 200,
     maxSchedules: 2,
   },
@@ -140,11 +140,11 @@ describe('[Integration] Configuration check', () => {
 
   it('Should the Maintenance contract set configs correctly', async () => {
     expect(await maintenanceContract.validatorContract()).eq(validatorContract.address);
-    expect(await maintenanceContract.minMaintenanceBlockPeriod()).eq(
-      config.maintenanceArguments?.minMaintenanceBlockPeriod
+    expect(await maintenanceContract.minMaintenanceDurationInBlock()).eq(
+      config.maintenanceArguments?.minMaintenanceDurationInBlock
     );
-    expect(await maintenanceContract.maxMaintenanceBlockPeriod()).eq(
-      config.maintenanceArguments?.maxMaintenanceBlockPeriod
+    expect(await maintenanceContract.maxMaintenanceDurationInBlock()).eq(
+      config.maintenanceArguments?.maxMaintenanceDurationInBlock
     );
     expect(await maintenanceContract.minOffsetToStartSchedule()).eq(
       config.maintenanceArguments!.minOffsetToStartSchedule
