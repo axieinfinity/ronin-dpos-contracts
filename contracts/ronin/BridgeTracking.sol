@@ -95,16 +95,9 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
       _totalVotes[_period]++;
       _receiptApprovedAt[_kind][_requestId] = _period;
 
-      address _operator;
       address[] storage _voters = _receiptVoters[_kind][_requestId];
       for (uint _i = 0; _i < _voters.length; _i++) {
-        _operator = _voters[_i];
-        // Counts ballot for the ones voted
-        if (!_receiptVoted[_kind][_requestId][_operator]) {
-          _totalBallots[_period]++;
-          _totalBallotsOf[_period][_operator]++;
-          _receiptVoted[_kind][_requestId][_operator] = true;
-        }
+        increaseBallot(_kind, _requestId, _voters[_i], _period);
       }
 
       delete _receiptVoters[_kind][_requestId];
@@ -131,10 +124,26 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
 
     uint256 _period = _validatorContract.currentPeriod();
     // Only records within a period
-    if (_approvedPeriod == _period && !_receiptVoted[_kind][_requestId][_operator]) {
-      _totalBallots[_period]++;
-      _totalBallotsOf[_period][_operator]++;
-      _receiptVoted[_kind][_requestId][_operator] = true;
+    if (_approvedPeriod == _period) {
+      increaseBallot(_kind, _requestId, _operator, _period);
     }
+  }
+
+  /**
+   * Increases the ballot for the operator at a period.
+   */
+  function increaseBallot(
+    VoteKind _kind,
+    uint256 _requestId,
+    address _operator,
+    uint256 _period
+  ) internal {
+    if (_receiptVoted[_kind][_requestId][_operator]) {
+      return;
+    }
+
+    _totalBallots[_period]++;
+    _totalBallotsOf[_period][_operator]++;
+    _receiptVoted[_kind][_requestId][_operator] = true;
   }
 }
