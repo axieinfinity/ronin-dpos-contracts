@@ -16,9 +16,9 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   mapping(uint256 => mapping(address => uint256)) internal _totalBallotsOf;
 
   /// @dev Mapping from vote kind => request id => the period that the receipt is approved
-  mapping(VoteKind => mapping(uint256 => uint256)) _receiptApprovedAt;
+  mapping(VoteKind => mapping(uint256 => uint256)) internal _receiptApprovedAt;
   /// @dev Mapping from vote kind => request id => the voters
-  mapping(VoteKind => mapping(uint256 => address[])) _receiptVoters;
+  mapping(VoteKind => mapping(uint256 => address[])) internal _receiptVoters;
   /// @dev Mapping from vote kind => request id => bridge operator address => flag indicating whether the operator voted or not
   mapping(VoteKind => mapping(uint256 => mapping(address => bool))) internal _receiptVoted;
 
@@ -30,6 +30,10 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
       return;
     }
     _;
+  }
+
+  constructor() {
+    _disableInitializers();
   }
 
   /**
@@ -117,9 +121,11 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   ) external override onlyBridgeContract skipOnUnstarted {
     uint256 _approvedPeriod = _receiptApprovedAt[_kind][_requestId];
 
-    // Stores the ones vote for the request which not approved
+    // Stores the ones vote for the (deposit/mainchain withdrawal) request which not approved yet
     if (_approvedPeriod == 0) {
-      _receiptVoters[_kind][_requestId].push(_operator);
+      if (_kind != VoteKind.Withdrawal) {
+        _receiptVoters[_kind][_requestId].push(_operator);
+      }
       return;
     }
 
