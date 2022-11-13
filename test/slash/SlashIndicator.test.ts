@@ -44,7 +44,7 @@ const minValidatorStakingAmount = BigNumber.from(100);
 const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(2);
 const slashDoubleSignAmount = BigNumber.from(5);
 
-const minOffset = 200;
+const minOffsetToStartSchedule = 200;
 
 const validateIndicatorAt = async (idx: number) => {
   expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[idx].address)).to.eq(
@@ -77,7 +77,7 @@ describe('Slash indicator test', () => {
           maxValidatorCandidate,
         },
         maintenanceArguments: {
-          minOffset,
+          minOffsetToStartSchedule,
         },
         roninTrustedOrganizationArguments: {
           trustedOrganizations: [governor].map((v) => ({
@@ -120,7 +120,7 @@ describe('Slash indicator test', () => {
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-    localEpochController = new EpochController(minOffset, numberOfBlocksInEpoch);
+    localEpochController = new EpochController(minOffsetToStartSchedule, numberOfBlocksInEpoch);
     await localEpochController.mineToBeforeEndOfEpoch();
     await validatorContract.connect(coinbase).wrapUpEpoch();
     expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.address));

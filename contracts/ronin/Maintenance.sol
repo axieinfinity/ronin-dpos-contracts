@@ -11,16 +11,18 @@ import "../libraries/Math.sol";
 contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   using Math for uint256;
 
-  /// @dev Mapping from consensus address => maintenance schedule
+  /// @dev Mapping from consensus address => maintenance schedule.
   mapping(address => Schedule) internal _schedule;
 
-  /// @dev The min block period to maintenance
-  uint256 public minMaintenanceBlockPeriod;
-  /// @dev The max block period to maintenance
-  uint256 public maxMaintenanceBlockPeriod;
-  /// @dev The min blocks from the current block to the start block
-  uint256 public minOffset;
-  /// @dev The max number of scheduled maintenances
+  /// @dev The min duration to maintenance in blocks.
+  uint256 public minMaintenanceDurationInBlock;
+  /// @dev The max duration to maintenance in blocks.
+  uint256 public maxMaintenanceDurationInBlock;
+  /// @dev The offset to the min block number that the schedule can start.
+  uint256 public minOffsetToStartSchedule;
+  /// @dev The offset to the max block number that the schedule can start.
+  uint256 public maxOffsetToStartSchedule;
+  /// @dev The max number of scheduled maintenances.
   uint256 public maxSchedules;
 
   constructor() {
@@ -32,25 +34,39 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    */
   function initialize(
     address __validatorContract,
-    uint256 _minMaintenanceBlockPeriod,
-    uint256 _maxMaintenanceBlockPeriod,
-    uint256 _minOffset,
+    uint256 _minMaintenanceDurationInBlock,
+    uint256 _maxMaintenanceDurationInBlock,
+    uint256 _minOffsetToStartSchedule,
+    uint256 _maxOffsetToStartSchedule,
     uint256 _maxSchedules
   ) external initializer {
     _setValidatorContract(__validatorContract);
-    _setMaintenanceConfig(_minMaintenanceBlockPeriod, _maxMaintenanceBlockPeriod, _minOffset, _maxSchedules);
+    _setMaintenanceConfig(
+      _minMaintenanceDurationInBlock,
+      _maxMaintenanceDurationInBlock,
+      _minOffsetToStartSchedule,
+      _maxOffsetToStartSchedule,
+      _maxSchedules
+    );
   }
 
   /**
    * @inheritdoc IMaintenance
    */
   function setMaintenanceConfig(
-    uint256 _minMaintenanceBlockPeriod,
-    uint256 _maxMaintenanceBlockPeriod,
-    uint256 _minOffset,
+    uint256 _minMaintenanceDurationInBlock,
+    uint256 _maxMaintenanceDurationInBlock,
+    uint256 _minOffsetToStartSchedule,
+    uint256 _maxOffsetToStartSchedule,
     uint256 _maxSchedules
   ) external onlyAdmin {
-    _setMaintenanceConfig(_minMaintenanceBlockPeriod, _maxMaintenanceBlockPeriod, _minOffset, _maxSchedules);
+    _setMaintenanceConfig(
+      _minMaintenanceDurationInBlock,
+      _maxMaintenanceDurationInBlock,
+      _minOffsetToStartSchedule,
+      _maxOffsetToStartSchedule,
+      _maxSchedules
+    );
   }
 
   /**
@@ -70,12 +86,15 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     );
     require(!scheduled(_consensusAddr), "Maintenance: already scheduled");
     require(totalSchedules() < maxSchedules, "Maintenance: exceeds total of schedules");
-    require(block.number + minOffset <= _startedAtBlock, "Maintenance: invalid offset size");
+    require(
+      _startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule),
+      "Maintenance: start block is out of offset"
+    );
     require(_startedAtBlock < _endedAtBlock, "Maintenance: start block must be less than end block");
     uint256 _blockPeriod = _endedAtBlock - _startedAtBlock;
     require(
-      _blockPeriod.inRange(minMaintenanceBlockPeriod, maxMaintenanceBlockPeriod),
-      "Maintenance: invalid maintenance block period"
+      _blockPeriod.inRange(minMaintenanceDurationInBlock, maxMaintenanceDurationInBlock),
+      "Maintenance: invalid maintenance duration"
     );
     require(_validator.epochEndingAt(_startedAtBlock - 1), "Maintenance: start block is not at the start of an epoch");
     require(_validator.epochEndingAt(_endedAtBlock), "Maintenance: end block is not at the end of an epoch");
@@ -171,17 +190,32 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    *
    */
   function _setMaintenanceConfig(
-    uint256 _minMaintenanceBlockPeriod,
-    uint256 _maxMaintenanceBlockPeriod,
-    uint256 _minOffset,
+    uint256 _minMaintenanceDurationInBlock,
+    uint256 _maxMaintenanceDurationInBlock,
+    uint256 _minOffsetToStartSchedule,
+    uint256 _maxOffsetToStartSchedule,
     uint256 _maxSchedules
   ) internal {
-    require(_minMaintenanceBlockPeriod < _maxMaintenanceBlockPeriod, "Maintenance: invalid block periods");
-    minMaintenanceBlockPeriod = _minMaintenanceBlockPeriod;
-    maxMaintenanceBlockPeriod = _maxMaintenanceBlockPeriod;
-    minOffset = _minOffset;
+    require(
+      _minMaintenanceDurationInBlock < _maxMaintenanceDurationInBlock,
+      "Maintenance: invalid maintenance duration configs"
+    );
+    require(
+      _minOffsetToStartSchedule < _maxOffsetToStartSchedule,
+      "Maintenance: invalid offset to start schedule configs"
+    );
+    minMaintenanceDurationInBlock = _minMaintenanceDurationInBlock;
+    maxMaintenanceDurationInBlock = _maxMaintenanceDurationInBlock;
+    minOffsetToStartSchedule = _minOffsetToStartSchedule;
+    maxOffsetToStartSchedule = _maxOffsetToStartSchedule;
     maxSchedules = _maxSchedules;
-    emit MaintenanceConfigUpdated(_minMaintenanceBlockPeriod, _maxMaintenanceBlockPeriod, _minOffset, _maxSchedules);
+    emit MaintenanceConfigUpdated(
+      _minMaintenanceDurationInBlock,
+      _maxMaintenanceDurationInBlock,
+      _minOffsetToStartSchedule,
+      _maxOffsetToStartSchedule,
+      _maxSchedules
+    );
   }
 
   /**

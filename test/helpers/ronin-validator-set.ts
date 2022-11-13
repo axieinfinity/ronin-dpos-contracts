@@ -10,17 +10,17 @@ import { BlockRewardDeprecatedType } from '../../src/script/ronin-validator-set'
 const contractInterface = RoninValidatorSet__factory.createInterface();
 
 export class EpochController {
-  readonly minOffset: number;
+  readonly minOffsetToStartSchedule: number;
   readonly numberOfBlocksInEpoch: number;
 
-  constructor(minOffset: number, numberOfBlocksInEpoch: number) {
-    this.minOffset = minOffset;
+  constructor(minOffsetToStartSchedule: number, numberOfBlocksInEpoch: number) {
+    this.minOffsetToStartSchedule = minOffsetToStartSchedule;
     this.numberOfBlocksInEpoch = numberOfBlocksInEpoch;
   }
 
   calculateStartOfEpoch(block: number): BigNumber {
     return BigNumber.from(
-      Math.floor((block + this.minOffset) / this.numberOfBlocksInEpoch + 1) * this.numberOfBlocksInEpoch
+      Math.floor((block + this.minOffsetToStartSchedule) / this.numberOfBlocksInEpoch + 1) * this.numberOfBlocksInEpoch
     );
   }
 

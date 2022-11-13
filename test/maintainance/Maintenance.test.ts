@@ -38,9 +38,10 @@ const unavailabilityTier2Threshold = 150;
 const maxValidatorNumber = 4;
 const numberOfBlocksInEpoch = 600;
 const minValidatorStakingAmount = BigNumber.from(100);
-const minMaintenanceBlockPeriod = 100;
-const maxMaintenanceBlockPeriod = 1000;
-const minOffset = 200;
+const minMaintenanceDurationInBlock = 100;
+const maxMaintenanceDurationInBlock = 1000;
+const minOffsetToStartSchedule = 200;
+const maxOffsetToStartSchedule = 200 * 7;
 
 let startedAtBlock: BigNumberish = 0;
 let endedAtBlock: BigNumberish = 0;
@@ -70,9 +71,10 @@ describe('Maintenance test', () => {
         numberOfBlocksInEpoch,
       },
       maintenanceArguments: {
-        minOffset,
-        minMaintenanceBlockPeriod,
-        maxMaintenanceBlockPeriod,
+        minOffsetToStartSchedule,
+        maxOffsetToStartSchedule,
+        minMaintenanceDurationInBlock,
+        maxMaintenanceDurationInBlock,
       },
       roninTrustedOrganizationArguments: {
         trustedOrganizations: [governor].map((v) => ({
@@ -111,7 +113,7 @@ describe('Maintenance test', () => {
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-    localEpochController = new EpochController(minOffset, numberOfBlocksInEpoch);
+    localEpochController = new EpochController(minOffsetToStartSchedule, numberOfBlocksInEpoch);
     await localEpochController.mineToBeforeEndOfEpoch();
     let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
     await ValidatorSetExpects.emitValidatorSetUpdatedEvent(
@@ -133,28 +135,37 @@ describe('Maintenance test', () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
     });
 
-    it('Should be not able to schedule maintenance with invalid offset', async () => {
+    it('Should be not able to schedule maintenance with invalid start block', async () => {
       startedAtBlock = 0;
       endedAtBlock = 100;
-      expect(startedAtBlock - currentBlock).lt(minOffset);
+      expect(startedAtBlock - currentBlock).lt(minOffsetToStartSchedule);
       await expect(
         maintenanceContract
           .connect(validatorCandidates[0])
           .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: invalid offset size');
+      ).revertedWith('Maintenance: start block is out of offset');
 
       startedAtBlock = currentBlock;
       endedAtBlock = currentBlock + 1000;
-      expect(startedAtBlock - currentBlock).lt(minOffset);
+      expect(startedAtBlock - currentBlock).lt(minOffsetToStartSchedule);
       await expect(
         maintenanceContract
           .connect(validatorCandidates[0])
           .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: invalid offset size');
+      ).revertedWith('Maintenance: start block is out of offset');
+
+      startedAtBlock = currentBlock + maxOffsetToStartSchedule + 1;
+      endedAtBlock = startedAtBlock + 1000;
+      expect(startedAtBlock - currentBlock).gt(maxOffsetToStartSchedule);
+      await expect(
+        maintenanceContract
+          .connect(validatorCandidates[0])
+          .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
+      ).revertedWith('Maintenance: start block is out of offset');
     });
 
     it('Should be not able to schedule maintenance in case of: start block >= end block', async () => {
-      startedAtBlock = currentBlock + minOffset;
+      startedAtBlock = currentBlock + minOffsetToStartSchedule;
       endedAtBlock = currentBlock;
       expect(endedAtBlock).lte(startedAtBlock);
       await expect(
@@ -174,25 +185,25 @@ describe('Maintenance test', () => {
 
     it('Should be not able to schedule maintenance when the maintenance period is too small or large', async () => {
       endedAtBlock = BigNumber.from(startedAtBlock).add(1);
-      expect(endedAtBlock.sub(startedAtBlock)).lt(minMaintenanceBlockPeriod);
+      expect(endedAtBlock.sub(startedAtBlock)).lt(minMaintenanceDurationInBlock);
       await expect(
         maintenanceContract
           .connect(validatorCandidates[0])
           .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: invalid maintenance block period');
+      ).revertedWith('Maintenance: invalid maintenance duration');
 
-      endedAtBlock = BigNumber.from(startedAtBlock).add(maxMaintenanceBlockPeriod).add(1);
-      expect(endedAtBlock.sub(startedAtBlock)).gt(maxMaintenanceBlockPeriod);
+      endedAtBlock = BigNumber.from(startedAtBlock).add(maxMaintenanceDurationInBlock).add(1);
+      expect(endedAtBlock.sub(startedAtBlock)).gt(maxMaintenanceDurationInBlock);
       await expect(
         maintenanceContract
           .connect(validatorCandidates[0])
           .schedule(validatorCandidates[0].address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: invalid maintenance block period');
+      ).revertedWith('Maintenance: invalid maintenance duration');
     });
 
     it('Should be not able to schedule maintenance when the start block is not at the start of an epoch', async () => {
       startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock).add(1);
-      endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock.add(minMaintenanceBlockPeriod));
+      endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock.add(minMaintenanceDurationInBlock));
 
       expect(startedAtBlock.mod(numberOfBlocksInEpoch)).not.eq(0);
       expect(endedAtBlock.mod(numberOfBlocksInEpoch)).eq(numberOfBlocksInEpoch - 1);
@@ -206,7 +217,7 @@ describe('Maintenance test', () => {
     it('Should be not able to schedule maintenance when the end block is not at the end of an epoch', async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
-      endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock.add(minMaintenanceBlockPeriod)).add(1);
+      endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock.add(minMaintenanceDurationInBlock)).add(1);
 
       expect(startedAtBlock.mod(numberOfBlocksInEpoch)).eq(0);
       expect(endedAtBlock.mod(numberOfBlocksInEpoch)).not.eq(numberOfBlocksInEpoch - 1);
@@ -235,7 +246,7 @@ describe('Maintenance test', () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock).add(numberOfBlocksInEpoch);
       endedAtBlock = localEpochController.calculateEndOfEpoch(
-        BigNumber.from(startedAtBlock).add(minMaintenanceBlockPeriod)
+        BigNumber.from(startedAtBlock).add(minMaintenanceDurationInBlock)
       );
 
       const tx = await maintenanceContract

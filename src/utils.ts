@@ -51,9 +51,10 @@ export interface GeneralConfig {
 }
 
 export interface MaintenanceArguments {
-  minMaintenanceBlockPeriod?: BigNumberish;
-  maxMaintenanceBlockPeriod?: BigNumberish;
-  minOffset?: BigNumberish;
+  minMaintenanceDurationInBlock?: BigNumberish;
+  maxMaintenanceDurationInBlock?: BigNumberish;
+  minOffsetToStartSchedule?: BigNumberish;
+  maxOffsetToStartSchedule?: BigNumberish;
   maxSchedules?: BigNumberish;
 }
 
