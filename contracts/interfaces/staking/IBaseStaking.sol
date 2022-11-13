@@ -3,11 +3,6 @@
 pragma solidity ^0.8.9;
 
 interface IBaseStaking {
-  /// @dev Emitted when the minium number of seconds to undelegate is updated.
-  event CooldownSecsToUndelegateUpdated(uint256 minSecs);
-  /// @dev Emitted when the number of seconds that a candidate must wait to be revoked.
-  event WaitingSecsToRevokeUpdated(uint256 secs);
-
   struct PoolDetail {
     // Address of the pool i.e. consensus address of the validator
     address addr;
@@ -22,6 +17,11 @@ interface IBaseStaking {
     // Mapping from delegator => the last timestamp that delegator staked
     mapping(address => uint256) lastDelegatingTimestamp;
   }
+
+  /// @dev Emitted when the minium number of seconds to undelegate is updated.
+  event CooldownSecsToUndelegateUpdated(uint256 minSecs);
+  /// @dev Emitted when the number of seconds that a candidate must wait to be revoked.
+  event WaitingSecsToRevokeUpdated(uint256 secs);
 
   /**
    * @dev Returns The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.

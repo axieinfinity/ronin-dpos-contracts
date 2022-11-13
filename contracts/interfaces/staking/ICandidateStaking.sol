@@ -52,7 +52,7 @@ interface ICandidateStaking is IRewardPool {
    * Emits the event `PoolApproved`.
    *
    * @param _candidateAdmin the candidate admin will be stored in the validator contract, used for calling function that affects
-   * to its candidate. IE: scheduling maintenance.
+   * to its candidate, e.g. scheduling maintenance.
    *
    */
   function applyValidatorCandidate(

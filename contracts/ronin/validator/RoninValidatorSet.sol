@@ -33,6 +33,9 @@ contract RoninValidatorSet is
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
+  /// @dev Length of period in seconds
+  uint256 internal constant _periodLength = 1 days;
+
   /// @dev The maximum number of validator.
   uint256 internal _maxValidatorNumber;
   /// @dev The number of blocks in a epoch
@@ -227,7 +230,7 @@ contract RoninValidatorSet is
     }
 
     if (_slashAmount > 0) {
-      IStaking(_stakingContract).deductStakingAmount(_validatorAddr, _slashAmount);
+      _stakingContract.deductStakingAmount(_validatorAddr, _slashAmount);
     }
 
     emit ValidatorPunished(_validatorAddr, _period, _jailedUntil[_validatorAddr], _slashAmount, true, false);
@@ -303,7 +306,7 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function bulkJailed(address[] memory _addrList) external view override returns (bool[] memory _result) {
+  function bulkJailed(address[] calldata _addrList) external view override returns (bool[] memory _result) {
     _result = new bool[](_addrList.length);
     for (uint256 _i; _i < _addrList.length; _i++) {
       _result[_i] = _jailed(_addrList[_i]);
@@ -313,7 +316,7 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function miningRewardDeprecated(address[] memory _blockProducers)
+  function miningRewardDeprecated(address[] calldata _blockProducers)
     external
     view
     override
@@ -329,7 +332,7 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function miningRewardDeprecatedAtPeriod(address[] memory _blockProducers, uint256 _period)
+  function miningRewardDeprecatedAtPeriod(address[] calldata _blockProducers, uint256 _period)
     external
     view
     override
@@ -590,8 +593,7 @@ contract RoninValidatorSet is
   ) internal {
     // Shares equally in case the bridge has nothing to votes
     if (_totalBallots == 0 && _totalVotes == 0) {
-      uint256 _shareRatio = _MAX_PERCENTAGE / totalBridgeOperators();
-      _bridgeOperatingReward[_validator] = (_shareRatio * _totalBridgeReward) / _MAX_PERCENTAGE;
+      _bridgeOperatingReward[_validator] = _totalBridgeReward / totalBridgeOperators();
       return;
     }
 
@@ -606,8 +608,7 @@ contract RoninValidatorSet is
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       emit ValidatorPunished(_validator, _period, _jailedUntil[_validator], 0, false, true);
     } else if (_totalBallots > 0) {
-      uint256 _shareRatio = (_validatorBallots * _MAX_PERCENTAGE) / _totalBallots;
-      _bridgeOperatingReward[_validator] = (_shareRatio * _totalBridgeReward) / _MAX_PERCENTAGE;
+      _bridgeOperatingReward[_validator] = _totalBridgeReward / _totalBallots;
     }
   }
 
@@ -863,7 +864,7 @@ contract RoninValidatorSet is
    * @dev Returns the calculated period.
    */
   function _computePeriod(uint256 _timestamp) internal pure returns (uint256) {
-    return _timestamp / 1 days;
+    return _timestamp / _periodLength;
   }
 
   /**

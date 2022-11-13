@@ -114,16 +114,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   }
 
   /**
-   * @dev Proposes a candidate to become a validator.
-   *
-   * Requirements:
-   * - The pool admin is able to receive RON.
-   * - The treasury is able to receive RON.
-   * - The amount is larger than or equal to the minimum validator staking amount `minValidatorStakingAmount()`.
-   *
-   * @param _candidateAdmin the candidate admin will be stored in the validator contract, used for calling function that affects
-   * to its candidate. IE: scheduling maintenance.
-   *
+   * @dev See {ICandidateStaking-applyValidatorCandidate}
    */
   function _applyValidatorCandidate(
     address payable _poolAdmin,
@@ -148,13 +139,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   }
 
   /**
-   * @dev Stakes for the validator candidate.
-   *
-   * Requirements:
-   * - The address `_requester` must be the pool admin.
-   *
-   * Emits the `Staked` event.
-   *
+   * @dev See {ICandidateStaking-stake}
    */
   function _stake(
     PoolDetail storage _pool,
@@ -168,13 +153,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   }
 
   /**
-   * @dev Withdraws the staking amount `_amount` for the validator candidate.
-   *
-   * Requirements:
-   * - The address `_requester` must be the pool admin.
-   *
-   * Emits the `Unstaked` event.
-   *
+   * @dev See {ICandidateStaking-unstake}
    */
   function _unstake(
     PoolDetail storage _pool,
