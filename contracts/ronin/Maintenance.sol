@@ -200,6 +200,10 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
       _minMaintenanceDurationInBlock < _maxMaintenanceDurationInBlock,
       "Maintenance: invalid maintenance duration configs"
     );
+    require(
+      _minOffsetToStartSchedule < _maxOffsetToStartSchedule,
+      "Maintenance: invalid offset to start schedule configs"
+    );
     minMaintenanceDurationInBlock = _minMaintenanceDurationInBlock;
     maxMaintenanceDurationInBlock = _maxMaintenanceDurationInBlock;
     minOffsetToStartSchedule = _minOffsetToStartSchedule;
