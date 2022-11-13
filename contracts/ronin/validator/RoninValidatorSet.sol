@@ -608,8 +608,7 @@ contract RoninValidatorSet is
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       emit ValidatorPunished(_validator, _period, _jailedUntil[_validator], 0, false, true);
     } else if (_totalBallots > 0) {
-      uint256 _shareRatio = (_validatorBallots * _MAX_PERCENTAGE) / _totalBallots;
-      _bridgeOperatingReward[_validator] = (_shareRatio * _totalBridgeReward) / _MAX_PERCENTAGE;
+      _bridgeOperatingReward[_validator] = _totalBridgeReward / _totalBallots;
     }
   }
 
