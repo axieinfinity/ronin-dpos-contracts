@@ -115,7 +115,7 @@ interface IMaintenance {
    * - The method caller is candidate admin of the candidate `_consensusAddr`.
    * - The candidate `_consensusAddr` has no schedule yet or the previous is done.
    * - The total number of schedules is not larger than `maxSchedules()`.
-   * - The start block must be at least `minOffsetToStartSchedule()` at at most `maxOffsetToStartSchedule()` blocks from the current block.
+   * - The start block must be at least `minOffsetToStartSchedule()` and at most `maxOffsetToStartSchedule()` blocks from the current block.
    * - The end block is larger than the start block.
    * - The scheduled duration is larger than the `minMaintenanceDurationInBlock()` and less than the `maxMaintenanceDurationInBlock()`.
    * - The start block is at the start of an epoch.
