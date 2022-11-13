@@ -126,7 +126,7 @@ contract RoninValidatorSet is
     _setRoninTrustedOrganizationContract(__roninTrustedOrganizationContract);
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
-    _setPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
+    _setMaxPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
     _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
   }
 
@@ -510,8 +510,8 @@ contract RoninValidatorSet is
   /**
    * @inheritdoc IRoninValidatorSet
    */
-  function setNumberOfBlocksInEpoch(uint256 _number) external override onlyAdmin {
-    _setNumberOfBlocksInEpoch(_number);
+  function setMaxPrioritizedValidatorNumber(uint256 _number) external override onlyAdmin {
+    _setMaxPrioritizedValidatorNumber(_number);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -821,10 +821,7 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @dev Updates the max validator number
-   *
-   * Emits the event `MaxValidatorNumberUpdated`
-   *
+   * @dev See {IRoninValidatorSet-setMaxValidatorNumber}
    */
   function _setMaxValidatorNumber(uint256 _number) internal {
     _maxValidatorNumber = _number;
@@ -832,9 +829,9 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @dev Updates the number of reserved slots for prioritized validators
+   * @dev See {IRoninValidatorSet-setMaxPrioritizedValidatorNumber}
    */
-  function _setPrioritizedValidatorNumber(uint256 _number) internal {
+  function _setMaxPrioritizedValidatorNumber(uint256 _number) internal {
     require(
       _number <= _maxValidatorNumber,
       "RoninValidatorSet: cannot set number of prioritized greater than number of max validators"
@@ -856,7 +853,7 @@ contract RoninValidatorSet is
   }
 
   /**
-   * @dev Returns whether the last period is ending when compared with the new period.
+   * @dev See {IRoninValidatorSet-isPeriodEnding}
    */
   function _isPeriodEnding(uint256 _newPeriod) public view virtual returns (bool) {
     return _newPeriod > _lastUpdatedPeriod;

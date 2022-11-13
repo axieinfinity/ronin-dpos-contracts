@@ -284,13 +284,13 @@ interface IRoninValidatorSet is ICandidateManager {
   function setMaxValidatorNumber(uint256 _maxValidatorNumber) external;
 
   /**
-   * @dev Updates the number of blocks in epoch
+   * @dev Updates the number of reserved slots for prioritized validators
    *
    * Requirements:
    * - The method caller is admin
    *
-   * Emits the event `NumberOfBlocksInEpochUpdated`
+   * Emits the event `MaxPrioritizedValidatorNumberUpdated`
    *
    */
-  function setNumberOfBlocksInEpoch(uint256 _numberOfBlocksInEpoch) external;
+  function setMaxPrioritizedValidatorNumber(uint256 _maxPrioritizedValidatorNumber) external;
 }
