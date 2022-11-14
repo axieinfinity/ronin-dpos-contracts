@@ -15,8 +15,6 @@ interface IRoninValidatorSet is ICandidateManager {
   event MaxValidatorNumberUpdated(uint256);
   /// @dev Emitted when the number of reserved slots for prioritized validators is updated
   event MaxPrioritizedValidatorNumberUpdated(uint256);
-  /// @dev Emitted when the number of blocks in epoch is updated
-  event NumberOfBlocksInEpochUpdated(uint256);
   /// @dev Emitted when the validator set is updated
   event ValidatorSetUpdated(uint256 indexed period, address[] consensusAddrs);
   /// @dev Emitted when the bridge operator set is updated, to mirror the in-jail and maintaining status of the validator.
