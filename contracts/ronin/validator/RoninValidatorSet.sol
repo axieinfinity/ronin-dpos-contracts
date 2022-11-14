@@ -130,7 +130,7 @@ contract RoninValidatorSet is
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setMaxPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
-    _setNumberOfBlocksInEpoch(__numberOfBlocksInEpoch);
+    _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -293,14 +293,14 @@ contract RoninValidatorSet is
       uint256 epochLeft_
     )
   {
-    uint256 __jailedUntil = _jailedUntil[_addr];
-    if (__jailedUntil < _blockNum) {
+    uint256 _jailedBlock = _jailedUntil[_addr];
+    if (_jailedBlock < _blockNum) {
       return (false, 0, 0);
     }
 
     isJailed_ = true;
-    blockLeft_ = __jailedUntil - _blockNum + 1;
-    epochLeft_ = epochOf(__jailedUntil) - epochOf(_blockNum) + 1;
+    blockLeft_ = _jailedBlock - _blockNum + 1;
+    epochLeft_ = epochOf(_jailedBlock) - epochOf(_blockNum) + 1;
   }
 
   /**
@@ -352,7 +352,7 @@ contract RoninValidatorSet is
    * @inheritdoc IRoninValidatorSet
    */
   function epochOf(uint256 _block) public view virtual override returns (uint256) {
-    return _block == 0 ? 0 : _block / _numberOfBlocksInEpoch + 1;
+    return _block / _numberOfBlocksInEpoch + 1;
   }
 
   /**
@@ -840,17 +840,6 @@ contract RoninValidatorSet is
 
     _maxPrioritizedValidatorNumber = _number;
     emit MaxPrioritizedValidatorNumberUpdated(_number);
-  }
-
-  /**
-   * @dev Updates the number of blocks in epoch
-   *
-   * Emits the event `NumberOfBlocksInEpochUpdated`
-   *
-   */
-  function _setNumberOfBlocksInEpoch(uint256 _number) internal {
-    _numberOfBlocksInEpoch = _number;
-    emit NumberOfBlocksInEpochUpdated(_number);
   }
 
   /**
