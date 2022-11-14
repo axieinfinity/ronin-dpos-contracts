@@ -12,7 +12,7 @@ dotenv.config();
 
 const DEFAULT_MNEMONIC = 'title spike pink garlic hamster sorry few damage silver mushroom clever window';
 
-const { REPORT_GAS, DEVNET_PK, DEVNET_URL, TESTNET_PK, TESTNET_URL, MAINNET_PK, MAINNET_URL } = process.env;
+const { REPORT_GAS, DEVNET_PK, DEVNET_URL, TESTNET_PK, TESTNET_URL, MAINNET_PK, MAINNET_URL, GOERLI_URL, GOERLI_PK } = process.env;
 
 if (!DEVNET_PK) {
   console.warn('DEVNET_PK is unset. Using DEFAULT_MNEMONIC');
@@ -24,6 +24,10 @@ if (!TESTNET_PK) {
 
 if (!MAINNET_PK) {
   console.warn('MAINNET_PK is unset. Using DEFAULT_MNEMONIC');
+}
+
+if (!GOERLI_PK) {
+  console.warn('GOERLI_PK is unset. Using DEFAULT_MNEMONIC');
 }
 
 const local: NetworkUserConfig = {
@@ -47,6 +51,13 @@ const mainnet: NetworkUserConfig = {
   chainId: 2020,
   url: MAINNET_URL || 'https://api.roninchain.com/rpc',
   accounts: MAINNET_PK ? [MAINNET_PK] : { mnemonic: DEFAULT_MNEMONIC },
+  blockGasLimit: 100000000,
+};
+
+const goerli: NetworkUserConfig = {
+  chainId: 5,
+  url: GOERLI_URL || '',
+  accounts: GOERLI_PK ? [GOERLI_PK] : { mnemonic: DEFAULT_MNEMONIC },
   blockGasLimit: 100000000,
 };
 
@@ -87,6 +98,7 @@ const config: HardhatUserConfig = {
     'ronin-devnet': devnet,
     'ronin-testnet': testnet,
     'ronin-mainnet': mainnet,
+    'goerli': goerli,
   },
   gasReporter: {
     enabled: REPORT_GAS ? true : false,
