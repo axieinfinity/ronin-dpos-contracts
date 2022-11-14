@@ -15,13 +15,26 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   /// @dev Mapping from period number => bridge operator address => total number of ballots
   mapping(uint256 => mapping(address => uint256)) internal _totalBallotsOf;
 
-  /// @dev Mapping from vote kind => request id => flag indicating whether the receipt is recorded or not
-  mapping(VoteKind => mapping(uint256 => bool)) _receiptRecorded;
+  /// @dev Mapping from vote kind => request id => the period that the receipt is approved
+  mapping(VoteKind => mapping(uint256 => uint256)) internal _receiptApprovedAt;
+  /// @dev Mapping from vote kind => request id => the voters
+  mapping(VoteKind => mapping(uint256 => address[])) internal _receiptVoters;
   /// @dev Mapping from vote kind => request id => bridge operator address => flag indicating whether the operator voted or not
   mapping(VoteKind => mapping(uint256 => mapping(address => bool))) internal _receiptVoted;
 
   /// @dev The block that the contract allows incoming mutable calls.
   uint256 public startedAtBlock;
+
+  modifier skipOnUnstarted() {
+    if (block.number < startedAtBlock) {
+      return;
+    }
+    _;
+  }
+
+  constructor() {
+    _disableInitializers();
+  }
 
   /**
    * @dev Initializes the contract storage.
@@ -75,25 +88,62 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   /**
    * @inheritdoc IBridgeTracking
    */
+  function handleVoteApproved(VoteKind _kind, uint256 _requestId) external override onlyBridgeContract skipOnUnstarted {
+    // Only records for the receipt which not approved
+    if (_receiptApprovedAt[_kind][_requestId] == 0) {
+      uint256 _period = _validatorContract.currentPeriod();
+      _totalVotes[_period]++;
+      _receiptApprovedAt[_kind][_requestId] = _period;
+
+      address[] storage _voters = _receiptVoters[_kind][_requestId];
+      for (uint _i = 0; _i < _voters.length; _i++) {
+        increaseBallot(_kind, _requestId, _voters[_i], _period);
+      }
+
+      delete _receiptVoters[_kind][_requestId];
+    }
+  }
+
+  /**
+   * @inheritdoc IBridgeTracking
+   */
   function recordVote(
     VoteKind _kind,
     uint256 _requestId,
     address _operator
-  ) external override onlyBridgeContract {
-    if (block.number < startedAtBlock) {
+  ) external override onlyBridgeContract skipOnUnstarted {
+    uint256 _approvedPeriod = _receiptApprovedAt[_kind][_requestId];
+
+    // Stores the ones vote for the (deposit/mainchain withdrawal) request which not approved yet
+    if (_approvedPeriod == 0) {
+      if (_kind != VoteKind.Withdrawal) {
+        _receiptVoters[_kind][_requestId].push(_operator);
+      }
       return;
     }
 
     uint256 _period = _validatorContract.currentPeriod();
-    if (!_receiptRecorded[_kind][_requestId]) {
-      _totalVotes[_period]++;
-      _receiptRecorded[_kind][_requestId] = true;
+    // Only records within a period
+    if (_approvedPeriod == _period) {
+      increaseBallot(_kind, _requestId, _operator, _period);
+    }
+  }
+
+  /**
+   * Increases the ballot for the operator at a period.
+   */
+  function increaseBallot(
+    VoteKind _kind,
+    uint256 _requestId,
+    address _operator,
+    uint256 _period
+  ) internal {
+    if (_receiptVoted[_kind][_requestId][_operator]) {
+      return;
     }
 
-    if (!_receiptVoted[_kind][_requestId][_operator]) {
-      _totalBallots[_period]++;
-      _totalBallotsOf[_period][_operator]++;
-      _receiptVoted[_kind][_requestId][_operator] = true;
-    }
+    _totalBallots[_period]++;
+    _totalBallotsOf[_period][_operator]++;
+    _receiptVoted[_kind][_requestId][_operator] = true;
   }
 }
