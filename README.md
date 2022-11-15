@@ -15,36 +15,22 @@ Read more details at the [Ronin Whitepaper](https://www.notion.so/skymavis/Ronin
     - [Reward Calculation](#reward-calculation)
   - [Validator Contract & Rewarding](#validator-contract--rewarding)
     - [Block reward submission](#block-reward-submission)
-    - [Wrapping up epoch](#wrapping-up-epoch)
+    - [Wrapping up epoch/period](#wrapping-up-epochperiod)
   - [Slashing](#slashing)
-    - [Unavailability](#unavailability)
-    - [Double Sign](#double-sign)
-    - [](#)
+    - [Unavailability block producer](#unavailability-block-producer)
+    - [Double-sign block producer](#double-sign-block-producer)
+    - [Bridge Relayers](#bridge-relayers)
+    - [Bridge Voters (Ronin Trusted Organizations)](#bridge-voters-ronin-trusted-organizations)
+    - [Credit score](#credit-score)
+  - [Maintenance](#maintenance)
+  - [Bridges](#bridges)
+    - [Deposits](#deposits)
+    - [Withdrawals](#withdrawals)
   - [Contract Interaction flow](#contract-interaction-flow)
 - [Development](#development)
   - [Requirement](#requirement)
   - [Compile & test](#compile--test)
 - [Deployment](#deployment)
-
----
-
-0. Ronin Trusted Orgs
-1. Staking
-2. Validator
-3. Slashing
-4. Maintenance
-
----
-
-5. Staking Vesting
-   Bridges
-
----
-
-6. Bridge
-   BridgeTracking
-
----
 
 ## Governance
 
@@ -171,7 +157,7 @@ The top users with the highest amount of staked coins will be considered to be v
 
 The block miners submit their block reward at the end of each block, and these amounts will be split for the block producers and their corresponding delegators at the end of the period (~1 day).
 
-### Wrapping up epoch
+### Wrapping up epoch/period
 
 ![image](./assets/Validator%20Contract%20Overview.drawio.png)
 _Validator contract flow overview_
@@ -219,7 +205,7 @@ The validators will be slashed when they do not provide good service for Ronin n
 | `bridgeVotingThreshold`   | The threshold to slash when a trusted organization does not vote for bridge operators. |
 | `bridgeVotingSlashAmount` | The amount of RON to slash bridge voting.                                              |
 
-## Credit score
+### Credit score
 
 | Properties                     | Explanation                                                                                                          |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
@@ -227,6 +213,18 @@ The validators will be slashed when they do not provide good service for Ronin n
 | `maxCreditScore`               | The max number of credit score that a validator can hold.                                                            |
 | `bailOutCostMultiplier`        | The number that will be multiplied with the remaining jailed time to get the cost of bailing out.                    |
 | `cutOffPercentageAfterBailout` | The percentage of reward that the block producer will be cut off from until the end of the period after bailing out. |
+
+## Maintenance
+
+The validators will be slashed in their absence (even when it is due to scheduled maintenance). We allow the validators scheduling to enter a maintenance mode:
+
+| Properties                      | Explanation                                                     |
+| ------------------------------- | --------------------------------------------------------------- |
+| `minMaintenanceDurationInBlock` | The min duration to maintenance in blocks.                      |
+| `maxMaintenanceDurationInBlock` | The max duration to maintenance in blocks.                      |
+| `minOffsetToStartSchedule`      | The offset to the min block number that the schedule can start. |
+| `maxOffsetToStartSchedule`      | The offset to the max block number that the schedule can start. |
+| `maxSchedules`                  | The max number of scheduled maintenances.                       |
 
 ## Bridges
 
@@ -280,6 +278,14 @@ $ yarn test
 ```
 
 ## Deployment
+
+On main chains, we need to deploy the governance contract and bridge contracts: `RoninTrustedOrganization`, `MainchainGovernanceAdmin` and `MainchainGatewayV2`.
+
+On Ronin we deploy `RoninGatewayV2` for bridge operation and the DPoS contracts.
+
+All contracts (except governance contracts) are upgradable by following the governance process, we use [`TransparentUpgradeableProxy`](https://docs.openzeppelin.com/contracts/3.x/api/proxy#TransparentUpgradeableProxy) for this use case, and they should grant the governance contract the role of admin.
+
+Here is the deployment steps:
 
 - Init the environment variables:
 
