@@ -17,10 +17,6 @@ abstract contract ValidatorSetFragmentSlashing is
   RewardManager,
   SlashingInfoManager
 {
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                            FUNCTIONS FOR SLASH INDICATOR                          //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
   /**
    * @inheritdoc IValidatorSetFragmentSlashing
    */

@@ -61,10 +61,6 @@ interface IValidatorSetFragmentCoinbase is IFragmentBase {
   /// @dev Emitted when the epoch is wrapped up.
   event WrappedUpEpoch(uint256 indexed periodNumber, uint256 indexed epochNumber, bool periodEnding);
 
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                              FUNCTIONS FOR COINBASE                               //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
   /**
    * @dev Submits reward of the current block.
    *

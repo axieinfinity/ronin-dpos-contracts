@@ -8,10 +8,6 @@ interface IValidatorSetFragmentSlashing is IFragmentBase {
   /// @dev Emitted when the validator get out of jail by bailout.
   event ValidatorUnjailed(address indexed validator, uint256 period);
 
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                            FUNCTIONS FOR SLASH INDICATOR                          //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
   /**
    * @dev Finalize the slash request from slash indicator contract.
    *
