@@ -39,8 +39,7 @@ We have a group of trusted organizations that are chosen by the community and Sk
 - Update the system parameters, e.g: slash thresholds, and add/remove trusted organizations,...
 - Sync the set of bridge operators to the Ethereum chain every period.
 
-![image](./assets/Bridge%20Governance.png)
-
+![image](./assets/Governance.png)
 _Governance flow overview_
 
 The governance contracts (`RoninGovernanceAdmin` and `MainchainGovernanceAdmin`) are mainly responsible for the governance process via a decentralized voting mechanism. At any instance, there will be maximum one governance vote going on per network.
@@ -159,7 +158,7 @@ The block miners submit their block reward at the end of each block, and these a
 
 ### Wrapping up epoch/period
 
-![image](./assets/Validator%20Contract%20Overview.drawio.png)
+![image](./assets/Validator%20Contract%20Overview.png)
 _Validator contract flow overview_
 
 1. The block producer calls the contract `RoninValidatorSet.wrapUpEpoch()` to filter jailed/maintaining block producers.
@@ -236,7 +235,7 @@ When a deposit event happens on mainchain, the Bridge component in each validato
 Users can deposit ETH, ERC20, and ERC721 (NFTs) by sending transactions to `MainchainGatewayV2` and waiting for the deposit to be verified on Ronin. The validator will listen to the event on mainchain and then acknowledge the deposit on Ronin. The gateway should have a mapping between token contracts on Ethereum and on Ronin before the deposit can take place.
 
 For deposit there is no restriction on how large a deposit can be.
-![image](https://user-images.githubusercontent.com/1470053/166392267-d4acba7b-f1b0-4170-807b-3a29a114390c.png)
+![image](./assets/Deposit.png)
 
 ### Withdrawals
 
@@ -256,7 +255,7 @@ For withdrawal there are certain restrictions:
 
    There will be another constraint on the number of token that can be withdraw in a day. We propose to cap the value at $50M. Since withdrawal of Tier 3 already requires human review, it will not be counted in daily withdrawal limit.
 
-![image](https://user-images.githubusercontent.com/1470053/166392379-9562291d-ddb7-45ae-8ea5-1e174268a2cb.png)
+![image](./assets/Withdrawal.png)
 _Normal withdrawal flow (tier 1 + tier 2). For tier 3, a separated human address will need to unlock the fund._
 
 ## Contract Interaction flow
