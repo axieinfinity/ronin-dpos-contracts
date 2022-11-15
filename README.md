@@ -28,8 +28,8 @@ Read more details at the [Ronin Whitepaper](https://www.notion.so/skymavis/Ronin
     - [Withdrawals](#withdrawals)
   - [Contract Interaction flow](#contract-interaction-flow)
 - [Development](#development)
-  - [Requirement](#requirement)
-  - [Compile & test](#compile--test)
+    - [Requirement](#requirement)
+    - [Compile & test](#compile--test)
 - [Deployment](#deployment)
 
 ## Governance
@@ -262,7 +262,7 @@ _Normal withdrawal flow (tier 1 + tier 2). For tier 3, a separated human address
 
 Read the contract interaction flow at [DPoS Contract: Interaction Flow](https://skymavis.notion.site/DPoS-Contract-Interaction-Flow-3a535cf9048f46f69dd9a45958ad9b85).
 
-## Development
+# Development
 
 ### Requirement
 
@@ -276,7 +276,7 @@ $ yarn compile
 $ yarn test
 ```
 
-## Deployment
+# Deployment
 
 On main chains, we need to deploy the governance contract and bridge contracts: `RoninTrustedOrganization`, `MainchainGovernanceAdmin` and `MainchainGatewayV2`.
 
