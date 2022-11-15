@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.9;
 
-import "../../extensions/collections/HasStakingContract.sol";
-import "../../extensions/consumers/PercentageConsumer.sol";
-import "../../interfaces/ICandidateManager.sol";
-import "../../interfaces/staking/IStaking.sol";
+import "../../../extensions/collections/HasStakingContract.sol";
+import "../../../extensions/consumers/PercentageConsumer.sol";
+import "../../../interfaces/validator/managers/ICandidateManager.sol";
+import "../../../interfaces/staking/IStaking.sol";
 
-abstract contract CandidateManager is ICandidateManager, HasStakingContract, PercentageConsumer {
+abstract contract CandidateManager is ICandidateManager, PercentageConsumer, HasStakingContract {
   /// @dev Maximum number of validator candidate
   uint256 private _maxValidatorCandidate;
 
@@ -114,12 +114,12 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract, Per
   }
 
   /**
-   * @inheritdoc ICandidateManager
+   * @dev See {ITimingManager}
    */
-  function currentPeriod() public view virtual override returns (uint256);
+  function currentPeriod() public view virtual returns (uint256);
 
   /**
-   * @inheritdoc ICandidateManager
+   * @dev See {ITimingManager}
    */
   function numberOfBlocksInEpoch() public view virtual returns (uint256);
 

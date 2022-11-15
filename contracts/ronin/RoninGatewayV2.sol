@@ -9,7 +9,7 @@ import "../extensions/MinimumWithdrawal.sol";
 import "../interfaces/IERC20Mintable.sol";
 import "../interfaces/IERC721Mintable.sol";
 import "../interfaces/IRoninGatewayV2.sol";
-import "../interfaces/IRoninValidatorSet.sol";
+import "../interfaces/validator/IRoninValidatorSet.sol";
 import "../interfaces/IBridgeTracking.sol";
 import "../interfaces/collections/IHasValidatorContract.sol";
 import "../interfaces/collections/IHasBridgeTrackingContract.sol";
