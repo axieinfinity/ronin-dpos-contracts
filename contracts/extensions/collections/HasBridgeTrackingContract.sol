@@ -34,9 +34,6 @@ contract HasBridgeTrackingContract is IHasBridgeTrackingContract, HasProxyAdmin 
   /**
    * @dev Sets the bridge tracking contract.
    *
-   * Requirements:
-   * - The new address is a contract.
-   *
    * Emits the event `BridgeTrackingContractUpdated`.
    *
    */

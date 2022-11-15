@@ -34,9 +34,6 @@ contract HasMaintenanceContract is IHasMaintenanceContract, HasProxyAdmin {
   /**
    * @dev Sets the scheduled maintenance contract.
    *
-   * Requirements:
-   * - The new address is a contract.
-   *
    * Emits the event `MaintenanceContractUpdated`.
    *
    */

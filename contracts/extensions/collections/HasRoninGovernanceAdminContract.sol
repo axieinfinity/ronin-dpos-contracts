@@ -34,9 +34,6 @@ contract HasRoninGovernanceAdminContract is IHasRoninGovernanceAdminContract, Ha
   /**
    * @dev Sets the ronin governance admin contract.
    *
-   * Requirements:
-   * - The new address is a contract.
-   *
    * Emits the event `RoninGovernanceAdminContractUpdated`.
    *
    */

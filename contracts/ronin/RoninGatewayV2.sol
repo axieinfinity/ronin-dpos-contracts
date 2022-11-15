@@ -457,9 +457,6 @@ contract RoninGatewayV2 is
   /**
    * @dev Sets the validator contract.
    *
-   * Requirements:
-   * - The new address is a contract.
-   *
    * Emits the event `ValidatorContractUpdated`.
    *
    */
@@ -470,9 +467,6 @@ contract RoninGatewayV2 is
 
   /**
    * @dev Sets the bridge tracking contract.
-   *
-   * Requirements:
-   * - The new address is a contract.
    *
    * Emits the event `BridgeTrackingContractUpdated`.
    *

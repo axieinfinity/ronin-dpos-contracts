@@ -31,9 +31,6 @@ contract HasStakingContract is IHasStakingContract, HasProxyAdmin {
   /**
    * @dev Sets the staking contract.
    *
-   * Requirements:
-   * - The new address is a contract.
-   *
    * Emits the event `StakingContractUpdated`.
    *
    */

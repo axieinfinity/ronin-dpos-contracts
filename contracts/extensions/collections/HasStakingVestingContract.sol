@@ -34,9 +34,6 @@ contract HasStakingVestingContract is IHasStakingVestingContract, HasProxyAdmin 
   /**
    * @dev Sets the staking vesting contract.
    *
-   * Requirements:
-   * - The new address is a contract.
-   *
    * Emits the event `StakingVestingContractUpdated`.
    *
    */

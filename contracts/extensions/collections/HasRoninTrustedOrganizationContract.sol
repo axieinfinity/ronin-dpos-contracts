@@ -34,9 +34,6 @@ contract HasRoninTrustedOrganizationContract is IHasRoninTrustedOrganizationCont
   /**
    * @dev Sets the ronin trusted organization contract.
    *
-   * Requirements:
-   * - The new address is a contract.
-   *
    * Emits the event `RoninTrustedOrganizationContractUpdated`.
    *
    */

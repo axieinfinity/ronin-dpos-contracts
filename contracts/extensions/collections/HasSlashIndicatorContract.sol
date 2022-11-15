@@ -34,9 +34,6 @@ contract HasSlashIndicatorContract is IHasSlashIndicatorContract, HasProxyAdmin 
   /**
    * @dev Sets the slash indicator contract.
    *
-   * Requirements:
-   * - The new address is a contract.
-   *
    * Emits the event `SlashIndicatorContractUpdated`.
    *
    */

@@ -31,9 +31,6 @@ contract HasBridgeContract is IHasBridgeContract, HasProxyAdmin {
   /**
    * @dev Sets the bridge contract.
    *
-   * Requirements:
-   * - The new address is a contract.
-   *
    * Emits the event `BridgeContractUpdated`.
    *
    */
