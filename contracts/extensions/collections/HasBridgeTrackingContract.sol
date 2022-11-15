@@ -27,6 +27,7 @@ contract HasBridgeTrackingContract is IHasBridgeTrackingContract, HasProxyAdmin 
    * @inheritdoc IHasBridgeTrackingContract
    */
   function setBridgeTrackingContract(address _addr) external virtual override onlyAdmin {
+    require(_addr.code.length > 0, "HasBridgeTrackingContract: set to non-contract");
     _setBridgeTrackingContract(_addr);
   }
 

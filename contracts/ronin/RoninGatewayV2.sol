@@ -98,6 +98,7 @@ contract RoninGatewayV2 is
    * @inheritdoc IHasValidatorContract
    */
   function setValidatorContract(address _addr) external override onlyAdmin {
+    require(_addr.code.length > 0, "RoninGatewayV2: set to non-contract");
     _setValidatorContract(_addr);
   }
 
@@ -112,6 +113,7 @@ contract RoninGatewayV2 is
    * @inheritdoc IHasBridgeTrackingContract
    */
   function setBridgeTrackingContract(address _addr) external override onlyAdmin {
+    require(_addr.code.length > 0, "RoninGatewayV2: set to non-contract");
     _setBridgeTrackingContract(_addr);
   }
 

@@ -35,6 +35,7 @@ contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract,
    * @inheritdoc IHasRoninTrustedOrganizationContract
    */
   function setRoninTrustedOrganizationContract(address _addr) external override onlySelfCall {
+    require(_addr.code.length > 0, "GovernanceAdmin: set to non-contract");
     _setRoninTrustedOrganizationContract(_addr);
   }
 
@@ -42,6 +43,7 @@ contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract,
    * @inheritdoc IHasBridgeContract
    */
   function setBridgeContract(address _addr) external override onlySelfCall {
+    require(_addr.code.length > 0, "GovernanceAdmin: set to non-contract");
     _setBridgeContract(_addr);
   }
 
