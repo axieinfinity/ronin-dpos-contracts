@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-interface IFragmentBase {
+interface IBaseValidatorSetFragment {
   /// @dev Emitted when the validator is punished.
   event ValidatorPunished(
     address indexed consensusAddr,

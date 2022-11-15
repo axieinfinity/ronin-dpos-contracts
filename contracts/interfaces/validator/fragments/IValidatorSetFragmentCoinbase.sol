@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-import "./IFragmentBase.sol";
+import "./IBaseValidatorSetFragment.sol";
 
-interface IValidatorSetFragmentCoinbase is IFragmentBase {
+interface IValidatorSetFragmentCoinbase is IBaseValidatorSetFragment {
   enum BlockRewardDeprecatedType {
     UNKNOWN,
     UNAVAILABILITY,

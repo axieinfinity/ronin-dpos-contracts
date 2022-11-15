@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-import "./IFragmentBase.sol";
+import "./IBaseValidatorSetFragment.sol";
 
-interface IValidatorSetFragmentSlashing is IFragmentBase {
+interface IValidatorSetFragmentSlashing is IBaseValidatorSetFragment {
   /// @dev Emitted when the validator get out of jail by bailout.
   event ValidatorUnjailed(address indexed validator, uint256 period);
 
