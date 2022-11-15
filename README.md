@@ -75,10 +75,10 @@ The governance contracts (`RoninGovernanceAdmin` and `MainchainGovernanceAdmin`)
 const TYPEHASH = 0xeea5e3908ac28cbdbbce8853e49444c558a0a03597e98ef19e6ff86162ed9ae3;
 ```
 
-| Name        | Type        | Explanation                                      |
-| ----------- | ----------- | ------------------------------------------------ |
-| `period`    | `uint256`   | The period that these operators are active       |
-| `operators` | `address[]` | List of address that the BridgeAdmin has to call |
+| Name        | Type        | Explanation                                |
+| ----------- | ----------- | ------------------------------------------ |
+| `period`    | `uint256`   | The period that these operators are active |
+| `operators` | `address[]` | The address list of all operators          |
 
 ### Proposals
 
@@ -124,7 +124,7 @@ The users can propose themselves to be validator candidates by staking their RON
 
 ### Validator Candidate
 
-**Applying to be validator candidate**
+**Applying to be a candidate**
 
 | Params                       | Explanation                                                                                                                                         |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -137,7 +137,7 @@ The users can propose themselves to be validator candidates by staking their RON
 
 The validator candidates can deposit or withdraw their funds afterwards as long as the staking balance must be greater than the threshold `minValidatorStakingAmount()`.
 
-**Renouncing validator**
+**Renouncing**
 
 The candidates can renounce and take back their deposited RON at the next period ending after waiting `waitingSecsToRevoke()` seconds.
 
@@ -158,27 +158,9 @@ The delegator has to wait at least `cooldownSecsToUndelegate()` seconds from the
 
 ### Reward Calculation
 
-The reward is calculated based on the minimum staking amount in the current period of a specific delegator.
-
-For example:
-
-| Period      | Action            | Reward                  | Explanation                                                                                       |
-| ----------- | ----------------- | ----------------------- | ------------------------------------------------------------------------------------------------- |
-| -           | UserA: +500       |                         | Staking action before the hardfork block does affect the reward calculation at the first period x |
-|             | UserA: -450       |                         |                                                                                                   |
-|             | UserA: +50        |                         | StakingAmount(UserA)= 500 → 50 → 100                                                              |
-|             | UserB: +100       |                         | StakingAmount(UserB)= 0 → 100                                                                     |
-| x           | -                 | -                       | Hardfork block                                                                                    |
-|             | UserA: -60        |                         | StakingAmount(UserA)=100 → 40                                                                     |
-|             | UserB: -90        |                         | StakingAmount(UserB)=100 → 10                                                                     |
-|             | UserB: +40        |                         | StakingAmount(UserB)=10 → 50                                                                      |
-| Wrap up x   | Pool reward: 2000 | UserA+=1600; UserB+=400 | Minimum balance of UserA is 40 (80%); Minimum balance of UserB is 10 (20%)                        |
-| x+1         | UserA: +10        | -                       | StakingAmount(UserA)=40 → 50                                                                      |
-|             | UserB: -10        | -                       | StakingAmount(UserB)=50 → 40                                                                      |
-| Wrap up x+1 | Pool reward: 2000 | UserA+=1000 UserB+=1000 | Minimum balance of UserA is 40 (50%) Minimum balance of UserB is 40 (50%)                         |
+The reward is calculated based on the minimum staking amount in the current period of a specific delegator:
 
 - Read how the reward is calculated for delegator at [Staking Problem: Reward Calculation](https://skymavis.notion.site/Staking-Problem-Reward-Calculation-bd47bbcefde24bbd8e959bee45dfd4a5).
-
 - See [`RewardCalculation` contract](./contracts/ronin/staking/RewardCalculation.sol) for the implementation.
 
 ## Validator Contract & Rewarding
@@ -187,7 +169,7 @@ The top users with the highest amount of staked coins will be considered to be v
 
 ### Block reward submission
 
-The block producers submit their block reward at the end of each block, and the amount of reward will be transferred to the block miner and its corresponding delegators at the end of the period (~1 day).
+The block miners submit their block reward at the end of each block, and these amounts will be split for the block producers and their corresponding delegators at the end of the period (~1 day).
 
 ### Wrapping up epoch
 
@@ -206,7 +188,7 @@ At the end of each period, the contract:
 
 The validators will be slashed when they do not provide good service for Ronin network.
 
-### Unavailability
+### Unavailability block producer
 
 | Properties                                    | Explanation                                                                                                                                    |
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -215,14 +197,69 @@ The validators will be slashed when they do not provide good service for Ronin n
 | `slashAmountForUnavailabilityTier2Threshold`  | The amount of RON to deduct from self-staking of a block producer when (s)he is slashed tier-2.                                                |
 | `jailDurationForUnavailabilityTier2Threshold` | The number of blocks to jail a block producer when (s)he is slashed tier-2.                                                                    |
 
-### Double Sign
+### Double-sign block producer
 
 | Properties                    | Explanation                                                                               |
 | ----------------------------- | ----------------------------------------------------------------------------------------- |
 | `slashDoubleSignAmount`       | The amount of RON to slash double sign.                                                   |
 | `doubleSigningJailUntilBlock` | The block number that the punished validator will be jailed until, due to double signing. |
 
-###
+### Bridge Relayers
+
+| Properties                              | Explanation                                                                                                                                           |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `missingVotesRatioTier1`                | The bridge reward will be deprecated if (s)he missed more than this ratio.                                                                            |
+| `missingVotesRatioTier2`                | The bridge reward and mining reward will be deprecated and the corresponding block producer will be put in jail if (s)he misses more than this ratio. |
+| `jailDurationForMissingVotesRatioTier2` | The number of blocks to jail the corresponding block producer when its bridge operator is slashed tier-2.                                             |
+
+### Bridge Voters (Ronin Trusted Organizations)
+
+| Properties                | Explanation                                                                            |
+| ------------------------- | -------------------------------------------------------------------------------------- |
+| `bridgeVotingThreshold`   | The threshold to slash when a trusted organization does not vote for bridge operators. |
+| `bridgeVotingSlashAmount` | The amount of RON to slash bridge voting.                                              |
+
+## Credit score
+
+| Properties                     | Explanation                                                                                                          |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `gainCreditScore`              | The max gained number of credit score per period.                                                                    |
+| `maxCreditScore`               | The max number of credit score that a validator can hold.                                                            |
+| `bailOutCostMultiplier`        | The number that will be multiplied with the remaining jailed time to get the cost of bailing out.                    |
+| `cutOffPercentageAfterBailout` | The percentage of reward that the block producer will be cut off from until the end of the period after bailing out. |
+
+## Bridges
+
+The bridge is design to support multiple chains.
+When a deposit event happens on mainchain, the Bridge component in each validator node will pick it up and relay it to Ronin by sending a corresponding transaction. For withdrawal and governance events, it will start from Ronin then being relay on other chains.
+
+### Deposits
+
+Users can deposit ETH, ERC20, and ERC721 (NFTs) by sending transactions to `MainchainGatewayV2` and waiting for the deposit to be verified on Ronin. The validator will listen to the event on mainchain and then acknowledge the deposit on Ronin. The gateway should have a mapping between token contracts on Ethereum and on Ronin before the deposit can take place.
+
+For deposit there is no restriction on how large a deposit can be.
+![image](https://user-images.githubusercontent.com/1470053/166392267-d4acba7b-f1b0-4170-807b-3a29a114390c.png)
+
+### Withdrawals
+
+For withdrawal there are certain restrictions:
+
+1. Withdrawal tiers
+
+   There are 3 withdrawal tiers with different level of threshold required to withdraw. This is what we propose initially
+
+   | Tier   | Withdrawal Value | Threshold                                                                                               |
+   | ------ | :--------------: | ------------------------------------------------------------------------------------------------------- |
+   | Tier 1 |        -         | The normal withdrawal/deposit threshold                                                                 |
+   | Tier 2 |      >= $1M      | Applied the special threshold for high-tier withdrawals                                                 |
+   | Tier 3 |     >= $10M      | Applied the special threshold for high-tier withdrawals, one additional human review to unlock the fund |
+
+2. Daily withdrawal limit
+
+   There will be another constraint on the number of token that can be withdraw in a day. We propose to cap the value at $50M. Since withdrawal of Tier 3 already requires human review, it will not be counted in daily withdrawal limit.
+
+![image](https://user-images.githubusercontent.com/1470053/166392379-9562291d-ddb7-45ae-8ea5-1e174268a2cb.png)
+_Normal withdrawal flow (tier 1 + tier 2). For tier 3, a separated human address will need to unlock the fund._
 
 ## Contract Interaction flow
 
