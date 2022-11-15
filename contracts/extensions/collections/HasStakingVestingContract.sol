@@ -27,14 +27,12 @@ contract HasStakingVestingContract is IHasStakingVestingContract, HasProxyAdmin 
    * @inheritdoc IHasStakingVestingContract
    */
   function setStakingVestingContract(address _addr) external override onlyAdmin {
+    require(_addr.code.length > 0, "HasStakingVestingContract: set to non-contract");
     _setStakingVestingContract(_addr);
   }
 
   /**
    * @dev Sets the staking vesting contract.
-   *
-   * Requirements:
-   * - The new address is a contract.
    *
    * Emits the event `StakingVestingContractUpdated`.
    *

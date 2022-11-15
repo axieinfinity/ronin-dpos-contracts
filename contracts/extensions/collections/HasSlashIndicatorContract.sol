@@ -27,14 +27,12 @@ contract HasSlashIndicatorContract is IHasSlashIndicatorContract, HasProxyAdmin 
    * @inheritdoc IHasSlashIndicatorContract
    */
   function setSlashIndicatorContract(address _addr) external override onlyAdmin {
+    require(_addr.code.length > 0, "HasSlashIndicatorContract: set to non-contract");
     _setSlashIndicatorContract(_addr);
   }
 
   /**
    * @dev Sets the slash indicator contract.
-   *
-   * Requirements:
-   * - The new address is a contract.
    *
    * Emits the event `SlashIndicatorContractUpdated`.
    *

@@ -27,14 +27,12 @@ contract HasMaintenanceContract is IHasMaintenanceContract, HasProxyAdmin {
    * @inheritdoc IHasMaintenanceContract
    */
   function setMaintenanceContract(address _addr) external override onlyAdmin {
+    require(_addr.code.length > 0, "HasMaintenanceContract: set to non-contract");
     _setMaintenanceContract(_addr);
   }
 
   /**
    * @dev Sets the scheduled maintenance contract.
-   *
-   * Requirements:
-   * - The new address is a contract.
    *
    * Emits the event `MaintenanceContractUpdated`.
    *

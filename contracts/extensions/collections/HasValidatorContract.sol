@@ -24,14 +24,12 @@ contract HasValidatorContract is IHasValidatorContract, HasProxyAdmin {
    * @inheritdoc IHasValidatorContract
    */
   function setValidatorContract(address _addr) external override onlyAdmin {
+    require(_addr.code.length > 0, "HasValidatorContract: set to non-contract");
     _setValidatorContract(_addr);
   }
 
   /**
    * @dev Sets the validator contract.
-   *
-   * Requirements:
-   * - The new address is a contract.
    *
    * Emits the event `ValidatorContractUpdated`.
    *

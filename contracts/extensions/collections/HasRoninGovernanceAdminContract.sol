@@ -27,14 +27,12 @@ contract HasRoninGovernanceAdminContract is IHasRoninGovernanceAdminContract, Ha
    * @inheritdoc IHasRoninGovernanceAdminContract
    */
   function setRoninGovernanceAdminContract(address _addr) external override onlyAdmin {
+    require(_addr.code.length > 0, "HasRoninGovernanceAdminContract: set to non-contract");
     _setRoninGovernanceAdminContract(_addr);
   }
 
   /**
    * @dev Sets the ronin governance admin contract.
-   *
-   * Requirements:
-   * - The new address is a contract.
    *
    * Emits the event `RoninGovernanceAdminContractUpdated`.
    *

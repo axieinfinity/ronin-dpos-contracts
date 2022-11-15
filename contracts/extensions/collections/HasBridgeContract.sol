@@ -24,14 +24,12 @@ contract HasBridgeContract is IHasBridgeContract, HasProxyAdmin {
    * @inheritdoc IHasBridgeContract
    */
   function setBridgeContract(address _addr) external virtual override onlyAdmin {
+    require(_addr.code.length > 0, "HasBridgeContract: set to non-contract");
     _setBridgeContract(_addr);
   }
 
   /**
    * @dev Sets the bridge contract.
-   *
-   * Requirements:
-   * - The new address is a contract.
    *
    * Emits the event `BridgeContractUpdated`.
    *
