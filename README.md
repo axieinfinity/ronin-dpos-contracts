@@ -4,6 +4,28 @@ The collections of smart contracts that power the Ronin Delegated Proof of Stake
 
 Read more details at the [Ronin Whitepaper](https://www.notion.so/skymavis/Ronin-Whitepaper-deec289d6cec49d38dc6e904669331a5).
 
+- [Overview](#ronin-dpos-contracts)
+  - [Governance](#governance)
+    - [Ronin Trusted Organization](#ronin-trusted-organization)
+    - [Bridge Operators Ballot](#bridge-operators-ballot)
+    - [Proposals](#proposals)
+  - [Staking](#staking)
+    - [Validator Candidate](#validator-candidate)
+    - [Delegator](#delegator)
+    - [Reward Calculation](#reward-calculation)
+  - [Validator Contract & Rewarding](#validator-contract--rewarding)
+    - [Block reward submission](#block-reward-submission)
+    - [Wrapping up epoch](#wrapping-up-epoch)
+  - [Slashing](#slashing)
+    - [Unavailability](#unavailability)
+    - [Double Sign](#double-sign)
+    - [](#)
+  - [Contract Interaction flow](#contract-interaction-flow)
+- [Development](#development)
+  - [Requirement](#requirement)
+  - [Compile & test](#compile--test)
+- [Deployment](#deployment)
+
 ---
 
 0. Ronin Trusted Orgs
@@ -35,7 +57,7 @@ We have a group of trusted organizations that are chosen by the community and Sk
 
 _Governance flow overview_
 
-The governance contracts (`RoninGovernanceAdmin` and `MainchainGovernanceAdmin`) are mainly responsible for governance process via a decentralized voting mechanism. At any instance there will be maximum one governance vote going on per network.
+The governance contracts (`RoninGovernanceAdmin` and `MainchainGovernanceAdmin`) are mainly responsible for the governance process via a decentralized voting mechanism. At any instance, there will be maximum one governance vote going on per network.
 
 ### Ronin Trusted Organization
 
@@ -161,18 +183,18 @@ For example:
 
 ## Validator Contract & Rewarding
 
-The top users with the highest amount of staked coins will be considered to be validators after prioritize the Ronin Trusted Organization. The total number of validators do not larger than `maxValidatorNumber()`. Each validator will be a block producer and a bridge relayer, whenever a validator get jailed its corresponding block producer will not be able to receive block reward.
+The top users with the highest amount of staked coins will be considered to be validators after prioritizing the trusted organizations. The total number of validators do not larger than `maxValidatorNumber()`. Each validator will be a block producer and a bridge relayer, whenever a validator gets jailed its corresponding block producer will not be able to receive the block reward.
 
 ### Block reward submission
 
-The block producers submits their block reward at the end of each block, the amount of reward will be transferred to the block miner and its corresponding delegators at the end of period (~$1$ day).
+The block producers submit their block reward at the end of each block, and the amount of reward will be transferred to the block miner and its corresponding delegators at the end of the period (~1 day).
 
 ### Wrapping up epoch
 
 ![image](./assets/Validator%20Contract%20Overview.drawio.png)
 _Validator contract flow overview_
 
-1. The block producer call the contract `RoninValidatorSet.wrapUpEpoch()` to filter jailed/maintaining block producers.
+1. The block producer calls the contract `RoninValidatorSet.wrapUpEpoch()` to filter jailed/maintaining block producers.
 
 At the end of each period, the contract:
 
@@ -182,7 +204,7 @@ At the end of each period, the contract:
 
 ## Slashing
 
-The validators will be slashed when they do not provide the good service for Ronin network.
+The validators will be slashed when they do not provide good service for Ronin network.
 
 ### Unavailability
 
@@ -195,12 +217,12 @@ The validators will be slashed when they do not provide the good service for Ron
 
 ### Double Sign
 
-| Properties                     | Explanation                                                                               |
-| ------------------------------ | ----------------------------------------------------------------------------------------- |
+| Properties                    | Explanation                                                                               |
+| ----------------------------- | ----------------------------------------------------------------------------------------- |
 | `slashDoubleSignAmount`       | The amount of RON to slash double sign.                                                   |
 | `doubleSigningJailUntilBlock` | The block number that the punished validator will be jailed until, due to double signing. |
 
-### 
+###
 
 ## Contract Interaction flow
 
