@@ -29,10 +29,6 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
    */
   uint256[50] private ______gap;
 
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                              CREDIT SCORE FUNCTIONS                               //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
   /**
    * @inheritdoc ICreditScore
    */
@@ -100,10 +96,6 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     _bailedOutAtPeriod[_consensusAddr][_period] = true;
   }
 
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                               GOVERNANCE FUNCTIONS                                //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
   /**
    * @inheritdoc ICreditScore
    */
@@ -115,10 +107,6 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   ) external override onlyAdmin {
     _setCreditScoreConfigs(_gainCreditScore, _maxCreditScore, _bailOutCostMultiplier, _cutOffPercentageAfterBailout);
   }
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                                  QUERY FUNCTIONS                                  //
-  ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * @dev See `ISlashUnavailability`
@@ -174,10 +162,6 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   function bailedOutAtPeriod(address _validator, uint256 _period) external view override returns (bool) {
     return _bailedOutAtPeriod[_validator][_period];
   }
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                                 HELPER FUNCTIONS                                  //
-  ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * @dev See `ISlashUnavailability`

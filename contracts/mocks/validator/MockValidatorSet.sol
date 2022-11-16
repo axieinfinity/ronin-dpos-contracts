@@ -2,10 +2,8 @@
 
 pragma solidity ^0.8.9;
 
-import "../interfaces/slash-indicator/ISlashIndicator.sol";
-import "../interfaces/IRoninValidatorSet.sol";
-import "../interfaces/staking/IStaking.sol";
-import "../ronin/validator/CandidateManager.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
+import "../../ronin/validator/CandidateManager.sol";
 
 contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   address public stakingVestingContract;
@@ -33,7 +31,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   function submitBlockReward() external payable override {}
 
   function wrapUpEpoch() external payable override {
-    _filterUnsatisfiedCandidates();
+    _removeUnsatisfiedCandidates();
     _lastUpdatedPeriod = currentPeriod();
   }
 
@@ -81,7 +79,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     return true;
   }
 
-  function numberOfBlocksInEpoch() public view override(CandidateManager, ICandidateManager) returns (uint256) {
+  function numberOfBlocksInEpoch() public view override returns (uint256) {
     return _numberOfBlocksInEpoch;
   }
 
@@ -105,7 +103,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     return currentPeriod() > _lastUpdatedPeriod;
   }
 
-  function currentPeriod() public view override(CandidateManager, ICandidateManager) returns (uint256) {
+  function currentPeriod() public view override returns (uint256) {
     return block.timestamp / 86400;
   }
 

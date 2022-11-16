@@ -103,19 +103,4 @@ interface ICandidateManager {
    * @dev Returns whether the address is the candidate admin.
    */
   function isCandidateAdmin(address _candidate, address _admin) external view returns (bool);
-
-  /**
-   * @dev Returns the period index from the current block.
-   */
-  function currentPeriod() external view returns (uint256);
-
-  /**
-   * @dev Returns the block number that the current period starts at.
-   */
-  function currentPeriodStartAtBlock() external view returns (uint256);
-
-  /**
-   * @dev Returns the number of blocks in a epoch.
-   */
-  function numberOfBlocksInEpoch() external view returns (uint256 _numberOfBlocks);
 }

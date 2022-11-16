@@ -4,10 +4,10 @@ pragma solidity ^0.8.9;
 
 import "../../extensions/collections/HasStakingContract.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
-import "../../interfaces/ICandidateManager.sol";
+import "../../interfaces/validator/ICandidateManager.sol";
 import "../../interfaces/staking/IStaking.sol";
 
-abstract contract CandidateManager is ICandidateManager, HasStakingContract, PercentageConsumer {
+abstract contract CandidateManager is ICandidateManager, PercentageConsumer, HasStakingContract {
   /// @dev Maximum number of validator candidate
   uint256 private _maxValidatorCandidate;
 
@@ -114,23 +114,13 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract, Per
   }
 
   /**
-   * @inheritdoc ICandidateManager
-   */
-  function currentPeriod() public view virtual override returns (uint256);
-
-  /**
-   * @inheritdoc ICandidateManager
-   */
-  function numberOfBlocksInEpoch() public view virtual returns (uint256);
-
-  /**
    * @dev Removes unsastisfied candidates, the ones who have insufficient minimum candidate staking amount,
    * or the ones who revoked their candidate role.
    *
    * Emits the event `CandidatesRevoked` when a candidate is revoked.
    *
    */
-  function _filterUnsatisfiedCandidates() internal {
+  function _removeUnsatisfiedCandidates() internal {
     IStaking _staking = _stakingContract;
     uint256 _minStakingAmount = _stakingContract.minValidatorStakingAmount();
     uint256[] memory _selfStakings = _staking.bulkSelfStaking(_candidates);
@@ -190,6 +180,13 @@ abstract contract CandidateManager is ICandidateManager, HasStakingContract, Per
     }
 
     _candidates.pop();
+  }
+
+  /**
+   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
+   */
+  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address) {
+    return _candidateInfo[_consensusAddr].bridgeOperatorAddr;
   }
 
   /**
