@@ -135,9 +135,9 @@ describe('Governance Admin test', () => {
   });
 
   it('Should be able relay vote bridge operators', async () => {
-    expect(await mainchainGovernanceAdmin.bridgeOperatorRelayed(ballot.period)).to.false;
+    expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period)).to.false;
     await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures);
-    expect(await mainchainGovernanceAdmin.bridgeOperatorRelayed(ballot.period)).to.true;
+    expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period)).to.true;
     expect(await bridgeContract.getBridgeOperators()).eql(governors.map((v) => v.address));
   });
 

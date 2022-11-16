@@ -33,7 +33,7 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
   /**
    * @dev Returns whether the voter `_voter` casted vote for bridge operators at a specific period.
    */
-  function bridgeOperatorRelayed(uint256 _period) external view returns (bool) {
+  function bridgeOperatorsRelayed(uint256 _period) external view returns (bool) {
     return _vote[_period].status != VoteStatus.Pending;
   }
 
