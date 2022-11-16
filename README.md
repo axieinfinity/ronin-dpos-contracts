@@ -5,10 +5,6 @@ The collections of smart contracts that power the Ronin Delegated Proof of Stake
 Read more details at the [Ronin Whitepaper](https://www.notion.so/skymavis/Ronin-Whitepaper-deec289d6cec49d38dc6e904669331a5).
 
 - [Overview](#ronin-dpos-contracts)
-  - [Governance](#governance)
-    - [Ronin Trusted Organization](#ronin-trusted-organization)
-    - [Bridge Operators Ballot](#bridge-operators-ballot)
-    - [Proposals](#proposals)
   - [Staking](#staking)
     - [Validator Candidate](#validator-candidate)
     - [Delegator](#delegator)
@@ -26,82 +22,15 @@ Read more details at the [Ronin Whitepaper](https://www.notion.so/skymavis/Ronin
   - [Bridges](#bridges)
     - [Deposits](#deposits)
     - [Withdrawals](#withdrawals)
+  - [Governance](#governance)
+    - [Ronin Trusted Organization](#ronin-trusted-organization)
+    - [Bridge Operators Ballot](#bridge-operators-ballot)
+    - [Proposals](#proposals)
   - [Contract Interaction flow](#contract-interaction-flow)
 - [Development](#development)
-    - [Requirement](#requirement)
-    - [Compile & test](#compile--test)
+  - [Requirement](#requirement)
+  - [Compile & test](#compile--test)
 - [Deployment](#deployment)
-
-## Governance
-
-We have a group of trusted organizations that are chosen by the community and Sky Mavis. Their tasks are to take part in the Validator set and govern the network configuration through the on-chain governance process:
-
-- Update the system parameters, e.g: slash thresholds, and add/remove trusted organizations,...
-- Sync the set of bridge operators to the Ethereum chain every period.
-
-![image](./assets/Governance.png)
-_Governance flow overview_
-
-The governance contracts (`RoninGovernanceAdmin` and `MainchainGovernanceAdmin`) are mainly responsible for the governance process via a decentralized voting mechanism. At any instance, there will be maximum one governance vote going on per network.
-
-### Ronin Trusted Organization
-
-| Properties              | Explanation                                                                        |
-| ----------------------- | ---------------------------------------------------------------------------------- |
-| `address consensusAddr` | Address of the validator that produces block. This is so-called validator address. |
-| `address governor`      | Address to voting proposal                                                         |
-| `address bridgeVoter`   | Address to voting bridge operators                                                 |
-| `uint256 weight`        | Governor weight                                                                    |
-
-### Bridge Operators Ballot
-
-```js
-// keccak256("BridgeOperatorsBallot(uint256 period,address[] operators)");
-const TYPEHASH = 0xeea5e3908ac28cbdbbce8853e49444c558a0a03597e98ef19e6ff86162ed9ae3;
-```
-
-| Name        | Type        | Explanation                                |
-| ----------- | ----------- | ------------------------------------------ |
-| `period`    | `uint256`   | The period that these operators are active |
-| `operators` | `address[]` | The address list of all operators          |
-
-### Proposals
-
-**Per-chain Proposal**
-
-```js
-// keccak256("ProposalDetail(uint256 nonce,uint256 chainId,address[] targets,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)");
-const TYPE_HASH = 0x65526afa953b4e935ecd640e6905741252eedae157e79c37331ee8103c70019d;
-```
-
-| Name         | Type        | Explanation                                                   |
-| ------------ | ----------- | ------------------------------------------------------------- |
-| `nonce`      | `uint256`   | The proposal nonce                                            |
-| `chainId`    | `uint256`   | The chain id to execute the proposal (id = 0 for all network) |
-| `targets`    | `address[]` | List of address that the BridgeAdmin has to call              |
-| `values`     | `uint256[]` | msg.value to send for targets                                 |
-| `calldatas`  | `bytes[]`   | Data to call to the targets                                   |
-| `gasAmounts` | `uint256[]` | Gas amount to call                                            |
-
-**Global Proposal**
-
-The governance has 2 target options to call to globally:
-
-- Option 0: `RoninTrustedOrganization` contract
-- Option 1: `Bridge` contract
-
-```js
-// keccak256("GlobalProposalDetail(uint256 nonce,uint8[] targetOptions,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)");
-const TYPE_HASH = 0xdb316eb400de2ddff92ab4255c0cd3cba634cd5236b93386ed9328b7d822d1c7;
-```
-
-| Name            | Type        | Explanation                   |
-| --------------- | ----------- | ----------------------------- |
-| `nonce`         | `uint256`   | The proposal nonce            |
-| `targetOptions` | `uint8[]`   | List of options               |
-| `values`        | `uint256[]` | msg.value to send for targets |
-| `calldatas`     | `bytes[]`   | Data to call to the targets   |
-| `gasAmounts`    | `uint256[]` | Gas amount to call            |
 
 ## Staking
 
@@ -150,7 +79,7 @@ The reward is calculated based on the minimum staking amount in the current peri
 
 ## Validator Contract & Rewarding
 
-The top users with the highest amount of staked coins will be considered to be validators after prioritizing the trusted organizations. The total number of validators do not larger than `maxValidatorNumber()`. Each validator will be a block producer and a bridge relayer, whenever a validator gets jailed its corresponding block producer will not be able to receive the block reward.
+The top users with the highest amount of staked coins will be considered to be validators after prioritizing [the trusted organizations](#ronin-trusted-organization). The total number of validators do not larger than `maxValidatorNumber()`. Each validator will be a block producer and a bridge relayer, whenever a validator gets jailed its corresponding block producer will not be able to receive the block reward.
 
 ### Block reward submission
 
@@ -245,18 +174,89 @@ For withdrawal there are certain restrictions:
 
    There are 3 withdrawal tiers with different level of threshold required to withdraw. This is what we propose initially
 
-   | Tier   | Withdrawal Value | Threshold                                                                                               |
-   | ------ | :--------------: | ------------------------------------------------------------------------------------------------------- |
-   | Tier 1 |        -         | The normal withdrawal/deposit threshold                                                                 |
-   | Tier 2 |      >= $1M      | Applied the special threshold for high-tier withdrawals                                                 |
-   | Tier 3 |     >= $10M      | Applied the special threshold for high-tier withdrawals, one additional human review to unlock the fund |
+   | Tier   |       Withdrawal Value        | Threshold                                                                                               |
+   | ------ | :---------------------------: | ------------------------------------------------------------------------------------------------------- |
+   | Tier 1 |               -               | The normal withdrawal/deposit threshold                                                                 |
+   | Tier 2 | >= `highTierThreshold(token)` | Applied the special threshold for high-tier withdrawals                                                 |
+   | Tier 3 |  >= `lockedThreshold(token)`  | Applied the special threshold for high-tier withdrawals, one additional human review to unlock the fund |
 
 2. Daily withdrawal limit
 
-   There will be another constraint on the number of token that can be withdraw in a day. We propose to cap the value at $50M. Since withdrawal of Tier 3 already requires human review, it will not be counted in daily withdrawal limit.
+   There will be another constraint on the number of token that can be withdraw in a day. We propose to cap the value at `dailyWithdrawalLimit(token)`. Since withdrawal of Tier 3 already requires human review, it will not be counted in daily withdrawal limit.
 
 ![image](./assets/Withdrawal.png)
 _Normal withdrawal flow (tier 1 + tier 2). For tier 3, a separated human address will need to unlock the fund._
+
+## Governance
+
+We have a group of trusted organizations that are chosen by the community and Sky Mavis. Their tasks are to take part in the Validator set and govern the network configuration through the on-chain governance process:
+
+- Update the system parameters, e.g: slash thresholds, and add/remove trusted organizations,...
+- Sync the set of bridge operators to the Ethereum chain every period.
+
+![image](./assets/Governance.png)
+_Governance flow overview_
+
+The governance contracts (`RoninGovernanceAdmin` and `MainchainGovernanceAdmin`) are mainly responsible for the governance process via a decentralized voting mechanism. At any instance, there will be maximum one governance vote going on per network.
+
+### Ronin Trusted Organization
+
+| Properties              | Explanation                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------- |
+| `address consensusAddr` | Address of the validator that produces block. This is so-called validator address. |
+| `address governor`      | Address to voting proposal                                                         |
+| `address bridgeVoter`   | Address to voting bridge operators                                                 |
+| `uint256 weight`        | Governor weight                                                                    |
+
+### Bridge Operators Ballot
+
+```js
+// keccak256("BridgeOperatorsBallot(uint256 period,address[] operators)");
+const TYPEHASH = 0xeea5e3908ac28cbdbbce8853e49444c558a0a03597e98ef19e6ff86162ed9ae3;
+```
+
+| Name        | Type        | Explanation                                |
+| ----------- | ----------- | ------------------------------------------ |
+| `period`    | `uint256`   | The period that these operators are active |
+| `operators` | `address[]` | The address list of all operators          |
+
+### Proposals
+
+**Per-chain Proposal**
+
+```js
+// keccak256("ProposalDetail(uint256 nonce,uint256 chainId,address[] targets,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)");
+const TYPE_HASH = 0x65526afa953b4e935ecd640e6905741252eedae157e79c37331ee8103c70019d;
+```
+
+| Name         | Type        | Explanation                                                   |
+| ------------ | ----------- | ------------------------------------------------------------- |
+| `nonce`      | `uint256`   | The proposal nonce                                            |
+| `chainId`    | `uint256`   | The chain id to execute the proposal (id = 0 for all network) |
+| `targets`    | `address[]` | List of address that the BridgeAdmin has to call              |
+| `values`     | `uint256[]` | msg.value to send for targets                                 |
+| `calldatas`  | `bytes[]`   | Data to call to the targets                                   |
+| `gasAmounts` | `uint256[]` | Gas amount to call                                            |
+
+**Global Proposal**
+
+The governance has 2 target options to call to globally:
+
+- Option 0: `RoninTrustedOrganization` contract
+- Option 1: `Bridge` contract
+
+```js
+// keccak256("GlobalProposalDetail(uint256 nonce,uint8[] targetOptions,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)");
+const TYPE_HASH = 0xdb316eb400de2ddff92ab4255c0cd3cba634cd5236b93386ed9328b7d822d1c7;
+```
+
+| Name            | Type        | Explanation                   |
+| --------------- | ----------- | ----------------------------- |
+| `nonce`         | `uint256`   | The proposal nonce            |
+| `targetOptions` | `uint8[]`   | List of options               |
+| `values`        | `uint256[]` | msg.value to send for targets |
+| `calldatas`     | `bytes[]`   | Data to call to the targets   |
+| `gasAmounts`    | `uint256[]` | Gas amount to call            |
 
 ## Contract Interaction flow
 
