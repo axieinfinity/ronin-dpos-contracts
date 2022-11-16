@@ -5,7 +5,7 @@ pragma solidity ^0.8.9;
 import "../../../interfaces/validator/info-fragments/IJailingInfo.sol";
 import "./TimingStorage.sol";
 
-abstract contract JailingStorage is TimingStorage, IJailingInfo {
+abstract contract JailingStorage is IJailingInfo {
   /// @dev Mapping from consensus address => period number => block producer has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _miningRewardDeprecatedAtPeriod;
   /// @dev Mapping from consensus address => period number => whether the block producer get cut off reward, due to bailout
@@ -108,6 +108,16 @@ abstract contract JailingStorage is TimingStorage, IJailingInfo {
       _result[_i] = _miningRewardDeprecated(_blockProducers[_i], _period);
     }
   }
+
+  /**
+   * @dev See {ITimingInfo-epochOf}
+   */
+  function epochOf(uint256 _block) public view virtual returns (uint256);
+
+  /**
+   * @dev See {ITimingInfo-currentPeriod}
+   */
+  function currentPeriod() public view virtual returns (uint256);
 
   /**
    * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) during the current period.

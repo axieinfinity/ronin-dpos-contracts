@@ -6,7 +6,7 @@ import "../../../libraries/EnumFlags.sol";
 import "../../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../../../interfaces/validator/info-fragments/IValidatorInfo.sol";
 
-abstract contract ValidatorInfoStorage is HasRoninTrustedOrganizationContract, IValidatorInfo {
+abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganizationContract {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
   /// @dev The maximum number of validator.

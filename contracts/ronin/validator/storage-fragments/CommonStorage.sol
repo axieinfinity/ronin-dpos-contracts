@@ -7,7 +7,7 @@ import "./JailingStorage.sol";
 import "./TimingStorage.sol";
 import "./ValidatorInfoStorage.sol";
 
-abstract contract CommonStorage is TimingStorage, JailingStorage, ValidatorInfoStorage, ICommonInfo {
+abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, ValidatorInfoStorage {
   /// @dev Mapping from consensus address => pending reward from producing block
   mapping(address => uint256) internal _miningReward;
   /// @dev Mapping from consensus address => pending reward from delegating
@@ -17,4 +17,24 @@ abstract contract CommonStorage is TimingStorage, JailingStorage, ValidatorInfoS
   uint256 internal _totalBridgeReward;
   /// @dev Mapping from consensus address => pending reward for being bridge operator
   mapping(address => uint256) internal _bridgeOperatingReward;
+
+  /**
+   * @dev See {ITimingInfo-epochOf}
+   */
+  function epochOf(uint256 _block)
+    public
+    view
+    virtual
+    override(ITimingInfo, JailingStorage, TimingStorage)
+    returns (uint256)
+  {
+    return TimingStorage.epochOf(_block);
+  }
+
+  /**
+   * @dev See {ITimingInfo-currentPeriod}
+   */
+  function currentPeriod() public view virtual override(ITimingInfo, JailingStorage, TimingStorage) returns (uint256) {
+    return TimingStorage.currentPeriod();
+  }
 }
