@@ -129,9 +129,9 @@ describe('Governance Admin test', () => {
           .then(mapByteSigToSigStruct)
       )
     );
-    expect(await governanceAdmin.bridgeOperatorVoted(ballot.period, governors[0].address)).to.false;
+    expect(await governanceAdmin.bridgeOperatorsVoted(ballot.period, governors[0].address)).to.false;
     await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures);
-    expect(await governanceAdmin.bridgeOperatorVoted(ballot.period, governors[0].address)).to.true;
+    expect(await governanceAdmin.bridgeOperatorsVoted(ballot.period, governors[0].address)).to.true;
   });
 
   it('Should be able relay vote bridge operators', async () => {
