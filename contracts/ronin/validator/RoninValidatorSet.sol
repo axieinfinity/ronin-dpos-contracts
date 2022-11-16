@@ -3,17 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../../extensions/collections/HasStakingVestingContract.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
-import "./fragments/ValidatorSetFragmentCoinbase.sol";
-import "./fragments/ValidatorSetFragmentSlashing.sol";
+import "./CoinbaseExecution.sol";
+import "./SlashingExecution.sol";
 
-contract RoninValidatorSet is
-  Initializable,
-  HasStakingVestingContract,
-  ValidatorSetFragmentCoinbase,
-  ValidatorSetFragmentSlashing
-{
+contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecution {
   constructor() {
     _disableInitializers();
   }
@@ -25,27 +19,6 @@ contract RoninValidatorSet is
   receive() external payable {
     _fallback();
   }
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                               OVERRIDING FUNCTIONS                                //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
-  function currentPeriod() public view override(TimingManager, ValidatorSetFragmentCoinbase) returns (uint256) {
-    return TimingManager.currentPeriod();
-  }
-
-  function numberOfBlocksInEpoch()
-    public
-    view
-    override(TimingManager, ValidatorSetFragmentCoinbase)
-    returns (uint256 _numberOfBlocks)
-  {
-    return TimingManager.numberOfBlocksInEpoch();
-  }
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                                       MAIN                                        //
-  ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * @dev Initializes the contract storage.
@@ -82,5 +55,12 @@ contract RoninValidatorSet is
       msg.sender == stakingVestingContract(),
       "RoninValidatorSet: only receives RON from staking vesting contract"
     );
+  }
+
+  /**
+   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
+   */
+  function _bridgeOperatorOf(address _consensusAddr) internal view virtual override returns (address) {
+    return _candidateInfo[_consensusAddr].bridgeOperatorAddr;
   }
 }

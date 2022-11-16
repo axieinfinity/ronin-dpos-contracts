@@ -3,7 +3,7 @@
 pragma solidity ^0.8.9;
 
 import "../interfaces/validator/IRoninValidatorSet.sol";
-import "../ronin/validator/managers/CandidateManager.sol";
+import "../ronin/validator/CandidateManager.sol";
 
 contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   address public stakingVestingContract;
@@ -79,7 +79,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     return true;
   }
 
-  function numberOfBlocksInEpoch() public view override(CandidateManager, ITimingManager) returns (uint256) {
+  function numberOfBlocksInEpoch() public view override returns (uint256) {
     return _numberOfBlocksInEpoch;
   }
 
@@ -103,7 +103,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     return currentPeriod() > _lastUpdatedPeriod;
   }
 
-  function currentPeriod() public view override(CandidateManager, ITimingManager) returns (uint256) {
+  function currentPeriod() public view override returns (uint256) {
     return block.timestamp / 86400;
   }
 

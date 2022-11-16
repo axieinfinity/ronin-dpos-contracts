@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.9;
 
-import "../../../interfaces/validator/managers/ISlashingInfoManager.sol";
-import "./TimingManager.sol";
+import "../../../interfaces/validator/info-fragments/IJailingInfo.sol";
+import "./TimingStorage.sol";
 
-abstract contract SlashingInfoManager is ISlashingInfoManager, TimingManager {
+contract JailingStorage is TimingStorage, IJailingInfo {
   /// @dev Mapping from consensus address => period number => block producer has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _miningRewardDeprecatedAtPeriod;
   /// @dev Mapping from consensus address => period number => whether the block producer get cut off reward, due to bailout
@@ -16,14 +16,14 @@ abstract contract SlashingInfoManager is ISlashingInfoManager, TimingManager {
   mapping(address => uint256) internal _jailedUntil;
 
   /**
-   * @inheritdoc ISlashingInfoManager
+   * @inheritdoc IJailingInfo
    */
   function jailed(address _addr) external view override returns (bool) {
     return jailedAtBlock(_addr, block.number);
   }
 
   /**
-   * @inheritdoc ISlashingInfoManager
+   * @inheritdoc IJailingInfo
    */
   function jailedTimeLeft(address _addr)
     external
@@ -39,14 +39,14 @@ abstract contract SlashingInfoManager is ISlashingInfoManager, TimingManager {
   }
 
   /**
-   * @inheritdoc ISlashingInfoManager
+   * @inheritdoc IJailingInfo
    */
   function jailedAtBlock(address _addr, uint256 _blockNum) public view override returns (bool) {
     return _jailedAtBlock(_addr, _blockNum);
   }
 
   /**
-   * @inheritdoc ISlashingInfoManager
+   * @inheritdoc IJailingInfo
    */
   function jailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
     public
@@ -69,7 +69,7 @@ abstract contract SlashingInfoManager is ISlashingInfoManager, TimingManager {
   }
 
   /**
-   * @inheritdoc ISlashingInfoManager
+   * @inheritdoc IJailingInfo
    */
   function bulkJailed(address[] calldata _addrList) external view override returns (bool[] memory _result) {
     _result = new bool[](_addrList.length);
@@ -79,7 +79,7 @@ abstract contract SlashingInfoManager is ISlashingInfoManager, TimingManager {
   }
 
   /**
-   * @inheritdoc ISlashingInfoManager
+   * @inheritdoc IJailingInfo
    */
   function miningRewardDeprecated(address[] calldata _blockProducers)
     external
@@ -95,7 +95,7 @@ abstract contract SlashingInfoManager is ISlashingInfoManager, TimingManager {
   }
 
   /**
-   * @inheritdoc ISlashingInfoManager
+   * @inheritdoc IJailingInfo
    */
   function miningRewardDeprecatedAtPeriod(address[] calldata _blockProducers, uint256 _period)
     external

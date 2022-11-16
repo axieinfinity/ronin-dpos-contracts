@@ -2,7 +2,12 @@
 
 pragma solidity ^0.8.9;
 
-abstract contract RewardManager {
+import "../../../interfaces/validator/info-fragments/ICommonInfo.sol";
+import "./JailingStorage.sol";
+import "./TimingStorage.sol";
+import "./ValidatorInfoStorage.sol";
+
+abstract contract CommonStorage is TimingStorage, JailingStorage, ValidatorInfoStorage, ICommonInfo {
   /// @dev Mapping from consensus address => pending reward from producing block
   mapping(address => uint256) internal _miningReward;
   /// @dev Mapping from consensus address => pending reward from delegating

@@ -2,23 +2,19 @@
 
 pragma solidity ^0.8.9;
 
-import "../../../extensions/collections/HasSlashIndicatorContract.sol";
-import "../../../extensions/collections/HasStakingContract.sol";
-import "../../../interfaces/validator/fragments/IValidatorSetFragmentSlashing.sol";
-import "../managers/TimingManager.sol";
-import "../managers/RewardManager.sol";
-import "../managers/SlashingInfoManager.sol";
+import "../../extensions/collections/HasSlashIndicatorContract.sol";
+import "../../extensions/collections/HasStakingContract.sol";
+import "../../interfaces/validator/ISlashingExecution.sol";
+import "./storage-fragments/CommonStorage.sol";
 
-abstract contract ValidatorSetFragmentSlashing is
-  IValidatorSetFragmentSlashing,
+abstract contract SlashingExecution is
+  ISlashingExecution,
   HasSlashIndicatorContract,
   HasStakingContract,
-  TimingManager,
-  RewardManager,
-  SlashingInfoManager
+  CommonStorage
 {
   /**
-   * @inheritdoc IValidatorSetFragmentSlashing
+   * @inheritdoc ISlashingExecution
    */
   function execSlash(
     address _validatorAddr,
@@ -42,12 +38,11 @@ abstract contract ValidatorSetFragmentSlashing is
   }
 
   /**
-   * @inheritdoc IValidatorSetFragmentSlashing
+   * @inheritdoc ISlashingExecution
    */
   function execBailOut(address _validatorAddr, uint256 _period) external override onlySlashIndicatorContract {
-    /// Note: Removing rewards of validator in `bailOut` function is not needed, since the rewards have been
-    /// removed previously in the `slash` function.
-
+    // Note: Removing rewards of validator in `bailOut` function is not needed, since the rewards have been
+    // removed previously in the `slash` function.
     _miningRewardBailoutCutOffAtPeriod[_validatorAddr][_period] = true;
     _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = false;
     _jailedUntil[_validatorAddr] = block.number - 1;

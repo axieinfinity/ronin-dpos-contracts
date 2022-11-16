@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-import "../../../interfaces/validator/managers/ITimingManager.sol";
+import "../../../interfaces/validator/info-fragments/ITimingInfo.sol";
 
-abstract contract TimingManager is ITimingManager {
+contract TimingStorage is ITimingInfo {
   /// @dev Length of period in seconds
   uint256 internal constant _periodLength = 1 days;
 
@@ -18,49 +18,49 @@ abstract contract TimingManager is ITimingManager {
   uint256 internal _currentPeriodStartAtBlock;
 
   /**
-   * @inheritdoc ITimingManager
+   * @inheritdoc ITimingInfo
    */
   function getLastUpdatedBlock() external view override returns (uint256) {
     return _lastUpdatedBlock;
   }
 
   /**
-   * @inheritdoc ITimingManager
+   * @inheritdoc ITimingInfo
    */
   function epochOf(uint256 _block) public view virtual override returns (uint256) {
     return _block / _numberOfBlocksInEpoch + 1;
   }
 
   /**
-   * @inheritdoc ITimingManager
+   * @inheritdoc ITimingInfo
    */
   function isPeriodEnding() external view override returns (bool) {
     return _isPeriodEnding(_computePeriod(block.timestamp));
   }
 
   /**
-   * @inheritdoc ITimingManager
+   * @inheritdoc ITimingInfo
    */
   function epochEndingAt(uint256 _block) public view virtual override returns (bool) {
     return _block % _numberOfBlocksInEpoch == _numberOfBlocksInEpoch - 1;
   }
 
   /**
-   * @inheritdoc ITimingManager
+   * @inheritdoc ITimingInfo
    */
   function currentPeriod() public view virtual override returns (uint256) {
     return _lastUpdatedPeriod;
   }
 
   /**
-   * @inheritdoc ITimingManager
+   * @inheritdoc ITimingInfo
    */
   function currentPeriodStartAtBlock() public view override returns (uint256) {
     return _currentPeriodStartAtBlock;
   }
 
   /**
-   * @inheritdoc ITimingManager
+   * @inheritdoc ITimingInfo
    */
   function numberOfBlocksInEpoch() public view virtual override returns (uint256 _numberOfBlocks) {
     return _numberOfBlocksInEpoch;
@@ -71,7 +71,7 @@ abstract contract TimingManager is ITimingManager {
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev See {ITimingManager-isPeriodEnding}
+   * @dev See `ITimingInfo-isPeriodEnding`
    */
   function _isPeriodEnding(uint256 _newPeriod) public view virtual returns (bool) {
     return _newPeriod > _lastUpdatedPeriod;

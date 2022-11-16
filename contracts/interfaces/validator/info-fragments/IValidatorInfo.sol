@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-interface IValidatorManager {
+interface IValidatorInfo {
   /// @dev Emitted when the number of max validator is updated
   event MaxValidatorNumberUpdated(uint256);
   /// @dev Emitted when the number of reserved slots for prioritized validators is updated

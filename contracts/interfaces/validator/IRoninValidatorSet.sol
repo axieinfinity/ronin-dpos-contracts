@@ -2,18 +2,18 @@
 
 pragma solidity ^0.8.9;
 
-import "./managers/ICandidateManager.sol";
-import "./managers/ISlashingInfoManager.sol";
-import "./managers/ITimingManager.sol";
-import "./managers/IValidatorManager.sol";
-import "./fragments/IValidatorSetFragmentCoinbase.sol";
-import "./fragments/IValidatorSetFragmentSlashing.sol";
+import "./ICandidateManager.sol";
+import "./info-fragments/IJailingInfo.sol";
+import "./info-fragments/ITimingInfo.sol";
+import "./info-fragments/IValidatorInfo.sol";
+import "./ICoinbaseExecution.sol";
+import "./ISlashingExecution.sol";
 
 interface IRoninValidatorSet is
-  ITimingManager,
-  ISlashingInfoManager,
+  ITimingInfo,
+  IJailingInfo,
   ICandidateManager,
-  IValidatorManager,
-  IValidatorSetFragmentCoinbase,
-  IValidatorSetFragmentSlashing
+  IValidatorInfo,
+  ISlashingExecution,
+  ICoinbaseExecution
 {}

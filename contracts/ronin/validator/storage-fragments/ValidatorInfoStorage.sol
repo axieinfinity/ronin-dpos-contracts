@@ -4,10 +4,9 @@ pragma solidity ^0.8.9;
 
 import "../../../libraries/EnumFlags.sol";
 import "../../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
-import "../../../interfaces/validator/managers/IValidatorManager.sol";
-import "./CandidateManager.sol";
+import "../../../interfaces/validator/info-fragments/IValidatorInfo.sol";
 
-abstract contract ValidatorManager is IValidatorManager, HasRoninTrustedOrganizationContract, CandidateManager {
+abstract contract ValidatorInfoStorage is HasRoninTrustedOrganizationContract, IValidatorInfo {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
   /// @dev The maximum number of validator.
@@ -23,7 +22,7 @@ abstract contract ValidatorManager is IValidatorManager, HasRoninTrustedOrganiza
   uint256 internal _maxPrioritizedValidatorNumber;
 
   /**
-   * @inheritdoc IValidatorManager
+   * @inheritdoc IValidatorInfo
    */
   function getValidators() public view override returns (address[] memory _validatorList) {
     _validatorList = new address[](validatorCount);
@@ -33,14 +32,14 @@ abstract contract ValidatorManager is IValidatorManager, HasRoninTrustedOrganiza
   }
 
   /**
-   * @inheritdoc IValidatorManager
+   * @inheritdoc IValidatorInfo
    */
   function isValidator(address _addr) public view override returns (bool) {
     return !_validatorMap[_addr].isNone();
   }
 
   /**
-   * @inheritdoc IValidatorManager
+   * @inheritdoc IValidatorInfo
    */
   function getBlockProducers() public view override returns (address[] memory _result) {
     _result = new address[](validatorCount);
@@ -57,14 +56,14 @@ abstract contract ValidatorManager is IValidatorManager, HasRoninTrustedOrganiza
   }
 
   /**
-   * @inheritdoc IValidatorManager
+   * @inheritdoc IValidatorInfo
    */
   function isBlockProducer(address _addr) public view override returns (bool) {
     return _validatorMap[_addr].hasFlag(EnumFlags.ValidatorFlag.BlockProducer);
   }
 
   /**
-   * @inheritdoc IValidatorManager
+   * @inheritdoc IValidatorInfo
    */
   function totalBlockProducers() external view returns (uint256 _total) {
     for (uint _i = 0; _i < validatorCount; _i++) {
@@ -75,21 +74,21 @@ abstract contract ValidatorManager is IValidatorManager, HasRoninTrustedOrganiza
   }
 
   /**
-   * @inheritdoc IValidatorManager
+   * @inheritdoc IValidatorInfo
    */
   function getBridgeOperators() public view override returns (address[] memory _bridgeOperatorList) {
     _bridgeOperatorList = new address[](validatorCount);
     for (uint _i = 0; _i < _bridgeOperatorList.length; _i++) {
-      _bridgeOperatorList[_i] = _candidateInfo[_validators[_i]].bridgeOperatorAddr;
+      _bridgeOperatorList[_i] = _bridgeOperatorOf(_validators[_i]);
     }
   }
 
   /**
-   * @inheritdoc IValidatorManager
+   * @inheritdoc IValidatorInfo
    */
   function isBridgeOperator(address _bridgeOperatorAddr) external view override returns (bool _result) {
     for (uint _i = 0; _i < validatorCount; _i++) {
-      if (_candidateInfo[_validators[_i]].bridgeOperatorAddr == _bridgeOperatorAddr) {
+      if (_bridgeOperatorOf(_validators[_i]) == _bridgeOperatorAddr) {
         _result = true;
         break;
       }
@@ -97,14 +96,14 @@ abstract contract ValidatorManager is IValidatorManager, HasRoninTrustedOrganiza
   }
 
   /**
-   * @inheritdoc IValidatorManager
+   * @inheritdoc IValidatorInfo
    */
   function maxValidatorNumber() external view override returns (uint256 _maximumValidatorNumber) {
     return _maxValidatorNumber;
   }
 
   /**
-   * @inheritdoc IValidatorManager
+   * @inheritdoc IValidatorInfo
    */
   function maxPrioritizedValidatorNumber() external view override returns (uint256 _maximumPrioritizedValidatorNumber) {
     return _maxPrioritizedValidatorNumber;
@@ -113,7 +112,7 @@ abstract contract ValidatorManager is IValidatorManager, HasRoninTrustedOrganiza
   /**
    * Notice: A validator is always a bride operator
    *
-   * @inheritdoc IValidatorManager
+   * @inheritdoc IValidatorInfo
    */
   function totalBridgeOperators() public view returns (uint256) {
     return validatorCount;
@@ -124,14 +123,14 @@ abstract contract ValidatorManager is IValidatorManager, HasRoninTrustedOrganiza
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @inheritdoc IValidatorManager
+   * @inheritdoc IValidatorInfo
    */
   function setMaxValidatorNumber(uint256 _max) external override onlyAdmin {
     _setMaxValidatorNumber(_max);
   }
 
   /**
-   * @inheritdoc IValidatorManager
+   * @inheritdoc IValidatorInfo
    */
   function setMaxPrioritizedValidatorNumber(uint256 _number) external override onlyAdmin {
     _setMaxPrioritizedValidatorNumber(_number);
@@ -142,7 +141,7 @@ abstract contract ValidatorManager is IValidatorManager, HasRoninTrustedOrganiza
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * @dev See {IValidatorManager-setMaxValidatorNumber}
+   * @dev See `IValidatorInfo-setMaxValidatorNumber`
    */
   function _setMaxValidatorNumber(uint256 _number) internal {
     _maxValidatorNumber = _number;
@@ -150,7 +149,7 @@ abstract contract ValidatorManager is IValidatorManager, HasRoninTrustedOrganiza
   }
 
   /**
-   * @dev See {IValidatorManager-setMaxPrioritizedValidatorNumber}
+   * @dev See `IValidatorInfo-setMaxPrioritizedValidatorNumber`
    */
   function _setMaxPrioritizedValidatorNumber(uint256 _number) internal {
     require(
@@ -161,4 +160,9 @@ abstract contract ValidatorManager is IValidatorManager, HasRoninTrustedOrganiza
     _maxPrioritizedValidatorNumber = _number;
     emit MaxPrioritizedValidatorNumberUpdated(_number);
   }
+
+  /**
+   * @dev Returns the bridge operator of a consensus address.
+   */
+  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address);
 }

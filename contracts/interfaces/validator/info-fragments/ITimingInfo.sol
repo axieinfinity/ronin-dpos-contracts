@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-interface ITimingManager {
+interface ITimingInfo {
   /**
    * @dev Returns the block that validator set was updated.
    */

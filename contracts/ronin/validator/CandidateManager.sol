@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.9;
 
-import "../../../extensions/collections/HasStakingContract.sol";
-import "../../../extensions/consumers/PercentageConsumer.sol";
-import "../../../interfaces/validator/managers/ICandidateManager.sol";
-import "../../../interfaces/staking/IStaking.sol";
+import "../../extensions/collections/HasStakingContract.sol";
+import "../../extensions/consumers/PercentageConsumer.sol";
+import "../../interfaces/validator/ICandidateManager.sol";
+import "../../interfaces/staking/IStaking.sol";
 
 abstract contract CandidateManager is ICandidateManager, PercentageConsumer, HasStakingContract {
   /// @dev Maximum number of validator candidate
@@ -112,16 +112,6 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   function getValidatorCandidates() public view override returns (address[] memory) {
     return _candidates;
   }
-
-  /**
-   * @dev See {ITimingManager}
-   */
-  function currentPeriod() public view virtual returns (uint256);
-
-  /**
-   * @dev See {ITimingManager}
-   */
-  function numberOfBlocksInEpoch() public view virtual returns (uint256);
 
   /**
    * @dev Removes unsastisfied candidates, the ones who have insufficient minimum candidate staking amount,

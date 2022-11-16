@@ -2,23 +2,21 @@
 
 pragma solidity ^0.8.9;
 
-import "../../../extensions/collections/HasBridgeTrackingContract.sol";
-import "../../../extensions/collections/HasMaintenanceContract.sol";
-import "../../../extensions/collections/HasSlashIndicatorContract.sol";
-import "../../../extensions/collections/HasStakingVestingContract.sol";
-import "../../../extensions/RONTransferHelper.sol";
-import "../../../interfaces/validator/fragments/IValidatorSetFragmentCoinbase.sol";
-import "../../../libraries/EnumFlags.sol";
-import "../../../libraries/Math.sol";
-import "../../../precompile-usages/PrecompileUsageSortValidators.sol";
-import "../../../precompile-usages/PrecompileUsagePickValidatorSet.sol";
-import "../managers/TimingManager.sol";
-import "../managers/RewardManager.sol";
-import "../managers/SlashingInfoManager.sol";
-import "../managers/ValidatorManager.sol";
+import "../../extensions/collections/HasBridgeTrackingContract.sol";
+import "../../extensions/collections/HasMaintenanceContract.sol";
+import "../../extensions/collections/HasSlashIndicatorContract.sol";
+import "../../extensions/collections/HasStakingVestingContract.sol";
+import "../../extensions/RONTransferHelper.sol";
+import "../../interfaces/validator/ICoinbaseExecution.sol";
+import "../../libraries/EnumFlags.sol";
+import "../../libraries/Math.sol";
+import "../../precompile-usages/PrecompileUsageSortValidators.sol";
+import "../../precompile-usages/PrecompileUsagePickValidatorSet.sol";
+import "./storage-fragments/CommonStorage.sol";
+import "./CandidateManager.sol";
 
-abstract contract ValidatorSetFragmentCoinbase is
-  IValidatorSetFragmentCoinbase,
+abstract contract CoinbaseExecution is
+  ICoinbaseExecution,
   RONTransferHelper,
   PrecompileUsageSortValidators,
   PrecompileUsagePickValidatorSet,
@@ -26,10 +24,8 @@ abstract contract ValidatorSetFragmentCoinbase is
   HasBridgeTrackingContract,
   HasMaintenanceContract,
   HasSlashIndicatorContract,
-  ValidatorManager,
-  TimingManager,
-  RewardManager,
-  SlashingInfoManager
+  CandidateManager,
+  CommonStorage
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
@@ -52,36 +48,8 @@ abstract contract ValidatorSetFragmentCoinbase is
     _;
   }
 
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                               OVERRIDING FUNCTIONS                                //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
   /**
-   * @inheritdoc ITimingManager
-   */
-  function currentPeriod() public view virtual override(CandidateManager, TimingManager) returns (uint256) {
-    return TimingManager.currentPeriod();
-  }
-
-  /**
-   * @inheritdoc ITimingManager
-   */
-  function numberOfBlocksInEpoch()
-    public
-    view
-    virtual
-    override(CandidateManager, TimingManager)
-    returns (uint256 _numberOfBlocks)
-  {
-    return TimingManager.numberOfBlocksInEpoch();
-  }
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                              FUNCTIONS FOR COINBASE                               //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
-  /**
-   * @inheritdoc IValidatorSetFragmentCoinbase
+   * @inheritdoc ICoinbaseExecution
    */
   function submitBlockReward() external payable override onlyCoinbase {
     uint256 _submittedReward = msg.value;
@@ -125,7 +93,7 @@ abstract contract ValidatorSetFragmentCoinbase is
   }
 
   /**
-   * @inheritdoc IValidatorSetFragmentCoinbase
+   * @inheritdoc ICoinbaseExecution
    */
   function wrapUpEpoch() external payable virtual override onlyCoinbase whenEpochEnding oncePerEpoch {
     uint256 _newPeriod = _computePeriod(block.timestamp);
@@ -150,10 +118,6 @@ abstract contract ValidatorSetFragmentCoinbase is
     emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
     _lastUpdatedPeriod = _newPeriod;
   }
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                     PRIVATE HELPER FUNCTIONS OF WRAPPING UP EPOCH                 //
-  ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * @dev This loop over the all current validators to:

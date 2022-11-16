@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-interface ISlashingInfoManager {
+interface IJailingInfo {
   /**
    * @dev Returns whether the validator are put in jail (cannot join the set of validators) during the current period.
    */
