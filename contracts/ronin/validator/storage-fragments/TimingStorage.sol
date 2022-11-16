@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../../../interfaces/validator/info-fragments/ITimingInfo.sol";
 
-contract TimingStorage is ITimingInfo {
+abstract contract TimingStorage is ITimingInfo {
   /// @dev Length of period in seconds
   uint256 internal constant _periodLength = 1 days;
 

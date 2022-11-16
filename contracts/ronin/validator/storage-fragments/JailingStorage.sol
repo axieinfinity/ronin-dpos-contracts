@@ -5,7 +5,7 @@ pragma solidity ^0.8.9;
 import "../../../interfaces/validator/info-fragments/IJailingInfo.sol";
 import "./TimingStorage.sol";
 
-contract JailingStorage is TimingStorage, IJailingInfo {
+abstract contract JailingStorage is TimingStorage, IJailingInfo {
   /// @dev Mapping from consensus address => period number => block producer has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _miningRewardDeprecatedAtPeriod;
   /// @dev Mapping from consensus address => period number => whether the block producer get cut off reward, due to bailout
