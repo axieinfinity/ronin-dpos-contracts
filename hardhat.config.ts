@@ -12,7 +12,8 @@ dotenv.config();
 
 const DEFAULT_MNEMONIC = 'title spike pink garlic hamster sorry few damage silver mushroom clever window';
 
-const { REPORT_GAS, DEVNET_PK, DEVNET_URL, TESTNET_PK, TESTNET_URL, MAINNET_PK, MAINNET_URL, GOERLI_URL, GOERLI_PK } = process.env;
+const { REPORT_GAS, DEVNET_PK, DEVNET_URL, TESTNET_PK, TESTNET_URL, MAINNET_PK, MAINNET_URL, GOERLI_URL, GOERLI_PK } =
+  process.env;
 
 if (!DEVNET_PK) {
   console.warn('DEVNET_PK is unset. Using DEFAULT_MNEMONIC');
@@ -62,11 +63,11 @@ const goerli: NetworkUserConfig = {
 };
 
 const compilerConfig: SolcUserConfig = {
-  version: '0.8.9',
+  version: '0.8.16',
   settings: {
     optimizer: {
       enabled: true,
-      runs: 200,
+      runs: 5000,
     },
   },
 };
@@ -98,7 +99,7 @@ const config: HardhatUserConfig = {
     'ronin-devnet': devnet,
     'ronin-testnet': testnet,
     'ronin-mainnet': mainnet,
-    'goerli': goerli,
+    goerli: goerli,
   },
   gasReporter: {
     enabled: REPORT_GAS ? true : false,
