@@ -35,6 +35,7 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
     };
   }
 
+  // Only for local
   if ([Network.Local.toString()].includes(network.name)) {
     generalMainchainConf[network.name].bridgeContract = calculateAddress(deployer, nonce++).address;
   }
@@ -49,7 +50,8 @@ deploy.dependencies = [
   'RoninValidatorSetLogic',
   'RoninTrustedOrganizationLogic',
   'BridgeTrackingLogic',
-  'MainchainGatewayV2Logic', // only for local
+  'MainchainGatewayV2Logic',
+  'RoninGatewayV2Logic',
 ];
 
 export default deploy;
