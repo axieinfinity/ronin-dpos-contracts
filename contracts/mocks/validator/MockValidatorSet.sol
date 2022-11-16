@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.9;
 
-import "../interfaces/validator/IRoninValidatorSet.sol";
-import "../ronin/validator/CandidateManager.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
+import "../../ronin/validator/CandidateManager.sol";
 
 contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   address public stakingVestingContract;
