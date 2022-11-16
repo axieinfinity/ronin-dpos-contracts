@@ -81,19 +81,22 @@ describe('Governance Admin test', () => {
   });
 
   it('Should be able to propose to change staking config', async () => {
+    const newMinValidatorStakingAmount = 555;
     proposal = await governanceAdminInterface.createProposal(
       stakingContract.address,
       0,
       governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
-        stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [555]),
+        stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [newMinValidatorStakingAmount]),
       ]),
       500_000
     );
     signatures = await governanceAdminInterface.generateSignatures(proposal);
     supports = signatures.map(() => VoteType.For);
 
+    expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, governors[0].address)).to.false;
     await governanceAdmin.connect(governors[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);
-    expect(await stakingContract.minValidatorStakingAmount()).eq(555);
+    expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, governors[0].address)).to.true;
+    expect(await stakingContract.minValidatorStakingAmount()).eq(newMinValidatorStakingAmount);
   });
 
   it('Should not be able to reuse already voted signatures or proposals', async () => {
@@ -103,7 +106,9 @@ describe('Governance Admin test', () => {
   });
 
   it('Should be able to relay to mainchain governance admin contract', async () => {
+    expect(await mainchainGovernanceAdmin.proposalRelayed(proposal.chainId, proposal.nonce)).to.false;
     await mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures);
+    expect(await mainchainGovernanceAdmin.proposalRelayed(proposal.chainId, proposal.nonce)).to.true;
   });
 
   it('Should not be able to relay again', async () => {
@@ -124,11 +129,15 @@ describe('Governance Admin test', () => {
           .then(mapByteSigToSigStruct)
       )
     );
+    expect(await governanceAdmin.bridgeOperatorVoted(ballot.period, governors[0].address)).to.false;
     await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures);
+    expect(await governanceAdmin.bridgeOperatorVoted(ballot.period, governors[0].address)).to.true;
   });
 
   it('Should be able relay vote bridge operators', async () => {
+    expect(await mainchainGovernanceAdmin.bridgeOperatorRelayed(ballot.period)).to.false;
     await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures);
+    expect(await mainchainGovernanceAdmin.bridgeOperatorRelayed(ballot.period)).to.true;
     expect(await bridgeContract.getBridgeOperators()).eql(governors.map((v) => v.address));
   });
 
