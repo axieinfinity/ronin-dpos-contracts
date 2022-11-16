@@ -118,10 +118,6 @@ abstract contract ValidatorInfoStorage is HasRoninTrustedOrganizationContract, I
     return validatorCount;
   }
 
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                               FUNCTIONS FOR ADMIN                                 //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
   /**
    * @inheritdoc IValidatorInfo
    */
@@ -135,10 +131,6 @@ abstract contract ValidatorInfoStorage is HasRoninTrustedOrganizationContract, I
   function setMaxPrioritizedValidatorNumber(uint256 _number) external override onlyAdmin {
     _setMaxPrioritizedValidatorNumber(_number);
   }
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                             OTHER HELPER FUNCTIONS                                //
-  ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * @dev See `IValidatorInfo-setMaxValidatorNumber`

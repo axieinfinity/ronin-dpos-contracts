@@ -8,10 +8,6 @@ interface IValidatorInfo {
   /// @dev Emitted when the number of reserved slots for prioritized validators is updated
   event MaxPrioritizedValidatorNumberUpdated(uint256);
 
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                             FUNCTIONS FOR NORMAL USER                             //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
   /**
    * @dev Returns the maximum number of validators in the epoch
    */
@@ -61,10 +57,6 @@ interface IValidatorInfo {
    * @dev Returns total numbers of the bridge operators.
    */
   function totalBridgeOperators() external view returns (uint256);
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                               FUNCTIONS FOR ADMIN                                 //
-  ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * @dev Updates the max validator number

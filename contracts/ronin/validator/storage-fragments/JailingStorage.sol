@@ -109,10 +109,6 @@ contract JailingStorage is TimingStorage, IJailingInfo {
     }
   }
 
-  ///////////////////////////////////////////////////////////////////////////////////////
-  //                             OTHER HELPER FUNCTIONS                                //
-  ///////////////////////////////////////////////////////////////////////////////////////
-
   /**
    * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) during the current period.
    */
