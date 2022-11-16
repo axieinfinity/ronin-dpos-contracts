@@ -183,6 +183,13 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   }
 
   /**
+   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
+   */
+  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address) {
+    return _candidateInfo[_consensusAddr].bridgeOperatorAddr;
+  }
+
+  /**
    * @dev Sets the maximum number of validator candidate.
    *
    * Emits the `MaxValidatorCandidateUpdated` event.

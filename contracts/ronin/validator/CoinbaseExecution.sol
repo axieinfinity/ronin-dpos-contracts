@@ -386,4 +386,17 @@ abstract contract CoinbaseExecution is
 
     emit BlockProducerSetUpdated(_newPeriod, getBlockProducers());
   }
+
+  /**
+   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
+   */
+  function _bridgeOperatorOf(address _consensusAddr)
+    internal
+    view
+    virtual
+    override(CandidateManager, ValidatorInfoStorage)
+    returns (address)
+  {
+    return CandidateManager._bridgeOperatorOf(_consensusAddr);
+  }
 }
