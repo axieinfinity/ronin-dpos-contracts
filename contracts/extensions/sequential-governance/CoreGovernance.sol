@@ -209,7 +209,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
 
     require(round[_proposal.chainId] == _round, "CoreGovernance: query for invalid proposal nonce");
     require(_vote.status == VoteStatus.Pending, "CoreGovernance: the vote is finalized");
-    if (_vote.forVoted[_voter] || _vote.againstVoted[_voter]) {
+    if (_voted(_vote, _voter)) {
       revert(string(abi.encodePacked("CoreGovernance: ", Strings.toHexString(uint160(_voter), 20), " already voted")));
     }
 
@@ -249,6 +249,13 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
       (bool[] memory _successCalls, bytes[] memory _returnDatas) = _proposal.execute();
       emit ProposalExecuted(_vote.hash, _successCalls, _returnDatas);
     }
+  }
+
+  /**
+   * @dev Returns whether the voter casted for the proposal.
+   */
+  function _voted(ProposalVote storage _vote, address _voter) internal view returns (bool) {
+    return _vote.forVoted[_voter] || _vote.againstVoted[_voter];
   }
 
   /**

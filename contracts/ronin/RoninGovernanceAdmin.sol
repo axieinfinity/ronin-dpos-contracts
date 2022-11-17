@@ -66,6 +66,24 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
   }
 
   /**
+   * @dev Returns whether the voter `_voter` casted vote for the proposal.
+   */
+  function proposalVoted(
+    uint256 _chainId,
+    uint256 _round,
+    address _voter
+  ) external view returns (bool) {
+    return _voted(vote[_chainId][_round], _voter);
+  }
+
+  /**
+   * @dev Returns whether the voter `_voter` casted vote for bridge operators at a specific period.
+   */
+  function bridgeOperatorsVoted(uint256 _period, address _voter) external view returns (bool) {
+    return _voted(_vote[_period], _voter);
+  }
+
+  /**
    * @dev See {CoreGovernance-_proposeProposal}.
    *
    * Requirements:

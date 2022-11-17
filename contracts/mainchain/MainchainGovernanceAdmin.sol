@@ -24,6 +24,20 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
   }
 
   /**
+   * @dev Returns whether the voter `_voter` casted vote for the proposal.
+   */
+  function proposalRelayed(uint256 _chainId, uint256 _round) external view returns (bool) {
+    return vote[_chainId][_round].status != VoteStatus.Pending;
+  }
+
+  /**
+   * @dev Returns whether the voter `_voter` casted vote for bridge operators at a specific period.
+   */
+  function bridgeOperatorsRelayed(uint256 _period) external view returns (bool) {
+    return _vote[_period].status != VoteStatus.Pending;
+  }
+
+  /**
    * @dev See {GovernanceRelay-_relayProposal}.
    *
    * Requirements:
