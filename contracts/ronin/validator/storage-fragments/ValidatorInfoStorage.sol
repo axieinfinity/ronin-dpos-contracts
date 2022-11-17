@@ -22,6 +22,12 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
   uint256 internal _maxPrioritizedValidatorNumber;
 
   /**
+   * @dev This empty reserved space is put in place to allow future versions to add new
+   * variables without shifting down storage in the inheritance chain.
+   */
+  uint256[50] private ______gap;
+
+  /**
    * @inheritdoc IValidatorInfo
    */
   function getValidators() public view override returns (address[] memory _validatorList) {

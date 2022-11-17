@@ -19,6 +19,12 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   mapping(address => uint256) internal _bridgeOperatingReward;
 
   /**
+   * @dev This empty reserved space is put in place to allow future versions to add new
+   * variables without shifting down storage in the inheritance chain.
+   */
+  uint256[50] private ______gap;
+
+  /**
    * @dev See {ITimingInfo-epochOf}
    */
   function epochOf(uint256 _block)
