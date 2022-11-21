@@ -110,7 +110,7 @@ abstract contract CoinbaseExecution is
         uint256[] memory _delegatingRewards
       ) = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(_lastPeriod, _currentValidators);
       _settleAndTransferDelegatingRewards(_lastPeriod, _currentValidators, _totalDelegatingReward, _delegatingRewards);
-      _slashIndicatorContract.updateCreditScore(_currentValidators, _lastPeriod);
+      _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
       _currentValidators = _syncValidatorSet(_newPeriod);
     }
 
