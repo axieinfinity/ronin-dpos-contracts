@@ -65,6 +65,7 @@ const config: InitTestInput = {
       missingVotesRatioTier1: 10_00, // 10%
       missingVotesRatioTier2: 20_00, // 20%
       jailDurationForMissingVotesRatioTier2: 28800 * 2,
+      skipBridgeOperatorSlashingThreshold: 7777777,
     },
     bridgeVotingSlashing: {
       bridgeVotingThreshold: 28800 * 3,
@@ -193,6 +194,7 @@ describe('[Integration] Configuration check', () => {
         config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier1,
         config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier2,
         config.slashIndicatorArguments?.bridgeOperatorSlashing?.jailDurationForMissingVotesRatioTier2,
+        config.slashIndicatorArguments?.bridgeOperatorSlashing?.skipBridgeOperatorSlashingThreshold,
       ].map(BigNumber.from)
     );
   });
