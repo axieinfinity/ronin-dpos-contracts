@@ -24,6 +24,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
       slashIndicatorConf[network.name]!.bridgeOperatorSlashing?.missingVotesRatioTier1,
       slashIndicatorConf[network.name]!.bridgeOperatorSlashing?.missingVotesRatioTier2,
       slashIndicatorConf[network.name]!.bridgeOperatorSlashing?.jailDurationForMissingVotesRatioTier2,
+      slashIndicatorConf[network.name]!.bridgeOperatorSlashing?.skipBridgeOperatorSlashingThreshold,
     ],
     [
       slashIndicatorConf[network.name]!.bridgeVotingSlashing?.bridgeVotingThreshold,

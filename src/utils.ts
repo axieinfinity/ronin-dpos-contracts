@@ -96,6 +96,7 @@ export interface BridgeOperatorSlashingConfig {
   missingVotesRatioTier1?: BigNumberish;
   missingVotesRatioTier2?: BigNumberish;
   jailDurationForMissingVotesRatioTier2?: BigNumberish;
+  skipBridgeOperatorSlashingThreshold?: BigNumberish;
 }
 
 export interface BridgeVotingSlashingConfig {
@@ -120,7 +121,6 @@ export interface CreditScoreConfig {
   maxCreditScore?: BigNumberish;
   bailOutCostMultiplier?: BigNumberish;
   cutOffPercentageAfterBailout?: BigNumberish;
-  skipBridgeOperatorSlashingThreshold?: BigNumberish;
 }
 
 export interface SlashIndicatorArguments {

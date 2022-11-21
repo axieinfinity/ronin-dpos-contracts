@@ -114,6 +114,7 @@ const defaultSlashIndicatorConf: SlashIndicatorArguments = {
     missingVotesRatioTier1: 10_00, // 10%
     missingVotesRatioTier2: 20_00, // 20%
     jailDurationForMissingVotesRatioTier2: 28800 * 2, // jails for 2 days
+    skipBridgeOperatorSlashingThreshold: 50,
   },
   bridgeVotingSlashing: {
     bridgeVotingThreshold: 28800 * 3, // ~3 days
@@ -134,7 +135,6 @@ const defaultSlashIndicatorConf: SlashIndicatorArguments = {
     maxCreditScore: 600,
     bailOutCostMultiplier: 5,
     cutOffPercentageAfterBailout: 50_00, // 50%
-    skipBridgeOperatorSlashingThreshold: 50,
   },
 };
 
