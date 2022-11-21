@@ -41,7 +41,7 @@ export const generalRoninConf: GeneralConfig = {
   [Network.Hardhat]: defaultGeneralConf,
   [Network.Devnet]: defaultGeneralConf,
   [Network.Testnet]: {
-    startedAtBlock: 11818199,
+    startedAtBlock: 11710199,
     bridgeContract: '0xCee681C9108c42C710c6A8A949307D5F13C9F3ca',
   }
 };
