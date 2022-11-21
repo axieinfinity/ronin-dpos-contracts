@@ -79,6 +79,7 @@ export const defaultTestConfig: InitTestInput = {
       missingVotesRatioTier1: 10_00, // 10%
       missingVotesRatioTier2: 20_00, // 20%
       jailDurationForMissingVotesRatioTier2: 28800 * 2,
+      skipBridgeOperatorSlashingThreshold: 10,
     },
     bridgeVotingSlashing: {
       bridgeVotingThreshold: 28800 * 3,

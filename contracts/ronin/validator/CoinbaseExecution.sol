@@ -105,12 +105,13 @@ abstract contract CoinbaseExecution is
     uint256 _lastPeriod = currentPeriod();
 
     if (_periodEnding) {
+      _syncBridgeOperatingReward(_lastPeriod, _currentValidators);
       (
         uint256 _totalDelegatingReward,
         uint256[] memory _delegatingRewards
       ) = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(_lastPeriod, _currentValidators);
       _settleAndTransferDelegatingRewards(_lastPeriod, _currentValidators, _totalDelegatingReward, _delegatingRewards);
-      _slashIndicatorContract.updateCreditScore(_currentValidators, _lastPeriod);
+      _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
       _currentValidators = _syncValidatorSet(_newPeriod);
     }
 
@@ -120,66 +121,41 @@ abstract contract CoinbaseExecution is
   }
 
   /**
-   * @dev This loop over the all current validators to:
-   * - Update delegating reward for and calculate total delegating rewards to be sent to the staking contract,
-   * - Distribute the reward of block producers and bridge operators to their treasury addresses.
+   * @dev This loop over the all current validators to sync the bridge operating reward.
    *
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
-    uint256 _lastPeriod,
-    address[] memory _currentValidators
-  ) private returns (uint256 _totalDelegatingReward, uint256[] memory _delegatingRewards) {
-    _delegatingRewards = new uint256[](_currentValidators.length);
-    address _consensusAddr;
-    address payable _treasury;
+  function _syncBridgeOperatingReward(uint256 _lastPeriod, address[] memory _currentValidators) internal {
     IBridgeTracking _bridgeTracking = _bridgeTrackingContract;
-
     uint256 _totalBridgeBallots = _bridgeTracking.totalBallots(_lastPeriod);
     uint256 _totalBridgeVotes = _bridgeTracking.totalVotes(_lastPeriod);
     uint256[] memory _bridgeBallots = _bridgeTracking.bulkTotalBallotsOf(_lastPeriod, _currentValidators);
     (
       uint256 _missingVotesRatioTier1,
       uint256 _missingVotesRatioTier2,
-      uint256 _jailDurationForMissingVotesRatioTier2
+      uint256 _jailDurationForMissingVotesRatioTier2,
+      uint256 _skipBridgeOperatorSlashingThreshold
     ) = _slashIndicatorContract.getBridgeOperatorSlashingConfigs();
-
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
-      _consensusAddr = _currentValidators[_i];
-      _treasury = _candidateInfo[_consensusAddr].treasuryAddr;
-      _updateValidatorReward(
+      _updateValidatorRewardBaseOnBridgeOperatingPerformance(
         _lastPeriod,
-        _consensusAddr,
+        _currentValidators[_i],
         _bridgeBallots[_i],
         _totalBridgeVotes,
         _totalBridgeBallots,
         _missingVotesRatioTier1,
         _missingVotesRatioTier2,
-        _jailDurationForMissingVotesRatioTier2
+        _jailDurationForMissingVotesRatioTier2,
+        _skipBridgeOperatorSlashingThreshold
       );
-
-      if (!_bridgeRewardDeprecated(_consensusAddr, _lastPeriod)) {
-        _distributeBridgeOperatingReward(_consensusAddr, _candidateInfo[_consensusAddr].bridgeOperatorAddr, _treasury);
-      }
-
-      if (!_jailed(_consensusAddr) && !_miningRewardDeprecated(_consensusAddr, _lastPeriod)) {
-        _totalDelegatingReward += _delegatingReward[_consensusAddr];
-        _delegatingRewards[_i] = _delegatingReward[_consensusAddr];
-        _distributeMiningReward(_consensusAddr, _treasury);
-      }
-
-      delete _delegatingReward[_consensusAddr];
-      delete _miningReward[_consensusAddr];
-      delete _bridgeOperatingReward[_consensusAddr];
     }
-    delete _totalBridgeReward;
   }
 
   /**
    * @dev Updates validator reward based on the corresponding bridge operator performance.
    */
-  function _updateValidatorReward(
+  function _updateValidatorRewardBaseOnBridgeOperatingPerformance(
     uint256 _period,
     address _validator,
     uint256 _validatorBallots,
@@ -187,11 +163,21 @@ abstract contract CoinbaseExecution is
     uint256 _totalBallots,
     uint256 _ratioTier1,
     uint256 _ratioTier2,
-    uint256 _jailDurationTier2
+    uint256 _jailDurationTier2,
+    uint256 _skipBridgeOperatorSlashingThreshold
   ) internal {
     // Shares equally in case the bridge has nothing to votes
-    if (_totalBallots == 0 && _totalVotes == 0) {
+    bool _emptyBallot = _totalBallots == 0;
+    if (_emptyBallot && _totalVotes == 0) {
       _bridgeOperatingReward[_validator] = _totalBridgeReward / totalBridgeOperators();
+      return;
+    } else if (_emptyBallot) {
+      return;
+    }
+
+    // Skips slashing in case the total number of votes is too small
+    if (_totalVotes <= _skipBridgeOperatorSlashingThreshold) {
+      _bridgeOperatingReward[_validator] = _totalBridgeReward / _totalBallots;
       return;
     }
 
@@ -208,6 +194,42 @@ abstract contract CoinbaseExecution is
     } else if (_totalBallots > 0) {
       _bridgeOperatingReward[_validator] = _totalBridgeReward / _totalBallots;
     }
+  }
+
+  /**
+   * @dev This loop over the all current validators to:
+   * - Update delegating reward for and calculate total delegating rewards to be sent to the staking contract,
+   * - Distribute the reward of block producers and bridge operators to their treasury addresses.
+   *
+   * Note: This method should be called once in the end of each period.
+   *
+   */
+  function _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
+    uint256 _lastPeriod,
+    address[] memory _currentValidators
+  ) private returns (uint256 _totalDelegatingReward, uint256[] memory _delegatingRewards) {
+    address _consensusAddr;
+    address payable _treasury;
+    _delegatingRewards = new uint256[](_currentValidators.length);
+    for (uint _i = 0; _i < _currentValidators.length; _i++) {
+      _consensusAddr = _currentValidators[_i];
+      _treasury = _candidateInfo[_consensusAddr].treasuryAddr;
+
+      if (!_bridgeRewardDeprecated(_consensusAddr, _lastPeriod)) {
+        _distributeBridgeOperatingReward(_consensusAddr, _candidateInfo[_consensusAddr].bridgeOperatorAddr, _treasury);
+      }
+
+      if (!_jailed(_consensusAddr) && !_miningRewardDeprecated(_consensusAddr, _lastPeriod)) {
+        _totalDelegatingReward += _delegatingReward[_consensusAddr];
+        _delegatingRewards[_i] = _delegatingReward[_consensusAddr];
+        _distributeMiningReward(_consensusAddr, _treasury);
+      }
+
+      delete _delegatingReward[_consensusAddr];
+      delete _miningReward[_consensusAddr];
+      delete _bridgeOperatingReward[_consensusAddr];
+    }
+    delete _totalBridgeReward;
   }
 
   /**

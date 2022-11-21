@@ -43,7 +43,7 @@ export const generalRoninConf: GeneralConfig = {
   [Network.Testnet]: {
     startedAtBlock: 11818199,
     bridgeContract: '0xCee681C9108c42C710c6A8A949307D5F13C9F3ca',
-  }
+  },
 };
 
 export const generalMainchainConf: GeneralConfig = {
@@ -53,7 +53,7 @@ export const generalMainchainConf: GeneralConfig = {
   [Network.Goerli]: {
     startedAtBlock: 0,
     bridgeContract: '0xFc4319Ae9e6134C708b88D5Ad5Da1A4a83372502',
-  }
+  },
 };
 
 const defaultMaintenanceConf: MaintenanceArguments = {
@@ -114,6 +114,7 @@ const defaultSlashIndicatorConf: SlashIndicatorArguments = {
     missingVotesRatioTier1: 10_00, // 10%
     missingVotesRatioTier2: 20_00, // 20%
     jailDurationForMissingVotesRatioTier2: 28800 * 2, // jails for 2 days
+    skipBridgeOperatorSlashingThreshold: 50,
   },
   bridgeVotingSlashing: {
     bridgeVotingThreshold: 28800 * 3, // ~3 days
@@ -254,7 +255,7 @@ export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
   [Network.Devnet]: defaultMainchainGovernanceAdminConf,
   [Network.Goerli]: {
     roleSetter: '0xC37b5d7891D73F2064B0eE044844e053872Ef941',
-    relayers: ['0xC37b5d7891D73F2064B0eE044844e053872Ef941']
+    relayers: ['0xC37b5d7891D73F2064B0eE044844e053872Ef941'],
   },
   [Network.Ethereum]: undefined,
 };

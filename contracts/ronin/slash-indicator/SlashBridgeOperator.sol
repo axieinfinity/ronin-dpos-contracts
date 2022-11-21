@@ -19,6 +19,8 @@ abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, Pe
   uint256 internal _missingVotesRatioTier2;
   /// @dev The number of blocks to jail the corresponding block producer when its bridge operator is slashed tier-2.
   uint256 internal _jailDurationForMissingVotesRatioTier2;
+  /// @dev The threshold to skip slashing the bridge operator in case the total number of votes in the bridge is too small.
+  uint256 internal _skipBridgeOperatorSlashingThreshold;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
@@ -36,10 +38,16 @@ abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, Pe
     returns (
       uint256,
       uint256,
+      uint256,
       uint256
     )
   {
-    return (_missingVotesRatioTier1, _missingVotesRatioTier2, _jailDurationForMissingVotesRatioTier2);
+    return (
+      _missingVotesRatioTier1,
+      _missingVotesRatioTier2,
+      _jailDurationForMissingVotesRatioTier2,
+      _skipBridgeOperatorSlashingThreshold
+    );
   }
 
   /**
@@ -48,9 +56,10 @@ abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, Pe
   function setBridgeOperatorSlashingConfigs(
     uint256 _ratioTier1,
     uint256 _ratioTier2,
-    uint256 _jailDurationTier2
+    uint256 _jailDurationTier2,
+    uint256 _skipSlashingThreshold
   ) external override onlyAdmin {
-    _setBridgeOperatorSlashingConfigs(_ratioTier1, _ratioTier2, _jailDurationTier2);
+    _setBridgeOperatorSlashingConfigs(_ratioTier1, _ratioTier2, _jailDurationTier2, _skipSlashingThreshold);
   }
 
   /**
@@ -59,7 +68,8 @@ abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, Pe
   function _setBridgeOperatorSlashingConfigs(
     uint256 _ratioTier1,
     uint256 _ratioTier2,
-    uint256 _jailDurationTier2
+    uint256 _jailDurationTier2,
+    uint256 _skipSlashingThreshold
   ) internal {
     require(
       _ratioTier1 <= _ratioTier2 && _ratioTier1 <= _MAX_PERCENTAGE && _ratioTier2 <= _MAX_PERCENTAGE,
@@ -68,6 +78,7 @@ abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, Pe
     _missingVotesRatioTier1 = _ratioTier1;
     _missingVotesRatioTier2 = _ratioTier2;
     _jailDurationForMissingVotesRatioTier2 = _jailDurationTier2;
-    emit BridgeOperatorSlashingConfigsUpdated(_ratioTier1, _ratioTier2, _jailDurationTier2);
+    _skipBridgeOperatorSlashingThreshold = _skipSlashingThreshold;
+    emit BridgeOperatorSlashingConfigsUpdated(_ratioTier1, _ratioTier2, _jailDurationTier2, _skipSlashingThreshold);
   }
 }
