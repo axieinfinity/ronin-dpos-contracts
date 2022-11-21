@@ -99,6 +99,7 @@ export const defaultTestConfig: InitTestInput = {
       maxCreditScore: 600,
       bailOutCostMultiplier: 5,
       cutOffPercentageAfterBailout: 50_00, // 50%
+      skipBridgeOperatorSlashingThreshold: 0,
     },
   },
 
