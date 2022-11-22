@@ -161,7 +161,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   }
 
   /**
-   * @dev See `ISlashUnavailability`
+   * @dev See `SlashUnavailability`.
    */
   function _setUnavailabilityIndicator(
     address _validator,
@@ -170,7 +170,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   ) internal virtual;
 
   /**
-   * @dev See `ICreditScore-CreditScoreConfigsUpdated`.
+   * @dev See `ICreditScore-setCreditScoreConfigs`.
    */
   function _setCreditScoreConfigs(
     uint256 _gainScore,

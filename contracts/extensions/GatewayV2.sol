@@ -19,21 +19,21 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
   uint256[50] private ______gap;
 
   /**
-   * @dev See {IQuorum-getThreshold}.
+   * @inheritdoc IQuorum
    */
   function getThreshold() external view virtual returns (uint256, uint256) {
     return (_num, _denom);
   }
 
   /**
-   * @dev See {IQuorum-checkThreshold}.
+   * @inheritdoc IQuorum
    */
   function checkThreshold(uint256 _voteWeight) external view virtual returns (bool) {
     return _voteWeight * _denom >= _num * _getTotalWeight();
   }
 
   /**
-   * @dev See {IQuorum-setThreshold}.
+   * @inheritdoc IQuorum
    */
   function setThreshold(uint256 _numerator, uint256 _denominator)
     external
@@ -59,7 +59,7 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
   }
 
   /**
-   * @dev See {IQuorum-minimumVoteWeight}.
+   * @inheritdoc IQuorum
    */
   function minimumVoteWeight() public view virtual returns (uint256) {
     return _minimumVoteWeight(_getTotalWeight());

@@ -25,7 +25,7 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   uint256[50] private ______gap;
 
   /**
-   * @dev See {ITimingInfo-epochOf}
+   * @inheritdoc ITimingInfo
    */
   function epochOf(uint256 _block)
     public
@@ -38,7 +38,7 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   }
 
   /**
-   * @dev See {ITimingInfo-currentPeriod}
+   * @inheritdoc ITimingInfo
    */
   function currentPeriod() public view virtual override(ITimingInfo, JailingStorage, TimingStorage) returns (uint256) {
     return TimingStorage.currentPeriod();
