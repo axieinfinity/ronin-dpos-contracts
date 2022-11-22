@@ -142,7 +142,7 @@ describe('Reward Calculation test', () => {
       expect(await stakingContract.getReward(poolAddr, userA.address)).eq(1000);
       await expect(tx)
         .emit(stakingContract, 'PoolsUpdated')
-        .withArgs(period++, [poolAddr], [aRps], [await stakingContract.stakingTotal(poolAddr)]);
+        .withArgs(period++, [poolAddr], [aRps], [await stakingContract.getStakingTotal(poolAddr)]);
     });
   });
 
@@ -175,7 +175,7 @@ describe('Reward Calculation test', () => {
       tx = await stakingContract.endPeriod(); // period 5
       await expect(tx)
         .emit(stakingContract, 'PoolsUpdated')
-        .withArgs(period++, [poolAddr], [aRps], [await stakingContract.stakingTotal(poolAddr)]);
+        .withArgs(period++, [poolAddr], [aRps], [await stakingContract.getStakingTotal(poolAddr)]);
       expect(await stakingContract.getReward(poolAddr, userA.address)).eq(2100); // 50% of 1000 + 1600 from the last period
       expect(await stakingContract.getReward(poolAddr, userB.address)).eq(900); // 50% of 1000 + 400 from the last period
     });
@@ -191,7 +191,7 @@ describe('Reward Calculation test', () => {
       tx = await stakingContract.endPeriod(); // period 6
       await expect(tx)
         .emit(stakingContract, 'PoolsUpdated')
-        .withArgs(period++, [poolAddr], [aRps], [await stakingContract.stakingTotal(poolAddr)]);
+        .withArgs(period++, [poolAddr], [aRps], [await stakingContract.getStakingTotal(poolAddr)]);
       expect(await stakingContract.getReward(poolAddr, userA.address)).eq(3100); // 1000 + 2100 from the last period
     });
 

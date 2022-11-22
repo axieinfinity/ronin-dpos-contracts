@@ -87,7 +87,7 @@ contract MockStaking is RewardCalculation {
     returns (uint256[] memory)
   {}
 
-  function stakingTotal(address _addr) public view virtual override returns (uint256) {
+  function getStakingTotal(address _addr) public view virtual override returns (uint256) {
     return _addr == poolAddr ? _stakingTotal : 0;
   }
 

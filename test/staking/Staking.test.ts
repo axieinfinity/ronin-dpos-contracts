@@ -80,7 +80,7 @@ describe('Staking test', () => {
       }
 
       poolAddr = validatorCandidates[1];
-      expect(await stakingContract.stakingTotal(poolAddr.address)).eq(minValidatorStakingAmount.mul(2));
+      expect(await stakingContract.getStakingTotal(poolAddr.address)).eq(minValidatorStakingAmount.mul(2));
     });
 
     it('Should not be able to propose validator again', async () => {
@@ -112,7 +112,7 @@ describe('Staking test', () => {
     it('Should be able to stake as a validator candidate', async () => {
       const tx = await stakingContract.connect(poolAddr).stake(poolAddr.address, { value: 1 });
       await expect(tx!).emit(stakingContract, 'Staked').withArgs(poolAddr.address, 1);
-      expect(await stakingContract.stakingTotal(poolAddr.address)).eq(minValidatorStakingAmount.mul(2).add(1));
+      expect(await stakingContract.getStakingTotal(poolAddr.address)).eq(minValidatorStakingAmount.mul(2).add(1));
     });
 
     it('Should not be able to unstake due to cooldown restriction', async () => {
@@ -125,7 +125,7 @@ describe('Staking test', () => {
       await network.provider.send('evm_increaseTime', [cooldownSecsToUndelegate + 1]);
       const tx = await stakingContract.connect(poolAddr).unstake(poolAddr.address, 1);
       await expect(tx!).emit(stakingContract, 'Unstaked').withArgs(poolAddr.address, 1);
-      expect(await stakingContract.stakingTotal(poolAddr.address)).eq(minValidatorStakingAmount.mul(2));
+      expect(await stakingContract.getStakingTotal(poolAddr.address)).eq(minValidatorStakingAmount.mul(2));
       expect(await stakingContract.getStakingAmount(poolAddr.address, poolAddr.address)).eq(
         minValidatorStakingAmount.mul(2)
       );
@@ -214,7 +214,7 @@ describe('Staking test', () => {
       tx = await stakingContract.connect(userB).delegate(otherPoolAddr.address, { value: 1 });
       await expect(tx!).emit(stakingContract, 'Delegated').withArgs(userB.address, otherPoolAddr.address, 1);
 
-      expect(await stakingContract.stakingTotal(otherPoolAddr.address)).eq(minValidatorStakingAmount.mul(2).add(2));
+      expect(await stakingContract.getStakingTotal(otherPoolAddr.address)).eq(minValidatorStakingAmount.mul(2).add(2));
     });
 
     it('Should not be able to undelegate due to cooldown restriction', async () => {
@@ -227,7 +227,7 @@ describe('Staking test', () => {
       await network.provider.send('evm_increaseTime', [cooldownSecsToUndelegate + 1]);
       const tx = await stakingContract.connect(userA).undelegate(otherPoolAddr.address, 1);
       await expect(tx!).emit(stakingContract, 'Undelegated').withArgs(userA.address, otherPoolAddr.address, 1);
-      expect(await stakingContract.stakingTotal(otherPoolAddr.address)).eq(minValidatorStakingAmount.mul(2).add(1));
+      expect(await stakingContract.getStakingTotal(otherPoolAddr.address)).eq(minValidatorStakingAmount.mul(2).add(1));
     });
 
     it('Should not be able to undelegate with empty amount', async () => {
