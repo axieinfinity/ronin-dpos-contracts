@@ -131,7 +131,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function bulkMaintainingInBlockRange(
+  function getManyMaintainedInBlockRange(
     address[] calldata _addrList,
     uint256 _fromBlock,
     uint256 _toBlock

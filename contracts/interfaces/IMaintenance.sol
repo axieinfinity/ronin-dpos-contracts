@@ -40,9 +40,9 @@ interface IMaintenance {
   function getManyMaintained(address[] calldata _addrList, uint256 _block) external view returns (bool[] memory);
 
   /**
-   * @dev Returns a bool array indicating the validator was maintaining in the inclusive range [`_fromBlock`, `_toBlock`] of blocks or not.
+   * @dev Returns a bool array indicating the validators maintained in the inclusive range [`_fromBlock`, `_toBlock`] of blocks or not.
    */
-  function bulkMaintainingInBlockRange(
+  function getManyMaintainedInBlockRange(
     address[] calldata _addrList,
     uint256 _fromBlock,
     uint256 _toBlock
