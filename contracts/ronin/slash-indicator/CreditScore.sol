@@ -35,7 +35,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   function updateCreditScores(address[] calldata _validators, uint256 _period) external override onlyValidatorContract {
     uint256 _periodStartAtBlock = _validatorContract.currentPeriodStartAtBlock();
 
-    bool[] memory _jaileds = _validatorContract.bulkJailed(_validators);
+    bool[] memory _jaileds = _validatorContract.getManyJailed(_validators);
     bool[] memory _maintaineds = _maintenanceContract.getManyMaintainedInBlockRange(
       _validators,
       _periodStartAtBlock,

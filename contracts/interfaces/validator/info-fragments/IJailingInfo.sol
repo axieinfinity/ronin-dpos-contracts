@@ -40,7 +40,7 @@ interface IJailingInfo {
   /**
    * @dev Returns whether the validators are put in jail (cannot join the set of validators) during the current period.
    */
-  function bulkJailed(address[] calldata) external view returns (bool[] memory);
+  function getManyJailed(address[] calldata) external view returns (bool[] memory);
 
   /**
    * @dev Returns whether the incoming reward of the block producers are deprecated during the current period.
