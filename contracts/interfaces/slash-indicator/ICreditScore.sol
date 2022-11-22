@@ -87,7 +87,7 @@ interface ICreditScore {
   /**
    * @dev Returns the current credit score of a list of validators.
    */
-  function getBulkCreditScore(address[] calldata _validators) external view returns (uint256[] memory _resultList);
+  function getManyCreditScores(address[] calldata _validators) external view returns (uint256[] memory _resultList);
 
   /**
    * @dev Returns the whether the `_validator` has been bailed out at the `_period`.
