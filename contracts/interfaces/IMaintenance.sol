@@ -21,21 +21,21 @@ interface IMaintenance {
   );
 
   /**
-   * @dev Returns whether the validator `_consensusAddr` is maintaining at the block number `_block`.
+   * @dev Returns whether the validator `_consensusAddr` maintained at the block number `_block`.
    */
-  function maintaining(address _consensusAddr, uint256 _block) external view returns (bool);
+  function maintained(address _consensusAddr, uint256 _block) external view returns (bool);
 
   /**
-   * @dev Returns whether the validator `_consensusAddr` was maintaining in the inclusive range [`_fromBlock`, `_toBlock`] of blocks.
+   * @dev Returns whether the validator `_consensusAddr` maintained in the inclusive range [`_fromBlock`, `_toBlock`] of blocks.
    */
-  function maintainingInBlockRange(
+  function maintainedInBlockRange(
     address _consensusAddr,
     uint256 _fromBlock,
     uint256 _toBlock
   ) external view returns (bool);
 
   /**
-   * @dev Returns the bool array indicating the validator is maintaining or not.
+   * @dev Returns the bool array indicating the validators maintained at block number `_block` or not.
    */
   function bulkMaintaining(address[] calldata _addrList, uint256 _block) external view returns (bool[] memory);
 
