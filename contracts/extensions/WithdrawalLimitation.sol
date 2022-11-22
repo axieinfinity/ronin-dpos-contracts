@@ -47,7 +47,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
   uint256[50] private ______gap;
 
   /**
-   * @dev Override {GatewayV2-setThreshold}.
+   * @dev Override `GatewayV2-setThreshold`.
    *
    * Requirements:
    * - The high-tier vote weight threshold must equal to or larger than the normal threshold.

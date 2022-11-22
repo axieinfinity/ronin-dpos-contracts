@@ -116,12 +116,12 @@ abstract contract JailingStorage is IJailingInfo {
   }
 
   /**
-   * @dev See {ITimingInfo-epochOf}
+   * @dev See `ITimingInfo-epochOf`
    */
   function epochOf(uint256 _block) public view virtual returns (uint256);
 
   /**
-   * @dev See {ITimingInfo-currentPeriod}
+   * @dev See `ITimingInfo-currentPeriod`
    */
   function currentPeriod() public view virtual returns (uint256);
 
