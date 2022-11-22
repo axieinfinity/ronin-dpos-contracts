@@ -59,14 +59,9 @@ interface IMaintenance {
   function getSchedule(address _consensusAddr) external view returns (Schedule memory);
 
   /**
-   * @dev Returns the min duration for maintenance in block.
+   * @dev Returns the total of current schedules.
    */
-  function minMaintenanceDurationInBlock() external view returns (uint256);
-
-  /**
-   * @dev Returns the max duration for maintenance in block.
-   */
-  function maxMaintenanceDurationInBlock() external view returns (uint256);
+  function totalSchedules() external view returns (uint256 _count);
 
   /**
    * @dev Sets the duration restriction, start time restriction, and max allowed for maintenance.
@@ -88,6 +83,16 @@ interface IMaintenance {
   ) external;
 
   /**
+   * @dev Returns the min duration for maintenance in block.
+   */
+  function minMaintenanceDurationInBlock() external view returns (uint256);
+
+  /**
+   * @dev Returns the max duration for maintenance in block.
+   */
+  function maxMaintenanceDurationInBlock() external view returns (uint256);
+
+  /**
    * @dev The offset to the min block number that the schedule can start
    */
   function minOffsetToStartSchedule() external view returns (uint256);
@@ -101,11 +106,6 @@ interface IMaintenance {
    * @dev Returns the max number of scheduled maintenances.
    */
   function maxSchedules() external view returns (uint256);
-
-  /**
-   * @dev Returns the total of current schedules.
-   */
-  function totalSchedules() external view returns (uint256 _count);
 
   /**
    * @dev Schedules for maintenance from `_startedAtBlock` to `_startedAtBlock`.
