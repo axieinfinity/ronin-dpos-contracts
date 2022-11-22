@@ -385,12 +385,12 @@ abstract contract CoinbaseExecution is
    *
    */
   function _revampBlockProducers(uint256 _newPeriod, address[] memory _currentValidators) private {
-    bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
+    bool[] memory _maintainedList = _maintenanceContract.getManyMaintained(_candidates, block.number + 1);
 
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
       address _currentValidator = _currentValidators[_i];
       bool _isProducerBefore = isBlockProducer(_currentValidator);
-      bool _isProducerAfter = !(_jailed(_currentValidator) || _maintainingList[_i]);
+      bool _isProducerAfter = !(_jailed(_currentValidator) || _maintainedList[_i]);
 
       if (!_isProducerBefore && _isProducerAfter) {
         _validatorMap[_currentValidator] = _validatorMap[_currentValidator].addFlag(

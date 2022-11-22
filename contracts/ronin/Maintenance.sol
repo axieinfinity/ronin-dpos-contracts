@@ -116,7 +116,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function bulkMaintaining(address[] calldata _addrList, uint256 _block)
+  function getManyMaintained(address[] calldata _addrList, uint256 _block)
     external
     view
     override
