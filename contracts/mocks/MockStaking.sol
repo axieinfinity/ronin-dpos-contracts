@@ -95,5 +95,5 @@ contract MockStaking is RewardCalculation {
     return lastUpdatedPeriod;
   }
 
-  function bulkStakingTotal(address[] calldata _poolAddr) external view override returns (uint256[] memory) {}
+  function getManyStakingTotals(address[] calldata _poolAddr) external view override returns (uint256[] memory) {}
 }
