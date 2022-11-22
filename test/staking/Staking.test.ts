@@ -268,14 +268,20 @@ describe('Staking test', () => {
       await stakingContract.connect(userA).delegate(poolAddr.address, { value: 2 });
       await stakingContract.connect(userB).delegate(poolAddr.address, { value: 2 });
       expect(
-        await stakingContract.bulkStakingAmountOf([poolAddr.address, poolAddr.address], [userA.address, userB.address])
+        await stakingContract.getManyStakingAmounts(
+          [poolAddr.address, poolAddr.address],
+          [userA.address, userB.address]
+        )
       ).eql([2, 2].map(BigNumber.from));
 
       await network.provider.send('evm_increaseTime', [cooldownSecsToUndelegate + 1]);
       await stakingContract.connect(userA).undelegate(poolAddr.address, 2);
       await stakingContract.connect(userB).undelegate(poolAddr.address, 1);
       expect(
-        await stakingContract.bulkStakingAmountOf([poolAddr.address, poolAddr.address], [userA.address, userB.address])
+        await stakingContract.getManyStakingAmounts(
+          [poolAddr.address, poolAddr.address],
+          [userA.address, userB.address]
+        )
       ).eql([0, 1].map(BigNumber.from));
     });
   });

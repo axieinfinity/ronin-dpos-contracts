@@ -80,7 +80,7 @@ contract MockStaking is RewardCalculation {
     return _stakingAmount[_user];
   }
 
-  function bulkStakingAmountOf(address[] calldata _poolAddrs, address[] calldata _userList)
+  function getManyStakingAmounts(address[] calldata _poolAddrs, address[] calldata _userList)
     external
     view
     override

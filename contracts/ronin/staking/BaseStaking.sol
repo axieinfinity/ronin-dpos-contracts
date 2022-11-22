@@ -82,7 +82,7 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IRewardPool
    */
-  function bulkStakingAmountOf(address[] calldata _poolAddrs, address[] calldata _userList)
+  function getManyStakingAmounts(address[] calldata _poolAddrs, address[] calldata _userList)
     external
     view
     override
