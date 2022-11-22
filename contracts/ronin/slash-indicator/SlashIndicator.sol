@@ -109,6 +109,6 @@ contract SlashIndicator is
     return
       (msg.sender != _addr) &&
       _validatorContract.isBlockProducer(_addr) &&
-      !_maintenanceContract.maintaining(_addr, block.number);
+      !_maintenanceContract.maintained(_addr, block.number);
   }
 }

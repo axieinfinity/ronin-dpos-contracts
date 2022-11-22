@@ -124,7 +124,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   {
     _resList = new bool[](_addrList.length);
     for (uint _i = 0; _i < _addrList.length; _i++) {
-      _resList[_i] = maintaining(_addrList[_i], _block);
+      _resList[_i] = maintained(_addrList[_i], _block);
     }
   }
 
@@ -157,7 +157,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function maintaining(address _consensusAddr, uint256 _block) public view returns (bool) {
+  function maintained(address _consensusAddr, uint256 _block) public view returns (bool) {
     Schedule storage _s = _schedule[_consensusAddr];
     return _s.from <= _block && _block <= _s.to;
   }
@@ -165,7 +165,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function maintainingInBlockRange(
+  function maintainedInBlockRange(
     address _consensusAddr,
     uint256 _fromBlock,
     uint256 _toBlock
