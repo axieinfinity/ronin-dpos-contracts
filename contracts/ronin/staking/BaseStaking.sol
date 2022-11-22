@@ -53,7 +53,7 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IRewardPool
    */
-  function stakingTotal(address _poolAddr) public view override returns (uint256) {
+  function getStakingTotal(address _poolAddr) public view override returns (uint256) {
     return _stakingPool[_poolAddr].stakingTotal;
   }
 
@@ -68,7 +68,7 @@ abstract contract BaseStaking is
   {
     _stakingAmounts = new uint256[](_poolList.length);
     for (uint _i = 0; _i < _poolList.length; _i++) {
-      _stakingAmounts[_i] = stakingTotal(_poolList[_i]);
+      _stakingAmounts[_i] = getStakingTotal(_poolList[_i]);
     }
   }
 

@@ -38,7 +38,7 @@ abstract contract RewardCalculation is IRewardPool {
   /**
    * @inheritdoc IRewardPool
    */
-  function stakingTotal(address _poolAddr) public view virtual returns (uint256);
+  function getStakingTotal(address _poolAddr) public view virtual returns (uint256);
 
   /**
    * @dev Returns the reward amount that user claimable.
@@ -83,7 +83,7 @@ abstract contract RewardCalculation is IRewardPool {
 
     // Updates the pool shares if it is outdated
     if (_pool.shares.lastPeriod < _period) {
-      _pool.shares = PeriodWrapper(stakingTotal(_poolAddr), _period);
+      _pool.shares = PeriodWrapper(getStakingTotal(_poolAddr), _period);
     }
 
     UserRewardFields storage _reward = _userReward[_poolAddr][_user];
@@ -178,7 +178,7 @@ abstract contract RewardCalculation is IRewardPool {
     for (uint _i = 0; _i < _poolAddrs.length; _i++) {
       _poolAddr = _poolAddrs[_i];
       PoolFields storage _pool = _stakingPool[_poolAddr];
-      _stakingTotal = stakingTotal(_poolAddr);
+      _stakingTotal = getStakingTotal(_poolAddr);
 
       if (_accumulatedRps[_poolAddr][_period].lastPeriod == _period) {
         _conflicted[_count++] = _poolAddr;
