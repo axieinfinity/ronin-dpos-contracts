@@ -47,6 +47,21 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
   }
 
+  function withdrawDeprecatedReward() external onlyAdmin {
+    uint256 _withdrawAmount = _totalBridgeReward;
+    address _withdrawTarget = stakingVestingContract();
+
+    _totalBridgeReward = 0;
+
+    (bool _success, ) = _withdrawTarget.call{ value: _withdrawAmount }(
+      abi.encodeWithSelector(IStakingVesting.receiveRON.selector)
+    );
+
+    require(_success, "RoninValidatorSet: cannot withdraw deprecated reward to staking vesting contract");
+
+    emit DeprecatedRewardWithdrawn(_withdrawTarget, _withdrawAmount);
+  }
+
   /**
    * @dev Only receives RON from staking vesting contract.
    */
