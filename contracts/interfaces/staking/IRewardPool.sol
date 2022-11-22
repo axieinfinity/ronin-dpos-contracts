@@ -45,7 +45,7 @@ interface IRewardPool is PeriodWrapperConsumer {
   /**
    * @dev Returns the staking amount of an user.
    */
-  function stakingAmountOf(address _poolAddr, address _user) external view returns (uint256);
+  function getStakingAmount(address _poolAddr, address _user) external view returns (uint256);
 
   /**
    * @dev Returns the staking amounts of the users.
