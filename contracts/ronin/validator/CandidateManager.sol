@@ -123,7 +123,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   function _removeUnsatisfiedCandidates() internal {
     IStaking _staking = _stakingContract;
     uint256 _minStakingAmount = _stakingContract.minValidatorStakingAmount();
-    uint256[] memory _selfStakings = _staking.bulkSelfStaking(_candidates);
+    uint256[] memory _selfStakings = _staking.getManySelfStakings(_candidates);
 
     uint256 _length = _candidates.length;
     uint256 _unsatisfiedCount;
