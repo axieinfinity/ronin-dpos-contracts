@@ -140,7 +140,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   /**
    * @inheritdoc ICreditScore
    */
-  function getBulkCreditScore(address[] calldata _validators)
+  function getManyCreditScores(address[] calldata _validators)
     public
     view
     override
