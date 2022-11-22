@@ -27,13 +27,13 @@ abstract contract RewardCalculation is IRewardPool {
    * @inheritdoc IRewardPool
    */
   function getReward(address _poolAddr, address _user) external view returns (uint256) {
-    return _getReward(_poolAddr, _user, _currentPeriod(), stakingAmountOf(_poolAddr, _user));
+    return _getReward(_poolAddr, _user, _currentPeriod(), getStakingAmount(_poolAddr, _user));
   }
 
   /**
    * @inheritdoc IRewardPool
    */
-  function stakingAmountOf(address _poolAddr, address _user) public view virtual returns (uint256);
+  function getStakingAmount(address _poolAddr, address _user) public view virtual returns (uint256);
 
   /**
    * @inheritdoc IRewardPool
@@ -87,7 +87,7 @@ abstract contract RewardCalculation is IRewardPool {
     }
 
     UserRewardFields storage _reward = _userReward[_poolAddr][_user];
-    uint256 _currentStakingAmount = stakingAmountOf(_poolAddr, _user);
+    uint256 _currentStakingAmount = getStakingAmount(_poolAddr, _user);
     uint256 _debited = _getReward(_poolAddr, _user, _period, _currentStakingAmount);
 
     if (_reward.debited != _debited) {
@@ -137,7 +137,7 @@ abstract contract RewardCalculation is IRewardPool {
    */
   function _claimReward(address _poolAddr, address _user) internal returns (uint256 _amount) {
     uint256 _latestPeriod = _currentPeriod();
-    _amount = _getReward(_poolAddr, _user, _latestPeriod, stakingAmountOf(_poolAddr, _user));
+    _amount = _getReward(_poolAddr, _user, _latestPeriod, getStakingAmount(_poolAddr, _user));
     emit RewardClaimed(_poolAddr, _user, _amount);
 
     UserRewardFields storage _reward = _userReward[_poolAddr][_user];

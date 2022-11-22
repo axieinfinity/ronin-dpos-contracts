@@ -138,7 +138,7 @@ describe('[Integration] Slash validators', () => {
             value: slasheeInitStakingAmount,
           });
 
-        expect(await stakingContract.stakingAmountOf(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
+        expect(await stakingContract.getStakingAmount(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
 
         await EpochController.setTimestampToPeriodEnding();
         await mineBatchTxs(async () => {
@@ -194,7 +194,7 @@ describe('[Integration] Slash validators', () => {
 
       it('Should the Staking contract subtract staking amount from validator', async () => {
         let _expectingSlasheeStakingAmount = slasheeInitStakingAmount.sub(slashAmountForUnavailabilityTier2Threshold);
-        expect(await stakingContract.stakingAmountOf(slashee.address, slashee.address)).eq(
+        expect(await stakingContract.getStakingAmount(slashee.address, slashee.address)).eq(
           _expectingSlasheeStakingAmount
         );
       });
@@ -268,7 +268,7 @@ describe('[Integration] Slash validators', () => {
             value: slasheeInitStakingAmount,
           });
 
-        expect(await stakingContract.stakingAmountOf(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
+        expect(await stakingContract.getStakingAmount(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
 
         await EpochController.setTimestampToPeriodEnding();
         await mineBatchTxs(async () => {
@@ -323,7 +323,7 @@ describe('[Integration] Slash validators', () => {
 
         it('Should the Staking contract subtract staking amount from validator', async () => {
           let _expectingSlasheeStakingAmount = slasheeInitStakingAmount.sub(slashAmountForUnavailabilityTier2Threshold);
-          expect(await stakingContract.stakingAmountOf(slashee.address, slashee.address)).eq(
+          expect(await stakingContract.getStakingAmount(slashee.address, slashee.address)).eq(
             _expectingSlasheeStakingAmount
           );
         });

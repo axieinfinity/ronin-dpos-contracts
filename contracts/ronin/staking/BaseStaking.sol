@@ -75,7 +75,7 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IRewardPool
    */
-  function stakingAmountOf(address _poolAddr, address _user) public view override returns (uint256) {
+  function getStakingAmount(address _poolAddr, address _user) public view override returns (uint256) {
     return _stakingPool[_poolAddr].delegatingAmount[_user];
   }
 

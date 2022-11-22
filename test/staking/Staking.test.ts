@@ -126,17 +126,17 @@ describe('Staking test', () => {
       const tx = await stakingContract.connect(poolAddr).unstake(poolAddr.address, 1);
       await expect(tx!).emit(stakingContract, 'Unstaked').withArgs(poolAddr.address, 1);
       expect(await stakingContract.stakingTotal(poolAddr.address)).eq(minValidatorStakingAmount.mul(2));
-      expect(await stakingContract.stakingAmountOf(poolAddr.address, poolAddr.address)).eq(
+      expect(await stakingContract.getStakingAmount(poolAddr.address, poolAddr.address)).eq(
         minValidatorStakingAmount.mul(2)
       );
     });
 
     it('[Delegator] Should be able to delegate/undelegate to a validator candidate', async () => {
       await stakingContract.delegate(poolAddr.address, { value: 10 });
-      expect(await stakingContract.stakingAmountOf(poolAddr.address, deployer.address)).eq(10);
+      expect(await stakingContract.getStakingAmount(poolAddr.address, deployer.address)).eq(10);
       await network.provider.send('evm_increaseTime', [cooldownSecsToUndelegate + 1]);
       await stakingContract.undelegate(poolAddr.address, 1);
-      expect(await stakingContract.stakingAmountOf(poolAddr.address, deployer.address)).eq(9);
+      expect(await stakingContract.getStakingAmount(poolAddr.address, deployer.address)).eq(9);
     });
 
     it('Should be not able to unstake with the balance left is not larger than the minimum balance threshold', async () => {
@@ -184,7 +184,7 @@ describe('Staking test', () => {
 
     it('Should be able to undelegate from a deprecated validator candidate', async () => {
       await stakingContract.undelegate(poolAddr.address, 1);
-      expect(await stakingContract.stakingAmountOf(poolAddr.address, deployer.address)).eq(8);
+      expect(await stakingContract.getStakingAmount(poolAddr.address, deployer.address)).eq(8);
     });
 
     it('Should not be able to delegate to a deprecated pool', async () => {
@@ -258,12 +258,12 @@ describe('Staking test', () => {
         minValidatorStakingAmount,
         minValidatorStakingAmount.add(8),
       ]);
-      expect(await stakingContract.stakingAmountOf(poolAddr.address, deployer.address)).eq(8);
+      expect(await stakingContract.getStakingAmount(poolAddr.address, deployer.address)).eq(8);
     });
 
     it('Should be able to delegate/undelegate for the rejoined candidate', async () => {
       await stakingContract.delegate(poolAddr.address, { value: 2 });
-      expect(await stakingContract.stakingAmountOf(poolAddr.address, deployer.address)).eq(10);
+      expect(await stakingContract.getStakingAmount(poolAddr.address, deployer.address)).eq(10);
 
       await stakingContract.connect(userA).delegate(poolAddr.address, { value: 2 });
       await stakingContract.connect(userB).delegate(poolAddr.address, { value: 2 });
