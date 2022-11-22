@@ -36,7 +36,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     uint256 _periodStartAtBlock = _validatorContract.currentPeriodStartAtBlock();
 
     bool[] memory _jaileds = _validatorContract.bulkJailed(_validators);
-    bool[] memory _maintaineds = _maintenanceContract.bulkMaintainingInBlockRange(
+    bool[] memory _maintaineds = _maintenanceContract.getManyMaintainedInBlockRange(
       _validators,
       _periodStartAtBlock,
       block.number
