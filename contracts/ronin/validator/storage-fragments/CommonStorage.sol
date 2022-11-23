@@ -28,6 +28,13 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   uint256[49] private ______gap;
 
   /**
+   * @inheritdoc ICommonInfo
+   */
+  function totalDeprecatedReward() external view override returns (uint256) {
+    return _totalDeprecatedReward;
+  }
+
+  /**
    * @inheritdoc ITimingInfo
    */
   function epochOf(uint256 _block)
