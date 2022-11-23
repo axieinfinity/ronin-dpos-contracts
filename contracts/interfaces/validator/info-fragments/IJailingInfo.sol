@@ -6,12 +6,12 @@ interface IJailingInfo {
   /**
    * @dev Returns whether the validator are put in jail (cannot join the set of validators) during the current period.
    */
-  function jailed(address) external view returns (bool);
+  function checkJailed(address) external view returns (bool);
 
   /**
    * @dev Returns whether the validator are put in jail and the number of block and epoch that he still is in the jail.
    */
-  function jailedTimeLeft(address _addr)
+  function getJailedTimeLeft(address _addr)
     external
     view
     returns (
@@ -23,12 +23,12 @@ interface IJailingInfo {
   /**
    * @dev Returns whether the validator are put in jail (cannot join the set of validators) at a specific block.
    */
-  function jailedAtBlock(address _addr, uint256 _blockNum) external view returns (bool);
+  function checkJailedAtBlock(address _addr, uint256 _blockNum) external view returns (bool);
 
   /**
    * @dev Returns whether the validator are put in jail at a specific block and the number of block and epoch that he still is in the jail.
    */
-  function jailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
+  function getJailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
     external
     view
     returns (
@@ -40,17 +40,17 @@ interface IJailingInfo {
   /**
    * @dev Returns whether the validators are put in jail (cannot join the set of validators) during the current period.
    */
-  function bulkJailed(address[] calldata) external view returns (bool[] memory);
+  function checkManyJailed(address[] calldata) external view returns (bool[] memory);
 
   /**
    * @dev Returns whether the incoming reward of the block producers are deprecated during the current period.
    */
-  function miningRewardDeprecated(address[] calldata _blockProducers) external view returns (bool[] memory);
+  function checkMiningRewardDeprecated(address[] calldata _blockProducers) external view returns (bool[] memory);
 
   /**
    * @dev Returns whether the incoming reward of the block producers are deprecated during a specific period.
    */
-  function miningRewardDeprecatedAtPeriod(address[] calldata _blockProducers, uint256 _period)
+  function checkMiningRewardDeprecatedAtPeriod(address[] calldata _blockProducers, uint256 _period)
     external
     view
     returns (bool[] memory);

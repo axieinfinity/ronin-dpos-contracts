@@ -52,7 +52,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   /**
    * @inheritdoc IStaking
    */
-  function bulkSelfStaking(address[] calldata _pools) external view returns (uint256[] memory _selfStakings) {
+  function getManySelfStakings(address[] calldata _pools) external view returns (uint256[] memory _selfStakings) {
     _selfStakings = new uint256[](_pools.length);
     for (uint _i = 0; _i < _pools.length; _i++) {
       _selfStakings[_i] = _stakingPool[_pools[_i]].stakingAmount;

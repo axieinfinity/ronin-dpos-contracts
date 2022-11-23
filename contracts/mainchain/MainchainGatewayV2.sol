@@ -94,7 +94,7 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
   }
 
   /**
-   * @dev See {IBridge-replaceBridgeOperators}.
+   * @inheritdoc IBridge
    */
   function replaceBridgeOperators(address[] calldata _list) external onlyAdmin {
     address _addr;
@@ -124,7 +124,7 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
   }
 
   /**
-   * @dev See {IBridge-getBridgeOperators}.
+   * @inheritdoc IBridge
    */
   function getBridgeOperators() external view returns (address[] memory) {
     return _bridgeOperators;
@@ -136,28 +136,28 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
   function receiveEther() external payable {}
 
   /**
-   * @dev See {IMainchainGatewayV2-DOMAIN_SEPARATOR}.
+   * @inheritdoc IMainchainGatewayV2
    */
   function DOMAIN_SEPARATOR() external view virtual returns (bytes32) {
     return _domainSeparator;
   }
 
   /**
-   * @dev See {IMainchainGatewayV2-setWrappedNativeTokenContract}.
+   * @inheritdoc IMainchainGatewayV2
    */
   function setWrappedNativeTokenContract(IWETH _wrappedToken) external virtual onlyAdmin {
     _setWrappedNativeTokenContract(_wrappedToken);
   }
 
   /**
-   * @dev See {IMainchainGatewayV2-requestDepositFor}.
+   * @inheritdoc IMainchainGatewayV2
    */
   function requestDepositFor(Transfer.Request calldata _request) external payable virtual whenNotPaused {
     _requestDepositFor(_request, msg.sender);
   }
 
   /**
-   * @dev See {IMainchainGatewayV2-submitWithdrawal}.
+   * @inheritdoc IMainchainGatewayV2
    */
   function submitWithdrawal(Transfer.Receipt calldata _receipt, Signature[] calldata _signatures)
     external
@@ -169,7 +169,7 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
   }
 
   /**
-   * @dev See {IMainchainGatewayV2-unlockWithdrawal}.
+   * @inheritdoc IMainchainGatewayV2
    */
   function unlockWithdrawal(Transfer.Receipt calldata _receipt) external onlyRole(WITHDRAWAL_UNLOCKER_ROLE) {
     bytes32 _receiptHash = _receipt.hash();
@@ -195,7 +195,7 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
   }
 
   /**
-   * @dev See {IMainchainGatewayV2-mapTokens}.
+   * @inheritdoc IMainchainGatewayV2
    */
   function mapTokens(
     address[] calldata _mainchainTokens,
@@ -207,7 +207,7 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
   }
 
   /**
-   * @dev See {IMainchainGatewayV2-mapTokensAndThresholds}.
+   * @inheritdoc IMainchainGatewayV2
    */
   function mapTokensAndThresholds(
     address[] calldata _mainchainTokens,
@@ -228,7 +228,7 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
   }
 
   /**
-   * @dev See {IMainchainGatewayV2-getRoninToken}.
+   * @inheritdoc IMainchainGatewayV2
    */
   function getRoninToken(address _mainchainToken) public view returns (MappedToken memory _token) {
     _token = _roninToken[_mainchainToken];

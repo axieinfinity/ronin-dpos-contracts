@@ -130,7 +130,7 @@ abstract contract CoinbaseExecution is
     IBridgeTracking _bridgeTracking = _bridgeTrackingContract;
     uint256 _totalBridgeBallots = _bridgeTracking.totalBallots(_lastPeriod);
     uint256 _totalBridgeVotes = _bridgeTracking.totalVotes(_lastPeriod);
-    uint256[] memory _bridgeBallots = _bridgeTracking.bulkTotalBallotsOf(_lastPeriod, _currentValidators);
+    uint256[] memory _bridgeBallots = _bridgeTracking.getManyTotalBallots(_lastPeriod, _currentValidators);
     (
       uint256 _missingVotesRatioTier1,
       uint256 _missingVotesRatioTier2,
@@ -325,7 +325,7 @@ abstract contract CoinbaseExecution is
     // NOTE: This is a temporary approach since the slashing issue is still not finalized.
     // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
     _removeUnsatisfiedCandidates();
-    uint256[] memory _weights = _stakingContract.bulkStakingTotal(_candidates);
+    uint256[] memory _weights = _stakingContract.getManyStakingTotals(_candidates);
     uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getConsensusWeights(_candidates);
     uint256 _newValidatorCount;
     (_newValidators, _newValidatorCount) = _pcPickValidatorSet(
@@ -385,12 +385,12 @@ abstract contract CoinbaseExecution is
    *
    */
   function _revampBlockProducers(uint256 _newPeriod, address[] memory _currentValidators) private {
-    bool[] memory _maintainingList = _maintenanceContract.bulkMaintaining(_candidates, block.number + 1);
+    bool[] memory _maintainedList = _maintenanceContract.checkManyMaintained(_candidates, block.number + 1);
 
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
       address _currentValidator = _currentValidators[_i];
       bool _isProducerBefore = isBlockProducer(_currentValidator);
-      bool _isProducerAfter = !(_jailed(_currentValidator) || _maintainingList[_i]);
+      bool _isProducerAfter = !(_jailed(_currentValidator) || _maintainedList[_i]);
 
       if (!_isProducerBefore && _isProducerAfter) {
         _validatorMap[_currentValidator] = _validatorMap[_currentValidator].addFlag(

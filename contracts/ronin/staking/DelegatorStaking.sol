@@ -101,7 +101,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
 
     for (uint256 _i = 0; _i < _poolAddrList.length; _i++) {
       _consensusAddr = _poolAddrList[_i];
-      _rewards[_i] = _getReward(_consensusAddr, _user, _period, stakingAmountOf(_consensusAddr, _user));
+      _rewards[_i] = _getReward(_consensusAddr, _user, _period, getStakingAmount(_consensusAddr, _user));
     }
   }
 

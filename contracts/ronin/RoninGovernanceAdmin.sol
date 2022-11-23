@@ -84,7 +84,7 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
   }
 
   /**
-   * @dev See {CoreGovernance-_proposeProposal}.
+   * @dev See `CoreGovernance-_proposeProposal`.
    *
    * Requirements:
    * - The method caller is governor.
@@ -101,7 +101,7 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
   }
 
   /**
-   * @dev See {GovernanceProposal-_proposeProposalStructAndCastVotes}.
+   * @dev See `GovernanceProposal-_proposeProposalStructAndCastVotes`.
    *
    * Requirements:
    * - The method caller is governor.
@@ -116,7 +116,7 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
   }
 
   /**
-   * @dev See {GovernanceProposal-_castProposalBySignatures}.
+   * @dev See `GovernanceProposal-_castProposalBySignatures`.
    */
   function castProposalBySignatures(
     Proposal.ProposalDetail calldata _proposal,
@@ -127,7 +127,7 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
   }
 
   /**
-   * @dev See {CoreGovernance-_proposeGlobal}.
+   * @dev See `CoreGovernance-_proposeGlobal`.
    *
    * Requirements:
    * - The method caller is governor.
@@ -151,7 +151,7 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
   }
 
   /**
-   * @dev See {GovernanceProposal-_proposeGlobalProposalStructAndCastVotes}.
+   * @dev See `GovernanceProposal-_proposeGlobalProposalStructAndCastVotes`.
    *
    * Requirements:
    * - The method caller is governor.
@@ -174,7 +174,7 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
   }
 
   /**
-   * @dev See {GovernanceProposal-_castGlobalProposalBySignatures}.
+   * @dev See `GovernanceProposal-_castGlobalProposalBySignatures`.
    */
   function castGlobalProposalBySignatures(
     GlobalProposal.GlobalProposalDetail calldata _globalProposal,
@@ -192,7 +192,7 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
   }
 
   /**
-   * @dev See {BOsGovernanceProposal-_castVotesBySignatures}.
+   * @dev See `BOsGovernanceProposal-_castVotesBySignatures`.
    */
   function voteBridgeOperatorsBySignatures(
     uint256 _period,

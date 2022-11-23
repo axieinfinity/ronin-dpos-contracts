@@ -45,12 +45,12 @@ interface IRewardPool is PeriodWrapperConsumer {
   /**
    * @dev Returns the staking amount of an user.
    */
-  function stakingAmountOf(address _poolAddr, address _user) external view returns (uint256);
+  function getStakingAmount(address _poolAddr, address _user) external view returns (uint256);
 
   /**
    * @dev Returns the staking amounts of the users.
    */
-  function bulkStakingAmountOf(address[] calldata _poolAddrs, address[] calldata _userList)
+  function getManyStakingAmounts(address[] calldata _poolAddrs, address[] calldata _userList)
     external
     view
     returns (uint256[] memory);
@@ -58,10 +58,10 @@ interface IRewardPool is PeriodWrapperConsumer {
   /**
    * @dev Returns the total staking amount of all users for a pool.
    */
-  function stakingTotal(address _poolAddr) external view returns (uint256);
+  function getStakingTotal(address _poolAddr) external view returns (uint256);
 
   /**
    * @dev Returns the total staking amounts of all users for the pools `_poolAddrs`.
    */
-  function bulkStakingTotal(address[] calldata _poolAddrs) external view returns (uint256[] memory);
+  function getManyStakingTotals(address[] calldata _poolAddrs) external view returns (uint256[] memory);
 }

@@ -66,7 +66,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   /**
    * @inheritdoc IBridgeTracking
    */
-  function bulkTotalBallotsOf(uint256 _period, address[] calldata _bridgeOperators)
+  function getManyTotalBallots(uint256 _period, address[] calldata _bridgeOperators)
     external
     view
     override
