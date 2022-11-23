@@ -92,5 +92,5 @@ interface ICreditScore {
   /**
    * @dev Returns the whether the `_validator` has been bailed out at the `_period`.
    */
-  function bailedOutAtPeriod(address _validator, uint256 _period) external view returns (bool);
+  function checkBailedOutAtPeriod(address _validator, uint256 _period) external view returns (bool);
 }

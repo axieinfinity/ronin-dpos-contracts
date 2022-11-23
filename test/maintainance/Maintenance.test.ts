@@ -255,7 +255,7 @@ describe('Maintenance test', () => {
       await expect(tx)
         .emit(maintenanceContract, 'MaintenanceScheduled')
         .withArgs(validatorCandidates[0].address, [startedAtBlock, endedAtBlock]);
-      expect(await maintenanceContract.scheduled(validatorCandidates[0].address)).true;
+      expect(await maintenanceContract.checkScheduled(validatorCandidates[0].address)).true;
     });
 
     it('Should not be able to schedule maintenance again', async () => {

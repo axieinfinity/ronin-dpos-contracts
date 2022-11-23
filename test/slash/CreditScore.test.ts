@@ -221,7 +221,7 @@ describe('Credit score and bail out test', () => {
       localScoreController.increaseAtWithUpperbound(0, maxCreditScore, 0);
       await validateScoreAt(0);
 
-      let _jailLeft = await validatorContract.jailedTimeLeft(validatorCandidates[0].address);
+      let _jailLeft = await validatorContract.getJailedTimeLeft(validatorCandidates[0].address);
       await network.provider.send('hardhat_mine', [_jailLeft.blockLeft_.toHexString(), '0x0']);
     });
     it('Should the score updated correctly, case: max score (y), in jail (N), unavailability (N)', async () => {
@@ -276,7 +276,7 @@ describe('Credit score and bail out test', () => {
 
       it('Should the bailing out cost subtracted correctly', async () => {
         let _latestBlockNum = BigNumber.from(await network.provider.send('eth_blockNumber'));
-        let _jailLeft = await validatorContract.jailedTimeLeftAtBlock(
+        let _jailLeft = await validatorContract.getJailedTimeLeftAtBlock(
           validatorCandidates[0].address,
           _latestBlockNum.add(1)
         );
@@ -361,7 +361,7 @@ describe('Credit score and bail out test', () => {
       });
 
       it('Should the slashed validator become block producer when jailed time over', async () => {
-        let _jailEpochLeft = (await validatorContract.jailedTimeLeft(validatorCandidates[0].address)).epochLeft_;
+        let _jailEpochLeft = (await validatorContract.getJailedTimeLeft(validatorCandidates[0].address)).epochLeft_;
         await endPeriodAndWrapUpAndResetIndicators(_jailEpochLeft.toNumber());
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].address)).eq(true);
       });
@@ -381,7 +381,7 @@ describe('Credit score and bail out test', () => {
       });
 
       it('Should the bailing out cost subtracted correctly', async () => {
-        let _jailLeft = await validatorContract.jailedTimeLeft(validatorCandidates[0].address);
+        let _jailLeft = await validatorContract.getJailedTimeLeft(validatorCandidates[0].address);
         let tx = await slashContract.connect(candidateAdmins[0]).bailOut(validatorCandidates[0].address);
         let _period = validatorContract.currentPeriod();
 
@@ -457,7 +457,7 @@ describe('Credit score and bail out test', () => {
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].address)).eq(true);
 
         let _latestBlockNum = BigNumber.from(await network.provider.send('eth_blockNumber'));
-        let _jailLeft = await validatorContract.jailedTimeLeftAtBlock(
+        let _jailLeft = await validatorContract.getJailedTimeLeftAtBlock(
           validatorCandidates[0].address,
           _latestBlockNum.add(1)
         );
@@ -495,7 +495,7 @@ describe('Credit score and bail out test', () => {
         await endPeriodAndWrapUpAndResetIndicators();
 
         let _latestBlockNum = BigNumber.from(await network.provider.send('eth_blockNumber'));
-        let _jailLeft = await validatorContract.jailedTimeLeftAtBlock(
+        let _jailLeft = await validatorContract.getJailedTimeLeftAtBlock(
           validatorCandidates[0].address,
           _latestBlockNum.add(1)
         );
