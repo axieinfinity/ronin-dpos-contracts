@@ -114,7 +114,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   }
 
   /**
-   * @dev See {ICandidateStaking-applyValidatorCandidate}
+   * @dev See `ICandidateStaking-applyValidatorCandidate`
    */
   function _applyValidatorCandidate(
     address payable _poolAdmin,
@@ -139,7 +139,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   }
 
   /**
-   * @dev See {ICandidateStaking-stake}
+   * @dev See `ICandidateStaking-stake`
    */
   function _stake(
     PoolDetail storage _pool,
@@ -153,7 +153,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   }
 
   /**
-   * @dev See {ICandidateStaking-unstake}
+   * @dev See `ICandidateStaking-unstake`
    */
   function _unstake(
     PoolDetail storage _pool,

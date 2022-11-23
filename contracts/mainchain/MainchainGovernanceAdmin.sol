@@ -38,7 +38,7 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
   }
 
   /**
-   * @dev See {GovernanceRelay-_relayProposal}.
+   * @dev See `GovernanceRelay-_relayProposal`.
    *
    * Requirements:
    * - The method caller is relayer.
@@ -53,7 +53,7 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
   }
 
   /**
-   * @dev See {GovernanceRelay-_relayGlobalProposal}.
+   * @dev See `GovernanceRelay-_relayGlobalProposal`.
    *
    * Requirements:
    * - The method caller is relayer.
@@ -76,7 +76,7 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
   }
 
   /**
-   * @dev See {BOsGovernanceRelay-_relayVotesBySignatures}.
+   * @dev See `BOsGovernanceRelay-_relayVotesBySignatures`.
    *
    * Requirements:
    * - The method caller is relayer.

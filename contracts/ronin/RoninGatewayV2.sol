@@ -151,7 +151,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @dev {IRoninGatewayV2-getWithdrawalSignatures}.
+   * @inheritdoc IRoninGatewayV2
    */
   function getWithdrawalSignatures(uint256 _withdrawalId, address[] calldata _validators)
     external
@@ -165,7 +165,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @dev {IRoninGatewayV2-depositFor}.
+   * @inheritdoc IRoninGatewayV2
    */
   function depositFor(Transfer.Receipt calldata _receipt) external {
     address _sender = msg.sender;
@@ -175,7 +175,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @dev {IRoninGatewayV2-tryBulkAcknowledgeMainchainWithdrew}.
+   * @inheritdoc IRoninGatewayV2
    */
   function tryBulkAcknowledgeMainchainWithdrew(uint256[] calldata _withdrawalIds)
     external
@@ -207,7 +207,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @dev {IRoninGatewayV2-tryBulkDepositFor}.
+   * @inheritdoc IRoninGatewayV2
    */
   function tryBulkDepositFor(Transfer.Receipt[] calldata _receipts) external returns (bool[] memory _executedReceipts) {
     address _sender = msg.sender;
@@ -228,14 +228,14 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @dev {IRoninGatewayV2-requestWithdrawalFor}.
+   * @inheritdoc IRoninGatewayV2
    */
   function requestWithdrawalFor(Transfer.Request calldata _request, uint256 _chainId) external whenNotPaused {
     _requestWithdrawalFor(_request, msg.sender, _chainId);
   }
 
   /**
-   * @dev {IRoninGatewayV2-bulkRequestWithdrawalFor}.
+   * @inheritdoc IRoninGatewayV2
    */
   function bulkRequestWithdrawalFor(Transfer.Request[] calldata _requests, uint256 _chainId) external whenNotPaused {
     require(_requests.length > 0, "RoninGatewayV2: empty array");
@@ -245,7 +245,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @dev {IRoninGatewayV2-requestWithdrawalSignatures}.
+   * @inheritdoc IRoninGatewayV2
    */
   function requestWithdrawalSignatures(uint256 _withdrawalId) external whenNotPaused {
     require(!mainchainWithdrew(_withdrawalId), "RoninGatewayV2: withdrew on mainchain already");
@@ -255,7 +255,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @dev {IRoninGatewayV2-bulkSubmitWithdrawalSignatures}.
+   * @inheritdoc IRoninGatewayV2
    */
   function bulkSubmitWithdrawalSignatures(uint256[] calldata _withdrawals, bytes[] calldata _signatures) external {
     address _validator = msg.sender;
@@ -276,7 +276,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @dev {IRoninGatewayV2-mapTokens}.
+   * @inheritdoc IRoninGatewayV2
    */
   function mapTokens(
     address[] calldata _roninTokens,
@@ -289,7 +289,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @dev {IRoninGatewayV2-depositVoted}.
+   * @inheritdoc IRoninGatewayV2
    */
   function depositVoted(
     uint256 _chainId,
@@ -300,21 +300,21 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @dev {IRoninGatewayV2-mainchainWithdrewVoted}.
+   * @inheritdoc IRoninGatewayV2
    */
   function mainchainWithdrewVoted(uint256 _withdrawalId, address _voter) external view returns (bool) {
     return _voted(mainchainWithdrewVote[_withdrawalId], _voter);
   }
 
   /**
-   * @dev {IRoninGatewayV2-mainchainWithdrew}.
+   * @inheritdoc IRoninGatewayV2
    */
   function mainchainWithdrew(uint256 _withdrawalId) public view returns (bool) {
     return mainchainWithdrewVote[_withdrawalId].status == VoteStatus.Executed;
   }
 
   /**
-   * @dev {IRoninGatewayV2-getMainchainToken}.
+   * @inheritdoc IRoninGatewayV2
    */
   function getMainchainToken(address _roninToken, uint256 _chainId) public view returns (MappedToken memory _token) {
     _token = _mainchainToken[_roninToken][_chainId];

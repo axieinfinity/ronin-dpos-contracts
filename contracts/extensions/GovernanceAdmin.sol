@@ -91,7 +91,7 @@ contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract,
   }
 
   /**
-   * @dev Override {CoreGovernance-_getMinimumVoteWeight}.
+   * @dev Override `CoreGovernance-_getMinimumVoteWeight`.
    */
   function _getMinimumVoteWeight() internal view virtual override returns (uint256) {
     (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
@@ -106,7 +106,7 @@ contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract,
   }
 
   /**
-   * @dev Override {CoreGovernance-_getTotalWeights}.
+   * @dev Override `CoreGovernance-_getTotalWeights`.
    */
   function _getTotalWeights() internal view virtual override returns (uint256) {
     (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(

@@ -53,14 +53,14 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IRewardPool
    */
-  function stakingTotal(address _poolAddr) public view override returns (uint256) {
+  function getStakingTotal(address _poolAddr) public view override returns (uint256) {
     return _stakingPool[_poolAddr].stakingTotal;
   }
 
   /**
    * @inheritdoc IRewardPool
    */
-  function bulkStakingTotal(address[] calldata _poolList)
+  function getManyStakingTotals(address[] calldata _poolList)
     public
     view
     override
@@ -68,21 +68,21 @@ abstract contract BaseStaking is
   {
     _stakingAmounts = new uint256[](_poolList.length);
     for (uint _i = 0; _i < _poolList.length; _i++) {
-      _stakingAmounts[_i] = stakingTotal(_poolList[_i]);
+      _stakingAmounts[_i] = getStakingTotal(_poolList[_i]);
     }
   }
 
   /**
    * @inheritdoc IRewardPool
    */
-  function stakingAmountOf(address _poolAddr, address _user) public view override returns (uint256) {
+  function getStakingAmount(address _poolAddr, address _user) public view override returns (uint256) {
     return _stakingPool[_poolAddr].delegatingAmount[_user];
   }
 
   /**
    * @inheritdoc IRewardPool
    */
-  function bulkStakingAmountOf(address[] calldata _poolAddrs, address[] calldata _userList)
+  function getManyStakingAmounts(address[] calldata _poolAddrs, address[] calldata _userList)
     external
     view
     override
