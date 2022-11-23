@@ -32,12 +32,12 @@ let validatorCandidates: SignerWithAddress[];
 
 const unavailabilityTier2Threshold = 10;
 const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(1);
-const slashDoubleSignAmount = 1000;
-const minValidatorStakingAmount = BigNumber.from(100);
-const blockProducerBonusPerBlock = BigNumber.from(1);
+const slashDoubleSignAmount = 10000;
+const minValidatorStakingAmount = BigNumber.from(1000);
+const blockProducerBonusPerBlock = BigNumber.from(200);
 
 describe('[Integration] Submit Block Reward', () => {
-  const blockRewardAmount = BigNumber.from(2);
+  const blockRewardAmount = BigNumber.from(100);
 
   before(async () => {
     [deployer, coinbase, governor, ...validatorCandidates] = await ethers.getSigners();
