@@ -353,6 +353,8 @@ describe('Ronin Validator Set test', () => {
           tx = await slashIndicator.slashMisdemeanor(coinbase.address);
           expect(tx).emit(roninValidatorSet, 'ValidatorPunished').withArgs(coinbase.address, 0, 0);
 
+          await expect(await roninValidatorSet.totalDeprecatedReward()).equal(5100); // = 0 + (5000 + 100)
+
           epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
           lastPeriod = await roninValidatorSet.currentPeriod();
           await mineBatchTxs(async () => {
@@ -360,8 +362,7 @@ describe('Ronin Validator Set test', () => {
             tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
           });
           const balanceDiff = (await treasury.getBalance()).sub(balance);
-          expect(balanceDiff).eq(0);
-          // The delegators don't receives the new rewards until the period is ended
+          expect(balanceDiff).eq(0); // The delegators don't receives the new rewards until the period is ended
           expect(await stakingContract.getReward(coinbase.address, coinbase.address)).eq(
             5148 // (5000 + 100 + 100) * 99% = 99% of the reward, since the pool is only staked by the coinbase
           );
@@ -458,6 +459,28 @@ describe('Ronin Validator Set test', () => {
         lastPeriod = await roninValidatorSet.currentPeriod();
         await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, currentValidatorSet);
       });
+    });
+  });
+
+  describe('Withdraw deprecated rewards', async () => {
+    it('Should non-admin not be able to call withdraw function', async () => {
+      await expect(roninValidatorSet.withdrawDeprecatedReward()).revertedWith('HasProxyAdmin: unauthorized sender');
+    });
+
+    it('Should admin be able to withdraw the deprecated rewards to the staking vesting contract', async () => {
+      let tx: ContractTransaction;
+      let _withdrawAmount = await roninValidatorSet.totalDeprecatedReward();
+
+      await expect(async () => {
+        tx = await governanceAdminInterface.functionDelegateCall(
+          roninValidatorSet.address,
+          roninValidatorSet.interface.encodeFunctionData('withdrawDeprecatedReward')
+        );
+        return tx;
+      }).changeEtherBalance(stakingVesting.address, _withdrawAmount);
+
+      await RoninValidatorSet.expects.emitDeprecatedRewardWithdrawnEvent(tx!, stakingVesting.address, _withdrawAmount);
+      expect(await roninValidatorSet.totalDeprecatedReward()).equal(0);
     });
   });
 });

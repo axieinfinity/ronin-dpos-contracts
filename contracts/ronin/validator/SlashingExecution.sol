@@ -23,6 +23,9 @@ abstract contract SlashingExecution is
   ) external override onlySlashIndicatorContract {
     uint256 _period = currentPeriod();
     _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = true;
+
+    _totalDeprecatedReward += _miningReward[_validatorAddr] + _delegatingReward[_validatorAddr];
+
     delete _miningReward[_validatorAddr];
     delete _delegatingReward[_validatorAddr];
 

@@ -197,9 +197,10 @@ abstract contract CoinbaseExecution is
   }
 
   /**
-   * @dev This loop over the all current validators to:
+   * @dev This loops over all current validators to:
    * - Update delegating reward for and calculate total delegating rewards to be sent to the staking contract,
-   * - Distribute the reward of block producers and bridge operators to their treasury addresses.
+   * - Distribute the reward of block producers and bridge operators to their treasury addresses,
+   * - Update the total deprecated reward if the two previous conditions do not sastify.
    *
    * Note: This method should be called once in the end of each period.
    *
@@ -217,12 +218,16 @@ abstract contract CoinbaseExecution is
 
       if (!_bridgeRewardDeprecated(_consensusAddr, _lastPeriod)) {
         _distributeBridgeOperatingReward(_consensusAddr, _candidateInfo[_consensusAddr].bridgeOperatorAddr, _treasury);
+      } else {
+        _totalDeprecatedReward += _bridgeOperatingReward[_consensusAddr];
       }
 
       if (!_jailed(_consensusAddr) && !_miningRewardDeprecated(_consensusAddr, _lastPeriod)) {
         _totalDelegatingReward += _delegatingReward[_consensusAddr];
         _delegatingRewards[_i] = _delegatingReward[_consensusAddr];
         _distributeMiningReward(_consensusAddr, _treasury);
+      } else {
+        _totalDeprecatedReward += _miningReward[_consensusAddr] + _delegatingReward[_consensusAddr];
       }
 
       delete _delegatingReward[_consensusAddr];
