@@ -23,7 +23,7 @@ contract MockRoninValidatorSetExtended is MockRoninValidatorSetOverridePrecompil
     }
   }
 
-  function epochEndingAt(uint256 _block) public view override returns (bool) {
+  function epochEndingAt(uint256 _block) public view override(ITimingInfo, TimingStorage) returns (bool) {
     for (uint _i = 0; _i < _epochs.length; _i++) {
       if (_block == _epochs[_i]) {
         return true;
