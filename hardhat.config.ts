@@ -94,12 +94,13 @@ const config: HardhatUserConfig = {
         count: 100,
         accountsBalance: '1000000000000000000000000000', // 1B RON
       },
+      allowUnlimitedContractSize: true,
     },
     local,
     'ronin-devnet': devnet,
     'ronin-testnet': testnet,
     'ronin-mainnet': mainnet,
-    goerli: goerli,
+    goerli,
   },
   gasReporter: {
     enabled: REPORT_GAS ? true : false,
