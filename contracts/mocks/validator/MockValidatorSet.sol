@@ -134,4 +134,6 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
       uint256 epochLeft_
     )
   {}
+
+  function totalDeprecatedReward() external view override returns (uint256) {}
 }
