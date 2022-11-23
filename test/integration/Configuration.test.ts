@@ -56,9 +56,9 @@ const config: InitTestInput = {
     waitingSecsToRevoke: 1000,
   },
   stakingVestingArguments: {
-    blockProducerBonusPerBlock: 1,
-    bridgeOperatorBonusPerBlock: 1,
-    topupAmount: BigNumber.from(10000),
+    blockProducerBonusPerBlock: 1_000,
+    bridgeOperatorBonusPerBlock: 1_100,
+    topupAmount: BigNumber.from(10_000_000),
   },
   slashIndicatorArguments: {
     bridgeOperatorSlashing: {
