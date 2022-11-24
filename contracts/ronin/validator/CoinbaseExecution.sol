@@ -322,8 +322,6 @@ abstract contract CoinbaseExecution is
    *
    */
   function _syncValidatorSet(uint256 _newPeriod) private returns (address[] memory _newValidators) {
-    // NOTE: This is a temporary approach since the slashing issue is still not finalized.
-    // Read more about slashing issue at: https://www.notion.so/skymavis/Slashing-Issue-9610ae1452434faca1213ab2e1d7d944
     _removeUnsatisfiedCandidates();
     uint256[] memory _weights = _stakingContract.getManyStakingTotals(_candidates);
     uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getConsensusWeights(_candidates);
