@@ -55,15 +55,13 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
 
     _candidateIndex[_consensusAddr] = ~_length;
     _candidates.push(_consensusAddr);
-    _candidateInfo[_consensusAddr] = ValidatorCandidate(
-      _admin,
-      _consensusAddr,
-      _treasuryAddr,
-      _bridgeOperatorAddr,
-      _commissionRate,
-      type(uint256).max,
-      new bytes(0)
-    );
+
+    ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
+    _info.admin = _admin;
+    _info.consensusAddr = _consensusAddr;
+    _info.treasuryAddr = _treasuryAddr;
+    _info.bridgeOperatorAddr = _bridgeOperatorAddr;
+    _info.commissionRate = _commissionRate;
     emit CandidateGranted(_consensusAddr, _treasuryAddr, _admin, _bridgeOperatorAddr);
   }
 
@@ -72,13 +70,12 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    */
   function requestRevokeCandidate(address _consensusAddr, uint256 _secsLeft) external override onlyStakingContract {
     require(isValidatorCandidate(_consensusAddr), "CandidateManager: query for non-existent candidate");
-    uint256 _revokedTimestamp = block.timestamp + _secsLeft;
-    require(
-      _revokedTimestamp < _candidateInfo[_consensusAddr].revokedTimestamp,
-      "CandidateManager: invalid revoked timestamp"
-    );
-    _candidateInfo[_consensusAddr].revokedTimestamp = _revokedTimestamp;
-    emit CandidateRevokedTimestampUpdated(_consensusAddr, _revokedTimestamp);
+    ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
+    require(_info.revokingTimestamp == 0, "CandidateManager: already requested before");
+
+    uint256 _revokingTimestamp = block.timestamp + _secsLeft;
+    _info.revokingTimestamp = _revokingTimestamp;
+    emit CandidateRevokingTimestampUpdated(_consensusAddr, _revokingTimestamp);
   }
 
   /**
@@ -115,14 +112,15 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
 
   /**
    * @dev Removes unsastisfied candidates, the ones who have insufficient minimum candidate staking amount,
-   * or the ones who revoked their candidate role.
+   * or the ones who requested to renounce their candidate role.
    *
    * Emits the event `CandidatesRevoked` when a candidate is revoked.
    *
    */
   function _removeUnsatisfiedCandidates() internal {
     IStaking _staking = _stakingContract;
-    uint256 _minStakingAmount = _stakingContract.minValidatorStakingAmount();
+    uint256 _waitingSecsToRevoke = _staking.waitingSecsToRevoke();
+    uint256 _minStakingAmount = _staking.minValidatorStakingAmount();
     uint256[] memory _selfStakings = _staking.getManySelfStakings(_candidates);
 
     uint256 _length = _candidates.length;
@@ -130,11 +128,30 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     address[] memory _unsatisfiedCandidates = new address[](_length);
 
     {
-      address _addr;
       uint256 _i;
+      address _addr;
+      ValidatorCandidate storage _info;
       while (_i < _length) {
         _addr = _candidates[_i];
-        if (_selfStakings[_i] < _minStakingAmount || _candidateInfo[_addr].revokedTimestamp <= block.timestamp) {
+        _info = _candidateInfo[_addr];
+
+        bool _hasTopupDeadline = _info.topupDeadline != 0;
+        if (_selfStakings[_i] < _minStakingAmount) {
+          // Updates deadline on the first time unsatisfied the staking amount condition
+          if (!_hasTopupDeadline) {
+            uint256 _topupDeadline = block.timestamp + _waitingSecsToRevoke;
+            _info.topupDeadline = _topupDeadline;
+            emit CandidateTopupDeadlineUpdated(_addr, _topupDeadline);
+          }
+        } else if (_hasTopupDeadline) {
+          // Removes the deadline if the staking amount condition is satisfied
+          delete _info.topupDeadline;
+          emit CandidateTopupDeadlineUpdated(_addr, 0);
+        }
+
+        bool _revokingActivated = _info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp;
+        bool _topupDeadlineMissed = _info.topupDeadline != 0 && _info.topupDeadline <= block.timestamp;
+        if (_revokingActivated || _topupDeadlineMissed) {
           _selfStakings[_i] = _selfStakings[--_length];
           _unsatisfiedCandidates[_unsatisfiedCount++] = _addr;
           _removeCandidate(_addr);
