@@ -18,7 +18,7 @@ interface ICandidateManager {
     // The timestamp that scheduled to revoke the candidate (no schedule=0)
     uint256 revokingTimestamp;
     // The deadline that the candidate must top up staking amount to keep it larger than or equal to the threshold (no deadline=0)
-    uint256 topupDealine;
+    uint256 topupDeadline;
   }
 
   /// @dev Emitted when the maximum number of validator candidates is updated.

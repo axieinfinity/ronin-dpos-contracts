@@ -135,23 +135,23 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
         _addr = _candidates[_i];
         _info = _candidateInfo[_addr];
 
-        bool _hasTopupDeadline = _info.topupDealine != 0;
+        bool _hasTopupDeadline = _info.topupDeadline != 0;
         if (_selfStakings[_i] < _minStakingAmount) {
           // Updates deadline on the first time unsatisfied the staking amount condition
           if (!_hasTopupDeadline) {
-            uint256 _topupDealine = block.timestamp + _waitingSecsToRevoke;
-            _info.topupDealine = _topupDealine;
-            emit CandidateTopupDeadlineUpdated(_addr, _topupDealine);
+            uint256 _topupDeadline = block.timestamp + _waitingSecsToRevoke;
+            _info.topupDeadline = _topupDeadline;
+            emit CandidateTopupDeadlineUpdated(_addr, _topupDeadline);
           }
         } else if (_hasTopupDeadline) {
           // Removes the deadline if the staking amount condition is satisfied
-          delete _info.topupDealine;
+          delete _info.topupDeadline;
           emit CandidateTopupDeadlineUpdated(_addr, 0);
         }
 
-        bool _revokingActived = _info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp;
-        bool _topupDeadlineMissed = _info.topupDealine != 0 && _info.topupDealine <= block.timestamp;
-        if (_revokingActived || _topupDeadlineMissed) {
+        bool _revokingActivated = _info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp;
+        bool _topupDeadlineMissed = _info.topupDeadline != 0 && _info.topupDeadline <= block.timestamp;
+        if (_revokingActivated || _topupDeadlineMissed) {
           _selfStakings[_i] = _selfStakings[--_length];
           _unsatisfiedCandidates[_unsatisfiedCount++] = _addr;
           _removeCandidate(_addr);
