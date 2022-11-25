@@ -21,6 +21,12 @@ import { mineBatchTxs } from '../helpers/utils';
 import { SlashType } from '../../src/script/slash-indicator';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
+import {
+  createManyTrustedOrganizationAddressSets,
+  createManyValidatorCandidateAddressSets,
+  TrustedOrganizationAddressSet,
+  ValidatorCandidateAddressSet,
+} from '../helpers/address-set-types';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
@@ -30,8 +36,9 @@ let governanceAdminInterface: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
-let governor: SignerWithAddress;
-let validatorCandidates: SignerWithAddress[];
+let signers: SignerWithAddress[];
+let trustedOrgs: TrustedOrganizationAddressSet[];
+let validatorCandidates: ValidatorCandidateAddressSet[];
 
 const jailDurationForUnavailabilityTier2Threshold = 28800 * 2;
 const unavailabilityTier1Threshold = 10;
@@ -44,7 +51,10 @@ const maxValidatorNumber = 5;
 
 describe('[Integration] Slash validators', () => {
   before(async () => {
-    [deployer, coinbase, governor, ...validatorCandidates] = await ethers.getSigners();
+    [deployer, coinbase, ...signers] = await ethers.getSigners();
+    trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
+    validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, maxValidatorNumber * 5));
+
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
@@ -70,9 +80,9 @@ describe('[Integration] Slash validators', () => {
         roninTrustedOrganizationArguments: {
           trustedOrganizations: [
             {
-              consensusAddr: governor.address,
-              governor: governor.address,
-              bridgeVoter: governor.address,
+              consensusAddr: trustedOrgs[0].consensusAddr.address,
+              governor: trustedOrgs[0].governor.address,
+              bridgeVoter: trustedOrgs[0].bridgeVoter.address,
               weight: 100,
               addedBlock: 0,
             },
@@ -84,7 +94,7 @@ describe('[Integration] Slash validators', () => {
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
-    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, governor);
+    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, trustedOrgs[0].governor);
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
@@ -105,13 +115,13 @@ describe('[Integration] Slash validators', () => {
 
     before(async () => {
       period = await validatorContract.currentPeriod();
-      await validatorContract.addValidators([1, 2, 3].map((_) => validatorCandidates[_].address));
+      await validatorContract.addValidators([1, 2, 3].map((i) => validatorCandidates[i].consensusAddr.address));
     });
 
     describe('Slash misdemeanor validator', async () => {
       it('Should the ValidatorSet contract emit event', async () => {
         let slasheeIdx = 1;
-        let slashee = validatorCandidates[slasheeIdx];
+        let slashee = validatorCandidates[slasheeIdx].consensusAddr;
 
         for (let i = 0; i < unavailabilityTier1Threshold - 1; i++) {
           await slashContract.connect(coinbase).slashUnavailability(slashee.address);
@@ -131,7 +141,7 @@ describe('[Integration] Slash validators', () => {
       let wrapUpEpochTx: ContractTransaction;
       let slashValidatorTx: ContractTransaction;
       let slasheeIdx: number;
-      let slashee: SignerWithAddress;
+      let slashee: ValidatorCandidateAddressSet;
       let slasheeInitStakingAmount: BigNumber;
 
       before(async () => {
@@ -139,12 +149,21 @@ describe('[Integration] Slash validators', () => {
         slashee = validatorCandidates[slasheeIdx];
         slasheeInitStakingAmount = minValidatorStakingAmount.add(slashAmountForUnavailabilityTier2Threshold.mul(10));
         await stakingContract
-          .connect(slashee)
-          .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, slashee.address, 2_00, {
-            value: slasheeInitStakingAmount,
-          });
+          .connect(slashee.poolAdmin)
+          .applyValidatorCandidate(
+            slashee.candidateAdmin.address,
+            slashee.consensusAddr.address,
+            slashee.treasuryAddr.address,
+            slashee.bridgeOperator.address,
+            2_00,
+            {
+              value: slasheeInitStakingAmount,
+            }
+          );
 
-        expect(await stakingContract.getStakingAmount(slashee.address, slashee.address)).eq(slasheeInitStakingAmount);
+        expect(await stakingContract.getStakingAmount(slashee.consensusAddr.address, slashee.poolAdmin.address)).eq(
+          slasheeInitStakingAmount
+        );
 
         await EpochController.setTimestampToPeriodEnding();
         await mineBatchTxs(async () => {
@@ -153,8 +172,8 @@ describe('[Integration] Slash validators', () => {
         });
 
         period = await validatorContract.currentPeriod();
-        expectingValidatorSet.push(slashee.address);
-        expectingBlockProducerSet.push(slashee.address);
+        expectingValidatorSet.push(slashee.consensusAddr.address);
+        expectingBlockProducerSet.push(slashee.consensusAddr.address);
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
 
         expect(await validatorContract.getValidators()).eql(expectingValidatorSet);
@@ -163,20 +182,20 @@ describe('[Integration] Slash validators', () => {
 
       it('Should the ValidatorSet contract emit event', async () => {
         for (let i = 0; i < unavailabilityTier2Threshold - 1; i++) {
-          await slashContract.connect(coinbase).slashUnavailability(slashee.address);
+          await slashContract.connect(coinbase).slashUnavailability(slashee.consensusAddr.address);
         }
-        slashValidatorTx = await slashContract.connect(coinbase).slashUnavailability(slashee.address);
+        slashValidatorTx = await slashContract.connect(coinbase).slashUnavailability(slashee.consensusAddr.address);
 
         await expect(slashValidatorTx)
           .to.emit(slashContract, 'Slashed')
-          .withArgs(slashee.address, SlashType.UNAVAILABILITY_TIER_2, period);
+          .withArgs(slashee.consensusAddr.address, SlashType.UNAVAILABILITY_TIER_2, period);
 
         let blockNumber = await network.provider.send('eth_blockNumber');
 
         await expect(slashValidatorTx)
           .to.emit(validatorContract, 'ValidatorPunished')
           .withArgs(
-            slashee.address,
+            slashee.consensusAddr.address,
             period,
             BigNumber.from(blockNumber).add(jailDurationForUnavailabilityTier2Threshold),
             slashAmountForUnavailabilityTier2Threshold,
@@ -195,12 +214,12 @@ describe('[Integration] Slash validators', () => {
       it('Should the Staking contract emit Unstaked event', async () => {
         await expect(slashValidatorTx)
           .to.emit(stakingContract, 'Unstaked')
-          .withArgs(slashee.address, slashAmountForUnavailabilityTier2Threshold);
+          .withArgs(slashee.consensusAddr.address, slashAmountForUnavailabilityTier2Threshold);
       });
 
       it('Should the Staking contract subtract staking amount from validator', async () => {
         let _expectingSlasheeStakingAmount = slasheeInitStakingAmount.sub(slashAmountForUnavailabilityTier2Threshold);
-        expect(await stakingContract.getStakingAmount(slashee.address, slashee.address)).eq(
+        expect(await stakingContract.getStakingAmount(slashee.consensusAddr.address, slashee.poolAdmin.address)).eq(
           _expectingSlasheeStakingAmount
         );
       });
@@ -222,7 +241,7 @@ describe('[Integration] Slash validators', () => {
 
       it('Should the validator cannot re-join as a block producer when jail time is not over', async () => {
         let _blockNumber = await network.provider.send('eth_blockNumber');
-        let _jailUntil = await validatorContract.getJailUntils([slashee.address]);
+        let _jailUntil = await validatorContract.getJailUntils([slashee.consensusAddr.address]);
         let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber).sub(100);
 
         await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString(), '0x0']);
@@ -236,7 +255,7 @@ describe('[Integration] Slash validators', () => {
 
       it('Should the validator re-join as a block producer when jail time is over', async () => {
         let _blockNumber = await network.provider.send('eth_blockNumber');
-        let _jailUntil = await validatorContract.getJailUntils([slashee.address]);
+        let _jailUntil = await validatorContract.getJailUntils([slashee.consensusAddr.address]);
         let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber);
 
         await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString(), '0x0']);
@@ -244,7 +263,7 @@ describe('[Integration] Slash validators', () => {
           await validatorContract.connect(coinbase).endEpoch();
           wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
-        expectingBlockProducerSet.push(slashee.address);
+        expectingBlockProducerSet.push(slashee.consensusAddr.address);
 
         expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
         await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
@@ -260,7 +279,7 @@ describe('[Integration] Slash validators', () => {
       let wrapUpEpochTx: ContractTransaction;
       let slashValidatorTxs: (ContractTransaction | undefined)[];
       let slasheeIdxs: number[];
-      let slashees: SignerWithAddress[];
+      let slashees: ValidatorCandidateAddressSet[];
       let slasheeInitStakingAmount: BigNumber;
       let expectingRevokedCandidates: Address[];
 
@@ -272,20 +291,20 @@ describe('[Integration] Slash validators', () => {
 
         for (let i = 0; i < slashees.length; i++) {
           await stakingContract
-            .connect(slashees[i])
+            .connect(slashees[i].poolAdmin)
             .applyValidatorCandidate(
-              slashees[i].address,
-              slashees[i].address,
-              slashees[i].address,
-              slashees[i].address,
+              slashees[i].candidateAdmin.address,
+              slashees[i].consensusAddr.address,
+              slashees[i].treasuryAddr.address,
+              slashees[i].bridgeOperator.address,
               2_00,
               {
                 value: slasheeInitStakingAmount.add(slashees.length - i),
               }
             );
-          expect(await stakingContract.getStakingAmount(slashees[i].address, slashees[i].address)).eq(
-            slasheeInitStakingAmount.add(slashees.length - i)
-          );
+          expect(
+            await stakingContract.getStakingAmount(slashees[i].consensusAddr.address, slashees[i].poolAdmin.address)
+          ).eq(slasheeInitStakingAmount.add(slashees.length - i));
         }
 
         await EpochController.setTimestampToPeriodEnding();
@@ -295,7 +314,7 @@ describe('[Integration] Slash validators', () => {
         });
 
         for (let i = 0; i < slashees.length; i++) {
-          expectingValidatorSet.push(slashees[i].address);
+          expectingValidatorSet.push(slashees[i].consensusAddr.address);
         }
 
         period = await validatorContract.currentPeriod();
@@ -307,20 +326,22 @@ describe('[Integration] Slash validators', () => {
         it('Should the ValidatorSet contract emit event when the validators are slashed tier-2', async () => {
           for (let i = 0; i < unavailabilityTier2Threshold - 1; i++) {
             for (let j = 0; j < slashees.length; j++) {
-              await slashContract.connect(coinbase).slashUnavailability(slashees[j].address);
+              await slashContract.connect(coinbase).slashUnavailability(slashees[j].consensusAddr.address);
             }
           }
 
           for (let j = 0; j < slashees.length; j++) {
-            slashValidatorTxs[j] = await slashContract.connect(coinbase).slashUnavailability(slashees[j].address);
+            slashValidatorTxs[j] = await slashContract
+              .connect(coinbase)
+              .slashUnavailability(slashees[j].consensusAddr.address);
             await expect(slashValidatorTxs[j])
               .to.emit(slashContract, 'Slashed')
-              .withArgs(slashees[j].address, SlashType.UNAVAILABILITY_TIER_2, period);
+              .withArgs(slashees[j].consensusAddr.address, SlashType.UNAVAILABILITY_TIER_2, period);
             const blockNumber = await network.provider.send('eth_blockNumber');
             await expect(slashValidatorTxs[j])
               .to.emit(validatorContract, 'ValidatorPunished')
               .withArgs(
-                slashees[j].address,
+                slashees[j].consensusAddr.address,
                 period,
                 BigNumber.from(blockNumber).add(jailDurationForUnavailabilityTier2Threshold),
                 slashAmountForUnavailabilityTier2Threshold,
@@ -332,7 +353,7 @@ describe('[Integration] Slash validators', () => {
 
         it('Should the validators are put in jail', async () => {
           const blockNumber = await network.provider.send('eth_blockNumber');
-          expect(await validatorContract.getJailUntils(slashees.map((v) => v.address))).eql([
+          expect(await validatorContract.getJailUntils(slashees.map((v) => v.consensusAddr.address))).eql([
             BigNumber.from(blockNumber).add(jailDurationForUnavailabilityTier2Threshold).sub(1),
             BigNumber.from(blockNumber).add(jailDurationForUnavailabilityTier2Threshold).sub(0),
           ]);
@@ -342,7 +363,7 @@ describe('[Integration] Slash validators', () => {
           for (let j = 0; j < slashees.length; j++) {
             await expect(slashValidatorTxs[j])
               .to.emit(stakingContract, 'Unstaked')
-              .withArgs(slashees[j].address, slashAmountForUnavailabilityTier2Threshold);
+              .withArgs(slashees[j].consensusAddr.address, slashAmountForUnavailabilityTier2Threshold);
           }
         });
 
@@ -351,9 +372,9 @@ describe('[Integration] Slash validators', () => {
             let expectingSlasheeStakingAmount = slasheeInitStakingAmount
               .sub(slashAmountForUnavailabilityTier2Threshold)
               .add(slashees.length - j);
-            expect(await stakingContract.getStakingAmount(slashees[j].address, slashees[j].address)).eq(
-              expectingSlasheeStakingAmount
-            );
+            expect(
+              await stakingContract.getStakingAmount(slashees[j].consensusAddr.address, slashees[j].poolAdmin.address)
+            ).eq(expectingSlasheeStakingAmount);
           }
         });
       });
@@ -374,7 +395,7 @@ describe('[Integration] Slash validators', () => {
 
         it('Should the validator cannot re-join as a block producer when jail time is not over', async () => {
           let _blockNumber = await network.provider.send('eth_blockNumber');
-          let _jailUntil = await validatorContract.getJailUntils([slashees[0].address]);
+          let _jailUntil = await validatorContract.getJailUntils([slashees[0].consensusAddr.address]);
           let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber).sub(100);
 
           await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString(), '0x0']);
@@ -388,7 +409,7 @@ describe('[Integration] Slash validators', () => {
 
         it('Should the validator can join as a validator when jail time is over, despite of insufficient fund', async () => {
           let _blockNumber = await network.provider.send('eth_blockNumber');
-          let _jailUntil = await validatorContract.getJailUntils([slashees[slashees.length - 1].address]);
+          let _jailUntil = await validatorContract.getJailUntils([slashees[slashees.length - 1].consensusAddr.address]);
           let _numOfBlockToEndJailTime = _jailUntil[0].sub(_blockNumber);
 
           await network.provider.send('hardhat_mine', [_numOfBlockToEndJailTime.toHexString()]);
@@ -397,7 +418,7 @@ describe('[Integration] Slash validators', () => {
             wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
           });
 
-          slashees.forEach((slashee) => expectingBlockProducerSet.push(slashee.address));
+          slashees.forEach((slashee) => expectingBlockProducerSet.push(slashee.consensusAddr.address));
           expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
           expect(await validatorContract.getValidators()).eql(expectingBlockProducerSet);
           await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
@@ -423,7 +444,7 @@ describe('[Integration] Slash validators', () => {
           for (let j = 0; j < slashees.length; j++) {
             await expect(wrapUpEpochTx)
               .emit(validatorContract, 'CandidateTopupDeadlineUpdated')
-              .withArgs(slashees[j].address, deadline);
+              .withArgs(slashees[j].consensusAddr.address, deadline);
           }
 
           period = await validatorContract.currentPeriod();
@@ -434,8 +455,8 @@ describe('[Integration] Slash validators', () => {
 
         it('The validator should be able to top up before deadline', async () => {
           await stakingContract
-            .connect(slashees[0])
-            .stake(slashees[0].address, { value: slashAmountForUnavailabilityTier2Threshold });
+            .connect(slashees[0].poolAdmin)
+            .stake(slashees[0].consensusAddr.address, { value: slashAmountForUnavailabilityTier2Threshold });
         });
 
         it('Should be able to emit event for clearing deadline', async () => {
@@ -446,7 +467,7 @@ describe('[Integration] Slash validators', () => {
           });
           await expect(wrapUpEpochTx)
             .emit(validatorContract, 'CandidateTopupDeadlineUpdated')
-            .withArgs(slashees[0].address, 0);
+            .withArgs(slashees[0].consensusAddr.address, 0);
         });
 
         it('Should be able to kick validators which are unsatisfied staking amount condition', async () => {
@@ -480,12 +501,12 @@ describe('[Integration] Slash validators', () => {
 
       describe('Kicked candidates re-join', async () => {
         before(() => {
-          slashees = slashees.filter((s) => expectingRevokedCandidates.includes(s.address));
+          slashees = slashees.filter((s) => expectingRevokedCandidates.includes(s.consensusAddr.address));
         });
 
         it('Should the kicked validators cannot top-up, since they are not candidates anymore', async () => {
           for (let slashee of slashees) {
-            const topUpTx = stakingContract.connect(slashee).stake(slashee.address, {
+            const topUpTx = stakingContract.connect(slashee.poolAdmin).stake(slashee.consensusAddr.address, {
               value: slashAmountForUnavailabilityTier2Threshold,
             });
             await expect(topUpTx).revertedWith('BaseStaking: query for non-existent pool');
@@ -495,17 +516,24 @@ describe('[Integration] Slash validators', () => {
         it('Should the kicked validator be able to re-join as a candidate', async () => {
           for (let slashee of slashees) {
             let applyCandidateTx = await stakingContract
-              .connect(slashee)
-              .applyValidatorCandidate(slashee.address, slashee.address, slashee.address, slashee.address, 2_00, {
-                value: slasheeInitStakingAmount,
-              });
+              .connect(slashee.poolAdmin)
+              .applyValidatorCandidate(
+                slashee.candidateAdmin.address,
+                slashee.consensusAddr.address,
+                slashee.treasuryAddr.address,
+                slashee.bridgeOperator.address,
+                2_00,
+                {
+                  value: slasheeInitStakingAmount,
+                }
+              );
 
             await CandidateManagerExpects.emitCandidateGrantedEvent(
               applyCandidateTx!,
-              slashee.address,
-              slashee.address,
-              slashee.address,
-              slashee.address
+              slashee.consensusAddr.address,
+              slashee.treasuryAddr.address,
+              slashee.candidateAdmin.address,
+              slashee.bridgeOperator.address
             );
           }
         });

@@ -23,6 +23,7 @@ import {
 } from '../../src/types';
 import { initTest, InitTestInput } from '../helpers/fixture';
 import { randomAddress } from '../../src/utils';
+import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
 
 let stakingVestingContract: StakingVesting;
 let maintenanceContract: Maintenance;
@@ -35,8 +36,8 @@ let bridgeTrackingContract: BridgeTracking;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
-let governor: SignerWithAddress;
-let validatorCandidates: SignerWithAddress[];
+let signers: SignerWithAddress[];
+let trustedOrgs: TrustedOrganizationAddressSet[];
 
 const config: InitTestInput = {
   bridgeContract: randomAddress(),
@@ -101,11 +102,14 @@ const config: InitTestInput = {
 
 describe('[Integration] Configuration check', () => {
   before(async () => {
-    [coinbase, deployer, governor, ...validatorCandidates] = await ethers.getSigners();
-    config.roninTrustedOrganizationArguments!.trustedOrganizations = [governor].map((v) => ({
-      consensusAddr: v.address,
-      governor: v.address,
-      bridgeVoter: v.address,
+    [coinbase, deployer, ...signers] = await ethers.getSigners();
+
+    trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
+
+    config.roninTrustedOrganizationArguments!.trustedOrganizations = trustedOrgs.map((v) => ({
+      consensusAddr: v.consensusAddr.address,
+      governor: v.governor.address,
+      bridgeVoter: v.bridgeVoter.address,
       weight: 100,
       addedBlock: 0,
     }));
@@ -169,10 +173,10 @@ describe('[Integration] Configuration check', () => {
         })
       )
     ).eql(
-      [governor].map((v) => ({
-        consensusAddr: v.address,
-        governor: v.address,
-        bridgeVoter: v.address,
+      trustedOrgs.map((v) => ({
+        consensusAddr: v.consensusAddr.address,
+        governor: v.governor.address,
+        bridgeVoter: v.bridgeVoter.address,
         weight: BigNumber.from(100),
         addedBlock: undefined,
       }))
