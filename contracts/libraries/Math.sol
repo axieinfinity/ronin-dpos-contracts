@@ -57,4 +57,18 @@ library Math {
   function subNonNegative(uint256 a, uint256 b) internal pure returns (uint256) {
     return a - min(a, b);
   }
+
+  /**
+   * @dev Returns whether all pairs of value in an array of addresses is distinct.
+   */
+  function containsNoDuplicated(address[] memory values) internal pure returns (bool) {
+    for (uint _i = 0; _i < values.length - 1; _i++) {
+      for (uint _j = _i + 1; _j < values.length; _j++) {
+        if (values[_i] == values[_j]) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
 }
