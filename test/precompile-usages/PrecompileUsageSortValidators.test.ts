@@ -11,13 +11,13 @@ import {
 import { randomInt } from 'crypto';
 
 let deployer: SignerWithAddress;
-let signers: SignerWithAddress[];
+let validatorCandidates: SignerWithAddress[];
 let precompileSorting: MockPrecompile;
 let usageSorting: MockPrecompileUsageSortValidators;
 
 describe('[Precompile] Sorting validators test', () => {
   before(async () => {
-    [deployer, ...signers] = await ethers.getSigners();
+    [deployer, ...validatorCandidates] = await ethers.getSigners();
 
     precompileSorting = await new MockPrecompile__factory(deployer).deploy();
     usageSorting = await new MockPrecompileUsageSortValidators__factory(deployer).deploy(precompileSorting.address);
@@ -31,7 +31,7 @@ describe('[Precompile] Sorting validators test', () => {
     let numOfValidator = 21;
     let validatorsAndWeights = Array.from({ length: numOfValidator }, (_, i) => {
       return {
-        address: signers[i].address,
+        address: validatorCandidates[i].address,
         balance: randomInt(numOfValidator * 10000),
       };
     });
