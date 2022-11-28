@@ -68,6 +68,7 @@ abstract contract CoinbaseExecution is
 
     // Deprecates reward for non-validator or slashed validator
     if (!_requestForBlockProducer) {
+      _totalDeprecatedReward += _submittedReward;
       emit BlockRewardDeprecated(_coinbaseAddr, _submittedReward, BlockRewardDeprecatedType.UNAVAILABILITY);
       return;
     }
@@ -80,6 +81,7 @@ abstract contract CoinbaseExecution is
     if (_miningRewardBailoutCutOffAtPeriod[_coinbaseAddr][_period]) {
       (, , , uint256 _cutOffPercentage) = _slashIndicatorContract.getCreditScoreConfigs();
       _cutOffReward = (_reward * _cutOffPercentage) / _MAX_PERCENTAGE;
+      _totalDeprecatedReward += _cutOffReward;
       emit BlockRewardDeprecated(_coinbaseAddr, _cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
     }
 
@@ -111,6 +113,7 @@ abstract contract CoinbaseExecution is
         uint256[] memory _delegatingRewards
       ) = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(_lastPeriod, _currentValidators);
       _settleAndTransferDelegatingRewards(_lastPeriod, _currentValidators, _totalDelegatingReward, _delegatingRewards);
+      _recycleDeprecatedRewards();
       _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
       _currentValidators = _syncValidatorSet(_newPeriod);
     }
@@ -314,6 +317,32 @@ abstract contract CoinbaseExecution is
       }
 
       emit StakingRewardDistributionFailed(_totalDelegatingReward, address(this).balance);
+    }
+  }
+
+  /**
+   * @dev Transfer the deprecated rewards e.g. the rewards that get deprecated when validator is slashed/maintained,
+   * to the staking vesting contract
+   *
+   * Note: This method should be called once in the end of each period.
+   */
+  function _recycleDeprecatedRewards() private {
+    uint256 _withdrawAmount = _totalDeprecatedReward;
+
+    if (_withdrawAmount != 0) {
+      address _withdrawTarget = stakingVestingContract();
+
+      _totalDeprecatedReward = 0;
+
+      (bool _success, ) = _withdrawTarget.call{ value: _withdrawAmount }(
+        abi.encodeWithSelector(IStakingVesting.receiveRON.selector)
+      );
+
+      if (_success) {
+        emit DeprecatedRewardRecycled(_withdrawTarget, _withdrawAmount);
+      } else {
+        emit DeprecatedRewardRecycleFailed(_withdrawTarget, _withdrawAmount, address(this).balance);
+      }
     }
   }
 

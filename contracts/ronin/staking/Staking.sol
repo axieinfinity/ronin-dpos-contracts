@@ -74,7 +74,11 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
    * @inheritdoc IStaking
    */
   function deductStakingAmount(address _consensusAddr, uint256 _amount) external onlyValidatorContract {
-    return _deductStakingAmount(_stakingPool[_consensusAddr], _amount);
+    uint256 _actualDeductingAmount = _deductStakingAmount(_stakingPool[_consensusAddr], _amount);
+    address payable _recipientAddr = payable(validatorContract());
+    if (!_unsafeSendRON(_recipientAddr, _amount)) {
+      emit StakingAmountTransferFailed(_consensusAddr, _recipientAddr, _actualDeductingAmount, address(this).balance);
+    }
   }
 
   /**
@@ -87,11 +91,15 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   /**
    * @inheritdoc CandidateStaking
    */
-  function _deductStakingAmount(PoolDetail storage _pool, uint256 _amount) internal override {
-    _amount = Math.min(_pool.stakingAmount, _amount);
+  function _deductStakingAmount(PoolDetail storage _pool, uint256 _amount)
+    internal
+    override
+    returns (uint256 _actualDeductingAmount)
+  {
+    _actualDeductingAmount = Math.min(_pool.stakingAmount, _amount);
 
-    _pool.stakingAmount -= _amount;
-    _changeDelegatingAmount(_pool, _pool.admin, _pool.stakingAmount, _pool.stakingTotal - _amount);
-    emit Unstaked(_pool.addr, _amount);
+    _pool.stakingAmount -= _actualDeductingAmount;
+    _changeDelegatingAmount(_pool, _pool.admin, _pool.stakingAmount, _pool.stakingTotal - _actualDeductingAmount);
+    emit Unstaked(_pool.addr, _actualDeductingAmount);
   }
 }

@@ -24,6 +24,13 @@ interface ICandidateStaking is IRewardPool {
     uint256 amount,
     uint256 contractBalance
   );
+  /// @dev Emitted when the staking amount deducted failed.
+  event StakingAmountDeductFailed(
+    address indexed validator,
+    address indexed recipient,
+    uint256 amount,
+    uint256 contractBalance
+  );
 
   /**
    * @dev Returns the minimum threshold for being a validator candidate.

@@ -35,6 +35,7 @@ abstract contract SlashingExecution is
 
     if (_slashAmount > 0) {
       _stakingContract.deductStakingAmount(_validatorAddr, _slashAmount);
+      _totalDeprecatedReward += _slashAmount;
     }
 
     emit ValidatorPunished(_validatorAddr, _period, _jailedUntil[_validatorAddr], _slashAmount, true, false);
