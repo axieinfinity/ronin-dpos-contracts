@@ -55,10 +55,20 @@ abstract contract RewardCalculation is IRewardPool {
       return _reward.debited;
     }
 
+    uint256 _aRps;
+    uint256 _lastPeriodReward;
     PoolFields storage _pool = _stakingPool[_poolAddr];
-    uint256 _minAmount = _reward.minAmount;
-    uint256 _aRps = _accumulatedRps[_poolAddr][_reward.lastPeriod].inner;
-    uint256 _lastPeriodReward = _minAmount * (_aRps - _reward.aRps);
+    PeriodWrapper storage _wrappedArps = _accumulatedRps[_poolAddr][_reward.lastPeriod];
+
+    if (_wrappedArps.lastPeriod > 0) {
+      // Calculates the last period reward if the aRps at the period is set
+      _aRps = _accumulatedRps[_poolAddr][_reward.lastPeriod].inner;
+      _lastPeriodReward = _reward.minAmount * (_aRps - _reward.aRps);
+    } else {
+      // Fallbacks to the previous aRps in case the aRps is not set
+      _aRps = _reward.aRps;
+    }
+
     uint256 _newPeriodsReward = _latestStakingAmount * (_pool.aRps - _aRps);
     return _reward.debited + (_lastPeriodReward + _newPeriodsReward) / 1e18;
   }

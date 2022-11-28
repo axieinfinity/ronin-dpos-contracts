@@ -245,9 +245,9 @@ describe('Reward Calculation test', () => {
       expect(await stakingContract.getReward(poolAddr, userA.address)).eq(0);
     });
 
-    it('Should revert if increasing period without recording rewards', async () => {
+    it('Should not revert if increasing period without recording rewards', async () => {
       tx = await stakingContract.increasePeriod();
-      await expect(stakingContract.getReward(poolAddr, userB.address)).reverted;
+      expect(await stakingContract.getReward(poolAddr, userB.address)).reverted;
     });
   });
 });

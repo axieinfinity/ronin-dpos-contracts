@@ -313,14 +313,8 @@ abstract contract CoinbaseExecution is
         return;
       }
 
-      // Clears the delegating reward before calling Staking contract
-      for (uint _i = 0; _i < _delegatingRewards.length; _i++) {
-        delete _delegatingRewards[_i];
-      }
       emit StakingRewardDistributionFailed(_totalDelegatingReward, address(this).balance);
     }
-    // Still records the rewards to make sure Staking contract can update the aRps
-    _staking.recordRewards(_currentValidators, _delegatingRewards, _period);
   }
 
   /**
