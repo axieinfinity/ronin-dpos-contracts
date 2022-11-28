@@ -75,6 +75,22 @@ describe('Staking test', () => {
       ).revertedWith('CandidateStaking: insufficient amount');
     });
 
+    it('Should not be able to propose validator with duplicated address', async () => {
+      let candidate = validatorCandidates[1];
+
+      const tx = stakingContract
+        .connect(candidate.poolAdmin)
+        .applyValidatorCandidate(
+          candidate.consensusAddr.address,
+          candidate.consensusAddr.address,
+          candidate.consensusAddr.address,
+          candidate.consensusAddr.address,
+          1,
+          /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
+        );
+      await expect(tx).revertedWith('CandidateStaking: five addresses must be distinct');
+    });
+
     it('Should be able to propose validator with sufficient amount', async () => {
       for (let i = 1; i < validatorCandidates.length; i++) {
         const candidate = validatorCandidates[i];
