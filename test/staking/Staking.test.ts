@@ -21,6 +21,7 @@ let userA: SignerWithAddress;
 let userB: SignerWithAddress;
 let poolAddr: ValidatorCandidateAddressSet;
 let otherPoolAddr: ValidatorCandidateAddressSet;
+let anotherActivePool: ValidatorCandidateAddressSet;
 
 let validatorContract: MockValidatorSet;
 let stakingContract: Staking;
@@ -92,7 +93,7 @@ describe('Staking test', () => {
     });
 
     it('Should be able to propose validator with sufficient amount', async () => {
-      for (let i = 1; i < validatorCandidates.length; i++) {
+      for (let i = 0; i < validatorCandidates.length; i++) {
         const candidate = validatorCandidates[i];
         const tx = await stakingContract
           .connect(candidate.poolAdmin)
@@ -109,7 +110,7 @@ describe('Staking test', () => {
           .withArgs(candidate.consensusAddr.address, candidate.poolAdmin.address);
       }
 
-      poolAddr = validatorCandidates[1];
+      poolAddr = validatorCandidates[0];
       expect(await stakingContract.getStakingTotal(poolAddr.consensusAddr.address)).eq(
         minValidatorStakingAmount.mul(2)
       );
@@ -224,7 +225,8 @@ describe('Staking test', () => {
 
   describe('Delegator test', () => {
     before(() => {
-      otherPoolAddr = validatorCandidates[2];
+      otherPoolAddr = validatorCandidates[1];
+      anotherActivePool = validatorCandidates[2];
     });
 
     it('Should be able to undelegate from a deprecated validator candidate', async () => {
@@ -247,10 +249,19 @@ describe('Staking test', () => {
     it('Should not be able to delegate/undelegate when the method caller is the pool admin', async () => {
       await expect(
         stakingContract.connect(otherPoolAddr.poolAdmin).delegate(otherPoolAddr.consensusAddr.address, { value: 1 })
-      ).revertedWith('BaseStaking: delegator must not be the pool admin');
+      ).revertedWith('DelegatorStaking: admin of an arbitrary pool cannot delegate');
       await expect(
         stakingContract.connect(otherPoolAddr.poolAdmin).undelegate(otherPoolAddr.consensusAddr.address, 1)
       ).revertedWith('BaseStaking: delegator must not be the pool admin');
+    });
+
+    it('Should not be able to delegate when the method caller is the admin of any arbitrary pool', async () => {
+      await expect(
+        stakingContract.connect(anotherActivePool.poolAdmin).delegate(otherPoolAddr.consensusAddr.address, { value: 1 })
+      ).revertedWith('DelegatorStaking: admin of an arbitrary pool cannot delegate');
+      await expect(
+        stakingContract.connect(otherPoolAddr.poolAdmin).delegate(anotherActivePool.consensusAddr.address, { value: 1 })
+      ).revertedWith('DelegatorStaking: admin of an arbitrary pool cannot delegate');
     });
 
     it('Should multiple accounts be able to delegate to one pool', async () => {
