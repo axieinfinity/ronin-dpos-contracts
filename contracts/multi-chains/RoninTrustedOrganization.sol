@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../libraries/Math.sol";
+import "../libraries/AddressArrayUtils.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 import "../extensions/collections/HasProxyAdmin.sol";
 
@@ -269,7 +269,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
     _addresses[0] = _v.consensusAddr;
     _addresses[1] = _v.governor;
     _addresses[2] = _v.bridgeVoter;
-    require(Math.containsNoDuplicated(_addresses), "RoninTrustedOrganization: three addresses must be distinct");
+    require(!AddressArrayUtils.hasDuplicate(_addresses), "RoninTrustedOrganization: three addresses must be distinct");
 
     if (_consensusWeight[_v.consensusAddr] > 0) {
       revert(
