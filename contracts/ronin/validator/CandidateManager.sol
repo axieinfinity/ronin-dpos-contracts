@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "../../extensions/collections/HasStakingContract.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/validator/ICandidateManager.sol";
@@ -52,6 +53,46 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     require(_length < maxValidatorCandidate(), "CandidateManager: exceeds maximum number of candidates");
     require(!isValidatorCandidate(_consensusAddr), "CandidateManager: query for already existent candidate");
     require(_commissionRate <= _MAX_PERCENTAGE, "CandidateManager: invalid comission rate");
+
+    for (uint _i = 0; _i < _candidates.length; _i++) {
+      ValidatorCandidate storage existentInfo = _candidateInfo[_candidates[_i]];
+
+      if (_admin == existentInfo.admin) {
+        revert(
+          string(
+            abi.encodePacked(
+              "CandidateManager: candidate admin address ",
+              Strings.toHexString(uint160(_admin), 20),
+              " is already exist"
+            )
+          )
+        );
+      }
+
+      if (_treasuryAddr == existentInfo.treasuryAddr) {
+        revert(
+          string(
+            abi.encodePacked(
+              "CandidateManager: treasury address ",
+              Strings.toHexString(uint160(address(_treasuryAddr)), 20),
+              " is already exist"
+            )
+          )
+        );
+      }
+
+      if (_bridgeOperatorAddr == existentInfo.bridgeOperatorAddr) {
+        revert(
+          string(
+            abi.encodePacked(
+              "CandidateManager: bridge operator address ",
+              Strings.toHexString(uint160(_bridgeOperatorAddr), 20),
+              " is already exist"
+            )
+          )
+        );
+      }
+    }
 
     _candidateIndex[_consensusAddr] = ~_length;
     _candidates.push(_consensusAddr);

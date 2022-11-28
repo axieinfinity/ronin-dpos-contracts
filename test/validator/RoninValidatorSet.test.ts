@@ -183,6 +183,65 @@ describe('Ronin Validator Set test', () => {
     });
   });
 
+  describe('Grant validator candidate sanity check', async () => {
+    it('Should not be able to apply for candidate role with existed candidate admin address', async () => {
+      let tx = stakingContract
+        .connect(validatorCandidates[4].poolAdmin)
+        .applyValidatorCandidate(
+          validatorCandidates[0].candidateAdmin.address,
+          validatorCandidates[4].consensusAddr.address,
+          validatorCandidates[4].treasuryAddr.address,
+          validatorCandidates[4].bridgeOperator.address,
+          2_00,
+          {
+            value: minValidatorStakingAmount,
+          }
+        );
+
+      await expect(tx).revertedWith(
+        `CandidateManager: candidate admin address ${validatorCandidates[0].candidateAdmin.address.toLocaleLowerCase()} is already exist`
+      );
+    });
+
+    it('Should not be able to apply for candidate role with existed treasury address', async () => {
+      let tx = stakingContract
+        .connect(validatorCandidates[4].poolAdmin)
+        .applyValidatorCandidate(
+          validatorCandidates[4].candidateAdmin.address,
+          validatorCandidates[4].consensusAddr.address,
+          validatorCandidates[0].treasuryAddr.address,
+          validatorCandidates[4].bridgeOperator.address,
+          2_00,
+          {
+            value: minValidatorStakingAmount,
+          }
+        );
+
+      await expect(tx).revertedWith(
+        `CandidateManager: treasury address ${validatorCandidates[0].treasuryAddr.address.toLocaleLowerCase()} is already exist`
+      );
+    });
+
+    it('Should not be able to apply for candidate role with existed bridge operator address', async () => {
+      let tx = stakingContract
+        .connect(validatorCandidates[4].poolAdmin)
+        .applyValidatorCandidate(
+          validatorCandidates[4].candidateAdmin.address,
+          validatorCandidates[4].consensusAddr.address,
+          validatorCandidates[4].treasuryAddr.address,
+          validatorCandidates[0].bridgeOperator.address,
+          2_00,
+          {
+            value: minValidatorStakingAmount,
+          }
+        );
+
+      await expect(tx).revertedWith(
+        `CandidateManager: bridge operator address ${validatorCandidates[0].bridgeOperator.address.toLocaleLowerCase()} is already exist`
+      );
+    });
+  });
+
   describe('Wrapping up at the end of the period', async () => {
     let expectingValidatorsAddr: Address[];
     it('Should be able to wrap up epoch at end of period and sync validator set from staking contract', async () => {
