@@ -18,6 +18,12 @@ import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import { EpochController } from '../helpers/ronin-validator-set';
 import { BlockRewardDeprecatedType } from '../../src/script/ronin-validator-set';
+import {
+  createManyTrustedOrganizationAddressSets,
+  createManyValidatorCandidateAddressSets,
+  TrustedOrganizationAddressSet,
+  ValidatorCandidateAddressSet,
+} from '../helpers/address-set-types';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
@@ -27,8 +33,9 @@ let governanceAdminInterface: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
-let governor: SignerWithAddress;
-let validatorCandidates: SignerWithAddress[];
+let signers: SignerWithAddress[];
+let trustedOrgs: TrustedOrganizationAddressSet[];
+let validatorCandidates: ValidatorCandidateAddressSet[];
 
 const unavailabilityTier2Threshold = 10;
 const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(1);
@@ -40,7 +47,11 @@ describe('[Integration] Submit Block Reward', () => {
   const blockRewardAmount = BigNumber.from(100);
 
   before(async () => {
-    [deployer, coinbase, governor, ...validatorCandidates] = await ethers.getSigners();
+    [deployer, coinbase, ...signers] = await ethers.getSigners();
+
+    validatorCandidates = createManyValidatorCandidateAddressSets(signers.splice(0, 2 * 5));
+    trustedOrgs = createManyTrustedOrganizationAddressSets([...signers.slice(0, 1 * 3)]);
+
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
@@ -61,10 +72,10 @@ describe('[Integration] Submit Block Reward', () => {
           blockProducerBonusPerBlock,
         },
         roninTrustedOrganizationArguments: {
-          trustedOrganizations: [governor].map((v) => ({
-            consensusAddr: v.address,
-            governor: v.address,
-            bridgeVoter: v.address,
+          trustedOrganizations: trustedOrgs.map((v) => ({
+            consensusAddr: v.consensusAddr.address,
+            governor: v.governor.address,
+            bridgeVoter: v.bridgeVoter.address,
             weight: 100,
             addedBlock: 0,
           })),
@@ -75,7 +86,7 @@ describe('[Integration] Submit Block Reward', () => {
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
-    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, governor);
+    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, ...trustedOrgs.map((_) => _.governor));
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
@@ -104,17 +115,24 @@ describe('[Integration] Submit Block Reward', () => {
   });
 
   describe('One validator submits block reward', async () => {
-    let validator: SignerWithAddress;
+    let validator: ValidatorCandidateAddressSet;
     let submitRewardTx: ContractTransaction;
 
     before(async () => {
       let initStakingAmount = minValidatorStakingAmount.mul(2);
       validator = validatorCandidates[0];
       await stakingContract
-        .connect(validator)
-        .applyValidatorCandidate(validator.address, validator.address, validator.address, validator.address, 2_00, {
-          value: initStakingAmount,
-        });
+        .connect(validator.poolAdmin)
+        .applyValidatorCandidate(
+          validator.candidateAdmin.address,
+          validator.consensusAddr.address,
+          validator.treasuryAddr.address,
+          validator.bridgeOperator.address,
+          2_00,
+          {
+            value: initStakingAmount,
+          }
+        );
 
       await EpochController.setTimestampToPeriodEnding();
       await mineBatchTxs(async () => {
@@ -128,8 +146,8 @@ describe('[Integration] Submit Block Reward', () => {
     });
 
     it('Should validator can submit block reward', async () => {
-      await network.provider.send('hardhat_setCoinbase', [validator.address]);
-      validatorContract = validatorContract.connect(validator);
+      await network.provider.send('hardhat_setCoinbase', [validator.consensusAddr.address]);
+      validatorContract = validatorContract.connect(validator.consensusAddr);
 
       submitRewardTx = await validatorContract.submitBlockReward({
         value: blockRewardAmount,
@@ -139,7 +157,7 @@ describe('[Integration] Submit Block Reward', () => {
     it('Should the ValidatorSetContract emit event of submitting reward', async () => {
       await expect(submitRewardTx)
         .to.emit(validatorContract, 'BlockRewardSubmitted')
-        .withArgs(validator.address, blockRewardAmount, blockProducerBonusPerBlock);
+        .withArgs(validator.consensusAddr.address, blockRewardAmount, blockProducerBonusPerBlock);
     });
 
     it.skip('Should the ValidatorSetContract update mining reward', async () => {});
@@ -148,7 +166,7 @@ describe('[Integration] Submit Block Reward', () => {
   });
 
   describe('In-jail validator submits block reward', async () => {
-    let validator: SignerWithAddress;
+    let validator: ValidatorCandidateAddressSet;
     let submitRewardTx: ContractTransaction;
 
     before(async () => {
@@ -156,10 +174,17 @@ describe('[Integration] Submit Block Reward', () => {
       validator = validatorCandidates[1];
 
       await stakingContract
-        .connect(validator)
-        .applyValidatorCandidate(validator.address, validator.address, validator.address, validator.address, 2_00, {
-          value: initStakingAmount,
-        });
+        .connect(validator.poolAdmin)
+        .applyValidatorCandidate(
+          validator.candidateAdmin.address,
+          validator.consensusAddr.address,
+          validator.treasuryAddr.address,
+          validator.bridgeOperator.address,
+          2_00,
+          {
+            value: initStakingAmount,
+          }
+        );
 
       await mineBatchTxs(async () => {
         await validatorContract.connect(coinbase).endEpoch();
@@ -167,13 +192,13 @@ describe('[Integration] Submit Block Reward', () => {
       });
 
       for (let i = 0; i < unavailabilityTier2Threshold; i++) {
-        await slashContract.connect(coinbase).slashUnavailability(validator.address);
+        await slashContract.connect(coinbase).slashUnavailability(validator.consensusAddr.address);
       }
     });
 
     it('Should in-jail validator submit block reward', async () => {
-      await network.provider.send('hardhat_setCoinbase', [validator.address]);
-      validatorContract = validatorContract.connect(validator);
+      await network.provider.send('hardhat_setCoinbase', [validator.consensusAddr.address]);
+      validatorContract = validatorContract.connect(validator.consensusAddr);
 
       submitRewardTx = await validatorContract.submitBlockReward({
         value: blockRewardAmount,
@@ -183,7 +208,7 @@ describe('[Integration] Submit Block Reward', () => {
     it('Should the ValidatorSetContract emit event of deprecating reward', async () => {
       await expect(submitRewardTx)
         .to.emit(validatorContract, 'BlockRewardDeprecated')
-        .withArgs(validator.address, blockRewardAmount, BlockRewardDeprecatedType.UNAVAILABILITY);
+        .withArgs(validator.consensusAddr.address, blockRewardAmount, BlockRewardDeprecatedType.UNAVAILABILITY);
     });
 
     it('Should the StakingContract not emit event of recording reward', async () => {

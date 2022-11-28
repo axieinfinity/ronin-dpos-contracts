@@ -91,7 +91,7 @@ const config: HardhatUserConfig = {
       hardfork: 'istanbul',
       accounts: {
         mnemonic: DEFAULT_MNEMONIC,
-        count: 100,
+        count: 150,
         accountsBalance: '1000000000000000000000000000', // 1B RON
       },
       allowUnlimitedContractSize: true,

@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.9;
 
+import "../../libraries/AddressArrayUtils.sol";
 import "../../interfaces/staking/ICandidateStaking.sol";
 import "./BaseStaking.sol";
 
@@ -128,6 +129,14 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     require(_sendRON(_poolAdmin, 0), "CandidateStaking: pool admin cannot receive RON");
     require(_sendRON(_treasuryAddr, 0), "CandidateStaking: treasury cannot receive RON");
     require(_amount >= _minValidatorStakingAmount, "CandidateStaking: insufficient amount");
+
+    address[] memory _addresses = new address[](5);
+    _addresses[0] = _poolAdmin;
+    _addresses[1] = _candidateAdmin;
+    _addresses[2] = _consensusAddr;
+    _addresses[3] = _treasuryAddr;
+    _addresses[4] = _bridgeOperatorAddr;
+    require(!AddressArrayUtils.hasDuplicate(_addresses), "CandidateStaking: five addresses must be distinct");
 
     _validatorContract.grantValidatorCandidate(
       _candidateAdmin,
