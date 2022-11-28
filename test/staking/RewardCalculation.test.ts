@@ -235,12 +235,19 @@ describe('Reward Calculation test', () => {
       txs[0] = await stakingContract.claimReward(userA.address);
       await expect(txs[0]).emit(stakingContract, 'RewardClaimed').withArgs(poolAddr, userA.address, 3100);
       await expect(txs[0]).emit(stakingContract, 'UserRewardUpdated').withArgs(poolAddr, userA.address, 0);
+      expect(await stakingContract.getReward(poolAddr, userA.address)).eq(0);
 
       txs[1] = await stakingContract.claimReward(userB.address);
       await expect(txs[1]).emit(stakingContract, 'RewardClaimed').withArgs(poolAddr, userB.address, 900);
       await expect(txs[1]).emit(stakingContract, 'UserRewardUpdated').withArgs(poolAddr, userB.address, 0);
       txs[1] = await stakingContract.unstake(userA.address, 0);
       await expect(txs[1]).not.emit(stakingContract, 'UserRewardUpdated');
+      expect(await stakingContract.getReward(poolAddr, userA.address)).eq(0);
+    });
+
+    it('Should revert if increasing period without recording rewards', async () => {
+      tx = await stakingContract.increasePeriod();
+      await expect(stakingContract.getReward(poolAddr, userB.address)).reverted;
     });
   });
 });
