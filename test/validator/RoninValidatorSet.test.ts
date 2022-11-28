@@ -28,6 +28,7 @@ import {
   TrustedOrganizationAddressSet,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types';
+import { SlashType } from '../../src/script/slash-indicator';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let stakingVesting: StakingVesting;
@@ -59,7 +60,8 @@ const minValidatorStakingAmount = BigNumber.from(20000);
 const blockProducerBonusPerBlock = BigNumber.from(5000);
 const bridgeOperatorBonusPerBlock = BigNumber.from(37);
 const zeroTopUpAmount = 0;
-const topUpAmount = BigNumber.from(100000000000);
+const topUpAmount = BigNumber.from(100_000_000_000);
+const slashDoubleSignAmount = BigNumber.from(2000);
 
 describe('Ronin Validator Set test', () => {
   before(async () => {
@@ -78,6 +80,9 @@ describe('Ronin Validator Set test', () => {
       stakingVestingContractAddress,
     } = await initTest('RoninValidatorSet')({
       slashIndicatorArguments: {
+        doubleSignSlashing: {
+          slashDoubleSignAmount,
+        },
         unavailabilitySlashing: {
           slashAmountForUnavailabilityTier2Threshold,
         },
@@ -179,7 +184,7 @@ describe('Ronin Validator Set test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, false);
       expect(await roninValidatorSet.getValidators()).eql([]);
       expect(await roninValidatorSet.getBlockProducers()).eql([]);
-      expect(tx!).not.emit(roninValidatorSet, 'ValidatorSetUpdated');
+      await expect(tx!).not.emit(roninValidatorSet, 'ValidatorSetUpdated');
     });
   });
 
@@ -286,7 +291,7 @@ describe('Ronin Validator Set test', () => {
         lastPeriod = await roninValidatorSet.currentPeriod();
         await RoninValidatorSet.expects.emitBlockRewardSubmittedEvent(tx, consensusAddr.address, 100, 0);
 
-        expect(tx).not.emit(stakingVesting, 'BonusTransferred');
+        await expect(tx).not.emit(stakingVesting, 'BonusTransferred');
         await StakingVestingExpects.emitBonusTransferFailedEvent(
           tx,
           undefined,
@@ -316,7 +321,7 @@ describe('Ronin Validator Set test', () => {
           blockProducerBonusPerBlock
         );
 
-        expect(tx).not.emit(stakingVesting, 'BonusTransferFailed');
+        await expect(tx).not.emit(stakingVesting, 'BonusTransferFailed');
         await StakingVestingExpects.emitBonusTransferredEvent(
           tx,
           undefined,
@@ -348,7 +353,7 @@ describe('Ronin Validator Set test', () => {
           treasury.address,
           52
         ); // (5000 + 100 + 100) * 1%
-        expect(tx!)
+        await expect(tx!)
           .emit(roninValidatorSet, 'BridgeOperatorRewardDistributed')
           .withArgs(
             consensusAddr.address,
@@ -369,9 +374,11 @@ describe('Ronin Validator Set test', () => {
           const balance = await treasury.getBalance();
           await roninValidatorSet.connect(consensusAddr).submitBlockReward({ value: 100 });
           tx = await slashIndicator.slashMisdemeanor(consensusAddr.address);
-          expect(tx).emit(roninValidatorSet, 'ValidatorPunished').withArgs(consensusAddr.address, 0, 0);
+          await expect(tx)
+            .emit(roninValidatorSet, 'ValidatorPunished')
+            .withArgs(consensusAddr.address, lastPeriod, 0, 0, true, false);
 
-          await expect(await roninValidatorSet.totalDeprecatedReward()).equal(5100); // = 0 + (5000 + 100)
+          expect(await roninValidatorSet.totalDeprecatedReward()).equal(5100); // = 0 + (5000 + 100)
 
           epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
           lastPeriod = await roninValidatorSet.currentPeriod();
@@ -385,7 +392,7 @@ describe('Ronin Validator Set test', () => {
             5148 // (5000 + 100 + 100) * 99% = 99% of the reward, since the pool is only staked by the poolAdmin
           );
           await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, false);
-          expect(tx!).not.emit(roninValidatorSet, 'ValidatorSetUpdated');
+          await expect(tx!).not.emit(roninValidatorSet, 'ValidatorSetUpdated');
         }
 
         {
@@ -406,7 +413,9 @@ describe('Ronin Validator Set test', () => {
           expect(await stakingContract.getReward(consensusAddr.address, poolAdmin.address)).eq(
             5148 // (5000 + 100 + 100) * 99% = 99% of the reward, since the pool is only staked by the poolAdmin
           );
+          await expect(await roninValidatorSet.totalDeprecatedReward()).equal(0);
           await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
+          await expect(tx!).emit(roninValidatorSet, 'DeprecatedRewardRecycled').withArgs(stakingVesting.address, 5200);
           lastPeriod = await roninValidatorSet.currentPeriod();
           await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, currentValidatorSet);
         }
@@ -455,6 +464,7 @@ describe('Ronin Validator Set test', () => {
         await expect(tx)
           .to.emit(roninValidatorSet, 'BlockRewardDeprecated')
           .withArgs(consensusAddr.address, 100, BlockRewardDeprecatedType.UNAVAILABILITY);
+        await expect(await roninValidatorSet.totalDeprecatedReward()).equal(100);
         await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
 
         epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
@@ -480,25 +490,60 @@ describe('Ronin Validator Set test', () => {
     });
   });
 
-  describe('Withdraw deprecated rewards', async () => {
-    it('Should non-admin not be able to call withdraw function', async () => {
-      await expect(roninValidatorSet.withdrawDeprecatedReward()).revertedWith('HasProxyAdmin: unauthorized sender');
+  describe('Recycle deprecated rewards', async () => {
+    before(async () => {
+      await expect(() => stakingVesting.receiveRON({ value: topUpAmount })).changeEtherBalance(
+        stakingVesting.address,
+        topUpAmount
+      );
     });
 
-    it('Should admin be able to withdraw the deprecated rewards to the staking vesting contract', async () => {
+    it('Should the slashed amount transfer back to staking vesting contract', async () => {
       let tx: ContractTransaction;
-      let _withdrawAmount = await roninValidatorSet.totalDeprecatedReward();
+      const stakingVestingBalance = await ethers.provider.getBalance(stakingVesting.address);
 
-      await expect(async () => {
-        tx = await governanceAdminInterface.functionDelegateCall(
-          roninValidatorSet.address,
-          roninValidatorSet.interface.encodeFunctionData('withdrawDeprecatedReward')
-        );
-        return tx;
-      }).changeEtherBalance(stakingVesting.address, _withdrawAmount);
-
-      await RoninValidatorSet.expects.emitDeprecatedRewardWithdrawnEvent(tx!, stakingVesting.address, _withdrawAmount);
       expect(await roninValidatorSet.totalDeprecatedReward()).equal(0);
+
+      let slashTx;
+      await expect(
+        async () =>
+          (slashTx = slashIndicator
+            .connect(consensusAddr)
+            .slashDoubleSign(validatorCandidates[2].consensusAddr.address, '0x', '0x'))
+      ).changeEtherBalances(
+        [stakingContract.address, roninValidatorSet.address],
+        [BigNumber.from(0).sub(slashDoubleSignAmount), slashDoubleSignAmount]
+      );
+
+      await expect(slashTx).not.emit(stakingContract, 'StakingAmountTransferFailed');
+
+      await expect(slashTx)
+        .emit(slashIndicator, 'Slashed')
+        .withArgs(validatorCandidates[2].consensusAddr.address, SlashType.DOUBLE_SIGNING, lastPeriod);
+      expect(await roninValidatorSet.totalDeprecatedReward()).equal(slashDoubleSignAmount);
+
+      currentValidatorSet.splice(-1, 1, validatorCandidates[1].consensusAddr.address);
+
+      await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
+      epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
+      lastPeriod = await roninValidatorSet.currentPeriod();
+      await mineBatchTxs(async () => {
+        await roninValidatorSet.endEpoch();
+        tx = await roninValidatorSet.connect(consensusAddr).wrapUpEpoch();
+      });
+
+      const stakingVestingBalanceDiff = (await ethers.provider.getBalance(stakingVesting.address)).sub(
+        stakingVestingBalance
+      );
+      expect(stakingVestingBalanceDiff).eq(slashDoubleSignAmount);
+
+      expect(await roninValidatorSet.totalDeprecatedReward()).equal(0);
+      await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
+      await expect(tx!)
+        .emit(roninValidatorSet, 'DeprecatedRewardRecycled')
+        .withArgs(stakingVesting.address, slashDoubleSignAmount);
+      lastPeriod = await roninValidatorSet.currentPeriod();
+      await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, currentValidatorSet);
     });
   });
 });
