@@ -24,7 +24,7 @@ interface ICandidateStaking is IRewardPool {
     uint256 amount,
     uint256 contractBalance
   );
-  /// @dev Emitted when the staking amount deducted failed.
+  /// @dev Emitted when the staking amount deducted failed, e.g. when the validator gets slashed.
   event StakingAmountDeductFailed(
     address indexed validator,
     address indexed recipient,
