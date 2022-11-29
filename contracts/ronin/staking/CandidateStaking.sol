@@ -108,6 +108,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
    */
   function requestRenounce(address _consensusAddr)
     external
+    override
     poolExists(_consensusAddr)
     onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
   {
