@@ -185,8 +185,9 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
    *
    * Emits the event `Unstaked`.
    *
+   * @return The actual deducted amount
    */
-  function _deductStakingAmount(PoolDetail storage _pool, uint256 _amount) internal virtual;
+  function _deductStakingAmount(PoolDetail storage _pool, uint256 _amount) internal virtual returns (uint256);
 
   /**
    * @dev Sets the minimum threshold for being a validator candidate.
