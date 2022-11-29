@@ -38,7 +38,7 @@ interface ICandidateManager {
   event CandidatesRevoked(address[] consensusAddrs);
 
   /// @dev Emitted when the commission rate of a validator is updated.
-  event CommissionRateUpdated(address consensusAddr, uint256 rate);
+  event CommissionRateUpdated(address indexed consensusAddr, uint256 rate);
 
   /**
    * @dev Returns the maximum number of validator candidate.
