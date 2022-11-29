@@ -8,7 +8,9 @@ import "./IValidatorInfo.sol";
 
 interface ICommonInfo is ITimingInfo, IJailingInfo, IValidatorInfo {
   /// @dev Emitted when the deprecated reward is withdrawn.
-  event DeprecatedRewardWithdrawn(address indexed recipientAddr, uint256 amount);
+  event DeprecatedRewardRecycled(address indexed recipientAddr, uint256 amount);
+  /// @dev Emitted when the deprecated reward withdrawal is failed
+  event DeprecatedRewardRecycleFailed(address indexed recipientAddr, uint256 amount, uint256 balance);
 
   /**
    * @dev Returns the total deprecated reward, which includes reward that is not sent for slashed validators and unsastified bridge operators

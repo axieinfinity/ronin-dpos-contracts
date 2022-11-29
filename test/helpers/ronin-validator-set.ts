@@ -188,14 +188,14 @@ export const expects = {
     );
   },
 
-  emitDeprecatedRewardWithdrawnEvent: async function (
+  emitDeprecatedRewardRecycledEvent: async function (
     tx: ContractTransaction,
     expectingWithdrawnTarget: string,
     expectingWithdrawnAmount: BigNumberish
   ) {
     await expectEvent(
       contractInterface,
-      'DeprecatedRewardWithdrawn',
+      'DeprecatedRewardRecycled',
       tx,
       (event) => {
         expect(event.args[0], 'invalid withdraw target').eq(expectingWithdrawnTarget);
