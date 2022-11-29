@@ -332,7 +332,7 @@ abstract contract CoinbaseExecution is
     if (_withdrawAmount != 0) {
       address _withdrawTarget = stakingVestingContract();
 
-      _totalDeprecatedReward = 0;
+      delete _totalDeprecatedReward;
 
       (bool _success, ) = _withdrawTarget.call{ value: _withdrawAmount }(
         abi.encodeWithSelector(IStakingVesting.receiveRON.selector)
