@@ -7,12 +7,7 @@ import { Staking, Staking__factory, TransparentUpgradeableProxyV2__factory } fro
 import { MockValidatorSet__factory } from '../../src/types/factories/MockValidatorSet__factory';
 import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
-import {
-  createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
-  TrustedOrganizationAddressSet,
-  ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types';
+import { createManyValidatorCandidateAddressSets, ValidatorCandidateAddressSet } from '../helpers/address-set-types';
 
 let deployer: SignerWithAddress;
 
@@ -26,7 +21,6 @@ let anotherActivePool: ValidatorCandidateAddressSet;
 let validatorContract: MockValidatorSet;
 let stakingContract: Staking;
 let signers: SignerWithAddress[];
-let trustedOrgs: TrustedOrganizationAddressSet[];
 let validatorCandidates: ValidatorCandidateAddressSet[];
 
 const minValidatorStakingAmount = BigNumber.from(20);
@@ -38,7 +32,6 @@ const waitingSecsToRevoke = 7 * 86400;
 describe('Staking test', () => {
   before(async () => {
     [deployer, proxyAdmin, userA, userB, ...signers] = await ethers.getSigners();
-    trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
     validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, 3 * 5));
 
     const stakingVestingContract = await new StakingVesting__factory(deployer).deploy();
@@ -195,6 +188,27 @@ describe('Staking test', () => {
       await expect(stakingContract.connect(deployer).requestRenounce(poolAddr.consensusAddr.address)).revertedWith(
         'BaseStaking: requester must be the pool admin'
       );
+    });
+
+    it('Should the pool admin be able to update the commission rate', async () => {
+      let tx = stakingContract.connect(poolAddr.poolAdmin).requestUpdateCommissionRate(
+        poolAddr.consensusAddr.address,
+        20_00 // 20%
+      );
+
+      await expect(tx).emit(validatorContract, 'CommissionRateUpdated').withArgs(poolAddr.consensusAddr.address, 20_00);
+
+      let _info = await validatorContract.getCandidateInfo(poolAddr.consensusAddr.address);
+      await expect(_info.commissionRate).eq(20_00);
+    });
+
+    it('Should the non-pool-admin not be able to update the commission rate', async () => {
+      await expect(
+        stakingContract.connect(poolAddr.bridgeOperator).requestUpdateCommissionRate(
+          poolAddr.consensusAddr.address,
+          20_00 // 20%
+        )
+      ).revertedWith('BaseStaking: requester must be the pool admin');
     });
 
     it('Should be able to request renounce using pool admin', async () => {
