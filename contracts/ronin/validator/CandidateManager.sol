@@ -81,6 +81,17 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /**
    * @inheritdoc ICandidateManager
    */
+  function execUpdateCommissionRate(address _consensusAddr, uint256 _commissionRate)
+    external
+    override
+    onlyStakingContract
+  {
+    _updateValidatorCommissionRate(_consensusAddr, _commissionRate);
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
   function isValidatorCandidate(address _addr) public view override returns (bool) {
     return _candidateIndex[_addr] != 0;
   }
@@ -178,9 +189,27 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   }
 
   /**
+   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
+   */
+  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address) {
+    return _candidateInfo[_consensusAddr].bridgeOperatorAddr;
+  }
+
+  /**
+   * @dev Sets the maximum number of validator candidate.
+   *
+   * Emits the `MaxValidatorCandidateUpdated` event.
+   *
+   */
+  function _setMaxValidatorCandidate(uint256 _threshold) internal {
+    _maxValidatorCandidate = _threshold;
+    emit MaxValidatorCandidateUpdated(_threshold);
+  }
+
+  /**
    * @dev Removes the candidate.
    */
-  function _removeCandidate(address _addr) internal {
+  function _removeCandidate(address _addr) private {
     uint256 _idx = _candidateIndex[_addr];
     if (_idx == 0) {
       return;
@@ -200,20 +229,16 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   }
 
   /**
-   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
+   * @dev Sets the commission rate of a validator candidate.
+   *
+   * Emits the `ComissionRateUpdated` event.
+   *
    */
-  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address) {
-    return _candidateInfo[_consensusAddr].bridgeOperatorAddr;
-  }
+  function _updateValidatorCommissionRate(address _consensusAddr, uint256 _rate) private {
+    require(_rate <= _MAX_PERCENTAGE, "CandidateManager: invalid commission rate");
+    ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
+    _info.commissionRate = _rate;
 
-  /**
-   * @dev Sets the maximum number of validator candidate.
-   *
-   * Emits the `MaxValidatorCandidateUpdated` event.
-   *
-   */
-  function _setMaxValidatorCandidate(uint256 _threshold) internal {
-    _maxValidatorCandidate = _threshold;
-    emit MaxValidatorCandidateUpdated(_threshold);
+    emit CommissionRateUpdated(_consensusAddr, _rate);
   }
 }

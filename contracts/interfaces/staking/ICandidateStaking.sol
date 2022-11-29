@@ -101,6 +101,20 @@ interface ICandidateStaking is IRewardPool {
   function unstake(address _consensusAddr, uint256 _amount) external;
 
   /**
+   * @dev Pool admin requests update validator commission rate. The request will be forwarded to the candidate manager
+   * contract, and the value is getting updated in {ICandidateManager-execUpdateCommissionRate}.
+   *
+   * Requirements:
+   * - The consensus address is a validator candidate.
+   * - The method caller is the pool admin.
+   * - The `_rate` must be in range of [0_00; 100_00].
+   *
+   * Emits the event `CommissionRateUpdated`.
+   *
+   */
+  function requestUpdateCommissionRate(address _consensusAddr, uint256 _rate) external;
+
+  /**
    * @dev Renounces being a validator candidate and takes back the delegating/staking amount.
    *
    * Requirements:

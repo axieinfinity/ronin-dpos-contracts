@@ -37,6 +37,9 @@ interface ICandidateManager {
   /// @dev Emitted when the validator candidate is revoked.
   event CandidatesRevoked(address[] consensusAddrs);
 
+  /// @dev Emitted when the commission rate of a validator is updated.
+  event CommissionRateUpdated(address consensusAddr, uint256 rate);
+
   /**
    * @dev Returns the maximum number of validator candidate.
    */
@@ -80,6 +83,18 @@ interface ICandidateManager {
    *
    */
   function requestRevokeCandidate(address, uint256 _secsLeft) external;
+
+  /**
+   * @dev Fallback function of `{CandidateStaking-requestUpdateCommissionRate}`.
+   *
+   * Requirements:
+   * - The method caller is the staking contract.
+   * - The `_rate` must be in range of [0_00; 100_00].
+   *
+   * Emits the event `CommissionRateUpdated`.
+   *
+   */
+  function execUpdateCommissionRate(address _consensusAddr, uint256 _rate) external;
 
   /**
    * @dev Returns whether the address is a validator (candidate).
