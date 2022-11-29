@@ -85,7 +85,7 @@ interface ICandidateManager {
   function requestRevokeCandidate(address, uint256 _secsLeft) external;
 
   /**
-   * @dev Fallback function of `{CandidateStaking-requestUpdateCommissionRate}`.
+   * @dev Fallback function of `CandidateStaking-requestUpdateCommissionRate`.
    *
    * Requirements:
    * - The method caller is the staking contract.
