@@ -43,6 +43,13 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /**
    * @inheritdoc ICandidateManager
    */
+  function minEffectiveDaysOnwards() external view override returns (uint256) {
+    return _minEffectiveDaysOnwards;
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
   function setMaxValidatorCandidate(uint256 _number) external override onlyAdmin {
     _setMaxValidatorCandidate(_number);
   }
