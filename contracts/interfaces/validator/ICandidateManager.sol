@@ -24,7 +24,7 @@ interface ICandidateManager {
   struct CommissionSchedule {
     // The timestamp that the commission schedule gets affected.
     uint256 effectiveTimestamp;
-    // The new commission rate.
+    // The new commission rate. Value is in range [0; 100_00], stands for 0-100%
     uint256 commissionRate;
   }
 

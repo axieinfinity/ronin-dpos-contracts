@@ -19,7 +19,10 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /// @dev Mapping from candidate address => their info
   mapping(address => ValidatorCandidate) internal _candidateInfo;
 
-  /// @dev The minimum offset in day from current date to the effective date of a new commission schedule.
+  /**
+   * @dev The minimum offset in day from current date to the effective date of a new commission schedule.
+   * Value of 1 means the change gets affected at the beginning of the following day.
+   **/
   uint256 internal _minEffectiveDaysOnwards;
   /// @dev Mapping from candidate address => schedule commission change.
   mapping(address => CommissionSchedule) internal _candidateCommissionChangeSchedule;
