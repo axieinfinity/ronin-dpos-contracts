@@ -147,7 +147,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
       "CandidateManager: commission change schedule exists"
     );
     require(_commissionRate <= _MAX_PERCENTAGE, "CandidateManager: invalid commission rate");
-    require(_effectiveDaysOnwards >= _minEffectiveDaysOnwards);
+    require(_effectiveDaysOnwards >= _minEffectiveDaysOnwards, "CandidateManager: invalid effective date");
 
     CommissionSchedule storage _schedule = _candidateCommissionChangeSchedule[_consensusAddr];
     uint256 _effectiveTimestamp = ((block.timestamp / 1 days) + _effectiveDaysOnwards) * 1 days;
@@ -210,7 +210,6 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
       uint256 _i;
       address _addr;
       ValidatorCandidate storage _info;
-      CommissionSchedule storage _schedule;
       while (_i < _length) {
         _addr = _candidates[_i];
         _info = _candidateInfo[_addr];
@@ -241,9 +240,9 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
         }
 
         // Checks for schedule of commission change and updates commission rate
-        _schedule = _candidateCommissionChangeSchedule[_addr];
-        if (_schedule.effectiveTimestamp >= block.timestamp) {
-          uint256 _commisionRate = _schedule.commissionRate;
+        uint256 _scheduleTimestamp = _candidateCommissionChangeSchedule[_addr].effectiveTimestamp;
+        if (_scheduleTimestamp != 0 && _scheduleTimestamp <= block.timestamp) {
+          uint256 _commisionRate = _candidateCommissionChangeSchedule[_addr].commissionRate;
           delete _candidateCommissionChangeSchedule[_addr];
           _info.commissionRate = _commisionRate;
           emit CommissionRateUpdated(_addr, _commisionRate);
