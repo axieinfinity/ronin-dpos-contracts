@@ -143,7 +143,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     uint256 _commissionRate
   ) external override onlyStakingContract {
     require(
-      _candidateCommissionChangeSchedule[_consensusAddr].effectiveTimestamp != 0,
+      _candidateCommissionChangeSchedule[_consensusAddr].effectiveTimestamp == 0,
       "CandidateManager: commission change schedule exists"
     );
     require(_commissionRate <= _MAX_PERCENTAGE, "CandidateManager: invalid commission rate");
