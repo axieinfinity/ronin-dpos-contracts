@@ -163,6 +163,7 @@ const defaultRoninValidatorSetConf: RoninValidatorSetArguments = {
   maxPrioritizedValidatorNumber: 11,
   maxValidatorCandidate: 100,
   numberOfBlocksInEpoch: 600,
+  minEffectiveDaysOnwards: 7,
 };
 
 // TODO: update config for testnet & mainnet
@@ -174,6 +175,7 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
     maxPrioritizedValidatorNumber: 22,
     maxValidatorCandidate: 100,
     numberOfBlocksInEpoch: 200,
+    minEffectiveDaysOnwards: 7,
   },
   [Network.Mainnet]: undefined,
 };
