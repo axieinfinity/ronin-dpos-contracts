@@ -19,11 +19,16 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /// @dev Mapping from candidate address => their info
   mapping(address => ValidatorCandidate) internal _candidateInfo;
 
+  /// @dev The minimum offset in day from current date to the effective date of a new commission schedule.
+  uint256 internal _minEffectiveDaysOnwards;
+  /// @dev Mapping from candidate address => schedule commission change.
+  mapping(address => CommissionSchedule) internal _candidateCommissionChangeSchedule;
+
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[50] private ______gap;
+  uint256[48] private ______gap;
 
   /**
    * @inheritdoc ICandidateManager
@@ -37,6 +42,13 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    */
   function setMaxValidatorCandidate(uint256 _number) external override onlyAdmin {
     _setMaxValidatorCandidate(_number);
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
+  function setMinEffectiveDaysOnwards(uint256 _numOfDays) external override onlyAdmin {
+    _setMinEffectiveDaysOnwards(_numOfDays);
   }
 
   /**
@@ -122,12 +134,24 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /**
    * @inheritdoc ICandidateManager
    */
-  function execUpdateCommissionRate(address _consensusAddr, uint256 _commissionRate)
-    external
-    override
-    onlyStakingContract
-  {
-    _updateValidatorCommissionRate(_consensusAddr, _commissionRate);
+  function execRequestUpdateCommissionRate(
+    address _consensusAddr,
+    uint256 _effectiveDaysOnwards,
+    uint256 _commissionRate
+  ) external override onlyStakingContract {
+    require(
+      _candidateCommissionChangeSchedule[_consensusAddr].effectiveTimestamp != 0,
+      "CandidateManager: commission change schedule exists"
+    );
+    require(_commissionRate <= _MAX_PERCENTAGE, "CandidateManager: invalid commission rate");
+    require(_effectiveDaysOnwards >= _minEffectiveDaysOnwards);
+
+    CommissionSchedule storage _schedule = _candidateCommissionChangeSchedule[_consensusAddr];
+    uint256 _effectiveTimestamp = ((block.timestamp / 1 days) + _effectiveDaysOnwards) * 1 days;
+    _schedule.effectiveTimestamp = _effectiveTimestamp;
+    _schedule.commissionRate = _commissionRate;
+
+    emit CommissionRateUpdateScheduled(_consensusAddr, _effectiveTimestamp, _commissionRate);
   }
 
   /**
@@ -169,7 +193,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    * Emits the event `CandidatesRevoked` when a candidate is revoked.
    *
    */
-  function _removeUnsatisfiedCandidates() internal {
+  function _syncCandidateSet() internal {
     IStaking _staking = _stakingContract;
     uint256 _waitingSecsToRevoke = _staking.waitingSecsToRevoke();
     uint256 _minStakingAmount = _staking.minValidatorStakingAmount();
@@ -183,10 +207,12 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
       uint256 _i;
       address _addr;
       ValidatorCandidate storage _info;
+      CommissionSchedule storage _schedule;
       while (_i < _length) {
         _addr = _candidates[_i];
         _info = _candidateInfo[_addr];
 
+        // Checks for under-balance status of candidates
         bool _hasTopupDeadline = _info.topupDeadline != 0;
         if (_selfStakings[_i] < _minStakingAmount) {
           // Updates deadline on the first time unsatisfied the staking amount condition
@@ -201,6 +227,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
           emit CandidateTopupDeadlineUpdated(_addr, 0);
         }
 
+        // Removes unsastisfied candidates
         bool _revokingActivated = _info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp;
         bool _topupDeadlineMissed = _info.topupDeadline != 0 && _info.topupDeadline <= block.timestamp;
         if (_revokingActivated || _topupDeadlineMissed) {
@@ -209,6 +236,16 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
           _removeCandidate(_addr);
           continue;
         }
+
+        // Checks for schedule of commission change and updates commission rate
+        _schedule = _candidateCommissionChangeSchedule[_addr];
+        if (_schedule.effectiveTimestamp >= block.timestamp) {
+          uint256 _commisionRate = _schedule.commissionRate;
+          delete _candidateCommissionChangeSchedule[_addr];
+          _info.commissionRate = _commisionRate;
+          emit CommissionRateUpdated(_addr, _commisionRate);
+        }
+
         _i++;
       }
     }
@@ -248,6 +285,18 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   }
 
   /**
+   * @dev Sets the minimum number of days onwards to the effective date of commission rate change.
+   *
+   * Emits the `MinEffectiveDaysOnwardsUpdated` event.
+   *
+   */
+  function _setMinEffectiveDaysOnwards(uint256 _numOfDays) internal {
+    require(_numOfDays >= 1, "CandidateManager: invalid min effective days onwards");
+    _minEffectiveDaysOnwards = _numOfDays;
+    emit MinEffectiveDaysOnwardsUpdated(_numOfDays);
+  }
+
+  /**
    * @dev Removes the candidate.
    */
   function _removeCandidate(address _addr) private {
@@ -258,6 +307,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
 
     delete _candidateInfo[_addr];
     delete _candidateIndex[_addr];
+    delete _candidateCommissionChangeSchedule[_addr];
 
     address _lastCandidate = _candidates[_candidates.length - 1];
 
@@ -267,19 +317,5 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     }
 
     _candidates.pop();
-  }
-
-  /**
-   * @dev Sets the commission rate of a validator candidate.
-   *
-   * Emits the `ComissionRateUpdated` event.
-   *
-   */
-  function _updateValidatorCommissionRate(address _consensusAddr, uint256 _rate) private {
-    require(_rate <= _MAX_PERCENTAGE, "CandidateManager: invalid commission rate");
-    ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
-    _info.commissionRate = _rate;
-
-    emit CommissionRateUpdated(_consensusAddr, _rate);
   }
 }

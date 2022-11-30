@@ -356,7 +356,7 @@ abstract contract CoinbaseExecution is
    *
    */
   function _syncValidatorSet(uint256 _newPeriod) private returns (address[] memory _newValidators) {
-    _removeUnsatisfiedCandidates();
+    _syncCandidateSet();
     uint256[] memory _weights = _stakingContract.getManyStakingTotals(_candidates);
     uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getConsensusWeights(_candidates);
     uint256 _newValidatorCount;

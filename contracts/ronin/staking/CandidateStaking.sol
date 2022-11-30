@@ -62,13 +62,12 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   /**
    * @inheritdoc ICandidateStaking
    */
-  function requestUpdateCommissionRate(address _consensusAddr, uint256 _rate)
-    external
-    override
-    poolExists(_consensusAddr)
-    onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
-  {
-    _validatorContract.execUpdateCommissionRate(_consensusAddr, _rate);
+  function requestUpdateCommissionRate(
+    address _consensusAddr,
+    uint256 _effectiveDaysOnwards,
+    uint256 _commissionRate
+  ) external override poolExists(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
+    _validatorContract.execRequestUpdateCommissionRate(_consensusAddr, _effectiveDaysOnwards, _commissionRate);
   }
 
   /**

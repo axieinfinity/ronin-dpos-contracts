@@ -31,7 +31,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   function submitBlockReward() external payable override {}
 
   function wrapUpEpoch() external payable override {
-    _removeUnsatisfiedCandidates();
+    _syncCandidateSet();
     _lastUpdatedPeriod = currentPeriod();
   }
 
