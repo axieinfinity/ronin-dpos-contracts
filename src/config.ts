@@ -265,7 +265,7 @@ export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
 };
 
 const defaultGovernanceAdminConf: GovernanceAdminArguments = {
-  proposalExpiryDuration: 60 * 60 * 24 * 7, // 7 days
+  proposalExpiryDuration: 60 * 60 * 24 * 14, // 14 days
 };
 
 // TODO: update config for goerli, ethereum

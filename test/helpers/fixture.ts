@@ -126,7 +126,7 @@ export const defaultTestConfig: InitTestInput = {
   },
 
   governanceAdminArguments: {
-    proposalExpiryDuration: 60 * 60 * 24 * 7, // 7 days
+    proposalExpiryDuration: 60 * 60 * 24 * 14, // 14 days
   },
 };
 
