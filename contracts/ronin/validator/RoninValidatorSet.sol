@@ -33,6 +33,7 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
+    uint256 __minEffectiveDaysOnwards,
     uint256 __numberOfBlocksInEpoch
   ) external initializer {
     _setSlashIndicatorContract(__slashIndicatorContract);
@@ -44,6 +45,7 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setMaxPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
+    _setMinEffectiveDaysOnwards(__minEffectiveDaysOnwards);
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
   }
 

@@ -21,8 +21,17 @@ interface ICandidateManager {
     uint256 topupDeadline;
   }
 
+  struct CommissionSchedule {
+    // The timestamp that the commission schedule gets affected (no schedule=0).
+    uint256 effectiveTimestamp;
+    // The new commission rate. Value is in range [0; 100_00], stands for 0-100%
+    uint256 commissionRate;
+  }
+
   /// @dev Emitted when the maximum number of validator candidates is updated.
   event MaxValidatorCandidateUpdated(uint256 threshold);
+  /// @dev Emitted when the min offset to the effective date of commission rate change is updated.
+  event MinEffectiveDaysOnwardsUpdated(uint256 numOfDays);
   /// @dev Emitted when the validator candidate is granted.
   event CandidateGranted(
     address indexed consensusAddr,
@@ -37,6 +46,8 @@ interface ICandidateManager {
   /// @dev Emitted when the validator candidate is revoked.
   event CandidatesRevoked(address[] consensusAddrs);
 
+  /// @dev Emitted when a schedule for updating commission rate is set.
+  event CommissionRateUpdateScheduled(address indexed consensusAddr, uint256 effectiveTimestamp, uint256 rate);
   /// @dev Emitted when the commission rate of a validator is updated.
   event CommissionRateUpdated(address indexed consensusAddr, uint256 rate);
 
@@ -44,6 +55,11 @@ interface ICandidateManager {
    * @dev Returns the maximum number of validator candidate.
    */
   function maxValidatorCandidate() external view returns (uint256);
+
+  /**
+   * @dev Returns the minimum number of days to the effective date of commission rate change.
+   */
+  function minEffectiveDaysOnwards() external view returns (uint256);
 
   /**
    * @dev Sets the maximum number of validator candidate.
@@ -55,6 +71,17 @@ interface ICandidateManager {
    *
    */
   function setMaxValidatorCandidate(uint256) external;
+
+  /**
+   * @dev Sets the minimum number of days to the effective date of commision rate change.
+   *
+   * Requirements:
+   * - The method caller is admin.
+   *
+   * Emits the `MinEffectiveDaysOnwardsUpdated` event.
+   *
+   */
+  function setMinEffectiveDaysOnwards(uint256 _numOfDays) external;
 
   /**
    * @dev Grants a validator candidate.
@@ -89,12 +116,17 @@ interface ICandidateManager {
    *
    * Requirements:
    * - The method caller is the staking contract.
+   * - The `_effectiveTimestamp` must be the beginning of a UTC day, and at least from 7 days onwards
    * - The `_rate` must be in range of [0_00; 100_00].
    *
-   * Emits the event `CommissionRateUpdated`.
+   * Emits the event `CommissionRateUpdateScheduled`.
    *
    */
-  function execUpdateCommissionRate(address _consensusAddr, uint256 _rate) external;
+  function execRequestUpdateCommissionRate(
+    address _consensusAddr,
+    uint256 _effectiveTimestamp,
+    uint256 _rate
+  ) external;
 
   /**
    * @dev Returns whether the address is a validator (candidate).

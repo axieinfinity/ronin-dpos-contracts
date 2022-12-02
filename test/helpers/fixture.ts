@@ -108,6 +108,7 @@ export const defaultTestConfig: InitTestInput = {
     maxPrioritizedValidatorNumber: 0,
     numberOfBlocksInEpoch: 600,
     maxValidatorCandidate: 10,
+    minEffectiveDaysOnwards: 7,
   },
 
   roninTrustedOrganizationArguments: {
