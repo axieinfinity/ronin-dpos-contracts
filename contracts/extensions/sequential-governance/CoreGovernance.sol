@@ -307,7 +307,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   /**
    * @dev Returns the expiry duration for a new proposal.
    */
-  function _getProposalExpiryDuration() internal returns (uint256) {
+  function _getProposalExpiryDuration() internal view returns (uint256) {
     return _proposalExpiryDuration;
   }
 

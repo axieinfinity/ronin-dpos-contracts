@@ -80,7 +80,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
   /**
    * @dev Returns the proposal expiry duration.
    */
-  function getProposalExpiryDuration() external returns (uint256) {
+  function getProposalExpiryDuration() external view returns (uint256) {
     return super._getProposalExpiryDuration();
   }
 
