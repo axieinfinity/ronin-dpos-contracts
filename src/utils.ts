@@ -140,6 +140,7 @@ export interface RoninValidatorSetArguments {
   maxValidatorCandidate?: BigNumberish;
   maxPrioritizedValidatorNumber?: BigNumberish;
   numberOfBlocksInEpoch?: BigNumberish;
+  minEffectiveDaysOnwards?: BigNumberish;
 }
 
 export interface RoninValidatorSetConfig {

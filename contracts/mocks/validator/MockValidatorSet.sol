@@ -19,19 +19,21 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     address _slashIndicatorContract,
     address _stakingVestingContract,
     uint256 __maxValidatorCandidate,
-    uint256 __numberOfBlocksInEpoch
+    uint256 __numberOfBlocksInEpoch,
+    uint256 __minEffectiveDaysOnwards
   ) {
     _setStakingContract(__stakingContract);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     slashIndicatorContract = _slashIndicatorContract;
     stakingVestingContract = _stakingVestingContract;
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
+    _minEffectiveDaysOnwards = __minEffectiveDaysOnwards;
   }
 
   function submitBlockReward() external payable override {}
 
   function wrapUpEpoch() external payable override {
-    _removeUnsatisfiedCandidates();
+    _syncCandidateSet();
     _lastUpdatedPeriod = currentPeriod();
   }
 

@@ -1,3 +1,4 @@
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
@@ -23,11 +24,20 @@ let stakingContract: Staking;
 let signers: SignerWithAddress[];
 let validatorCandidates: ValidatorCandidateAddressSet[];
 
+const ONE_DAY = 60 * 60 * 24;
+
 const minValidatorStakingAmount = BigNumber.from(20);
 const maxValidatorCandidate = 50;
 const numberOfBlocksInEpoch = 2;
 const cooldownSecsToUndelegate = 3 * 86400;
 const waitingSecsToRevoke = 7 * 86400;
+const minEffectiveDaysOnwards = 7;
+
+const getLastBlockTimestamp = async () => {
+  let blockNumBefore = await ethers.provider.getBlockNumber();
+  let blockBefore = await ethers.provider.getBlock(blockNumBefore);
+  return blockBefore.timestamp;
+};
 
 describe('Staking test', () => {
   before(async () => {
@@ -42,7 +52,8 @@ describe('Staking test', () => {
       ethers.constants.AddressZero,
       stakingVestingContract.address,
       maxValidatorCandidate,
-      numberOfBlocksInEpoch
+      numberOfBlocksInEpoch,
+      minEffectiveDaysOnwards
     );
     await validatorContract.deployed();
     const logicContract = await new Staking__factory(deployer).deploy();
@@ -190,25 +201,55 @@ describe('Staking test', () => {
       );
     });
 
-    it('Should the pool admin be able to update the commission rate', async () => {
+    it('Should the non-pool-admin not be able to update the commission rate', async () => {
+      await expect(
+        stakingContract.connect(poolAddr.bridgeOperator).requestUpdateCommissionRate(
+          poolAddr.consensusAddr.address,
+          minEffectiveDaysOnwards,
+          20_00 // 20%
+        )
+      ).revertedWith('BaseStaking: requester must be the pool admin');
+    });
+
+    it('Should the pool admin not be able to request updating the commission rate with invalid effective date', async () => {
+      await expect(
+        stakingContract.connect(poolAddr.poolAdmin).requestUpdateCommissionRate(
+          poolAddr.consensusAddr.address,
+          minEffectiveDaysOnwards - 1,
+          20_00 // 20%
+        )
+      ).revertedWith('CandidateManager: invalid effective date');
+    });
+
+    it('Should the pool admin be able to request updating the commission rate', async () => {
+      let _info = await validatorContract.getCandidateInfo(poolAddr.consensusAddr.address);
+      let _previousRate = _info.commissionRate;
+
       let tx = stakingContract.connect(poolAddr.poolAdmin).requestUpdateCommissionRate(
         poolAddr.consensusAddr.address,
+        minEffectiveDaysOnwards,
         20_00 // 20%
       );
+
+      let lastBlockTimestamp = await getLastBlockTimestamp();
+      let expectingEffectiveTime = (Math.floor(lastBlockTimestamp / ONE_DAY) + minEffectiveDaysOnwards) * ONE_DAY;
+
+      await expect(tx)
+        .emit(validatorContract, 'CommissionRateUpdateScheduled')
+        .withArgs(poolAddr.consensusAddr.address, expectingEffectiveTime, 20_00);
+
+      _info = await validatorContract.getCandidateInfo(poolAddr.consensusAddr.address);
+      await expect(_info.commissionRate).eq(_previousRate);
+    });
+
+    it('Should the commission rate get updated when the waiting time passes', async () => {
+      await network.provider.send('evm_increaseTime', [minEffectiveDaysOnwards * ONE_DAY]);
+      let tx = await validatorContract.wrapUpEpoch();
 
       await expect(tx).emit(validatorContract, 'CommissionRateUpdated').withArgs(poolAddr.consensusAddr.address, 20_00);
 
       let _info = await validatorContract.getCandidateInfo(poolAddr.consensusAddr.address);
       await expect(_info.commissionRate).eq(20_00);
-    });
-
-    it('Should the non-pool-admin not be able to update the commission rate', async () => {
-      await expect(
-        stakingContract.connect(poolAddr.bridgeOperator).requestUpdateCommissionRate(
-          poolAddr.consensusAddr.address,
-          20_00 // 20%
-        )
-      ).revertedWith('BaseStaking: requester must be the pool admin');
     });
 
     it('Should be able to request renounce using pool admin', async () => {

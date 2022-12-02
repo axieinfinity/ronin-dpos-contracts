@@ -88,6 +88,7 @@ const config: InitTestInput = {
     maxPrioritizedValidatorNumber: 0,
     numberOfBlocksInEpoch: 600,
     maxValidatorCandidate: 10,
+    minEffectiveDaysOnwards: 7,
   },
   roninTrustedOrganizationArguments: {
     trustedOrganizations: [],
@@ -239,6 +240,9 @@ describe('[Integration] Configuration check', () => {
     );
     expect(await validatorContract.maxPrioritizedValidatorNumber()).to.eq(
       config.roninValidatorSetArguments?.maxPrioritizedValidatorNumber
+    );
+    expect(await validatorContract.minEffectiveDaysOnwards()).to.eq(
+      config.roninValidatorSetArguments?.minEffectiveDaysOnwards
     );
     expect(await validatorContract.numberOfBlocksInEpoch()).to.eq(
       config.roninValidatorSetArguments?.numberOfBlocksInEpoch
