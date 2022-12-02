@@ -57,6 +57,12 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   /// @dev Mapping from chain id => vote round => proposal vote
   mapping(uint256 => mapping(uint256 => ProposalVote)) public vote;
 
+  uint256 private _proposalExpiryDuration;
+
+  constructor(uint256 _expiryDuration) {
+    _setProposalExpiryDuration(_expiryDuration);
+  }
+
   /**
    * @dev Creates new round voting for the proposal `_proposalHash` of chain `_chainId`.
    */
@@ -285,10 +291,24 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   }
 
   /**
+   * @dev Sets the expiry duration for a new proposal.
+   */
+  function _setProposalExpiryDuration(uint256 _expiryDuration) internal {
+    _proposalExpiryDuration = _expiryDuration;
+  }
+
+  /**
    * @dev Returns whether the voter casted for the proposal.
    */
   function _voted(ProposalVote storage _vote, address _voter) internal view returns (bool) {
     return _vote.sig[_voter].v != 0;
+  }
+
+  /**
+   * @dev Returns the expiry duration for a new proposal.
+   */
+  function _getProposalExpiryDuration() internal returns (uint256) {
+    return _proposalExpiryDuration;
   }
 
   /**

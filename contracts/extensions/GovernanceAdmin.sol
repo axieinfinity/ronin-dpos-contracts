@@ -15,7 +15,11 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
     _;
   }
 
-  constructor(address _roninTrustedOrganizationContract, address _bridgeContract) {
+  constructor(
+    address _roninTrustedOrganizationContract,
+    address _bridgeContract,
+    uint256 _proposalExpiryDuration
+  ) CoreGovernance(_proposalExpiryDuration) {
     require(
       keccak256(
         abi.encode(
@@ -48,6 +52,17 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
   }
 
   /**
+   * @dev Sets the expiry duration for a new proposal.
+   *
+   * Requirements:
+   * - Only admin can call this method.
+   *
+   */
+  function setProposalExpiryDuration(uint256 _expiryDuration) external onlyAdmin {
+    _setProposalExpiryDuration(_expiryDuration);
+  }
+
+  /**
    * @dev Returns the current implementation of `_proxy`.
    *
    * Requirements:
@@ -60,6 +75,13 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
     (bool _success, bytes memory _returndata) = _proxy.staticcall(hex"5c60da1b");
     require(_success, "GovernanceAdmin: proxy call `implementation()` failed");
     return abi.decode(_returndata, (address));
+  }
+
+  /**
+   * @dev Returns the proposal expiry duration.
+   */
+  function getProposalExpiryDuration() external returns (uint256) {
+    return super._getProposalExpiryDuration();
   }
 
   /**
