@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { mainchainGovernanceAdminConf, generalMainchainConf, mainchainNetworks } from '../config';
+import { mainchainGovernanceAdminConf, governanceAdminConf, generalMainchainConf, mainchainNetworks } from '../config';
 import { verifyAddress } from '../script/verify-address';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
@@ -20,6 +20,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
       generalMainchainConf[network.name].roninTrustedOrganizationContract?.address,
       generalMainchainConf[network.name].bridgeContract,
       mainchainGovernanceAdminConf[network.name]?.relayers,
+      governanceAdminConf[network.name]?.proposalExpiryDuration,
     ],
     nonce: generalMainchainConf[network.name].governanceAdmin?.nonce,
   });

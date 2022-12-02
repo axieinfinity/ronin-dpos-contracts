@@ -1,5 +1,5 @@
 import { BigNumber, BigNumberish } from 'ethers';
-import { ethers } from 'hardhat';
+import { ethers, network } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
 
 import { TrustedOrganizationStruct } from './types/IRoninTrustedOrganization';
@@ -145,6 +145,14 @@ export interface RoninValidatorSetArguments {
 
 export interface RoninValidatorSetConfig {
   [network: LiteralNetwork]: RoninValidatorSetArguments | undefined;
+}
+
+export interface GovernanceAdminArguments {
+  proposalExpiryDuration?: BigNumberish;
+}
+
+export interface GovernanceAdminConfig {
+  [network: LiteralNetwork]: GovernanceAdminArguments | undefined;
 }
 
 export interface MainchainGovernanceAdminArguments {
