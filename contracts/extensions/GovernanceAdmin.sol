@@ -55,7 +55,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
    * @dev Sets the expiry duration for a new proposal.
    *
    * Requirements:
-   * - Only admin can call this method.
+   * - Only allowing self-call to this method, since this contract does not have admin.
    *
    */
   function setProposalExpiryDuration(uint256 _expiryDuration) external onlySelfCall {
