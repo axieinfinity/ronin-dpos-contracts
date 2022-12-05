@@ -58,7 +58,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
    * - Only admin can call this method.
    *
    */
-  function setProposalExpiryDuration(uint256 _expiryDuration) external onlyAdmin {
+  function setProposalExpiryDuration(uint256 _expiryDuration) external onlySelfCall {
     _setProposalExpiryDuration(_expiryDuration);
   }
 
