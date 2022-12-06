@@ -1,4 +1,3 @@
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumberish } from 'ethers';
@@ -231,8 +230,6 @@ describe('Bridge Tracking test', () => {
     });
 
     const expectTotalVotes = mainchainWithdrewIds.length + submitWithdrawalSignatures.length + receipts.length;
-    console.log(expectTotalVotes);
-
     expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
     expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 2);
     expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(expectTotalVotes);
@@ -256,8 +253,6 @@ describe('Bridge Tracking test', () => {
     });
 
     const expectTotalVotes = mainchainWithdrewIds.length + submitWithdrawalSignatures.length + receipts.length;
-    console.log('expectTotalVotes', expectTotalVotes);
-
     expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
     expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 3);
     expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(expectTotalVotes);
@@ -266,9 +261,6 @@ describe('Bridge Tracking test', () => {
   });
 
   it('Should not record in the next period', async () => {
-    console.log('=============================');
-    console.log('=============================');
-
     const newPeriod = await roninValidatorSet.currentPeriod();
     expect(newPeriod).not.eq(period);
 
@@ -286,13 +278,9 @@ describe('Bridge Tracking test', () => {
       await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
 
-    console.log('ts >>>>>>>>> period', period);
-
     const expectTotalVotes = mainchainWithdrewIds.length + submitWithdrawalSignatures.length + receipts.length;
     expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
     expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 3);
-    console.log(candidates.map((v) => v.bridgeOperator.address));
-
     expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(expectTotalVotes);
     expect(await bridgeTracking.totalBallotsOf(period, candidates[1].bridgeOperator.address)).eq(expectTotalVotes);
     expect(await bridgeTracking.totalBallotsOf(period, candidates[2].bridgeOperator.address)).eq(expectTotalVotes);

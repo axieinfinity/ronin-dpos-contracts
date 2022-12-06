@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.9;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../extensions/collections/HasBridgeContract.sol";
 import "../extensions/collections/HasValidatorContract.sol";
@@ -72,13 +71,11 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
    */
   function totalVotes(uint256 _period) external view override returns (uint256 _totalVotes) {
     _totalVotes = _periodStats[_period].totalVotes;
-    console.log("totalVotes._totalVotes?=", _totalVotes);
 
     uint256 _currentEpoch = _validatorContract.epochOf(block.number);
     uint256 _periodOfNextTemporaryEpoch = _validatorContract.periodOf(_temporaryStats.lastEpoch + 1);
     // Counts the last stats for the period if the last epoch is passed.
     if (_period == _periodOfNextTemporaryEpoch && _temporaryStats.lastEpoch < _currentEpoch) {
-      console.log("totalVotes._temporaryStats.info.totalVotes?=", _temporaryStats.info.totalVotes);
       _totalVotes += _temporaryStats.info.totalVotes;
     }
   }
@@ -88,13 +85,11 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
    */
   function totalBallots(uint256 _period) external view override returns (uint256 _totalBallots) {
     _totalBallots = _periodStats[_period].totalBallots;
-    console.log("totalVotes._totalBallots?=", _totalBallots);
 
     uint256 _currentEpoch = _validatorContract.epochOf(block.number);
     uint256 _periodOfNextTemporaryEpoch = _validatorContract.periodOf(_temporaryStats.lastEpoch + 1);
     // Counts the last stats for the period if the last epoch is passed.
     if (_period == _periodOfNextTemporaryEpoch && _temporaryStats.lastEpoch < _currentEpoch) {
-      console.log("totalVotes._temporaryStats.info.totalBallots?=", _temporaryStats.info.totalBallots);
       _totalBallots += _temporaryStats.info.totalBallots;
     }
   }
@@ -140,16 +135,9 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
       uint256 _currentPeriod = _validatorContract.currentPeriod();
       _syncPeriodStats(_validatorContract.epochOf(block.number));
       _temporaryStats.info.totalVotes++;
-      console.log(
-        "handleVoteApproved._temporaryStats.info.totalVotes",
-        _temporaryStats.info.totalVotes,
-        uint8(_kind),
-        _requestId
-      );
       _stats.approvedPeriod = _currentPeriod;
 
       address[] storage _voters = _stats.voters;
-      console.log("handleVoteApproved.voters.length=", _voters.length);
       for (uint _i = 0; _i < _voters.length; _i++) {
         _increaseBallot(_kind, _requestId, _voters[_i], _currentPeriod);
       }
@@ -219,7 +207,6 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
     if (_period == _periodOfNextTemporaryEpoch && _temporaryStats.lastEpoch < _currentEpoch) {
       _totalBallots += _temporaryStats.info.totalBallotsOf[_bridgeOperator];
     }
-    console.log("_totalBallotsOf.period?operator?ballot?", _period, _bridgeOperator, _totalBallots);
   }
 
   /**
@@ -229,19 +216,12 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
     if (_temporaryStats.lastEpoch < _currentEpoch) {
       uint256 _period = _validatorContract.periodOf(_temporaryStats.lastEpoch + 1);
       VoteStats storage _stats = _periodStats[_period];
-      console.log("_syncPeriodStats. count for period=", _period);
       _stats.totalVotes += _temporaryStats.info.totalVotes;
       _stats.totalBallots += _temporaryStats.info.totalBallots;
 
       address _voter;
       for (uint _i = 0; _i < _temporaryStats.info.voters.length; _i++) {
         _voter = _temporaryStats.info.voters[_i];
-        console.log(
-          "\t_syncPeriodStats. voter?amount?after?=",
-          _voter,
-          _temporaryStats.info.totalBallotsOf[_voter],
-          _stats.totalBallotsOf[_voter] + _temporaryStats.info.totalBallotsOf[_voter]
-        );
         _stats.totalBallotsOf[_voter] += _temporaryStats.info.totalBallotsOf[_voter];
         delete _temporaryStats.info.totalBallotsOf[_voter];
       }
