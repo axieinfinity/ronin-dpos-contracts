@@ -48,12 +48,13 @@ export class GovernanceAdminInterface {
     target: Address,
     value: BigNumberish,
     calldata: BytesLike,
-    gasAmount: BigNumberish
+    gasAmount: BigNumberish,
+    nonce?: BigNumber
   ) {
     const proposal: ProposalDetailStruct = {
       chainId: network.config.chainId!,
       expiryTimestamp,
-      nonce: (await this.contract.round(network.config.chainId!)).add(1),
+      nonce: nonce ?? (await this.contract.round(network.config.chainId!)).add(1),
       targets: [target],
       values: [value],
       calldatas: [calldata],

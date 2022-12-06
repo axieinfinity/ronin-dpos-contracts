@@ -1,9 +1,16 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { BigNumber } from 'ethers';
+import { ethers, network } from 'hardhat';
 
 import { GovernanceAdminInterface, mapByteSigToSigStruct } from '../../src/script/governance-admin-interface';
-import { BOsBallot, BridgeOperatorsBallotTypes, VoteType } from '../../src/script/proposal';
+import {
+  BOsBallot,
+  BridgeOperatorsBallotTypes,
+  getProposalHash,
+  VoteStatus,
+  VoteType,
+} from '../../src/script/proposal';
 import {
   IBridge,
   MainchainGovernanceAdmin,
@@ -39,6 +46,8 @@ let signatures: SignatureStruct[];
 let ballot: BOsBallot;
 
 let proposalExpiryDuration = 60;
+let numerator = 7;
+let denominator = 10;
 
 describe('Governance Admin test', () => {
   before(async () => {
@@ -66,8 +75,8 @@ describe('Governance Admin test', () => {
           addedBlock: 0,
         })),
 
-        numerator: 1,
-        denominator: 2,
+        numerator,
+        denominator,
       },
       mainchainGovernanceAdminArguments: {
         relayers: [relayer.address],
@@ -90,124 +99,261 @@ describe('Governance Admin test', () => {
     );
   });
 
-  it('Should be able to propose to change staking config', async () => {
-    const newMinValidatorStakingAmount = 555;
-    const latestTimestamp = await getLastBlockTimestamp();
-    proposal = await governanceAdminInterface.createProposal(
-      latestTimestamp + proposalExpiryDuration,
-      stakingContract.address,
-      0,
-      governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
-        stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [newMinValidatorStakingAmount]),
-      ]),
-      500_000
-    );
-    signatures = await governanceAdminInterface.generateSignatures(proposal);
-    supports = signatures.map(() => VoteType.For);
+  describe('General case of governance admin', async () => {
+    it('Should be able to propose to change staking config', async () => {
+      const newMinValidatorStakingAmount = 555;
+      const latestTimestamp = await getLastBlockTimestamp();
+      proposal = await governanceAdminInterface.createProposal(
+        latestTimestamp + proposalExpiryDuration,
+        stakingContract.address,
+        0,
+        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [newMinValidatorStakingAmount]),
+        ]),
+        500_000
+      );
+      signatures = await governanceAdminInterface.generateSignatures(proposal);
+      supports = signatures.map(() => VoteType.For);
 
-    expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
-      .false;
-    await governanceAdmin
-      .connect(trustedOrgs[0].governor)
-      .proposeProposalStructAndCastVotes(proposal, supports, signatures);
-    expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
-      .true;
-    expect(await stakingContract.minValidatorStakingAmount()).eq(newMinValidatorStakingAmount);
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
+        .false;
+      await governanceAdmin
+        .connect(trustedOrgs[0].governor)
+        .proposeProposalStructAndCastVotes(proposal, supports, signatures);
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
+        .true;
+      expect(await stakingContract.minValidatorStakingAmount()).eq(newMinValidatorStakingAmount);
+    });
+
+    it('Should not be able to reuse already voted signatures or proposals', async () => {
+      await expect(
+        governanceAdmin
+          .connect(trustedOrgs[0].governor)
+          .proposeProposalStructAndCastVotes(proposal, supports, signatures)
+      ).revertedWith('CoreGovernance: invalid proposal nonce');
+    });
+
+    it('Should be able to relay to mainchain governance admin contract', async () => {
+      expect(await mainchainGovernanceAdmin.proposalRelayed(proposal.chainId, proposal.nonce)).to.false;
+      await mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures);
+      expect(await mainchainGovernanceAdmin.proposalRelayed(proposal.chainId, proposal.nonce)).to.true;
+    });
+
+    it('Should not be able to relay again', async () => {
+      await expect(
+        mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures)
+      ).revertedWith('CoreGovernance: invalid proposal nonce');
+    });
+
+    it('Should be able to vote bridge operators', async () => {
+      ballot = {
+        period: 10,
+        operators: trustedOrgs.map((v) => v.bridgeVoter.address),
+      };
+      signatures = await Promise.all(
+        trustedOrgs.map((g) =>
+          g.bridgeVoter
+            ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
+            .then(mapByteSigToSigStruct)
+        )
+      );
+      expect(await governanceAdmin.bridgeOperatorsVoted(ballot.period, trustedOrgs[0].bridgeVoter.address)).to.false;
+      await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures);
+      expect(await governanceAdmin.bridgeOperatorsVoted(ballot.period, trustedOrgs[0].bridgeVoter.address)).to.true;
+    });
+
+    it('Should be able relay vote bridge operators', async () => {
+      expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period)).to.false;
+      await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures);
+      expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period)).to.true;
+      expect(await bridgeContract.getBridgeOperators()).eql(trustedOrgs.map((v) => v.bridgeVoter.address));
+    });
+
+    it('Should not able to relay again', async () => {
+      await expect(
+        mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures)
+      ).revertedWith('BOsGovernanceRelay: query for outdated period');
+    });
+
+    it('Should not be able to use the signatures for another period', async () => {
+      ballot = {
+        period: 100,
+        operators: trustedOrgs.map((v) => v.bridgeVoter.address),
+      };
+      await expect(
+        governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures)
+      ).revertedWith('BOsGovernanceProposal: invalid order');
+    });
+
+    it('Should not be able to vote bridge operators with a smaller period', async () => {
+      ballot = {
+        period: 5,
+        operators: trustedOrgs.map((v) => v.bridgeVoter.address),
+      };
+      signatures = await Promise.all(
+        trustedOrgs.map((g) =>
+          g.bridgeVoter
+            ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
+            .then(mapByteSigToSigStruct)
+        )
+      );
+      await expect(
+        governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures)
+      ).revertedWith('BOsGovernanceProposal: query for outdated period');
+    });
+
+    it('Should be able to vote bridge operators with a larger period', async () => {
+      const duplicatedNumber = 11;
+      ballot = {
+        period: 100,
+        operators: trustedOrgs.map((v, i) => (i < duplicatedNumber ? v.bridgeVoter.address : randomAddress())),
+      };
+      signatures = await Promise.all(
+        trustedOrgs.map((g) =>
+          g.bridgeVoter
+            ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
+            .then(mapByteSigToSigStruct)
+        )
+      );
+      await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures);
+    });
+
+    it('Should be able relay vote bridge operators', async () => {
+      await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures);
+      expect(await bridgeContract.getBridgeOperators()).have.same.members(ballot.operators);
+    });
   });
 
-  it('Should not be able to reuse already voted signatures or proposals', async () => {
-    await expect(
-      governanceAdmin.connect(trustedOrgs[0].governor).proposeProposalStructAndCastVotes(proposal, supports, signatures)
-    ).revertedWith('CoreGovernance: invalid proposal nonce');
-  });
+  describe('Proposal expiry test', async () => {
+    let previousProposal: ProposalDetailStruct;
+    let previousHash: string;
+    let previousSupports: VoteType[];
+    let previousSignatures: SignatureStruct[];
 
-  it('Should be able to relay to mainchain governance admin contract', async () => {
-    expect(await mainchainGovernanceAdmin.proposalRelayed(proposal.chainId, proposal.nonce)).to.false;
-    await mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures);
-    expect(await mainchainGovernanceAdmin.proposalRelayed(proposal.chainId, proposal.nonce)).to.true;
-  });
+    it('Should not be able to propose a proposal with invalid expiry time', async () => {
+      const newMinValidatorStakingAmount = 1337;
+      const latestTimestamp = await getLastBlockTimestamp();
+      const nextTimestamp = latestTimestamp + 1;
+      await network.provider.send('evm_setNextBlockTimestamp', [nextTimestamp]);
 
-  it('Should not be able to relay again', async () => {
-    await expect(mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures)).revertedWith(
-      'CoreGovernance: invalid proposal nonce'
-    );
-  });
+      proposal = await governanceAdminInterface.createProposal(
+        nextTimestamp + proposalExpiryDuration + 1,
+        stakingContract.address,
+        0,
+        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [newMinValidatorStakingAmount]),
+        ]),
+        500_000
+      );
+      signatures = await governanceAdminInterface.generateSignatures(proposal);
+      supports = signatures.map(() => VoteType.For);
 
-  it('Should be able to vote bridge operators', async () => {
-    ballot = {
-      period: 10,
-      operators: trustedOrgs.map((v) => v.bridgeVoter.address),
-    };
-    signatures = await Promise.all(
-      trustedOrgs.map((g) =>
-        g.bridgeVoter
-          ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
-          .then(mapByteSigToSigStruct)
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
+        .false;
+      await expect(
+        governanceAdmin
+          .connect(trustedOrgs[0].governor)
+          .proposeProposalStructAndCastVotes(proposal, supports, signatures)
+      ).revertedWith('Proposal: invalid expiry timestamp');
+    });
+
+    it('Should the expired proposal cannot be voted anymore', async () => {
+      const newMinValidatorStakingAmount = 1337;
+      const latestTimestamp = await getLastBlockTimestamp();
+      const expiryTimestamp = latestTimestamp + proposalExpiryDuration,
+        proposal = await governanceAdminInterface.createProposal(
+          expiryTimestamp,
+          stakingContract.address,
+          0,
+          governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+            stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [
+              newMinValidatorStakingAmount,
+            ]),
+          ]),
+          500_000
+        );
+      previousProposal = proposal;
+      previousHash = getProposalHash(proposal);
+
+      signatures = await governanceAdminInterface.generateSignatures(proposal);
+      supports = signatures.map(() => VoteType.For);
+
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
+        .false;
+
+      const cutOffLength = Math.floor((supports.length * numerator) / denominator);
+
+      await governanceAdmin
+        .connect(trustedOrgs[0].governor)
+        .proposeProposalStructAndCastVotes(
+          proposal,
+          supports.splice(0, cutOffLength - 1),
+          signatures.splice(0, cutOffLength - 1)
+        );
+
+      await network.provider.send('evm_setNextBlockTimestamp', [expiryTimestamp + 1]);
+      expect(
+        await governanceAdmin
+          .connect(trustedOrgs[0].governor)
+          .castProposalBySignatures(proposal, supports.splice(0, 1), signatures.splice(0, 1))
       )
-    );
-    expect(await governanceAdmin.bridgeOperatorsVoted(ballot.period, trustedOrgs[0].bridgeVoter.address)).to.false;
-    await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures);
-    expect(await governanceAdmin.bridgeOperatorsVoted(ballot.period, trustedOrgs[0].bridgeVoter.address)).to.true;
-  });
+        .emit(governanceAdmin, 'ProposalExpired')
+        .withArgs(previousHash);
+      await expect(
+        governanceAdmin
+          .connect(trustedOrgs[0].governor)
+          .castProposalBySignatures(proposal, supports.splice(0, 1), signatures.splice(0, 1))
+      ).revertedWith('CoreGovernance: the vote is finalized');
+    });
 
-  it('Should be able relay vote bridge operators', async () => {
-    expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period)).to.false;
-    await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures);
-    expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period)).to.true;
-    expect(await bridgeContract.getBridgeOperators()).eql(trustedOrgs.map((v) => v.bridgeVoter.address));
-  });
+    it('Should the new proposal replace the expired proposal', async () => {
+      let currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
+      expect(currentProposalVote.hash).eq(previousHash);
+      expect(currentProposalVote.status).eq(VoteStatus.Expired);
 
-  it('Should not able to relay again', async () => {
-    await expect(
-      mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures)
-    ).revertedWith('BOsGovernanceRelay: query for outdated period');
-  });
+      const newMinValidatorStakingAmount = 202881;
+      const latestTimestamp = await getLastBlockTimestamp();
+      const expiryTimestamp = latestTimestamp + proposalExpiryDuration,
+        proposal = await governanceAdminInterface.createProposal(
+          expiryTimestamp,
+          stakingContract.address,
+          0,
+          governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+            stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [
+              newMinValidatorStakingAmount,
+            ]),
+          ]),
+          500_000,
+          BigNumber.from(previousProposal.nonce)
+        );
 
-  it('Should not be able to use the signatures for another period', async () => {
-    ballot = {
-      period: 100,
-      operators: trustedOrgs.map((v) => v.bridgeVoter.address),
-    };
-    await expect(
-      governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures)
-    ).revertedWith('BOsGovernanceProposal: invalid order');
-  });
+      previousSignatures = signatures = await governanceAdminInterface.generateSignatures(proposal);
+      previousSupports = supports = signatures.map(() => VoteType.For);
 
-  it('Should not be able to vote bridge operators with a smaller period', async () => {
-    ballot = {
-      period: 5,
-      operators: trustedOrgs.map((v) => v.bridgeVoter.address),
-    };
-    signatures = await Promise.all(
-      trustedOrgs.map((g) =>
-        g.bridgeVoter
-          ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
-          .then(mapByteSigToSigStruct)
+      await governanceAdmin
+        .connect(trustedOrgs[0].governor)
+        .proposeProposalStructAndCastVotes(proposal, supports.splice(0, 1), signatures.splice(0, 1));
+
+      currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
+      expect(currentProposalVote.hash).not.eq(previousHash);
+      expect(currentProposalVote.status).eq(VoteStatus.Pending);
+
+      await governanceAdmin.connect(trustedOrgs[0].governor).castProposalBySignatures(proposal, supports, signatures);
+      currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
+      expect(currentProposalVote.status).eq(VoteStatus.Executed);
+
+      previousProposal = proposal;
+      previousHash = getProposalHash(proposal);
+    });
+
+    it('Should the approved proposal and the time of expiry pass can be relayed on mainchain', async () => {
+      expect(
+        await mainchainGovernanceAdmin
+          .connect(relayer)
+          .relayProposal(previousProposal, previousSupports, previousSignatures)
       )
-    );
-    await expect(
-      governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures)
-    ).revertedWith('BOsGovernanceProposal: query for outdated period');
-  });
-
-  it('Should be able to vote bridge operators with a larger period', async () => {
-    const duplicatedNumber = 11;
-    ballot = {
-      period: 100,
-      operators: trustedOrgs.map((v, i) => (i < duplicatedNumber ? v.bridgeVoter.address : randomAddress())),
-    };
-    signatures = await Promise.all(
-      trustedOrgs.map((g) =>
-        g.bridgeVoter
-          ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
-          .then(mapByteSigToSigStruct)
-      )
-    );
-    await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures);
-  });
-
-  it('Should be able relay vote bridge operators', async () => {
-    await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures);
-    expect(await bridgeContract.getBridgeOperators()).have.same.members(ballot.operators);
+        .emit(mainchainGovernanceAdmin, 'ProposalApproved')
+        .withArgs(previousHash);
+    });
   });
 });
