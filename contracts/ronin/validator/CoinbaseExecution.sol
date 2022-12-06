@@ -119,7 +119,6 @@ abstract contract CoinbaseExecution is
     }
     _revampBlockProducers(_newPeriod, _currentValidators);
     emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
-    _periodOf[_epoch] = _lastPeriod;
     _periodOf[_epoch + 1] = _newPeriod;
     _lastUpdatedPeriod = _newPeriod;
   }
