@@ -180,7 +180,7 @@ abstract contract CoinbaseExecution is
 
     // Skips slashing in case the total number of votes is too small
     if (_totalVotes <= _skipBridgeOperatorSlashingThreshold) {
-      _bridgeOperatingReward[_validator] = _totalBridgeReward / _totalBallots;
+      _bridgeOperatingReward[_validator] = (_totalBridgeReward * _validatorBallots) / _totalBallots;
       return;
     }
 
@@ -195,7 +195,7 @@ abstract contract CoinbaseExecution is
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       emit ValidatorPunished(_validator, _period, _jailedUntil[_validator], 0, false, true);
     } else if (_totalBallots > 0) {
-      _bridgeOperatingReward[_validator] = _totalBridgeReward / _totalBallots;
+      _bridgeOperatingReward[_validator] = (_totalBridgeReward * _validatorBallots) / _totalBallots;
     }
   }
 
