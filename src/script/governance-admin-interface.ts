@@ -38,9 +38,16 @@ export class GovernanceAdminInterface {
     this.interface = new TransparentUpgradeableProxyV2__factory().interface;
   }
 
-  async createProposal(target: Address, value: BigNumberish, calldata: BytesLike, gasAmount: BigNumberish) {
+  async createProposal(
+    expiryTimestamp: BigNumberish,
+    target: Address,
+    value: BigNumberish,
+    calldata: BytesLike,
+    gasAmount: BigNumberish
+  ) {
     const proposal: ProposalDetailStruct = {
       chainId: network.config.chainId!,
+      expiryTimestamp,
       nonce: (await this.contract.round(network.config.chainId!)).add(1),
       targets: [target],
       values: [value],
@@ -60,8 +67,9 @@ export class GovernanceAdminInterface {
     return signatures;
   }
 
-  async functionDelegateCall(to: Address, data: BytesLike) {
+  async functionDelegateCall(expiryTimestamp: BigNumberish, to: Address, data: BytesLike) {
     const proposal = await this.createProposal(
+      expiryTimestamp,
       to,
       0,
       this.interface.encodeFunctionData('functionDelegateCall', [data]),
@@ -72,13 +80,14 @@ export class GovernanceAdminInterface {
     return this.contract.connect(this.signers[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);
   }
 
-  async functionDelegateCalls(toList: Address[], dataList: BytesLike[]) {
+  async functionDelegateCalls(expiryTimestamp: BigNumberish, toList: Address[], dataList: BytesLike[]) {
     if (toList.length != dataList.length || toList.length == 0) {
       throw Error('invalid array length');
     }
 
     const proposal = {
       chainId: network.config.chainId!,
+      expiryTimestamp,
       nonce: (await this.contract.round(network.config.chainId!)).add(1),
       targets: toList,
       values: toList.map(() => 0),
@@ -91,8 +100,14 @@ export class GovernanceAdminInterface {
     return this.contract.connect(this.signers[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);
   }
 
-  async upgrade(from: Address, to: Address) {
-    const proposal = await this.createProposal(from, 0, this.interface.encodeFunctionData('upgradeTo', [to]), 500_000);
+  async upgrade(expiryTimestamp: BigNumberish, from: Address, to: Address) {
+    const proposal = await this.createProposal(
+      expiryTimestamp,
+      from,
+      0,
+      this.interface.encodeFunctionData('upgradeTo', [to]),
+      500_000
+    );
     const signatures = await this.generateSignatures(proposal);
     const supports = signatures.map(() => VoteType.For);
     return this.contract.connect(this.signers[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);

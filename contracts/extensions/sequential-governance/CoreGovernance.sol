@@ -70,7 +70,9 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _round = round[_chainId];
 
     // Skip checking for the first ever round
-    if (_round > 0) {
+    if (_round == 0) {
+      _round = round[_chainId] = 1;
+    } else {
       ProposalVote storage _latestProposalVote = vote[_chainId][_round];
       if (_latestProposalVote.status == VoteStatus.Expired) {
         _deleteExpiredVotingRound(_latestProposalVote);
@@ -79,6 +81,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
         _round = ++round[_chainId];
       }
     }
+
     vote[_chainId][_round].hash = _proposalHash;
   }
 

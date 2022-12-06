@@ -20,6 +20,7 @@ import { SignatureStruct } from '../../src/types/RoninGovernanceAdmin';
 import { randomAddress } from '../../src/utils';
 import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
 import { initTest } from '../helpers/fixture';
+import { getLastBlockTimestamp } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
 let relayer: SignerWithAddress;
@@ -36,6 +37,8 @@ let proposal: ProposalDetailStruct;
 let supports: VoteType[];
 let signatures: SignatureStruct[];
 let ballot: BOsBallot;
+
+let proposalExpiryDuration = 60;
 
 describe('Governance Admin test', () => {
   before(async () => {
@@ -69,6 +72,9 @@ describe('Governance Admin test', () => {
       mainchainGovernanceAdminArguments: {
         relayers: [relayer.address],
       },
+      governanceAdminArguments: {
+        proposalExpiryDuration,
+      },
     });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -82,7 +88,9 @@ describe('Governance Admin test', () => {
 
   it('Should be able to propose to change staking config', async () => {
     const newMinValidatorStakingAmount = 555;
+    const latestTimestamp = await getLastBlockTimestamp();
     proposal = await governanceAdminInterface.createProposal(
+      latestTimestamp + proposalExpiryDuration,
       stakingContract.address,
       0,
       governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
