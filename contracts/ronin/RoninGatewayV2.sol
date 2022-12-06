@@ -51,6 +51,9 @@ contract RoninGatewayV2 is
   /// @dev The bridge tracking contract
   IBridgeTracking internal _bridgeTrackingContract;
 
+  /// @dev Mapping from withdrawal id => vote for recording withdrawal stats
+  mapping(uint256 => IsolatedVote) public withdrawalStatVote;
+
   fallback() external payable {
     _fallback();
   }
@@ -260,7 +263,8 @@ contract RoninGatewayV2 is
   function bulkSubmitWithdrawalSignatures(uint256[] calldata _withdrawals, bytes[] calldata _signatures) external {
     address _validator = msg.sender;
     // This checks method caller already
-    _getValidatorWeight(_validator);
+    uint256 _weight = _getValidatorWeight(_validator);
+    uint256 _minVoteWeight = minimumVoteWeight();
 
     require(
       _withdrawals.length > 0 && _withdrawals.length == _signatures.length,
@@ -272,6 +276,13 @@ contract RoninGatewayV2 is
       _id = _withdrawals[_i];
       _withdrawalSig[_id][_validator] = _signatures[_i];
       _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Withdrawal, _id, _validator);
+
+      IsolatedVote storage _proposal = withdrawalStatVote[_id];
+      VoteStatus _status = _castVote(_proposal, _validator, _weight, _minVoteWeight, bytes32(_id));
+      if (_status == VoteStatus.Approved) {
+        _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, _id);
+        _proposal.status = VoteStatus.Executed;
+      }
     }
   }
 
@@ -413,8 +424,7 @@ contract RoninGatewayV2 is
     MappedToken memory _token = getMainchainToken(_request.tokenAddr, _chainId);
     require(_request.info.erc == _token.erc, "RoninGatewayV2: invalid token standard");
     _request.info.transferFrom(_requester, address(this), _request.tokenAddr);
-    uint256 _id = _storeAsReceipt(_request, _chainId, _requester, _token.tokenAddr);
-    _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, _id);
+    _storeAsReceipt(_request, _chainId, _requester, _token.tokenAddr);
   }
 
   /**

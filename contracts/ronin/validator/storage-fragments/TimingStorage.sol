@@ -17,11 +17,14 @@ abstract contract TimingStorage is ITimingInfo {
   /// @dev The starting block of the last updated period
   uint256 internal _currentPeriodStartAtBlock;
 
+  /// @dev Mapping from epoch index => period index
+  mapping(uint256 => uint256) internal _periodOf;
+
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[50] private ______gap;
+  uint256[49] private ______gap;
 
   /**
    * @inheritdoc ITimingInfo
@@ -35,6 +38,13 @@ abstract contract TimingStorage is ITimingInfo {
    */
   function epochOf(uint256 _block) public view virtual override returns (uint256) {
     return _block / _numberOfBlocksInEpoch + 1;
+  }
+
+  /**
+   * @inheritdoc ITimingInfo
+   */
+  function periodOf(uint256 _epoch) external view returns (uint256) {
+    return _periodOf[_epoch];
   }
 
   /**

@@ -3,7 +3,6 @@
 pragma solidity ^0.8.9;
 
 import "./MockRoninValidatorSetOverridePrecompile.sol";
-import "../libraries/Sorting.sol";
 import "../../libraries/EnumFlags.sol";
 
 contract MockRoninValidatorSetExtended is MockRoninValidatorSetOverridePrecompile {
