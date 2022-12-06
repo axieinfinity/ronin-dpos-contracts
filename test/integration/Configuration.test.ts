@@ -23,6 +23,7 @@ import {
 } from '../../src/types';
 import { initTest, InitTestInput } from '../helpers/fixture';
 import { randomAddress } from '../../src/utils';
+import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
 
 let stakingVestingContract: StakingVesting;
 let maintenanceContract: Maintenance;
@@ -35,8 +36,8 @@ let bridgeTrackingContract: BridgeTracking;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
-let governor: SignerWithAddress;
-let validatorCandidates: SignerWithAddress[];
+let signers: SignerWithAddress[];
+let trustedOrgs: TrustedOrganizationAddressSet[];
 
 const config: InitTestInput = {
   bridgeContract: randomAddress(),
@@ -56,15 +57,16 @@ const config: InitTestInput = {
     waitingSecsToRevoke: 1000,
   },
   stakingVestingArguments: {
-    blockProducerBonusPerBlock: 1,
-    bridgeOperatorBonusPerBlock: 1,
-    topupAmount: BigNumber.from(10000),
+    blockProducerBonusPerBlock: 1_000,
+    bridgeOperatorBonusPerBlock: 1_100,
+    topupAmount: BigNumber.from(10_000_000),
   },
   slashIndicatorArguments: {
     bridgeOperatorSlashing: {
       missingVotesRatioTier1: 10_00, // 10%
       missingVotesRatioTier2: 20_00, // 20%
       jailDurationForMissingVotesRatioTier2: 28800 * 2,
+      skipBridgeOperatorSlashingThreshold: 7777777,
     },
     bridgeVotingSlashing: {
       bridgeVotingThreshold: 28800 * 3,
@@ -86,6 +88,7 @@ const config: InitTestInput = {
     maxPrioritizedValidatorNumber: 0,
     numberOfBlocksInEpoch: 600,
     maxValidatorCandidate: 10,
+    minEffectiveDaysOnwards: 7,
   },
   roninTrustedOrganizationArguments: {
     trustedOrganizations: [],
@@ -100,11 +103,14 @@ const config: InitTestInput = {
 
 describe('[Integration] Configuration check', () => {
   before(async () => {
-    [coinbase, deployer, governor, ...validatorCandidates] = await ethers.getSigners();
-    config.roninTrustedOrganizationArguments!.trustedOrganizations = [governor].map((v) => ({
-      consensusAddr: v.address,
-      governor: v.address,
-      bridgeVoter: v.address,
+    [coinbase, deployer, ...signers] = await ethers.getSigners();
+
+    trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
+
+    config.roninTrustedOrganizationArguments!.trustedOrganizations = trustedOrgs.map((v) => ({
+      consensusAddr: v.consensusAddr.address,
+      governor: v.governor.address,
+      bridgeVoter: v.bridgeVoter.address,
       weight: 100,
       addedBlock: 0,
     }));
@@ -168,10 +174,10 @@ describe('[Integration] Configuration check', () => {
         })
       )
     ).eql(
-      [governor].map((v) => ({
-        consensusAddr: v.address,
-        governor: v.address,
-        bridgeVoter: v.address,
+      trustedOrgs.map((v) => ({
+        consensusAddr: v.consensusAddr.address,
+        governor: v.governor.address,
+        bridgeVoter: v.bridgeVoter.address,
         weight: BigNumber.from(100),
         addedBlock: undefined,
       }))
@@ -193,6 +199,7 @@ describe('[Integration] Configuration check', () => {
         config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier1,
         config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier2,
         config.slashIndicatorArguments?.bridgeOperatorSlashing?.jailDurationForMissingVotesRatioTier2,
+        config.slashIndicatorArguments?.bridgeOperatorSlashing?.skipBridgeOperatorSlashingThreshold,
       ].map(BigNumber.from)
     );
   });
@@ -233,6 +240,9 @@ describe('[Integration] Configuration check', () => {
     );
     expect(await validatorContract.maxPrioritizedValidatorNumber()).to.eq(
       config.roninValidatorSetArguments?.maxPrioritizedValidatorNumber
+    );
+    expect(await validatorContract.minEffectiveDaysOnwards()).to.eq(
+      config.roninValidatorSetArguments?.minEffectiveDaysOnwards
     );
     expect(await validatorContract.numberOfBlocksInEpoch()).to.eq(
       config.roninValidatorSetArguments?.numberOfBlocksInEpoch

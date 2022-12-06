@@ -96,6 +96,7 @@ export interface BridgeOperatorSlashingConfig {
   missingVotesRatioTier1?: BigNumberish;
   missingVotesRatioTier2?: BigNumberish;
   jailDurationForMissingVotesRatioTier2?: BigNumberish;
+  skipBridgeOperatorSlashingThreshold?: BigNumberish;
 }
 
 export interface BridgeVotingSlashingConfig {
@@ -139,6 +140,7 @@ export interface RoninValidatorSetArguments {
   maxValidatorCandidate?: BigNumberish;
   maxPrioritizedValidatorNumber?: BigNumberish;
   numberOfBlocksInEpoch?: BigNumberish;
+  minEffectiveDaysOnwards?: BigNumberish;
 }
 
 export interface RoninValidatorSetConfig {

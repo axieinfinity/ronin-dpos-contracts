@@ -24,6 +24,13 @@ interface ICandidateStaking is IRewardPool {
     uint256 amount,
     uint256 contractBalance
   );
+  /// @dev Emitted when the staking amount deducted failed, e.g. when the validator gets slashed.
+  event StakingAmountDeductFailed(
+    address indexed validator,
+    address indexed recipient,
+    uint256 amount,
+    uint256 contractBalance
+  );
 
   /**
    * @dev Returns the minimum threshold for being a validator candidate.
@@ -99,6 +106,25 @@ interface ICandidateStaking is IRewardPool {
    *
    */
   function unstake(address _consensusAddr, uint256 _amount) external;
+
+  /**
+   * @dev Pool admin requests update validator commission rate. The request will be forwarded to the candidate manager
+   * contract, and the value is getting updated in {ICandidateManager-execRequestUpdateCommissionRate}.
+   *
+   * Requirements:
+   * - The consensus address is a validator candidate.
+   * - The method caller is the pool admin.
+   * - The `_effectiveDaysOnwards` must be equal to or larger than the {CandidateManager-_minEffectiveDaysOnwards}.
+   * - The `_rate` must be in range of [0_00; 100_00].
+   *
+   * Emits the event `CommissionRateUpdated`.
+   *
+   */
+  function requestUpdateCommissionRate(
+    address _consensusAddr,
+    uint256 _effectiveDaysOnwards,
+    uint256 _commissionRate
+  ) external;
 
   /**
    * @dev Renounces being a validator candidate and takes back the delegating/staking amount.

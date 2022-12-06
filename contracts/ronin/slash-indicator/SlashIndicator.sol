@@ -34,7 +34,8 @@ contract SlashIndicator is
     // _bridgeOperatorSlashingConfigs[0]: _missingVotesRatioTier1
     // _bridgeOperatorSlashingConfigs[1]: _missingVotesRatioTier2
     // _bridgeOperatorSlashingConfigs[2]: _jailDurationForMissingVotesRatioTier2
-    uint256[3] calldata _bridgeOperatorSlashingConfigs,
+    // _bridgeOperatorSlashingConfigs[3]: _skipBridgeOperatorSlashingThreshold
+    uint256[4] calldata _bridgeOperatorSlashingConfigs,
     // _bridgeVotingSlashingConfigs[0]: _bridgeVotingThreshold
     // _bridgeVotingSlashingConfigs[1]: _bridgeVotingSlashAmount
     uint256[2] calldata _bridgeVotingSlashingConfigs,
@@ -59,7 +60,8 @@ contract SlashIndicator is
     _setBridgeOperatorSlashingConfigs(
       _bridgeOperatorSlashingConfigs[0],
       _bridgeOperatorSlashingConfigs[1],
-      _bridgeOperatorSlashingConfigs[2]
+      _bridgeOperatorSlashingConfigs[2],
+      _bridgeOperatorSlashingConfigs[3]
     );
     _setBridgeVotingSlashingConfigs(_bridgeVotingSlashingConfigs[0], _bridgeVotingSlashingConfigs[1]);
     _setDoubleSignSlashingConfigs(_doubleSignSlashingConfigs[0], _doubleSignSlashingConfigs[1]);
@@ -107,6 +109,6 @@ contract SlashIndicator is
     return
       (msg.sender != _addr) &&
       _validatorContract.isBlockProducer(_addr) &&
-      !_maintenanceContract.maintaining(_addr, block.number);
+      !_maintenanceContract.checkMaintained(_addr, block.number);
   }
 }

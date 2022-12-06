@@ -16,6 +16,7 @@ import {
 } from '../../src/types';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
+import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
 
 let validatorContract: MockRoninValidatorSetExtended;
 let slashIndicator: MockSlashIndicatorExtended;
@@ -25,6 +26,8 @@ let governanceAdminInterface: GovernanceAdminInterface;
 
 let deployer: SignerWithAddress;
 let governor: SignerWithAddress;
+let signers: SignerWithAddress[];
+let trustedOrgs: TrustedOrganizationAddressSet[];
 let candidates: Address[];
 
 const slashAmountForUnavailabilityTier2Threshold = 100;
@@ -84,7 +87,9 @@ const sortArrayByBoolean = (indexes: number[], statuses: boolean[]) => {
 
 describe('Arrange validators', () => {
   before(async () => {
-    [deployer, governor] = await ethers.getSigners();
+    [deployer, governor, ...signers] = await ethers.getSigners();
+    trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
+
     candidates = Array.from({ length: maxValidatorCandidate }, (_, i) =>
       ethers.utils.hexZeroPad(ethers.utils.hexlify(i + 0x40), 20)
     );
@@ -106,10 +111,10 @@ describe('Arrange validators', () => {
         maxPrioritizedValidatorNumber,
       },
       roninTrustedOrganizationArguments: {
-        trustedOrganizations: [governor].map((v) => ({
-          consensusAddr: v.address,
-          governor: v.address,
-          bridgeVoter: v.address,
+        trustedOrganizations: trustedOrgs.map((v) => ({
+          consensusAddr: v.consensusAddr.address,
+          governor: v.governor.address,
+          bridgeVoter: v.bridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
@@ -119,7 +124,7 @@ describe('Arrange validators', () => {
     slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
     roninTrustedOrganization = RoninTrustedOrganization__factory.connect(roninTrustedOrganizationAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
-    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, governor);
+    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, ...trustedOrgs.map((_) => _.governor));
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();

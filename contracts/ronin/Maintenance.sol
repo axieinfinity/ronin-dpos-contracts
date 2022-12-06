@@ -84,7 +84,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
       _validator.isCandidateAdmin(_consensusAddr, msg.sender),
       "Maintenance: method caller must be a candidate admin"
     );
-    require(!scheduled(_consensusAddr), "Maintenance: already scheduled");
+    require(!checkScheduled(_consensusAddr), "Maintenance: already scheduled");
     require(totalSchedules() < maxSchedules, "Maintenance: exceeds total of schedules");
     require(
       _startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule),
@@ -116,7 +116,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function bulkMaintaining(address[] calldata _addrList, uint256 _block)
+  function checkManyMaintained(address[] calldata _addrList, uint256 _block)
     external
     view
     override
@@ -124,14 +124,14 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   {
     _resList = new bool[](_addrList.length);
     for (uint _i = 0; _i < _addrList.length; _i++) {
-      _resList[_i] = maintaining(_addrList[_i], _block);
+      _resList[_i] = checkMaintained(_addrList[_i], _block);
     }
   }
 
   /**
    * @inheritdoc IMaintenance
    */
-  function bulkMaintainingInBlockRange(
+  function checkManyMaintainedInBlockRange(
     address[] calldata _addrList,
     uint256 _fromBlock,
     uint256 _toBlock
@@ -148,7 +148,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   function totalSchedules() public view override returns (uint256 _count) {
     address[] memory _validators = _validatorContract.getValidators();
     for (uint _i = 0; _i < _validators.length; _i++) {
-      if (scheduled(_validators[_i])) {
+      if (checkScheduled(_validators[_i])) {
         _count++;
       }
     }
@@ -157,7 +157,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function maintaining(address _consensusAddr, uint256 _block) public view returns (bool) {
+  function checkMaintained(address _consensusAddr, uint256 _block) public view returns (bool) {
     Schedule storage _s = _schedule[_consensusAddr];
     return _s.from <= _block && _block <= _s.to;
   }
@@ -165,7 +165,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function maintainingInBlockRange(
+  function checkMaintainedInBlockRange(
     address _consensusAddr,
     uint256 _fromBlock,
     uint256 _toBlock
@@ -176,7 +176,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function scheduled(address _consensusAddr) public view override returns (bool) {
+  function checkScheduled(address _consensusAddr) public view override returns (bool) {
     return block.number <= _schedule[_consensusAddr].to;
   }
 

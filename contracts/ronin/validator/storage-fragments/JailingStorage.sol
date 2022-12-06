@@ -24,14 +24,14 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @inheritdoc IJailingInfo
    */
-  function jailed(address _addr) external view override returns (bool) {
-    return jailedAtBlock(_addr, block.number);
+  function checkJailed(address _addr) external view override returns (bool) {
+    return checkJailedAtBlock(_addr, block.number);
   }
 
   /**
    * @inheritdoc IJailingInfo
    */
-  function jailedTimeLeft(address _addr)
+  function getJailedTimeLeft(address _addr)
     external
     view
     override
@@ -41,20 +41,20 @@ abstract contract JailingStorage is IJailingInfo {
       uint256 epochLeft_
     )
   {
-    return jailedTimeLeftAtBlock(_addr, block.number);
+    return getJailedTimeLeftAtBlock(_addr, block.number);
   }
 
   /**
    * @inheritdoc IJailingInfo
    */
-  function jailedAtBlock(address _addr, uint256 _blockNum) public view override returns (bool) {
+  function checkJailedAtBlock(address _addr, uint256 _blockNum) public view override returns (bool) {
     return _jailedAtBlock(_addr, _blockNum);
   }
 
   /**
    * @inheritdoc IJailingInfo
    */
-  function jailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
+  function getJailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
     public
     view
     override
@@ -77,7 +77,7 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @inheritdoc IJailingInfo
    */
-  function bulkJailed(address[] calldata _addrList) external view override returns (bool[] memory _result) {
+  function checkManyJailed(address[] calldata _addrList) external view override returns (bool[] memory _result) {
     _result = new bool[](_addrList.length);
     for (uint256 _i; _i < _addrList.length; _i++) {
       _result[_i] = _jailed(_addrList[_i]);
@@ -87,7 +87,7 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @inheritdoc IJailingInfo
    */
-  function miningRewardDeprecated(address[] calldata _blockProducers)
+  function checkMiningRewardDeprecated(address[] calldata _blockProducers)
     external
     view
     override
@@ -103,7 +103,7 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @inheritdoc IJailingInfo
    */
-  function miningRewardDeprecatedAtPeriod(address[] calldata _blockProducers, uint256 _period)
+  function checkMiningRewardDeprecatedAtPeriod(address[] calldata _blockProducers, uint256 _period)
     external
     view
     override
@@ -116,12 +116,12 @@ abstract contract JailingStorage is IJailingInfo {
   }
 
   /**
-   * @dev See {ITimingInfo-epochOf}
+   * @dev See `ITimingInfo-epochOf`
    */
   function epochOf(uint256 _block) public view virtual returns (uint256);
 
   /**
-   * @dev See {ITimingInfo-currentPeriod}
+   * @dev See `ITimingInfo-currentPeriod`
    */
   function currentPeriod() public view virtual returns (uint256);
 

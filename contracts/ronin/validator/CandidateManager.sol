@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "../../extensions/collections/HasStakingContract.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/validator/ICandidateManager.sol";
@@ -19,10 +20,18 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   mapping(address => ValidatorCandidate) internal _candidateInfo;
 
   /**
+   * @dev The minimum offset in day from current date to the effective date of a new commission schedule.
+   * Value of 1 means the change gets affected at the beginning of the following day.
+   **/
+  uint256 internal _minEffectiveDaysOnwards;
+  /// @dev Mapping from candidate address => schedule commission change.
+  mapping(address => CommissionSchedule) internal _candidateCommissionChangeSchedule;
+
+  /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[50] private ______gap;
+  uint256[48] private ______gap;
 
   /**
    * @inheritdoc ICandidateManager
@@ -34,8 +43,22 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /**
    * @inheritdoc ICandidateManager
    */
+  function minEffectiveDaysOnwards() external view override returns (uint256) {
+    return _minEffectiveDaysOnwards;
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
   function setMaxValidatorCandidate(uint256 _number) external override onlyAdmin {
     _setMaxValidatorCandidate(_number);
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
+  function setMinEffectiveDaysOnwards(uint256 _numOfDays) external override onlyAdmin {
+    _setMinEffectiveDaysOnwards(_numOfDays);
   }
 
   /**
@@ -53,17 +76,55 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     require(!isValidatorCandidate(_consensusAddr), "CandidateManager: query for already existent candidate");
     require(_commissionRate <= _MAX_PERCENTAGE, "CandidateManager: invalid comission rate");
 
+    for (uint _i = 0; _i < _candidates.length; _i++) {
+      ValidatorCandidate storage existentInfo = _candidateInfo[_candidates[_i]];
+
+      if (_admin == existentInfo.admin) {
+        revert(
+          string(
+            abi.encodePacked(
+              "CandidateManager: candidate admin address ",
+              Strings.toHexString(uint160(_admin), 20),
+              " is already exist"
+            )
+          )
+        );
+      }
+
+      if (_treasuryAddr == existentInfo.treasuryAddr) {
+        revert(
+          string(
+            abi.encodePacked(
+              "CandidateManager: treasury address ",
+              Strings.toHexString(uint160(address(_treasuryAddr)), 20),
+              " is already exist"
+            )
+          )
+        );
+      }
+
+      if (_bridgeOperatorAddr == existentInfo.bridgeOperatorAddr) {
+        revert(
+          string(
+            abi.encodePacked(
+              "CandidateManager: bridge operator address ",
+              Strings.toHexString(uint160(_bridgeOperatorAddr), 20),
+              " is already exist"
+            )
+          )
+        );
+      }
+    }
+
     _candidateIndex[_consensusAddr] = ~_length;
     _candidates.push(_consensusAddr);
-    _candidateInfo[_consensusAddr] = ValidatorCandidate(
-      _admin,
-      _consensusAddr,
-      _treasuryAddr,
-      _bridgeOperatorAddr,
-      _commissionRate,
-      type(uint256).max,
-      new bytes(0)
-    );
+
+    ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
+    _info.admin = _admin;
+    _info.consensusAddr = _consensusAddr;
+    _info.treasuryAddr = _treasuryAddr;
+    _info.bridgeOperatorAddr = _bridgeOperatorAddr;
+    _info.commissionRate = _commissionRate;
     emit CandidateGranted(_consensusAddr, _treasuryAddr, _admin, _bridgeOperatorAddr);
   }
 
@@ -72,13 +133,35 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    */
   function requestRevokeCandidate(address _consensusAddr, uint256 _secsLeft) external override onlyStakingContract {
     require(isValidatorCandidate(_consensusAddr), "CandidateManager: query for non-existent candidate");
-    uint256 _revokedTimestamp = block.timestamp + _secsLeft;
+    ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
+    require(_info.revokingTimestamp == 0, "CandidateManager: already requested before");
+
+    uint256 _revokingTimestamp = block.timestamp + _secsLeft;
+    _info.revokingTimestamp = _revokingTimestamp;
+    emit CandidateRevokingTimestampUpdated(_consensusAddr, _revokingTimestamp);
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
+  function execRequestUpdateCommissionRate(
+    address _consensusAddr,
+    uint256 _effectiveDaysOnwards,
+    uint256 _commissionRate
+  ) external override onlyStakingContract {
     require(
-      _revokedTimestamp < _candidateInfo[_consensusAddr].revokedTimestamp,
-      "CandidateManager: invalid revoked timestamp"
+      _candidateCommissionChangeSchedule[_consensusAddr].effectiveTimestamp == 0,
+      "CandidateManager: commission change schedule exists"
     );
-    _candidateInfo[_consensusAddr].revokedTimestamp = _revokedTimestamp;
-    emit CandidateRevokedTimestampUpdated(_consensusAddr, _revokedTimestamp);
+    require(_commissionRate <= _MAX_PERCENTAGE, "CandidateManager: invalid commission rate");
+    require(_effectiveDaysOnwards >= _minEffectiveDaysOnwards, "CandidateManager: invalid effective date");
+
+    CommissionSchedule storage _schedule = _candidateCommissionChangeSchedule[_consensusAddr];
+    uint256 _effectiveTimestamp = ((block.timestamp / 1 days) + _effectiveDaysOnwards) * 1 days;
+    _schedule.effectiveTimestamp = _effectiveTimestamp;
+    _schedule.commissionRate = _commissionRate;
+
+    emit CommissionRateUpdateScheduled(_consensusAddr, _effectiveTimestamp, _commissionRate);
   }
 
   /**
@@ -115,31 +198,63 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
 
   /**
    * @dev Removes unsastisfied candidates, the ones who have insufficient minimum candidate staking amount,
-   * or the ones who revoked their candidate role.
+   * or the ones who requested to renounce their candidate role.
    *
    * Emits the event `CandidatesRevoked` when a candidate is revoked.
    *
    */
-  function _removeUnsatisfiedCandidates() internal {
+  function _syncCandidateSet() internal {
     IStaking _staking = _stakingContract;
-    uint256 _minStakingAmount = _stakingContract.minValidatorStakingAmount();
-    uint256[] memory _selfStakings = _staking.bulkSelfStaking(_candidates);
+    uint256 _waitingSecsToRevoke = _staking.waitingSecsToRevoke();
+    uint256 _minStakingAmount = _staking.minValidatorStakingAmount();
+    uint256[] memory _selfStakings = _staking.getManySelfStakings(_candidates);
 
     uint256 _length = _candidates.length;
     uint256 _unsatisfiedCount;
     address[] memory _unsatisfiedCandidates = new address[](_length);
 
     {
-      address _addr;
       uint256 _i;
+      address _addr;
+      ValidatorCandidate storage _info;
       while (_i < _length) {
         _addr = _candidates[_i];
-        if (_selfStakings[_i] < _minStakingAmount || _candidateInfo[_addr].revokedTimestamp <= block.timestamp) {
+        _info = _candidateInfo[_addr];
+
+        // Checks for under-balance status of candidates
+        bool _hasTopupDeadline = _info.topupDeadline != 0;
+        if (_selfStakings[_i] < _minStakingAmount) {
+          // Updates deadline on the first time unsatisfied the staking amount condition
+          if (!_hasTopupDeadline) {
+            uint256 _topupDeadline = block.timestamp + _waitingSecsToRevoke;
+            _info.topupDeadline = _topupDeadline;
+            emit CandidateTopupDeadlineUpdated(_addr, _topupDeadline);
+          }
+        } else if (_hasTopupDeadline) {
+          // Removes the deadline if the staking amount condition is satisfied
+          delete _info.topupDeadline;
+          emit CandidateTopupDeadlineUpdated(_addr, 0);
+        }
+
+        // Removes unsastisfied candidates
+        bool _revokingActivated = _info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp;
+        bool _topupDeadlineMissed = _info.topupDeadline != 0 && _info.topupDeadline <= block.timestamp;
+        if (_revokingActivated || _topupDeadlineMissed) {
           _selfStakings[_i] = _selfStakings[--_length];
           _unsatisfiedCandidates[_unsatisfiedCount++] = _addr;
           _removeCandidate(_addr);
           continue;
         }
+
+        // Checks for schedule of commission change and updates commission rate
+        uint256 _scheduleTimestamp = _candidateCommissionChangeSchedule[_addr].effectiveTimestamp;
+        if (_scheduleTimestamp != 0 && _scheduleTimestamp <= block.timestamp) {
+          uint256 _commisionRate = _candidateCommissionChangeSchedule[_addr].commissionRate;
+          delete _candidateCommissionChangeSchedule[_addr];
+          _info.commissionRate = _commisionRate;
+          emit CommissionRateUpdated(_addr, _commisionRate);
+        }
+
         _i++;
       }
     }
@@ -161,28 +276,6 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   }
 
   /**
-   * @dev Removes the candidate.
-   */
-  function _removeCandidate(address _addr) internal {
-    uint256 _idx = _candidateIndex[_addr];
-    if (_idx == 0) {
-      return;
-    }
-
-    delete _candidateInfo[_addr];
-    delete _candidateIndex[_addr];
-
-    address _lastCandidate = _candidates[_candidates.length - 1];
-
-    if (_lastCandidate != _addr) {
-      _candidateIndex[_lastCandidate] = _idx;
-      _candidates[~_idx] = _lastCandidate;
-    }
-
-    _candidates.pop();
-  }
-
-  /**
    * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
    */
   function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address) {
@@ -198,5 +291,40 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   function _setMaxValidatorCandidate(uint256 _threshold) internal {
     _maxValidatorCandidate = _threshold;
     emit MaxValidatorCandidateUpdated(_threshold);
+  }
+
+  /**
+   * @dev Sets the minimum number of days onwards to the effective date of commission rate change.
+   *
+   * Emits the `MinEffectiveDaysOnwardsUpdated` event.
+   *
+   */
+  function _setMinEffectiveDaysOnwards(uint256 _numOfDays) internal {
+    require(_numOfDays >= 1, "CandidateManager: invalid min effective days onwards");
+    _minEffectiveDaysOnwards = _numOfDays;
+    emit MinEffectiveDaysOnwardsUpdated(_numOfDays);
+  }
+
+  /**
+   * @dev Removes the candidate.
+   */
+  function _removeCandidate(address _addr) private {
+    uint256 _idx = _candidateIndex[_addr];
+    if (_idx == 0) {
+      return;
+    }
+
+    delete _candidateInfo[_addr];
+    delete _candidateIndex[_addr];
+    delete _candidateCommissionChangeSchedule[_addr];
+
+    address _lastCandidate = _candidates[_candidates.length - 1];
+
+    if (_lastCandidate != _addr) {
+      _candidateIndex[_lastCandidate] = _idx;
+      _candidates[~_idx] = _lastCandidate;
+    }
+
+    _candidates.pop();
   }
 }

@@ -187,4 +187,21 @@ export const expects = {
       1
     );
   },
+
+  emitDeprecatedRewardRecycledEvent: async function (
+    tx: ContractTransaction,
+    expectingWithdrawnTarget: string,
+    expectingWithdrawnAmount: BigNumberish
+  ) {
+    await expectEvent(
+      contractInterface,
+      'DeprecatedRewardRecycled',
+      tx,
+      (event) => {
+        expect(event.args[0], 'invalid withdraw target').eq(expectingWithdrawnTarget);
+        expect(event.args[1], 'invalid withdraw amount').eql(expectingWithdrawnAmount);
+      },
+      1
+    );
+  },
 };

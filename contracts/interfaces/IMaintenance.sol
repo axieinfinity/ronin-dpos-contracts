@@ -21,28 +21,28 @@ interface IMaintenance {
   );
 
   /**
-   * @dev Returns whether the validator `_consensusAddr` is maintaining at the block number `_block`.
+   * @dev Returns whether the validator `_consensusAddr` maintained at the block number `_block`.
    */
-  function maintaining(address _consensusAddr, uint256 _block) external view returns (bool);
+  function checkMaintained(address _consensusAddr, uint256 _block) external view returns (bool);
 
   /**
-   * @dev Returns whether the validator `_consensusAddr` was maintaining in the inclusive range [`_fromBlock`, `_toBlock`] of blocks.
+   * @dev Returns whether the validator `_consensusAddr` maintained in the inclusive range [`_fromBlock`, `_toBlock`] of blocks.
    */
-  function maintainingInBlockRange(
+  function checkMaintainedInBlockRange(
     address _consensusAddr,
     uint256 _fromBlock,
     uint256 _toBlock
   ) external view returns (bool);
 
   /**
-   * @dev Returns the bool array indicating the validator is maintaining or not.
+   * @dev Returns the bool array indicating the validators maintained at block number `_block` or not.
    */
-  function bulkMaintaining(address[] calldata _addrList, uint256 _block) external view returns (bool[] memory);
+  function checkManyMaintained(address[] calldata _addrList, uint256 _block) external view returns (bool[] memory);
 
   /**
-   * @dev Returns a bool array indicating the validator was maintaining in the inclusive range [`_fromBlock`, `_toBlock`] of blocks or not.
+   * @dev Returns a bool array indicating the validators maintained in the inclusive range [`_fromBlock`, `_toBlock`] of blocks or not.
    */
-  function bulkMaintainingInBlockRange(
+  function checkManyMaintainedInBlockRange(
     address[] calldata _addrList,
     uint256 _fromBlock,
     uint256 _toBlock
@@ -51,7 +51,7 @@ interface IMaintenance {
   /**
    * @dev Returns whether the validator `_consensusAddr` has scheduled.
    */
-  function scheduled(address _consensusAddr) external view returns (bool);
+  function checkScheduled(address _consensusAddr) external view returns (bool);
 
   /**
    * @dev Returns the detailed schedule of the validator `_consensusAddr`.
@@ -59,14 +59,9 @@ interface IMaintenance {
   function getSchedule(address _consensusAddr) external view returns (Schedule memory);
 
   /**
-   * @dev Returns the min duration for maintenance in block.
+   * @dev Returns the total of current schedules.
    */
-  function minMaintenanceDurationInBlock() external view returns (uint256);
-
-  /**
-   * @dev Returns the max duration for maintenance in block.
-   */
-  function maxMaintenanceDurationInBlock() external view returns (uint256);
+  function totalSchedules() external view returns (uint256 _count);
 
   /**
    * @dev Sets the duration restriction, start time restriction, and max allowed for maintenance.
@@ -88,6 +83,16 @@ interface IMaintenance {
   ) external;
 
   /**
+   * @dev Returns the min duration for maintenance in block.
+   */
+  function minMaintenanceDurationInBlock() external view returns (uint256);
+
+  /**
+   * @dev Returns the max duration for maintenance in block.
+   */
+  function maxMaintenanceDurationInBlock() external view returns (uint256);
+
+  /**
    * @dev The offset to the min block number that the schedule can start
    */
   function minOffsetToStartSchedule() external view returns (uint256);
@@ -101,11 +106,6 @@ interface IMaintenance {
    * @dev Returns the max number of scheduled maintenances.
    */
   function maxSchedules() external view returns (uint256);
-
-  /**
-   * @dev Returns the total of current schedules.
-   */
-  function totalSchedules() external view returns (uint256 _count);
 
   /**
    * @dev Schedules for maintenance from `_startedAtBlock` to `_startedAtBlock`.

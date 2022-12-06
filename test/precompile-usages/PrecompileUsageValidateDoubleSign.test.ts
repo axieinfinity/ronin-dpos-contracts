@@ -10,13 +10,13 @@ import {
 } from '../../src/types';
 
 let deployer: SignerWithAddress;
-let validatorCandidates: SignerWithAddress[];
+let signers: SignerWithAddress[];
 let precompileValidating: MockPrecompile;
 let usageValidating: MockPrecompileUsageValidateDoubleSign;
 
 describe('[Precompile] Validate double sign test', () => {
   before(async () => {
-    [deployer, ...validatorCandidates] = await ethers.getSigners();
+    [deployer, ...signers] = await ethers.getSigners();
 
     precompileValidating = await new MockPrecompile__factory(deployer).deploy();
     usageValidating = await new MockPrecompileUsageValidateDoubleSign__factory(deployer).deploy(

@@ -19,6 +19,12 @@ import { mineBatchTxs } from '../helpers/utils';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import { Address } from 'hardhat-deploy/dist/types';
+import {
+  createManyTrustedOrganizationAddressSets,
+  createManyValidatorCandidateAddressSets,
+  TrustedOrganizationAddressSet,
+  ValidatorCandidateAddressSet,
+} from '../helpers/address-set-types';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
@@ -28,8 +34,9 @@ let governanceAdminInterface: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
-let governor: SignerWithAddress;
-let validatorCandidates: SignerWithAddress[];
+let signers: SignerWithAddress[];
+let trustedOrgs: TrustedOrganizationAddressSet[];
+let validatorCandidates: ValidatorCandidateAddressSet[];
 
 const unavailabilityTier2Threshold = 10;
 const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(1);
@@ -41,8 +48,11 @@ describe('[Integration] Wrap up epoch', () => {
   const blockRewardAmount = BigNumber.from(2);
 
   before(async () => {
-    [deployer, coinbase, governor, ...validatorCandidates] = await ethers.getSigners();
+    [deployer, coinbase, ...signers] = await ethers.getSigners();
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+
+    trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
+    validatorCandidates = createManyValidatorCandidateAddressSets(signers.splice(0, maxValidatorNumber * 3 * 5));
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
       await initTest('ActionWrapUpEpoch')({
@@ -59,10 +69,10 @@ describe('[Integration] Wrap up epoch', () => {
           minValidatorStakingAmount,
         },
         roninTrustedOrganizationArguments: {
-          trustedOrganizations: [governor].map((v) => ({
-            consensusAddr: v.address,
-            governor: v.address,
-            bridgeVoter: v.address,
+          trustedOrganizations: trustedOrgs.map((v) => ({
+            consensusAddr: v.consensusAddr.address,
+            governor: v.governor.address,
+            bridgeVoter: v.bridgeVoter.address,
             weight: 100,
             addedBlock: 0,
           })),
@@ -75,7 +85,7 @@ describe('[Integration] Wrap up epoch', () => {
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
-    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, governor);
+    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, ...trustedOrgs.map((_) => _.governor));
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
@@ -116,19 +126,19 @@ describe('[Integration] Wrap up epoch', () => {
 
   describe('Flow test on one validator', async () => {
     let wrapUpTx: ContractTransaction;
-    let validators: SignerWithAddress[];
+    let validators: ValidatorCandidateAddressSet[];
 
     before(async () => {
       validators = validatorCandidates.slice(0, 4);
 
       for (let i = 0; i < validators.length; i++) {
         await stakingContract
-          .connect(validatorCandidates[i])
+          .connect(validatorCandidates[i].poolAdmin)
           .applyValidatorCandidate(
-            validatorCandidates[i].address,
-            validatorCandidates[i].address,
-            validatorCandidates[i].address,
-            validatorCandidates[i].address,
+            validatorCandidates[i].candidateAdmin.address,
+            validatorCandidates[i].consensusAddr.address,
+            validatorCandidates[i].treasuryAddr.address,
+            validatorCandidates[i].bridgeOperator.address,
             2_00,
             {
               value: minValidatorStakingAmount.mul(2).add(i),
@@ -142,8 +152,8 @@ describe('[Integration] Wrap up epoch', () => {
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
 
-      await network.provider.send('hardhat_setCoinbase', [validators[3].address]);
-      validatorContract = validatorContract.connect(validators[3]);
+      await network.provider.send('hardhat_setCoinbase', [validators[3].consensusAddr.address]);
+      validatorContract = validatorContract.connect(validators[3].consensusAddr);
       await validatorContract.submitBlockReward({
         value: blockRewardAmount,
       });
@@ -179,7 +189,7 @@ describe('[Integration] Wrap up epoch', () => {
             undefined,
             validators
               .slice(1, 4)
-              .map((_) => _.address)
+              .map((_) => _.consensusAddr.address)
               .reverse()
           );
         });
@@ -188,8 +198,10 @@ describe('[Integration] Wrap up epoch', () => {
 
     describe('Wrap up epoch: at the end of the period', async () => {
       before(async () => {
-        await validatorContract.addValidators(validators.map((v) => v.address));
-        await Promise.all(validators.map((v) => slashContract.connect(coinbase).slashUnavailability(v.address)));
+        await validatorContract.addValidators(validators.map((v) => v.consensusAddr.address));
+        await Promise.all(
+          validators.map((v) => slashContract.connect(coinbase).slashUnavailability(v.consensusAddr.address))
+        );
       });
 
       it('Should the ValidatorSet not reset counter, when the period is not ended', async () => {
@@ -198,8 +210,12 @@ describe('[Integration] Wrap up epoch', () => {
           wrapUpTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
         expect(
-          await Promise.all(validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.address)))
-        ).eql(validators.map((v) => (v.address == coinbase.address ? BigNumber.from(0) : BigNumber.from(1))));
+          await Promise.all(
+            validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.consensusAddr.address))
+          )
+        ).eql(
+          validators.map((v) => (v.consensusAddr.address == coinbase.address ? BigNumber.from(0) : BigNumber.from(1)))
+        );
       });
 
       it('Should the ValidatorSet reset counter in SlashIndicator contract', async () => {
@@ -209,7 +225,9 @@ describe('[Integration] Wrap up epoch', () => {
           wrapUpTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
         expect(
-          await Promise.all(validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.address)))
+          await Promise.all(
+            validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.consensusAddr.address))
+          )
         ).eql(validators.map(() => BigNumber.from(0)));
       });
     });
@@ -217,19 +235,19 @@ describe('[Integration] Wrap up epoch', () => {
 
   describe('Flow test on many validators', async () => {
     let wrapUpTx: ContractTransaction;
-    let validators: SignerWithAddress[];
+    let validators: ValidatorCandidateAddressSet[];
 
     before(async () => {
       validators = validatorCandidates.slice(4, 8);
 
       for (let i = 0; i < validators.length; i++) {
         await stakingContract
-          .connect(validators[i])
+          .connect(validators[i].poolAdmin)
           .applyValidatorCandidate(
-            validators[i].address,
-            validators[i].address,
-            validators[i].address,
-            validators[i].address,
+            validators[i].candidateAdmin.address,
+            validators[i].consensusAddr.address,
+            validators[i].treasuryAddr.address,
+            validators[i].bridgeOperator.address,
             2_00,
             {
               value: minValidatorStakingAmount.mul(3).add(i),
@@ -243,7 +261,7 @@ describe('[Integration] Wrap up epoch', () => {
         await validatorContract.connect(coinbase).wrapUpEpoch();
       });
 
-      coinbase = validators[3];
+      coinbase = validators[3].consensusAddr;
       await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
       validatorContract = validatorContract.connect(coinbase);
       await validatorContract.submitBlockReward({
@@ -255,7 +273,7 @@ describe('[Integration] Wrap up epoch', () => {
       let slasheeAddress: Address;
 
       before(async () => {
-        slasheeAddress = validators[1].address;
+        slasheeAddress = validators[1].consensusAddr.address;
         await mineBatchTxs(async () => {
           await validatorContract.endEpoch();
           await validatorContract.wrapUpEpoch();
@@ -274,13 +292,13 @@ describe('[Integration] Wrap up epoch', () => {
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
 
-        let expectingBlockProducerSet = [validators[2], validators[3]].map((_) => _.address).reverse();
+        let expectingBlockProducerSet = [validators[2], validators[3]].map((_) => _.consensusAddr.address).reverse();
 
         await expect(wrapUpTx!).emit(validatorContract, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, false);
         await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpTx!, lastPeriod, expectingBlockProducerSet);
 
         expect(await validatorContract.getValidators()).eql(
-          [validators[1], validators[2], validators[3]].map((_) => _.address).reverse()
+          [validators[1], validators[2], validators[3]].map((_) => _.consensusAddr.address).reverse()
         );
         expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
       });
@@ -292,7 +310,9 @@ describe('[Integration] Wrap up epoch', () => {
           wrapUpTx = await validatorContract.wrapUpEpoch();
         });
         expect(
-          await Promise.all(validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.address)))
+          await Promise.all(
+            validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.consensusAddr.address))
+          )
         ).eql(validators.map(() => BigNumber.from(0)));
       });
     });

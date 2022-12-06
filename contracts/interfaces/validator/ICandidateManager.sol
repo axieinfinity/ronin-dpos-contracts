@@ -15,14 +15,23 @@ interface ICandidateManager {
     // The percentage of reward that validators can be received, the rest goes to the delegators.
     // Values in range [0; 100_00] stands for 0-100%
     uint256 commissionRate;
-    // The timestamp that the candidate to be revoked.
-    uint256 revokedTimestamp;
-    // Extra data
-    bytes extraData;
+    // The timestamp that scheduled to revoke the candidate (no schedule=0)
+    uint256 revokingTimestamp;
+    // The deadline that the candidate must top up staking amount to keep it larger than or equal to the threshold (no deadline=0)
+    uint256 topupDeadline;
+  }
+
+  struct CommissionSchedule {
+    // The timestamp that the commission schedule gets affected (no schedule=0).
+    uint256 effectiveTimestamp;
+    // The new commission rate. Value is in range [0; 100_00], stands for 0-100%
+    uint256 commissionRate;
   }
 
   /// @dev Emitted when the maximum number of validator candidates is updated.
   event MaxValidatorCandidateUpdated(uint256 threshold);
+  /// @dev Emitted when the min offset to the effective date of commission rate change is updated.
+  event MinEffectiveDaysOnwardsUpdated(uint256 numOfDays);
   /// @dev Emitted when the validator candidate is granted.
   event CandidateGranted(
     address indexed consensusAddr,
@@ -30,15 +39,27 @@ interface ICandidateManager {
     address indexed admin,
     address bridgeOperator
   );
-  /// @dev Emitted when the revoked timestamp of a candidate is updated.
-  event CandidateRevokedTimestampUpdated(address indexed consensusAddr, uint256 revokedTimestamp);
+  /// @dev Emitted when the revoking timestamp of a candidate is updated.
+  event CandidateRevokingTimestampUpdated(address indexed consensusAddr, uint256 revokingTimestamp);
+  /// @dev Emitted when the topup deadline of a candidate is updated.
+  event CandidateTopupDeadlineUpdated(address indexed consensusAddr, uint256 topupDeadline);
   /// @dev Emitted when the validator candidate is revoked.
   event CandidatesRevoked(address[] consensusAddrs);
+
+  /// @dev Emitted when a schedule for updating commission rate is set.
+  event CommissionRateUpdateScheduled(address indexed consensusAddr, uint256 effectiveTimestamp, uint256 rate);
+  /// @dev Emitted when the commission rate of a validator is updated.
+  event CommissionRateUpdated(address indexed consensusAddr, uint256 rate);
 
   /**
    * @dev Returns the maximum number of validator candidate.
    */
   function maxValidatorCandidate() external view returns (uint256);
+
+  /**
+   * @dev Returns the minimum number of days to the effective date of commission rate change.
+   */
+  function minEffectiveDaysOnwards() external view returns (uint256);
 
   /**
    * @dev Sets the maximum number of validator candidate.
@@ -50,6 +71,17 @@ interface ICandidateManager {
    *
    */
   function setMaxValidatorCandidate(uint256) external;
+
+  /**
+   * @dev Sets the minimum number of days to the effective date of commision rate change.
+   *
+   * Requirements:
+   * - The method caller is admin.
+   *
+   * Emits the `MinEffectiveDaysOnwardsUpdated` event.
+   *
+   */
+  function setMinEffectiveDaysOnwards(uint256 _numOfDays) external;
 
   /**
    * @dev Grants a validator candidate.
@@ -74,10 +106,27 @@ interface ICandidateManager {
    * Requirements:
    * - The method caller is staking contract.
    *
-   * Emits the event `CandidateRevokedTimestampUpdated`.
+   * Emits the event `CandidateRevokingTimestampUpdated`.
    *
    */
   function requestRevokeCandidate(address, uint256 _secsLeft) external;
+
+  /**
+   * @dev Fallback function of `CandidateStaking-requestUpdateCommissionRate`.
+   *
+   * Requirements:
+   * - The method caller is the staking contract.
+   * - The `_effectiveTimestamp` must be the beginning of a UTC day, and at least from 7 days onwards
+   * - The `_rate` must be in range of [0_00; 100_00].
+   *
+   * Emits the event `CommissionRateUpdateScheduled`.
+   *
+   */
+  function execRequestUpdateCommissionRate(
+    address _consensusAddr,
+    uint256 _effectiveTimestamp,
+    uint256 _rate
+  ) external;
 
   /**
    * @dev Returns whether the address is a validator (candidate).

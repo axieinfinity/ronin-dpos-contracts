@@ -52,7 +52,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   /**
    * @inheritdoc IStaking
    */
-  function bulkSelfStaking(address[] calldata _pools) external view returns (uint256[] memory _selfStakings) {
+  function getManySelfStakings(address[] calldata _pools) external view returns (uint256[] memory _selfStakings) {
     _selfStakings = new uint256[](_pools.length);
     for (uint _i = 0; _i < _pools.length; _i++) {
       _selfStakings[_i] = _stakingPool[_pools[_i]].stakingAmount;
@@ -73,8 +73,16 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   /**
    * @inheritdoc IStaking
    */
-  function deductStakingAmount(address _consensusAddr, uint256 _amount) external onlyValidatorContract {
-    return _deductStakingAmount(_stakingPool[_consensusAddr], _amount);
+  function deductStakingAmount(address _consensusAddr, uint256 _amount)
+    external
+    onlyValidatorContract
+    returns (uint256 _actualDeductingAmount)
+  {
+    _actualDeductingAmount = _deductStakingAmount(_stakingPool[_consensusAddr], _amount);
+    address payable _recipientAddr = payable(validatorContract());
+    if (!_unsafeSendRON(_recipientAddr, _actualDeductingAmount)) {
+      emit StakingAmountDeductFailed(_consensusAddr, _recipientAddr, _actualDeductingAmount, address(this).balance);
+    }
   }
 
   /**
@@ -87,11 +95,15 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   /**
    * @inheritdoc CandidateStaking
    */
-  function _deductStakingAmount(PoolDetail storage _pool, uint256 _amount) internal override {
-    _amount = Math.min(_pool.stakingAmount, _amount);
+  function _deductStakingAmount(PoolDetail storage _pool, uint256 _amount)
+    internal
+    override
+    returns (uint256 _actualDeductingAmount)
+  {
+    _actualDeductingAmount = Math.min(_pool.stakingAmount, _amount);
 
-    _pool.stakingAmount -= _amount;
-    _changeDelegatingAmount(_pool, _pool.admin, _pool.stakingAmount, _pool.stakingTotal - _amount);
-    emit Unstaked(_pool.addr, _amount);
+    _pool.stakingAmount -= _actualDeductingAmount;
+    _changeDelegatingAmount(_pool, _pool.admin, _pool.stakingAmount, _pool.stakingTotal - _actualDeductingAmount);
+    emit Unstaked(_pool.addr, _actualDeductingAmount);
   }
 }

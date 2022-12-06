@@ -23,6 +23,9 @@ abstract contract SlashingExecution is
   ) external override onlySlashIndicatorContract {
     uint256 _period = currentPeriod();
     _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = true;
+
+    _totalDeprecatedReward += _miningReward[_validatorAddr] + _delegatingReward[_validatorAddr];
+
     delete _miningReward[_validatorAddr];
     delete _delegatingReward[_validatorAddr];
 
@@ -31,7 +34,8 @@ abstract contract SlashingExecution is
     }
 
     if (_slashAmount > 0) {
-      _stakingContract.deductStakingAmount(_validatorAddr, _slashAmount);
+      uint256 _actualAmount = _stakingContract.deductStakingAmount(_validatorAddr, _slashAmount);
+      _totalDeprecatedReward += _actualAmount;
     }
 
     emit ValidatorPunished(_validatorAddr, _period, _jailedUntil[_validatorAddr], _slashAmount, true, false);

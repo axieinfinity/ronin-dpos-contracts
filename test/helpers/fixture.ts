@@ -69,9 +69,9 @@ export const defaultTestConfig: InitTestInput = {
   },
 
   stakingVestingArguments: {
-    blockProducerBonusPerBlock: 1,
-    bridgeOperatorBonusPerBlock: 1,
-    topupAmount: BigNumber.from(100000000000),
+    blockProducerBonusPerBlock: 1_000,
+    bridgeOperatorBonusPerBlock: 1_100,
+    topupAmount: BigNumber.from(100_000_000_000),
   },
 
   slashIndicatorArguments: {
@@ -79,6 +79,7 @@ export const defaultTestConfig: InitTestInput = {
       missingVotesRatioTier1: 10_00, // 10%
       missingVotesRatioTier2: 20_00, // 20%
       jailDurationForMissingVotesRatioTier2: 28800 * 2,
+      skipBridgeOperatorSlashingThreshold: 10,
     },
     bridgeVotingSlashing: {
       bridgeVotingThreshold: 28800 * 3,
@@ -107,6 +108,7 @@ export const defaultTestConfig: InitTestInput = {
     maxPrioritizedValidatorNumber: 0,
     numberOfBlocksInEpoch: 600,
     maxValidatorCandidate: 10,
+    minEffectiveDaysOnwards: 7,
   },
 
   roninTrustedOrganizationArguments: {

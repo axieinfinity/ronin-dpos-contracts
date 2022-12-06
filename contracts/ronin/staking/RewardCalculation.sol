@@ -27,18 +27,18 @@ abstract contract RewardCalculation is IRewardPool {
    * @inheritdoc IRewardPool
    */
   function getReward(address _poolAddr, address _user) external view returns (uint256) {
-    return _getReward(_poolAddr, _user, _currentPeriod(), stakingAmountOf(_poolAddr, _user));
+    return _getReward(_poolAddr, _user, _currentPeriod(), getStakingAmount(_poolAddr, _user));
   }
 
   /**
    * @inheritdoc IRewardPool
    */
-  function stakingAmountOf(address _poolAddr, address _user) public view virtual returns (uint256);
+  function getStakingAmount(address _poolAddr, address _user) public view virtual returns (uint256);
 
   /**
    * @inheritdoc IRewardPool
    */
-  function stakingTotal(address _poolAddr) public view virtual returns (uint256);
+  function getStakingTotal(address _poolAddr) public view virtual returns (uint256);
 
   /**
    * @dev Returns the reward amount that user claimable.
@@ -55,10 +55,20 @@ abstract contract RewardCalculation is IRewardPool {
       return _reward.debited;
     }
 
+    uint256 _aRps;
+    uint256 _lastPeriodReward;
     PoolFields storage _pool = _stakingPool[_poolAddr];
-    uint256 _minAmount = _reward.minAmount;
-    uint256 _aRps = _accumulatedRps[_poolAddr][_reward.lastPeriod].inner;
-    uint256 _lastPeriodReward = _minAmount * (_aRps - _reward.aRps);
+    PeriodWrapper storage _wrappedArps = _accumulatedRps[_poolAddr][_reward.lastPeriod];
+
+    if (_wrappedArps.lastPeriod > 0) {
+      // Calculates the last period reward if the aRps at the period is set
+      _aRps = _accumulatedRps[_poolAddr][_reward.lastPeriod].inner;
+      _lastPeriodReward = _reward.minAmount * (_aRps - _reward.aRps);
+    } else {
+      // Fallbacks to the previous aRps in case the aRps is not set
+      _aRps = _reward.aRps;
+    }
+
     uint256 _newPeriodsReward = _latestStakingAmount * (_pool.aRps - _aRps);
     return _reward.debited + (_lastPeriodReward + _newPeriodsReward) / 1e18;
   }
@@ -83,11 +93,11 @@ abstract contract RewardCalculation is IRewardPool {
 
     // Updates the pool shares if it is outdated
     if (_pool.shares.lastPeriod < _period) {
-      _pool.shares = PeriodWrapper(stakingTotal(_poolAddr), _period);
+      _pool.shares = PeriodWrapper(getStakingTotal(_poolAddr), _period);
     }
 
     UserRewardFields storage _reward = _userReward[_poolAddr][_user];
-    uint256 _currentStakingAmount = stakingAmountOf(_poolAddr, _user);
+    uint256 _currentStakingAmount = getStakingAmount(_poolAddr, _user);
     uint256 _debited = _getReward(_poolAddr, _user, _period, _currentStakingAmount);
 
     if (_reward.debited != _debited) {
@@ -137,7 +147,7 @@ abstract contract RewardCalculation is IRewardPool {
    */
   function _claimReward(address _poolAddr, address _user) internal returns (uint256 _amount) {
     uint256 _latestPeriod = _currentPeriod();
-    _amount = _getReward(_poolAddr, _user, _latestPeriod, stakingAmountOf(_poolAddr, _user));
+    _amount = _getReward(_poolAddr, _user, _latestPeriod, getStakingAmount(_poolAddr, _user));
     emit RewardClaimed(_poolAddr, _user, _amount);
 
     UserRewardFields storage _reward = _userReward[_poolAddr][_user];
@@ -178,7 +188,7 @@ abstract contract RewardCalculation is IRewardPool {
     for (uint _i = 0; _i < _poolAddrs.length; _i++) {
       _poolAddr = _poolAddrs[_i];
       PoolFields storage _pool = _stakingPool[_poolAddr];
-      _stakingTotal = stakingTotal(_poolAddr);
+      _stakingTotal = getStakingTotal(_poolAddr);
 
       if (_accumulatedRps[_poolAddr][_period].lastPeriod == _period) {
         _conflicted[_count++] = _poolAddr;

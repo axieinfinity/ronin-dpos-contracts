@@ -25,7 +25,7 @@ interface ICreditScore {
    * Emits the event `CreditScoresUpdated`.
    *
    */
-  function updateCreditScore(address[] calldata _validators, uint256 _period) external;
+  function updateCreditScores(address[] calldata _validators, uint256 _period) external;
 
   /**
    * @dev A slashed validator use this method to get out of jail.
@@ -47,23 +47,23 @@ interface ICreditScore {
    *
    * Emits the event `CreditScoreConfigsUpdated`.
    *
-   * @param _gainCreditScore The max gained number of credit score per period.
-   * @param _maxCreditScore The max number of credit score that a validator can hold.
-   * @param _bailOutCostMultiplier The number that will be multiplied with the remaining jailed time to get the cost of bailing out.
-   * @param _cutOffPercentageAfterBailout The percentage of reward that the block producer will be cut off from until the end of the period after bailing out.
+   * @param _gainScore The score to gain per period.
+   * @param _maxScore The max number of credit score that a validator can hold.
+   * @param _bailOutMultiplier The number that will be multiplied with the remaining jailed time to get the cost of bailing out.
+   * @param _cutOffPercentage The percentage of reward that the block producer will be cut off from until the end of the period after bailing out.
    *
    */
   function setCreditScoreConfigs(
-    uint256 _gainCreditScore,
-    uint256 _maxCreditScore,
-    uint256 _bailOutCostMultiplier,
-    uint256 _cutOffPercentageAfterBailout
+    uint256 _gainScore,
+    uint256 _maxScore,
+    uint256 _bailOutMultiplier,
+    uint256 _cutOffPercentage
   ) external;
 
   /**
    * @dev Returns the configs related to credit score.
    *
-   * @return _gainCreditScore The max gained number of credit score per period.
+   * @return _gainCreditScore The score to gain per period.
    * @return _maxCreditScore The max number of credit score that a validator can hold.
    * @return _bailOutCostMultiplier The number that will be multiplied with the remaining jailed time to get the cost of bailing out.
    * @return _cutOffPercentageAfterBailout The percentage of reward that the block producer will be cut off from until the end of the period after bailing out.
@@ -87,10 +87,10 @@ interface ICreditScore {
   /**
    * @dev Returns the current credit score of a list of validators.
    */
-  function getBulkCreditScore(address[] calldata _validators) external view returns (uint256[] memory _resultList);
+  function getManyCreditScores(address[] calldata _validators) external view returns (uint256[] memory _resultList);
 
   /**
    * @dev Returns the whether the `_validator` has been bailed out at the `_period`.
    */
-  function bailedOutAtPeriod(address _validator, uint256 _period) external view returns (bool);
+  function checkBailedOutAtPeriod(address _validator, uint256 _period) external view returns (bool);
 }

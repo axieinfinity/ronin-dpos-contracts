@@ -1,6 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 
 import { GovernanceAdminInterface, mapByteSigToSigStruct } from '../../src/script/governance-admin-interface';
@@ -19,11 +18,13 @@ import { MockBridge__factory } from '../../src/types/factories/MockBridge__facto
 import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
 import { SignatureStruct } from '../../src/types/RoninGovernanceAdmin';
 import { randomAddress } from '../../src/utils';
+import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
 import { initTest } from '../helpers/fixture';
 
 let deployer: SignerWithAddress;
 let relayer: SignerWithAddress;
-let governors: SignerWithAddress[];
+let signers: SignerWithAddress[];
+let trustedOrgs: TrustedOrganizationAddressSet[];
 
 let bridgeContract: IBridge;
 let stakingContract: Staking;
@@ -38,9 +39,8 @@ let ballot: BOsBallot;
 
 describe('Governance Admin test', () => {
   before(async () => {
-    [deployer, relayer, ...governors] = await ethers.getSigners();
-    governors = governors.slice(0, 21);
-    governors = governors.sort((v1, v2) => v1.address.toLowerCase().localeCompare(v2.address.toLowerCase()));
+    [deployer, relayer, ...signers] = await ethers.getSigners();
+    trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 21 * 3));
 
     const logic = await new MockBridge__factory(deployer).deploy();
     const proxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
@@ -55,10 +55,10 @@ describe('Governance Admin test', () => {
     )({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
-        trustedOrganizations: governors.map((v) => ({
-          consensusAddr: v.address,
-          governor: v.address,
-          bridgeVoter: v.address,
+        trustedOrganizations: trustedOrgs.map((v) => ({
+          consensusAddr: v.consensusAddr.address,
+          governor: v.governor.address,
+          bridgeVoter: v.bridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
@@ -73,7 +73,7 @@ describe('Governance Admin test', () => {
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
-    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, ...governors);
+    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, ...trustedOrgs.map((_) => _.governor));
     mainchainGovernanceAdmin = MainchainGovernanceAdmin__factory.connect(mainchainGovernanceAdminAddress, deployer);
     await TransparentUpgradeableProxyV2__factory.connect(proxy.address, deployer).changeAdmin(
       mainchainGovernanceAdmin.address
@@ -93,15 +93,19 @@ describe('Governance Admin test', () => {
     signatures = await governanceAdminInterface.generateSignatures(proposal);
     supports = signatures.map(() => VoteType.For);
 
-    expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, governors[0].address)).to.false;
-    await governanceAdmin.connect(governors[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);
-    expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, governors[0].address)).to.true;
+    expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
+      .false;
+    await governanceAdmin
+      .connect(trustedOrgs[0].governor)
+      .proposeProposalStructAndCastVotes(proposal, supports, signatures);
+    expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
+      .true;
     expect(await stakingContract.minValidatorStakingAmount()).eq(newMinValidatorStakingAmount);
   });
 
   it('Should not be able to reuse already voted signatures or proposals', async () => {
     await expect(
-      governanceAdmin.connect(governors[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures)
+      governanceAdmin.connect(trustedOrgs[0].governor).proposeProposalStructAndCastVotes(proposal, supports, signatures)
     ).revertedWith('CoreGovernance: invalid proposal nonce');
   });
 
@@ -120,25 +124,25 @@ describe('Governance Admin test', () => {
   it('Should be able to vote bridge operators', async () => {
     ballot = {
       period: 10,
-      operators: governors.map((v) => v.address),
+      operators: trustedOrgs.map((v) => v.bridgeVoter.address),
     };
     signatures = await Promise.all(
-      governors.map((g) =>
-        g
+      trustedOrgs.map((g) =>
+        g.bridgeVoter
           ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
           .then(mapByteSigToSigStruct)
       )
     );
-    expect(await governanceAdmin.bridgeOperatorsVoted(ballot.period, governors[0].address)).to.false;
+    expect(await governanceAdmin.bridgeOperatorsVoted(ballot.period, trustedOrgs[0].bridgeVoter.address)).to.false;
     await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures);
-    expect(await governanceAdmin.bridgeOperatorsVoted(ballot.period, governors[0].address)).to.true;
+    expect(await governanceAdmin.bridgeOperatorsVoted(ballot.period, trustedOrgs[0].bridgeVoter.address)).to.true;
   });
 
   it('Should be able relay vote bridge operators', async () => {
     expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period)).to.false;
     await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures);
     expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period)).to.true;
-    expect(await bridgeContract.getBridgeOperators()).eql(governors.map((v) => v.address));
+    expect(await bridgeContract.getBridgeOperators()).eql(trustedOrgs.map((v) => v.bridgeVoter.address));
   });
 
   it('Should not able to relay again', async () => {
@@ -150,7 +154,7 @@ describe('Governance Admin test', () => {
   it('Should not be able to use the signatures for another period', async () => {
     ballot = {
       period: 100,
-      operators: governors.map((v) => v.address),
+      operators: trustedOrgs.map((v) => v.bridgeVoter.address),
     };
     await expect(
       governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures)
@@ -160,11 +164,11 @@ describe('Governance Admin test', () => {
   it('Should not be able to vote bridge operators with a smaller period', async () => {
     ballot = {
       period: 5,
-      operators: governors.map((v) => v.address),
+      operators: trustedOrgs.map((v) => v.bridgeVoter.address),
     };
     signatures = await Promise.all(
-      governors.map((g) =>
-        g
+      trustedOrgs.map((g) =>
+        g.bridgeVoter
           ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
           .then(mapByteSigToSigStruct)
       )
@@ -178,11 +182,11 @@ describe('Governance Admin test', () => {
     const duplicatedNumber = 11;
     ballot = {
       period: 100,
-      operators: governors.map((v, i) => (i < duplicatedNumber ? v.address : randomAddress())),
+      operators: trustedOrgs.map((v, i) => (i < duplicatedNumber ? v.bridgeVoter.address : randomAddress())),
     };
     signatures = await Promise.all(
-      governors.map((g) =>
-        g
+      trustedOrgs.map((g) =>
+        g.bridgeVoter
           ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
           .then(mapByteSigToSigStruct)
       )

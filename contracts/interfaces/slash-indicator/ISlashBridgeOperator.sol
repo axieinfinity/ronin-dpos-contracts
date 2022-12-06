@@ -10,7 +10,8 @@ interface ISlashBridgeOperator {
   event BridgeOperatorSlashingConfigsUpdated(
     uint256 missingVotesRatioTier1,
     uint256 missingVotesRatioTier2,
-    uint256 jailDurationForMissingVotesRatioTier2
+    uint256 jailDurationForMissingVotesRatioTier2,
+    uint256 skipBridgeOperatorSlashingThreshold
   );
 
   /**
@@ -21,6 +22,8 @@ interface ISlashBridgeOperator {
    * block producer will be put in jail if (s)he misses more than this ratio.
    * @return _jailDurationForMissingVotesRatioTier2 The number of blocks to jail the corresponding block producer when
    * its bridge operator is slashed tier-2.
+   * @return _skipBridgeOperatorSlashingThreshold The threshold to skip slashing the bridge operator in case the total
+   * number of votes in the bridge is too small.
    *
    */
   function getBridgeOperatorSlashingConfigs()
@@ -29,7 +32,8 @@ interface ISlashBridgeOperator {
     returns (
       uint256 _missingVotesRatioTier1,
       uint256 _missingVotesRatioTier2,
-      uint256 _jailDurationForMissingVotesRatioTier2
+      uint256 _jailDurationForMissingVotesRatioTier2,
+      uint256 _skipBridgeOperatorSlashingThreshold
     );
 
   /**
@@ -46,11 +50,14 @@ interface ISlashBridgeOperator {
    * be put in jail if (s)he misses more than this ratio. Values 0-10,000 map to 0%-100%.
    * @param _jailDurationTier2 The number of blocks to jail the corresponding block producer when its bridge operator is
    * slashed tier-2.
+   * @param _skipSlashingThreshold The threshold to skip slashing the bridge operator in case the total number of votes
+   * in the bridge is too small.
    *
    */
   function setBridgeOperatorSlashingConfigs(
     uint256 _ratioTier1,
     uint256 _ratioTier2,
-    uint256 _jailDurationTier2
+    uint256 _jailDurationTier2,
+    uint256 _skipSlashingThreshold
   ) external;
 }

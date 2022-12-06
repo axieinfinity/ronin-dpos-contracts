@@ -35,7 +35,9 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
    * Emits the event `Unstaked`.
    *
    */
-  function deductStakingAmount(address _consensusAddr, uint256 _amount) external;
+  function deductStakingAmount(address _consensusAddr, uint256 _amount)
+    external
+    returns (uint256 _actualDeductingAmount);
 
   /**
    * @dev Returns the staking pool detail.
@@ -52,5 +54,5 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
   /**
    * @dev Returns the self-staking amounts of the pools.
    */
-  function bulkSelfStaking(address[] calldata) external view returns (uint256[] memory);
+  function getManySelfStakings(address[] calldata) external view returns (uint256[] memory);
 }

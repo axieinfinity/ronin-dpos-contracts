@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.9;
 
+import "../../libraries/AddressArrayUtils.sol";
 import "../../interfaces/staking/ICandidateStaking.sol";
 import "./BaseStaking.sol";
 
@@ -61,6 +62,17 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   /**
    * @inheritdoc ICandidateStaking
    */
+  function requestUpdateCommissionRate(
+    address _consensusAddr,
+    uint256 _effectiveDaysOnwards,
+    uint256 _commissionRate
+  ) external override poolExists(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
+    _validatorContract.execRequestUpdateCommissionRate(_consensusAddr, _effectiveDaysOnwards, _commissionRate);
+  }
+
+  /**
+   * @inheritdoc ICandidateStaking
+   */
   function deprecatePools(address[] calldata _pools) external override onlyValidatorContract {
     if (_pools.length == 0) {
       return;
@@ -107,6 +119,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
    */
   function requestRenounce(address _consensusAddr)
     external
+    override
     poolExists(_consensusAddr)
     onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
   {
@@ -114,7 +127,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   }
 
   /**
-   * @dev See {ICandidateStaking-applyValidatorCandidate}
+   * @dev See `ICandidateStaking-applyValidatorCandidate`
    */
   function _applyValidatorCandidate(
     address payable _poolAdmin,
@@ -129,6 +142,14 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     require(_sendRON(_treasuryAddr, 0), "CandidateStaking: treasury cannot receive RON");
     require(_amount >= _minValidatorStakingAmount, "CandidateStaking: insufficient amount");
 
+    address[] memory _addresses = new address[](5);
+    _addresses[0] = _poolAdmin;
+    _addresses[1] = _candidateAdmin;
+    _addresses[2] = _consensusAddr;
+    _addresses[3] = _treasuryAddr;
+    _addresses[4] = _bridgeOperatorAddr;
+    require(!AddressArrayUtils.hasDuplicate(_addresses), "CandidateStaking: five addresses must be distinct");
+
     _validatorContract.grantValidatorCandidate(
       _candidateAdmin,
       _consensusAddr,
@@ -139,7 +160,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   }
 
   /**
-   * @dev See {ICandidateStaking-stake}
+   * @dev See `ICandidateStaking-stake`
    */
   function _stake(
     PoolDetail storage _pool,
@@ -153,7 +174,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   }
 
   /**
-   * @dev See {ICandidateStaking-unstake}
+   * @dev See `ICandidateStaking-unstake`
    */
   function _unstake(
     PoolDetail storage _pool,
@@ -176,8 +197,9 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
    *
    * Emits the event `Unstaked`.
    *
+   * @return The actual deducted amount
    */
-  function _deductStakingAmount(PoolDetail storage _pool, uint256 _amount) internal virtual;
+  function _deductStakingAmount(PoolDetail storage _pool, uint256 _amount) internal virtual returns (uint256);
 
   /**
    * @dev Sets the minimum threshold for being a validator candidate.

@@ -137,7 +137,7 @@ The validators will be slashed when they do not provide good service for Ronin n
 
 | Properties                     | Explanation                                                                                                          |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `gainCreditScore`              | The max gained number of credit score per period.                                                                    |
+| `gainCreditScore`              | The score to gain per period.                                                                                        |
 | `maxCreditScore`               | The max number of credit score that a validator can hold.                                                            |
 | `bailOutCostMultiplier`        | The number that will be multiplied with the remaining jailed time to get the cost of bailing out.                    |
 | `cutOffPercentageAfterBailout` | The percentage of reward that the block producer will be cut off from until the end of the period after bailing out. |
