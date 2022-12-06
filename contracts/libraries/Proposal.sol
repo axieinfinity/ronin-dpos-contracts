@@ -21,7 +21,7 @@ library Proposal {
   /**
    * @dev Validates the proposal.
    */
-  function validate(ProposalDetail memory _proposal) internal pure {
+  function validate(ProposalDetail memory _proposal, uint256 _maxExpiryDuration) internal view {
     require(
       _proposal.targets.length > 0 &&
         _proposal.targets.length == _proposal.values.length &&
@@ -29,6 +29,7 @@ library Proposal {
         _proposal.targets.length == _proposal.gasAmounts.length,
       "Proposal: invalid array length"
     );
+    require(_proposal.expiryTimestamp <= block.timestamp + _maxExpiryDuration, "Proposal: invalid expiry timestamp");
   }
 
   /**

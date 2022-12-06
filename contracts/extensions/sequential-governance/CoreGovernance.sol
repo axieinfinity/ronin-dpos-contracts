@@ -126,7 +126,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       _calldatas,
       _gasAmounts
     );
-    _proposal.validate();
+    _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
     _round = _createVotingRound(_chainId, _proposalHash);
@@ -150,7 +150,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   {
     uint256 _chainId = _proposal.chainId;
     require(_chainId != 0, "CoreGovernance: invalid chain id");
-    _proposal.validate();
+    _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
     _round = _createVotingRound(_chainId, _proposalHash);
@@ -186,7 +186,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       _roninTrustedOrganizationContract,
       _gatewayContract
     );
-    _proposal.validate();
+    _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
     _round = _createVotingRound(0, _proposalHash);
@@ -209,7 +209,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     address _creator
   ) internal virtual returns (Proposal.ProposalDetail memory _proposal, uint256 _round) {
     _proposal = _globalProposal.into_proposal_detail(_roninTrustedOrganizationContract, _gatewayContract);
-    _proposal.validate();
+    _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
     _round = _createVotingRound(0, _proposalHash);
