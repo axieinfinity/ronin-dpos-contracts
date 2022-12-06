@@ -10,7 +10,7 @@ abstract contract GovernanceProposal is CoreGovernance {
   /**
    * @dev Casts votes by signatures.
    *
-   * @notice This method does not verify the proposal hash with the vote hash. Please consider checking it before.
+   * Note: This method does not verify the proposal hash with the vote hash. Please consider checking it before.
    *
    */
   function _castVotesBySignatures(

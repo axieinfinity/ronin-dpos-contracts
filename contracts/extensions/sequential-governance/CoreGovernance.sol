@@ -5,10 +5,11 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "../../libraries/Proposal.sol";
 import "../../libraries/GlobalProposal.sol";
 import "../../libraries/Ballot.sol";
+import "../../interfaces/consumers/ChainTypeConsumer.sol";
 import "../../interfaces/consumers/SignatureConsumer.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
 
-abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
+abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, ChainTypeConsumer {
   using Proposal for Proposal.ProposalDetail;
   using GlobalProposal for GlobalProposal.GlobalProposalDetail;
 
@@ -45,6 +46,8 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
   event ProposalApproved(bytes32 indexed proposalHash);
   /// @dev Emitted when the vote is reject
   event ProposalRejected(bytes32 indexed proposalHash);
+  /// @dev Emitted when the vote is expired
+  event ProposalExpired(bytes32 indexed proposalHash);
   /// @dev Emitted when the proposal is executed
   event ProposalExecuted(bytes32 indexed proposalHash, bool[] successCalls, bytes[] returnDatas);
 
@@ -58,12 +61,34 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
    * @dev Creates new round voting for the proposal `_proposalHash` of chain `_chainId`.
    */
   function _createVotingRound(uint256 _chainId, bytes32 _proposalHash) internal returns (uint256 _round) {
-    _round = round[_chainId]++;
+    _round = round[_chainId];
+
     // Skip checking for the first ever round
     if (_round > 0) {
-      require(vote[_chainId][_round].status != VoteStatus.Pending, "CoreGovernance: current proposal is not completed");
+      ProposalVote storage _latestProposalVote = vote[_chainId][_round];
+      if (_latestProposalVote.status == VoteStatus.Expired) {
+        _deleteExpiredVotingRound(_latestProposalVote);
+      } else {
+        require(_latestProposalVote.status != VoteStatus.Pending, "CoreGovernance: current proposal is not completed");
+        _round = ++round[_chainId];
+      }
     }
-    vote[_chainId][++_round].hash = _proposalHash;
+    vote[_chainId][_round].hash = _proposalHash;
+  }
+
+  function _deleteExpiredVotingRound(ProposalVote storage _proposalVote) private {
+    for (uint256 _i; _i < _proposalVote.forVoteds.length; _i++) {
+      delete _proposalVote.sig[_proposalVote.forVoteds[_i]];
+    }
+    for (uint256 _i; _i < _proposalVote.againstVoteds.length; _i++) {
+      delete _proposalVote.sig[_proposalVote.againstVoteds[_i]];
+    }
+    delete _proposalVote.status;
+    delete _proposalVote.hash;
+    delete _proposalVote.againstVoteWeight;
+    delete _proposalVote.forVoteWeight;
+    delete _proposalVote.forVoteds;
+    delete _proposalVote.againstVoteds;
   }
 
   /**
@@ -77,6 +102,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
    */
   function _proposeProposal(
     uint256 _chainId,
+    uint256 _expiryTimestamp,
     address[] memory _targets,
     uint256[] memory _values,
     bytes[] memory _calldatas,
@@ -88,6 +114,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
     Proposal.ProposalDetail memory _proposal = Proposal.ProposalDetail(
       round[_chainId] + 1,
       _chainId,
+      _expiryTimestamp,
       _targets,
       _values,
       _calldatas,
@@ -132,6 +159,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
    *
    */
   function _proposeGlobal(
+    uint256 _expiryTimestamp,
     GlobalProposal.TargetOption[] calldata _targetOptions,
     uint256[] memory _values,
     bytes[] memory _calldatas,
@@ -142,6 +170,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
   ) internal virtual returns (uint256 _round) {
     GlobalProposal.GlobalProposalDetail memory _globalProposal = GlobalProposal.GlobalProposalDetail(
       round[0] + 1,
+      _expiryTimestamp,
       _targetOptions,
       _values,
       _calldatas,
@@ -228,7 +257,11 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
       revert("CoreGovernance: unsupported vote type");
     }
 
-    if (_forVoteWeight >= _minimumForVoteWeight) {
+    if (_getChainType() == ChainType.RoninChain && _proposal.expiryTimestamp <= block.timestamp) {
+      _done = true;
+      _vote.status = VoteStatus.Expired;
+      emit ProposalExpired(_vote.hash);
+    } else if (_forVoteWeight >= _minimumForVoteWeight) {
       _done = true;
       _vote.status = VoteStatus.Approved;
       emit ProposalApproved(_vote.hash);
@@ -267,4 +300,9 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
    * @dev Returns minimum vote to pass a proposal.
    */
   function _getMinimumVoteWeight() internal view virtual returns (uint256);
+
+  /**
+   * @dev Returns current context is running on whether Ronin chain or on mainchain.
+   */
+  function _getChainType() internal view virtual returns (ChainType);
 }

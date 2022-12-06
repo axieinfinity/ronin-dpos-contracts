@@ -122,4 +122,11 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
     require(_success, "MainchainGovernanceAdmin: proxy call `sumBridgeVoterWeights(address[])` failed");
     return abi.decode(_returndata, (uint256));
   }
+
+  /**
+   * @dev See {CoreGovernance-_getChainType}
+   */
+  function _getChainType() internal pure override returns (ChainType) {
+    return ChainType.Mainchain;
+  }
 }

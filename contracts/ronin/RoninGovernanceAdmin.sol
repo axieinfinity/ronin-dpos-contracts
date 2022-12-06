@@ -91,12 +91,13 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
    */
   function propose(
     uint256 _chainId,
+    uint256 _expiryTimestamp,
     address[] calldata _targets,
     uint256[] calldata _values,
     bytes[] calldata _calldatas,
     uint256[] calldata _gasAmounts
   ) external onlyGovernor {
-    _proposeProposal(_chainId, _targets, _values, _calldatas, _gasAmounts, msg.sender);
+    _proposeProposal(_chainId, _expiryTimestamp, _targets, _values, _calldatas, _gasAmounts, msg.sender);
   }
 
   /**
@@ -133,12 +134,14 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
    *
    */
   function proposeGlobal(
+    uint256 _expiryTimestamp,
     GlobalProposal.TargetOption[] calldata _targetOptions,
     uint256[] calldata _values,
     bytes[] calldata _calldatas,
     uint256[] calldata _gasAmounts
   ) external onlyGovernor {
     _proposeGlobal(
+      _expiryTimestamp,
       _targetOptions,
       _values,
       _calldatas,
@@ -235,5 +238,12 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
     );
     require(_success, "GovernanceAdmin: proxy call `getBridgeVoterWeight(address)` failed");
     return abi.decode(_returndata, (uint256));
+  }
+
+  /**
+   * @dev See {CoreGovernance-_getChainType}
+   */
+  function _getChainType() internal pure override returns (ChainType) {
+    return ChainType.RoninChain;
   }
 }

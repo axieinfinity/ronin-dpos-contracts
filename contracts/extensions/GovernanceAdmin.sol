@@ -6,7 +6,7 @@ import "../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../extensions/collections/HasBridgeContract.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 
-contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract, HasBridgeContract {
+abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract, HasBridgeContract {
   /// @dev Domain separator
   bytes32 public constant DOMAIN_SEPARATOR = 0xf8704f8860d9e985bf6c52ec4738bd10fe31487599b36c0944f746ea09dc256b;
 

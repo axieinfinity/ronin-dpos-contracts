@@ -8,14 +8,15 @@ library Proposal {
     // Value 0: all chain should run this proposal
     // Other values: only specifc chain has to execute
     uint256 chainId;
+    uint256 expiryTimestamp;
     address[] targets;
     uint256[] values;
     bytes[] calldatas;
     uint256[] gasAmounts;
   }
 
-  // keccak256("ProposalDetail(uint256 nonce,uint256 chainId,address[] targets,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)");
-  bytes32 public constant TYPE_HASH = 0x65526afa953b4e935ecd640e6905741252eedae157e79c37331ee8103c70019d;
+  // keccak256("ProposalDetail(uint256 nonce,uint256 chainId,uint256 expiryTimestamp,address[] targets,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)");
+  bytes32 public constant TYPE_HASH = 0xd051578048e6ff0bbc9fca3b65a42088dbde10f36ca841de566711087ad9b08a;
 
   /**
    * @dev Validates the proposal.
@@ -61,6 +62,7 @@ library Proposal {
           TYPE_HASH,
           _proposal.nonce,
           _proposal.chainId,
+          _proposal.expiryTimestamp,
           _targetsHash,
           _valuesHash,
           _calldatasHash,
