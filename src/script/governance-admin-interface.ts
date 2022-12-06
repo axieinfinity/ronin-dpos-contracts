@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { BigNumberish, BytesLike } from 'ethers';
+import { BigNumber, BigNumberish, BytesLike } from 'ethers';
 import { ethers, network } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
 import { TypedDataDomain } from '@ethersproject/abstract-signer';
@@ -9,6 +9,9 @@ import { BallotTypes, getProposalHash, VoteType } from './proposal';
 import { RoninGovernanceAdmin, TransparentUpgradeableProxyV2__factory } from '../types';
 import { ProposalDetailStruct } from '../types/GovernanceAdmin';
 import { SignatureStruct } from '../types/MainchainGovernanceAdmin';
+import { GovernanceAdminArguments } from '../utils';
+import { getLastBlockTimestamp } from '../../test/helpers/utils';
+import { defaultTestConfig } from '../../test/helpers/fixture';
 
 export const getGovernanceAdminDomain = (): TypedDataDomain => ({
   name: 'GovernanceAdmin',
@@ -28,13 +31,15 @@ export class GovernanceAdminInterface {
   contract!: RoninGovernanceAdmin;
   domain!: TypedDataDomain;
   interface!: Interface;
+  args!: GovernanceAdminArguments;
   address = ethers.constants.AddressZero;
 
-  constructor(contract: RoninGovernanceAdmin, ...signers: SignerWithAddress[]) {
+  constructor(contract: RoninGovernanceAdmin, args?: GovernanceAdminArguments, ...signers: SignerWithAddress[]) {
     this.contract = contract;
     this.signers = signers;
     this.address = contract.address;
     this.domain = getGovernanceAdminDomain();
+    this.args = args ?? defaultTestConfig?.governanceAdminArguments!;
     this.interface = new TransparentUpgradeableProxyV2__factory().interface;
   }
 
@@ -67,9 +72,14 @@ export class GovernanceAdminInterface {
     return signatures;
   }
 
-  async functionDelegateCall(expiryTimestamp: BigNumberish, to: Address, data: BytesLike) {
+  async defaultExpiryTimestamp() {
+    let latestTimestamp = await getLastBlockTimestamp();
+    return BigNumber.from(this.args.proposalExpiryDuration!).add(latestTimestamp);
+  }
+
+  async functionDelegateCall(to: Address, data: BytesLike) {
     const proposal = await this.createProposal(
-      expiryTimestamp,
+      await this.defaultExpiryTimestamp(),
       to,
       0,
       this.interface.encodeFunctionData('functionDelegateCall', [data]),
@@ -80,14 +90,14 @@ export class GovernanceAdminInterface {
     return this.contract.connect(this.signers[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);
   }
 
-  async functionDelegateCalls(expiryTimestamp: BigNumberish, toList: Address[], dataList: BytesLike[]) {
+  async functionDelegateCalls(toList: Address[], dataList: BytesLike[]) {
     if (toList.length != dataList.length || toList.length == 0) {
       throw Error('invalid array length');
     }
 
     const proposal = {
       chainId: network.config.chainId!,
-      expiryTimestamp,
+      expiryTimestamp: await this.defaultExpiryTimestamp(),
       nonce: (await this.contract.round(network.config.chainId!)).add(1),
       targets: toList,
       values: toList.map(() => 0),
@@ -100,9 +110,9 @@ export class GovernanceAdminInterface {
     return this.contract.connect(this.signers[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);
   }
 
-  async upgrade(expiryTimestamp: BigNumberish, from: Address, to: Address) {
+  async upgrade(from: Address, to: Address) {
     const proposal = await this.createProposal(
-      expiryTimestamp,
+      await this.defaultExpiryTimestamp(),
       from,
       0,
       this.interface.encodeFunctionData('upgradeTo', [to]),

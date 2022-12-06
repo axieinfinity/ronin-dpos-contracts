@@ -124,7 +124,11 @@ describe('Arrange validators', () => {
     slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
     roninTrustedOrganization = RoninTrustedOrganization__factory.connect(roninTrustedOrganizationAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
-    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, ...trustedOrgs.map((_) => _.governor));
+    governanceAdminInterface = new GovernanceAdminInterface(
+      governanceAdmin,
+      undefined,
+      ...trustedOrgs.map((_) => _.governor)
+    );
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();

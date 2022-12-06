@@ -79,7 +79,11 @@ describe('Governance Admin test', () => {
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
-    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, ...trustedOrgs.map((_) => _.governor));
+    governanceAdminInterface = new GovernanceAdminInterface(
+      governanceAdmin,
+      { proposalExpiryDuration },
+      ...trustedOrgs.map((_) => _.governor)
+    );
     mainchainGovernanceAdmin = MainchainGovernanceAdmin__factory.connect(mainchainGovernanceAdminAddress, deployer);
     await TransparentUpgradeableProxyV2__factory.connect(proxy.address, deployer).changeAdmin(
       mainchainGovernanceAdmin.address
