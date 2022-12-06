@@ -17,8 +17,8 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
     bytes32 hash;
     uint256 againstVoteWeight; // Total weight of against votes
     uint256 forVoteWeight; // Total weight of for votes
-    mapping(address => bool) forVoted;
-    mapping(address => bool) againstVoted;
+    address[] forVoteds; // Array of addresses voting for
+    address[] againstVoteds; // Array of addresses voting against
     mapping(address => Signature) sig;
   }
 
@@ -219,10 +219,10 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
     uint256 _forVoteWeight;
     uint256 _againstVoteWeight;
     if (_support == Ballot.VoteType.For) {
-      _vote.forVoted[_voter] = true;
+      _vote.forVoteds.push(_voter);
       _forVoteWeight = _vote.forVoteWeight += _voterWeight;
     } else if (_support == Ballot.VoteType.Against) {
-      _vote.againstVoted[_voter] = true;
+      _vote.againstVoteds.push(_voter);
       _againstVoteWeight = _vote.againstVoteWeight += _voterWeight;
     } else {
       revert("CoreGovernance: unsupported vote type");
@@ -255,7 +255,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer {
    * @dev Returns whether the voter casted for the proposal.
    */
   function _voted(ProposalVote storage _vote, address _voter) internal view returns (bool) {
-    return _vote.forVoted[_voter] || _vote.againstVoted[_voter];
+    return _vote.sig[_voter].v != 0;
   }
 
   /**

@@ -22,28 +22,27 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
   /**
    * @dev Returns the voted signatures for the proposals.
    *
-   * Note: Does not verify whether the voter casted vote for the proposal and the returned signature can be empty.
-   * Please consider filtering for empty signatures after calling this function.
-   *
    */
-  function getProposalSignatures(
-    uint256 _chainId,
-    uint256 _round,
-    address[] calldata _voters
-  ) external view returns (Ballot.VoteType[] memory _supports, Signature[] memory _signatures) {
+  function getProposalSignatures(uint256 _chainId, uint256 _round)
+    external
+    view
+    returns (Ballot.VoteType[] memory _supports, Signature[] memory _signatures)
+  {
     ProposalVote storage _vote = vote[_chainId][_round];
 
-    address _voter;
-    _supports = new Ballot.VoteType[](_voters.length);
-    _signatures = new Signature[](_voters.length);
-    for (uint256 _i; _i < _voters.length; _i++) {
-      _voter = _voters[_i];
+    uint256 _forLength = _vote.forVoteds.length;
+    uint256 _againstLength = _vote.againstVoteds.length;
+    uint256 _voterLength = _forLength + _againstLength;
 
-      if (_vote.againstVoted[_voter]) {
-        _supports[_i] = Ballot.VoteType.Against;
-      }
-
-      _signatures[_i] = vote[_chainId][_round].sig[_voter];
+    _supports = new Ballot.VoteType[](_voterLength);
+    _signatures = new Signature[](_voterLength);
+    for (uint256 _i; _i < _forLength; _i++) {
+      _supports[_i] = Ballot.VoteType.For;
+      _signatures[_i] = vote[_chainId][_round].sig[_vote.forVoteds[_i]];
+    }
+    for (uint256 _i; _i < _againstLength; _i++) {
+      _supports[_i + _forLength] = Ballot.VoteType.Against;
+      _signatures[_i + _forLength] = vote[_chainId][_round].sig[_vote.againstVoteds[_i]];
     }
   }
 
