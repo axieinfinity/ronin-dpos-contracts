@@ -101,7 +101,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function totalBlockProducers() external view override returns (uint256) {}
 
-  function periodOf(uint256) external view returns (uint256) {}
+  function tryGetPeriodOfEpoch(uint256) external view returns (bool, uint256) {}
 
   function isPeriodEnding() public view virtual returns (bool) {
     return currentPeriod() > _lastUpdatedPeriod;
