@@ -24,7 +24,7 @@ import {
   MainchainGovernanceAdmin,
 } from '../../src/types';
 import { initTest, InitTestInput } from '../helpers/fixture';
-import { randomAddress } from '../../src/utils';
+import { MAX_UINT255, randomAddress } from '../../src/utils';
 import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
 
 let stakingVestingContract: StakingVesting;
@@ -160,9 +160,7 @@ describe('[Integration] Configuration check', () => {
   });
 
   it('Should the MainchainGovernanceAdmin contract set configs correctly', async () => {
-    expect(await mainchainGovernanceAdminContract.getProposalExpiryDuration()).eq(
-      config.governanceAdminArguments?.proposalExpiryDuration
-    );
+    expect(await mainchainGovernanceAdminContract.getProposalExpiryDuration()).eq(MAX_UINT255);
   });
 
   it('Should the Maintenance contract set configs correctly', async () => {
