@@ -196,6 +196,13 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
   }
 
   /**
+   * @dev See `CoreGovernance-_deleteExpiredProposal`
+   */
+  function deleteExpired(uint256 chainId, uint256 round) external {
+    _deleteExpiredVotingRound(chainId, round);
+  }
+
+  /**
    * @dev See `BOsGovernanceProposal-_castVotesBySignatures`.
    */
   function voteBridgeOperatorsBySignatures(

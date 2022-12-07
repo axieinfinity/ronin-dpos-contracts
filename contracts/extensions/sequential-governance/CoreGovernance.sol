@@ -274,6 +274,14 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   }
 
   /**
+   * @dev Delete the expired proposal by its chainId and nonce, without creating a new proposal.
+   */
+  function _deleteExpiredVotingRound(uint256 _chainId, uint256 _round) internal {
+    ProposalVote storage _vote = vote[_chainId][_round];
+    _tryDeleteExpiredVotingRound(_vote);
+  }
+
+  /**
    * @dev When the contract is on Ronin chain, checks whether the proposal is expired and delete it if is expired.
    */
   function _tryDeleteExpiredVotingRound(ProposalVote storage _proposalVote) private returns (bool _isExpired) {
