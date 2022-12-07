@@ -355,5 +355,64 @@ describe('Governance Admin test', () => {
         .emit(mainchainGovernanceAdmin, 'ProposalApproved')
         .withArgs(previousHash);
     });
+
+    it('Should the expired proposal can be manually marked as expired', async () => {
+      const newMinValidatorStakingAmount = 989283;
+      const latestTimestamp = await getLastBlockTimestamp();
+      const expiryTimestamp = latestTimestamp + proposalExpiryDuration,
+        proposal = await governanceAdminInterface.createProposal(
+          expiryTimestamp,
+          stakingContract.address,
+          0,
+          governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+            stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [
+              newMinValidatorStakingAmount,
+            ]),
+          ]),
+          500_000
+        );
+      previousProposal = proposal;
+      previousHash = getProposalHash(proposal);
+
+      signatures = await governanceAdminInterface.generateSignatures(proposal);
+      supports = signatures.map(() => VoteType.For);
+
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
+        .false;
+
+      const cutOffLength = Math.floor((supports.length * numerator) / denominator);
+
+      await governanceAdmin
+        .connect(trustedOrgs[0].governor)
+        .proposeProposalStructAndCastVotes(
+          proposal,
+          supports.splice(0, cutOffLength - 1),
+          signatures.splice(0, cutOffLength - 1)
+        );
+
+      expect(
+        await governanceAdmin
+          .connect(trustedOrgs[0].governor)
+          .deleteExpired(previousProposal.chainId, previousProposal.nonce)
+      ).not.emit(governanceAdmin, 'ProposalExpired');
+
+      await network.provider.send('evm_setNextBlockTimestamp', [expiryTimestamp + 1]);
+
+      let currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
+      expect(currentProposalVote.hash).eq(previousHash);
+      expect(currentProposalVote.status).eq(VoteStatus.Pending);
+
+      expect(
+        await governanceAdmin
+          .connect(trustedOrgs[0].governor)
+          .deleteExpired(previousProposal.chainId, previousProposal.nonce)
+      )
+        .emit(governanceAdmin, 'ProposalExpired')
+        .withArgs(previousHash);
+
+      currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
+      expect(currentProposalVote.hash).eq(ZERO_BYTES32);
+      expect(currentProposalVote.status).eq(VoteStatus.Pending);
+    });
   });
 });
