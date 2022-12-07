@@ -72,8 +72,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   function totalVotes(uint256 _period) external view override returns (uint256 _totalVotes) {
     _totalVotes = _periodStats[_period].totalVotes;
 
-    uint256 _currentEpoch = _validatorContract.epochOf(block.number);
-    bool _mustCountLastStats = _countedForPeriod(_period, _currentEpoch);
+    bool _mustCountLastStats = _isLastStatsCountedForPeriod(_period);
     if (_mustCountLastStats) {
       _totalVotes += _temporaryStats.info.totalVotes;
     }
@@ -85,8 +84,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   function totalBallots(uint256 _period) external view override returns (uint256 _totalBallots) {
     _totalBallots = _periodStats[_period].totalBallots;
 
-    uint256 _currentEpoch = _validatorContract.epochOf(block.number);
-    bool _mustCountLastStats = _countedForPeriod(_period, _currentEpoch);
+    bool _mustCountLastStats = _isLastStatsCountedForPeriod(_period);
     if (_mustCountLastStats) {
       _totalBallots += _temporaryStats.info.totalBallots;
     }
@@ -102,8 +100,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
     returns (uint256[] memory _res)
   {
     _res = new uint256[](_bridgeOperators.length);
-    uint256 _currentEpoch = _validatorContract.epochOf(block.number);
-    bool _mustCountLastStats = _countedForPeriod(_period, _currentEpoch);
+    bool _mustCountLastStats = _isLastStatsCountedForPeriod(_period);
     for (uint _i = 0; _i < _bridgeOperators.length; _i++) {
       _res[_i] = _totalBallotsOf(_period, _bridgeOperators[_i], _mustCountLastStats);
     }
@@ -113,8 +110,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
    * @inheritdoc IBridgeTracking
    */
   function totalBallotsOf(uint256 _period, address _bridgeOperator) public view override returns (uint256) {
-    return
-      _totalBallotsOf(_period, _bridgeOperator, _countedForPeriod(_period, _validatorContract.epochOf(block.number)));
+    return _totalBallotsOf(_period, _bridgeOperator, _isLastStatsCountedForPeriod(_period));
   }
 
   /**
@@ -125,8 +121,8 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
 
     // Only records for the receipt which not approved
     if (_stats.approvedPeriod == 0) {
+      _trySyncPeriodStats();
       uint256 _currentPeriod = _validatorContract.currentPeriod();
-      _trySyncPeriodStats(_validatorContract.epochOf(block.number));
       _temporaryStats.info.totalVotes++;
       _stats.approvedPeriod = _currentPeriod;
 
@@ -148,7 +144,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
     address _operator
   ) external override onlyBridgeContract skipOnUnstarted {
     uint256 _period = _validatorContract.currentPeriod();
-    _trySyncPeriodStats(_validatorContract.epochOf(block.number));
+    _trySyncPeriodStats();
     ReceiptStats storage _stats = _receiptStats[_kind][_requestId];
 
     // Stores the ones vote for the (deposit/mainchain withdrawal) request which is not approved yet
@@ -203,7 +199,8 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   /**
    * @dev Syncs period stats if the last epoch + 1 is already wrapped up.
    */
-  function _trySyncPeriodStats(uint256 _currentEpoch) internal {
+  function _trySyncPeriodStats() internal {
+    uint256 _currentEpoch = _validatorContract.epochOf(block.number);
     if (_temporaryStats.lastEpoch < _currentEpoch) {
       (bool _filled, uint256 _period) = _validatorContract.tryGetPeriodOfEpoch(_temporaryStats.lastEpoch + 1);
       if (!_filled) {
@@ -228,7 +225,8 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   /**
    * @dev Returns whether the last stats must be counted or not;
    */
-  function _countedForPeriod(uint256 _queriedPeriod, uint256 _currentEpoch) internal view returns (bool) {
+  function _isLastStatsCountedForPeriod(uint256 _queriedPeriod) internal view returns (bool) {
+    uint256 _currentEpoch = _validatorContract.epochOf(block.number);
     (bool _filled, uint256 _periodOfNextTemporaryEpoch) = _validatorContract.tryGetPeriodOfEpoch(
       _temporaryStats.lastEpoch + 1
     );
