@@ -23,7 +23,6 @@ export enum VoteStatus {
   Approved = 1,
   Executed = 2,
   Rejected = 3,
-  Expired = 4,
 }
 
 export const ballotParamTypes = ['bytes32', 'bytes32', 'uint8'];

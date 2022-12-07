@@ -24,7 +24,7 @@ import {
 import { MockBridge__factory } from '../../src/types/factories/MockBridge__factory';
 import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
 import { SignatureStruct } from '../../src/types/RoninGovernanceAdmin';
-import { randomAddress } from '../../src/utils';
+import { randomAddress, ZERO_BYTES32 } from '../../src/utils';
 import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
 import { initTest } from '../helpers/fixture';
 import { getLastBlockTimestamp } from '../helpers/utils';
@@ -303,13 +303,13 @@ describe('Governance Admin test', () => {
         governanceAdmin
           .connect(trustedOrgs[0].governor)
           .castProposalBySignatures(proposal, supports.splice(0, 1), signatures.splice(0, 1))
-      ).revertedWith('CoreGovernance: the vote is finalized');
+      ).revertedWith('GovernanceAdmin: cast vote for invalid proposal');
     });
 
     it('Should the new proposal replace the expired proposal', async () => {
       let currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
-      expect(currentProposalVote.hash).eq(previousHash);
-      expect(currentProposalVote.status).eq(VoteStatus.Expired);
+      expect(currentProposalVote.hash).eq(ZERO_BYTES32);
+      expect(currentProposalVote.status).eq(VoteStatus.Pending);
 
       const newMinValidatorStakingAmount = 202881;
       const latestTimestamp = await getLastBlockTimestamp();
@@ -346,7 +346,7 @@ describe('Governance Admin test', () => {
       previousHash = getProposalHash(proposal);
     });
 
-    it('Should the approved proposal and the time of expiry pass can be relayed on mainchain', async () => {
+    it('Should the approved proposal can be relayed on mainchain (even when the time of expiry is passed)', async () => {
       expect(
         await mainchainGovernanceAdmin
           .connect(relayer)

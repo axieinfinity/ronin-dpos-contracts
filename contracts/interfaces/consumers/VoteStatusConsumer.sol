@@ -6,7 +6,6 @@ interface VoteStatusConsumer {
     Pending,
     Approved,
     Executed,
-    Rejected,
-    Expired
+    Rejected
   }
 }

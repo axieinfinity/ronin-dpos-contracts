@@ -20,6 +20,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     uint256 forVoteWeight; // Total weight of for votes
     address[] forVoteds; // Array of addresses voting for
     address[] againstVoteds; // Array of addresses voting against
+    uint256 expiryTimestamp;
     mapping(address => Signature) sig;
   }
 
@@ -66,7 +67,11 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   /**
    * @dev Creates new round voting for the proposal `_proposalHash` of chain `_chainId`.
    */
-  function _createVotingRound(uint256 _chainId, bytes32 _proposalHash) internal returns (uint256 _round) {
+  function _createVotingRound(
+    uint256 _chainId,
+    bytes32 _proposalHash,
+    uint256 _expiryTimestamp
+  ) internal returns (uint256 _round) {
     _round = round[_chainId];
 
     // Skip checking for the first ever round
@@ -74,30 +79,16 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       _round = round[_chainId] = 1;
     } else {
       ProposalVote storage _latestProposalVote = vote[_chainId][_round];
-      if (_latestProposalVote.status == VoteStatus.Expired) {
-        _deleteExpiredVotingRound(_latestProposalVote);
-      } else {
+      bool _isExpired = _tryDeleteExpiredVotingRound(_latestProposalVote);
+      // Skip increase round number if the latest round is expired, allow the vote to be overridden
+      if (!_isExpired) {
         require(_latestProposalVote.status != VoteStatus.Pending, "CoreGovernance: current proposal is not completed");
         _round = ++round[_chainId];
       }
     }
 
     vote[_chainId][_round].hash = _proposalHash;
-  }
-
-  function _deleteExpiredVotingRound(ProposalVote storage _proposalVote) private {
-    for (uint256 _i; _i < _proposalVote.forVoteds.length; _i++) {
-      delete _proposalVote.sig[_proposalVote.forVoteds[_i]];
-    }
-    for (uint256 _i; _i < _proposalVote.againstVoteds.length; _i++) {
-      delete _proposalVote.sig[_proposalVote.againstVoteds[_i]];
-    }
-    delete _proposalVote.status;
-    delete _proposalVote.hash;
-    delete _proposalVote.againstVoteWeight;
-    delete _proposalVote.forVoteWeight;
-    delete _proposalVote.forVoteds;
-    delete _proposalVote.againstVoteds;
+    vote[_chainId][_round].expiryTimestamp = _expiryTimestamp;
   }
 
   /**
@@ -132,7 +123,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    _round = _createVotingRound(_chainId, _proposalHash);
+    _round = _createVotingRound(_chainId, _proposalHash, _expiryTimestamp);
     emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
   }
 
@@ -156,7 +147,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    _round = _createVotingRound(_chainId, _proposalHash);
+    _round = _createVotingRound(_chainId, _proposalHash, _proposal.expiryTimestamp);
     require(_round == _proposal.nonce, "CoreGovernance: invalid proposal nonce");
     emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
   }
@@ -192,7 +183,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    _round = _createVotingRound(0, _proposalHash);
+    _round = _createVotingRound(0, _proposalHash, _expiryTimestamp);
     emit GlobalProposalCreated(_round, _proposalHash, _proposal, _globalProposal.hash(), _globalProposal, _creator);
   }
 
@@ -215,7 +206,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    _round = _createVotingRound(0, _proposalHash);
+    _round = _createVotingRound(0, _proposalHash, _globalProposal.expiryTimestamp);
     require(_round == _proposal.nonce, "CoreGovernance: invalid proposal nonce");
     emit GlobalProposalCreated(_round, _proposalHash, _proposal, _globalProposal.hash(), _globalProposal, _creator);
   }
@@ -245,6 +236,10 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     uint256 _round = _proposal.nonce;
     ProposalVote storage _vote = vote[_chainId][_round];
 
+    if (_tryDeleteExpiredVotingRound(_vote)) {
+      return true;
+    }
+
     require(round[_proposal.chainId] == _round, "CoreGovernance: query for invalid proposal nonce");
     require(_vote.status == VoteStatus.Pending, "CoreGovernance: the vote is finalized");
     if (_voted(_vote, _voter)) {
@@ -266,11 +261,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       revert("CoreGovernance: unsupported vote type");
     }
 
-    if (_getChainType() == ChainType.RoninChain && _proposal.expiryTimestamp <= block.timestamp) {
-      _done = true;
-      _vote.status = VoteStatus.Expired;
-      emit ProposalExpired(_vote.hash);
-    } else if (_forVoteWeight >= _minimumForVoteWeight) {
+    if (_forVoteWeight >= _minimumForVoteWeight) {
       _done = true;
       _vote.status = VoteStatus.Approved;
       emit ProposalApproved(_vote.hash);
@@ -279,6 +270,31 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       _done = true;
       _vote.status = VoteStatus.Rejected;
       emit ProposalRejected(_vote.hash);
+    }
+  }
+
+  /**
+   * @dev When the contract is on Ronin chain, checks whether the proposal is expired and delete it if expired.
+   */
+  function _tryDeleteExpiredVotingRound(ProposalVote storage _proposalVote) private returns (bool _isExpired) {
+    if (_getChainType() == ChainType.RoninChain && _proposalVote.expiryTimestamp <= block.timestamp) {
+      emit ProposalExpired(_proposalVote.hash);
+
+      for (uint256 _i; _i < _proposalVote.forVoteds.length; _i++) {
+        delete _proposalVote.sig[_proposalVote.forVoteds[_i]];
+      }
+      for (uint256 _i; _i < _proposalVote.againstVoteds.length; _i++) {
+        delete _proposalVote.sig[_proposalVote.againstVoteds[_i]];
+      }
+      delete _proposalVote.status;
+      delete _proposalVote.hash;
+      delete _proposalVote.againstVoteWeight;
+      delete _proposalVote.forVoteWeight;
+      delete _proposalVote.forVoteds;
+      delete _proposalVote.againstVoteds;
+      delete _proposalVote.expiryTimestamp;
+
+      return true;
     }
   }
 
@@ -304,7 +320,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
    * @dev Returns whether the voter casted for the proposal.
    */
   function _voted(ProposalVote storage _vote, address _voter) internal view returns (bool) {
-    return _vote.sig[_voter].v != 0;
+    return _vote.sig[_voter].r != 0;
   }
 
   /**

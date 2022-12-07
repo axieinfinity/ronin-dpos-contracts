@@ -10,14 +10,14 @@ import "../interfaces/IBridge.sol";
 
 contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, GovernanceAdmin, BOsGovernanceRelay {
   bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
+  uint256 private constant DEFAULT_EXPIRY_DURATION = 1 << 255;
 
   constructor(
     address _roleSetter,
     address _roninTrustedOrganizationContract,
     address _bridgeContract,
-    address[] memory _relayers,
-    uint256 _proposalExpiryDuration
-  ) GovernanceAdmin(_roninTrustedOrganizationContract, _bridgeContract, _proposalExpiryDuration) {
+    address[] memory _relayers
+  ) GovernanceAdmin(_roninTrustedOrganizationContract, _bridgeContract, DEFAULT_EXPIRY_DURATION) {
     _setupRole(DEFAULT_ADMIN_ROLE, _roleSetter);
     for (uint256 _i; _i < _relayers.length; _i++) {
       _grantRole(RELAYER_ROLE, _relayers[_i]);
