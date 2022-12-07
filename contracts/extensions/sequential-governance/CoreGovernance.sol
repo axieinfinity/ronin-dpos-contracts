@@ -274,10 +274,12 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   }
 
   /**
-   * @dev When the contract is on Ronin chain, checks whether the proposal is expired and delete it if expired.
+   * @dev When the contract is on Ronin chain, checks whether the proposal is expired and delete it if is expired.
    */
   function _tryDeleteExpiredVotingRound(ProposalVote storage _proposalVote) private returns (bool _isExpired) {
-    if (_getChainType() == ChainType.RoninChain && _proposalVote.expiryTimestamp <= block.timestamp) {
+    _isExpired = _getChainType() == ChainType.RoninChain && _proposalVote.expiryTimestamp <= block.timestamp;
+
+    if (_isExpired) {
       emit ProposalExpired(_proposalVote.hash);
 
       for (uint256 _i; _i < _proposalVote.forVoteds.length; _i++) {
@@ -293,8 +295,6 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       delete _proposalVote.forVoteds;
       delete _proposalVote.againstVoteds;
       delete _proposalVote.expiryTimestamp;
-
-      return true;
     }
   }
 
