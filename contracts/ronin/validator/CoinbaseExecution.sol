@@ -117,9 +117,9 @@ abstract contract CoinbaseExecution is
       _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
       _currentValidators = _syncValidatorSet(_newPeriod);
     }
-
     _revampBlockProducers(_newPeriod, _currentValidators);
     emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
+    _periodOf[_epoch + 1] = _newPeriod;
     _lastUpdatedPeriod = _newPeriod;
   }
 

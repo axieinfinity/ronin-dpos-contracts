@@ -1,4 +1,3 @@
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumberish } from 'ethers';
@@ -28,6 +27,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types';
 import { initTest } from '../helpers/fixture';
+import { EpochController } from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
@@ -43,9 +43,10 @@ let roninValidatorSet: MockRoninValidatorSetExtended;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 let token: ERC20PresetMinterPauser;
+let localEpochController: EpochController;
 
-let receipt: ReceiptStruct;
 let period: BigNumberish;
+let receipts: ReceiptStruct[];
 let mainchainWithdrewIds: number[];
 let submitWithdrawalSignatures: number[];
 
@@ -55,6 +56,7 @@ const minValidatorStakingAmount = 500;
 const numerator = 2;
 const denominator = 4;
 const mainchainId = 1;
+const numberOfBlocksInEpoch = 600;
 
 describe('Bridge Tracking test', () => {
   before(async () => {
@@ -84,6 +86,7 @@ describe('Bridge Tracking test', () => {
       ])
     );
     bridgeContract = RoninGatewayV2__factory.connect(proxy.address, deployer);
+    localEpochController = new EpochController(0, numberOfBlocksInEpoch);
     await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
     // Deploys DPoS contracts
@@ -107,6 +110,7 @@ describe('Bridge Tracking test', () => {
         roninValidatorSetArguments: {
           maxValidatorNumber,
           maxPrioritizedValidatorNumber,
+          numberOfBlocksInEpoch,
         },
       });
 
@@ -161,26 +165,28 @@ describe('Bridge Tracking test', () => {
   });
 
   it('Should not record the receipts which is not approved yet', async () => {
-    receipt = {
-      id: 0,
-      kind: 0,
-      mainchain: {
-        addr: deployer.address,
-        tokenAddr: token.address,
-        chainId: mainchainId,
+    receipts = [
+      {
+        id: 0,
+        kind: 0,
+        mainchain: {
+          addr: deployer.address,
+          tokenAddr: token.address,
+          chainId: mainchainId,
+        },
+        ronin: {
+          addr: deployer.address,
+          tokenAddr: token.address,
+          chainId: network.config.chainId!,
+        },
+        info: { erc: 0, id: 0, quantity: 1 },
       },
-      ronin: {
-        addr: deployer.address,
-        tokenAddr: token.address,
-        chainId: network.config.chainId!,
-      },
-      info: { erc: 0, id: 0, quantity: 1 },
-    };
-
+    ];
+    receipts.push({ ...receipts[0], id: 1 });
     submitWithdrawalSignatures = [0, 1, 2, 3, 4, 5];
     mainchainWithdrewIds = [6, 7, 8, 9, 10];
 
-    await bridgeContract.connect(candidates[0].bridgeOperator).depositFor(receipt);
+    await bridgeContract.connect(candidates[0].bridgeOperator).tryBulkDepositFor(receipts);
     await bridgeContract
       .connect(candidates[0].bridgeOperator)
       .tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
@@ -194,77 +200,90 @@ describe('Bridge Tracking test', () => {
     expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(0);
   });
 
-  it('Should be able to record the votes/ballots when the receipts are already approved', async () => {
+  it('Should be able to approve the receipts', async () => {
     {
-      const tx = await bridgeContract.connect(candidates[1].bridgeOperator).depositFor(receipt);
-      await expect(tx).emit(bridgeContract, 'Deposited').withArgs(anyValue, anyValue);
+      const tx = await bridgeContract.connect(candidates[1].bridgeOperator).tryBulkDepositFor(receipts);
+      await expect(tx).emit(bridgeContract, 'Deposited');
     }
     {
       const tx = await bridgeContract
         .connect(candidates[1].bridgeOperator)
         .tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
-      await expect(tx).emit(bridgeContract, 'MainchainWithdrew').withArgs(anyValue, anyValue);
+      await expect(tx).emit(bridgeContract, 'MainchainWithdrew');
     }
     await bridgeContract.connect(candidates[1].bridgeOperator).bulkSubmitWithdrawalSignatures(
       submitWithdrawalSignatures,
       submitWithdrawalSignatures.map(() => [])
     );
-
-    // Should skips for the method `bulkSubmitWithdrawalSignatures` because no one requests these withdrawals
-    expect(await bridgeTracking.totalVotes(period)).eq(1 + mainchainWithdrewIds.length);
-    expect(await bridgeTracking.totalBallots(period)).eq((1 + mainchainWithdrewIds.length) * 2);
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(
-      1 + mainchainWithdrewIds.length
-    );
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[1].bridgeOperator.address)).eq(
-      1 + mainchainWithdrewIds.length
-    );
   });
 
-  it('Should still be able to record for those who vote once the request is approved', async () => {
-    await bridgeContract.connect(candidates[2].bridgeOperator).tryBulkDepositFor([receipt]);
-    await bridgeContract
-      .connect(candidates[2].bridgeOperator)
-      .tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
-
-    expect(await bridgeTracking.totalVotes(period)).eq(1 + mainchainWithdrewIds.length);
-    expect(await bridgeTracking.totalBallots(period)).eq((1 + mainchainWithdrewIds.length) * 3);
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(
-      1 + mainchainWithdrewIds.length
-    );
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[1].bridgeOperator.address)).eq(
-      1 + mainchainWithdrewIds.length
-    );
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[2].bridgeOperator.address)).eq(
-      1 + mainchainWithdrewIds.length
-    );
+  it('Should not record the approved receipts once the epoch is not yet wrapped up', async () => {
+    expect(await bridgeTracking.totalVotes(period)).eq(0);
+    expect(await bridgeTracking.totalBallots(period)).eq(0);
+    expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(0);
   });
 
-  it('Should not record in the next period', async () => {
-    await network.provider.send('evm_increaseTime', [86400]);
+  it('Should be able to record the approved votes/ballots when the epoch is wrapped up', async () => {
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
       await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
+
+    const expectTotalVotes = mainchainWithdrewIds.length + submitWithdrawalSignatures.length + receipts.length;
+    expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 2);
+    expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallotsOf(period, candidates[1].bridgeOperator.address)).eq(expectTotalVotes);
+  });
+
+  it('Should still be able to record for those who vote lately once the request is approved', async () => {
+    await bridgeContract.connect(candidates[2].bridgeOperator).tryBulkDepositFor(receipts);
+    await bridgeContract
+      .connect(candidates[2].bridgeOperator)
+      .tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
+    await bridgeContract.connect(candidates[2].bridgeOperator).bulkSubmitWithdrawalSignatures(
+      submitWithdrawalSignatures,
+      submitWithdrawalSignatures.map(() => [])
+    );
+
+    await EpochController.setTimestampToPeriodEnding();
+    await mineBatchTxs(async () => {
+      await roninValidatorSet.endEpoch();
+      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+    });
+
+    const expectTotalVotes = mainchainWithdrewIds.length + submitWithdrawalSignatures.length + receipts.length;
+    expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 3);
+    expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallotsOf(period, candidates[1].bridgeOperator.address)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallotsOf(period, candidates[2].bridgeOperator.address)).eq(expectTotalVotes);
+  });
+
+  it('Should not record in the next period', async () => {
     const newPeriod = await roninValidatorSet.currentPeriod();
     expect(newPeriod).not.eq(period);
 
-    await bridgeContract.connect(candidates[3].bridgeOperator).depositFor(receipt);
+    await bridgeContract.connect(candidates[3].bridgeOperator).tryBulkDepositFor(receipts);
     await bridgeContract
       .connect(candidates[3].bridgeOperator)
       .tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
+    await bridgeContract.connect(candidates[3].bridgeOperator).bulkSubmitWithdrawalSignatures(
+      submitWithdrawalSignatures,
+      submitWithdrawalSignatures.map(() => [])
+    );
 
-    expect(await bridgeTracking.totalVotes(period)).eq(1 + mainchainWithdrewIds.length);
-    expect(await bridgeTracking.totalBallots(period)).eq((1 + mainchainWithdrewIds.length) * 3);
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(
-      1 + mainchainWithdrewIds.length
-    );
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[1].bridgeOperator.address)).eq(
-      1 + mainchainWithdrewIds.length
-    );
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[2].bridgeOperator.address)).eq(
-      1 + mainchainWithdrewIds.length
-    );
+    await mineBatchTxs(async () => {
+      await roninValidatorSet.endEpoch();
+      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+    });
+
+    const expectTotalVotes = mainchainWithdrewIds.length + submitWithdrawalSignatures.length + receipts.length;
+    expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 3);
+    expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallotsOf(period, candidates[1].bridgeOperator.address)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallotsOf(period, candidates[2].bridgeOperator.address)).eq(expectTotalVotes);
     expect(await bridgeTracking.totalBallotsOf(period, candidates[3].bridgeOperator.address)).eq(0);
 
     period = newPeriod;
@@ -274,50 +293,5 @@ describe('Bridge Tracking test', () => {
     expect(await bridgeTracking.totalBallotsOf(newPeriod, candidates[1].bridgeOperator.address)).eq(0);
     expect(await bridgeTracking.totalBallotsOf(newPeriod, candidates[2].bridgeOperator.address)).eq(0);
     expect(await bridgeTracking.totalBallotsOf(newPeriod, candidates[3].bridgeOperator.address)).eq(0);
-  });
-
-  it('Should be able to request withdrawal and record voting for submitting signatures', async () => {
-    await token.mint(deployer.address, 1_000_000);
-    await token.connect(deployer).approve(bridgeContract.address, ethers.constants.MaxUint256);
-
-    await bridgeContract.bulkRequestWithdrawalFor(
-      submitWithdrawalSignatures.map(() => ({
-        recipientAddr: deployer.address,
-        tokenAddr: token.address,
-        info: receipt.info,
-      })),
-      mainchainId
-    );
-
-    await bridgeContract.connect(candidates[0].bridgeOperator).bulkSubmitWithdrawalSignatures(
-      submitWithdrawalSignatures,
-      submitWithdrawalSignatures.map(() => [])
-    );
-    await bridgeContract.connect(candidates[1].bridgeOperator).bulkSubmitWithdrawalSignatures(
-      submitWithdrawalSignatures,
-      submitWithdrawalSignatures.map(() => [])
-    );
-    await bridgeContract.connect(candidates[2].bridgeOperator).bulkSubmitWithdrawalSignatures(
-      submitWithdrawalSignatures,
-      submitWithdrawalSignatures.map(() => [])
-    );
-    await bridgeContract.connect(candidates[3].bridgeOperator).bulkSubmitWithdrawalSignatures(
-      submitWithdrawalSignatures,
-      submitWithdrawalSignatures.map(() => [])
-    );
-    expect(await bridgeTracking.totalVotes(period)).eq(submitWithdrawalSignatures.length);
-    expect(await bridgeTracking.totalBallots(period)).eq(submitWithdrawalSignatures.length * 4);
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(
-      submitWithdrawalSignatures.length
-    );
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[1].bridgeOperator.address)).eq(
-      submitWithdrawalSignatures.length
-    );
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[2].bridgeOperator.address)).eq(
-      submitWithdrawalSignatures.length
-    );
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[3].bridgeOperator.address)).eq(
-      submitWithdrawalSignatures.length
-    );
   });
 });

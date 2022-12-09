@@ -24,6 +24,11 @@ interface ITimingInfo {
   function epochEndingAt(uint256 _block) external view returns (bool);
 
   /**
+   * @dev Tries to get the period index from the epoch number.
+   */
+  function tryGetPeriodOfEpoch(uint256 _epoch) external view returns (bool _filled, uint256 _periodNumber);
+
+  /**
    * @dev Returns whether the period ending at the current block number.
    */
   function isPeriodEnding() external view returns (bool);
