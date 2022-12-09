@@ -8,19 +8,20 @@ library Proposal {
     // Value 0: all chain should run this proposal
     // Other values: only specifc chain has to execute
     uint256 chainId;
+    uint256 expiryTimestamp;
     address[] targets;
     uint256[] values;
     bytes[] calldatas;
     uint256[] gasAmounts;
   }
 
-  // keccak256("ProposalDetail(uint256 nonce,uint256 chainId,address[] targets,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)");
-  bytes32 public constant TYPE_HASH = 0x65526afa953b4e935ecd640e6905741252eedae157e79c37331ee8103c70019d;
+  // keccak256("ProposalDetail(uint256 nonce,uint256 chainId,uint256 expiryTimestamp,address[] targets,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)");
+  bytes32 public constant TYPE_HASH = 0xd051578048e6ff0bbc9fca3b65a42088dbde10f36ca841de566711087ad9b08a;
 
   /**
    * @dev Validates the proposal.
    */
-  function validate(ProposalDetail memory _proposal) internal pure {
+  function validate(ProposalDetail memory _proposal, uint256 _maxExpiryDuration) internal view {
     require(
       _proposal.targets.length > 0 &&
         _proposal.targets.length == _proposal.values.length &&
@@ -28,6 +29,7 @@ library Proposal {
         _proposal.targets.length == _proposal.gasAmounts.length,
       "Proposal: invalid array length"
     );
+    require(_proposal.expiryTimestamp <= block.timestamp + _maxExpiryDuration, "Proposal: invalid expiry timestamp");
   }
 
   /**
@@ -61,6 +63,7 @@ library Proposal {
           TYPE_HASH,
           _proposal.nonce,
           _proposal.chainId,
+          _proposal.expiryTimestamp,
           _targetsHash,
           _valuesHash,
           _calldatasHash,

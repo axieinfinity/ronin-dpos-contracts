@@ -1,11 +1,18 @@
 import { BigNumber, BigNumberish } from 'ethers';
-import { ethers } from 'hardhat';
+import { ethers, network } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
 
 import { TrustedOrganizationStruct } from './types/IRoninTrustedOrganization';
 
 export const DEFAULT_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
+export const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
+export const MAX_UINT256 = BigNumber.from(
+  '115792089237316195423570985008687907853269984665640564039457584007913129639936'
+);
+export const MAX_UINT255 = BigNumber.from(
+  '57896044618658097711785492504343953926634992332820282019728792003956564819968'
+);
 
 export enum Network {
   Local = 'local',
@@ -145,6 +152,14 @@ export interface RoninValidatorSetArguments {
 
 export interface RoninValidatorSetConfig {
   [network: LiteralNetwork]: RoninValidatorSetArguments | undefined;
+}
+
+export interface GovernanceAdminArguments {
+  proposalExpiryDuration?: BigNumberish;
+}
+
+export interface GovernanceAdminConfig {
+  [network: LiteralNetwork]: GovernanceAdminArguments | undefined;
 }
 
 export interface MainchainGovernanceAdminArguments {

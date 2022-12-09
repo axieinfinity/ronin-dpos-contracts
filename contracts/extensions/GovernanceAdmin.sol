@@ -6,7 +6,7 @@ import "../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../extensions/collections/HasBridgeContract.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 
-contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract, HasBridgeContract {
+abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract, HasBridgeContract {
   /// @dev Domain separator
   bytes32 public constant DOMAIN_SEPARATOR = 0xf8704f8860d9e985bf6c52ec4738bd10fe31487599b36c0944f746ea09dc256b;
 
@@ -15,7 +15,11 @@ contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract,
     _;
   }
 
-  constructor(address _roninTrustedOrganizationContract, address _bridgeContract) {
+  constructor(
+    address _roninTrustedOrganizationContract,
+    address _bridgeContract,
+    uint256 _proposalExpiryDuration
+  ) CoreGovernance(_proposalExpiryDuration) {
     require(
       keccak256(
         abi.encode(
@@ -48,6 +52,17 @@ contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract,
   }
 
   /**
+   * @dev Sets the expiry duration for a new proposal.
+   *
+   * Requirements:
+   * - Only allowing self-call to this method, since this contract does not have admin.
+   *
+   */
+  function setProposalExpiryDuration(uint256 _expiryDuration) external onlySelfCall {
+    _setProposalExpiryDuration(_expiryDuration);
+  }
+
+  /**
    * @dev Returns the current implementation of `_proxy`.
    *
    * Requirements:
@@ -60,6 +75,13 @@ contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract,
     (bool _success, bytes memory _returndata) = _proxy.staticcall(hex"5c60da1b");
     require(_success, "GovernanceAdmin: proxy call `implementation()` failed");
     return abi.decode(_returndata, (address));
+  }
+
+  /**
+   * @dev Returns the proposal expiry duration.
+   */
+  function getProposalExpiryDuration() external view returns (uint256) {
+    return super._getProposalExpiryDuration();
   }
 
   /**

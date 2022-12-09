@@ -10,13 +10,14 @@ import "../interfaces/IBridge.sol";
 
 contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, GovernanceAdmin, BOsGovernanceRelay {
   bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
+  uint256 private constant DEFAULT_EXPIRY_DURATION = 1 << 255;
 
   constructor(
     address _roleSetter,
     address _roninTrustedOrganizationContract,
     address _bridgeContract,
     address[] memory _relayers
-  ) GovernanceAdmin(_roninTrustedOrganizationContract, _bridgeContract) {
+  ) GovernanceAdmin(_roninTrustedOrganizationContract, _bridgeContract, DEFAULT_EXPIRY_DURATION) {
     _setupRole(DEFAULT_ADMIN_ROLE, _roleSetter);
     for (uint256 _i; _i < _relayers.length; _i++) {
       _grantRole(RELAYER_ROLE, _relayers[_i]);
@@ -121,5 +122,12 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
     );
     require(_success, "MainchainGovernanceAdmin: proxy call `sumBridgeVoterWeights(address[])` failed");
     return abi.decode(_returndata, (uint256));
+  }
+
+  /**
+   * @dev See {CoreGovernance-_getChainType}
+   */
+  function _getChainType() internal pure override returns (ChainType) {
+    return ChainType.Mainchain;
   }
 }

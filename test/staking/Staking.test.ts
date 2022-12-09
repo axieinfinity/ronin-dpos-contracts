@@ -9,6 +9,7 @@ import { MockValidatorSet__factory } from '../../src/types/factories/MockValidat
 import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
 import { createManyValidatorCandidateAddressSets, ValidatorCandidateAddressSet } from '../helpers/address-set-types';
+import { getLastBlockTimestamp } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
 
@@ -32,12 +33,6 @@ const numberOfBlocksInEpoch = 2;
 const cooldownSecsToUndelegate = 3 * 86400;
 const waitingSecsToRevoke = 7 * 86400;
 const minEffectiveDaysOnwards = 7;
-
-const getLastBlockTimestamp = async () => {
-  let blockNumBefore = await ethers.provider.getBlockNumber();
-  let blockBefore = await ethers.provider.getBlock(blockNumBefore);
-  return blockBefore.timestamp;
-};
 
 describe('Staking test', () => {
   before(async () => {

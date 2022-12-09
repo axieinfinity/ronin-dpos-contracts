@@ -20,9 +20,11 @@ import {
   RoninGovernanceAdmin,
   BridgeTracking__factory,
   BridgeTracking,
+  MainchainGovernanceAdmin__factory,
+  MainchainGovernanceAdmin,
 } from '../../src/types';
 import { initTest, InitTestInput } from '../helpers/fixture';
-import { randomAddress } from '../../src/utils';
+import { MAX_UINT255, randomAddress } from '../../src/utils';
 import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
 
 let stakingVestingContract: StakingVesting;
@@ -32,6 +34,7 @@ let stakingContract: Staking;
 let validatorContract: RoninValidatorSet;
 let roninTrustedOrganizationContract: RoninTrustedOrganization;
 let roninGovernanceAdminContract: RoninGovernanceAdmin;
+let mainchainGovernanceAdminContract: MainchainGovernanceAdmin;
 let bridgeTrackingContract: BridgeTracking;
 
 let coinbase: SignerWithAddress;
@@ -99,6 +102,9 @@ const config: InitTestInput = {
     roleSetter: ethers.constants.AddressZero,
     relayers: [],
   },
+  governanceAdminArguments: {
+    proposalExpiryDuration: 60 * 60 * 24 * 14,
+  },
 };
 
 describe('[Integration] Configuration check', () => {
@@ -122,10 +128,15 @@ describe('[Integration] Configuration check', () => {
       stakingVestingContractAddress,
       roninTrustedOrganizationAddress,
       roninGovernanceAdminAddress,
+      mainchainGovernanceAdminAddress,
       bridgeTrackingAddress,
     } = await initTest('Configuration')(config);
 
     roninGovernanceAdminContract = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
+    mainchainGovernanceAdminContract = MainchainGovernanceAdmin__factory.connect(
+      mainchainGovernanceAdminAddress,
+      deployer
+    );
     maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
     roninTrustedOrganizationContract = RoninTrustedOrganization__factory.connect(
       roninTrustedOrganizationAddress,
@@ -143,6 +154,13 @@ describe('[Integration] Configuration check', () => {
       roninTrustedOrganizationContract.address
     );
     expect(await roninGovernanceAdminContract.bridgeContract()).eq(config.bridgeContract);
+    expect(await roninGovernanceAdminContract.getProposalExpiryDuration()).eq(
+      config.governanceAdminArguments?.proposalExpiryDuration
+    );
+  });
+
+  it('Should the MainchainGovernanceAdmin contract set configs correctly', async () => {
+    expect(await mainchainGovernanceAdminContract.getProposalExpiryDuration()).eq(MAX_UINT255);
   });
 
   it('Should the Maintenance contract set configs correctly', async () => {

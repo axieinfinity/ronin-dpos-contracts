@@ -15,35 +15,36 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
     _;
   }
 
-  constructor(address _roninTrustedOrganizationContract, address _bridgeContract)
-    GovernanceAdmin(_roninTrustedOrganizationContract, _bridgeContract)
-  {}
+  constructor(
+    address _roninTrustedOrganizationContract,
+    address _bridgeContract,
+    uint256 _proposalExpiryDuration
+  ) GovernanceAdmin(_roninTrustedOrganizationContract, _bridgeContract, _proposalExpiryDuration) {}
 
   /**
    * @dev Returns the voted signatures for the proposals.
    *
-   * Note: Does not verify whether the voter casted vote for the proposal and the returned signature can be empty.
-   * Please consider filtering for empty signatures after calling this function.
-   *
    */
-  function getProposalSignatures(
-    uint256 _chainId,
-    uint256 _round,
-    address[] calldata _voters
-  ) external view returns (Ballot.VoteType[] memory _supports, Signature[] memory _signatures) {
+  function getProposalSignatures(uint256 _chainId, uint256 _round)
+    external
+    view
+    returns (Ballot.VoteType[] memory _supports, Signature[] memory _signatures)
+  {
     ProposalVote storage _vote = vote[_chainId][_round];
 
-    address _voter;
-    _supports = new Ballot.VoteType[](_voters.length);
-    _signatures = new Signature[](_voters.length);
-    for (uint256 _i; _i < _voters.length; _i++) {
-      _voter = _voters[_i];
+    uint256 _forLength = _vote.forVoteds.length;
+    uint256 _againstLength = _vote.againstVoteds.length;
+    uint256 _voterLength = _forLength + _againstLength;
 
-      if (_vote.againstVoted[_voter]) {
-        _supports[_i] = Ballot.VoteType.Against;
-      }
-
-      _signatures[_i] = vote[_chainId][_round].sig[_voter];
+    _supports = new Ballot.VoteType[](_voterLength);
+    _signatures = new Signature[](_voterLength);
+    for (uint256 _i; _i < _forLength; _i++) {
+      _supports[_i] = Ballot.VoteType.For;
+      _signatures[_i] = vote[_chainId][_round].sig[_vote.forVoteds[_i]];
+    }
+    for (uint256 _i; _i < _againstLength; _i++) {
+      _supports[_i + _forLength] = Ballot.VoteType.Against;
+      _signatures[_i + _forLength] = vote[_chainId][_round].sig[_vote.againstVoteds[_i]];
     }
   }
 
@@ -92,12 +93,13 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
    */
   function propose(
     uint256 _chainId,
+    uint256 _expiryTimestamp,
     address[] calldata _targets,
     uint256[] calldata _values,
     bytes[] calldata _calldatas,
     uint256[] calldata _gasAmounts
   ) external onlyGovernor {
-    _proposeProposal(_chainId, _targets, _values, _calldatas, _gasAmounts, msg.sender);
+    _proposeProposal(_chainId, _expiryTimestamp, _targets, _values, _calldatas, _gasAmounts, msg.sender);
   }
 
   /**
@@ -134,12 +136,14 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
    *
    */
   function proposeGlobal(
+    uint256 _expiryTimestamp,
     GlobalProposal.TargetOption[] calldata _targetOptions,
     uint256[] calldata _values,
     bytes[] calldata _calldatas,
     uint256[] calldata _gasAmounts
   ) external onlyGovernor {
     _proposeGlobal(
+      _expiryTimestamp,
       _targetOptions,
       _values,
       _calldatas,
@@ -192,6 +196,13 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
   }
 
   /**
+   * @dev See `CoreGovernance-_deleteExpiredProposal`
+   */
+  function deleteExpired(uint256 chainId, uint256 round) external {
+    _deleteExpiredVotingRound(chainId, round);
+  }
+
+  /**
    * @dev See `BOsGovernanceProposal-_castVotesBySignatures`.
    */
   function voteBridgeOperatorsBySignatures(
@@ -236,5 +247,12 @@ contract RoninGovernanceAdmin is GovernanceAdmin, GovernanceProposal, BOsGoverna
     );
     require(_success, "GovernanceAdmin: proxy call `getBridgeVoterWeight(address)` failed");
     return abi.decode(_returndata, (uint256));
+  }
+
+  /**
+   * @dev See {CoreGovernance-_getChainType}
+   */
+  function _getChainType() internal pure override returns (ChainType) {
+    return ChainType.RoninChain;
   }
 }

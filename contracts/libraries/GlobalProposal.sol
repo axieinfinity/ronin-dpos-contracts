@@ -12,14 +12,15 @@ library GlobalProposal {
   struct GlobalProposalDetail {
     // Nonce to make sure proposals are executed in order
     uint256 nonce;
+    uint256 expiryTimestamp;
     TargetOption[] targetOptions;
     uint256[] values;
     bytes[] calldatas;
     uint256[] gasAmounts;
   }
 
-  // keccak256("GlobalProposalDetail(uint256 nonce,uint8[] targetOptions,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)");
-  bytes32 public constant TYPE_HASH = 0xdb316eb400de2ddff92ab4255c0cd3cba634cd5236b93386ed9328b7d822d1c7;
+  // keccak256("GlobalProposalDetail(uint256 nonce,uint256 expiryTimestamp,uint8[] targetOptions,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)");
+  bytes32 public constant TYPE_HASH = 0x1463f426c05aff2c1a7a0957a71c9898bc8b47142540538e79ee25ee91141350;
 
   /**
    * @dev Returns struct hash of the proposal.
@@ -47,7 +48,17 @@ library GlobalProposal {
     }
 
     return
-      keccak256(abi.encode(TYPE_HASH, _proposal.nonce, _targetsHash, _valuesHash, _calldatasHash, _gasAmountsHash));
+      keccak256(
+        abi.encode(
+          TYPE_HASH,
+          _proposal.nonce,
+          _proposal.expiryTimestamp,
+          _targetsHash,
+          _valuesHash,
+          _calldatasHash,
+          _gasAmountsHash
+        )
+      );
   }
 
   /**
@@ -59,6 +70,7 @@ library GlobalProposal {
     address _gatewayContract
   ) internal pure returns (Proposal.ProposalDetail memory _detail) {
     _detail.nonce = _proposal.nonce;
+    _detail.expiryTimestamp = _proposal.expiryTimestamp;
     _detail.chainId = 0;
     _detail.targets = new address[](_proposal.targetOptions.length);
     _detail.values = _proposal.values;

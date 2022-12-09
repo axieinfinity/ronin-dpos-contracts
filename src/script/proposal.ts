@@ -4,10 +4,10 @@ import { Address } from 'hardhat-deploy/dist/types';
 
 import { GlobalProposalDetailStruct, ProposalDetailStruct } from '../types/GovernanceAdmin';
 
-// keccak256("ProposalDetail(uint256 nonce,uint256 chainId,address[] targets,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)")
-const proposalTypeHash = '0x65526afa953b4e935ecd640e6905741252eedae157e79c37331ee8103c70019d';
-// keccak256("GlobalProposalDetail(uint256 nonce,uint8[] targetOptions,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)")
-const globalProposalTypeHash = '0xdb316eb400de2ddff92ab4255c0cd3cba634cd5236b93386ed9328b7d822d1c7';
+// keccak256("ProposalDetail(uint256 nonce,uint256 chainId,uint256 expiryTimestamp,address[] targets,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)")
+const proposalTypeHash = '0xd051578048e6ff0bbc9fca3b65a42088dbde10f36ca841de566711087ad9b08a';
+// keccak256("GlobalProposalDetail(uint256 nonce,uint256 expiryTimestamp,uint8[] targetOptions,uint256[] values,bytes[] calldatas,uint256[] gasAmounts)")
+const globalProposalTypeHash = '0x1463f426c05aff2c1a7a0957a71c9898bc8b47142540538e79ee25ee91141350';
 // keccak256("Ballot(bytes32 proposalHash,uint8 support)")
 const ballotTypeHash = '0xd900570327c4c0df8dd6bdd522b7da7e39145dd049d2fd4602276adcd511e3c2';
 // keccak256("BridgeOperatorsBallot(uint256 period,address[] operators)");
@@ -26,8 +26,17 @@ export enum VoteStatus {
 }
 
 export const ballotParamTypes = ['bytes32', 'bytes32', 'uint8'];
-export const proposalParamTypes = ['bytes32', 'uint256', 'uint256', 'bytes32', 'bytes32', 'bytes32', 'bytes32'];
-export const globalProposalParamTypes = ['bytes32', 'uint256', 'bytes32', 'bytes32', 'bytes32', 'bytes32'];
+export const proposalParamTypes = [
+  'bytes32',
+  'uint256',
+  'uint256',
+  'uint256',
+  'bytes32',
+  'bytes32',
+  'bytes32',
+  'bytes32',
+];
+export const globalProposalParamTypes = ['bytes32', 'uint256', 'uint256', 'bytes32', 'bytes32', 'bytes32', 'bytes32'];
 export const bridgeOperatorsBallotParamTypes = ['bytes32', 'uint256', 'bytes32'];
 
 export const BallotTypes = {
@@ -40,6 +49,7 @@ export const BallotTypes = {
 export const ProposalDetailTypes = {
   ProposalDetail: [
     { name: 'chainId', type: 'uint256' },
+    { name: 'expiryTimestamp', type: 'uint256' },
     { name: 'targets', type: 'address[]' },
     { name: 'values', type: 'uint256[]' },
     { name: 'calldatas', type: 'bytes[]' },
@@ -49,6 +59,7 @@ export const ProposalDetailTypes = {
 
 export const GlobalProposalTypes = {
   GlobalProposalDetail: [
+    { name: 'expiryTimestamp', type: 'uint256' },
     { name: 'targetOptions', type: 'uint8[]' },
     { name: 'values', type: 'uint256[]' },
     { name: 'calldatas', type: 'bytes[]' },
@@ -69,6 +80,7 @@ export const getProposalHash = (proposal: ProposalDetailStruct) =>
       proposalTypeHash,
       proposal.nonce,
       proposal.chainId,
+      proposal.expiryTimestamp,
       keccak256(
         AbiCoder.prototype.encode(
           proposal.targets.map(() => 'address'),
@@ -101,6 +113,7 @@ export const getGlobalProposalHash = (proposal: GlobalProposalDetailStruct) =>
     AbiCoder.prototype.encode(globalProposalParamTypes, [
       globalProposalTypeHash,
       proposal.nonce,
+      proposal.expiryTimestamp,
       keccak256(
         AbiCoder.prototype.encode(
           proposal.targetOptions.map(() => 'uint8'),

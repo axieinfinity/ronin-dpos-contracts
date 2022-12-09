@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { ContractTransaction } from 'ethers';
 import { Interface, LogDescription } from 'ethers/lib/utils';
-import { network } from 'hardhat';
+import { ethers, network } from 'hardhat';
 
 export const expectEvent = async (
   contractInterface: Interface,
@@ -31,4 +31,10 @@ export const mineBatchTxs = async (fn: () => Promise<void>) => {
   await fn();
   await network.provider.send('evm_mine');
   await network.provider.send('evm_setAutomine', [true]);
+};
+
+export const getLastBlockTimestamp = async (): Promise<number> => {
+  let blockNumBefore = await ethers.provider.getBlockNumber();
+  let blockBefore = await ethers.provider.getBlock(blockNumBefore);
+  return blockBefore.timestamp;
 };
