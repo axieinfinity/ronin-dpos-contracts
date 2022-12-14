@@ -16,9 +16,10 @@ let deployer: SignerWithAddress;
 let proxyAdmin: SignerWithAddress;
 let userA: SignerWithAddress;
 let userB: SignerWithAddress;
-let poolAddr: ValidatorCandidateAddressSet;
-let otherPoolAddr: ValidatorCandidateAddressSet;
-let anotherActivePool: ValidatorCandidateAddressSet;
+let poolAddrSet: ValidatorCandidateAddressSet;
+let otherPoolAddrSet: ValidatorCandidateAddressSet;
+let anotherActivePoolSet: ValidatorCandidateAddressSet;
+let sparePoolAddrSet: ValidatorCandidateAddressSet;
 
 let validatorContract: MockValidatorSet;
 let stakingContract: Staking;
@@ -33,11 +34,13 @@ const numberOfBlocksInEpoch = 2;
 const cooldownSecsToUndelegate = 3 * 86400;
 const waitingSecsToRevoke = 7 * 86400;
 const minEffectiveDaysOnwards = 7;
+const numberOfCandidate = 4;
 
 describe('Staking test', () => {
   before(async () => {
     [deployer, proxyAdmin, userA, userB, ...signers] = await ethers.getSigners();
-    validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, 3 * 5));
+    validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, numberOfCandidate * 3));
+    sparePoolAddrSet = validatorCandidates.splice(validatorCandidates.length - 1)[0];
 
     const stakingVestingContract = await new StakingVesting__factory(deployer).deploy();
     const nonce = await deployer.getTransactionCount();
@@ -81,14 +84,14 @@ describe('Staking test', () => {
       const tx = stakingContract
         .connect(candidate.poolAdmin)
         .applyValidatorCandidate(
+          candidate.candidateAdmin.address,
           candidate.consensusAddr.address,
-          candidate.consensusAddr.address,
-          candidate.consensusAddr.address,
+          candidate.treasuryAddr.address,
           candidate.consensusAddr.address,
           1,
           /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
         );
-      await expect(tx).revertedWith('CandidateStaking: five addresses must be distinct');
+      await expect(tx).revertedWith('CandidateStaking: three operation addresses must be distinct');
     });
 
     it('Should be able to propose validator with sufficient amount', async () => {
@@ -109,21 +112,21 @@ describe('Staking test', () => {
           .withArgs(candidate.consensusAddr.address, candidate.poolAdmin.address);
       }
 
-      poolAddr = validatorCandidates[0];
-      expect(await stakingContract.getStakingTotal(poolAddr.consensusAddr.address)).eq(
+      poolAddrSet = validatorCandidates[0];
+      expect(await stakingContract.getStakingTotal(poolAddrSet.consensusAddr.address)).eq(
         minValidatorStakingAmount.mul(2)
       );
     });
 
-    it('Should not be able to propose validator again', async () => {
+    it('Should not be able to propose validator (existent consensus address) again', async () => {
       await expect(
         stakingContract
-          .connect(poolAddr.poolAdmin)
+          .connect(sparePoolAddrSet.poolAdmin)
           .applyValidatorCandidate(
-            poolAddr.candidateAdmin.address,
-            poolAddr.consensusAddr.address,
-            poolAddr.treasuryAddr.address,
-            poolAddr.bridgeOperator.address,
+            sparePoolAddrSet.candidateAdmin.address,
+            poolAddrSet.consensusAddr.address,
+            sparePoolAddrSet.treasuryAddr.address,
+            poolAddrSet.bridgeOperator.address,
             0,
             {
               value: minValidatorStakingAmount,
@@ -133,73 +136,75 @@ describe('Staking test', () => {
     });
 
     it('Should not be able to stake with empty value', async () => {
-      await expect(stakingContract.stake(poolAddr.consensusAddr.address, { value: 0 })).revertedWith(
+      await expect(stakingContract.stake(poolAddrSet.consensusAddr.address, { value: 0 })).revertedWith(
         'BaseStaking: query with empty value'
       );
     });
 
     it('Should not be able to call stake/unstake when the method is not the pool admin', async () => {
-      await expect(stakingContract.stake(poolAddr.consensusAddr.address, { value: 1 })).revertedWith(
+      await expect(stakingContract.stake(poolAddrSet.consensusAddr.address, { value: 1 })).revertedWith(
         'BaseStaking: requester must be the pool admin'
       );
 
-      await expect(stakingContract.unstake(poolAddr.consensusAddr.address, 1)).revertedWith(
+      await expect(stakingContract.unstake(poolAddrSet.consensusAddr.address, 1)).revertedWith(
         'BaseStaking: requester must be the pool admin'
       );
     });
 
     it('Should be able to stake as a validator candidate', async () => {
-      const tx = await stakingContract.connect(poolAddr.poolAdmin).stake(poolAddr.consensusAddr.address, { value: 1 });
-      await expect(tx!).emit(stakingContract, 'Staked').withArgs(poolAddr.consensusAddr.address, 1);
-      expect(await stakingContract.getStakingTotal(poolAddr.consensusAddr.address)).eq(
+      const tx = await stakingContract
+        .connect(poolAddrSet.poolAdmin)
+        .stake(poolAddrSet.consensusAddr.address, { value: 1 });
+      await expect(tx!).emit(stakingContract, 'Staked').withArgs(poolAddrSet.consensusAddr.address, 1);
+      expect(await stakingContract.getStakingTotal(poolAddrSet.consensusAddr.address)).eq(
         minValidatorStakingAmount.mul(2).add(1)
       );
     });
 
     it('Should not be able to unstake due to cooldown restriction', async () => {
-      await expect(stakingContract.connect(poolAddr.poolAdmin).unstake(poolAddr.consensusAddr.address, 1)).revertedWith(
-        'CandidateStaking: unstake too early'
-      );
+      await expect(
+        stakingContract.connect(poolAddrSet.poolAdmin).unstake(poolAddrSet.consensusAddr.address, 1)
+      ).revertedWith('CandidateStaking: unstake too early');
     });
 
     it('Should not be able to unstake after cooldown', async () => {
       await network.provider.send('evm_increaseTime', [cooldownSecsToUndelegate + 1]);
-      const tx = await stakingContract.connect(poolAddr.poolAdmin).unstake(poolAddr.consensusAddr.address, 1);
-      await expect(tx!).emit(stakingContract, 'Unstaked').withArgs(poolAddr.consensusAddr.address, 1);
-      expect(await stakingContract.getStakingTotal(poolAddr.consensusAddr.address)).eq(
+      const tx = await stakingContract.connect(poolAddrSet.poolAdmin).unstake(poolAddrSet.consensusAddr.address, 1);
+      await expect(tx!).emit(stakingContract, 'Unstaked').withArgs(poolAddrSet.consensusAddr.address, 1);
+      expect(await stakingContract.getStakingTotal(poolAddrSet.consensusAddr.address)).eq(
         minValidatorStakingAmount.mul(2)
       );
-      expect(await stakingContract.getStakingAmount(poolAddr.consensusAddr.address, poolAddr.poolAdmin.address)).eq(
-        minValidatorStakingAmount.mul(2)
-      );
+      expect(
+        await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, poolAddrSet.poolAdmin.address)
+      ).eq(minValidatorStakingAmount.mul(2));
     });
 
     it('[Delegator] Should be able to delegate/undelegate to a validator candidate', async () => {
-      await stakingContract.delegate(poolAddr.consensusAddr.address, { value: 10 });
-      expect(await stakingContract.getStakingAmount(poolAddr.consensusAddr.address, deployer.address)).eq(10);
+      await stakingContract.delegate(poolAddrSet.consensusAddr.address, { value: 10 });
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, deployer.address)).eq(10);
       await network.provider.send('evm_increaseTime', [cooldownSecsToUndelegate + 1]);
-      await stakingContract.undelegate(poolAddr.consensusAddr.address, 1);
-      expect(await stakingContract.getStakingAmount(poolAddr.consensusAddr.address, deployer.address)).eq(9);
+      await stakingContract.undelegate(poolAddrSet.consensusAddr.address, 1);
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, deployer.address)).eq(9);
     });
 
     it('Should be not able to unstake with the balance left is not larger than the minimum balance threshold', async () => {
       await expect(
         stakingContract
-          .connect(poolAddr.poolAdmin)
-          .unstake(poolAddr.consensusAddr.address, minValidatorStakingAmount.add(1))
+          .connect(poolAddrSet.poolAdmin)
+          .unstake(poolAddrSet.consensusAddr.address, minValidatorStakingAmount.add(1))
       ).revertedWith('CandidateStaking: invalid staking amount left');
     });
 
     it('Should not be able to request renounce using unauthorized account', async () => {
-      await expect(stakingContract.connect(deployer).requestRenounce(poolAddr.consensusAddr.address)).revertedWith(
+      await expect(stakingContract.connect(deployer).requestRenounce(poolAddrSet.consensusAddr.address)).revertedWith(
         'BaseStaking: requester must be the pool admin'
       );
     });
 
     it('Should the non-pool-admin not be able to update the commission rate', async () => {
       await expect(
-        stakingContract.connect(poolAddr.bridgeOperator).requestUpdateCommissionRate(
-          poolAddr.consensusAddr.address,
+        stakingContract.connect(poolAddrSet.bridgeOperator).requestUpdateCommissionRate(
+          poolAddrSet.consensusAddr.address,
           minEffectiveDaysOnwards,
           20_00 // 20%
         )
@@ -208,8 +213,8 @@ describe('Staking test', () => {
 
     it('Should the pool admin not be able to request updating the commission rate with invalid effective date', async () => {
       await expect(
-        stakingContract.connect(poolAddr.poolAdmin).requestUpdateCommissionRate(
-          poolAddr.consensusAddr.address,
+        stakingContract.connect(poolAddrSet.poolAdmin).requestUpdateCommissionRate(
+          poolAddrSet.consensusAddr.address,
           minEffectiveDaysOnwards - 1,
           20_00 // 20%
         )
@@ -217,11 +222,11 @@ describe('Staking test', () => {
     });
 
     it('Should the pool admin be able to request updating the commission rate', async () => {
-      let _info = await validatorContract.getCandidateInfo(poolAddr.consensusAddr.address);
+      let _info = await validatorContract.getCandidateInfo(poolAddrSet.consensusAddr.address);
       let _previousRate = _info.commissionRate;
 
-      let tx = stakingContract.connect(poolAddr.poolAdmin).requestUpdateCommissionRate(
-        poolAddr.consensusAddr.address,
+      let tx = stakingContract.connect(poolAddrSet.poolAdmin).requestUpdateCommissionRate(
+        poolAddrSet.consensusAddr.address,
         minEffectiveDaysOnwards,
         20_00 // 20%
       );
@@ -231,9 +236,9 @@ describe('Staking test', () => {
 
       await expect(tx)
         .emit(validatorContract, 'CommissionRateUpdateScheduled')
-        .withArgs(poolAddr.consensusAddr.address, expectingEffectiveTime, 20_00);
+        .withArgs(poolAddrSet.consensusAddr.address, expectingEffectiveTime, 20_00);
 
-      _info = await validatorContract.getCandidateInfo(poolAddr.consensusAddr.address);
+      _info = await validatorContract.getCandidateInfo(poolAddrSet.consensusAddr.address);
       await expect(_info.commissionRate).eq(_previousRate);
     });
 
@@ -241,33 +246,35 @@ describe('Staking test', () => {
       await network.provider.send('evm_increaseTime', [minEffectiveDaysOnwards * ONE_DAY]);
       let tx = await validatorContract.wrapUpEpoch();
 
-      await expect(tx).emit(validatorContract, 'CommissionRateUpdated').withArgs(poolAddr.consensusAddr.address, 20_00);
+      await expect(tx)
+        .emit(validatorContract, 'CommissionRateUpdated')
+        .withArgs(poolAddrSet.consensusAddr.address, 20_00);
 
-      let _info = await validatorContract.getCandidateInfo(poolAddr.consensusAddr.address);
+      let _info = await validatorContract.getCandidateInfo(poolAddrSet.consensusAddr.address);
       await expect(_info.commissionRate).eq(20_00);
     });
 
     it('Should be able to request renounce using pool admin', async () => {
-      await stakingContract.connect(poolAddr.poolAdmin).requestRenounce(poolAddr.consensusAddr.address);
+      await stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address);
     });
 
     it('Should not be able to request renounce again', async () => {
       await expect(
-        stakingContract.connect(poolAddr.poolAdmin).requestRenounce(poolAddr.consensusAddr.address)
+        stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address)
       ).revertedWith('CandidateManager: already requested before');
     });
 
     it('Should the consensus account is no longer be a candidate, and the staked amount is transferred back to the pool admin', async () => {
       await network.provider.send('evm_increaseTime', [waitingSecsToRevoke]);
       const stakingAmount = minValidatorStakingAmount.mul(2);
-      expect(await stakingContract.getStakingPool(poolAddr.consensusAddr.address)).eql([
-        poolAddr.poolAdmin.address,
+      expect(await stakingContract.getStakingPool(poolAddrSet.consensusAddr.address)).eql([
+        poolAddrSet.poolAdmin.address,
         stakingAmount,
         stakingAmount.add(9),
       ]);
 
-      await expect(() => validatorContract.wrapUpEpoch()).changeEtherBalance(poolAddr.poolAdmin, stakingAmount);
-      await expect(stakingContract.getStakingPool(poolAddr.consensusAddr.address)).revertedWith(
+      await expect(() => validatorContract.wrapUpEpoch()).changeEtherBalance(poolAddrSet.poolAdmin, stakingAmount);
+      await expect(stakingContract.getStakingPool(poolAddrSet.consensusAddr.address)).revertedWith(
         'BaseStaking: query for non-existent pool'
       );
     });
@@ -275,129 +282,135 @@ describe('Staking test', () => {
 
   describe('Delegator test', () => {
     before(() => {
-      otherPoolAddr = validatorCandidates[1];
-      anotherActivePool = validatorCandidates[2];
+      otherPoolAddrSet = validatorCandidates[1];
+      anotherActivePoolSet = validatorCandidates[2];
     });
 
     it('Should be able to undelegate from a deprecated validator candidate', async () => {
-      await stakingContract.undelegate(poolAddr.consensusAddr.address, 1);
-      expect(await stakingContract.getStakingAmount(poolAddr.consensusAddr.address, deployer.address)).eq(8);
+      await stakingContract.undelegate(poolAddrSet.consensusAddr.address, 1);
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, deployer.address)).eq(8);
     });
 
     it('Should not be able to delegate to a deprecated pool', async () => {
-      await expect(stakingContract.delegate(poolAddr.consensusAddr.address, { value: 1 })).revertedWith(
+      await expect(stakingContract.delegate(poolAddrSet.consensusAddr.address, { value: 1 })).revertedWith(
         'BaseStaking: query for non-existent pool'
       );
     });
 
     it('Should not be able to delegate with empty value', async () => {
-      await expect(stakingContract.delegate(otherPoolAddr.consensusAddr.address)).revertedWith(
+      await expect(stakingContract.delegate(otherPoolAddrSet.consensusAddr.address)).revertedWith(
         'BaseStaking: query with empty value'
       );
     });
 
     it('Should not be able to delegate/undelegate when the method caller is the pool admin', async () => {
       await expect(
-        stakingContract.connect(otherPoolAddr.poolAdmin).delegate(otherPoolAddr.consensusAddr.address, { value: 1 })
+        stakingContract
+          .connect(otherPoolAddrSet.poolAdmin)
+          .delegate(otherPoolAddrSet.consensusAddr.address, { value: 1 })
       ).revertedWith('DelegatorStaking: admin of an arbitrary pool cannot delegate');
       await expect(
-        stakingContract.connect(otherPoolAddr.poolAdmin).undelegate(otherPoolAddr.consensusAddr.address, 1)
+        stakingContract.connect(otherPoolAddrSet.poolAdmin).undelegate(otherPoolAddrSet.consensusAddr.address, 1)
       ).revertedWith('BaseStaking: delegator must not be the pool admin');
     });
 
     it('Should not be able to delegate when the method caller is the admin of any arbitrary pool', async () => {
       await expect(
-        stakingContract.connect(anotherActivePool.poolAdmin).delegate(otherPoolAddr.consensusAddr.address, { value: 1 })
+        stakingContract
+          .connect(anotherActivePoolSet.poolAdmin)
+          .delegate(otherPoolAddrSet.consensusAddr.address, { value: 1 })
       ).revertedWith('DelegatorStaking: admin of an arbitrary pool cannot delegate');
       await expect(
-        stakingContract.connect(otherPoolAddr.poolAdmin).delegate(anotherActivePool.consensusAddr.address, { value: 1 })
+        stakingContract
+          .connect(otherPoolAddrSet.poolAdmin)
+          .delegate(anotherActivePoolSet.consensusAddr.address, { value: 1 })
       ).revertedWith('DelegatorStaking: admin of an arbitrary pool cannot delegate');
     });
 
     it('Should multiple accounts be able to delegate to one pool', async () => {
       let tx: ContractTransaction;
-      tx = await stakingContract.connect(userA).delegate(otherPoolAddr.consensusAddr.address, { value: 1 });
+      tx = await stakingContract.connect(userA).delegate(otherPoolAddrSet.consensusAddr.address, { value: 1 });
       await expect(tx!)
         .emit(stakingContract, 'Delegated')
-        .withArgs(userA.address, otherPoolAddr.consensusAddr.address, 1);
+        .withArgs(userA.address, otherPoolAddrSet.consensusAddr.address, 1);
 
-      tx = await stakingContract.connect(userB).delegate(otherPoolAddr.consensusAddr.address, { value: 1 });
+      tx = await stakingContract.connect(userB).delegate(otherPoolAddrSet.consensusAddr.address, { value: 1 });
       await expect(tx!)
         .emit(stakingContract, 'Delegated')
-        .withArgs(userB.address, otherPoolAddr.consensusAddr.address, 1);
+        .withArgs(userB.address, otherPoolAddrSet.consensusAddr.address, 1);
 
-      expect(await stakingContract.getStakingTotal(otherPoolAddr.consensusAddr.address)).eq(
+      expect(await stakingContract.getStakingTotal(otherPoolAddrSet.consensusAddr.address)).eq(
         minValidatorStakingAmount.mul(2).add(2)
       );
     });
 
     it('Should not be able to undelegate due to cooldown restriction', async () => {
-      await expect(stakingContract.connect(userA).undelegate(otherPoolAddr.consensusAddr.address, 1)).revertedWith(
+      await expect(stakingContract.connect(userA).undelegate(otherPoolAddrSet.consensusAddr.address, 1)).revertedWith(
         'DelegatorStaking: undelegate too early'
       );
     });
 
     it('Should be able to undelegate after cooldown', async () => {
       await network.provider.send('evm_increaseTime', [cooldownSecsToUndelegate + 1]);
-      const tx = await stakingContract.connect(userA).undelegate(otherPoolAddr.consensusAddr.address, 1);
+      const tx = await stakingContract.connect(userA).undelegate(otherPoolAddrSet.consensusAddr.address, 1);
       await expect(tx!)
         .emit(stakingContract, 'Undelegated')
-        .withArgs(userA.address, otherPoolAddr.consensusAddr.address, 1);
-      expect(await stakingContract.getStakingTotal(otherPoolAddr.consensusAddr.address)).eq(
+        .withArgs(userA.address, otherPoolAddrSet.consensusAddr.address, 1);
+      expect(await stakingContract.getStakingTotal(otherPoolAddrSet.consensusAddr.address)).eq(
         minValidatorStakingAmount.mul(2).add(1)
       );
     });
 
     it('Should not be able to undelegate with empty amount', async () => {
-      await expect(stakingContract.undelegate(otherPoolAddr.consensusAddr.address, 0)).revertedWith(
+      await expect(stakingContract.undelegate(otherPoolAddrSet.consensusAddr.address, 0)).revertedWith(
         'DelegatorStaking: invalid amount'
       );
     });
 
     it('Should not be able to undelegate more than the delegating amount', async () => {
-      await expect(stakingContract.undelegate(otherPoolAddr.consensusAddr.address, 1000)).revertedWith(
+      await expect(stakingContract.undelegate(otherPoolAddrSet.consensusAddr.address, 1000)).revertedWith(
         'DelegatorStaking: insufficient amount to undelegate'
       );
     });
 
     it('[Validator Candidate] Should an ex-candidate to rejoin Staking contract', async () => {
       await stakingContract
-        .connect(poolAddr.poolAdmin)
+        .connect(poolAddrSet.poolAdmin)
         .applyValidatorCandidate(
-          poolAddr.candidateAdmin.address,
-          poolAddr.consensusAddr.address,
-          poolAddr.treasuryAddr.address,
-          poolAddr.bridgeOperator.address,
+          poolAddrSet.candidateAdmin.address,
+          poolAddrSet.consensusAddr.address,
+          poolAddrSet.treasuryAddr.address,
+          poolAddrSet.bridgeOperator.address,
           2,
           /* 0.02% */ { value: minValidatorStakingAmount }
         );
-      expect(await stakingContract.getStakingPool(poolAddr.consensusAddr.address)).eql([
-        poolAddr.poolAdmin.address,
+      expect(await stakingContract.getStakingPool(poolAddrSet.consensusAddr.address)).eql([
+        poolAddrSet.poolAdmin.address,
         minValidatorStakingAmount,
         minValidatorStakingAmount.add(8),
       ]);
-      expect(await stakingContract.getStakingAmount(poolAddr.consensusAddr.address, deployer.address)).eq(8);
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, deployer.address)).eq(8);
     });
 
     it('Should be able to delegate/undelegate for the rejoined candidate', async () => {
-      await stakingContract.delegate(poolAddr.consensusAddr.address, { value: 2 });
-      expect(await stakingContract.getStakingAmount(poolAddr.consensusAddr.address, deployer.address)).eq(10);
+      await stakingContract.delegate(poolAddrSet.consensusAddr.address, { value: 2 });
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, deployer.address)).eq(10);
 
-      await stakingContract.connect(userA).delegate(poolAddr.consensusAddr.address, { value: 2 });
-      await stakingContract.connect(userB).delegate(poolAddr.consensusAddr.address, { value: 2 });
+      await stakingContract.connect(userA).delegate(poolAddrSet.consensusAddr.address, { value: 2 });
+      await stakingContract.connect(userB).delegate(poolAddrSet.consensusAddr.address, { value: 2 });
       expect(
         await stakingContract.getManyStakingAmounts(
-          [poolAddr.consensusAddr.address, poolAddr.consensusAddr.address],
+          [poolAddrSet.consensusAddr.address, poolAddrSet.consensusAddr.address],
           [userA.address, userB.address]
         )
       ).eql([2, 2].map(BigNumber.from));
 
       await network.provider.send('evm_increaseTime', [cooldownSecsToUndelegate + 1]);
-      await stakingContract.connect(userA).undelegate(poolAddr.consensusAddr.address, 2);
-      await stakingContract.connect(userB).undelegate(poolAddr.consensusAddr.address, 1);
+      await stakingContract.connect(userA).undelegate(poolAddrSet.consensusAddr.address, 2);
+      await stakingContract.connect(userB).undelegate(poolAddrSet.consensusAddr.address, 1);
       expect(
         await stakingContract.getManyStakingAmounts(
-          [poolAddr.consensusAddr.address, poolAddr.consensusAddr.address],
+          [poolAddrSet.consensusAddr.address, poolAddrSet.consensusAddr.address],
           [userA.address, userB.address]
         )
       ).eql([0, 1].map(BigNumber.from));

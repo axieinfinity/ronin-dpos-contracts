@@ -125,7 +125,7 @@ describe('Credit score and bail out test', () => {
     [deployer, coinbase, ...signers] = await ethers.getSigners();
 
     trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
-    validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, (maxValidatorNumber + 1) * 5));
+    validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, (maxValidatorNumber + 1) * 3));
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
       await initTest('CreditScore')({
