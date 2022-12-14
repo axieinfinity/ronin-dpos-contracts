@@ -24,11 +24,13 @@ abstract contract BaseStaking is
   /// @dev The number of seconds that a candidate must wait to be revoked and take the self-staking amount back.
   uint256 internal _waitingSecsToRevoke;
 
+  /// @dev Mapping from pool admin address => consensus address.
+  mapping(address => address) internal _activePoolAdminMapping;
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[50] private ______gap;
+  uint256[49] private ______gap;
 
   modifier noEmptyValue() {
     require(msg.value > 0, "BaseStaking: query with empty value");
@@ -48,6 +50,13 @@ abstract contract BaseStaking is
   modifier poolExists(address _poolAddr) {
     require(_validatorContract.isValidatorCandidate(_poolAddr), "BaseStaking: query for non-existent pool");
     _;
+  }
+
+  /**
+   * @inheritdoc IBaseStaking
+   */
+  function isPoolAdminActive(address _poolAdminAddr) public view returns (bool) {
+    return _activePoolAdminMapping[_poolAdminAddr] != address(0);
   }
 
   /**

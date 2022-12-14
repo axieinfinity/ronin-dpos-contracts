@@ -21,4 +21,21 @@ library AddressArrayUtils {
     }
     return false;
   }
+
+  /**
+   * Returns whether or not all elements in the array are all equal. Runs in O(n).
+   * @param A Array to search
+   * @return Returns true if all equal, false otherwise
+   */
+  function hasAllEqual(address[] memory A) internal pure returns (bool) {
+    if (A.length == 0) {
+      return true;
+    }
+    for (uint i = 0; i < A.length - 1; i++) {
+      if (A[i] != A[i + 1]) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
