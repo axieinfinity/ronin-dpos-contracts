@@ -26,7 +26,7 @@ interface IBaseStaking {
   /**
    * @dev Returns whether the `_poolAdminAddr` is currently active.
    */
-  function isPoolAdminActive(address _poolAdminAddr) external view returns (bool);
+  function isActivePoolAdmin(address _poolAdminAddr) external view returns (bool);
 
   /**
    * @dev Returns The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.

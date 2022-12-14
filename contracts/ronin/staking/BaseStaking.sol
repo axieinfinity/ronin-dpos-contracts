@@ -55,7 +55,7 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IBaseStaking
    */
-  function isPoolAdminActive(address _poolAdminAddr) public view returns (bool) {
+  function isActivePoolAdmin(address _poolAdminAddr) public view returns (bool) {
     return _activePoolAdminMapping[_poolAdminAddr] != address(0);
   }
 

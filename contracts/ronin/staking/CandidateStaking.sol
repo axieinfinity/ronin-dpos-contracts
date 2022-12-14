@@ -40,7 +40,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external payable override nonReentrant {
-    require(!isPoolAdminActive(msg.sender), "CandidateStaking: pool admin is active");
+    require(!isActivePoolAdmin(msg.sender), "CandidateStaking: pool admin is active");
 
     uint256 _amount = msg.value;
     address payable _poolAdmin = payable(msg.sender);
