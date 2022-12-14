@@ -150,12 +150,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     require(_sendRON(_treasuryAddr, 0), "CandidateStaking: treasury cannot receive RON");
     require(_amount >= _minValidatorStakingAmount, "CandidateStaking: insufficient amount");
 
-    address[] memory _equalAddrs = new address[](3);
-    _equalAddrs[0] = _poolAdmin;
-    _equalAddrs[1] = _candidateAdmin;
-    _equalAddrs[2] = _treasuryAddr;
     require(
-      AddressArrayUtils.hasAllEqual(_equalAddrs),
+      _poolAdmin == _candidateAdmin && _candidateAdmin == _treasuryAddr,
       "CandidateStaking: three interaction addresses must be of the same"
     );
 
