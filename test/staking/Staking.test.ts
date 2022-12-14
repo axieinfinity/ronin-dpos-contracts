@@ -278,6 +278,49 @@ describe('Staking test', () => {
         'BaseStaking: query for non-existent pool'
       );
     });
+
+    it('Should the exited pool admin and consensus address rejoin as a candidate', async () => {
+      const tx = await stakingContract
+        .connect(poolAddrSet.poolAdmin)
+        .applyValidatorCandidate(
+          poolAddrSet.candidateAdmin.address,
+          poolAddrSet.consensusAddr.address,
+          poolAddrSet.treasuryAddr.address,
+          poolAddrSet.bridgeOperator.address,
+          1,
+          /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
+        );
+      await expect(tx)
+        .emit(stakingContract, 'PoolApproved')
+        .withArgs(poolAddrSet.consensusAddr.address, poolAddrSet.poolAdmin.address);
+
+      expect(
+        await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, poolAddrSet.candidateAdmin.address)
+      ).eq(minValidatorStakingAmount.mul(2));
+
+      expect(await stakingContract.getStakingTotal(poolAddrSet.consensusAddr.address)).gte(
+        minValidatorStakingAmount.mul(2)
+      ); // previous delegated amount still exist
+    });
+
+    it('Should the a pool admin who is active cannot propose a new pool / cannot propose validator', async () => {
+      await expect(
+        stakingContract
+          .connect(poolAddrSet.poolAdmin)
+          .applyValidatorCandidate(
+            poolAddrSet.candidateAdmin.address,
+            poolAddrSet.consensusAddr.address,
+            poolAddrSet.treasuryAddr.address,
+            poolAddrSet.bridgeOperator.address,
+            1,
+            /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
+          )
+      ).revertedWith('CandidateStaking: pool admin is active');
+
+      await stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address);
+      await network.provider.send('evm_increaseTime', [waitingSecsToRevoke]);
+      await validatorContract.wrapUpEpoch();
+    });
   });
 
   describe('Delegator test', () => {
