@@ -152,4 +152,9 @@ interface ICandidateManager {
    * @dev Returns whether the address is the candidate admin.
    */
   function isCandidateAdmin(address _candidate, address _admin) external view returns (bool);
+
+  /**
+   * @dev Returns the schedule of changing commission rate of a candidate address.
+   */
+  function getCommissionChangeSchedule(address _candidate) external view returns (CommissionSchedule memory);
 }
