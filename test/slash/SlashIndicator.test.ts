@@ -64,7 +64,7 @@ describe('Slash indicator test', () => {
   before(async () => {
     [deployer, coinbase, vagabond, ...signers] = await ethers.getSigners();
     trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
-    validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, maxValidatorNumber * 5));
+    validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, maxValidatorNumber * 3));
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
       await initTest('SlashIndicator')({

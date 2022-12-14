@@ -49,7 +49,7 @@ describe('[Integration] Submit Block Reward', () => {
   before(async () => {
     [deployer, coinbase, ...signers] = await ethers.getSigners();
 
-    validatorCandidates = createManyValidatorCandidateAddressSets(signers.splice(0, 2 * 5));
+    validatorCandidates = createManyValidatorCandidateAddressSets(signers.splice(0, 2 * 3));
     trustedOrgs = createManyTrustedOrganizationAddressSets([...signers.slice(0, 1 * 3)]);
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);

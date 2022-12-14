@@ -61,7 +61,7 @@ const numberOfBlocksInEpoch = 600;
 describe('Bridge Tracking test', () => {
   before(async () => {
     [deployer, coinbase, ...signers] = await ethers.getSigners();
-    candidates = createManyValidatorCandidateAddressSets(signers.slice(0, maxValidatorNumber * 5));
+    candidates = createManyValidatorCandidateAddressSets(signers.slice(0, maxValidatorNumber * 3));
 
     trustedOrgs = createManyTrustedOrganizationAddressSets([
       ...signers.slice(0, maxPrioritizedValidatorNumber),

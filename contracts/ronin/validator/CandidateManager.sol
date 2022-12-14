@@ -65,7 +65,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    * @inheritdoc ICandidateManager
    */
   function grantValidatorCandidate(
-    address _admin,
+    address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
     address _bridgeOperatorAddr,
@@ -79,12 +79,12 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     for (uint _i = 0; _i < _candidates.length; _i++) {
       ValidatorCandidate storage existentInfo = _candidateInfo[_candidates[_i]];
 
-      if (_admin == existentInfo.admin) {
+      if (_candidateAdmin == existentInfo.admin) {
         revert(
           string(
             abi.encodePacked(
               "CandidateManager: candidate admin address ",
-              Strings.toHexString(uint160(_admin), 20),
+              Strings.toHexString(uint160(_candidateAdmin), 20),
               " is already exist"
             )
           )
@@ -120,12 +120,12 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     _candidates.push(_consensusAddr);
 
     ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
-    _info.admin = _admin;
+    _info.admin = _candidateAdmin;
     _info.consensusAddr = _consensusAddr;
     _info.treasuryAddr = _treasuryAddr;
     _info.bridgeOperatorAddr = _bridgeOperatorAddr;
     _info.commissionRate = _commissionRate;
-    emit CandidateGranted(_consensusAddr, _treasuryAddr, _admin, _bridgeOperatorAddr);
+    emit CandidateGranted(_consensusAddr, _treasuryAddr, _candidateAdmin, _bridgeOperatorAddr);
   }
 
   /**

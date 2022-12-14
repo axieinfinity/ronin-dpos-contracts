@@ -71,16 +71,16 @@ export function createManyTrustedOrganizationAddressSets(
 export const createValidatorCandidateAddressSet = (
   addrs: SignerWithAddress[]
 ): ValidatorCandidateAddressSet | undefined => {
-  if (addrs.length != 5) {
+  if (addrs.length != 3) {
     return;
   }
 
   return {
     poolAdmin: addrs[0],
-    candidateAdmin: addrs[1],
-    consensusAddr: addrs[2],
-    treasuryAddr: addrs[3],
-    bridgeOperator: addrs[4],
+    candidateAdmin: addrs[0],
+    treasuryAddr: addrs[0],
+    consensusAddr: addrs[1],
+    bridgeOperator: addrs[2],
   };
 };
 
@@ -104,12 +104,12 @@ export function createManyValidatorCandidateAddressSets(
   let poolAdmins: SignerWithAddress[] = [];
 
   if (!candidateAdmins || !consensusAddrs || !treasuryAddrs || !bridgeOperators) {
-    expect(signers.length % 5).eq(0, 'createManyValidatorCandidateAddressSets: signers length must be divisible by 5');
-    let _length = signers.length / 5;
+    expect(signers.length % 3).eq(0, 'createManyValidatorCandidateAddressSets: signers length must be divisible by 3');
+    let _length = signers.length / 3;
     poolAdmins = signers.splice(0, _length);
-    candidateAdmins = signers.splice(0, _length);
+    candidateAdmins = poolAdmins;
+    treasuryAddrs = poolAdmins;
     consensusAddrs = signers.splice(0, _length);
-    treasuryAddrs = signers.splice(0, _length);
     bridgeOperators = signers.splice(0, _length);
   }
 

@@ -52,7 +52,7 @@ describe('[Integration] Wrap up epoch', () => {
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
     trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
-    validatorCandidates = createManyValidatorCandidateAddressSets(signers.splice(0, maxValidatorNumber * 3 * 5));
+    validatorCandidates = createManyValidatorCandidateAddressSets(signers.splice(0, maxValidatorNumber * 3 * 3));
 
     const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
       await initTest('ActionWrapUpEpoch')({

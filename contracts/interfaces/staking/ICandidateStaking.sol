@@ -72,6 +72,9 @@ interface ICandidateStaking is IRewardPool {
 
   /**
    * @dev Deprecates the pool.
+   * - Deduct self-staking amount of the pool admin to zero.
+   * - Transfer the deducted amount to the pool admin.
+   * - Deactivate the pool admin address in the mapping of active pool admins
    *
    * Requirements:
    * - The method caller is validator contract.

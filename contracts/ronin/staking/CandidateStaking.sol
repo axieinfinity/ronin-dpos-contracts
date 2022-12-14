@@ -40,6 +40,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external payable override nonReentrant {
+    require(!isActivePoolAdmin(msg.sender), "CandidateStaking: pool admin is active");
+
     uint256 _amount = msg.value;
     address payable _poolAdmin = payable(msg.sender);
     _applyValidatorCandidate(
@@ -55,6 +57,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
     _pool.admin = _poolAdmin;
     _pool.addr = _consensusAddr;
+    _activePoolAdminMapping[_poolAdmin] = _consensusAddr;
+
     _stake(_stakingPool[_consensusAddr], _poolAdmin, _amount);
     emit PoolApproved(_consensusAddr, _poolAdmin);
   }
@@ -81,6 +85,10 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     uint256 _amount;
     for (uint _i = 0; _i < _pools.length; _i++) {
       PoolDetail storage _pool = _stakingPool[_pools[_i]];
+      // Deactivate the pool admin in the active mapping.
+      delete _activePoolAdminMapping[_pool.admin];
+
+      // Deduct and transfer the self staking amount to the pool admin.
       _amount = _pool.stakingAmount;
       if (_amount > 0) {
         _deductStakingAmount(_pool, _amount);
@@ -142,13 +150,19 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     require(_sendRON(_treasuryAddr, 0), "CandidateStaking: treasury cannot receive RON");
     require(_amount >= _minValidatorStakingAmount, "CandidateStaking: insufficient amount");
 
-    address[] memory _addresses = new address[](5);
-    _addresses[0] = _poolAdmin;
-    _addresses[1] = _candidateAdmin;
-    _addresses[2] = _consensusAddr;
-    _addresses[3] = _treasuryAddr;
-    _addresses[4] = _bridgeOperatorAddr;
-    require(!AddressArrayUtils.hasDuplicate(_addresses), "CandidateStaking: five addresses must be distinct");
+    require(
+      _poolAdmin == _candidateAdmin && _candidateAdmin == _treasuryAddr,
+      "CandidateStaking: three interaction addresses must be of the same"
+    );
+
+    address[] memory _diffAddrs = new address[](3);
+    _diffAddrs[0] = _poolAdmin;
+    _diffAddrs[1] = _consensusAddr;
+    _diffAddrs[2] = _bridgeOperatorAddr;
+    require(
+      !AddressArrayUtils.hasDuplicate(_diffAddrs),
+      "CandidateStaking: three operation addresses must be distinct"
+    );
 
     _validatorContract.grantValidatorCandidate(
       _candidateAdmin,

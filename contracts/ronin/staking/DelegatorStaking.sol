@@ -16,12 +16,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    * @inheritdoc IDelegatorStaking
    */
   function delegate(address _consensusAddr) external payable noEmptyValue poolExists(_consensusAddr) {
-    address[] memory _currValidatorList = _validatorContract.getValidatorCandidates();
-    for (uint _i = 0; _i < _currValidatorList.length; _i++) {
-      PoolDetail storage _pool = _stakingPool[_currValidatorList[_i]];
-      require(msg.sender != _pool.admin, "DelegatorStaking: admin of an arbitrary pool cannot delegate");
-    }
-
+    require(!isActivePoolAdmin(msg.sender), "DelegatorStaking: admin of an active pool cannot delegate");
     _delegate(_stakingPool[_consensusAddr], msg.sender, msg.value);
   }
 
