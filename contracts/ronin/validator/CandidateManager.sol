@@ -14,9 +14,9 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
 
   /// @dev The validator candidate array
   address[] internal _candidates;
-  /// @dev Mapping from candidate address => bitwise negation of validator index in `_candidates`
+  /// @dev Mapping from candidate consensus address => bitwise negation of validator index in `_candidates`
   mapping(address => uint256) internal _candidateIndex;
-  /// @dev Mapping from candidate address => their info
+  /// @dev Mapping from candidate consensus address => their info
   mapping(address => ValidatorCandidate) internal _candidateInfo;
 
   /**
@@ -24,7 +24,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    * Value of 1 means the change gets affected at the beginning of the following day.
    **/
   uint256 internal _minEffectiveDaysOnwards;
-  /// @dev Mapping from candidate address => schedule commission change.
+  /// @dev Mapping from candidate consensus address => schedule commission change.
   mapping(address => CommissionSchedule) internal _candidateCommissionChangeSchedule;
 
   /**
@@ -194,6 +194,13 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    */
   function getValidatorCandidates() public view override returns (address[] memory) {
     return _candidates;
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
+  function getCommissionChangeSchedule(address _candidate) external view override returns (CommissionSchedule memory) {
+    return _candidateCommissionChangeSchedule[_candidate];
   }
 
   /**
