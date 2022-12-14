@@ -351,7 +351,7 @@ describe('Staking test', () => {
         stakingContract
           .connect(otherPoolAddrSet.poolAdmin)
           .delegate(otherPoolAddrSet.consensusAddr.address, { value: 1 })
-      ).revertedWith('DelegatorStaking: admin of an arbitrary pool cannot delegate');
+      ).revertedWith('DelegatorStaking: admin of an active pool cannot delegate');
       await expect(
         stakingContract.connect(otherPoolAddrSet.poolAdmin).undelegate(otherPoolAddrSet.consensusAddr.address, 1)
       ).revertedWith('BaseStaking: delegator must not be the pool admin');
@@ -362,12 +362,12 @@ describe('Staking test', () => {
         stakingContract
           .connect(anotherActivePoolSet.poolAdmin)
           .delegate(otherPoolAddrSet.consensusAddr.address, { value: 1 })
-      ).revertedWith('DelegatorStaking: admin of an arbitrary pool cannot delegate');
+      ).revertedWith('DelegatorStaking: admin of an active pool cannot delegate');
       await expect(
         stakingContract
           .connect(otherPoolAddrSet.poolAdmin)
           .delegate(anotherActivePoolSet.consensusAddr.address, { value: 1 })
-      ).revertedWith('DelegatorStaking: admin of an arbitrary pool cannot delegate');
+      ).revertedWith('DelegatorStaking: admin of an active pool cannot delegate');
     });
 
     it('Should multiple accounts be able to delegate to one pool', async () => {
