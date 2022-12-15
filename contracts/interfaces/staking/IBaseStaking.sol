@@ -29,6 +29,11 @@ interface IBaseStaking {
   function isActivePoolAdmin(address _poolAdminAddr) external view returns (bool);
 
   /**
+   * @dev Returns the consensus address corresponding to the pool admin.
+   */
+  function getPoolAddressOf(address _poolAdminAddr) external view returns (address);
+
+  /**
    * @dev Returns The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.
    */
   function cooldownSecsToUndelegate() external view returns (uint256);
