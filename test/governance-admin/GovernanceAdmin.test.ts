@@ -448,7 +448,8 @@ describe('Governance Admin test', () => {
       previousHash = getProposalHash(proposal);
 
       // Wait to expiry time pass
-      await network.provider.send('evm_setNextBlockTimestamp', [expiryTimestamp + 1]);
+      let nextBlockTimestamp = expiryTimestamp + 1;
+      await network.provider.send('evm_setNextBlockTimestamp', [nextBlockTimestamp]);
 
       // Create a new proposal
       currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
@@ -456,8 +457,8 @@ describe('Governance Admin test', () => {
       expect(currentProposalVote.status).eq(VoteStatus.Executed);
 
       newMinValidatorStakingAmount = 491239;
-      latestTimestamp = await getLastBlockTimestamp();
-      expiryTimestamp = latestTimestamp + proposalExpiryDuration;
+      expiryTimestamp = nextBlockTimestamp + proposalExpiryDuration;
+
       proposal = await governanceAdminInterface.createProposal(
         expiryTimestamp,
         stakingContract.address,
