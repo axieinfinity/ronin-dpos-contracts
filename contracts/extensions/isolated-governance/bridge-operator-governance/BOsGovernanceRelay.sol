@@ -8,8 +8,10 @@ import "../../../libraries/BridgeOperatorsBallot.sol";
 abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
   /// @dev The last period that the brige operators synced.
   uint256 internal _lastSyncedPeriod;
-  /// @dev Mapping from period index => bridge operators vote
-  mapping(uint256 => IsolatedVote) internal _vote;
+  /// @dev The last epoch that the brige operators synced.
+  uint256 internal _lastSyncedEpoch;
+  /// @dev Mapping from period index => epoch index => bridge operators vote
+  mapping(uint256 => mapping(uint256 => IsolatedVote)) internal _vote;
 
   /**
    * @dev Relays votes by signatures.
@@ -26,10 +28,15 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
     address[] calldata _operators,
     Signature[] calldata _signatures,
     uint256 _period,
+    uint256 _epoch,
     uint256 _minimumVoteWeight,
     bytes32 _domainSeperator
   ) internal {
-    require(_period > _lastSyncedPeriod, "BOsGovernanceRelay: query for outdated period");
+    require(
+      (_period > _lastSyncedPeriod && _epoch > _lastSyncedEpoch) ||
+        (_period == _lastSyncedPeriod && _epoch > _lastSyncedEpoch),
+      "BOsGovernanceRelay: query for outdated bridge operator set"
+    );
     require(_operators.length > 0 && _signatures.length > 0, "BOsGovernanceRelay: invalid array length");
 
     Signature memory _sig;
@@ -45,12 +52,13 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
       _lastSigner = _signers[_i];
     }
 
-    IsolatedVote storage _v = _vote[_period];
+    IsolatedVote storage _v = _vote[_period][_epoch];
     uint256 _totalVoteWeight = _sumBridgeVoterWeights(_signers);
     if (_totalVoteWeight >= _minimumVoteWeight) {
       require(_totalVoteWeight > 0, "BOsGovernanceRelay: invalid vote weight");
       _v.status = VoteStatus.Approved;
       _lastSyncedPeriod = _period;
+      _lastSyncedEpoch = _epoch;
       return;
     }
 

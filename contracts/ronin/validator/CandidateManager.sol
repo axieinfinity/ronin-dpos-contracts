@@ -132,13 +132,9 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    * @inheritdoc ICandidateManager
    */
   function requestRevokeCandidate(address _consensusAddr, uint256 _secsLeft) external override onlyStakingContract {
-    require(isValidatorCandidate(_consensusAddr), "CandidateManager: query for non-existent candidate");
     ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
     require(_info.revokingTimestamp == 0, "CandidateManager: already requested before");
-
-    uint256 _revokingTimestamp = block.timestamp + _secsLeft;
-    _info.revokingTimestamp = _revokingTimestamp;
-    emit CandidateRevokingTimestampUpdated(_consensusAddr, _revokingTimestamp);
+    _setRevokingTimestamp(_info, block.timestamp + _secsLeft);
   }
 
   /**
@@ -285,7 +281,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /**
    * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
    */
-  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address) {
+  function bridgeOperatorOf(address _consensusAddr) public view virtual returns (address) {
     return _candidateInfo[_consensusAddr].bridgeOperatorAddr;
   }
 
@@ -326,12 +322,20 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     delete _candidateCommissionChangeSchedule[_addr];
 
     address _lastCandidate = _candidates[_candidates.length - 1];
-
     if (_lastCandidate != _addr) {
       _candidateIndex[_lastCandidate] = _idx;
       _candidates[~_idx] = _lastCandidate;
     }
 
     _candidates.pop();
+  }
+
+  /**
+   * @dev Sets timestamp to revoke a candidate.
+   */
+  function _setRevokingTimestamp(ValidatorCandidate storage _candidate, uint256 _timestamp) internal {
+    require(isValidatorCandidate(_candidate.consensusAddr), "CandidateManager: query for non-existent candidate");
+    _candidate.revokingTimestamp = _timestamp;
+    emit CandidateRevokingTimestampUpdated(_candidate.consensusAddr, _timestamp);
   }
 }

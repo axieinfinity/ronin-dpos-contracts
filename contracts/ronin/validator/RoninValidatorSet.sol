@@ -7,6 +7,7 @@ import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "./CoinbaseExecution.sol";
 import "./SlashingExecution.sol";
 
+// IRoninValidatorSet
 contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecution {
   constructor() {
     _disableInitializers();
@@ -63,12 +64,12 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
   /**
    * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
    */
-  function _bridgeOperatorOf(address _consensusAddr)
-    internal
+  function bridgeOperatorOf(address _consensusAddr)
+    public
     view
-    override(CoinbaseExecution, ValidatorInfoStorage)
+    override(CoinbaseExecution, IValidatorInfo, ValidatorInfoStorage)
     returns (address)
   {
-    return CoinbaseExecution._bridgeOperatorOf(_consensusAddr);
+    return super.bridgeOperatorOf(_consensusAddr);
   }
 }
