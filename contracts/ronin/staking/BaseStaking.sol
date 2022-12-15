@@ -24,7 +24,7 @@ abstract contract BaseStaking is
   /// @dev The number of seconds that a candidate must wait to be revoked and take the self-staking amount back.
   uint256 internal _waitingSecsToRevoke;
 
-  /// @dev Mapping from pool admin address => consensus address.
+  /// @dev Mapping from active pool admin address => consensus address.
   mapping(address => address) internal _activePoolAdminMapping;
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
@@ -57,6 +57,13 @@ abstract contract BaseStaking is
    */
   function isActivePoolAdmin(address _poolAdminAddr) public view override returns (bool) {
     return _activePoolAdminMapping[_poolAdminAddr] != address(0);
+  }
+
+  /**
+   * @inheritdoc IBaseStaking
+   */
+  function getPoolAddressOf(address _poolAdminAddr) external view override returns (address) {
+    return _activePoolAdminMapping[_poolAdminAddr];
   }
 
   /**
