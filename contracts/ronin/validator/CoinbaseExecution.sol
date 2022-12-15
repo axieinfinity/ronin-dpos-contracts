@@ -105,6 +105,7 @@ abstract contract CoinbaseExecution is
     address[] memory _currentValidators = getValidators();
     uint256 _epoch = epochOf(block.number);
     uint256 _lastPeriod = currentPeriod();
+    uint256 _nextEpoch = _epoch + 1;
 
     if (_periodEnding) {
       _syncBridgeOperatingReward(_lastPeriod, _currentValidators);
@@ -117,10 +118,23 @@ abstract contract CoinbaseExecution is
       _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
       _currentValidators = _syncValidatorSet(_newPeriod);
     }
-    _revampBlockProducers(_newPeriod, _currentValidators);
+    _revampRoles(_newPeriod, _nextEpoch, _currentValidators);
     emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
-    _periodOf[_epoch + 1] = _newPeriod;
+    _periodOf[_nextEpoch] = _newPeriod;
     _lastUpdatedPeriod = _newPeriod;
+  }
+
+  /**
+   * @inheritdoc IValidatorInfo
+   */
+  function bridgeOperatorOf(address _consensusAddr)
+    public
+    view
+    virtual
+    override(CandidateManager, IValidatorInfo, ValidatorInfoStorage)
+    returns (address)
+  {
+    return super.bridgeOperatorOf(_consensusAddr);
   }
 
   /**
@@ -368,7 +382,6 @@ abstract contract CoinbaseExecution is
       _maxPrioritizedValidatorNumber
     );
     _setNewValidatorSet(_newValidators, _newValidatorCount, _newPeriod);
-    emit BridgeOperatorSetUpdated(_newPeriod, getBridgeOperators());
   }
 
   /**
@@ -416,41 +429,34 @@ abstract contract CoinbaseExecution is
    * Emits the `BlockProducerSetUpdated` event.
    *
    */
-  function _revampBlockProducers(uint256 _newPeriod, address[] memory _currentValidators) private {
+  function _revampRoles(
+    uint256 _newPeriod,
+    uint256 _nextEpoch,
+    address[] memory _currentValidators
+  ) private {
     bool[] memory _maintainedList = _maintenanceContract.checkManyMaintained(_candidates, block.number + 1);
 
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
-      address _currentValidator = _currentValidators[_i];
-      bool _isProducerBefore = isBlockProducer(_currentValidator);
-      bool _isProducerAfter = !(_jailed(_currentValidator) || _maintainedList[_i]);
+      address _validator = _currentValidators[_i];
+      bool _isProducerBefore = isBlockProducer(_validator);
+      bool _isProducerAfter = !(_jailed(_validator) || _maintainedList[_i]);
 
       if (!_isProducerBefore && _isProducerAfter) {
-        _validatorMap[_currentValidator] = _validatorMap[_currentValidator].addFlag(
-          EnumFlags.ValidatorFlag.BlockProducer
-        );
-        continue;
+        _validatorMap[_validator] = _validatorMap[_validator].addFlag(EnumFlags.ValidatorFlag.BlockProducer);
+      } else if (_isProducerBefore && !_isProducerAfter) {
+        _validatorMap[_validator] = _validatorMap[_validator].removeFlag(EnumFlags.ValidatorFlag.BlockProducer);
       }
 
-      if (_isProducerBefore && !_isProducerAfter) {
-        _validatorMap[_currentValidator] = _validatorMap[_currentValidator].removeFlag(
-          EnumFlags.ValidatorFlag.BlockProducer
-        );
+      bool _isBridgeOperatorBefore = _validatorMap[_validator].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator);
+      bool _isBridgeOperatorAfter = _bridgeOperatorJailedTimestamp[_validator] < block.timestamp;
+      if (!_isBridgeOperatorBefore && _isBridgeOperatorAfter) {
+        _validatorMap[_validator] = _validatorMap[_validator].addFlag(EnumFlags.ValidatorFlag.BridgeOperator);
+      } else if (_isBridgeOperatorBefore && !_isBridgeOperatorAfter) {
+        _validatorMap[_validator] = _validatorMap[_validator].removeFlag(EnumFlags.ValidatorFlag.BridgeOperator);
       }
     }
 
-    emit BlockProducerSetUpdated(_newPeriod, getBlockProducers());
-  }
-
-  /**
-   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
-   */
-  function _bridgeOperatorOf(address _consensusAddr)
-    internal
-    view
-    virtual
-    override(CandidateManager, ValidatorInfoStorage)
-    returns (address)
-  {
-    return CandidateManager._bridgeOperatorOf(_consensusAddr);
+    emit BlockProducerSetUpdated(_newPeriod, _nextEpoch, getBlockProducers());
+    emit BridgeOperatorSetUpdated(_newPeriod, _nextEpoch, getBridgeOperators());
   }
 }

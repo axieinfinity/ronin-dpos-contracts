@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "../interfaces/consumers/WeightedAddressConsumer.sol";
 
 library BridgeOperatorsBallot {
   // keccak256("BridgeOperatorsBallot(uint256 period,address[] operators)");

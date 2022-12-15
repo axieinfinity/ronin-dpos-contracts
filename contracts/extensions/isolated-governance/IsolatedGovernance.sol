@@ -12,6 +12,10 @@ abstract contract IsolatedGovernance is VoteStatusConsumer {
     mapping(address => bytes32) voteHashOf;
     /// @dev Mapping from receipt hash => vote weight
     mapping(bytes32 => uint256) weight;
+    /// @dev The timestamp that voting is expired (no expiration=0)
+    uint256 expiredAt;
+    /// @dev The timestamp that voting is created
+    uint256 createdAt;
   }
 
   /**
@@ -29,6 +33,11 @@ abstract contract IsolatedGovernance is VoteStatusConsumer {
     uint256 _minimumVoteWeight,
     bytes32 _hash
   ) internal virtual returns (VoteStatus _status) {
+    if (_proposal.expiredAt > 0 && _proposal.expiredAt <= block.timestamp) {
+      _proposal.status = VoteStatus.Expired;
+      return _proposal.status;
+    }
+
     if (_voted(_proposal, _voter)) {
       revert(
         string(abi.encodePacked("IsolatedGovernance: ", Strings.toHexString(uint160(_voter), 20), " already voted"))

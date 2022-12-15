@@ -12,14 +12,17 @@ abstract contract JailingStorage is IJailingInfo {
   mapping(address => mapping(uint256 => bool)) internal _miningRewardBailoutCutOffAtPeriod;
   /// @dev Mapping from consensus address => period number => block operator has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _bridgeRewardDeprecatedAtPeriod;
-  /// @dev Mapping from consensus address => the last block that the validator is jailed
+
+  /// @dev Mapping from consensus address => the last block that the block producer is jailed
   mapping(address => uint256) internal _jailedUntil;
+  /// @dev Mapping from consensus address => the last timestamp that the bridge operator is jailed
+  mapping(address => uint256) internal _bridgeOperatorJailedTimestamp;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[50] private ______gap;
+  uint256[49] private ______gap;
 
   /**
    * @inheritdoc IJailingInfo

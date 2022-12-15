@@ -14,9 +14,9 @@ interface ICoinbaseExecution is ISlashingExecution {
   /// @dev Emitted when the validator set is updated
   event ValidatorSetUpdated(uint256 indexed period, address[] consensusAddrs);
   /// @dev Emitted when the bridge operator set is updated, to mirror the in-jail and maintaining status of the validator.
-  event BlockProducerSetUpdated(uint256 indexed period, address[] consensusAddrs);
+  event BlockProducerSetUpdated(uint256 indexed period, uint256 indexed epoch, address[] consensusAddrs);
   /// @dev Emitted when the bridge operator set is updated.
-  event BridgeOperatorSetUpdated(uint256 indexed period, address[] bridgeOperators);
+  event BridgeOperatorSetUpdated(uint256 indexed period, uint256 indexed epoch, address[] bridgeOperators);
 
   /// @dev Emitted when the reward of the block producer is deprecated.
   event BlockRewardDeprecated(

@@ -34,8 +34,8 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
   /**
    * @dev Returns whether the voter `_voter` casted vote for bridge operators at a specific period.
    */
-  function bridgeOperatorsRelayed(uint256 _period) external view returns (bool) {
-    return _vote[_period].status != VoteStatus.Pending;
+  function bridgeOperatorsRelayed(uint256 _period, uint256 _epoch) external view returns (bool) {
+    return _vote[_period][_epoch].status != VoteStatus.Pending;
   }
 
   /**
@@ -85,10 +85,11 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
    */
   function relayBridgeOperators(
     uint256 _period,
+    uint256 _epoch,
     address[] calldata _operators,
     Signature[] calldata _signatures
   ) external onlyRole(RELAYER_ROLE) {
-    _relayVotesBySignatures(_operators, _signatures, _period, _getMinimumVoteWeight(), DOMAIN_SEPARATOR);
+    _relayVotesBySignatures(_operators, _signatures, _period, _epoch, _getMinimumVoteWeight(), DOMAIN_SEPARATOR);
     TransparentUpgradeableProxyV2(payable(bridgeContract())).functionDelegateCall(
       abi.encodeWithSelector(_bridgeContract.replaceBridgeOperators.selector, _operators)
     );
