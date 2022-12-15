@@ -260,18 +260,16 @@ describe('Governance Admin test', () => {
     it('Should the expired proposal cannot be voted anymore', async () => {
       const newMinValidatorStakingAmount = 1337;
       const latestTimestamp = await getLastBlockTimestamp();
-      const expiryTimestamp = latestTimestamp + proposalExpiryDuration,
-        proposal = await governanceAdminInterface.createProposal(
-          expiryTimestamp,
-          stakingContract.address,
-          0,
-          governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
-            stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [
-              newMinValidatorStakingAmount,
-            ]),
-          ]),
-          500_000
-        );
+      const expiryTimestamp = latestTimestamp + proposalExpiryDuration;
+      proposal = await governanceAdminInterface.createProposal(
+        expiryTimestamp,
+        stakingContract.address,
+        0,
+        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [newMinValidatorStakingAmount]),
+        ]),
+        500_000
+      );
       previousProposal = proposal;
       previousHash = getProposalHash(proposal);
 
@@ -313,19 +311,17 @@ describe('Governance Admin test', () => {
 
       const newMinValidatorStakingAmount = 202881;
       const latestTimestamp = await getLastBlockTimestamp();
-      const expiryTimestamp = latestTimestamp + proposalExpiryDuration,
-        proposal = await governanceAdminInterface.createProposal(
-          expiryTimestamp,
-          stakingContract.address,
-          0,
-          governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
-            stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [
-              newMinValidatorStakingAmount,
-            ]),
-          ]),
-          500_000,
-          BigNumber.from(previousProposal.nonce)
-        );
+      const expiryTimestamp = latestTimestamp + proposalExpiryDuration;
+      proposal = await governanceAdminInterface.createProposal(
+        expiryTimestamp,
+        stakingContract.address,
+        0,
+        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [newMinValidatorStakingAmount]),
+        ]),
+        500_000,
+        BigNumber.from(previousProposal.nonce)
+      );
 
       previousSignatures = signatures = await governanceAdminInterface.generateSignatures(proposal);
       previousSupports = supports = signatures.map(() => VoteType.For);
@@ -359,18 +355,16 @@ describe('Governance Admin test', () => {
     it('Should the expired proposal can be manually marked as expired', async () => {
       const newMinValidatorStakingAmount = 989283;
       const latestTimestamp = await getLastBlockTimestamp();
-      const expiryTimestamp = latestTimestamp + proposalExpiryDuration,
-        proposal = await governanceAdminInterface.createProposal(
-          expiryTimestamp,
-          stakingContract.address,
-          0,
-          governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
-            stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [
-              newMinValidatorStakingAmount,
-            ]),
-          ]),
-          500_000
-        );
+      const expiryTimestamp = latestTimestamp + proposalExpiryDuration;
+      proposal = await governanceAdminInterface.createProposal(
+        expiryTimestamp,
+        stakingContract.address,
+        0,
+        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [newMinValidatorStakingAmount]),
+        ]),
+        500_000
+      );
       previousProposal = proposal;
       previousHash = getProposalHash(proposal);
 
@@ -413,6 +407,83 @@ describe('Governance Admin test', () => {
       currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
       expect(currentProposalVote.hash).eq(ZERO_BYTES32);
       expect(currentProposalVote.status).eq(VoteStatus.Pending);
+    });
+
+    it('Should a proposal executed, then expiry time passes, and then a new proposal is created and executed', async () => {
+      // Execute a proposal
+      let currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
+      expect(currentProposalVote.hash).eq(ZERO_BYTES32);
+      expect(currentProposalVote.status).eq(VoteStatus.Pending);
+
+      let newMinValidatorStakingAmount = 191293002;
+      let latestTimestamp = await getLastBlockTimestamp();
+      let expiryTimestamp = latestTimestamp + proposalExpiryDuration;
+      proposal = await governanceAdminInterface.createProposal(
+        expiryTimestamp,
+        stakingContract.address,
+        0,
+        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [newMinValidatorStakingAmount]),
+        ]),
+        500_000,
+        BigNumber.from(previousProposal.nonce)
+      );
+      expect(proposal.nonce).eq(previousProposal.nonce);
+
+      previousSignatures = signatures = await governanceAdminInterface.generateSignatures(proposal);
+      previousSupports = supports = signatures.map(() => VoteType.For);
+
+      await governanceAdmin
+        .connect(trustedOrgs[0].governor)
+        .proposeProposalStructAndCastVotes(proposal, supports.splice(0, 1), signatures.splice(0, 1));
+
+      currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
+      expect(currentProposalVote.status).eq(VoteStatus.Pending);
+
+      await governanceAdmin.connect(trustedOrgs[0].governor).castProposalBySignatures(proposal, supports, signatures);
+      currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
+      expect(currentProposalVote.status).eq(VoteStatus.Executed);
+
+      previousProposal = proposal;
+      previousHash = getProposalHash(proposal);
+
+      // Wait to expiry time pass
+      await network.provider.send('evm_setNextBlockTimestamp', [expiryTimestamp + 1]);
+
+      // Create a new proposal
+      currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
+      expect(currentProposalVote.hash).eq(previousHash);
+      expect(currentProposalVote.status).eq(VoteStatus.Executed);
+
+      newMinValidatorStakingAmount = 491239;
+      latestTimestamp = await getLastBlockTimestamp();
+      expiryTimestamp = latestTimestamp + proposalExpiryDuration;
+      proposal = await governanceAdminInterface.createProposal(
+        expiryTimestamp,
+        stakingContract.address,
+        0,
+        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [newMinValidatorStakingAmount]),
+        ]),
+        500_000
+      );
+      expect(proposal.nonce).eq(BigNumber.from(previousProposal.nonce).add(1));
+
+      previousSignatures = signatures = await governanceAdminInterface.generateSignatures(proposal);
+      previousSupports = supports = signatures.map(() => VoteType.For);
+      previousProposal = proposal;
+      previousHash = getProposalHash(proposal);
+
+      await governanceAdmin
+        .connect(trustedOrgs[0].governor)
+        .proposeProposalStructAndCastVotes(proposal, supports.splice(0, 1), signatures.splice(0, 1));
+
+      currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
+      expect(currentProposalVote.status).eq(VoteStatus.Pending);
+
+      await governanceAdmin.connect(trustedOrgs[0].governor).castProposalBySignatures(proposal, supports, signatures);
+      currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
+      expect(currentProposalVote.status).eq(VoteStatus.Executed);
     });
   });
 });
