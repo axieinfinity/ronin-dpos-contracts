@@ -14,6 +14,7 @@ import "../../precompile-usages/PrecompileUsageSortValidators.sol";
 import "../../precompile-usages/PrecompileUsagePickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
 import "./CandidateManager.sol";
+import "./EmergencyExit.sol";
 
 abstract contract CoinbaseExecution is
   ICoinbaseExecution,
@@ -24,8 +25,7 @@ abstract contract CoinbaseExecution is
   HasBridgeTrackingContract,
   HasMaintenanceContract,
   HasSlashIndicatorContract,
-  CandidateManager,
-  CommonStorage
+  EmergencyExit
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
@@ -117,24 +117,12 @@ abstract contract CoinbaseExecution is
       _recycleDeprecatedRewards();
       _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
       _currentValidators = _syncValidatorSet(_newPeriod);
+      _tryRecycleLockedFundsFromEmergencyExits();
     }
     _revampRoles(_newPeriod, _nextEpoch, _currentValidators);
     emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
     _periodOf[_nextEpoch] = _newPeriod;
     _lastUpdatedPeriod = _newPeriod;
-  }
-
-  /**
-   * @inheritdoc IValidatorInfo
-   */
-  function bridgeOperatorOf(address _consensusAddr)
-    public
-    view
-    virtual
-    override(CandidateManager, IValidatorInfo, ValidatorInfoStorage)
-    returns (address)
-  {
-    return super.bridgeOperatorOf(_consensusAddr);
   }
 
   /**

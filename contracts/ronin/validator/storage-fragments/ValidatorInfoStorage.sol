@@ -85,7 +85,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
   function getBridgeOperators() public view override returns (address[] memory _bridgeOperatorList) {
     _bridgeOperatorList = new address[](validatorCount);
     for (uint _i = 0; _i < _bridgeOperatorList.length; _i++) {
-      _bridgeOperatorList[_i] = bridgeOperatorOf(_validators[_i]);
+      _bridgeOperatorList[_i] = _bridgeOperatorOf(_validators[_i]);
     }
   }
 
@@ -94,7 +94,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
    */
   function isBridgeOperator(address _bridgeOperatorAddr) external view override returns (bool _result) {
     for (uint _i = 0; _i < validatorCount; _i++) {
-      if (bridgeOperatorOf(_validators[_i]) == _bridgeOperatorAddr) {
+      if (_bridgeOperatorOf(_validators[_i]) == _bridgeOperatorAddr) {
         _result = true;
         break;
       }
@@ -139,9 +139,9 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
   }
 
   /**
-   * @inheritdoc IValidatorInfo
+   * @dev Returns the bridge operator of a consensus address.
    */
-  function bridgeOperatorOf(address _consensusAddr) public view virtual returns (address);
+  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address);
 
   /**
    * @dev See `IValidatorInfo-setMaxValidatorNumber`

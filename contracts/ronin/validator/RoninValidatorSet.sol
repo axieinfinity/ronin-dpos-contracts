@@ -52,7 +52,7 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
 
   /**
    * @dev Only receives RON from staking vesting contract (for topping up bonus), and from staking contract (for transferring
-   * deducting amount when slash).
+   * deducting amount on slashing).
    */
   function _fallback() internal view {
     require(
@@ -61,15 +61,12 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     );
   }
 
-  /**
-   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
-   */
-  function bridgeOperatorOf(address _consensusAddr)
-    public
+  function _bridgeOperatorOf(address _consensusAddr)
+    internal
     view
-    override(CoinbaseExecution, IValidatorInfo, ValidatorInfoStorage)
+    override(EmergencyExit, ValidatorInfoStorage)
     returns (address)
   {
-    return super.bridgeOperatorOf(_consensusAddr);
+    return super._bridgeOperatorOf(_consensusAddr);
   }
 }

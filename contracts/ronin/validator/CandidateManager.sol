@@ -281,7 +281,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /**
    * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
    */
-  function bridgeOperatorOf(address _consensusAddr) public view virtual returns (address) {
+  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address) {
     return _candidateInfo[_consensusAddr].bridgeOperatorAddr;
   }
 

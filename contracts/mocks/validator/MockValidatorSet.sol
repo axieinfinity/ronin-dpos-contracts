@@ -141,14 +141,19 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function totalDeprecatedReward() external view override returns (uint256) {}
 
-  function bridgeOperatorOf(address _consensusAddr)
-    public
-    view
-    override(CandidateManager, IValidatorInfo)
-    returns (address)
-  {
-    return super.bridgeOperatorOf(_consensusAddr);
+  function _bridgeOperatorOf(address _consensusAddr) internal view override returns (address) {
+    return super._bridgeOperatorOf(_consensusAddr);
   }
 
   function unlockFundForEmergencyExitRequest(address _consensusAddr, address payable _recipient) external override {}
+
+  function emergencyExitLockedAmount() external override returns (uint256) {}
+
+  function emergencyExpiryDuration() external override returns (uint256) {}
+
+  function setEmergencyExitLockedAmount(uint256 _emergencyExitLockedAmount) external override {}
+
+  function setEmergencyExpiryDuration(uint256 _emergencyExpiryDuration) external override {}
+
+  function getEmergencyExitInfo(address _consensusAddr) external view override returns (EmergencyExitInfo memory) {}
 }

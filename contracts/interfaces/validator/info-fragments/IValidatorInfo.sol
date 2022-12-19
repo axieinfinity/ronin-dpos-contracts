@@ -54,11 +54,6 @@ interface IValidatorInfo {
   function isBridgeOperator(address _addr) external view returns (bool);
 
   /**
-   * @dev Returns the bridge operator of a consensus address.
-   */
-  function bridgeOperatorOf(address _consensusAddr) external view returns (address);
-
-  /**
    * @dev Returns total numbers of the bridge operators.
    */
   function totalBridgeOperators() external view returns (uint256);
