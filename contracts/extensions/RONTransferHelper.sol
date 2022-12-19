@@ -37,4 +37,15 @@ abstract contract RONTransferHelper {
   function _unsafeSendRON(address payable _recipient, uint256 _amount) internal returns (bool _success) {
     (_success, ) = _recipient.call{ value: _amount }("");
   }
+
+  /**
+   * @dev Same purpose with {_unsafeSendRON(address,uin256)} but containing gas limit stipend forwarded in the call.
+   */
+  function _unsafeSendRON(
+    address payable _recipient,
+    uint256 _amount,
+    uint256 _gas
+  ) internal returns (bool _success) {
+    (_success, ) = _recipient.call{ value: _amount, gas: _gas }("");
+  }
 }
