@@ -154,16 +154,18 @@ export const expects = {
 
   emitBlockProducerSetUpdatedEvent: async function (
     tx: ContractTransaction,
-    expectingPeriod: BigNumberish,
-    expectingBlockProducers: string[]
+    expectingPeriod?: BigNumberish,
+    expectingEpoch?: BigNumberish,
+    expectingBlockProducers?: string[]
   ) {
     await expectEvent(
       contractInterface,
       'BlockProducerSetUpdated',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid period').eq(expectingPeriod);
-        expect(event.args[1], 'invalid validator set').eql(expectingBlockProducers);
+        !!expectingPeriod && expect(event.args[0], 'invalid period').eq(expectingPeriod);
+        !!expectingEpoch && expect(event.args[1], 'invalid epoch').eq(expectingEpoch);
+        !!expectingBlockProducers && expect(event.args[2], 'invalid block producers').eql(expectingBlockProducers);
       },
       1
     );

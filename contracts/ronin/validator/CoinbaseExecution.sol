@@ -104,8 +104,8 @@ abstract contract CoinbaseExecution is
 
     address[] memory _currentValidators = getValidators();
     uint256 _epoch = epochOf(block.number);
-    uint256 _lastPeriod = currentPeriod();
     uint256 _nextEpoch = _epoch + 1;
+    uint256 _lastPeriod = currentPeriod();
 
     if (_periodEnding) {
       _syncBridgeOperatingReward(_lastPeriod, _currentValidators);

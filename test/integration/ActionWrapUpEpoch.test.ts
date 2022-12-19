@@ -299,7 +299,12 @@ describe('[Integration] Wrap up epoch', () => {
         let expectingBlockProducerSet = [validators[2], validators[3]].map((_) => _.consensusAddr.address).reverse();
 
         await expect(wrapUpTx!).emit(validatorContract, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, false);
-        await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpTx!, lastPeriod, expectingBlockProducerSet);
+        await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
+          wrapUpTx!,
+          lastPeriod,
+          await validatorContract.epochOf(await ethers.provider.getBlockNumber()),
+          expectingBlockProducerSet
+        );
 
         expect(await validatorContract.getValidators()).eql(
           [validators[1], validators[2], validators[3]].map((_) => _.consensusAddr.address).reverse()

@@ -307,6 +307,7 @@ describe('Maintenance test', () => {
       await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
         tx!,
         await validatorContract.currentPeriod(),
+        await validatorContract.epochOf(await ethers.provider.getBlockNumber()),
         expectingBlockProducerSet
       );
       expect(await validatorContract.getBlockProducers()).eql(
@@ -328,6 +329,7 @@ describe('Maintenance test', () => {
       await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
         tx!,
         await validatorContract.currentPeriod(),
+        await validatorContract.epochOf(await ethers.provider.getBlockNumber()),
         expectingBlockProducerSet
       );
       expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);

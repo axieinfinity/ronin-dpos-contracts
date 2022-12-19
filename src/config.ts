@@ -2,8 +2,8 @@ import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 import {
   GeneralConfig,
-  GovernanceAdminArguments,
-  GovernanceAdminConfig,
+  RoninGovernanceAdminArguments,
+  RoninGovernanceAdminConfig,
   LiteralNetwork,
   MainchainGovernanceAdminArguments,
   MainchainGovernanceAdminConfig,
@@ -264,12 +264,12 @@ export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
   [Network.Ethereum]: undefined,
 };
 
-const defaultGovernanceAdminConf: GovernanceAdminArguments = {
+const defaultGovernanceAdminConf: RoninGovernanceAdminArguments = {
   proposalExpiryDuration: 60 * 60 * 24 * 14, // 14 days
 };
 
 // TODO: update config for goerli, ethereum
-export const governanceAdminConf: GovernanceAdminConfig = {
+export const roninGovernanceAdminConf: RoninGovernanceAdminConfig = {
   [Network.Local]: defaultGovernanceAdminConf,
   [Network.Devnet]: defaultGovernanceAdminConf,
   [Network.Goerli]: undefined,

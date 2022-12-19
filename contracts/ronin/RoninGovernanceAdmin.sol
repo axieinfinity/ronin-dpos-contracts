@@ -38,8 +38,11 @@ contract RoninGovernanceAdmin is
   constructor(
     address _roninTrustedOrganizationContract,
     address _bridgeContract,
+    address _validatorContract,
     uint256 _proposalExpiryDuration
-  ) GovernanceAdmin(_roninTrustedOrganizationContract, _bridgeContract, _proposalExpiryDuration) {}
+  ) GovernanceAdmin(_roninTrustedOrganizationContract, _bridgeContract, _proposalExpiryDuration) {
+    _setValidatorContract(_validatorContract);
+  }
 
   /**
    * @inheritdoc IHasValidatorContract

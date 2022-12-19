@@ -52,7 +52,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IsolatedGovernance
     Signature memory _sig;
     address _signer;
     address _lastSigner;
-    bytes32 _hash = BridgeOperatorsBallot.hash(_period, _operators);
+    bytes32 _hash = BridgeOperatorsBallot.hash(_period, _epoch, _operators);
     bytes32 _digest = ECDSA.toTypedDataHash(_domainSeperator, _hash);
     IsolatedVote storage _v = _vote[_period][_epoch];
     bool _hasValidVotes;

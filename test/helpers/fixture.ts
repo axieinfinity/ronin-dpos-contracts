@@ -6,7 +6,7 @@ import { EpochController } from './ronin-validator-set';
 import {
   generalMainchainConf,
   generalRoninConf,
-  governanceAdminConf,
+  roninGovernanceAdminConf,
   mainchainGovernanceAdminConf,
   maintenanceConf,
   roninTrustedOrganizationConf,
@@ -16,7 +16,7 @@ import {
   stakingVestingConfig,
 } from '../../src/config';
 import {
-  GovernanceAdminArguments,
+  RoninGovernanceAdminArguments,
   MainchainGovernanceAdminArguments,
   MaintenanceArguments,
   Network,
@@ -50,7 +50,7 @@ export interface InitTestInput {
   roninValidatorSetArguments?: RoninValidatorSetArguments;
   roninTrustedOrganizationArguments?: RoninTrustedOrganizationArguments;
   mainchainGovernanceAdminArguments?: MainchainGovernanceAdminArguments;
-  governanceAdminArguments?: GovernanceAdminArguments;
+  governanceAdminArguments?: RoninGovernanceAdminArguments;
 }
 
 export const defaultTestConfig: InitTestInput = {
@@ -189,7 +189,7 @@ export const initTest = (id: string) =>
         ...defaultTestConfig?.mainchainGovernanceAdminArguments,
         ...options?.mainchainGovernanceAdminArguments,
       };
-      governanceAdminConf[network.name] = {
+      roninGovernanceAdminConf[network.name] = {
         ...defaultTestConfig?.governanceAdminArguments,
         ...options?.governanceAdminArguments,
       };

@@ -41,7 +41,7 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
     Signature memory _sig;
     address[] memory _signers = new address[](_signatures.length);
     address _lastSigner;
-    bytes32 _hash = BridgeOperatorsBallot.hash(_period, _operators);
+    bytes32 _hash = BridgeOperatorsBallot.hash(_period, _epoch, _operators);
     bytes32 _digest = ECDSA.toTypedDataHash(_domainSeperator, _hash);
 
     for (uint256 _i = 0; _i < _signatures.length; _i++) {

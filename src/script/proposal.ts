@@ -10,8 +10,8 @@ const proposalTypeHash = '0xd051578048e6ff0bbc9fca3b65a42088dbde10f36ca841de5667
 const globalProposalTypeHash = '0x1463f426c05aff2c1a7a0957a71c9898bc8b47142540538e79ee25ee91141350';
 // keccak256("Ballot(bytes32 proposalHash,uint8 support)")
 const ballotTypeHash = '0xd900570327c4c0df8dd6bdd522b7da7e39145dd049d2fd4602276adcd511e3c2';
-// keccak256("BridgeOperatorsBallot(uint256 period,address[] operators)");
-const bridgeOperatorsBallotTypeHash = '0xeea5e3908ac28cbdbbce8853e49444c558a0a03597e98ef19e6ff86162ed9ae3';
+// keccak256("BridgeOperatorsBallot(uint256 period,uint256 epoch,address[] operators)");
+const bridgeOperatorsBallotTypeHash = '0xd679a49e9e099fa9ed83a5446aaec83e746b03ec6723d6f5efb29d37d7f0b78a';
 
 export enum VoteType {
   For = 0,
@@ -70,6 +70,7 @@ export const GlobalProposalTypes = {
 export const BridgeOperatorsBallotTypes = {
   BridgeOperatorsBallot: [
     { name: 'period', type: 'uint256' },
+    { name: 'epoch', type: 'uint256' },
     { name: 'operators', type: 'address[]' },
   ],
 };
@@ -152,14 +153,16 @@ export const getBallotDigest = (domainSeparator: string, proposalHash: string, s
 
 export interface BOsBallot {
   period: BigNumberish;
+  epoch: BigNumberish;
   operators: Address[];
 }
 
-export const getBOsBallotHash = (period: BigNumberish, operators: Address[]) =>
+export const getBOsBallotHash = (period: BigNumberish, epoch: BigNumberish, operators: Address[]) =>
   keccak256(
     AbiCoder.prototype.encode(bridgeOperatorsBallotParamTypes, [
       bridgeOperatorsBallotTypeHash,
       period,
+      epoch,
       keccak256(
         AbiCoder.prototype.encode(
           operators.map(() => 'address'),
@@ -169,8 +172,13 @@ export const getBOsBallotHash = (period: BigNumberish, operators: Address[]) =>
     ])
   );
 
-export const getBOsBallotDigest = (domainSeparator: string, period: BigNumberish, operators: Address[]): string =>
+export const getBOsBallotDigest = (
+  domainSeparator: string,
+  period: BigNumberish,
+  epoch: BigNumberish,
+  operators: Address[]
+): string =>
   solidityKeccak256(
     ['bytes1', 'bytes1', 'bytes32', 'bytes32'],
-    ['0x19', '0x01', domainSeparator, getBOsBallotHash(period, operators)]
+    ['0x19', '0x01', domainSeparator, getBOsBallotHash(period, epoch, operators)]
   );

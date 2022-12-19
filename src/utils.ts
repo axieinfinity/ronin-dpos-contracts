@@ -154,12 +154,12 @@ export interface RoninValidatorSetConfig {
   [network: LiteralNetwork]: RoninValidatorSetArguments | undefined;
 }
 
-export interface GovernanceAdminArguments {
+export interface RoninGovernanceAdminArguments {
   proposalExpiryDuration?: BigNumberish;
 }
 
-export interface GovernanceAdminConfig {
-  [network: LiteralNetwork]: GovernanceAdminArguments | undefined;
+export interface RoninGovernanceAdminConfig {
+  [network: LiteralNetwork]: RoninGovernanceAdminArguments | undefined;
 }
 
 export interface MainchainGovernanceAdminArguments {

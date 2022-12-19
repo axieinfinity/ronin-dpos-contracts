@@ -9,7 +9,7 @@ import { BallotTypes, getProposalHash, VoteType } from './proposal';
 import { RoninGovernanceAdmin, TransparentUpgradeableProxyV2__factory } from '../types';
 import { ProposalDetailStruct } from '../types/GovernanceAdmin';
 import { SignatureStruct } from '../types/MainchainGovernanceAdmin';
-import { GovernanceAdminArguments } from '../utils';
+import { RoninGovernanceAdminArguments } from '../utils';
 import { getLastBlockTimestamp } from '../../test/helpers/utils';
 import { defaultTestConfig } from '../../test/helpers/fixture';
 
@@ -31,10 +31,10 @@ export class GovernanceAdminInterface {
   contract!: RoninGovernanceAdmin;
   domain!: TypedDataDomain;
   interface!: Interface;
-  args!: GovernanceAdminArguments;
+  args!: RoninGovernanceAdminArguments;
   address = ethers.constants.AddressZero;
 
-  constructor(contract: RoninGovernanceAdmin, args?: GovernanceAdminArguments, ...signers: SignerWithAddress[]) {
+  constructor(contract: RoninGovernanceAdmin, args?: RoninGovernanceAdminArguments, ...signers: SignerWithAddress[]) {
     this.contract = contract;
     this.signers = signers;
     this.address = contract.address;

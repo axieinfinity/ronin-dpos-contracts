@@ -148,6 +148,7 @@ describe('Governance Admin test', () => {
     it('Should be able to vote bridge operators', async () => {
       ballot = {
         period: 10,
+        epoch: 10_000,
         operators: trustedOrgs.map((v) => v.bridgeVoter.address),
       };
       signatures = await Promise.all(
@@ -157,37 +158,47 @@ describe('Governance Admin test', () => {
             .then(mapByteSigToSigStruct)
         )
       );
-      expect(await governanceAdmin.bridgeOperatorsVoted(ballot.period, trustedOrgs[0].bridgeVoter.address)).to.false;
-      await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures);
-      expect(await governanceAdmin.bridgeOperatorsVoted(ballot.period, trustedOrgs[0].bridgeVoter.address)).to.true;
+      expect(
+        await governanceAdmin.bridgeOperatorsVoted(ballot.period, ballot.epoch, trustedOrgs[0].bridgeVoter.address)
+      ).to.false;
+      await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.epoch, ballot.operators, signatures);
+      expect(
+        await governanceAdmin.bridgeOperatorsVoted(ballot.period, ballot.epoch, trustedOrgs[0].bridgeVoter.address)
+      ).to.true;
     });
 
     it('Should be able relay vote bridge operators', async () => {
-      expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period)).to.false;
-      await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures);
-      expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period)).to.true;
+      expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.false;
+      await mainchainGovernanceAdmin
+        .connect(relayer)
+        .relayBridgeOperators(ballot.period, ballot.epoch, ballot.operators, signatures);
+      expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.true;
       expect(await bridgeContract.getBridgeOperators()).eql(trustedOrgs.map((v) => v.bridgeVoter.address));
     });
 
     it('Should not able to relay again', async () => {
       await expect(
-        mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures)
-      ).revertedWith('BOsGovernanceRelay: query for outdated period');
+        mainchainGovernanceAdmin
+          .connect(relayer)
+          .relayBridgeOperators(ballot.period, ballot.epoch, ballot.operators, signatures)
+      ).revertedWith('BOsGovernanceRelay: query for outdated bridge operator set');
     });
 
     it('Should not be able to use the signatures for another period', async () => {
       ballot = {
         period: 100,
+        epoch: 10_000,
         operators: trustedOrgs.map((v) => v.bridgeVoter.address),
       };
       await expect(
-        governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures)
+        governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.epoch, ballot.operators, signatures)
       ).revertedWith('BOsGovernanceProposal: invalid order');
     });
 
     it('Should not be able to vote bridge operators with a smaller period', async () => {
       ballot = {
-        period: 5,
+        period: 100,
+        epoch: 100,
         operators: trustedOrgs.map((v) => v.bridgeVoter.address),
       };
       signatures = await Promise.all(
@@ -198,14 +209,15 @@ describe('Governance Admin test', () => {
         )
       );
       await expect(
-        governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures)
-      ).revertedWith('BOsGovernanceProposal: query for outdated period');
+        governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.epoch, ballot.operators, signatures)
+      ).revertedWith('BOsGovernanceProposal: query for outdated bridge operator set');
     });
 
-    it('Should be able to vote bridge operators with a larger period', async () => {
+    it('Should be able to vote bridge operators with a larger epoch', async () => {
       const duplicatedNumber = 11;
       ballot = {
         period: 100,
+        epoch: 10_001,
         operators: trustedOrgs.map((v, i) => (i < duplicatedNumber ? v.bridgeVoter.address : randomAddress())),
       };
       signatures = await Promise.all(
@@ -215,11 +227,13 @@ describe('Governance Admin test', () => {
             .then(mapByteSigToSigStruct)
         )
       );
-      await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.operators, signatures);
+      await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.epoch, ballot.operators, signatures);
     });
 
     it('Should be able relay vote bridge operators', async () => {
-      await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot.period, ballot.operators, signatures);
+      await mainchainGovernanceAdmin
+        .connect(relayer)
+        .relayBridgeOperators(ballot.period, ballot.epoch, ballot.operators, signatures);
       expect(await bridgeContract.getBridgeOperators()).have.same.members(ballot.operators);
     });
   });

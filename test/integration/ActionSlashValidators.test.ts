@@ -225,15 +225,18 @@ describe('[Integration] Slash validators', () => {
       });
 
       it('Should the block producer set exclude the jailed validator in the next epoch', async () => {
+        console.log(await validatorContract.epochOf(await ethers.provider.getBlockNumber()));
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
           wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
+        console.log(await validatorContract.epochOf(await ethers.provider.getBlockNumber()));
         expectingBlockProducerSet.pop();
         expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
         await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
           wrapUpEpochTx!,
           period,
+          await validatorContract.epochOf(await ethers.provider.getBlockNumber()),
           expectingBlockProducerSet
         );
         expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
@@ -269,6 +272,7 @@ describe('[Integration] Slash validators', () => {
         await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
           wrapUpEpochTx!,
           period,
+          await validatorContract.epochOf(await ethers.provider.getBlockNumber()),
           expectingBlockProducerSet
         );
         expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
@@ -389,6 +393,7 @@ describe('[Integration] Slash validators', () => {
           await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
             wrapUpEpochTx!,
             period,
+            await validatorContract.epochOf(await ethers.provider.getBlockNumber()),
             expectingBlockProducerSet
           );
         });
@@ -424,6 +429,7 @@ describe('[Integration] Slash validators', () => {
           await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
             wrapUpEpochTx!,
             period,
+            await validatorContract.epochOf(await ethers.provider.getBlockNumber()),
             expectingBlockProducerSet
           );
           expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
