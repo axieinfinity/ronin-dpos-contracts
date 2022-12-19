@@ -21,6 +21,14 @@ contract RoninGovernanceAdmin is
 
   /// @dev Emitted when the bridge operators are approved.
   event BridgeOperatorsApproved(uint256 _period, uint256 _epoch, address[] _operators);
+  /// @dev Emitted when an emergency exit vote is created.
+  event EmergencyExitVoteCreated(
+    bytes32 _voteHash,
+    address _consensusAddr,
+    address _recipientAfterUnlockedFund,
+    uint256 _requestedAt,
+    uint256 _expiredAt
+  );
 
   modifier onlyGovernor() {
     require(_getWeight(msg.sender) > 0, "RoninGovernanceAdmin: sender is not governor");
@@ -36,7 +44,7 @@ contract RoninGovernanceAdmin is
   /**
    * @inheritdoc IHasValidatorContract
    */
-  function setValidatorContract(address _addr) external override onlyAdmin {
+  function setValidatorContract(address _addr) external override onlySelfCall {
     require(_addr.code.length > 0, "RoninGovernanceAdmin: set to non-contract");
     _setValidatorContract(_addr);
   }
@@ -258,6 +266,7 @@ contract RoninGovernanceAdmin is
     IsolatedVote storage _v = _emergecyVote[_hash];
     _v.createdAt = block.timestamp;
     _v.expiredAt = _expiredAt;
+    emit EmergencyExitVoteCreated(_hash, _consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
   }
 
   /**
@@ -270,6 +279,7 @@ contract RoninGovernanceAdmin is
    *
    */
   function voteEmergencyExit(
+    bytes32 _voteHash,
     address _consensusAddr,
     address _recipientAfterUnlockedFund,
     uint256 _requestedAt
@@ -279,9 +289,12 @@ contract RoninGovernanceAdmin is
     require(_weight > 0, "RoninGovernanceAdmin: sender is not governor");
 
     bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt);
+    require(_voteHash == _hash, "RoninGovernanceAdmin: invalid vote hash");
+
     IsolatedVote storage _v = _emergecyVote[_hash];
     require(_v.createdAt > 0, "RoninGovernanceAdmin: query for un-existent vote");
     require(_v.expiredAt > 0 && _v.expiredAt <= block.timestamp, "RoninGovernanceAdmin: query for expired vote");
+
     if (_castVote(_v, _voter, _weight, _getMinimumVoteWeight(), _hash) == VoteStatus.Approved) {
       _unlockFundForEmergencyExitRequest(_consensusAddr, _recipientAfterUnlockedFund);
       _v.status = VoteStatus.Executed;
@@ -318,6 +331,9 @@ contract RoninGovernanceAdmin is
     return abi.decode(_returndata, (uint256));
   }
 
+  /**
+   * @dev Trigger function from validator contract to unlock fund for emeregency exit request.
+   */
   function _unlockFundForEmergencyExitRequest(address _consensusAddr, address _recipientAfterUnlockedFund)
     internal
     virtual

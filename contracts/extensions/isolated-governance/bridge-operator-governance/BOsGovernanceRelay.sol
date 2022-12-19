@@ -33,8 +33,7 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
     bytes32 _domainSeperator
   ) internal {
     require(
-      (_period > _lastSyncedPeriod && _epoch > _lastSyncedEpoch) ||
-        (_period == _lastSyncedPeriod && _epoch > _lastSyncedEpoch),
+      (_period >= _lastSyncedPeriod && _epoch > _lastSyncedEpoch),
       "BOsGovernanceRelay: query for outdated bridge operator set"
     );
     require(_operators.length > 0 && _signatures.length > 0, "BOsGovernanceRelay: invalid array length");
