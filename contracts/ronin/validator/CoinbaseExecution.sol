@@ -252,7 +252,7 @@ abstract contract CoinbaseExecution is
   function _distributeMiningReward(address _consensusAddr, address payable _treasury) private {
     uint256 _amount = _miningReward[_consensusAddr];
     if (_amount > 0) {
-      if (_unsafeSendRON(_treasury, _amount)) {
+      if (_unsafeSendRON(_treasury, _amount, 3500)) {
         emit MiningRewardDistributed(_consensusAddr, _treasury, _amount);
         return;
       }
@@ -277,7 +277,7 @@ abstract contract CoinbaseExecution is
   ) private {
     uint256 _amount = _bridgeOperatingReward[_consensusAddr];
     if (_amount > 0) {
-      if (_unsafeSendRON(_treasury, _amount)) {
+      if (_unsafeSendRON(_treasury, _amount, 3500)) {
         emit BridgeOperatorRewardDistributed(_consensusAddr, _bridgeOperator, _treasury, _amount);
         return;
       }

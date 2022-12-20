@@ -92,7 +92,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
       _amount = _pool.stakingAmount;
       if (_amount > 0) {
         _deductStakingAmount(_pool, _amount);
-        if (!_unsafeSendRON(payable(_pool.admin), _amount)) {
+        if (!_unsafeSendRON(payable(_pool.admin), _amount, 3500)) {
           emit StakingAmountTransferFailed(_pool.addr, _pool.admin, _amount, address(this).balance);
         }
       }
