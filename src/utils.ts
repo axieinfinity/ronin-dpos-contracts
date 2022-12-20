@@ -14,6 +14,9 @@ export const MAX_UINT255 = BigNumber.from(
   '57896044618658097711785492504343953926634992332820282019728792003956564819968'
 );
 
+export const TARGET_SLOT = '0x99eb7666c084b9136a94e6a829f687abc476d287db070ef792cda8b663eb029e';
+export const ADMIN_SLOT = '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103';
+
 export enum Network {
   Local = 'local',
   Hardhat = 'hardhat',
