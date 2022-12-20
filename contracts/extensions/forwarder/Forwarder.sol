@@ -9,8 +9,9 @@ contract Forwarder is ForwarderLogic, ForwarderStorage {
   /**
    * @dev Initializes the forwarder with an initial target specified by `__target`.
    */
-  constructor(address __target) payable {
+  constructor(address __target, address __admin) payable {
     _changeTargetTo(__target);
+    _changeAdmin(__admin);
   }
 
   /**
