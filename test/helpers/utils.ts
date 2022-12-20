@@ -26,11 +26,14 @@ export const expectEvent = async (
   expect(counter, 'invalid number of emitted events').eq(eventNumbers);
 };
 
+export const mineDummyBlock = () => network.provider.send('hardhat_mine', []);
+
 export const mineBatchTxs = async (fn: () => Promise<void>) => {
   await network.provider.send('evm_setAutomine', [false]);
   await fn();
   await network.provider.send('evm_mine');
   await network.provider.send('evm_setAutomine', [true]);
+  await mineDummyBlock();
 };
 
 export const getLastBlockTimestamp = async (): Promise<number> => {

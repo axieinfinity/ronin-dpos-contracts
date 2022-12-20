@@ -6,9 +6,17 @@ import "./MockRoninValidatorSetOverridePrecompile.sol";
 import "../../libraries/EnumFlags.sol";
 
 contract MockRoninValidatorSetExtended is MockRoninValidatorSetOverridePrecompile {
+  bool private _initialized;
   uint256[] internal _epochs;
 
   constructor() {}
+
+  function initEpoch() public {
+    if (!_initialized) {
+      _epochs.push(0);
+      _initialized = true;
+    }
+  }
 
   function endEpoch() external {
     _epochs.push(block.number);
@@ -16,7 +24,7 @@ contract MockRoninValidatorSetExtended is MockRoninValidatorSetOverridePrecompil
 
   function epochOf(uint256 _block) public view override returns (uint256 _epoch) {
     for (uint256 _i = _epochs.length; _i > 0; _i--) {
-      if (_block >= _epochs[_i - 1]) {
+      if (_block > _epochs[_i - 1]) {
         return _i;
       }
     }

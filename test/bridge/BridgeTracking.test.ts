@@ -43,7 +43,6 @@ let roninValidatorSet: MockRoninValidatorSetExtended;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 let token: ERC20PresetMinterPauser;
-let localEpochController: EpochController;
 
 let period: BigNumberish;
 let receipts: ReceiptStruct[];
@@ -86,7 +85,6 @@ describe('Bridge Tracking test', () => {
       ])
     );
     bridgeContract = RoninGatewayV2__factory.connect(proxy.address, deployer);
-    localEpochController = new EpochController(0, numberOfBlocksInEpoch);
     await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
     // Deploys DPoS contracts
@@ -127,6 +125,7 @@ describe('Bridge Tracking test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
+    await roninValidatorSet.initEpoch();
 
     await TransparentUpgradeableProxyV2__factory.connect(proxy.address, deployer).changeAdmin(governanceAdmin.address);
     await governanceAdminInterface.functionDelegateCalls(
@@ -219,6 +218,8 @@ describe('Bridge Tracking test', () => {
       submitWithdrawalSignatures,
       submitWithdrawalSignatures.map(() => [])
     );
+    console.log('Period:', await roninValidatorSet.currentPeriod());
+    console.log('Epoch:', await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber()));
   });
 
   it('Should not record the approved receipts once the epoch is not yet wrapped up', async () => {
@@ -250,7 +251,6 @@ describe('Bridge Tracking test', () => {
       submitWithdrawalSignatures.map(() => [])
     );
 
-    await EpochController.setTimestampToPeriodEnding();
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
       await roninValidatorSet.connect(coinbase).wrapUpEpoch();
@@ -265,6 +265,11 @@ describe('Bridge Tracking test', () => {
   });
 
   it('Should not record in the next period', async () => {
+    await EpochController.setTimestampToPeriodEnding();
+    await mineBatchTxs(async () => {
+      await roninValidatorSet.endEpoch();
+      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+    });
     const newPeriod = await roninValidatorSet.currentPeriod();
     expect(newPeriod).not.eq(period);
 

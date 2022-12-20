@@ -7,7 +7,6 @@ import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "./CoinbaseExecution.sol";
 import "./SlashingExecution.sol";
 
-// IRoninValidatorSet
 contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecution {
   constructor() {
     _disableInitializers();

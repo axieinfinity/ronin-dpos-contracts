@@ -126,6 +126,7 @@ describe('Ronin Validator Set test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
+    await roninValidatorSet.initEpoch();
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
@@ -182,7 +183,7 @@ describe('Ronin Validator Set test', () => {
       }
 
       let tx: ContractTransaction;
-      epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
+      epoch = await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber());
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();
         tx = await roninValidatorSet.connect(consensusAddr).wrapUpEpoch();
@@ -271,7 +272,7 @@ describe('Ronin Validator Set test', () => {
     it('Should be able to wrap up epoch at end of period and sync validator set from staking contract', async () => {
       let tx: ContractTransaction;
       await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
-      epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
+      epoch = await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber());
       lastPeriod = await roninValidatorSet.currentPeriod();
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();
@@ -331,7 +332,7 @@ describe('Ronin Validator Set test', () => {
 
       let tx: ContractTransaction;
       await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
-      epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
+      epoch = await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber());
       lastPeriod = await roninValidatorSet.currentPeriod();
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();
@@ -365,7 +366,7 @@ describe('Ronin Validator Set test', () => {
       it('Should be able to submit block reward using coinbase account and not receive bonuses', async () => {
         const tx = await roninValidatorSet.connect(consensusAddr).submitBlockReward({ value: 100 });
 
-        epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
+        epoch = await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber());
         lastPeriod = await roninValidatorSet.currentPeriod();
         await RoninValidatorSet.expects.emitBlockRewardSubmittedEvent(tx, consensusAddr.address, 100, 0);
 
@@ -415,7 +416,7 @@ describe('Ronin Validator Set test', () => {
         await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
 
         lastPeriod = await roninValidatorSet.currentPeriod();
-        epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
+        epoch = await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber());
         await mineBatchTxs(async () => {
           await roninValidatorSet.endEpoch();
           tx = await roninValidatorSet.connect(consensusAddr).wrapUpEpoch();
@@ -458,7 +459,7 @@ describe('Ronin Validator Set test', () => {
 
           expect(await roninValidatorSet.totalDeprecatedReward()).equal(5100); // = 0 + (5000 + 100)
 
-          epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
+          epoch = await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber());
           lastPeriod = await roninValidatorSet.currentPeriod();
           await mineBatchTxs(async () => {
             await roninValidatorSet.endEpoch();
@@ -478,7 +479,7 @@ describe('Ronin Validator Set test', () => {
           await roninValidatorSet.connect(consensusAddr).submitBlockReward({ value: 100 });
           await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
 
-          epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
+          epoch = await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber());
           lastPeriod = await roninValidatorSet.currentPeriod();
           await mineBatchTxs(async () => {
             await roninValidatorSet.endEpoch();
@@ -505,7 +506,7 @@ describe('Ronin Validator Set test', () => {
         await roninValidatorSet.connect(consensusAddr).submitBlockReward({ value: 100 });
         await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
 
-        epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
+        epoch = await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber());
         lastPeriod = await roninValidatorSet.currentPeriod();
         await mineBatchTxs(async () => {
           await roninValidatorSet.endEpoch();
@@ -542,10 +543,10 @@ describe('Ronin Validator Set test', () => {
         await expect(tx)
           .to.emit(roninValidatorSet, 'BlockRewardDeprecated')
           .withArgs(consensusAddr.address, 100, BlockRewardDeprecatedType.UNAVAILABILITY);
-        await expect(await roninValidatorSet.totalDeprecatedReward()).equal(100);
+        expect(await roninValidatorSet.totalDeprecatedReward()).equal(100);
         await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
 
-        epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
+        epoch = await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber());
         lastPeriod = await roninValidatorSet.currentPeriod();
         await mineBatchTxs(async () => {
           await roninValidatorSet.endEpoch();
@@ -603,7 +604,7 @@ describe('Ronin Validator Set test', () => {
       currentValidatorSet.splice(-1, 1, validatorCandidates[1].consensusAddr.address);
 
       await RoninValidatorSet.EpochController.setTimestampToPeriodEnding();
-      epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
+      epoch = await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber());
       lastPeriod = await roninValidatorSet.currentPeriod();
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();

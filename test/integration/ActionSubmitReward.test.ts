@@ -95,6 +95,7 @@ describe('[Integration] Submit Block Reward', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await validatorContract.initEpoch();
   });
 
   describe('Configuration check', async () => {
