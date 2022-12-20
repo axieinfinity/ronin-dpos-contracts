@@ -166,13 +166,11 @@ describe('[Integration] Slash validators', () => {
           slasheeInitStakingAmount
         );
 
-        console.log('----------');
         await EpochController.setTimestampToPeriodEnding();
         await mineBatchTxs(async () => {
           await validatorContract.connect(coinbase).endEpoch();
           wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
-        console.log('----------');
 
         period = await validatorContract.currentPeriod();
         expectingValidatorSet.push(slashee.consensusAddr.address);

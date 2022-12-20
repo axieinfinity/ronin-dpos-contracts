@@ -218,8 +218,6 @@ describe('Bridge Tracking test', () => {
       submitWithdrawalSignatures,
       submitWithdrawalSignatures.map(() => [])
     );
-    console.log('Period:', await roninValidatorSet.currentPeriod());
-    console.log('Epoch:', await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber()));
   });
 
   it('Should not record the approved receipts once the epoch is not yet wrapped up', async () => {
