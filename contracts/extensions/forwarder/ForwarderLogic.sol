@@ -7,30 +7,34 @@ abstract contract ForwarderLogic {
    *
    * This function does not return to its internal call site, it will return directly to the external caller.
    */
-  function _call(address target) internal {
-    uint value = msg.value;
-    assembly {
-      // Copy msg.data. We take full control of memory in this inline assembly
-      // block because it will not return to Solidity code. We overwrite the
-      // Solidity scratch pad at memory position 0.
-      calldatacopy(0, 0, calldatasize())
+  function _call(
+    address __target,
+    bytes memory __data,
+    uint256 __value
+  ) internal {
+    (bool _success, bytes memory _res) = __target.call{ value: __value }(__data);
 
-      // Call the implementation
-      // out and outsize are 0 because we don't know the size yet.
-      let result := call(gas(), target, value, 0, calldatasize(), 0, 0)
-
-      // Copy the returned data.
-      returndatacopy(0, 0, returndatasize())
-
-      switch result
-      // delegatecall returns 0 on error.
-      case 0 {
-        revert(0, returndatasize())
-      }
-      default {
-        return(0, returndatasize())
-      }
+    if (!_success) {
+      _handleRevertMsg(_res);
     }
+  }
+
+  /**
+   * @dev Handle revert message from internal call to human-readable.
+   */
+  function _handleRevertMsg(bytes memory _returnData) internal pure {
+    // If the _res length is less than 68, then the transaction failed silently (without a revert message)
+    if (_returnData.length < 68) {
+      revert("Forwarder: reverted silently");
+    }
+
+    assembly {
+      // Slice the sighash.
+      _returnData := add(_returnData, 0x04)
+    }
+
+    // All that remains is the revert string
+    revert(abi.decode(_returnData, (string)));
   }
 
   /**
@@ -45,7 +49,7 @@ abstract contract ForwarderLogic {
    * This function does not return to its internal call site, it will return directly to the external caller.
    */
   function _fallback() internal {
-    _call(_target());
+    _call(_target(), msg.data, msg.value);
   }
 
   /**

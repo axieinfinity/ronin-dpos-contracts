@@ -11,7 +11,7 @@ contract MockForwarderTarget is RONTransferHelper {
   event TargetWithdrawn(address indexed _origin, address indexed _caller, address indexed _recipient);
 
   modifier onlyOwner() {
-    require(msg.sender == owner, "MockForwarderContract: only owner can call method)");
+    require(msg.sender == owner, "MockForwarderContract: only owner can call method");
     _;
   }
 
@@ -34,6 +34,14 @@ contract MockForwarderTarget is RONTransferHelper {
 
   function fooPayable(uint256 _data) external payable onlyOwner {
     data = _data;
+  }
+
+  function fooSilentRevert() external view onlyOwner {
+    revert();
+  }
+
+  function fooRevert() external view onlyOwner {
+    revert("MockForwarderContract: revert intentionally");
   }
 
   function getBalance() external view returns (uint256) {

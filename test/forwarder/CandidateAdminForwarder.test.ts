@@ -91,6 +91,14 @@ describe('Candidate admin forwarder', () => {
       expect(await target.getBalance()).eq(300);
     });
 
+    it('Should the revert message is thrown from target contract', async () => {
+      await expect(targetBehindForwarder.fooRevert()).revertedWith('MockForwarderContract: revert intentionally');
+    });
+
+    it('Should the silent revert message is thrown from forwarder contract', async () => {
+      await expect(targetBehindForwarder.fooSilentRevert()).revertedWith('Forwarder: reverted silently');
+    });
+
     it("Should be able to call function of target, that has the same name with admin's function", async () => {
       await expect(targetBehindForwarder.withdrawAll()).changeEtherBalances(
         [forwarder.address, target.address],
