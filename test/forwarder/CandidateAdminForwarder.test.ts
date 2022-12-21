@@ -65,76 +65,135 @@ describe('Candidate admin forwarder', () => {
   });
 
   describe('Calls from normal user', async () => {
-    describe('Forwarding call', async () => {
-      before(async () => {
-        target = MockForwarderTarget__factory.connect(target.address, moderator);
-        targetBehindForwarder = MockForwarderTarget__factory.connect(forwarder.address, moderator);
-      });
-
-      it('Should be able to call foo function', async () => {
-        await targetBehindForwarder.foo(2);
-        expect(await target.data()).eq(2);
-      });
-
-      it('Should be able to call payable foo function, with fund from caller account', async () => {
-        expect(await targetBehindForwarder.fooPayable(3, { value: 100 })).changeEtherBalances(
-          [moderator.address, target.address],
-          [-100, 100]
-        );
-        expect(await target.data()).eq(3);
-        expect(await target.getBalance()).eq(100);
-      });
-
-      it('Should be able to call payable foo function, with fund from forwarder account', async () => {
-        expect(
-          await forwarder.functionCall(target.interface.encodeFunctionData('fooPayable', [4]), 200)
-        ).changeEtherBalances([moderator.address, forwarder.address, target.address], [0, -200, 200]);
-        expect(await target.data()).eq(4);
-        expect(await target.getBalance()).eq(300);
-      });
-
-      it("Should be able to call function of target, that has the same name with admin's function", async () => {
-        await expect(targetBehindForwarder.withdrawAll()).changeEtherBalances(
-          [forwarder.address, target.address],
-          [300, -300]
-        );
-      });
-
-      it('Should be able to invoke fallback of target through forwarder', async () => {
-        await expect(
-          moderator.sendTransaction({
-            data: '0xdeadbeef',
-            to: targetBehindForwarder.address,
-            value: 200,
-          })
-        ).revertedWith('MockForwardTarget: hello from fallback');
-      });
-
-      it('Should not be able to invoke receive of target through forwarder', async () => {
-        await expect(
-          moderator.sendTransaction({
-            to: targetBehindForwarder.address,
-            value: 200,
-          })
-        ).changeEtherBalances([moderator.address, forwarder.address, target.address], [-200, 200, 0]);
-      });
+    before(async () => {
+      forwarder = CandidateAdminForwarder__factory.connect(forwarder.address, moderator);
+      target = MockForwarderTarget__factory.connect(target.address, moderator);
+      targetBehindForwarder = MockForwarderTarget__factory.connect(forwarder.address, moderator);
     });
 
-    describe('Admin call', async () => {
-      it('Should not be able to call the function of admin', async () => {});
+    it('Should be able to call non-payable foo function', async () => {
+      await targetBehindForwarder.foo(2);
+      expect(await target.data()).eq(2);
     });
 
-    describe('', async () => {});
+    it('Should be able to call payable foo function, with fund from caller account', async () => {
+      expect(await targetBehindForwarder.fooPayable(3, { value: 100 })).changeEtherBalances(
+        [moderator.address, target.address],
+        [-100, 100]
+      );
+      expect(await target.data()).eq(3);
+      expect(await target.getBalance()).eq(100);
+    });
+
+    it('Should be able to call payable foo function, with fund from forwarder account', async () => {
+      expect(
+        await forwarder.functionCall(target.interface.encodeFunctionData('fooPayable', [4]), 200)
+      ).changeEtherBalances([moderator.address, forwarder.address, target.address], [0, -200, 200]);
+      expect(await target.data()).eq(4);
+      expect(await target.getBalance()).eq(300);
+    });
+
+    it("Should be able to call function of target, that has the same name with admin's function", async () => {
+      await expect(targetBehindForwarder.withdrawAll()).changeEtherBalances(
+        [forwarder.address, target.address],
+        [300, -300]
+      );
+    });
+
+    it('Should be able to invoke fallback of target through forwarder', async () => {
+      await expect(
+        moderator.sendTransaction({
+          data: '0xdeadbeef',
+          to: targetBehindForwarder.address,
+          value: 200,
+        })
+      ).revertedWith('MockForwardTarget: hello from fallback');
+    });
+
+    it('Should not be able to invoke receive of target through forwarder', async () => {
+      await expect(
+        moderator.sendTransaction({
+          to: targetBehindForwarder.address,
+          value: 200,
+        })
+      ).changeEtherBalances([moderator.address, forwarder.address, target.address], [-200, 200, 0]);
+    });
+
+    it('Should not be able to call the function of admin: invokes target method', async () => {
+      // overloaded method in target is invoked here
+      let tx;
+      await expect(async () => (tx = forwarder.withdrawAll())).changeEtherBalances(
+        [moderator.address, forwarder.address, target.address],
+        [0, 0, 0]
+      );
+
+      expect(tx).emit(target, 'TargetWithdrawn').withArgs(moderator.address, forwarder.address, forwarder.address);
+      expect(tx).not.emit(forwarder, 'ForwarderWithdrawn');
+    });
   });
 
   describe('Calls from admin user', async () => {
-    it('Should be able to call foo function', async () => {});
-    it('Should be able to call payable foo function, with fund from caller account', async () => {});
-    it('Should be able to call payable foo function, with fund from forwarder account', async () => {});
-    it("Should be able to call function of target, that has the same name with admin's", async () => {});
-    it('Should be able to call fallback', async () => {});
-    it('Should be able to call receive', async () => {});
-    it('Should be able to call the function of admin', async () => {});
+    before(async () => {
+      forwarder = CandidateAdminForwarder__factory.connect(forwarder.address, admin);
+      target = MockForwarderTarget__factory.connect(target.address, admin);
+      targetBehindForwarder = MockForwarderTarget__factory.connect(forwarder.address, admin);
+    });
+
+    it('Should not be able to call non-payable foo function', async () => {
+      await targetBehindForwarder.foo(2);
+      expect(await target.data()).not.eq(2);
+    });
+
+    it('Should be able to call non-payable foo function by force `functionCall`', async () => {
+      expect(await forwarder.functionCall(target.interface.encodeFunctionData('foo', [12]), 0)).changeEtherBalances(
+        [admin.address, forwarder.address, target.address],
+        [0, 0, 0]
+      );
+      expect(await target.data()).eq(12);
+    });
+
+    it('Should be able to call payable foo function, with fund from forwarder account', async () => {
+      expect(
+        await forwarder.functionCall(target.interface.encodeFunctionData('fooPayable', [13]), 300)
+      ).changeEtherBalances([admin.address, forwarder.address, target.address], [-300, 0, 300]);
+    });
+
+    it('Should not be able to invoke fallback of target through forwarder: invokes forwarder', async () => {
+      let tx;
+      await expect(
+        async () =>
+          (tx = admin.sendTransaction({
+            data: '0xdeadbeef',
+            to: targetBehindForwarder.address,
+            value: 200,
+          }))
+      ).changeEtherBalances([admin.address, forwarder.address, target.address], [-200, 200, 0]);
+
+      expect(tx).not.revertedWith('MockForwardTarget: hello from fallback');
+    });
+
+    it('Should not be able to invoke receive of target through forwarder: invokes forwarder', async () => {
+      await expect(
+        admin.sendTransaction({
+          to: targetBehindForwarder.address,
+          value: 200,
+        })
+      ).changeEtherBalances([admin.address, forwarder.address, target.address], [-200, 200, 0]);
+    });
+
+    it('Should be able to call the function of admin: invokes forwarder method', async () => {
+      let forwarderBalance = await ethers.provider.getBalance(forwarder.address);
+
+      // overloaded method in forwarder is invoked here
+      let tx;
+      await expect(async () => (tx = forwarder.withdrawAll())).changeEtherBalances(
+        [admin.address, forwarder.address, target.address],
+        [forwarderBalance, BigNumber.from(0).sub(forwarderBalance), 0]
+      );
+
+      expect(tx).not.emit(target, 'TargetWithdrawn');
+      expect(tx).emit(forwarder, 'ForwarderWithdrawn').withArgs(admin.address, forwarderBalance);
+    });
   });
 
   describe('Calls from unauthorized user', async () => {
