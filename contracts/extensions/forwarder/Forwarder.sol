@@ -81,23 +81,6 @@ contract Forwarder is ForwarderLogic, ForwarderStorage {
   }
 
   /**
-   * @dev See {Forwarder-_functionCall}.
-   *
-   * The originated value from the transaction is included in the call, and is forwarded to the target.
-   *
-   * Requirements:
-   * - Only the admin can call this function.
-   *
-   * Note: The forwarder admin is not allowed to interact with the target through the fallback function to avoid
-   * triggering some unexpected logic. This method is used to allow the administrator to explicitly call the target,
-   * please consider reviewing the encoded data `_data` and the method which is called before using this.
-   *
-   */
-  function functionCall(bytes memory _data, uint256 _val) external payable virtual ifAdmin {
-    _functionCall(_data, _val);
-  }
-
-  /**
    * @dev Calls a function from the current forwarder to the target as specified by `_data`, which should be an encoded
    * function call, with the value `_val`.
    */

@@ -2,11 +2,18 @@
 
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "../extensions/forwarder/Forwarder.sol";
 import "../extensions/RONTransferHelper.sol";
 
-contract CandidateAdminForwarder is Forwarder, AccessControlEnumerable, RONTransferHelper {
+/**
+ * @title A vault contract that keeps RON, and behaves as a candidate admin.
+ * @dev There are three roles of interaction:
+ * - Admin: top-up and withdraw RON to the vault, cannot forward call to the target.
+ * - Moderator: forward all call to the target, can top-up RON, cannot withdraw RON.
+ * - Others: can top-up RON, cannot execute any other actions.
+ */
+contract CandidateAdminForwarder is Forwarder, AccessControl, RONTransferHelper {
   /// @dev Moderator of the forwarder role hash
   bytes32 public constant MODERATOR_ROLE = keccak256("MODERATOR_ROLE");
 
@@ -16,18 +23,27 @@ contract CandidateAdminForwarder is Forwarder, AccessControlEnumerable, RONTrans
     _setupRole(DEFAULT_ADMIN_ROLE, _admin);
   }
 
-  /**
-   * @dev Treats the fallback function based on permission of the `msg.sender`:
-   * - Admin of forwarder : interact directly with the forwarder,
-   * - Has `MODERATOR_ROLE`: forwards the call to the target (the `msg.value` is sent along in the call),
-   * - Unauthorized: revert the call.
-   */
-  fallback() external payable override {
-    if (msg.sender == _getAdmin()) {
-      return;
-    }
+  modifier onlyModerator() {
+    require(hasRole(MODERATOR_ROLE, msg.sender), "Forwarder: unauthorized call");
+    _;
+  }
 
-    require(hasRole(MODERATOR_ROLE, msg.sender), "Unauthorized call");
+  modifier adminExecutesOrModeratorForwards() {
+    if (msg.sender == _getAdmin()) {
+      _;
+    } else {
+      require(hasRole(MODERATOR_ROLE, msg.sender), "Forwarder: unauthorized call");
+      _fallback();
+    }
+  }
+
+  /**
+   * @dev Forwards the call to the target (the `msg.value` is sent along in the call).
+   *
+   * Requirements:
+   * - Only moderator can invoke fallback method.
+   */
+  fallback() external payable override onlyModerator {
     _fallback();
   }
 
@@ -41,10 +57,9 @@ contract CandidateAdminForwarder is Forwarder, AccessControlEnumerable, RONTrans
    * from the forwarder contract and sends along with the call.
    *
    * Requirements:
-   * - Only authorized users can call this method.
+   * - Only `MODERATOR_ROLE` users can call this method.
    */
-  function functionCall(bytes memory _data, uint256 _val) external payable override {
-    require(hasRole(MODERATOR_ROLE, msg.sender) || msg.sender == _admin(), "Unauthorized call");
+  function functionCall(bytes memory _data, uint256 _val) external payable onlyModerator {
     _functionCall(_data, _val);
   }
 
@@ -54,7 +69,7 @@ contract CandidateAdminForwarder is Forwarder, AccessControlEnumerable, RONTrans
    * Requirements:
    * - Only forwarder admin can call this method.
    */
-  function withdrawAll() external ifAdmin {
+  function withdrawAll() external adminExecutesOrModeratorForwards {
     uint256 _value = address(this).balance;
     emit ForwarderWithdrawn(msg.sender, _value);
     _transferRON(payable(msg.sender), _value);

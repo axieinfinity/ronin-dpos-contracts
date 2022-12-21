@@ -44,7 +44,7 @@ abstract contract ForwarderLogic {
    *
    * This function does not return to its internal call site, it will return directly to the external caller.
    */
-  function _fallback() internal virtual {
+  function _fallback() internal {
     _call(_target());
   }
 
