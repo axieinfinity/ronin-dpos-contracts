@@ -22,7 +22,7 @@ let targetBehindForwarder: MockForwarderTarget;
 let target: MockForwarderTarget;
 let localData: BigNumber;
 
-describe('Candidate admin forwarder', () => {
+describe('Vault forwarder', () => {
   before(async () => {
     [deployer, admin, moderator, unauthorized] = await ethers.getSigners();
 

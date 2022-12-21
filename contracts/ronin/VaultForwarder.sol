@@ -7,10 +7,10 @@ import "../extensions/forwarder/Forwarder.sol";
 import "../extensions/RONTransferHelper.sol";
 
 /**
- * @title A vault contract that keeps RON, and behaves as a candidate admin.
+ * @title A vault contract that keeps RON, and behaves as an EOA account to interact with a target contract.
  * @dev There are three roles of interaction:
  * - Admin: top-up and withdraw RON to the vault, cannot forward call to the target.
- * - Moderator: forward all call to the target, can top-up RON, cannot withdraw RON.
+ * - Moderator: forward all calls to the target, can top-up RON, cannot withdraw RON.
  * - Others: can top-up RON, cannot execute any other actions.
  */
 contract VaultForwarder is Forwarder, AccessControl, RONTransferHelper {
