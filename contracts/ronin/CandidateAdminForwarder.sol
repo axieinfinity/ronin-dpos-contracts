@@ -13,7 +13,7 @@ import "../extensions/RONTransferHelper.sol";
  * - Moderator: forward all call to the target, can top-up RON, cannot withdraw RON.
  * - Others: can top-up RON, cannot execute any other actions.
  */
-contract CandidateAdminForwarder is Forwarder, AccessControl, RONTransferHelper {
+contract VaultForwarder is Forwarder, AccessControl, RONTransferHelper {
   /// @dev Moderator of the forwarder role hash
   bytes32 public constant MODERATOR_ROLE = keccak256("MODERATOR_ROLE");
 

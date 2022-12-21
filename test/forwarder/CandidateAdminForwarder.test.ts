@@ -4,8 +4,8 @@ import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import {
-  CandidateAdminForwarder,
-  CandidateAdminForwarder__factory,
+  VaultForwarder,
+  VaultForwarder__factory,
   MockForwarderTarget,
   MockForwarderTarget__factory,
 } from '../../src/types';
@@ -17,7 +17,7 @@ let deployer: SignerWithAddress;
 let admin: SignerWithAddress;
 let moderator: SignerWithAddress;
 let unauthorized: SignerWithAddress;
-let forwarder: CandidateAdminForwarder;
+let forwarder: VaultForwarder;
 let targetBehindForwarder: MockForwarderTarget;
 let target: MockForwarderTarget;
 let localData: BigNumber;
@@ -36,7 +36,7 @@ describe('Candidate admin forwarder', () => {
 
     localData = BigNumber.from(0);
     target = await new MockForwarderTarget__factory(deployer).deploy(forwarderAddress, localData);
-    forwarder = await new CandidateAdminForwarder__factory(deployer).deploy(target.address, admin.address);
+    forwarder = await new VaultForwarder__factory(deployer).deploy(target.address, admin.address);
   });
 
   describe('Configuration test', async () => {
@@ -54,7 +54,7 @@ describe('Candidate admin forwarder', () => {
 
   describe('Access grant', async () => {
     before(async () => {
-      forwarder = CandidateAdminForwarder__factory.connect(forwarder.address, admin);
+      forwarder = VaultForwarder__factory.connect(forwarder.address, admin);
     });
     it('Should the admin be able to grant moderator role', async () => {
       await forwarder.grantRole(MODERATOR_ROLE, moderator.address);
@@ -64,7 +64,7 @@ describe('Candidate admin forwarder', () => {
 
   describe('Calls from moderator user', async () => {
     before(async () => {
-      forwarder = CandidateAdminForwarder__factory.connect(forwarder.address, moderator);
+      forwarder = VaultForwarder__factory.connect(forwarder.address, moderator);
       target = MockForwarderTarget__factory.connect(target.address, moderator);
       targetBehindForwarder = MockForwarderTarget__factory.connect(forwarder.address, moderator);
     });
@@ -140,7 +140,7 @@ describe('Candidate admin forwarder', () => {
 
   describe('Calls from admin user', async () => {
     before(async () => {
-      forwarder = CandidateAdminForwarder__factory.connect(forwarder.address, admin);
+      forwarder = VaultForwarder__factory.connect(forwarder.address, admin);
       target = MockForwarderTarget__factory.connect(target.address, admin);
       targetBehindForwarder = MockForwarderTarget__factory.connect(forwarder.address, admin);
     });
@@ -198,7 +198,7 @@ describe('Candidate admin forwarder', () => {
 
   describe('Calls from unauthorized user', async () => {
     before(async () => {
-      forwarder = CandidateAdminForwarder__factory.connect(forwarder.address, unauthorized);
+      forwarder = VaultForwarder__factory.connect(forwarder.address, unauthorized);
       target = MockForwarderTarget__factory.connect(target.address, unauthorized);
       targetBehindForwarder = MockForwarderTarget__factory.connect(forwarder.address, unauthorized);
     });
