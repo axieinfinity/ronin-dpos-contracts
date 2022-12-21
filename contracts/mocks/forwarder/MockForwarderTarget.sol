@@ -21,8 +21,8 @@ contract MockForwarderTarget is RONTransferHelper {
     _fallback();
   }
 
-  constructor(uint256 _data) payable {
-    owner = msg.sender;
+  constructor(address _owner, uint256 _data) payable {
+    owner = _owner;
     data = _data;
   }
 
@@ -30,8 +30,12 @@ contract MockForwarderTarget is RONTransferHelper {
     data = _data;
   }
 
-  function fooPayable(uint256 _data) external onlyOwner {
+  function fooPayable(uint256 _data) external payable onlyOwner {
     data = _data;
+  }
+
+  function getBalance() external view returns (uint256) {
+    return address(this).balance;
   }
 
   function withdrawAll() external onlyOwner {
@@ -39,6 +43,6 @@ contract MockForwarderTarget is RONTransferHelper {
   }
 
   function _fallback() private pure {
-    require(false, "MockForwardTarget: not supported fallback");
+    revert("MockForwardTarget: hello from fallback");
   }
 }

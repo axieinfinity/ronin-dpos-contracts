@@ -52,14 +52,14 @@ abstract contract ForwarderLogic {
    * @dev Fallback function that calls to the address returned by `_target()`. Will run if no other function in the
    * contract matches the call data.
    */
-  fallback() external payable {
+  fallback() external payable virtual {
     _fallback();
   }
 
   /**
    * @dev Fallback function that calls to the address returned by `_target()`. Will run if call data is empty.
    */
-  receive() external payable {
+  receive() external payable virtual {
     _fallback();
   }
 }

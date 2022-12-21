@@ -22,7 +22,7 @@ contract Forwarder is ForwarderLogic, ForwarderStorage {
   }
 
   /**
-   * @dev Modifier used internally that will delegate the call to the implementation unless the sender is the admin.
+   * @dev Modifier used internally that will forward the call to the target unless the sender is the admin.
    */
   modifier ifAdmin() {
     if (msg.sender == _getAdmin()) {
@@ -46,7 +46,7 @@ contract Forwarder is ForwarderLogic, ForwarderStorage {
   }
 
   /**
-   * @dev Returns the current implementation.
+   * @dev Returns the current target.
    *
    * NOTE: Only the admin can call this function. See {ForwarderStorage-_getTarget}.
    *
@@ -59,7 +59,7 @@ contract Forwarder is ForwarderLogic, ForwarderStorage {
   }
 
   /**
-   * @dev Changes the admin of the proxy.
+   * @dev Changes the admin of the forwarder.
    *
    * Emits an {AdminChanged} event.
    *
@@ -70,7 +70,20 @@ contract Forwarder is ForwarderLogic, ForwarderStorage {
   }
 
   /**
-   * @dev Calls a function from the current target as specified by `_data`, which should be an encoded function call.
+   * @dev Changes the target of the forwarder.
+   *
+   * Emits an {TargetChanged} event.
+   *
+   * NOTE: Only the admin can call this function. See {ForwarderStorage-_changeTargetTo}.
+   */
+  function changeTargetTo(address newTarget) external virtual ifAdmin {
+    _changeTargetTo(newTarget);
+  }
+
+  /**
+   * @dev See {Forwarder-_functionCall}.
+   *
+   * The originated value from the transaction is included in the call, and is forwarded to the target.
    *
    * Requirements:
    * - Only the admin can call this function.
@@ -80,9 +93,16 @@ contract Forwarder is ForwarderLogic, ForwarderStorage {
    * please consider reviewing the encoded data `_data` and the method which is called before using this.
    *
    */
-  function functionCall(bytes memory _data) external payable ifAdmin {
+  function functionCall(bytes memory _data, uint256 _val) external payable virtual ifAdmin {
+    _functionCall(_data, _val);
+  }
+
+  /**
+   * @dev Calls a function from the current forwarder to the target as specified by `_data`, which should be an encoded
+   * function call, with the value `_val`.
+   */
+  function _functionCall(bytes memory _data, uint256 _val) internal {
     address _addr = _target();
-    uint _val = msg.value;
     assembly {
       // Call the implementation
       // out and outsize are 0 because we don't know the size yet.
