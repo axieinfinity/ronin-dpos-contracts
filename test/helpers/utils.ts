@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import { ContractTransaction } from 'ethers';
 import { Interface, LogDescription } from 'ethers/lib/utils';
 import { ethers, network } from 'hardhat';
+import { Address } from 'hardhat-deploy/dist/types';
 
 export const expectEvent = async (
   contractInterface: Interface,
@@ -38,3 +39,8 @@ export const getLastBlockTimestamp = async (): Promise<number> => {
   let blockBefore = await ethers.provider.getBlock(blockNumBefore);
   return blockBefore.timestamp;
 };
+
+export const calculateAddress = (from: Address, nonce: number) => ({
+  nonce,
+  address: ethers.utils.getContractAddress({ from, nonce }),
+});
