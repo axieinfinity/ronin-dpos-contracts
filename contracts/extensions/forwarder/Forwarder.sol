@@ -102,6 +102,7 @@ contract Forwarder is ForwarderLogic, ForwarderStorage {
    * function call, with the value `_val`.
    */
   function _functionCall(bytes memory _data, uint256 _val) internal {
+    require(_val <= address(this).balance, "Forwarder: invalid forwarding value");
     address _addr = _target();
     assembly {
       // Call the implementation

@@ -10,13 +10,10 @@ contract CandidateAdminForwarder is Forwarder, AccessControlEnumerable, RONTrans
   /// @dev Moderator of the forwarder role hash
   bytes32 public constant MODERATOR_ROLE = keccak256("MODERATOR_ROLE");
 
+  event ForwarderWithdrawn(address indexed _recipient, uint256 _value);
+
   constructor(address _target, address _admin) Forwarder(_target, _admin) {
     _setupRole(DEFAULT_ADMIN_ROLE, _admin);
-  }
-
-  modifier onlyAuthorized() {
-    require(hasRole(MODERATOR_ROLE, msg.sender) || msg.sender == _admin(), "Unauthorized call");
-    _;
   }
 
   /**
@@ -25,7 +22,12 @@ contract CandidateAdminForwarder is Forwarder, AccessControlEnumerable, RONTrans
    * - Has `MODERATOR_ROLE`: forwards the call to the target (the `msg.value` is sent along in the call),
    * - Unauthorized: revert the call.
    */
-  fallback() external payable override onlyAuthorized {
+  fallback() external payable override {
+    if (msg.sender == _getAdmin()) {
+      return;
+    }
+
+    require(hasRole(MODERATOR_ROLE, msg.sender), "Unauthorized call");
     _fallback();
   }
 
@@ -41,7 +43,8 @@ contract CandidateAdminForwarder is Forwarder, AccessControlEnumerable, RONTrans
    * Requirements:
    * - Only authorized users can call this method.
    */
-  function functionCall(bytes memory _data, uint256 _val) external payable override onlyAuthorized {
+  function functionCall(bytes memory _data, uint256 _val) external payable override {
+    require(hasRole(MODERATOR_ROLE, msg.sender) || msg.sender == _admin(), "Unauthorized call");
     _functionCall(_data, _val);
   }
 
@@ -52,6 +55,8 @@ contract CandidateAdminForwarder is Forwarder, AccessControlEnumerable, RONTrans
    * - Only forwarder admin can call this method.
    */
   function withdrawAll() external ifAdmin {
-    _transferRON(payable(msg.sender), address(this).balance);
+    uint256 _value = address(this).balance;
+    emit ForwarderWithdrawn(msg.sender, _value);
+    _transferRON(payable(msg.sender), _value);
   }
 }

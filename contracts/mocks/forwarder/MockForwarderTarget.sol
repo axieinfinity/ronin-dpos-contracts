@@ -8,6 +8,8 @@ contract MockForwarderTarget is RONTransferHelper {
   address public owner;
   uint256 public data;
 
+  event TargetWithdrawn(address indexed _origin, address indexed _caller, address indexed _recipient);
+
   modifier onlyOwner() {
     require(msg.sender == owner, "MockForwarderContract: only owner can call method)");
     _;
@@ -39,6 +41,7 @@ contract MockForwarderTarget is RONTransferHelper {
   }
 
   function withdrawAll() external onlyOwner {
+    emit TargetWithdrawn(tx.origin, msg.sender, msg.sender);
     _transferRON(payable(msg.sender), address(this).balance);
   }
 
