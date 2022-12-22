@@ -259,7 +259,7 @@ contract RoninGovernanceAdmin is
   /**
    * @inheritdoc IRoninGovernanceAdmin
    */
-  function createEmergencyExitVote(
+  function createEmergencyExitPoll(
     address _consensusAddr,
     address _recipientAfterUnlockedFund,
     uint256 _requestedAt,

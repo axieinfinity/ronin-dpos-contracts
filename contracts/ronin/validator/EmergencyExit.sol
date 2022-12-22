@@ -43,7 +43,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
       _lockedConsensusList.push(_consensusAddr);
       _info.lockedAmount = _deductedAmount;
       _info.recyclingAt = _recyclingAt;
-      IRoninGovernanceAdmin(_getAdmin()).createEmergencyExitVote(
+      IRoninGovernanceAdmin(_getAdmin()).createEmergencyExitPoll(
         _consensusAddr,
         _candidateInfo[_consensusAddr].treasuryAddr,
         block.timestamp,

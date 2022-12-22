@@ -14,7 +14,7 @@ interface IRoninGovernanceAdmin {
    * - The method caller is validator contract.
    *
    */
-  function createEmergencyExitVote(
+  function createEmergencyExitPoll(
     address _consensusAddr,
     address _recipientAfterUnlockedFund,
     uint256 _requestedAt,
