@@ -191,11 +191,14 @@ abstract contract CoinbaseExecution is
     if (_missedRatio > _ratioTier2) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
-      _jailedUntil[_validator] = Math.max(block.number + _jailDurationTier2, _jailedUntil[_validator]);
-      emit ValidatorPunished(_validator, _period, _jailedUntil[_validator], 0, true, true);
+      _blockProducerJailedBlock[_validator] = Math.max(
+        block.number + _jailDurationTier2,
+        _blockProducerJailedBlock[_validator]
+      );
+      emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, true, true);
     } else if (_missedRatio > _ratioTier1) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
-      emit ValidatorPunished(_validator, _period, _jailedUntil[_validator], 0, false, true);
+      emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, false, true);
     } else if (_totalBallots > 0) {
       _bridgeOperatingReward[_validator] = (_totalBridgeReward * _validatorBallots) / _totalBallots;
     }
