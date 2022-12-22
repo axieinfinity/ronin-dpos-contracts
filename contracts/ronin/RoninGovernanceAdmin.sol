@@ -16,8 +16,8 @@ contract RoninGovernanceAdmin is
   BOsGovernanceProposal,
   HasValidatorContract
 {
-  /// @dev Mapping from request hash => bridge operators vote
-  mapping(bytes32 => IsolatedVote) internal _emergecyVote;
+  /// @dev Mapping from request hash => emergency poll
+  mapping(bytes32 => IsolatedVote) internal _emergencyExitPoll;
 
   /// @dev Emitted when the bridge operators are approved.
   event BridgeOperatorsApproved(uint256 _period, uint256 _epoch, address[] _operators);
@@ -266,7 +266,7 @@ contract RoninGovernanceAdmin is
     uint256 _expiredAt
   ) external onlyValidatorContract {
     bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
-    IsolatedVote storage _v = _emergecyVote[_hash];
+    IsolatedVote storage _v = _emergencyExitPoll[_hash];
     _v.createdAt = block.timestamp;
     _v.expiredAt = _expiredAt;
     emit EmergencyExitVoteCreated(_hash, _consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
@@ -295,7 +295,7 @@ contract RoninGovernanceAdmin is
     bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
     require(_voteHash == _hash, "RoninGovernanceAdmin: invalid vote hash");
 
-    IsolatedVote storage _v = _emergecyVote[_hash];
+    IsolatedVote storage _v = _emergencyExitPoll[_hash];
     require(_v.createdAt > 0, "RoninGovernanceAdmin: query for un-existent vote");
     require(_v.expiredAt > 0 && block.timestamp <= _v.expiredAt, "RoninGovernanceAdmin: query for expired vote");
 
