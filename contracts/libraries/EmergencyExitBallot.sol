@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 library EmergencyExitBallot {
-  // keccak256("EmergencyExitBallot(address consensusAddress,address recipientAfterUnlockedFund,uint256 requestedAt)");
+  // keccak256("EmergencyExitBallot(address consensusAddress,address recipientAfterUnlockedFund,uint256 requestedAt,uint256 expiredAt)");
   bytes32 public constant EMERGENCY_EXIT_BALLOT_TYPEHASH =
-    0x10e263cc106e7f73f987b170d2d40c1f3a1c905ac487982dec61e8bbceaa2071;
+    0x697acba4deaf1a718d8c2d93e42860488cb7812696f28ca10eed17bac41e7027;
 
   /**
    * @dev Returns hash of the ballot.
@@ -14,11 +14,18 @@ library EmergencyExitBallot {
   function hash(
     address _consensusAddress,
     address _recipientAfterUnlockedFund,
-    uint256 _requestedAt
+    uint256 _requestedAt,
+    uint256 _expiredAt
   ) internal pure returns (bytes32) {
     return
       keccak256(
-        abi.encode(EMERGENCY_EXIT_BALLOT_TYPEHASH, _consensusAddress, _recipientAfterUnlockedFund, _requestedAt)
+        abi.encode(
+          EMERGENCY_EXIT_BALLOT_TYPEHASH,
+          _consensusAddress,
+          _recipientAfterUnlockedFund,
+          _requestedAt,
+          _expiredAt
+        )
       );
   }
 }

@@ -29,12 +29,14 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   address[] internal _lockedConsensusList;
   /// @dev Mapping from consensus => request exist info
   mapping(address => EmergencyExitInfo) internal _exitInfo;
+  /// @dev Mapping from consensus => flag indicating whether the fund is unlocked
+  mapping(address => bool) internal _fundUnlocked;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[45] private ______gap;
+  uint256[44] private ______gap;
 
   /**
    * @inheritdoc ICommonInfo

@@ -240,7 +240,8 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
         }
 
         // Removes unsastisfied candidates
-        bool _revokingActivated = _info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp;
+        bool _revokingActivated = (_info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp) ||
+          _emergencyExitFundUnlocked(_addr);
         bool _topupDeadlineMissed = _info.topupDeadline != 0 && _info.topupDeadline <= block.timestamp;
         if (_revokingActivated || _topupDeadlineMissed) {
           _selfStakings[_i] = _selfStakings[--_length];
@@ -311,7 +312,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /**
    * @dev Removes the candidate.
    */
-  function _removeCandidate(address _addr) private {
+  function _removeCandidate(address _addr) internal virtual {
     uint256 _idx = _candidateIndex[_addr];
     if (_idx == 0) {
       return;
@@ -338,4 +339,9 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     _candidate.revokingTimestamp = _timestamp;
     emit CandidateRevokingTimestampUpdated(_candidate.consensusAddr, _timestamp);
   }
+
+  /**
+   * @dev Returns a flag indicating whether the fund is unlocked.
+   */
+  function _emergencyExitFundUnlocked(address _consensusAddr) internal virtual returns (bool);
 }

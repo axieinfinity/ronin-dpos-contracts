@@ -156,4 +156,10 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   function setEmergencyExpiryDuration(uint256 _emergencyExpiryDuration) external override {}
 
   function getEmergencyExitInfo(address _consensusAddr) external view override returns (EmergencyExitInfo memory) {}
+
+  function execEmergencyExit(address, uint256) external {}
+
+  function isOperatingBridge(address) external view returns (bool) {}
+
+  function _emergencyExitFundUnlocked(address _consensusAddr) internal virtual override returns (bool) {}
 }

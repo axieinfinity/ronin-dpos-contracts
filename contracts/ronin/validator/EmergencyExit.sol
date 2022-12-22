@@ -26,7 +26,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   }
 
   /**
-   * @dev Fallback function of ``. TODO
+   * @inheritdoc IEmergencyExit
    */
   function execEmergencyExit(address _consensusAddr, uint256 _secLeftToRevoke) external onlyStakingContract {
     EmergencyExitInfo storage _info = _exitInfo[_consensusAddr];
@@ -34,10 +34,11 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
 
     uint256 _revokingTimestamp = block.timestamp + _secLeftToRevoke;
     _setRevokingTimestamp(_candidateInfo[_consensusAddr], _revokingTimestamp);
-    _bridgeOperatorJailedTimestamp[_consensusAddr] = _revokingTimestamp;
+    _emergencyExitJailedTimestamp[_consensusAddr] = _revokingTimestamp;
 
     uint256 _deductedAmount = _stakingContract.deductStakingAmount(_consensusAddr, _emergencyExitLockedAmount);
     if (_deductedAmount > 0) {
+      emit EmergencyExitFundLocked(_consensusAddr, _deductedAmount);
       uint256 _recyclingAt = block.timestamp + _emergencyExpiryDuration;
       _lockedConsensusList.push(_consensusAddr);
       _info.lockedAmount = _deductedAmount;
@@ -55,16 +56,14 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
    * @inheritdoc IEmergencyExit
    */
   function setEmergencyExitLockedAmount(uint256 _emergencyExitLockedAmount) external onlyAdmin {
-    _emergencyExitLockedAmount = _emergencyExitLockedAmount;
-    emit EmergencyExitLockedAmountUpdated(_emergencyExitLockedAmount);
+    _setEmergencyExitLockedAmount(_emergencyExitLockedAmount);
   }
 
   /**
    * @inheritdoc IEmergencyExit
    */
   function setEmergencyExpiryDuration(uint256 _emergencyExpiryDuration) external onlyAdmin {
-    _emergencyExpiryDuration = _emergencyExpiryDuration;
-    emit EmergencyExpiryDurationUpdated(_emergencyExpiryDuration);
+    _setEmergencyExpiryDuration(_emergencyExpiryDuration);
   }
 
   /**
@@ -91,6 +90,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     _lockedConsensusList[_index] = _lockedConsensusList[_length - 1];
     _lockedConsensusList.pop();
     if (_amount > 0) {
+      _fundUnlocked[_consensusAddr] = true;
       if (_unsafeSendRON(_recipient, _amount)) {
         emit EmergencyExitFundUnlocked(_consensusAddr, _recipient, _amount);
         return;
@@ -126,6 +126,24 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     }
   }
 
+  /**
+   * @dev Override `CandidateManager-_removeCandidate`.
+   */
+  function _emergencyExitFundUnlocked(address _consensusAddr) internal virtual override returns (bool) {
+    return _fundUnlocked[_consensusAddr];
+  }
+
+  /**
+   * @dev Override `CandidateManager-_removeCandidate`.
+   */
+  function _removeCandidate(address _consensusAddr) internal override {
+    delete _fundUnlocked[_consensusAddr];
+    super._removeCandidate(_consensusAddr);
+  }
+
+  /**
+   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
+   */
   function _bridgeOperatorOf(address _consensusAddr)
     internal
     view
@@ -134,5 +152,21 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     returns (address)
   {
     return CandidateManager._bridgeOperatorOf(_consensusAddr);
+  }
+
+  /**
+   * @dev See `setEmergencyExitLockedAmount.
+   */
+  function _setEmergencyExitLockedAmount(uint256 _amount) internal {
+    _emergencyExitLockedAmount = _amount;
+    emit EmergencyExitLockedAmountUpdated(_amount);
+  }
+
+  /**
+   * @dev See `setEmergencyExpiryDuration`.
+   */
+  function _setEmergencyExpiryDuration(uint256 _duration) internal {
+    _emergencyExpiryDuration = _duration;
+    emit EmergencyExpiryDurationUpdated(_duration);
   }
 }

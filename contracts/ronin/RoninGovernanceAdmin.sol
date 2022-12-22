@@ -265,7 +265,7 @@ contract RoninGovernanceAdmin is
     uint256 _requestedAt,
     uint256 _expiredAt
   ) external onlyValidatorContract {
-    bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt);
+    bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
     IsolatedVote storage _v = _emergecyVote[_hash];
     _v.createdAt = block.timestamp;
     _v.expiredAt = _expiredAt;
@@ -285,18 +285,19 @@ contract RoninGovernanceAdmin is
     bytes32 _voteHash,
     address _consensusAddr,
     address _recipientAfterUnlockedFund,
-    uint256 _requestedAt
+    uint256 _requestedAt,
+    uint256 _expiredAt
   ) external {
     address _voter = msg.sender;
     uint256 _weight = _getWeight(_voter);
     require(_weight > 0, "RoninGovernanceAdmin: sender is not governor");
 
-    bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt);
+    bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
     require(_voteHash == _hash, "RoninGovernanceAdmin: invalid vote hash");
 
     IsolatedVote storage _v = _emergecyVote[_hash];
     require(_v.createdAt > 0, "RoninGovernanceAdmin: query for un-existent vote");
-    require(_v.expiredAt > 0 && _v.expiredAt <= block.timestamp, "RoninGovernanceAdmin: query for expired vote");
+    require(_v.expiredAt > 0 && block.timestamp <= _v.expiredAt, "RoninGovernanceAdmin: query for expired vote");
 
     if (_castVote(_v, _voter, _weight, _getMinimumVoteWeight(), _hash) == VoteStatus.Approved) {
       _unlockFundForEmergencyExitRequest(_consensusAddr, _recipientAfterUnlockedFund);

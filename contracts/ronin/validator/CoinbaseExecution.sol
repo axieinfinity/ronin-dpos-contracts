@@ -114,10 +114,10 @@ abstract contract CoinbaseExecution is
         uint256[] memory _delegatingRewards
       ) = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(_lastPeriod, _currentValidators);
       _settleAndTransferDelegatingRewards(_lastPeriod, _currentValidators, _totalDelegatingReward, _delegatingRewards);
+      _tryRecycleLockedFundsFromEmergencyExits();
       _recycleDeprecatedRewards();
       _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
       _currentValidators = _syncValidatorSet(_newPeriod);
-      _tryRecycleLockedFundsFromEmergencyExits();
     }
     _revampRoles(_newPeriod, _nextEpoch, _currentValidators);
     emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
@@ -352,7 +352,6 @@ abstract contract CoinbaseExecution is
    * @dev Updates the validator set based on the validator candidates from the Staking contract.
    *
    * Emits the `ValidatorSetUpdated` event.
-   * Emits the `BridgeOperatorSetUpdated` event.
    *
    * Note: This method should be called once in the end of each period.
    *
@@ -415,6 +414,7 @@ abstract contract CoinbaseExecution is
    * - This method is called at the end of each epoch
    *
    * Emits the `BlockProducerSetUpdated` event.
+   * Emits the `BridgeOperatorSetUpdated` event.
    *
    */
   function _revampRoles(
@@ -426,8 +426,9 @@ abstract contract CoinbaseExecution is
 
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
       address _validator = _currentValidators[_i];
+      bool _emergencyExitRequested = block.timestamp <= _emergencyExitJailedTimestamp[_validator];
       bool _isProducerBefore = isBlockProducer(_validator);
-      bool _isProducerAfter = !(_jailed(_validator) || _maintainedList[_i]);
+      bool _isProducerAfter = !(_jailed(_validator) || _maintainedList[_i] || _emergencyExitRequested);
 
       if (!_isProducerBefore && _isProducerAfter) {
         _validatorMap[_validator] = _validatorMap[_validator].addFlag(EnumFlags.ValidatorFlag.BlockProducer);
@@ -435,8 +436,8 @@ abstract contract CoinbaseExecution is
         _validatorMap[_validator] = _validatorMap[_validator].removeFlag(EnumFlags.ValidatorFlag.BlockProducer);
       }
 
-      bool _isBridgeOperatorBefore = _validatorMap[_validator].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator);
-      bool _isBridgeOperatorAfter = _bridgeOperatorJailedTimestamp[_validator] < block.timestamp;
+      bool _isBridgeOperatorBefore = isOperatingBridge(_validator);
+      bool _isBridgeOperatorAfter = !_emergencyExitRequested;
       if (!_isBridgeOperatorBefore && _isBridgeOperatorAfter) {
         _validatorMap[_validator] = _validatorMap[_validator].addFlag(EnumFlags.ValidatorFlag.BridgeOperator);
       } else if (_isBridgeOperatorBefore && !_isBridgeOperatorAfter) {

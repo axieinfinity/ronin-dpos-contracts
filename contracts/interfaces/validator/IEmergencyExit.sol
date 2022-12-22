@@ -3,6 +3,8 @@
 pragma solidity ^0.8.9;
 
 interface IEmergencyExit {
+  /// @dev Emitted when the fund is locked from an emergency exit request
+  event EmergencyExitFundLocked(address indexed consensusAddr, uint256 lockedAmount);
   /// @dev Emitted when the fund that locked from an emergency exit request is transferred to the recipient.
   event EmergencyExitFundUnlocked(address indexed consensusAddr, address indexed recipient, uint256 unlockedAmount);
   /// @dev Emitted when the fund that locked from an emergency exit request is failed to transferred back.
@@ -61,4 +63,13 @@ interface IEmergencyExit {
    *
    */
   function unlockFundForEmergencyExitRequest(address _consensusAddr, address payable _recipient) external;
+
+  /**
+   * @dev Fallback function of `IStaking-requestEmergencyExit`.
+   *
+   * Requirements:
+   * - The method caller is staking contract.
+   *
+   */
+  function execEmergencyExit(address _consensusAddr, uint256 _secLeftToRevoke) external;
 }

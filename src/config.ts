@@ -166,6 +166,8 @@ const defaultRoninValidatorSetConf: RoninValidatorSetArguments = {
   maxValidatorCandidate: 100,
   numberOfBlocksInEpoch: 600,
   minEffectiveDaysOnwards: 7,
+  emergencyExitLockedAmount: BigNumber.from(10).pow(18).mul(50_000), // 50.000 RON
+  emergencyExpiryDuration: 14 * 86400, // 14 days
 };
 
 // TODO: update config for testnet & mainnet

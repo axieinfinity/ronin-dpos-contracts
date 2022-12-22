@@ -148,6 +148,8 @@ export interface RoninValidatorSetArguments {
   maxPrioritizedValidatorNumber?: BigNumberish;
   numberOfBlocksInEpoch?: BigNumberish;
   minEffectiveDaysOnwards?: BigNumberish;
+  emergencyExitLockedAmount?: BigNumberish;
+  emergencyExpiryDuration?: BigNumberish;
 }
 
 export interface RoninValidatorSetConfig {

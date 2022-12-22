@@ -112,6 +112,8 @@ export const defaultTestConfig: InitTestInput = {
     numberOfBlocksInEpoch: 600,
     maxValidatorCandidate: 10,
     minEffectiveDaysOnwards: 7,
+    emergencyExitLockedAmount: 500,
+    emergencyExpiryDuration: 14 * 86400, // 14 days
   },
 
   roninTrustedOrganizationArguments: {

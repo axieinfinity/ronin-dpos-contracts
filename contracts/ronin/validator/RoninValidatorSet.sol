@@ -34,7 +34,10 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
     uint256 __minEffectiveDaysOnwards,
-    uint256 __numberOfBlocksInEpoch
+    uint256 __numberOfBlocksInEpoch,
+    // __emergencyExitConfigs[0]: emergencyExitLockedAmount
+    // __emergencyExitConfigs[1]: emergencyExpiryDuration
+    uint256[2] calldata __emergencyExitConfigs
   ) external initializer {
     _setSlashIndicatorContract(__slashIndicatorContract);
     _setStakingContract(__stakingContract);
@@ -46,6 +49,8 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setMaxPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
     _setMinEffectiveDaysOnwards(__minEffectiveDaysOnwards);
+    _setEmergencyExitLockedAmount(__emergencyExitConfigs[0]);
+    _setEmergencyExpiryDuration(__emergencyExitConfigs[1]);
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
   }
 
@@ -60,6 +65,9 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     );
   }
 
+  /**
+   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
+   */
   function _bridgeOperatorOf(address _consensusAddr)
     internal
     view

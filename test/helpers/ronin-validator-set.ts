@@ -171,6 +171,25 @@ export const expects = {
     );
   },
 
+  emitBridgeOperatorSetUpdatedEvent: async function (
+    tx: ContractTransaction,
+    expectingPeriod?: BigNumberish,
+    expectingEpoch?: BigNumberish,
+    expectingBridgeOperators?: string[]
+  ) {
+    await expectEvent(
+      contractInterface,
+      'BridgeOperatorSetUpdated',
+      tx,
+      (event) => {
+        !!expectingPeriod && expect(event.args[0], 'invalid period').eq(expectingPeriod);
+        !!expectingEpoch && expect(event.args[1], 'invalid epoch').eq(expectingEpoch);
+        !!expectingBridgeOperators && expect(event.args[2], 'invalid bridge operators').eql(expectingBridgeOperators);
+      },
+      1
+    );
+  },
+
   emitBlockRewardDeprecatedEvent: async function (
     tx: ContractTransaction,
     expectingValidator: string,

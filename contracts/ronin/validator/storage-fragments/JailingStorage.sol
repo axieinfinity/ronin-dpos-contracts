@@ -16,7 +16,7 @@ abstract contract JailingStorage is IJailingInfo {
   /// @dev Mapping from consensus address => the last block that the block producer is jailed
   mapping(address => uint256) internal _jailedUntil;
   /// @dev Mapping from consensus address => the last timestamp that the bridge operator is jailed
-  mapping(address => uint256) internal _bridgeOperatorJailedTimestamp;
+  mapping(address => uint256) internal _emergencyExitJailedTimestamp;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
