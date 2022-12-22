@@ -62,7 +62,7 @@ interface IEmergencyExit {
    * Emits the event `EmergencyExitFundUnlockFailed` if the fund is failed to unlock.
    *
    */
-  function unlockFundForEmergencyExitRequest(address _consensusAddr, address payable _recipient) external;
+  function execReleaseLockedFundForEmergencyExitRequest(address _consensusAddr, address payable _recipient) external;
 
   /**
    * @dev Fallback function of `IStaking-requestEmergencyExit`.

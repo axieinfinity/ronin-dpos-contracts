@@ -198,7 +198,7 @@ describe('Emergency Exit test', () => {
       .withArgs(compromisedValidator.consensusAddr.address, emergencyExitLockedAmount);
   });
 
-  it('Should the request tx emit event EmergencyExitVoteCreated', async () => {
+  it('Should the request tx emit event EmergencyExitPollCreated', async () => {
     consensusAddr = compromisedValidator.consensusAddr.address;
     recipientAfterUnlockedFund = compromisedValidator.treasuryAddr.address;
     requestedAt = requestBlock.timestamp;
@@ -206,7 +206,7 @@ describe('Emergency Exit test', () => {
     voteHash = getEmergencyExitBallotHash(consensusAddr, recipientAfterUnlockedFund, requestedAt, expiredAt);
 
     await expect(tx)
-      .emit(governanceAdmin, 'EmergencyExitVoteCreated')
+      .emit(governanceAdmin, 'EmergencyExitPollCreated')
       .withArgs(voteHash, consensusAddr, recipientAfterUnlockedFund, requestedAt, expiredAt);
   });
 
@@ -316,7 +316,7 @@ describe('Emergency Exit test', () => {
     });
   });
 
-  describe('Expiry emergency exit', () => {
+  describe('Expired emergency exit', () => {
     let treasuryBalance: BigNumberish;
     let stakingVestingBalance: BigNumberish;
 
@@ -332,9 +332,13 @@ describe('Emergency Exit test', () => {
     });
 
     it('Should the governor not be able to vote for an expiry emergency exit', async () => {
+      tx = await governanceAdmin
+        .connect(trustedOrgs[0].governor)
+        .voteEmergencyExit(voteHash, consensusAddr, recipientAfterUnlockedFund, requestedAt, expiredAt);
+      await expect(tx).emit(governanceAdmin, 'EmergencyExitPollExpired').withArgs(voteHash);
       await expect(
         governanceAdmin
-          .connect(trustedOrgs[0].governor)
+          .connect(trustedOrgs[1].governor)
           .voteEmergencyExit(voteHash, consensusAddr, recipientAfterUnlockedFund, requestedAt, expiredAt)
       ).revertedWith('RoninGovernanceAdmin: query for expired vote');
     });

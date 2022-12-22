@@ -29,8 +29,8 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   address[] internal _lockedConsensusList;
   /// @dev Mapping from consensus => request exist info
   mapping(address => EmergencyExitInfo) internal _exitInfo;
-  /// @dev Mapping from consensus => flag indicating whether the fund is unlocked
-  mapping(address => bool) internal _fundUnlocked;
+  /// @dev Mapping from consensus => flag indicating whether the locked fund is released
+  mapping(address => bool) internal _lockedFundReleased;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new

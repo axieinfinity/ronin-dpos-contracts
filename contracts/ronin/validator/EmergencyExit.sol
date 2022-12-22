@@ -69,7 +69,14 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   /**
    * @inheritdoc IEmergencyExit
    */
-  function unlockFundForEmergencyExitRequest(address _consensusAddr, address payable _recipient) external onlyAdmin {
+  function execReleaseLockedFundForEmergencyExitRequest(address _consensusAddr, address payable _recipient)
+    external
+    onlyAdmin
+  {
+    if (_exitInfo[_consensusAddr].recyclingAt == 0) {
+      return;
+    }
+
     uint256 _length = _lockedConsensusList.length;
     uint256 _index = _length;
 
@@ -80,21 +87,25 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
       }
     }
 
-    // The locked amount might be recycled.
+    // The locked amount might be recycled
     if (_index == _length) {
       return;
     }
 
     uint256 _amount = _exitInfo[_consensusAddr].lockedAmount;
-    delete _exitInfo[_consensusAddr];
-    _lockedConsensusList[_index] = _lockedConsensusList[_length - 1];
-    _lockedConsensusList.pop();
     if (_amount > 0) {
-      _fundUnlocked[_consensusAddr] = true;
-      if (_unsafeSendRON(_recipient, _amount)) {
+      delete _exitInfo[_consensusAddr];
+      if (_length > 1) {
+        _lockedConsensusList[_index] = _lockedConsensusList[_length - 1];
+      }
+      _lockedConsensusList.pop();
+
+      _lockedFundReleased[_consensusAddr] = true;
+      if (_unsafeSendRON(_recipient, _amount, 3500)) {
         emit EmergencyExitFundUnlocked(_consensusAddr, _recipient, _amount);
         return;
       }
+
       emit EmergencyExitFundUnlockFailed(_consensusAddr, _recipient, _amount, address(this).balance);
     }
   }
@@ -117,7 +128,9 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
         _totalDeprecatedReward += _info.lockedAmount;
 
         delete _exitInfo[_addr];
-        _lockedConsensusList[_i] = _lockedConsensusList[--_length];
+        if (--_length > 0) {
+          _lockedConsensusList[_i] = _lockedConsensusList[_length];
+        }
         _lockedConsensusList.pop();
         continue;
       }
@@ -127,17 +140,17 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   }
 
   /**
-   * @dev Override `CandidateManager-_removeCandidate`.
+   * @dev Override `CandidateManager-_emergencyExitLockedFundReleased`.
    */
-  function _emergencyExitFundUnlocked(address _consensusAddr) internal virtual override returns (bool) {
-    return _fundUnlocked[_consensusAddr];
+  function _emergencyExitLockedFundReleased(address _consensusAddr) internal virtual override returns (bool) {
+    return _lockedFundReleased[_consensusAddr];
   }
 
   /**
    * @dev Override `CandidateManager-_removeCandidate`.
    */
   function _removeCandidate(address _consensusAddr) internal override {
-    delete _fundUnlocked[_consensusAddr];
+    delete _lockedFundReleased[_consensusAddr];
     super._removeCandidate(_consensusAddr);
   }
 

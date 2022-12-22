@@ -145,7 +145,10 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     return super._bridgeOperatorOf(_consensusAddr);
   }
 
-  function unlockFundForEmergencyExitRequest(address _consensusAddr, address payable _recipient) external override {}
+  function execReleaseLockedFundForEmergencyExitRequest(address _consensusAddr, address payable _recipient)
+    external
+    override
+  {}
 
   function emergencyExitLockedAmount() external override returns (uint256) {}
 
@@ -161,5 +164,5 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function isOperatingBridge(address) external view returns (bool) {}
 
-  function _emergencyExitFundUnlocked(address _consensusAddr) internal virtual override returns (bool) {}
+  function _emergencyExitLockedFundReleased(address _consensusAddr) internal virtual override returns (bool) {}
 }

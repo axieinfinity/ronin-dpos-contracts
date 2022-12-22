@@ -21,14 +21,16 @@ contract RoninGovernanceAdmin is
 
   /// @dev Emitted when the bridge operators are approved.
   event BridgeOperatorsApproved(uint256 _period, uint256 _epoch, address[] _operators);
-  /// @dev Emitted when an emergency exit vote is created.
-  event EmergencyExitVoteCreated(
+  /// @dev Emitted when an emergency exit poll is created.
+  event EmergencyExitPollCreated(
     bytes32 _voteHash,
     address _consensusAddr,
     address _recipientAfterUnlockedFund,
     uint256 _requestedAt,
     uint256 _expiredAt
   );
+  /// @dev Emitted when an emergency exit poll is expired.
+  event EmergencyExitPollExpired(bytes32 _voteHash);
 
   modifier onlyGovernor() {
     require(_getWeight(msg.sender) > 0, "RoninGovernanceAdmin: sender is not governor");
@@ -117,6 +119,13 @@ contract RoninGovernanceAdmin is
     address _voter
   ) external view returns (bool) {
     return _voted(_vote[_period][_epoch], _voter);
+  }
+
+  /**
+   * @dev Returns whether the voter casted vote for emergency exit poll.
+   */
+  function emergencyPollVoted(bytes32 _voteHash, address _voter) external view returns (bool) {
+    return _voted(_emergencyExitPoll[_voteHash], _voter);
   }
 
   /**
@@ -269,7 +278,7 @@ contract RoninGovernanceAdmin is
     IsolatedVote storage _v = _emergencyExitPoll[_hash];
     _v.createdAt = block.timestamp;
     _v.expiredAt = _expiredAt;
-    emit EmergencyExitVoteCreated(_hash, _consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
+    emit EmergencyExitPollCreated(_hash, _consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
   }
 
   /**
@@ -297,11 +306,14 @@ contract RoninGovernanceAdmin is
 
     IsolatedVote storage _v = _emergencyExitPoll[_hash];
     require(_v.createdAt > 0, "RoninGovernanceAdmin: query for non-existent vote");
-    require(_v.expiredAt > 0 && block.timestamp <= _v.expiredAt, "RoninGovernanceAdmin: query for expired vote");
+    require(_v.status != VoteStatus.Expired, "RoninGovernanceAdmin: query for expired vote");
 
-    if (_castVote(_v, _voter, _weight, _getMinimumVoteWeight(), _hash) == VoteStatus.Approved) {
-      _unlockFundForEmergencyExitRequest(_consensusAddr, _recipientAfterUnlockedFund);
+    VoteStatus _stt = _castVote(_v, _voter, _weight, _getMinimumVoteWeight(), _hash);
+    if (_stt == VoteStatus.Approved) {
+      _execReleaseLockedFundForEmergencyExitRequest(_consensusAddr, _recipientAfterUnlockedFund);
       _v.status = VoteStatus.Executed;
+    } else if (_stt == VoteStatus.Expired) {
+      emit EmergencyExitPollExpired(_hash);
     }
   }
 
@@ -338,7 +350,7 @@ contract RoninGovernanceAdmin is
   /**
    * @dev Trigger function from validator contract to unlock fund for emeregency exit request.
    */
-  function _unlockFundForEmergencyExitRequest(address _consensusAddr, address _recipientAfterUnlockedFund)
+  function _execReleaseLockedFundForEmergencyExitRequest(address _consensusAddr, address _recipientAfterUnlockedFund)
     internal
     virtual
   {
@@ -347,13 +359,16 @@ contract RoninGovernanceAdmin is
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
         abi.encodeWithSelector(
-          _validatorContract.unlockFundForEmergencyExitRequest.selector,
+          _validatorContract.execReleaseLockedFundForEmergencyExitRequest.selector,
           _consensusAddr,
           _recipientAfterUnlockedFund
         )
       )
     );
-    require(_success, "GovernanceAdmin: proxy call `unlockFundForEmergencyExitRequest(address,address)` failed");
+    require(
+      _success,
+      "GovernanceAdmin: proxy call `execReleaseLockedFundForEmergencyExitRequest(address,address)` failed"
+    );
   }
 
   /**
