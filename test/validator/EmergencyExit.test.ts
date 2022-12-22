@@ -16,11 +16,9 @@ import {
   StakingVesting,
 } from '../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
-import { expects as StakingVestingExpects } from '../helpers/staking-vesting';
 import { mineBatchTxs } from '../helpers/utils';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
-import { BlockRewardDeprecatedType } from '../../src/script/ronin-validator-set';
 import { Address } from 'hardhat-deploy/dist/types';
 import {
   createManyTrustedOrganizationAddressSets,
@@ -28,7 +26,6 @@ import {
   TrustedOrganizationAddressSet,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types';
-import { SlashType } from '../../src/script/slash-indicator';
 import { getEmergencyExitBallotHash } from '../../src/script/proposal';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
@@ -83,7 +80,7 @@ describe('Emergency Exit test', () => {
       stakingContractAddress,
       roninGovernanceAdminAddress,
       stakingVestingContractAddress,
-    } = await initTest('RoninValidatorSet')({
+    } = await initTest('EmergencyExit')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
           slashDoubleSignAmount,
