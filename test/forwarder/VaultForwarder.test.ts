@@ -9,7 +9,7 @@ import {
   MockForwarderTarget,
   MockForwarderTarget__factory,
 } from '../../src/types';
-import { ADMIN_SLOT, MODERATOR_ROLE, TARGET_SLOT } from '../../src/utils';
+import { DEFAULT_ADDRESS, FORWARDER_ADMIN_SLOT, MODERATOR_ROLE, FORWARDER_TARGET_SLOT } from '../../src/utils';
 import { calculateAddress } from '../helpers/utils';
 import { parseEther } from 'ethers/lib/utils';
 
@@ -41,12 +41,12 @@ describe('Vault forwarder', () => {
 
   describe('Configuration test', async () => {
     it('Should the forward config the target correctly', async () => {
-      expect(await network.provider.send('eth_getStorageAt', [forwarder.address, TARGET_SLOT])).eq(
+      expect(await network.provider.send('eth_getStorageAt', [forwarder.address, FORWARDER_TARGET_SLOT])).eq(
         ['0x', '0'.repeat(24), target.address.toLocaleLowerCase().slice(2)].join('')
       );
     });
     it('Should the forward config the admin correctly', async () => {
-      expect(await network.provider.send('eth_getStorageAt', [forwarder.address, ADMIN_SLOT])).eq(
+      expect(await network.provider.send('eth_getStorageAt', [forwarder.address, FORWARDER_ADMIN_SLOT])).eq(
         ['0x', '0'.repeat(24), admin.address.toLocaleLowerCase().slice(2)].join('')
       );
     });
@@ -245,6 +245,11 @@ describe('Vault forwarder', () => {
 
     it('Should not be able to call the function of admin', async () => {
       await expect(forwarder.withdrawAll()).revertedWith('Forwarder: unauthorized call');
+    });
+
+    it('Should not be able to call the exposed methods', async () => {
+      await expect(forwarder.changeForwarderAdmin(DEFAULT_ADDRESS)).revertedWith('Forwarder: unauthorized call');
+      await expect(forwarder.changeTargetTo(DEFAULT_ADDRESS)).revertedWith('Forwarder: unauthorized call');
     });
   });
 });

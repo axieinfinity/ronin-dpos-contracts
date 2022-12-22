@@ -7,10 +7,10 @@ import "@openzeppelin/contracts/utils/StorageSlot.sol";
 abstract contract ForwarderStorage {
   /**
    * @dev Storage slot with the address of the current target.
-   * This is the keccak-256 hash of "eip1967.proxy.target" subtracted by 1, and is
+   * This is the keccak-256 hash of "eip1967.forwarder.target" subtracted by 1, and is
    * validated in the constructor.
    */
-  bytes32 internal constant _TARGET_SLOT = 0x99eb7666c084b9136a94e6a829f687abc476d287db070ef792cda8b663eb029e;
+  bytes32 internal constant _TARGET_SLOT = 0xef66ca965b5cc064c3b2723445ac3a82b48db478c3cd5ef4620f7f96f1b1a19a;
 
   /**
    * @dev Emitted when the target is changed.
@@ -44,10 +44,10 @@ abstract contract ForwarderStorage {
 
   /**
    * @dev Storage slot with the admin of the contract.
-   * This is the keccak-256 hash of "eip1967.proxy.admin" subtracted by 1, and is
+   * This is the keccak-256 hash of "eip1967.forwarder.admin" subtracted by 1, and is
    * validated in the constructor.
    */
-  bytes32 internal constant _ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+  bytes32 internal constant _ADMIN_SLOT = 0x79a79760a074c8fb895d1b610f58e9e8356cbfa4196cb8f560d5a1205dae8d07;
 
   /**
    * @dev Emitted when the admin account has changed.
@@ -70,11 +70,11 @@ abstract contract ForwarderStorage {
   }
 
   /**
-   * @dev Changes the admin of the proxy.
+   * @dev Changes the admin of the forwarder.
    *
    * Emits an {AdminChanged} event.
    */
-  function _changeAdmin(address newAdmin) internal {
+  function _changeForwarderAdmin(address newAdmin) internal {
     emit AdminChanged(_getAdmin(), newAdmin);
     _setAdmin(newAdmin);
   }

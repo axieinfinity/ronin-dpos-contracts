@@ -1,5 +1,5 @@
 import { BigNumber, BigNumberish } from 'ethers';
-import { ethers, network } from 'hardhat';
+import { ethers } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
 
 import { TrustedOrganizationStruct } from './types/IRoninTrustedOrganization';
@@ -15,8 +15,8 @@ export const MAX_UINT255 = BigNumber.from(
   '57896044618658097711785492504343953926634992332820282019728792003956564819968'
 );
 
-export const TARGET_SLOT = '0x99eb7666c084b9136a94e6a829f687abc476d287db070ef792cda8b663eb029e';
-export const ADMIN_SLOT = '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103';
+export const FORWARDER_TARGET_SLOT = '0xef66ca965b5cc064c3b2723445ac3a82b48db478c3cd5ef4620f7f96f1b1a19a';
+export const FORWARDER_ADMIN_SLOT = '0x79a79760a074c8fb895d1b610f58e9e8356cbfa4196cb8f560d5a1205dae8d07';
 
 export enum Network {
   Local = 'local',
