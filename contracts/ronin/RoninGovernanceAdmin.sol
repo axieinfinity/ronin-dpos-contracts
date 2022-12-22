@@ -296,7 +296,7 @@ contract RoninGovernanceAdmin is
     require(_voteHash == _hash, "RoninGovernanceAdmin: invalid vote hash");
 
     IsolatedVote storage _v = _emergencyExitPoll[_hash];
-    require(_v.createdAt > 0, "RoninGovernanceAdmin: query for un-existent vote");
+    require(_v.createdAt > 0, "RoninGovernanceAdmin: query for non-existent vote");
     require(_v.expiredAt > 0 && block.timestamp <= _v.expiredAt, "RoninGovernanceAdmin: query for expired vote");
 
     if (_castVote(_v, _voter, _weight, _getMinimumVoteWeight(), _hash) == VoteStatus.Approved) {
