@@ -37,6 +37,7 @@ describe('Vault forwarder', () => {
     localData = BigNumber.from(0);
     target = await new MockForwarderTarget__factory(deployer).deploy(forwarderAddress, localData);
     forwarder = await new VaultForwarder__factory(deployer).deploy(target.address, admin.address);
+    expect(forwarder.address).eq(forwarderAddress);
   });
 
   describe('Configuration test', async () => {
@@ -133,8 +134,10 @@ describe('Vault forwarder', () => {
         [0, 0, 0]
       );
 
-      expect(tx).emit(target, 'TargetWithdrawn').withArgs(moderator.address, forwarder.address, forwarder.address);
-      expect(tx).not.emit(forwarder, 'ForwarderWithdrawn');
+      await expect(tx)
+        .emit(target, 'TargetWithdrawn')
+        .withArgs(moderator.address, forwarder.address, forwarder.address);
+      await expect(tx).not.emit(forwarder, 'ForwarderWithdrawn');
     });
   });
 
@@ -173,11 +176,13 @@ describe('Vault forwarder', () => {
     });
 
     it('Receive: invokes forwarder', async () => {
+      let tx;
       await expect(
-        admin.sendTransaction({
-          to: targetBehindForwarder.address,
-          value: 200,
-        })
+        async () =>
+          (tx = admin.sendTransaction({
+            to: targetBehindForwarder.address,
+            value: 200,
+          }))
       ).changeEtherBalances([admin.address, forwarder.address, target.address], [-200, 200, 0]);
     });
 
@@ -191,8 +196,8 @@ describe('Vault forwarder', () => {
         [forwarderBalance, BigNumber.from(0).sub(forwarderBalance), 0]
       );
 
-      expect(tx).not.emit(target, 'TargetWithdrawn');
-      expect(tx).emit(forwarder, 'ForwarderWithdrawn').withArgs(admin.address, forwarderBalance);
+      await expect(tx).not.emit(target, 'TargetWithdrawn');
+      await expect(tx).emit(forwarder, 'ForwarderWithdrawn').withArgs(admin.address, forwarderBalance);
     });
   });
 
