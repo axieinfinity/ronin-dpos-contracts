@@ -53,7 +53,7 @@ contract Forwarder is ForwarderLogic, ForwarderStorage, AccessControl {
    *
    * NOTE: Only the admin can call this function. See {ForwarderStorage-_getTarget}.
    *
-   * TIP: To get this value clients can read directly from the storage slot shown below (specified by EIP1967) using the
+   * TIP: To get this value clients can read directly from the storage slot shown below using the
    * https://eth.wiki/json-rpc/API#eth_getstorageat[`eth_getStorageAt`] RPC call.
    * `0xef66ca965b5cc064c3b2723445ac3a82b48db478c3cd5ef4620f7f96f1b1a19a`
    */
