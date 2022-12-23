@@ -44,7 +44,7 @@ contract Forwarder is ForwarderLogic, ForwarderStorage, AccessControl {
   }
 
   /**
-   * @dev Receives ether transfer from all addresses.
+   * @dev Receives RON transfer from all addresses.
    */
   receive() external payable override {}
 
