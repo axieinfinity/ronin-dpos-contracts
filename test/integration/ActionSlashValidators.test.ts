@@ -99,6 +99,7 @@ describe('[Integration] Slash validators', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await validatorContract.initEpoch();
 
     await EpochController.setTimestampToPeriodEnding();
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
@@ -234,6 +235,7 @@ describe('[Integration] Slash validators', () => {
         await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
           wrapUpEpochTx!,
           period,
+          await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
           expectingBlockProducerSet
         );
         expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
@@ -269,6 +271,7 @@ describe('[Integration] Slash validators', () => {
         await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
           wrapUpEpochTx!,
           period,
+          await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
           expectingBlockProducerSet
         );
         expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
@@ -389,6 +392,7 @@ describe('[Integration] Slash validators', () => {
           await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
             wrapUpEpochTx!,
             period,
+            await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
             expectingBlockProducerSet
           );
         });
@@ -424,6 +428,7 @@ describe('[Integration] Slash validators', () => {
           await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
             wrapUpEpochTx!,
             period,
+            await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
             expectingBlockProducerSet
           );
           expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');

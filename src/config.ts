@@ -2,8 +2,8 @@ import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 import {
   GeneralConfig,
-  GovernanceAdminArguments,
-  GovernanceAdminConfig,
+  RoninGovernanceAdminArguments,
+  RoninGovernanceAdminConfig,
   LiteralNetwork,
   MainchainGovernanceAdminArguments,
   MainchainGovernanceAdminConfig,
@@ -166,6 +166,8 @@ const defaultRoninValidatorSetConf: RoninValidatorSetArguments = {
   maxValidatorCandidate: 100,
   numberOfBlocksInEpoch: 600,
   minEffectiveDaysOnwards: 7,
+  emergencyExitLockedAmount: BigNumber.from(10).pow(18).mul(50_000), // 50.000 RON
+  emergencyExpiryDuration: 14 * 86400, // 14 days
 };
 
 // TODO: update config for testnet & mainnet
@@ -264,12 +266,12 @@ export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
   [Network.Ethereum]: undefined,
 };
 
-const defaultGovernanceAdminConf: GovernanceAdminArguments = {
+const defaultGovernanceAdminConf: RoninGovernanceAdminArguments = {
   proposalExpiryDuration: 60 * 60 * 24 * 14, // 14 days
 };
 
 // TODO: update config for goerli, ethereum
-export const governanceAdminConf: GovernanceAdminConfig = {
+export const roninGovernanceAdminConf: RoninGovernanceAdminConfig = {
   [Network.Local]: defaultGovernanceAdminConf,
   [Network.Devnet]: defaultGovernanceAdminConf,
   [Network.Goerli]: undefined,

@@ -132,13 +132,9 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    * @inheritdoc ICandidateManager
    */
   function requestRevokeCandidate(address _consensusAddr, uint256 _secsLeft) external override onlyStakingContract {
-    require(isValidatorCandidate(_consensusAddr), "CandidateManager: query for non-existent candidate");
     ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
     require(_info.revokingTimestamp == 0, "CandidateManager: already requested before");
-
-    uint256 _revokingTimestamp = block.timestamp + _secsLeft;
-    _info.revokingTimestamp = _revokingTimestamp;
-    emit CandidateRevokingTimestampUpdated(_consensusAddr, _revokingTimestamp);
+    _setRevokingTimestamp(_info, block.timestamp + _secsLeft);
   }
 
   /**
@@ -244,7 +240,8 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
         }
 
         // Removes unsastisfied candidates
-        bool _revokingActivated = _info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp;
+        bool _revokingActivated = (_info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp) ||
+          _emergencyExitLockedFundReleased(_addr);
         bool _topupDeadlineMissed = _info.topupDeadline != 0 && _info.topupDeadline <= block.timestamp;
         if (_revokingActivated || _topupDeadlineMissed) {
           _selfStakings[_i] = _selfStakings[--_length];
@@ -315,7 +312,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /**
    * @dev Removes the candidate.
    */
-  function _removeCandidate(address _addr) private {
+  function _removeCandidate(address _addr) internal virtual {
     uint256 _idx = _candidateIndex[_addr];
     if (_idx == 0) {
       return;
@@ -326,7 +323,6 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     delete _candidateCommissionChangeSchedule[_addr];
 
     address _lastCandidate = _candidates[_candidates.length - 1];
-
     if (_lastCandidate != _addr) {
       _candidateIndex[_lastCandidate] = _idx;
       _candidates[~_idx] = _lastCandidate;
@@ -334,4 +330,18 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
 
     _candidates.pop();
   }
+
+  /**
+   * @dev Sets timestamp to revoke a candidate.
+   */
+  function _setRevokingTimestamp(ValidatorCandidate storage _candidate, uint256 _timestamp) internal {
+    require(isValidatorCandidate(_candidate.consensusAddr), "CandidateManager: query for non-existent candidate");
+    _candidate.revokingTimestamp = _timestamp;
+    emit CandidateRevokingTimestampUpdated(_candidate.consensusAddr, _timestamp);
+  }
+
+  /**
+   * @dev Returns a flag indicating whether the fund is unlocked.
+   */
+  function _emergencyExitLockedFundReleased(address _consensusAddr) internal virtual returns (bool);
 }

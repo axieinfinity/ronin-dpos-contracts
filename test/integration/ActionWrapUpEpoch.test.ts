@@ -94,6 +94,7 @@ describe('[Integration] Wrap up epoch', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await validatorContract.initEpoch();
   });
 
   after(async () => {
@@ -290,7 +291,7 @@ describe('[Integration] Wrap up epoch', () => {
 
       it('Should the block producer set get updated (excluding the slashed validator)', async () => {
         const lastPeriod = await validatorContract.currentPeriod();
-        const epoch = (await validatorContract.epochOf(await ethers.provider.getBlockNumber())).add(1);
+        const epoch = await validatorContract.epochOf(await ethers.provider.getBlockNumber());
         await mineBatchTxs(async () => {
           await validatorContract.endEpoch();
           wrapUpTx = await validatorContract.wrapUpEpoch();
@@ -299,7 +300,12 @@ describe('[Integration] Wrap up epoch', () => {
         let expectingBlockProducerSet = [validators[2], validators[3]].map((_) => _.consensusAddr.address).reverse();
 
         await expect(wrapUpTx!).emit(validatorContract, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, false);
-        await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(wrapUpTx!, lastPeriod, expectingBlockProducerSet);
+        await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
+          wrapUpTx!,
+          lastPeriod,
+          await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
+          expectingBlockProducerSet
+        );
 
         expect(await validatorContract.getValidators()).eql(
           [validators[1], validators[2], validators[3]].map((_) => _.consensusAddr.address).reverse()

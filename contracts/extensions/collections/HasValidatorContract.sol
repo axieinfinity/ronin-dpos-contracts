@@ -23,7 +23,7 @@ contract HasValidatorContract is IHasValidatorContract, HasProxyAdmin {
   /**
    * @inheritdoc IHasValidatorContract
    */
-  function setValidatorContract(address _addr) external override onlyAdmin {
+  function setValidatorContract(address _addr) external virtual override onlyAdmin {
     require(_addr.code.length > 0, "HasValidatorContract: set to non-contract");
     _setValidatorContract(_addr);
   }

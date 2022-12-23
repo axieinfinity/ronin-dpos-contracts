@@ -29,8 +29,8 @@ abstract contract SlashingExecution is
     delete _miningReward[_validatorAddr];
     delete _delegatingReward[_validatorAddr];
 
-    if (_newJailedUntil > _jailedUntil[_validatorAddr]) {
-      _jailedUntil[_validatorAddr] = _newJailedUntil;
+    if (_newJailedUntil > _blockProducerJailedBlock[_validatorAddr]) {
+      _blockProducerJailedBlock[_validatorAddr] = _newJailedUntil;
     }
 
     if (_slashAmount > 0) {
@@ -38,7 +38,14 @@ abstract contract SlashingExecution is
       _totalDeprecatedReward += _actualAmount;
     }
 
-    emit ValidatorPunished(_validatorAddr, _period, _jailedUntil[_validatorAddr], _slashAmount, true, false);
+    emit ValidatorPunished(
+      _validatorAddr,
+      _period,
+      _blockProducerJailedBlock[_validatorAddr],
+      _slashAmount,
+      true,
+      false
+    );
   }
 
   /**
@@ -49,7 +56,7 @@ abstract contract SlashingExecution is
     // removed previously in the `slash` function.
     _miningRewardBailoutCutOffAtPeriod[_validatorAddr][_period] = true;
     _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = false;
-    _jailedUntil[_validatorAddr] = block.number - 1;
+    _blockProducerJailedBlock[_validatorAddr] = block.number - 1;
 
     emit ValidatorUnjailed(_validatorAddr, _period);
   }

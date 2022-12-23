@@ -135,6 +135,18 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   }
 
   /**
+   * @inheritdoc ICandidateStaking
+   */
+  function requestEmergencyExit(address _consensusAddr)
+    external
+    override
+    poolExists(_consensusAddr)
+    onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
+  {
+    _validatorContract.execEmergencyExit(_consensusAddr, _waitingSecsToRevoke);
+  }
+
+  /**
    * @dev See `ICandidateStaking-applyValidatorCandidate`
    */
   function _applyValidatorCandidate(
