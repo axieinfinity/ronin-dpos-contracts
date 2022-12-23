@@ -171,11 +171,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
    * @dev See `IValidatorInfo-setMaxPrioritizedValidatorNumber`
    */
   function _setMaxPrioritizedValidatorNumber(uint256 _number) internal {
-    require(
-      _number <= _maxValidatorNumber,
-      "RoninValidatorSet: cannot set number of prioritized greater than number of max validators"
-    );
-
+    if (_number > _maxValidatorNumber) revert InvalidMaxPrioitizedValidatorNumber();
     _maxPrioritizedValidatorNumber = _number;
     emit MaxPrioritizedValidatorNumberUpdated(_number);
   }
