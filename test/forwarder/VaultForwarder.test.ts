@@ -9,7 +9,12 @@ import {
   MockForwarderTarget,
   MockForwarderTarget__factory,
 } from '../../src/types';
-import { DEFAULT_ADDRESS, FORWARDER_ADMIN_SLOT, MODERATOR_ROLE, FORWARDER_TARGET_SLOT } from '../../src/utils';
+import {
+  DEFAULT_ADDRESS,
+  FORWARDER_ADMIN_SLOT,
+  FORWARDER_TARGET_SLOT,
+  FORWARDER_MODERATOR_SLOT,
+} from '../../src/utils';
 import { calculateAddress } from '../helpers/utils';
 import { parseEther } from 'ethers/lib/utils';
 
@@ -58,8 +63,10 @@ describe('Vault forwarder', () => {
       forwarder = VaultForwarder__factory.connect(forwarder.address, admin);
     });
     it('Should the admin be able to grant moderator role', async () => {
-      await forwarder.grantRole(MODERATOR_ROLE, moderator.address);
-      expect(await forwarder.hasRole(MODERATOR_ROLE, moderator.address)).eq(true);
+      await forwarder.changeModeratorTo(moderator.address);
+      expect(await network.provider.send('eth_getStorageAt', [forwarder.address, FORWARDER_MODERATOR_SLOT])).eq(
+        ['0x', '0'.repeat(24), moderator.address.toLocaleLowerCase().slice(2)].join('')
+      );
     });
   });
 
@@ -97,7 +104,11 @@ describe('Vault forwarder', () => {
     });
 
     it('Should the silent revert message is thrown from forwarder contract', async () => {
-      await expect(targetBehindForwarder.fooSilentRevert()).revertedWith('Forwarder: reverted silently');
+      await expect(targetBehindForwarder.fooSilentRevert()).reverted;
+    });
+
+    it('Should the custom error is thrown from forwarder contract', async () => {
+      await expect(targetBehindForwarder.fooCustomErrorRevert()).revertedWithCustomError(target, 'ErrIntentionally');
     });
 
     it("Should be able to call function of target, that has the same name with admin's function", async () => {
@@ -137,7 +148,7 @@ describe('Vault forwarder', () => {
       await expect(tx)
         .emit(target, 'TargetWithdrawn')
         .withArgs(moderator.address, forwarder.address, forwarder.address);
-      await expect(tx).not.emit(forwarder, 'ForwarderWithdrawn');
+      await expect(tx).not.emit(forwarder, 'ForwarderRONWithdrawn');
     });
   });
 
@@ -197,7 +208,7 @@ describe('Vault forwarder', () => {
       );
 
       await expect(tx).not.emit(target, 'TargetWithdrawn');
-      await expect(tx).emit(forwarder, 'ForwarderWithdrawn').withArgs(admin.address, forwarderBalance);
+      await expect(tx).emit(forwarder, 'ForwarderRONWithdrawn').withArgs(admin.address, forwarderBalance);
     });
   });
 
@@ -253,7 +264,6 @@ describe('Vault forwarder', () => {
     });
 
     it('Should not be able to call the exposed methods', async () => {
-      await expect(forwarder.changeForwarderAdmin(DEFAULT_ADDRESS)).revertedWith('Forwarder: unauthorized call');
       await expect(forwarder.changeTargetTo(DEFAULT_ADDRESS)).revertedWith('Forwarder: unauthorized call');
     });
   });

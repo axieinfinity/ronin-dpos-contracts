@@ -26,7 +26,7 @@ contract VaultForwarder is Forwarder, RONTransferHelper {
    */
   function withdrawAll() external adminExecutesOrModeratorForwards {
     uint256 _value = address(this).balance;
-    emit ForwarderWithdrawn(msg.sender, _value);
+    emit ForwarderRONWithdrawn(msg.sender, _value);
     _transferRON(payable(msg.sender), _value);
   }
 }

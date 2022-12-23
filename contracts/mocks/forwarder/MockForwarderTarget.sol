@@ -10,6 +10,8 @@ contract MockForwarderTarget is RONTransferHelper {
 
   event TargetWithdrawn(address indexed _origin, address indexed _caller, address indexed _recipient);
 
+  error ErrIntentionally();
+
   modifier onlyOwner() {
     require(msg.sender == owner, "MockForwarderContract: only owner can call method");
     _;
@@ -38,6 +40,10 @@ contract MockForwarderTarget is RONTransferHelper {
 
   function fooSilentRevert() external view onlyOwner {
     revert();
+  }
+
+  function fooCustomErrorRevert() external view onlyOwner {
+    revert ErrIntentionally();
   }
 
   function fooRevert() external view onlyOwner {

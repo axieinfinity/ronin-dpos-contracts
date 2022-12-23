@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "hardhat/console.sol";
+
 abstract contract ForwarderLogic {
   /**
    * @dev Forwards the current call to `target`.
@@ -14,27 +16,27 @@ abstract contract ForwarderLogic {
   ) internal {
     (bool _success, bytes memory _res) = __target.call{ value: __value }(__data);
 
+    // console.log(string(_res));
+    // console.log(_success);
+    // console.log(_res.length);
+
     if (!_success) {
-      _handleRevertMsg(_res);
-    }
-  }
+      if (_res.length == 0) revert();
 
-  /**
-   * @dev Handle revert message from internal call to human-readable.
-   */
-  function _handleRevertMsg(bytes memory _returnData) internal pure {
-    // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-    if (_returnData.length < 68) {
-      revert("Forwarder: reverted silently");
-    }
+      // console.log("tach");
 
-    assembly {
-      // Slice the sighash.
-      _returnData := add(_returnData, 0x04)
-    }
+      assembly {
+        let ptr := mload(0x40)
+        let size := returndatasize()
 
-    // All that remains is the revert string
-    revert(abi.decode(_returnData, (string)));
+        if iszero(size) {
+          revert(0, 0)
+        }
+
+        returndatacopy(ptr, 0, size)
+        revert(ptr, size)
+      }
+    }
   }
 
   /**
