@@ -59,10 +59,7 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
    * deducting amount on slashing).
    */
   function _fallback() internal view {
-    require(
-      msg.sender == stakingVestingContract() || msg.sender == stakingContract(),
-      "RoninValidatorSet: only receives RON from staking vesting contract or staking contract"
-    );
+    if (msg.sender != stakingVestingContract() && msg.sender != stakingContract()) revert UnauthorizedReceiveRON();
   }
 
   /**
