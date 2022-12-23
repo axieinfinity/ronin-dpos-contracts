@@ -28,7 +28,7 @@ abstract contract ForwarderStorage {
    * @dev Stores a new address in the EIP1967 target slot.
    */
   function _setTarget(address newTarget) private {
-    require(Address.isContract(newTarget), "ERC1967: new target is not a contract");
+    require(Address.isContract(newTarget), "ForwarderStorage: new target is not a contract");
     StorageSlot.getAddressSlot(_TARGET_SLOT).value = newTarget;
   }
 
