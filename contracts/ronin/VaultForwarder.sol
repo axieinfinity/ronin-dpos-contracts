@@ -13,7 +13,8 @@ import "../extensions/RONTransferHelper.sol";
  * - Others: can top-up RON, cannot execute any other actions.
  */
 contract VaultForwarder is Forwarder, RONTransferHelper {
-  event ForwarderWithdrawn(address indexed _recipient, uint256 _value);
+  /// @dev Emitted when the admin withdraws all RON from the forwarder contract.
+  event ForwarderRONWithdrawn(address indexed _recipient, uint256 _value);
 
   constructor(address _target, address _admin) Forwarder(_target, _admin) {}
 
