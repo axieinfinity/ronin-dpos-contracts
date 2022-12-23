@@ -263,9 +263,9 @@ describe('Ronin Validator Set test', () => {
           }
         );
 
-      await expect(tx).revertedWith(
-        `CandidateManager: bridge operator address ${validatorCandidates[0].bridgeOperator.address.toLocaleLowerCase()} is already exist`
-      );
+      await expect(tx)
+        .revertedWithCustomError(roninValidatorSet, 'ErrExistentBridgeOperator')
+        .withArgs(validatorCandidates[0].bridgeOperator.address);
     });
   });
 
