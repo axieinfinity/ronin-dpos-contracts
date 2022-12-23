@@ -38,7 +38,6 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
 
     uint256 _deductedAmount = _stakingContract.deductStakingAmount(_consensusAddr, _emergencyExitLockedAmount);
     if (_deductedAmount > 0) {
-      emit EmergencyExitFundLocked(_consensusAddr, _deductedAmount);
       uint256 _recyclingAt = block.timestamp + _emergencyExpiryDuration;
       _lockedConsensusList.push(_consensusAddr);
       _info.lockedAmount = _deductedAmount;
@@ -50,6 +49,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
         _recyclingAt
       );
     }
+    emit EmergencyExitRequested(_consensusAddr, _deductedAmount);
   }
 
   /**
@@ -102,11 +102,11 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
 
       _lockedFundReleased[_consensusAddr] = true;
       if (_unsafeSendRON(_recipient, _amount, 3500)) {
-        emit EmergencyExitFundUnlocked(_consensusAddr, _recipient, _amount);
+        emit EmergencyExitLockedFundReleased(_consensusAddr, _recipient, _amount);
         return;
       }
 
-      emit EmergencyExitFundUnlockFailed(_consensusAddr, _recipient, _amount, address(this).balance);
+      emit EmergencyExitLockedFundReleasingFailed(_consensusAddr, _recipient, _amount, address(this).balance);
     }
   }
 

@@ -192,9 +192,9 @@ describe('Emergency Exit test', () => {
       .withArgs(compromisedValidator.consensusAddr.address, requestBlock.timestamp + waitingSecsToRevoke);
   });
 
-  it('Should the request tx emit event EmergencyExitFundLocked', async () => {
+  it('Should the request tx emit event EmergencyExitRequested', async () => {
     await expect(tx)
-      .emit(roninValidatorSet, 'EmergencyExitFundLocked')
+      .emit(roninValidatorSet, 'EmergencyExitRequested')
       .withArgs(compromisedValidator.consensusAddr.address, emergencyExitLockedAmount);
   });
 
@@ -269,9 +269,9 @@ describe('Emergency Exit test', () => {
       await expect(tx).emit(governanceAdmin, 'EmergencyExitPollApproved').withArgs(voteHash);
     });
 
-    it('Should the vote tx emit event EmergencyExitFundUnlocked', async () => {
+    it('Should the vote tx emit event EmergencyExitLockedFundReleased', async () => {
       await expect(tx)
-        .emit(roninValidatorSet, 'EmergencyExitFundUnlocked')
+        .emit(roninValidatorSet, 'EmergencyExitLockedFundReleased')
         .withArgs(
           compromisedValidator.consensusAddr.address,
           compromisedValidator.treasuryAddr.address,
@@ -288,7 +288,7 @@ describe('Emergency Exit test', () => {
       tx = await governanceAdmin
         .connect(trustedOrgs[1].governor)
         .voteEmergencyExit(voteHash, consensusAddr, recipientAfterUnlockedFund, requestedAt, expiredAt);
-      await expect(tx).not.emit(roninValidatorSet, 'EmergencyExitFundUnlocked');
+      await expect(tx).not.emit(roninValidatorSet, 'EmergencyExitLockedFundReleased');
     });
 
     it('Should the requester not receive the unlocked fund again', async () => {
