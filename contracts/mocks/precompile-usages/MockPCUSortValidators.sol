@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-import "../../precompile-usages/PrecompileUsageSortValidators.sol";
+import "../../precompile-usages/PCUSortValidators.sol";
 
-contract MockPrecompileUsageSortValidators is PrecompileUsageSortValidators {
+contract MockPCUSortValidators is PCUSortValidators {
   address internal _precompileSortValidatorAddress;
 
   constructor(address _precompile) {
