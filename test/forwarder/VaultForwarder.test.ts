@@ -104,7 +104,7 @@ describe('Vault forwarder', () => {
     });
 
     it('Should the silent revert message is thrown from forwarder contract', async () => {
-      await expect(targetBehindForwarder.fooSilentRevert()).reverted;
+      await expect(targetBehindForwarder.fooSilentRevert()).revertedWith('Forwarder: target reverts silently');
     });
 
     it('Should the custom error is thrown from forwarder contract', async () => {

@@ -16,23 +16,11 @@ abstract contract ForwarderLogic {
   ) internal {
     (bool _success, bytes memory _res) = __target.call{ value: __value }(__data);
 
-    // console.log(string(_res));
-    // console.log(_success);
-    // console.log(_res.length);
-
     if (!_success) {
-      if (_res.length == 0) revert();
-
-      // console.log("tach");
-
+      require(_res.length >= 4, "Forwarder: target reverts silently");
       assembly {
         let ptr := mload(0x40)
         let size := returndatasize()
-
-        if iszero(size) {
-          revert(0, 0)
-        }
-
         returndatacopy(ptr, 0, size)
         revert(ptr, size)
       }
