@@ -102,8 +102,8 @@ describe('Vault forwarder', () => {
 
     it("Should be able to call function of target, that has the same name with admin's function", async () => {
       await expect(targetBehindForwarder.withdrawAll()).changeEtherBalances(
-        [forwarder.address, target.address],
-        [300, -300]
+        [forwarder.address, target.address, moderator.address],
+        [300, -300, 0]
       );
     });
 
