@@ -19,19 +19,6 @@ contract RoninGovernanceAdmin is
   /// @dev Mapping from request hash => emergency poll
   mapping(bytes32 => IsolatedVote) internal _emergencyExitPoll;
 
-  /// @dev Emitted when the bridge operators are approved.
-  event BridgeOperatorsApproved(uint256 _period, uint256 _epoch, address[] _operators);
-  /// @dev Emitted when an emergency exit poll is created.
-  event EmergencyExitPollCreated(
-    bytes32 _voteHash,
-    address _consensusAddr,
-    address _recipientAfterUnlockedFund,
-    uint256 _requestedAt,
-    uint256 _expiredAt
-  );
-  /// @dev Emitted when an emergency exit poll is expired.
-  event EmergencyExitPollExpired(bytes32 _voteHash);
-
   modifier onlyGovernor() {
     require(_getWeight(msg.sender) > 0, "RoninGovernanceAdmin: sender is not governor");
     _;
@@ -311,6 +298,7 @@ contract RoninGovernanceAdmin is
     VoteStatus _stt = _castVote(_v, _voter, _weight, _getMinimumVoteWeight(), _hash);
     if (_stt == VoteStatus.Approved) {
       _execReleaseLockedFundForEmergencyExitRequest(_consensusAddr, _recipientAfterUnlockedFund);
+      emit EmergencyExitPollApproved(_hash);
       _v.status = VoteStatus.Executed;
     } else if (_stt == VoteStatus.Expired) {
       emit EmergencyExitPollExpired(_hash);

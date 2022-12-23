@@ -265,6 +265,10 @@ describe('Emergency Exit test', () => {
         .voteEmergencyExit(voteHash, consensusAddr, recipientAfterUnlockedFund, requestedAt, expiredAt);
     });
 
+    it('Should the vote tx emit event EmergencyExitPollApproved', async () => {
+      await expect(tx).emit(governanceAdmin, 'EmergencyExitPollApproved').withArgs(voteHash);
+    });
+
     it('Should the vote tx emit event EmergencyExitFundUnlocked', async () => {
       await expect(tx)
         .emit(roninValidatorSet, 'EmergencyExitFundUnlocked')
