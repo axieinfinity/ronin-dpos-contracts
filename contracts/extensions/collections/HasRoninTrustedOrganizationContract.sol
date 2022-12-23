@@ -9,10 +9,7 @@ contract HasRoninTrustedOrganizationContract is IHasRoninTrustedOrganizationCont
   IRoninTrustedOrganization internal _roninTrustedOrganizationContract;
 
   modifier onlyRoninTrustedOrganizationContract() {
-    require(
-      roninTrustedOrganizationContract() == msg.sender,
-      "HasRoninTrustedOrganizationContract: method caller must be ronin trusted organization contract"
-    );
+    if (roninTrustedOrganizationContract() != msg.sender) revert ErrCallerMustBeRoninTrustedOrgContract();
     _;
   }
 
@@ -27,7 +24,7 @@ contract HasRoninTrustedOrganizationContract is IHasRoninTrustedOrganizationCont
    * @inheritdoc IHasRoninTrustedOrganizationContract
    */
   function setRoninTrustedOrganizationContract(address _addr) external virtual override onlyAdmin {
-    require(_addr.code.length > 0, "HasRoninTrustedOrganizationContract: set to non-contract");
+    if (_addr.code.length == 0) revert ErrZeroCodeRoninTrustedOrgContract();
     _setRoninTrustedOrganizationContract(_addr);
   }
 

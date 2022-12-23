@@ -9,10 +9,7 @@ contract HasMaintenanceContract is IHasMaintenanceContract, HasProxyAdmin {
   IMaintenance internal _maintenanceContract;
 
   modifier onlyMaintenanceContract() {
-    require(
-      maintenanceContract() == msg.sender,
-      "HasMaintenanceContract: method caller must be scheduled maintenance contract"
-    );
+    if (maintenanceContract() != msg.sender) revert ErrCallerMustBeMaintenanceContract();
     _;
   }
 
@@ -27,7 +24,7 @@ contract HasMaintenanceContract is IHasMaintenanceContract, HasProxyAdmin {
    * @inheritdoc IHasMaintenanceContract
    */
   function setMaintenanceContract(address _addr) external override onlyAdmin {
-    require(_addr.code.length > 0, "HasMaintenanceContract: set to non-contract");
+    if (_addr.code.length == 0) revert ErrZeroCodeMaintenanceContract();
     _setMaintenanceContract(_addr);
   }
 

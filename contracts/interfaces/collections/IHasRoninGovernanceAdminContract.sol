@@ -6,6 +6,11 @@ interface IHasRoninGovernanceAdminContract {
   /// @dev Emitted when the ronin governance admin contract is updated.
   event RoninGovernanceAdminContractUpdated(address);
 
+  /// @dev Error of method caller must be goverance admin contract.
+  error ErrCallerMustBeGovernanceAdminContract();
+  /// @dev Error of set to non-contract.
+  error ErrZeroCodeGovernanceAdminContract();
+
   /**
    * @dev Returns the ronin governance admin contract.
    */

@@ -6,6 +6,11 @@ interface IHasRoninTrustedOrganizationContract {
   /// @dev Emitted when the ronin trusted organization contract is updated.
   event RoninTrustedOrganizationContractUpdated(address);
 
+  /// @dev Error of method caller must be Ronin trusted org contract.
+  error ErrCallerMustBeRoninTrustedOrgContract();
+  /// @dev Error of set to non-contract.
+  error ErrZeroCodeRoninTrustedOrgContract();
+
   /**
    * @dev Returns the ronin trusted organization contract.
    */

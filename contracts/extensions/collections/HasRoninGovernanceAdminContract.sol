@@ -9,10 +9,7 @@ contract HasRoninGovernanceAdminContract is IHasRoninGovernanceAdminContract, Ha
   IRoninGovernanceAdmin internal _roninGovernanceAdminContract;
 
   modifier onlyRoninGovernanceAdminContract() {
-    require(
-      roninGovernanceAdminContract() == msg.sender,
-      "HasRoninGovernanceAdminContract: method caller must be ronin governance admin contract"
-    );
+    if (roninGovernanceAdminContract() != msg.sender) revert ErrCallerMustBeGovernanceAdminContract();
     _;
   }
 
@@ -27,7 +24,7 @@ contract HasRoninGovernanceAdminContract is IHasRoninGovernanceAdminContract, Ha
    * @inheritdoc IHasRoninGovernanceAdminContract
    */
   function setRoninGovernanceAdminContract(address _addr) external override onlyAdmin {
-    require(_addr.code.length > 0, "HasRoninGovernanceAdminContract: set to non-contract");
+    if (_addr.code.length == 0) revert ErrZeroCodeGovernanceAdminContract();
     _setRoninGovernanceAdminContract(_addr);
   }
 

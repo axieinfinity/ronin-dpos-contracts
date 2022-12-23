@@ -6,6 +6,11 @@ interface IHasBridgeTrackingContract {
   /// @dev Emitted when the bridge tracking contract is updated.
   event BridgeTrackingContractUpdated(address);
 
+  /// @dev Error of method caller must be bridge tracking contract.
+  error ErrCallerMustBeBridgeTrackingContract();
+  /// @dev Error of set to non-contract.
+  error ErrZeroCodeBridgeTrackingContract();
+
   /**
    * @dev Returns the bridge tracking contract.
    */

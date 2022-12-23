@@ -9,10 +9,7 @@ contract HasBridgeTrackingContract is IHasBridgeTrackingContract, HasProxyAdmin 
   IBridgeTracking internal _bridgeTrackingContract;
 
   modifier onlyBridgeTrackingContract() {
-    require(
-      bridgeTrackingContract() == msg.sender,
-      "HasBridgeTrackingContract: method caller must be bridge tracking contract"
-    );
+    if (bridgeTrackingContract() != msg.sender) revert ErrCallerMustBeBridgeTrackingContract();
     _;
   }
 
@@ -27,7 +24,7 @@ contract HasBridgeTrackingContract is IHasBridgeTrackingContract, HasProxyAdmin 
    * @inheritdoc IHasBridgeTrackingContract
    */
   function setBridgeTrackingContract(address _addr) external virtual override onlyAdmin {
-    require(_addr.code.length > 0, "HasBridgeTrackingContract: set to non-contract");
+    if (_addr.code.length == 0) revert ErrZeroCodeBridgeTrackingContract();
     _setBridgeTrackingContract(_addr);
   }
 

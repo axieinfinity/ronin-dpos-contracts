@@ -6,6 +6,11 @@ interface IHasSlashIndicatorContract {
   /// @dev Emitted when the slash indicator contract is updated.
   event SlashIndicatorContractUpdated(address);
 
+  /// @dev Error of method caller must be slash indicator contract.
+  error ErrCallerMustBeSlashIndicatorContract();
+  /// @dev Error of set to non-contract.
+  error ErrZeroCodeSlashIndicatorContract();
+
   /**
    * @dev Returns the slash indicator contract.
    */

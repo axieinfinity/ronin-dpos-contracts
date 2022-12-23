@@ -6,6 +6,11 @@ interface IHasMaintenanceContract {
   /// @dev Emitted when the maintenance contract is updated.
   event MaintenanceContractUpdated(address);
 
+  /// @dev Error of method caller must be maintenance contract.
+  error ErrCallerMustBeMaintenanceContract();
+  /// @dev Error of set to non-contract.
+  error ErrZeroCodeMaintenanceContract();
+
   /**
    * @dev Returns the maintenance contract.
    */

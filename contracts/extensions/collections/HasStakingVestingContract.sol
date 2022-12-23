@@ -9,10 +9,7 @@ contract HasStakingVestingContract is IHasStakingVestingContract, HasProxyAdmin 
   IStakingVesting internal _stakingVestingContract;
 
   modifier onlyStakingVestingContract() {
-    require(
-      stakingVestingContract() == msg.sender,
-      "HasStakingVestingContract: method caller must be staking vesting contract"
-    );
+    if (stakingVestingContract() != msg.sender) revert ErrCallerMustBeStakingVestingContract();
     _;
   }
 
@@ -27,7 +24,7 @@ contract HasStakingVestingContract is IHasStakingVestingContract, HasProxyAdmin 
    * @inheritdoc IHasStakingVestingContract
    */
   function setStakingVestingContract(address _addr) external override onlyAdmin {
-    require(_addr.code.length > 0, "HasStakingVestingContract: set to non-contract");
+    if (_addr.code.length == 0) revert ErrZeroCodeStakingVestingContract();
     _setStakingVestingContract(_addr);
   }
 
