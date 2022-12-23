@@ -65,7 +65,7 @@ abstract contract ForwarderStorage {
    * @dev Stores a new address in the EIP1967 admin slot.
    */
   function _setAdmin(address newAdmin) private {
-    require(newAdmin != address(0), "ERC1967: new admin is the zero address");
+    require(newAdmin != address(0), "ForwarderStorage: new admin is the zero address");
     StorageSlot.getAddressSlot(_ADMIN_SLOT).value = newAdmin;
   }
 
