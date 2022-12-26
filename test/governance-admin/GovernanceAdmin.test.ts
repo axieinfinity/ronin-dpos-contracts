@@ -23,6 +23,7 @@ import {
 } from '../../src/types';
 import { MockBridge__factory } from '../../src/types/factories/MockBridge__factory';
 import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
+import { SignatureStructOutput } from '../../src/types/IMainchainGatewayV2';
 import { SignatureStruct } from '../../src/types/RoninGovernanceAdmin';
 import { randomAddress, ZERO_BYTES32 } from '../../src/utils';
 import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
@@ -63,7 +64,7 @@ describe('Governance Admin test', () => {
     bridgeContract = MockBridge__factory.connect(proxy.address, deployer);
 
     const { roninGovernanceAdminAddress, mainchainGovernanceAdminAddress, stakingContractAddress } = await initTest(
-      'RoninGovernanceAdmin.test'
+      'RoninGovernanceAdminTest'
     )({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
@@ -499,6 +500,113 @@ describe('Governance Admin test', () => {
       await governanceAdmin.connect(trustedOrgs[0].governor).castProposalBySignatures(proposal, supports, signatures);
       currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
       expect(currentProposalVote.status).eq(VoteStatus.Executed);
+    });
+  });
+
+  describe('Current Network Proposal Voting', () => {
+    let votedSignatures: SignatureStruct[] = [];
+
+    it('Should be able to create a proposal using governor account', async () => {
+      const latestTimestamp = await getLastBlockTimestamp();
+      const expiryTimestamp = latestTimestamp + proposalExpiryDuration;
+      proposal = await governanceAdminInterface.createProposal(
+        expiryTimestamp,
+        stakingContract.address,
+        0,
+        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [1000]),
+        ]),
+        500_000
+      );
+
+      await governanceAdmin
+        .connect(trustedOrgs[0].governor)
+        .proposeProposalForCurrentNetwork(
+          proposal.expiryTimestamp,
+          proposal.targets,
+          proposal.values,
+          proposal.calldatas,
+          proposal.gasAmounts,
+          VoteType.Against
+        );
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
+        .true;
+    });
+
+    it('Should not be able to cast vote with invalid chain id', async () => {
+      await expect(
+        governanceAdmin
+          .connect(trustedOrgs[1].governor)
+          .castProposalVoteForCurrentNetwork(
+            { ...proposal, chainId: BigNumber.from(proposal.chainId).add(1) },
+            VoteType.Against
+          )
+      ).revertedWith('RoninGovernanceAdmin: invalid chain id');
+    });
+
+    it('Should not be able to cast vote with invalid data', async () => {
+      await expect(
+        governanceAdmin
+          .connect(trustedOrgs[1].governor)
+          .castProposalVoteForCurrentNetwork(
+            { ...proposal, values: proposal.values.map((v) => BigNumber.from(v).add(1)) },
+            VoteType.Against
+          )
+      ).revertedWith('RoninGovernanceAdmin: cast vote for invalid proposal');
+    });
+
+    it('Should be able to cast valid vote', async () => {
+      await governanceAdmin.connect(trustedOrgs[1].governor).castProposalVoteForCurrentNetwork(proposal, VoteType.For);
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[1].governor.address)).to
+        .true;
+    });
+
+    it('Should be able to cast vote using signatures', async () => {
+      votedSignatures = await governanceAdminInterface.generateSignatures(
+        proposal,
+        [trustedOrgs[2].governor],
+        VoteType.Against
+      );
+      await governanceAdmin
+        .connect(trustedOrgs[2].governor)
+        .castProposalBySignatures(proposal, [VoteType.Against], votedSignatures);
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[2].governor.address)).to
+        .true;
+    });
+
+    it('Should be able to retrieve the signatures', async () => {
+      const [voters, supports, signatures] = await governanceAdmin.getProposalSignatures(
+        proposal.chainId,
+        proposal.nonce
+      );
+      expect(voters).eql([
+        trustedOrgs[1].governor.address,
+        trustedOrgs[0].governor.address,
+        trustedOrgs[2].governor.address,
+      ]);
+      expect(supports).eql([VoteType.For, VoteType.Against, VoteType.Against]);
+      const emptySignatures = [0, ethers.constants.HashZero, ethers.constants.HashZero];
+      expect(signatures).eql([
+        emptySignatures,
+        emptySignatures,
+        ...votedSignatures.map((sig) => [sig.v, sig.r, sig.s]),
+      ]);
+    });
+
+    it("Should be able to clear when it' is expired", async () => {
+      await network.provider.send('evm_setNextBlockTimestamp', [
+        BigNumber.from(proposal.expiryTimestamp).add(1).toNumber(),
+      ]);
+      expect(
+        await governanceAdmin.connect(trustedOrgs[0].governor).deleteExpired(proposal.chainId, proposal.nonce)
+      ).emit(governanceAdmin, 'ProposalExpired');
+      const [voters, supports, signatures] = await governanceAdmin.getProposalSignatures(
+        proposal.chainId,
+        proposal.nonce
+      );
+      expect(voters.length).eq(0);
+      expect(supports.length).eq(0);
+      expect(signatures.length).eq(0);
     });
   });
 });

@@ -63,11 +63,13 @@ export class GovernanceAdminInterface {
     return proposal;
   }
 
-  async generateSignatures(proposal: ProposalDetailStruct) {
+  async generateSignatures(proposal: ProposalDetailStruct, signers?: SignerWithAddress[], support?: VoteType) {
     const proposalHash = getProposalHash(proposal);
     const signatures = await Promise.all(
-      this.signers.map((v) =>
-        v._signTypedData(this.domain, BallotTypes, { proposalHash, support: VoteType.For }).then(mapByteSigToSigStruct)
+      (signers ?? this.signers).map((v) =>
+        v
+          ._signTypedData(this.domain, BallotTypes, { proposalHash, support: support ?? VoteType.For })
+          .then(mapByteSigToSigStruct)
       )
     );
     return signatures;
