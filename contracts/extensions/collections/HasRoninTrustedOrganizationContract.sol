@@ -24,7 +24,7 @@ contract HasRoninTrustedOrganizationContract is IHasRoninTrustedOrganizationCont
    * @inheritdoc IHasRoninTrustedOrganizationContract
    */
   function setRoninTrustedOrganizationContract(address _addr) external virtual override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeRoninTrustedOrgContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract();
     _setRoninTrustedOrganizationContract(_addr);
   }
 

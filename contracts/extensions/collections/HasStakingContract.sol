@@ -24,7 +24,7 @@ contract HasStakingContract is IHasStakingContract, HasProxyAdmin {
    * @inheritdoc IHasStakingContract
    */
   function setStakingContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeStakingContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract();
     _setStakingContract(_addr);
   }
 

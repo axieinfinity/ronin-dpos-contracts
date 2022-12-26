@@ -24,7 +24,7 @@ contract HasValidatorContract is IHasValidatorContract, HasProxyAdmin {
    * @inheritdoc IHasValidatorContract
    */
   function setValidatorContract(address _addr) external virtual override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeValidatorContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract();
     _setValidatorContract(_addr);
   }
 

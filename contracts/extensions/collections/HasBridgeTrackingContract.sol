@@ -24,7 +24,7 @@ contract HasBridgeTrackingContract is IHasBridgeTrackingContract, HasProxyAdmin 
    * @inheritdoc IHasBridgeTrackingContract
    */
   function setBridgeTrackingContract(address _addr) external virtual override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeBridgeTrackingContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract();
     _setBridgeTrackingContract(_addr);
   }
 

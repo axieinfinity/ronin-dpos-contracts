@@ -24,7 +24,7 @@ contract HasRoninGovernanceAdminContract is IHasRoninGovernanceAdminContract, Ha
    * @inheritdoc IHasRoninGovernanceAdminContract
    */
   function setRoninGovernanceAdminContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeGovernanceAdminContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract();
     _setRoninGovernanceAdminContract(_addr);
   }
 

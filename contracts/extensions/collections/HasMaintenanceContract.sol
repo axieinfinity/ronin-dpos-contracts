@@ -24,7 +24,7 @@ contract HasMaintenanceContract is IHasMaintenanceContract, HasProxyAdmin {
    * @inheritdoc IHasMaintenanceContract
    */
   function setMaintenanceContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeMaintenanceContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract();
     _setMaintenanceContract(_addr);
   }
 

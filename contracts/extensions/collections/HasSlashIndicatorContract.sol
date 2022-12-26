@@ -24,7 +24,7 @@ contract HasSlashIndicatorContract is IHasSlashIndicatorContract, HasProxyAdmin 
    * @inheritdoc IHasSlashIndicatorContract
    */
   function setSlashIndicatorContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeSlashIndicatorContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract();
     _setSlashIndicatorContract(_addr);
   }
 
