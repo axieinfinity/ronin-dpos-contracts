@@ -28,7 +28,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
    */
   function execEmergencyExit(address _consensusAddr, uint256 _secLeftToRevoke) external onlyStakingContract {
     EmergencyExitInfo storage _info = _exitInfo[_consensusAddr];
-    require(_info.recyclingAt == 0, "EmergencyExit: already requested");
+    if (_info.recyclingAt != 0) revert ErrAlreadyRequestedEmergencyExit();
 
     uint256 _revokingTimestamp = block.timestamp + _secLeftToRevoke;
     _setRevokingTimestamp(_candidateInfo[_consensusAddr], _revokingTimestamp);
