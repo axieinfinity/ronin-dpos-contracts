@@ -5,8 +5,6 @@ pragma solidity ^0.8.9;
 import "../../extensions/RONTransferHelper.sol";
 import "../../interfaces/IRoninGovernanceAdmin.sol";
 import "../../interfaces/validator/IEmergencyExit.sol";
-import "../../precompile-usages/PrecompileUsageSortValidators.sol";
-import "../../precompile-usages/PrecompileUsagePickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
 import "./CandidateManager.sol";
 
