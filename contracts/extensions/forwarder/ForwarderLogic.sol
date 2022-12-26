@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
-
 abstract contract ForwarderLogic {
   /**
    * @dev Forwards the current call to `target`.
@@ -17,10 +15,11 @@ abstract contract ForwarderLogic {
     (bool _success, bytes memory _res) = __target.call{ value: __value }(__data);
 
     if (!_success) {
-      require(_res.length >= 4, "Forwarder: target reverts silently");
+      uint _size = _res.length;
+      require(_size >= 4, "Forwarder: target reverts silently");
       assembly {
-        let size := returndatasize()
-        revert(_res, size)
+        _res := add(_res, 0x20)
+        revert(_res, _size)
       }
     }
   }
