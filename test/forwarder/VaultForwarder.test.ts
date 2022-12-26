@@ -32,16 +32,17 @@ describe('Vault forwarder', () => {
     [deployer, admin, moderator, unauthorized] = await ethers.getSigners();
 
     let nonce = await ethers.provider.getTransactionCount(deployer.address);
-    let forwarderAddress = calculateAddress(deployer.address, nonce + 2).address;
+    let forwarderAddress = calculateAddress(deployer.address, nonce + 1).address;
+
+    localData = BigNumber.from(0);
+    target = await new MockForwarderTarget__factory(deployer).deploy(forwarderAddress, localData);
+    forwarder = await new VaultForwarder__factory(deployer).deploy(target.address, admin.address);
 
     await deployer.sendTransaction({
       to: forwarderAddress,
       value: parseEther('1.0'),
     });
 
-    localData = BigNumber.from(0);
-    target = await new MockForwarderTarget__factory(deployer).deploy(forwarderAddress, localData);
-    forwarder = await new VaultForwarder__factory(deployer).deploy(target.address, admin.address);
     expect(forwarder.address).eq(forwarderAddress);
   });
 
