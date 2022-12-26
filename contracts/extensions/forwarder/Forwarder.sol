@@ -7,7 +7,7 @@ import "./ForwarderRole.sol";
 
 contract Forwarder is ForwarderLogic, ForwarderRole {
   /**
-   * @dev Initializes the forwarder with an initial target specified by `__target`.
+   * @dev Initializes the forwarder with an initial target address and a contract admin.
    */
   constructor(address __target, address __admin) payable {
     _changeTargetTo(__target);

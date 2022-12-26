@@ -19,10 +19,8 @@ abstract contract ForwarderLogic {
     if (!_success) {
       require(_res.length >= 4, "Forwarder: target reverts silently");
       assembly {
-        let ptr := mload(0x40)
         let size := returndatasize()
-        returndatacopy(ptr, 0, size)
-        revert(ptr, size)
+        revert(_res, size)
       }
     }
   }

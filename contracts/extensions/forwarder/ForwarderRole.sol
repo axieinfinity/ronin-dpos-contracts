@@ -27,7 +27,7 @@ abstract contract ForwarderRole {
   }
 
   /**
-   * @dev Stores a new address in the EIP1967 admin slot.
+   * @dev Stores a new address in the admin slot.
    */
   function _setAdmin(address newAdmin) private {
     StorageSlot.getAddressSlot(_ADMIN_SLOT).value = newAdmin;
@@ -55,7 +55,7 @@ abstract contract ForwarderRole {
   }
 
   /**
-   * @dev Stores a new address in the EIP1967 target slot.
+   * @dev Stores a new address in the target slot.
    */
   function _setTarget(address newTarget) private {
     require(Address.isContract(newTarget), "ForwarderStorage: new target is not a contract");
