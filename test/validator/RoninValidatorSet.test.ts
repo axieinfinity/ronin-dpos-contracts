@@ -139,14 +139,16 @@ describe('Ronin Validator Set test', () => {
 
   describe('Wrapping up epoch sanity check', async () => {
     it('Should not be able to wrap up epoch using unauthorized account', async () => {
-      await expect(roninValidatorSet.connect(deployer).wrapUpEpoch()).revertedWith(
-        'RoninValidatorSet: method caller must be coinbase'
+      await expect(roninValidatorSet.connect(deployer).wrapUpEpoch()).revertedWithCustomError(
+        roninValidatorSet,
+        'ErrCallerMustBeCoinbase'
       );
     });
 
     it('Should not be able to wrap up epoch when the epoch is not ending', async () => {
-      await expect(roninValidatorSet.connect(consensusAddr).wrapUpEpoch()).revertedWith(
-        'RoninValidatorSet: only allowed at the end of epoch'
+      await expect(roninValidatorSet.connect(consensusAddr).wrapUpEpoch()).revertedWithCustomError(
+        roninValidatorSet,
+        'ErrAtEndOfEpochOnly'
       );
     });
 
@@ -261,9 +263,9 @@ describe('Ronin Validator Set test', () => {
           }
         );
 
-      await expect(tx).revertedWith(
-        `CandidateManager: bridge operator address ${validatorCandidates[0].bridgeOperator.address.toLocaleLowerCase()} is already exist`
-      );
+      await expect(tx)
+        .revertedWithCustomError(roninValidatorSet, 'ErrExistentBridgeOperator')
+        .withArgs(validatorCandidates[0].bridgeOperator.address);
     });
   });
 
@@ -356,8 +358,9 @@ describe('Ronin Validator Set test', () => {
   describe('Recording and distributing rewards', async () => {
     describe('Sanity check', async () => {
       it('Should not be able to submit block reward using unauthorized account', async () => {
-        await expect(roninValidatorSet.submitBlockReward()).revertedWith(
-          'RoninValidatorSet: method caller must be coinbase'
+        await expect(roninValidatorSet.submitBlockReward()).revertedWithCustomError(
+          roninValidatorSet,
+          'ErrCallerMustBeCoinbase'
         );
       });
     });

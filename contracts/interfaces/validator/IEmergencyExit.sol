@@ -24,6 +24,9 @@ interface IEmergencyExit {
   /// @dev Emitted when the emergency expiry duration is updated.
   event EmergencyExpiryDurationUpdated(uint256 amount);
 
+  /// @dev Error of already requested emergency exit before.
+  error ErrAlreadyRequestedEmergencyExit();
+
   /**
    * @dev Returns the amount of RON to lock from a consensus address.
    */

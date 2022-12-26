@@ -10,8 +10,8 @@ import "../../extensions/RONTransferHelper.sol";
 import "../../interfaces/validator/ICoinbaseExecution.sol";
 import "../../libraries/EnumFlags.sol";
 import "../../libraries/Math.sol";
-import "../../precompile-usages/PrecompileUsageSortValidators.sol";
-import "../../precompile-usages/PrecompileUsagePickValidatorSet.sol";
+import "../../precompile-usages/PCUSortValidators.sol";
+import "../../precompile-usages/PCUPickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
 import "./CandidateManager.sol";
 import "./EmergencyExit.sol";
@@ -19,8 +19,8 @@ import "./EmergencyExit.sol";
 abstract contract CoinbaseExecution is
   ICoinbaseExecution,
   RONTransferHelper,
-  PrecompileUsageSortValidators,
-  PrecompileUsagePickValidatorSet,
+  PCUSortValidators,
+  PCUPickValidatorSet,
   HasStakingVestingContract,
   HasBridgeTrackingContract,
   HasMaintenanceContract,
@@ -30,20 +30,17 @@ abstract contract CoinbaseExecution is
   using EnumFlags for EnumFlags.ValidatorFlag;
 
   modifier onlyCoinbase() {
-    require(msg.sender == block.coinbase, "RoninValidatorSet: method caller must be coinbase");
+    if (msg.sender != block.coinbase) revert ErrCallerMustBeCoinbase();
     _;
   }
 
   modifier whenEpochEnding() {
-    require(epochEndingAt(block.number), "RoninValidatorSet: only allowed at the end of epoch");
+    if (!epochEndingAt(block.number)) revert ErrAtEndOfEpochOnly();
     _;
   }
 
   modifier oncePerEpoch() {
-    require(
-      epochOf(_lastUpdatedBlock) < epochOf(block.number),
-      "RoninValidatorSet: query for already wrapped up epoch"
-    );
+    if (epochOf(_lastUpdatedBlock) >= epochOf(block.number)) revert ErrAlreadyWrappedEpoch();
     _lastUpdatedBlock = block.number;
     _;
   }

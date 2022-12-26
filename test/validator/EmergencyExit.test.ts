@@ -182,7 +182,7 @@ describe('Emergency Exit test', () => {
       stakingContract
         .connect(compromisedValidator.poolAdmin)
         .requestEmergencyExit(compromisedValidator.consensusAddr.address)
-    ).revertedWith('EmergencyExit: already requested');
+    ).revertedWithCustomError(roninValidatorSet, 'ErrAlreadyRequestedEmergencyExit');
   });
 
   it('Should the request tx emit event CandidateRevokingTimestampUpdated', async () => {

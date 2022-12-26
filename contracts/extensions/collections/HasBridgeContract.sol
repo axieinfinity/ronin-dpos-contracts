@@ -9,7 +9,7 @@ contract HasBridgeContract is IHasBridgeContract, HasProxyAdmin {
   IBridge internal _bridgeContract;
 
   modifier onlyBridgeContract() {
-    require(bridgeContract() == msg.sender, "HasBridgeContract: method caller must be bridge contract");
+    if (bridgeContract() != msg.sender) revert ErrCallerMustBeBridgeContract();
     _;
   }
 
@@ -24,7 +24,7 @@ contract HasBridgeContract is IHasBridgeContract, HasProxyAdmin {
    * @inheritdoc IHasBridgeContract
    */
   function setBridgeContract(address _addr) external virtual override onlyAdmin {
-    require(_addr.code.length > 0, "HasBridgeContract: set to non-contract");
+    if (_addr.code.length <= 0) revert ErrZeroCodeContract();
     _setBridgeContract(_addr);
   }
 

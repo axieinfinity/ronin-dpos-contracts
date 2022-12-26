@@ -3,18 +3,21 @@
 pragma solidity ^0.8.9;
 
 interface IValidatorInfo {
-  /// @dev Emitted when the number of max validator is updated
+  /// @dev Emitted when the number of max validator is updated.
   event MaxValidatorNumberUpdated(uint256);
-  /// @dev Emitted when the number of reserved slots for prioritized validators is updated
+  /// @dev Emitted when the number of reserved slots for prioritized validators is updated.
   event MaxPrioritizedValidatorNumberUpdated(uint256);
 
+  /// @dev Error of number of prioritized greater than number of max validators.
+  error InvalidMaxPrioitizedValidatorNumber();
+
   /**
-   * @dev Returns the maximum number of validators in the epoch
+   * @dev Returns the maximum number of validators in the epoch.
    */
   function maxValidatorNumber() external view returns (uint256 _maximumValidatorNumber);
 
   /**
-   * @dev Returns the number of reserved slots for prioritized validators
+   * @dev Returns the number of reserved slots for prioritized validators.
    */
   function maxPrioritizedValidatorNumber() external view returns (uint256 _maximumPrioritizedValidatorNumber);
 

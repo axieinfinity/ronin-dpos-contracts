@@ -173,7 +173,7 @@ describe('[Integration] Wrap up epoch', () => {
           await validatorContract.endEpoch();
           await validatorContract.wrapUpEpoch();
           let duplicatedWrapUpTx = validatorContract.wrapUpEpoch();
-          await expect(duplicatedWrapUpTx).to.be.revertedWith('RoninValidatorSet: query for already wrapped up epoch');
+          await expect(duplicatedWrapUpTx).to.be.revertedWithCustomError(validatorContract, 'ErrAlreadyWrappedEpoch');
         });
       });
 

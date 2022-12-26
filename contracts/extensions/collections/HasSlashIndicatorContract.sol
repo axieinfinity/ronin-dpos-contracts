@@ -9,10 +9,7 @@ contract HasSlashIndicatorContract is IHasSlashIndicatorContract, HasProxyAdmin 
   ISlashIndicator internal _slashIndicatorContract;
 
   modifier onlySlashIndicatorContract() {
-    require(
-      slashIndicatorContract() == msg.sender,
-      "HasSlashIndicatorContract: method caller must be slash indicator contract"
-    );
+    if (slashIndicatorContract() != msg.sender) revert ErrCallerMustBeSlashIndicatorContract();
     _;
   }
 
@@ -27,7 +24,7 @@ contract HasSlashIndicatorContract is IHasSlashIndicatorContract, HasProxyAdmin 
    * @inheritdoc IHasSlashIndicatorContract
    */
   function setSlashIndicatorContract(address _addr) external override onlyAdmin {
-    require(_addr.code.length > 0, "HasSlashIndicatorContract: set to non-contract");
+    if (_addr.code.length == 0) revert ErrZeroCodeContract();
     _setSlashIndicatorContract(_addr);
   }
 

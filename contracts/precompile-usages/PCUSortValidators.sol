@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-abstract contract PrecompileUsageSortValidators {
+import "./PrecompiledUsage.sol";
+
+abstract contract PCUSortValidators is PrecompiledUsage {
   /// @dev Gets the address of the precompile of sorting validators
   function precompileSortValidatorsAddress() public view virtual returns (address) {
     return address(0x66);
@@ -40,6 +42,6 @@ abstract contract PrecompileUsageSortValidators {
       _result := add(_result, 0x20)
     }
 
-    require(_success, "PrecompileUsageSortValidators: call to precompile fails");
+    if (!_success) revert ErrCallPrecompiled();
   }
 }
