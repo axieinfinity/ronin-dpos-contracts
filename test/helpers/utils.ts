@@ -41,3 +41,6 @@ export const getLastBlockTimestamp = async (): Promise<number> => {
   let blockBefore = await ethers.provider.getBlock(blockNumBefore);
   return blockBefore.timestamp;
 };
+
+export const compareAddrs = (firstStr: string, secondStr: string) =>
+  firstStr.toLowerCase().localeCompare(secondStr.toLowerCase());
