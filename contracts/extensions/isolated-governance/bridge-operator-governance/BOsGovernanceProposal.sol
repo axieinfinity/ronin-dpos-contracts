@@ -27,6 +27,13 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IsolatedGovernance
   }
 
   /**
+   * @inheritdoc IRoninGovernanceAdmin
+   */
+  function lastBridgeOperatorSetSynced() external view returns (uint256 _period, uint256 _epoch) {
+    return (_lastSyncedPeriod, _lastSyncedEpoch);
+  }
+
+  /**
    * @dev Votes for a set of bridge operators by signatures.
    *
    * Requirements:

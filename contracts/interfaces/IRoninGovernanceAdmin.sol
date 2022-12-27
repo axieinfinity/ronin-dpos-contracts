@@ -23,6 +23,11 @@ interface IRoninGovernanceAdmin {
   function lastVotedBlock(address _bridgeVoter) external view returns (uint256);
 
   /**
+   * @dev Returns the last period and epoch that the bridge operator set is synced.
+   */
+  function lastBridgeOperatorSetSynced() external view returns (uint256 _period, uint256 _epoch);
+
+  /**
    * @dev Create a vote to agree that an emergency exit is valid and should return the locked funds back.a
    *
    * Requirements:
