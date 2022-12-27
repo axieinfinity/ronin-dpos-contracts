@@ -39,12 +39,12 @@ library BridgeOperatorsBallot {
 
     require(
       _ballotOperatorsHash != _latestOperatorsHash,
-      "BOsGovernanceProposal: bridge operator set is already voted"
+      "BridgeOperatorsBallot: bridge operator set is already voted"
     );
 
     address _addr = _ballotOperators[0];
     for (uint _i = 1; _i < _ballotOperators.length; _i++) {
-      require(_addr < _ballotOperators[_i], "BOsGovernanceProposal: invalid order of bridge operators");
+      require(_addr < _ballotOperators[_i], "BridgeOperatorsBallot: invalid order of bridge operators");
       _addr = _ballotOperators[_i];
     }
   }

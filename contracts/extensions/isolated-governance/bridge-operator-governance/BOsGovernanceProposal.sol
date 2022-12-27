@@ -67,7 +67,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IsolatedGovernance
       {
         Signature calldata _sig = _signatures[_i];
         _signer = ECDSA.recover(_digest, _sig.v, _sig.r, _sig.s);
-        require(_lastSigner < _signer, "BOsGovernanceProposal: invalid order");
+        require(_lastSigner < _signer, "BOsGovernanceProposal: invalid signer order");
         _lastSigner = _signer;
       }
 
