@@ -20,6 +20,7 @@ import {
 } from '../../src/types';
 import { ERC20PresetMinterPauser } from '../../src/types/ERC20PresetMinterPauser';
 import { ReceiptStruct } from '../../src/types/IRoninGatewayV2';
+import { DEFAULT_ADDRESS } from '../../src/utils';
 import {
   createManyTrustedOrganizationAddressSets,
   createManyValidatorCandidateAddressSets,
@@ -157,6 +158,10 @@ describe('Bridge Tracking test', () => {
     });
     period = await roninValidatorSet.currentPeriod();
     expect(await roninValidatorSet.getBridgeOperators()).eql(candidates.map((v) => v.bridgeOperator.address));
+  });
+
+  after(async () => {
+    await network.provider.send('hardhat_setCoinbase', [DEFAULT_ADDRESS]);
   });
 
   it('Should be able to get contract configs correctly', async () => {
