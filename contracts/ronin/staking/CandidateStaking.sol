@@ -40,7 +40,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external payable override nonReentrant {
-    require(!isActivePoolAdmin(msg.sender), "CandidateStaking: pool is active");
+    if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
 
     uint256 _amount = msg.value;
     address payable _poolAdmin = payable(msg.sender);
@@ -57,7 +57,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
     _pool.admin = _poolAdmin;
     _pool.addr = _consensusAddr;
-    _activePoolAdminMapping[_poolAdmin] = _consensusAddr;
+    _adminOfActivePoolMapping[_poolAdmin] = _consensusAddr;
 
     _stake(_stakingPool[_consensusAddr], _poolAdmin, _amount);
     emit PoolApproved(_consensusAddr, _poolAdmin);
@@ -86,7 +86,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     for (uint _i = 0; _i < _pools.length; _i++) {
       PoolDetail storage _pool = _stakingPool[_pools[_i]];
       // Deactivate the pool admin in the active mapping.
-      delete _activePoolAdminMapping[_pool.admin];
+      delete _adminOfActivePoolMapping[_pool.admin];
 
       // Deduct and transfer the self staking amount to the pool admin.
       _amount = _pool.stakingAmount;
@@ -117,14 +117,14 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     nonReentrant
     poolIsActive(_consensusAddr)
   {
-    require(_amount > 0, "CandidateStaking: invalid amount");
-    address _delegator = msg.sender;
+    if (_amount == 0) revert ErrUnstakeZeroAmount();
+    address _requester = msg.sender;
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
     uint256 _remainAmount = _pool.stakingAmount - _amount;
-    require(_remainAmount >= _minValidatorStakingAmount, "CandidateStaking: invalid staking amount left");
+    if (_remainAmount < _minValidatorStakingAmount) revert ErrStakingAmountLeft();
 
-    _unstake(_pool, _delegator, _amount);
-    require(_sendRON(payable(_delegator), _amount), "CandidateStaking: could not transfer RON");
+    _unstake(_pool, _requester, _amount);
+    if (_unsafeSendRON(payable(_requester), _amount, 3500)) revert ErrCannotTransferRON();
   }
 
   /**
@@ -163,23 +163,17 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     uint256 _commissionRate,
     uint256 _amount
   ) internal {
-    require(_sendRON(_poolAdmin, 0), "CandidateStaking: pool admin cannot receive RON");
-    require(_sendRON(_treasuryAddr, 0), "CandidateStaking: treasury cannot receive RON");
-    require(_amount >= _minValidatorStakingAmount, "CandidateStaking: insufficient amount");
+    if (!_unsafeSendRON(_poolAdmin, 0)) revert ErrCannotInitTransferRON(_poolAdmin, "pool admin");
+    if (!_unsafeSendRON(_treasuryAddr, 0)) revert ErrCannotInitTransferRON(_treasuryAddr, "treasury");
+    if (_amount < _minValidatorStakingAmount) revert ErrInsufficientStakingAmount();
 
-    require(
-      _poolAdmin == _candidateAdmin && _candidateAdmin == _treasuryAddr,
-      "CandidateStaking: three interaction addresses must be of the same"
-    );
+    if (_poolAdmin != _candidateAdmin || _candidateAdmin != _treasuryAddr) revert ErrThreeInteractionAddrsNotEqual();
 
     address[] memory _diffAddrs = new address[](3);
     _diffAddrs[0] = _poolAdmin;
     _diffAddrs[1] = _consensusAddr;
     _diffAddrs[2] = _bridgeOperatorAddr;
-    require(
-      !AddressArrayUtils.hasDuplicate(_diffAddrs),
-      "CandidateStaking: three operation addresses must be distinct"
-    );
+    if (AddressArrayUtils.hasDuplicate(_diffAddrs)) revert ErrThreeOperationAddrNotDistinct();
 
     _validatorContract.grantValidatorCandidate(
       _candidateAdmin,
@@ -212,11 +206,10 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     address _requester,
     uint256 _amount
   ) internal onlyPoolAdmin(_pool, _requester) {
-    require(_amount <= _pool.stakingAmount, "CandidateStaking: insufficient staking amount");
-    require(
-      _pool.lastDelegatingTimestamp[_requester] + _cooldownSecsToUndelegate <= block.timestamp,
-      "CandidateStaking: unstake too early"
-    );
+    if (_amount > _pool.stakingAmount) revert ErrInsufficientStakingAmount();
+    if (_pool.lastDelegatingTimestamp[_requester] + _cooldownSecsToUndelegate > block.timestamp) {
+      revert ErrUnstakeTooEarly();
+    }
 
     _pool.stakingAmount -= _amount;
     _changeDelegatingAmount(_pool, _requester, _pool.stakingAmount, _pool.stakingTotal - _amount);

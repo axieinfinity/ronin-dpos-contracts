@@ -267,14 +267,14 @@ describe('Staking test', () => {
     it('Should the consensus account is no longer be a candidate, and the staked amount is transferred back to the pool admin', async () => {
       await network.provider.send('evm_increaseTime', [waitingSecsToRevoke]);
       const stakingAmount = minValidatorStakingAmount.mul(2);
-      expect(await stakingContract.getStakingPool(poolAddrSet.consensusAddr.address)).eql([
+      expect(await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address)).eql([
         poolAddrSet.poolAdmin.address,
         stakingAmount,
         stakingAmount.add(9),
       ]);
 
       await expect(() => validatorContract.wrapUpEpoch()).changeEtherBalance(poolAddrSet.poolAdmin, stakingAmount);
-      await expect(stakingContract.getStakingPool(poolAddrSet.consensusAddr.address)).revertedWith(
+      await expect(stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address)).revertedWith(
         'BaseStaking: query for non-existent pool'
       );
     });
@@ -427,7 +427,7 @@ describe('Staking test', () => {
           2,
           /* 0.02% */ { value: minValidatorStakingAmount }
         );
-      expect(await stakingContract.getStakingPool(poolAddrSet.consensusAddr.address)).eql([
+      expect(await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address)).eql([
         poolAddrSet.poolAdmin.address,
         minValidatorStakingAmount,
         minValidatorStakingAmount.add(8),

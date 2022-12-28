@@ -10,14 +10,10 @@ interface IDelegatorStaking is IRewardPool {
   /// @dev Emitted when the delegator unstaked from a validator candidate.
   event Undelegated(address indexed delegator, address indexed consensuAddr, uint256 amount);
 
-  /// @dev Error of admin of any active pool cannot delegate.
-  error ErrAdminOfAnyActivePoolForbidden(address admin);
-  /// @dev Error of cannot transfer RON.
-  error ErrCannotTransferRON();
   /// @dev Error of undelegating zero amount.
   error ErrUndelegateZeroAmount();
   /// @dev Error of undelegating insufficient amount.
-  error ErrInsufficientUndelegateAmount();
+  error ErrInsufficientDelegatingAmount();
   /// @dev Error of undelegating too early.
   error ErrUndelegateTooEarly();
 

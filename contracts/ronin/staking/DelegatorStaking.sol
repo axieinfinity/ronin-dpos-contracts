@@ -16,7 +16,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    * @inheritdoc IDelegatorStaking
    */
   function delegate(address _consensusAddr) external payable noEmptyValue poolIsActive(_consensusAddr) {
-    if (isActivePoolAdmin(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
+    if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
     _delegate(_stakingPool[_consensusAddr], msg.sender, msg.value);
   }
 
@@ -148,7 +148,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     uint256 _amount
   ) private notPoolAdmin(_pool, _delegator) {
     if (_amount == 0) revert ErrUndelegateZeroAmount();
-    if (_pool.delegatingAmount[_delegator] >= _amount) revert ErrInsufficientUndelegateAmount();
+    if (_pool.delegatingAmount[_delegator] >= _amount) revert ErrInsufficientDelegatingAmount();
     if (_pool.lastDelegatingTimestamp[_delegator] + _cooldownSecsToUndelegate < block.timestamp) {
       revert ErrUndelegateTooEarly();
     }

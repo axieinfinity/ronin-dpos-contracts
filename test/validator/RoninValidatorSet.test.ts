@@ -212,7 +212,9 @@ describe('Ronin Validator Set test', () => {
           }
         );
 
-      await expect(tx).revertedWith('CandidateStaking: pool is active');
+      await expect(tx)
+        .revertedWithCustomError(stakingContract, 'ErrAdminOfAnyActivePoolForbidden')
+        .withArgs(validatorCandidates[3].poolAdmin.address);
     });
 
     it('Should not be able to apply for candidate role with existed candidate admin address', async () => {
@@ -229,7 +231,7 @@ describe('Ronin Validator Set test', () => {
           }
         );
 
-      await expect(tx).revertedWith('CandidateStaking: three interaction addresses must be of the same');
+      await expect(tx).revertedWithCustomError(stakingContract, 'ErrThreeInteractionAddrsNotEqual');
     });
 
     it('Should not be able to apply for candidate role with existed treasury address', async () => {
@@ -246,7 +248,7 @@ describe('Ronin Validator Set test', () => {
           }
         );
 
-      await expect(tx).revertedWith('CandidateStaking: three interaction addresses must be of the same');
+      await expect(tx).revertedWithCustomError(stakingContract, 'ErrThreeInteractionAddrsNotEqual');
     });
 
     it('Should not be able to apply for candidate role with existed bridge operator address', async () => {

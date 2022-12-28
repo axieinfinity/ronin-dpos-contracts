@@ -25,7 +25,7 @@ abstract contract BaseStaking is
   uint256 internal _waitingSecsToRevoke;
 
   /// @dev Mapping from admin address of an active pool => consensus address.
-  mapping(address => address) internal _activePoolAdminMapping;
+  mapping(address => address) internal _adminOfActivePoolMapping;
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
@@ -55,15 +55,15 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IBaseStaking
    */
-  function isActivePoolAdmin(address _poolAdminAddr) public view override returns (bool) {
-    return _activePoolAdminMapping[_poolAdminAddr] != address(0);
+  function isAdminOfActivePool(address _poolAdminAddr) public view override returns (bool) {
+    return _adminOfActivePoolMapping[_poolAdminAddr] != address(0);
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
   function getPoolAddressOf(address _poolAdminAddr) external view override returns (address) {
-    return _activePoolAdminMapping[_poolAdminAddr];
+    return _adminOfActivePoolMapping[_poolAdminAddr];
   }
 
   /**
