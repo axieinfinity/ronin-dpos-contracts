@@ -124,7 +124,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     if (_remainAmount < _minValidatorStakingAmount) revert ErrStakingAmountLeft();
 
     _unstake(_pool, _requester, _amount);
-    if (_unsafeSendRON(payable(_requester), _amount, 3500)) revert ErrCannotTransferRON();
+    if (!_unsafeSendRON(payable(_requester), _amount, 3500)) revert ErrCannotTransferRON();
   }
 
   /**
@@ -173,7 +173,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     _diffAddrs[0] = _poolAdmin;
     _diffAddrs[1] = _consensusAddr;
     _diffAddrs[2] = _bridgeOperatorAddr;
-    if (AddressArrayUtils.hasDuplicate(_diffAddrs)) revert ErrThreeOperationAddrNotDistinct();
+    if (AddressArrayUtils.hasDuplicate(_diffAddrs)) revert ErrThreeOperationAddrsNotDistinct();
 
     _validatorContract.grantValidatorCandidate(
       _candidateAdmin,

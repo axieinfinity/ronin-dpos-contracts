@@ -148,8 +148,8 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     uint256 _amount
   ) private notPoolAdmin(_pool, _delegator) {
     if (_amount == 0) revert ErrUndelegateZeroAmount();
-    if (_pool.delegatingAmount[_delegator] >= _amount) revert ErrInsufficientDelegatingAmount();
-    if (_pool.lastDelegatingTimestamp[_delegator] + _cooldownSecsToUndelegate < block.timestamp) {
+    if (_pool.delegatingAmount[_delegator] < _amount) revert ErrInsufficientDelegatingAmount();
+    if (_pool.lastDelegatingTimestamp[_delegator] + _cooldownSecsToUndelegate >= block.timestamp) {
       revert ErrUndelegateTooEarly();
     }
 

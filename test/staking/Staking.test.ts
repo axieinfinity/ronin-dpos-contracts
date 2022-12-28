@@ -75,7 +75,7 @@ describe('Staking test', () => {
     it('Should not be able to propose validator with insufficient amount', async () => {
       await expect(
         stakingContract.applyValidatorCandidate(userA.address, userA.address, userA.address, userA.address, 1)
-      ).revertedWith('CandidateStaking: insufficient amount');
+      ).revertedWithCustomError(stakingContract, 'ErrInsufficientStakingAmount');
     });
 
     it('Should not be able to propose validator with duplicated address', async () => {
@@ -91,7 +91,7 @@ describe('Staking test', () => {
           1,
           /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
         );
-      await expect(tx).revertedWith('CandidateStaking: three operation addresses must be distinct');
+      await expect(tx).revertedWithCustomError(stakingContract, 'ErrThreeOperationAddrsNotDistinct');
     });
 
     it('Should be able to propose validator with sufficient amount', async () => {
@@ -136,18 +136,21 @@ describe('Staking test', () => {
     });
 
     it('Should not be able to stake with empty value', async () => {
-      await expect(stakingContract.stake(poolAddrSet.consensusAddr.address, { value: 0 })).revertedWith(
-        'BaseStaking: query with empty value'
+      await expect(stakingContract.stake(poolAddrSet.consensusAddr.address, { value: 0 })).revertedWithCustomError(
+        stakingContract,
+        'ErrZeroMessageValue'
       );
     });
 
     it('Should not be able to call stake/unstake when the method is not the pool admin', async () => {
-      await expect(stakingContract.stake(poolAddrSet.consensusAddr.address, { value: 1 })).revertedWith(
-        'BaseStaking: requester must be the pool admin'
+      await expect(stakingContract.stake(poolAddrSet.consensusAddr.address, { value: 1 })).revertedWithCustomError(
+        stakingContract,
+        'ErrOnlyPoolAdminAllowed'
       );
 
-      await expect(stakingContract.unstake(poolAddrSet.consensusAddr.address, 1)).revertedWith(
-        'BaseStaking: requester must be the pool admin'
+      await expect(stakingContract.unstake(poolAddrSet.consensusAddr.address, 1)).revertedWithCustomError(
+        stakingContract,
+        'ErrOnlyPoolAdminAllowed'
       );
     });
 
@@ -164,7 +167,7 @@ describe('Staking test', () => {
     it('Should not be able to unstake due to cooldown restriction', async () => {
       await expect(
         stakingContract.connect(poolAddrSet.poolAdmin).unstake(poolAddrSet.consensusAddr.address, 1)
-      ).revertedWith('CandidateStaking: unstake too early');
+      ).revertedWithCustomError(stakingContract, 'ErrUnstakeTooEarly');
     });
 
     it('Should not be able to unstake after cooldown', async () => {
@@ -192,13 +195,13 @@ describe('Staking test', () => {
         stakingContract
           .connect(poolAddrSet.poolAdmin)
           .unstake(poolAddrSet.consensusAddr.address, minValidatorStakingAmount.add(1))
-      ).revertedWith('CandidateStaking: invalid staking amount left');
+      ).revertedWithCustomError(stakingContract, 'ErrStakingAmountLeft');
     });
 
     it('Should not be able to request renounce using unauthorized account', async () => {
-      await expect(stakingContract.connect(deployer).requestRenounce(poolAddrSet.consensusAddr.address)).revertedWith(
-        'BaseStaking: requester must be the pool admin'
-      );
+      await expect(
+        stakingContract.connect(deployer).requestRenounce(poolAddrSet.consensusAddr.address)
+      ).revertedWithCustomError(stakingContract, 'ErrOnlyPoolAdminAllowed');
     });
 
     it('Should the non-pool-admin not be able to update the commission rate', async () => {
@@ -208,7 +211,7 @@ describe('Staking test', () => {
           minEffectiveDaysOnwards,
           20_00 // 20%
         )
-      ).revertedWith('BaseStaking: requester must be the pool admin');
+      ).revertedWithCustomError(stakingContract, 'ErrOnlyPoolAdminAllowed');
     });
 
     it('Should the pool admin not be able to request updating the commission rate with invalid effective date', async () => {
@@ -274,9 +277,8 @@ describe('Staking test', () => {
       ]);
 
       await expect(() => validatorContract.wrapUpEpoch()).changeEtherBalance(poolAddrSet.poolAdmin, stakingAmount);
-      await expect(stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address)).revertedWith(
-        'BaseStaking: query for non-existent pool'
-      );
+      let _poolDetail = await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address);
+      expect(_poolDetail._stakingAmount).eq(0);
     });
 
     it('Should the exited pool admin and consensus address rejoin as a candidate', async () => {
@@ -315,7 +317,9 @@ describe('Staking test', () => {
             1,
             /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
           )
-      ).revertedWith('CandidateStaking: pool is active');
+      )
+        .revertedWithCustomError(stakingContract, 'ErrAdminOfAnyActivePoolForbidden')
+        .withArgs(poolAddrSet.poolAdmin.address);
 
       await stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address);
       await network.provider.send('evm_increaseTime', [waitingSecsToRevoke]);
@@ -335,14 +339,15 @@ describe('Staking test', () => {
     });
 
     it('Should not be able to delegate to a deprecated pool', async () => {
-      await expect(stakingContract.delegate(poolAddrSet.consensusAddr.address, { value: 1 })).revertedWith(
-        'BaseStaking: query for non-existent pool'
-      );
+      await expect(stakingContract.delegate(poolAddrSet.consensusAddr.address, { value: 1 }))
+        .revertedWithCustomError(stakingContract, 'ErrInactivePool')
+        .withArgs(poolAddrSet.consensusAddr.address);
     });
 
     it('Should not be able to delegate with empty value', async () => {
-      await expect(stakingContract.delegate(otherPoolAddrSet.consensusAddr.address)).revertedWith(
-        'BaseStaking: query with empty value'
+      await expect(stakingContract.delegate(otherPoolAddrSet.consensusAddr.address)).revertedWithCustomError(
+        stakingContract,
+        'ErrZeroMessageValue'
       );
     });
 
@@ -351,10 +356,13 @@ describe('Staking test', () => {
         stakingContract
           .connect(otherPoolAddrSet.poolAdmin)
           .delegate(otherPoolAddrSet.consensusAddr.address, { value: 1 })
-      ).revertedWith('DelegatorStaking: admin of an active pool cannot delegate');
+      )
+        .revertedWithCustomError(stakingContract, 'ErrAdminOfAnyActivePoolForbidden')
+        .withArgs(otherPoolAddrSet.poolAdmin.address);
+
       await expect(
         stakingContract.connect(otherPoolAddrSet.poolAdmin).undelegate(otherPoolAddrSet.consensusAddr.address, 1)
-      ).revertedWith('BaseStaking: delegator must not be the pool admin');
+      ).revertedWithCustomError(stakingContract, 'ErrPoolAdminForbidden');
     });
 
     it('Should not be able to delegate when the method caller is the admin of any arbitrary pool', async () => {
@@ -362,12 +370,17 @@ describe('Staking test', () => {
         stakingContract
           .connect(anotherActivePoolSet.poolAdmin)
           .delegate(otherPoolAddrSet.consensusAddr.address, { value: 1 })
-      ).revertedWith('DelegatorStaking: admin of an active pool cannot delegate');
+      )
+        .revertedWithCustomError(stakingContract, 'ErrAdminOfAnyActivePoolForbidden')
+        .withArgs(anotherActivePoolSet.poolAdmin.address);
+
       await expect(
         stakingContract
           .connect(otherPoolAddrSet.poolAdmin)
           .delegate(anotherActivePoolSet.consensusAddr.address, { value: 1 })
-      ).revertedWith('DelegatorStaking: admin of an active pool cannot delegate');
+      )
+        .revertedWithCustomError(stakingContract, 'ErrAdminOfAnyActivePoolForbidden')
+        .withArgs(otherPoolAddrSet.poolAdmin.address);
     });
 
     it('Should multiple accounts be able to delegate to one pool', async () => {
@@ -388,9 +401,9 @@ describe('Staking test', () => {
     });
 
     it('Should not be able to undelegate due to cooldown restriction', async () => {
-      await expect(stakingContract.connect(userA).undelegate(otherPoolAddrSet.consensusAddr.address, 1)).revertedWith(
-        'DelegatorStaking: undelegate too early'
-      );
+      await expect(
+        stakingContract.connect(userA).undelegate(otherPoolAddrSet.consensusAddr.address, 1)
+      ).revertedWithCustomError(stakingContract, 'ErrUndelegateTooEarly');
     });
 
     it('Should be able to undelegate after cooldown', async () => {
@@ -405,14 +418,16 @@ describe('Staking test', () => {
     });
 
     it('Should not be able to undelegate with empty amount', async () => {
-      await expect(stakingContract.undelegate(otherPoolAddrSet.consensusAddr.address, 0)).revertedWith(
-        'DelegatorStaking: invalid amount'
+      await expect(stakingContract.undelegate(otherPoolAddrSet.consensusAddr.address, 0)).revertedWithCustomError(
+        stakingContract,
+        'ErrUndelegateZeroAmount'
       );
     });
 
     it('Should not be able to undelegate more than the delegating amount', async () => {
-      await expect(stakingContract.undelegate(otherPoolAddrSet.consensusAddr.address, 1000)).revertedWith(
-        'DelegatorStaking: insufficient amount to undelegate'
+      await expect(stakingContract.undelegate(otherPoolAddrSet.consensusAddr.address, 1000)).revertedWithCustomError(
+        stakingContract,
+        'ErrInsufficientDelegatingAmount'
       );
     });
 

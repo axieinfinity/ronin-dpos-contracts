@@ -514,7 +514,9 @@ describe('[Integration] Slash validators', () => {
             const topUpTx = stakingContract.connect(slashee.poolAdmin).stake(slashee.consensusAddr.address, {
               value: slashAmountForUnavailabilityTier2Threshold,
             });
-            await expect(topUpTx).revertedWith('BaseStaking: query for non-existent pool');
+            await expect(topUpTx)
+              .revertedWithCustomError(stakingContract, 'ErrInactivePool')
+              .withArgs(slashee.consensusAddr.address);
           }
         });
 

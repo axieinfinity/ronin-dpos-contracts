@@ -166,9 +166,9 @@ describe('Emergency Exit test', () => {
   });
 
   it('Should not be able to request emergency exit using unauthorized accounts', async () => {
-    await expect(stakingContract.requestEmergencyExit(compromisedValidator.consensusAddr.address)).revertedWith(
-      'BaseStaking: requester must be the pool admin'
-    );
+    await expect(
+      stakingContract.requestEmergencyExit(compromisedValidator.consensusAddr.address)
+    ).revertedWithCustomError(stakingContract, 'ErrOnlyPoolAdminAllowed');
   });
 
   it('Should be able to request emergency exit', async () => {
