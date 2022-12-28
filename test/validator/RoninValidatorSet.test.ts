@@ -212,7 +212,7 @@ describe('Ronin Validator Set test', () => {
           }
         );
 
-      await expect(tx).revertedWith('CandidateStaking: pool admin is active');
+      await expect(tx).revertedWith('CandidateStaking: pool is active');
     });
 
     it('Should not be able to apply for candidate role with existed candidate admin address', async () => {

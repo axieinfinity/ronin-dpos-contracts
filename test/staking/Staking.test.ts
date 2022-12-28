@@ -315,7 +315,7 @@ describe('Staking test', () => {
             1,
             /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
           )
-      ).revertedWith('CandidateStaking: pool admin is active');
+      ).revertedWith('CandidateStaking: pool is active');
 
       await stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address);
       await network.provider.send('evm_increaseTime', [waitingSecsToRevoke]);
