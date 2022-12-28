@@ -38,21 +38,4 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
   function deductStakingAmount(address _consensusAddr, uint256 _amount)
     external
     returns (uint256 _actualDeductingAmount);
-
-  /**
-   * @dev Returns the staking pool detail.
-   */
-  function getStakingPool(address)
-    external
-    view
-    returns (
-      address _admin,
-      uint256 _stakingAmount,
-      uint256 _stakingTotal
-    );
-
-  /**
-   * @dev Returns the self-staking amounts of the pools.
-   */
-  function getManySelfStakings(address[] calldata) external view returns (uint256[] memory);
 }

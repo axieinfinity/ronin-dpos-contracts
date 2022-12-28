@@ -34,6 +34,23 @@ interface IBaseStaking {
   function getPoolAddressOf(address _poolAdminAddr) external view returns (address);
 
   /**
+   * @dev Returns the staking pool detail.
+   */
+  function getPoolDetail(address)
+    external
+    view
+    returns (
+      address _admin,
+      uint256 _stakingAmount,
+      uint256 _stakingTotal
+    );
+
+  /**
+   * @dev Returns the self-staking amounts of the pools.
+   */
+  function getManySelfStakings(address[] calldata) external view returns (uint256[] memory);
+
+  /**
    * @dev Returns The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.
    */
   function cooldownSecsToUndelegate() external view returns (uint256);

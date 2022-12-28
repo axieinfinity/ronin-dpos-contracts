@@ -35,32 +35,6 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   /**
    * @inheritdoc IStaking
    */
-  function getStakingPool(address _poolAddr)
-    external
-    view
-    returns (
-      address _admin,
-      uint256 _stakingAmount,
-      uint256 _stakingTotal
-    )
-  {
-    PoolDetail storage _pool = _stakingPool[_poolAddr];
-    return (_pool.admin, _pool.stakingAmount, _pool.stakingTotal);
-  }
-
-  /**
-   * @inheritdoc IStaking
-   */
-  function getManySelfStakings(address[] calldata _pools) external view returns (uint256[] memory _selfStakings) {
-    _selfStakings = new uint256[](_pools.length);
-    for (uint _i = 0; _i < _pools.length; _i++) {
-      _selfStakings[_i] = _stakingPool[_pools[_i]].stakingAmount;
-    }
-  }
-
-  /**
-   * @inheritdoc IStaking
-   */
   function recordRewards(
     address[] calldata _consensusAddrs,
     uint256[] calldata _rewards,
