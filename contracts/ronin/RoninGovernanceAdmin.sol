@@ -6,7 +6,6 @@ import "../extensions/sequential-governance/GovernanceProposal.sol";
 import "../extensions/collections/HasValidatorContract.sol";
 import "../extensions/GovernanceAdmin.sol";
 import "../libraries/EmergencyExitBallot.sol";
-import "../interfaces/IBridge.sol";
 import "../interfaces/IRoninGovernanceAdmin.sol";
 
 contract RoninGovernanceAdmin is
@@ -16,6 +15,8 @@ contract RoninGovernanceAdmin is
   BOsGovernanceProposal,
   HasValidatorContract
 {
+  using Proposal for Proposal.ProposalDetail;
+
   /// @dev Mapping from request hash => emergency poll
   mapping(bytes32 => IsolatedVote) internal _emergencyExitPoll;
 
@@ -44,11 +45,17 @@ contract RoninGovernanceAdmin is
   /**
    * @dev Returns the voted signatures for the proposals.
    *
+   * Note: The signatures can be empty in case the proposal is voted on the current network.
+   *
    */
   function getProposalSignatures(uint256 _chainId, uint256 _round)
     external
     view
-    returns (Ballot.VoteType[] memory _supports, Signature[] memory _signatures)
+    returns (
+      address[] memory _voters,
+      Ballot.VoteType[] memory _supports,
+      Signature[] memory _signatures
+    )
   {
     ProposalVote storage _vote = vote[_chainId][_round];
 
@@ -58,13 +65,16 @@ contract RoninGovernanceAdmin is
 
     _supports = new Ballot.VoteType[](_voterLength);
     _signatures = new Signature[](_voterLength);
+    _voters = new address[](_voterLength);
     for (uint256 _i; _i < _forLength; _i++) {
       _supports[_i] = Ballot.VoteType.For;
       _signatures[_i] = vote[_chainId][_round].sig[_vote.forVoteds[_i]];
+      _voters[_i] = _vote.forVoteds[_i];
     }
     for (uint256 _i; _i < _againstLength; _i++) {
       _supports[_i + _forLength] = Ballot.VoteType.Against;
       _signatures[_i + _forLength] = vote[_chainId][_round].sig[_vote.againstVoteds[_i]];
+      _voters[_i + _forLength] = _vote.againstVoteds[_i];
     }
   }
 
@@ -138,6 +148,7 @@ contract RoninGovernanceAdmin is
    *
    * Requirements:
    * - The method caller is governor.
+   * - The proposal is for the current network.
    *
    */
   function proposeProposalStructAndCastVotes(
@@ -146,6 +157,49 @@ contract RoninGovernanceAdmin is
     Signature[] calldata _signatures
   ) external onlyGovernor {
     _proposeProposalStructAndCastVotes(_proposal, _supports, _signatures, DOMAIN_SEPARATOR, msg.sender);
+  }
+
+  /**
+   * @dev Proposes and casts vote for a proposal on the current network.
+   *
+   * Requirements:
+   * - The method caller is governor.
+   * - The proposal is for the current network.
+   *
+   */
+  function proposeProposalForCurrentNetwork(
+    uint256 _expiryTimestamp,
+    address[] calldata _targets,
+    uint256[] calldata _values,
+    bytes[] calldata _calldatas,
+    uint256[] calldata _gasAmounts,
+    Ballot.VoteType _support
+  ) external onlyGovernor {
+    address _voter = msg.sender;
+    Proposal.ProposalDetail memory _proposal = _proposeProposal(
+      block.chainid,
+      _expiryTimestamp,
+      _targets,
+      _values,
+      _calldatas,
+      _gasAmounts,
+      _voter
+    );
+    _castProposalVoteForCurrentNetwork(_voter, _proposal, _support);
+  }
+
+  /**
+   * @dev Casts vote for a proposal on the current network.
+   *
+   * Requirements:
+   * - The method caller is governor.
+   *
+   */
+  function castProposalVoteForCurrentNetwork(Proposal.ProposalDetail calldata _proposal, Ballot.VoteType _support)
+    external
+    onlyGovernor
+  {
+    _castProposalVoteForCurrentNetwork(msg.sender, _proposal, _support);
   }
 
   /**
@@ -357,9 +411,37 @@ contract RoninGovernanceAdmin is
   }
 
   /**
-   * @dev See {CoreGovernance-_getChainType}
+   * @dev See `CoreGovernance-_getChainType`.
    */
   function _getChainType() internal pure override returns (ChainType) {
     return ChainType.RoninChain;
+  }
+
+  /**
+   * @dev See `castProposalVoteForCurrentNetwork`.
+   */
+  function _castProposalVoteForCurrentNetwork(
+    address _voter,
+    Proposal.ProposalDetail memory _proposal,
+    Ballot.VoteType _support
+  ) internal {
+    require(_proposal.chainId == block.chainid, "RoninGovernanceAdmin: invalid chain id");
+    require(
+      vote[_proposal.chainId][_proposal.nonce].hash == _proposal.hash(),
+      "RoninGovernanceAdmin: cast vote for invalid proposal"
+    );
+
+    uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
+    uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;
+    Signature memory _emptySignature;
+    _castVote(
+      _proposal,
+      _support,
+      _minimumForVoteWeight,
+      _minimumAgainstVoteWeight,
+      _voter,
+      _emptySignature,
+      _getWeight(_voter)
+    );
   }
 }

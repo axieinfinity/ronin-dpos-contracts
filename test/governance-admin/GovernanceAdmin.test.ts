@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { BigNumber } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import { ethers, network } from 'hardhat';
 
 import { GovernanceAdminInterface, mapByteSigToSigStruct } from '../../src/script/governance-admin-interface';
@@ -48,6 +48,7 @@ let ballot: BOsBallot;
 let proposalExpiryDuration = 60;
 let numerator = 7;
 let denominator = 10;
+let snapshotId: string;
 
 describe('Governance Admin test', () => {
   before(async () => {
@@ -592,6 +593,204 @@ describe('Governance Admin test', () => {
       await governanceAdmin.connect(trustedOrgs[0].governor).castProposalBySignatures(proposal, supports, signatures);
       currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
       expect(currentProposalVote.status).eq(VoteStatus.Executed);
+    });
+  });
+
+  describe('Current Network Proposal Voting', () => {
+    let newConfig: BigNumberish;
+    let votedSignatures: SignatureStruct[] = [];
+
+    before(() => {
+      newConfig = Math.floor(Math.random() * 1000000) + 100000;
+    });
+
+    it('Should be able to create a proposal using governor account', async () => {
+      const latestTimestamp = await getLastBlockTimestamp();
+      const expiryTimestamp = latestTimestamp + proposalExpiryDuration;
+      proposal = await governanceAdminInterface.createProposal(
+        expiryTimestamp,
+        stakingContract.address,
+        0,
+        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [newConfig]),
+        ]),
+        500_000
+      );
+
+      await governanceAdmin
+        .connect(trustedOrgs[0].governor)
+        .proposeProposalForCurrentNetwork(
+          proposal.expiryTimestamp,
+          proposal.targets,
+          proposal.values,
+          proposal.calldatas,
+          proposal.gasAmounts,
+          VoteType.Against
+        );
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
+        .true;
+    });
+
+    it('Should not be able to cast vote with invalid chain id', async () => {
+      await expect(
+        governanceAdmin
+          .connect(trustedOrgs[1].governor)
+          .castProposalVoteForCurrentNetwork(
+            { ...proposal, chainId: BigNumber.from(proposal.chainId).add(1) },
+            VoteType.Against
+          )
+      ).revertedWith('RoninGovernanceAdmin: invalid chain id');
+    });
+
+    it('Should not be able to cast vote with invalid data', async () => {
+      await expect(
+        governanceAdmin
+          .connect(trustedOrgs[1].governor)
+          .castProposalVoteForCurrentNetwork(
+            { ...proposal, values: proposal.values.map((v) => BigNumber.from(v).add(1)) },
+            VoteType.Against
+          )
+      ).revertedWith('RoninGovernanceAdmin: cast vote for invalid proposal');
+    });
+
+    it('Should be able to cast valid vote', async () => {
+      await governanceAdmin.connect(trustedOrgs[1].governor).castProposalVoteForCurrentNetwork(proposal, VoteType.For);
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[1].governor.address)).to
+        .true;
+    });
+
+    it('Should not be able to cast vote again with signatures', async () => {
+      const votedSignatures = await governanceAdminInterface.generateSignatures(
+        proposal,
+        [trustedOrgs[0].governor],
+        VoteType.Against
+      );
+      await expect(
+        governanceAdmin
+          .connect(trustedOrgs[0].governor)
+          .castProposalBySignatures(proposal, [VoteType.Against], votedSignatures)
+      ).revertedWith(`CoreGovernance: ${trustedOrgs[0].governor.address.toLowerCase()} already voted`);
+    });
+
+    it('Should be able to cast vote using signatures', async () => {
+      votedSignatures = await governanceAdminInterface.generateSignatures(
+        proposal,
+        [trustedOrgs[2].governor],
+        VoteType.Against
+      );
+      await governanceAdmin
+        .connect(trustedOrgs[2].governor)
+        .castProposalBySignatures(proposal, [VoteType.Against], votedSignatures);
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[2].governor.address)).to
+        .true;
+    });
+
+    it('Should not be able to cast vote again without signatures', async () => {
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[2].governor.address)).to
+        .true;
+      await expect(
+        governanceAdmin.connect(trustedOrgs[2].governor).castProposalVoteForCurrentNetwork(proposal, VoteType.For)
+      ).revertedWith(`CoreGovernance: ${trustedOrgs[2].governor.address.toLowerCase()} already voted`);
+    });
+
+    it('Should be able to retrieve the signatures', async () => {
+      const [voters, supports, signatures] = await governanceAdmin.getProposalSignatures(
+        proposal.chainId,
+        proposal.nonce
+      );
+      expect(voters).eql([
+        trustedOrgs[1].governor.address,
+        trustedOrgs[0].governor.address,
+        trustedOrgs[2].governor.address,
+      ]);
+      expect(supports).eql([VoteType.For, VoteType.Against, VoteType.Against]);
+      const emptySignatures = [0, ethers.constants.HashZero, ethers.constants.HashZero];
+      expect(signatures).eql([
+        emptySignatures,
+        emptySignatures,
+        ...votedSignatures.map((sig) => [sig.v, sig.r, sig.s]),
+      ]);
+    });
+
+    describe('Expired Vote', () => {
+      before(async () => {
+        snapshotId = await network.provider.send('evm_snapshot');
+        await network.provider.send('evm_setNextBlockTimestamp', [
+          BigNumber.from(proposal.expiryTimestamp).add(1).toNumber(),
+        ]);
+      });
+
+      after(async () => {
+        await network.provider.send('evm_revert', [snapshotId]);
+      });
+
+      it("Should be able to clear when it' is expired", async () => {
+        expect(
+          await governanceAdmin.connect(trustedOrgs[0].governor).deleteExpired(proposal.chainId, proposal.nonce)
+        ).emit(governanceAdmin, 'ProposalExpired');
+        const [voters, supports, signatures] = await governanceAdmin.getProposalSignatures(
+          proposal.chainId,
+          proposal.nonce
+        );
+        expect(voters.length).eq(0);
+        expect(supports.length).eq(0);
+        expect(signatures.length).eq(0);
+      });
+    });
+
+    describe('Approved Vote', () => {
+      before(async () => {
+        snapshotId = await network.provider.send('evm_snapshot');
+      });
+
+      after(async () => {
+        await network.provider.send('evm_revert', [snapshotId]);
+      });
+
+      it('Should be able to cast for vote', async () => {
+        for (let i = 3; i < trustedOrgs.length; i++) {
+          let vote = await governanceAdmin.vote(proposal.chainId, proposal.nonce);
+          if (vote.status == VoteStatus.Pending) {
+            await governanceAdmin
+              .connect(trustedOrgs[i].governor)
+              .castProposalVoteForCurrentNetwork(proposal, VoteType.For);
+          }
+        }
+      });
+
+      it('Should the config change after the proposal vote is approved', async () => {
+        expect(await stakingContract.minValidatorStakingAmount()).eq(newConfig);
+      });
+    });
+
+    describe('Rejected Vote', () => {
+      let currentConfig: BigNumberish;
+
+      before(async () => {
+        snapshotId = await network.provider.send('evm_snapshot');
+        currentConfig = await stakingContract.minValidatorStakingAmount();
+      });
+
+      after(async () => {
+        await network.provider.send('evm_revert', [snapshotId]);
+      });
+
+      it('Should be able to cast for vote', async () => {
+        for (let i = 3; i < trustedOrgs.length; i++) {
+          let vote = await governanceAdmin.vote(proposal.chainId, proposal.nonce);
+          if (vote.status == VoteStatus.Pending) {
+            await governanceAdmin
+              .connect(trustedOrgs[i].governor)
+              .castProposalVoteForCurrentNetwork(proposal, VoteType.Against);
+          }
+        }
+      });
+
+      it('Should the config change after the proposal vote is approved', async () => {
+        const latestConfig = await stakingContract.minValidatorStakingAmount();
+        expect(latestConfig).not.eq(newConfig);
+        expect(latestConfig).eq(currentConfig);
+      });
     });
   });
 });
