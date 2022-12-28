@@ -84,14 +84,12 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
    *
    */
   function relayBridgeOperators(
-    uint256 _period,
-    uint256 _epoch,
-    address[] calldata _operators,
+    BridgeOperatorsBallot.BridgeOperatorSet calldata _ballot,
     Signature[] calldata _signatures
   ) external onlyRole(RELAYER_ROLE) {
-    _relayVotesBySignatures(_operators, _signatures, _period, _epoch, _getMinimumVoteWeight(), DOMAIN_SEPARATOR);
+    _relayVotesBySignatures(_ballot, _signatures, _getMinimumVoteWeight(), DOMAIN_SEPARATOR);
     TransparentUpgradeableProxyV2(payable(bridgeContract())).functionDelegateCall(
-      abi.encodeWithSelector(_bridgeContract.replaceBridgeOperators.selector, _operators)
+      abi.encodeWithSelector(_bridgeContract.replaceBridgeOperators.selector, _ballot.operators)
     );
   }
 

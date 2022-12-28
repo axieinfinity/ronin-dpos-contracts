@@ -30,7 +30,7 @@ abstract contract GovernanceRelay is CoreGovernance {
       address _signer;
       address _lastSigner;
       Ballot.VoteType _support;
-      Signature memory _sig;
+      Signature calldata _sig;
 
       for (uint256 _i; _i < _signatures.length; _i++) {
         _sig = _signatures[_i];

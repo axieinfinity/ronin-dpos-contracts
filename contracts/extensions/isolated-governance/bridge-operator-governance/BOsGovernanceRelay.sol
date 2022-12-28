@@ -6,12 +6,17 @@ import "../../../interfaces/consumers/SignatureConsumer.sol";
 import "../../../libraries/BridgeOperatorsBallot.sol";
 
 abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
-  /// @dev The last period that the brige operators synced.
-  uint256 internal _lastSyncedPeriod;
-  /// @dev The last epoch that the brige operators synced.
-  uint256 internal _lastSyncedEpoch;
+  /// @dev The last the brige operator set info.
+  BridgeOperatorsBallot.BridgeOperatorSet internal _lastSyncedBridgeOperatorSetInfo;
   /// @dev Mapping from period index => epoch index => bridge operators vote
   mapping(uint256 => mapping(uint256 => IsolatedVote)) internal _vote;
+
+  /**
+   * @dev Returns the synced bridge operator set info.
+   */
+  function lastSyncedBridgeOperatorSetInfo() external view returns (BridgeOperatorsBallot.BridgeOperatorSet memory) {
+    return _lastSyncedBridgeOperatorSetInfo;
+  }
 
   /**
    * @dev Relays votes by signatures.
@@ -25,23 +30,23 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
    *
    */
   function _relayVotesBySignatures(
-    address[] calldata _operators,
+    BridgeOperatorsBallot.BridgeOperatorSet calldata _ballot,
     Signature[] calldata _signatures,
-    uint256 _period,
-    uint256 _epoch,
     uint256 _minimumVoteWeight,
     bytes32 _domainSeperator
   ) internal {
     require(
-      (_period >= _lastSyncedPeriod && _epoch > _lastSyncedEpoch),
+      (_ballot.period >= _lastSyncedBridgeOperatorSetInfo.period &&
+        _ballot.epoch > _lastSyncedBridgeOperatorSetInfo.epoch),
       "BOsGovernanceRelay: query for outdated bridge operator set"
     );
-    require(_operators.length > 0 && _signatures.length > 0, "BOsGovernanceRelay: invalid array length");
+    BridgeOperatorsBallot.verifyBallot(_ballot, _lastSyncedBridgeOperatorSetInfo);
+    require(_signatures.length > 0, "BOsGovernanceRelay: invalid array length");
 
-    Signature memory _sig;
+    Signature calldata _sig;
     address[] memory _signers = new address[](_signatures.length);
     address _lastSigner;
-    bytes32 _hash = BridgeOperatorsBallot.hash(_period, _epoch, _operators);
+    bytes32 _hash = BridgeOperatorsBallot.hash(_ballot);
     bytes32 _digest = ECDSA.toTypedDataHash(_domainSeperator, _hash);
 
     for (uint256 _i = 0; _i < _signatures.length; _i++) {
@@ -51,13 +56,12 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
       _lastSigner = _signers[_i];
     }
 
-    IsolatedVote storage _v = _vote[_period][_epoch];
+    IsolatedVote storage _v = _vote[_ballot.period][_ballot.epoch];
     uint256 _totalVoteWeight = _sumBridgeVoterWeights(_signers);
     if (_totalVoteWeight >= _minimumVoteWeight) {
       require(_totalVoteWeight > 0, "BOsGovernanceRelay: invalid vote weight");
       _v.status = VoteStatus.Approved;
-      _lastSyncedPeriod = _period;
-      _lastSyncedEpoch = _epoch;
+      _lastSyncedBridgeOperatorSetInfo = _ballot;
       return;
     }
 

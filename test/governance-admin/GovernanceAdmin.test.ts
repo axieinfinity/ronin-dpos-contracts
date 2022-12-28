@@ -27,7 +27,7 @@ import { SignatureStruct } from '../../src/types/RoninGovernanceAdmin';
 import { randomAddress, ZERO_BYTES32 } from '../../src/utils';
 import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
 import { initTest } from '../helpers/fixture';
-import { getLastBlockTimestamp } from '../helpers/utils';
+import { getLastBlockTimestamp, compareAddrs } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
 let relayer: SignerWithAddress;
@@ -63,7 +63,7 @@ describe('Governance Admin test', () => {
     bridgeContract = MockBridge__factory.connect(proxy.address, deployer);
 
     const { roninGovernanceAdminAddress, mainchainGovernanceAdminAddress, stakingContractAddress } = await initTest(
-      'RoninGovernanceAdmin.test'
+      'RoninGovernanceAdminTest'
     )({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
@@ -100,141 +100,234 @@ describe('Governance Admin test', () => {
   });
 
   describe('General case of governance admin', async () => {
-    it('Should be able to propose to change staking config', async () => {
-      const newMinValidatorStakingAmount = 555;
-      const latestTimestamp = await getLastBlockTimestamp();
-      proposal = await governanceAdminInterface.createProposal(
-        latestTimestamp + proposalExpiryDuration,
-        stakingContract.address,
-        0,
-        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
-          stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [newMinValidatorStakingAmount]),
-        ]),
-        500_000
-      );
-      signatures = await governanceAdminInterface.generateSignatures(proposal);
-      supports = signatures.map(() => VoteType.For);
+    describe('Proposals', () => {
+      it('Should be able to propose to change staking config', async () => {
+        const newMinValidatorStakingAmount = 555;
+        const latestTimestamp = await getLastBlockTimestamp();
+        proposal = await governanceAdminInterface.createProposal(
+          latestTimestamp + proposalExpiryDuration,
+          stakingContract.address,
+          0,
+          governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+            stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [
+              newMinValidatorStakingAmount,
+            ]),
+          ]),
+          500_000
+        );
+        signatures = await governanceAdminInterface.generateSignatures(proposal);
+        supports = signatures.map(() => VoteType.For);
 
-      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
-        .false;
-      await governanceAdmin
-        .connect(trustedOrgs[0].governor)
-        .proposeProposalStructAndCastVotes(proposal, supports, signatures);
-      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
-        .true;
-      expect(await stakingContract.minValidatorStakingAmount()).eq(newMinValidatorStakingAmount);
-    });
-
-    it('Should not be able to reuse already voted signatures or proposals', async () => {
-      await expect(
-        governanceAdmin
+        expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address))
+          .to.false;
+        await governanceAdmin
           .connect(trustedOrgs[0].governor)
-          .proposeProposalStructAndCastVotes(proposal, supports, signatures)
-      ).revertedWith('CoreGovernance: invalid proposal nonce');
+          .proposeProposalStructAndCastVotes(proposal, supports, signatures);
+        expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address))
+          .to.true;
+        expect(await stakingContract.minValidatorStakingAmount()).eq(newMinValidatorStakingAmount);
+      });
+
+      it('Should not be able to reuse already voted signatures or proposals', async () => {
+        await expect(
+          governanceAdmin
+            .connect(trustedOrgs[0].governor)
+            .proposeProposalStructAndCastVotes(proposal, supports, signatures)
+        ).revertedWith('CoreGovernance: invalid proposal nonce');
+      });
+
+      it('Should be able to relay to mainchain governance admin contract', async () => {
+        expect(await mainchainGovernanceAdmin.proposalRelayed(proposal.chainId, proposal.nonce)).to.false;
+        await mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures);
+        expect(await mainchainGovernanceAdmin.proposalRelayed(proposal.chainId, proposal.nonce)).to.true;
+      });
+
+      it('Should not be able to relay again', async () => {
+        await expect(
+          mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures)
+        ).revertedWith('CoreGovernance: invalid proposal nonce');
+      });
     });
 
-    it('Should be able to relay to mainchain governance admin contract', async () => {
-      expect(await mainchainGovernanceAdmin.proposalRelayed(proposal.chainId, proposal.nonce)).to.false;
-      await mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures);
-      expect(await mainchainGovernanceAdmin.proposalRelayed(proposal.chainId, proposal.nonce)).to.true;
-    });
+    describe('Bridge Operator Set Voting', () => {
+      before(async () => {
+        const latestBOset = await governanceAdmin.lastSyncedBridgeOperatorSetInfo();
+        expect(latestBOset.period).eq(0);
+        expect(latestBOset.epoch).eq(0);
+        expect(latestBOset.operators).eql([]);
+      });
 
-    it('Should not be able to relay again', async () => {
-      await expect(
-        mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures)
-      ).revertedWith('CoreGovernance: invalid proposal nonce');
-    });
+      it('Should be able to vote bridge operators', async () => {
+        ballot = {
+          period: 10,
+          epoch: 10_000,
+          operators: trustedOrgs
+            .slice(0, 2)
+            .map((v) => v.bridgeVoter.address)
+            .sort(compareAddrs),
+        };
+        signatures = await Promise.all(
+          trustedOrgs.map((g) =>
+            g.bridgeVoter
+              ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
+              .then(mapByteSigToSigStruct)
+          )
+        );
+        expect(
+          await governanceAdmin.bridgeOperatorsVoted(ballot.period, ballot.epoch, trustedOrgs[0].bridgeVoter.address)
+        ).to.false;
+        await governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures);
+        expect(
+          await governanceAdmin.bridgeOperatorsVoted(ballot.period, ballot.epoch, trustedOrgs[0].bridgeVoter.address)
+        ).to.true;
 
-    it('Should be able to vote bridge operators', async () => {
-      ballot = {
-        period: 10,
-        epoch: 10_000,
-        operators: trustedOrgs.map((v) => v.bridgeVoter.address),
-      };
-      signatures = await Promise.all(
-        trustedOrgs.map((g) =>
-          g.bridgeVoter
-            ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
-            .then(mapByteSigToSigStruct)
-        )
-      );
-      expect(
-        await governanceAdmin.bridgeOperatorsVoted(ballot.period, ballot.epoch, trustedOrgs[0].bridgeVoter.address)
-      ).to.false;
-      await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.epoch, ballot.operators, signatures);
-      expect(
-        await governanceAdmin.bridgeOperatorsVoted(ballot.period, ballot.epoch, trustedOrgs[0].bridgeVoter.address)
-      ).to.true;
-    });
+        const latestBOset = await governanceAdmin.lastSyncedBridgeOperatorSetInfo();
+        expect(latestBOset.period).eq(ballot.period);
+        expect(latestBOset.epoch).eq(ballot.epoch);
+        expect(latestBOset.operators).eql(ballot.operators);
+      });
 
-    it('Should be able relay vote bridge operators', async () => {
-      expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.false;
-      await mainchainGovernanceAdmin
-        .connect(relayer)
-        .relayBridgeOperators(ballot.period, ballot.epoch, ballot.operators, signatures);
-      expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.true;
-      expect(await bridgeContract.getBridgeOperators()).eql(trustedOrgs.map((v) => v.bridgeVoter.address));
-    });
+      it('Should be able relay vote bridge operators', async () => {
+        expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.false;
+        await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures);
+        expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.true;
+        const bridgeOperators = await bridgeContract.getBridgeOperators();
+        expect([...bridgeOperators].sort(compareAddrs)).eql(ballot.operators);
+        const latestBOset = await mainchainGovernanceAdmin.lastSyncedBridgeOperatorSetInfo();
+        expect(latestBOset.period).eq(ballot.period);
+        expect(latestBOset.epoch).eq(ballot.epoch);
+        expect(latestBOset.operators).eql(ballot.operators);
+      });
 
-    it('Should not able to relay again', async () => {
-      await expect(
-        mainchainGovernanceAdmin
-          .connect(relayer)
-          .relayBridgeOperators(ballot.period, ballot.epoch, ballot.operators, signatures)
-      ).revertedWith('BOsGovernanceRelay: query for outdated bridge operator set');
-    });
+      it('Should not able to relay again', async () => {
+        await expect(mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures)).revertedWith(
+          'BOsGovernanceRelay: query for outdated bridge operator set'
+        );
+      });
 
-    it('Should not be able to use the signatures for another period', async () => {
-      ballot = {
-        period: 100,
-        epoch: 10_000,
-        operators: trustedOrgs.map((v) => v.bridgeVoter.address),
-      };
-      await expect(
-        governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.epoch, ballot.operators, signatures)
-      ).revertedWith('BOsGovernanceProposal: invalid order');
-    });
+      it('Should not be able to relay using invalid period/epoch', async () => {
+        await expect(
+          mainchainGovernanceAdmin
+            .connect(relayer)
+            .relayBridgeOperators(
+              { ...ballot, period: BigNumber.from(ballot.period).add(1), operators: [ethers.constants.AddressZero] },
+              signatures
+            )
+        ).revertedWith('BOsGovernanceRelay: query for outdated bridge operator set');
+      });
 
-    it('Should not be able to vote bridge operators with a smaller period', async () => {
-      ballot = {
-        period: 100,
-        epoch: 100,
-        operators: trustedOrgs.map((v) => v.bridgeVoter.address),
-      };
-      signatures = await Promise.all(
-        trustedOrgs.map((g) =>
-          g.bridgeVoter
-            ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
-            .then(mapByteSigToSigStruct)
-        )
-      );
-      await expect(
-        governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.epoch, ballot.operators, signatures)
-      ).revertedWith('BOsGovernanceProposal: query for outdated bridge operator set');
-    });
+      it('Should not be able to use the signatures for another period', async () => {
+        const ballot = {
+          period: 100,
+          epoch: 10_000,
+          operators: trustedOrgs.slice(0, 1).map((v) => v.bridgeVoter.address),
+        };
+        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWith(
+          'BOsGovernanceProposal: invalid signer order'
+        );
+      });
 
-    it('Should be able to vote bridge operators with a larger epoch', async () => {
-      const duplicatedNumber = 11;
-      ballot = {
-        period: 100,
-        epoch: 10_001,
-        operators: trustedOrgs.map((v, i) => (i < duplicatedNumber ? v.bridgeVoter.address : randomAddress())),
-      };
-      signatures = await Promise.all(
-        trustedOrgs.map((g) =>
-          g.bridgeVoter
-            ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
-            .then(mapByteSigToSigStruct)
-        )
-      );
-      await governanceAdmin.voteBridgeOperatorsBySignatures(ballot.period, ballot.epoch, ballot.operators, signatures);
-    });
+      it('Should not be able to vote for duplicated operators', async () => {
+        const ballot = {
+          period: 100,
+          epoch: 10_000,
+          operators: [ethers.constants.AddressZero, ethers.constants.AddressZero],
+        };
+        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWith(
+          'BridgeOperatorsBallot: invalid order of bridge operators'
+        );
+      });
 
-    it('Should be able relay vote bridge operators', async () => {
-      await mainchainGovernanceAdmin
-        .connect(relayer)
-        .relayBridgeOperators(ballot.period, ballot.epoch, ballot.operators, signatures);
-      expect(await bridgeContract.getBridgeOperators()).have.same.members(ballot.operators);
+      it('Should not be able to vote for the same operator set again', async () => {
+        ballot = {
+          ...ballot,
+          epoch: BigNumber.from(ballot.epoch).add(1),
+        };
+        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWith(
+          'BridgeOperatorsBallot: bridge operator set is already voted'
+        );
+      });
+
+      it('Should not be able to vote bridge operators with a smaller epoch/period', async () => {
+        ballot = {
+          period: 100,
+          epoch: 100,
+          operators: trustedOrgs.map((v) => v.bridgeVoter.address),
+        };
+        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWith(
+          'BOsGovernanceProposal: query for outdated bridge operator set'
+        );
+      });
+
+      it('Should not be able to vote invalid order of bridge operators', async () => {
+        const duplicatedNumber = 11;
+        ballot = {
+          period: 100,
+          epoch: 10_001,
+          operators: [
+            ...trustedOrgs.map((v, i) => (i < duplicatedNumber ? v.bridgeVoter.address : randomAddress())),
+            ethers.constants.AddressZero,
+          ],
+        };
+        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWith(
+          'BridgeOperatorsBallot: invalid order of bridge operators'
+        );
+      });
+
+      it('Should be able to vote for a larger number of bridge operators', async () => {
+        ballot.operators.pop();
+        ballot = {
+          ...ballot,
+          operators: [ethers.constants.AddressZero, ...ballot.operators.sort(compareAddrs)],
+        };
+        signatures = await Promise.all(
+          trustedOrgs.map((g) =>
+            g.bridgeVoter
+              ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
+              .then(mapByteSigToSigStruct)
+          )
+        );
+        const lastLength = (await governanceAdmin.lastSyncedBridgeOperatorSetInfo()).operators.length;
+        await governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures);
+        const latestBOset = await governanceAdmin.lastSyncedBridgeOperatorSetInfo();
+        expect(lastLength).not.eq(ballot.operators.length);
+        expect(latestBOset.period).eq(ballot.period);
+        expect(latestBOset.epoch).eq(ballot.epoch);
+        expect(latestBOset.operators).eql(ballot.operators);
+      });
+
+      it('Should be able relay vote bridge operators', async () => {
+        await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures);
+        const bridgeOperators = await bridgeContract.getBridgeOperators();
+        expect([...bridgeOperators].sort(compareAddrs)).eql(ballot.operators);
+        const latestBOset = await mainchainGovernanceAdmin.lastSyncedBridgeOperatorSetInfo();
+        expect(latestBOset.period).eq(ballot.period);
+        expect(latestBOset.epoch).eq(ballot.epoch);
+        expect(latestBOset.operators).eql(ballot.operators);
+      });
+
+      it('Should be able to vote for a same number of bridge operators', async () => {
+        ballot.operators.pop();
+        ballot = {
+          ...ballot,
+          epoch: BigNumber.from(ballot.epoch).add(1),
+          operators: [...ballot.operators, randomAddress()].sort(compareAddrs),
+        };
+        signatures = await Promise.all(
+          trustedOrgs.map((g) =>
+            g.bridgeVoter
+              ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
+              .then(mapByteSigToSigStruct)
+          )
+        );
+        const lastLength = (await governanceAdmin.lastSyncedBridgeOperatorSetInfo()).operators.length;
+        await governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures);
+        const latestBOset = await governanceAdmin.lastSyncedBridgeOperatorSetInfo();
+        expect(lastLength).eq(ballot.operators.length);
+        expect(latestBOset.period).eq(ballot.period);
+        expect(latestBOset.epoch).eq(ballot.epoch);
+        expect(latestBOset.operators).eql(ballot.operators);
+      });
     });
   });
 

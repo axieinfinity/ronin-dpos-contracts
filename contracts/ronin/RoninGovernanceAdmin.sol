@@ -237,17 +237,14 @@ contract RoninGovernanceAdmin is
    * @dev See `BOsGovernanceProposal-_castVotesBySignatures`.
    */
   function voteBridgeOperatorsBySignatures(
-    uint256 _period,
-    uint256 _epoch,
-    address[] calldata _operators,
+    BridgeOperatorsBallot.BridgeOperatorSet calldata _ballot,
     Signature[] calldata _signatures
   ) external {
-    _castVotesBySignatures(_operators, _signatures, _period, _epoch, _getMinimumVoteWeight(), DOMAIN_SEPARATOR);
-    IsolatedVote storage _v = _vote[_period][_epoch];
+    _castVotesBySignatures(_ballot, _signatures, _getMinimumVoteWeight(), DOMAIN_SEPARATOR);
+    IsolatedVote storage _v = _vote[_ballot.period][_ballot.epoch];
     if (_v.status == VoteStatus.Approved) {
-      _lastSyncedPeriod = _period;
-      _lastSyncedEpoch = _epoch;
-      emit BridgeOperatorsApproved(_period, _epoch, _operators);
+      _lastSyncedBridgeOperatorSetInfo = _ballot;
+      emit BridgeOperatorsApproved(_ballot.period, _ballot.epoch, _ballot.operators);
       _v.status = VoteStatus.Executed;
     }
   }
