@@ -35,7 +35,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   /**
    * @inheritdoc IStaking
    */
-  function recordRewards(
+  function execRecordRewards(
     address[] calldata _consensusAddrs,
     uint256[] calldata _rewards,
     uint256 _period
@@ -46,7 +46,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   /**
    * @inheritdoc IStaking
    */
-  function deductStakingAmount(address _consensusAddr, uint256 _amount)
+  function execDeductStakingAmount(address _consensusAddr, uint256 _amount)
     external
     onlyValidatorContract
     returns (uint256 _actualDeductingAmount)

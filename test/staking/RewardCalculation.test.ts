@@ -66,16 +66,16 @@ describe('Reward Calculation test', () => {
 
   describe('Period: x+1 -> x+2', () => {
     it('Should not be able to record reward with invalid arguments', async () => {
-      tx = await stakingContract.recordRewards([poolAddr], [100, 100]);
+      tx = await stakingContract.execRecordRewards([poolAddr], [100, 100]);
       await expect(tx).emit(stakingContract, 'PoolsUpdateFailed').withArgs(period, [poolAddr], [100, 100]);
     });
 
     it('Should not be able to record reward more than once for a pool', async () => {
       aRps = aRps.add(MASK.mul(1000 / 100));
-      tx = await stakingContract.recordRewards([poolAddr], [1000]);
+      tx = await stakingContract.execRecordRewards([poolAddr], [1000]);
       await expect(tx).emit(stakingContract, 'PoolsUpdated').withArgs(period, [poolAddr], [aRps], [100]);
 
-      tx = await stakingContract.recordRewards([poolAddr], [1000]);
+      tx = await stakingContract.execRecordRewards([poolAddr], [1000]);
       await expect(tx).emit(stakingContract, 'PoolsUpdateConflicted').withArgs(period, [poolAddr]);
       await expect(tx).not.emit(stakingContract, 'PoolsUpdated');
       await stakingContract.increasePeriod(); // period = 2
@@ -86,7 +86,7 @@ describe('Reward Calculation test', () => {
     it('Should not able to reward reward more than once for multiple pools', async () => {
       let addrList = Array.from(Array(10).keys()).map(randomAddress);
       let arr = addrList.map(() => 0);
-      tx = await stakingContract.recordRewards(
+      tx = await stakingContract.execRecordRewards(
         addrList,
         addrList.map(() => 1000)
       );
@@ -95,7 +95,7 @@ describe('Reward Calculation test', () => {
       const conflictNumber = 7;
       arr = arr.slice(conflictNumber);
       addrList = addrList.map((_, i) => (i >= conflictNumber ? randomAddress() : _));
-      tx = await stakingContract.recordRewards(
+      tx = await stakingContract.execRecordRewards(
         addrList,
         addrList.map(() => 1000)
       );

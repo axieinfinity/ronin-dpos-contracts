@@ -34,7 +34,7 @@ abstract contract SlashingExecution is
     }
 
     if (_slashAmount > 0) {
-      uint256 _actualAmount = _stakingContract.deductStakingAmount(_validatorAddr, _slashAmount);
+      uint256 _actualAmount = _stakingContract.execDeductStakingAmount(_validatorAddr, _slashAmount);
       _totalDeprecatedReward += _actualAmount;
     }
 
