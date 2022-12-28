@@ -54,9 +54,14 @@ interface ICoinbaseExecution is ISlashingExecution {
   );
 
   /// @dev Emitted when the amount of RON reward is distributed to staking contract.
-  event StakingRewardDistributed(uint256 amount);
+  event StakingRewardDistributed(uint256 totalAmount, address[] consensusAddrs, uint256[] amounts);
   /// @dev Emitted when the contracts fails when distributing the amount of RON to the staking contract.
-  event StakingRewardDistributionFailed(uint256 amount, uint256 contractBalance);
+  event StakingRewardDistributionFailed(
+    uint256 totalAmount,
+    address[] consensusAddrs,
+    uint256[] amounts,
+    uint256 contractBalance
+  );
 
   /// @dev Emitted when the epoch is wrapped up.
   event WrappedUpEpoch(uint256 indexed periodNumber, uint256 indexed epochNumber, bool periodEnding);

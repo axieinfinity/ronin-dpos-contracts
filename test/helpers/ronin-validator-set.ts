@@ -123,13 +123,24 @@ export const expects = {
     );
   },
 
-  emitStakingRewardDistributedEvent: async function (tx: ContractTransaction, expectingAmount: BigNumberish) {
+  emitStakingRewardDistributedEvent: async function (
+    tx: ContractTransaction,
+    expectingTotalAmount: BigNumberish,
+    expectingValidators: string[] | undefined,
+    expectingAmounts: BigNumberish[] | undefined
+  ) {
     await expectEvent(
       contractInterface,
       'StakingRewardDistributed',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid distributing reward').eq(expectingAmount);
+        expect(event.args[0], 'invalid total distributing reward').eq(expectingTotalAmount);
+        if (expectingValidators) {
+          expect(event.args[1], 'invalid validator list').eql(expectingValidators);
+        }
+        if (expectingAmounts) {
+          expect(event.args[2], 'invalid amount list').eql(expectingAmounts);
+        }
       },
       1
     );

@@ -314,11 +314,16 @@ abstract contract CoinbaseExecution is
     if (_totalDelegatingReward > 0) {
       if (_unsafeSendRON(payable(address(_staking)), _totalDelegatingReward)) {
         _staking.recordRewards(_currentValidators, _delegatingRewards, _period);
-        emit StakingRewardDistributed(_totalDelegatingReward);
+        emit StakingRewardDistributed(_totalDelegatingReward, _currentValidators, _delegatingRewards);
         return;
       }
 
-      emit StakingRewardDistributionFailed(_totalDelegatingReward, address(this).balance);
+      emit StakingRewardDistributionFailed(
+        _totalDelegatingReward,
+        _currentValidators,
+        _delegatingRewards,
+        address(this).balance
+      );
     }
   }
 

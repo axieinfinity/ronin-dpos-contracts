@@ -428,7 +428,12 @@ describe('Ronin Validator Set test', () => {
         await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
         lastPeriod = await roninValidatorSet.currentPeriod();
         await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, currentValidatorSet);
-        await RoninValidatorSet.expects.emitStakingRewardDistributedEvent(tx!, 5148); // (5000 + 100 + 100) * 99%
+        await RoninValidatorSet.expects.emitStakingRewardDistributedEvent(
+          tx!,
+          5148,
+          currentValidatorSet,
+          [5148, 0, 0, 0].map((_) => BigNumber.from(_))
+        ); // (5000 + 100 + 100) * 99%
         await RoninValidatorSet.expects.emitMiningRewardDistributedEvent(
           tx!,
           consensusAddr.address,
@@ -521,7 +526,9 @@ describe('Ronin Validator Set test', () => {
         await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, currentValidatorSet);
         await RoninValidatorSet.expects.emitStakingRewardDistributedEvent(
           tx!,
-          blockProducerBonusPerBlock.add(100).div(100).mul(99)
+          blockProducerBonusPerBlock.add(100).div(100).mul(99),
+          currentValidatorSet,
+          [blockProducerBonusPerBlock.add(100).div(100).mul(99), 0, 0, 0].map((_) => BigNumber.from(_))
         );
 
         const balanceDiff = (await treasury.getBalance()).sub(balance);
