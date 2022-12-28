@@ -9,7 +9,7 @@ contract HasValidatorContract is IHasValidatorContract, HasProxyAdmin {
   IRoninValidatorSet internal _validatorContract;
 
   modifier onlyValidatorContract() {
-    require(validatorContract() == msg.sender, "HasValidatorContract: method caller must be validator contract");
+    if (validatorContract() != msg.sender) revert ErrCallerMustBeValidatorContract();
     _;
   }
 
@@ -23,8 +23,8 @@ contract HasValidatorContract is IHasValidatorContract, HasProxyAdmin {
   /**
    * @inheritdoc IHasValidatorContract
    */
-  function setValidatorContract(address _addr) external override onlyAdmin {
-    require(_addr.code.length > 0, "HasValidatorContract: set to non-contract");
+  function setValidatorContract(address _addr) external virtual override onlyAdmin {
+    if (_addr.code.length == 0) revert ErrZeroCodeContract();
     _setValidatorContract(_addr);
   }
 

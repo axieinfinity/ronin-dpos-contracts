@@ -132,7 +132,7 @@ describe('Staking test', () => {
               value: minValidatorStakingAmount,
             }
           )
-      ).revertedWith('CandidateManager: query for already existent candidate');
+      ).revertedWithCustomError(validatorContract, 'ErrExistentCandidate');
     });
 
     it('Should not be able to stake with empty value', async () => {
@@ -218,7 +218,7 @@ describe('Staking test', () => {
           minEffectiveDaysOnwards - 1,
           20_00 // 20%
         )
-      ).revertedWith('CandidateManager: invalid effective date');
+      ).revertedWithCustomError(validatorContract, 'ErrInvalidEffectiveDaysOnwards');
     });
 
     it('Should the pool admin be able to request updating the commission rate', async () => {
@@ -261,7 +261,7 @@ describe('Staking test', () => {
     it('Should not be able to request renounce again', async () => {
       await expect(
         stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address)
-      ).revertedWith('CandidateManager: already requested before');
+      ).revertedWithCustomError(validatorContract, 'ErrAlreadyRequestedRevokingCandidate');
     });
 
     it('Should the consensus account is no longer be a candidate, and the staked amount is transferred back to the pool admin', async () => {

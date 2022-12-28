@@ -14,9 +14,9 @@ interface ICoinbaseExecution is ISlashingExecution {
   /// @dev Emitted when the validator set is updated
   event ValidatorSetUpdated(uint256 indexed period, address[] consensusAddrs);
   /// @dev Emitted when the bridge operator set is updated, to mirror the in-jail and maintaining status of the validator.
-  event BlockProducerSetUpdated(uint256 indexed period, address[] consensusAddrs);
+  event BlockProducerSetUpdated(uint256 indexed period, uint256 indexed epoch, address[] consensusAddrs);
   /// @dev Emitted when the bridge operator set is updated.
-  event BridgeOperatorSetUpdated(uint256 indexed period, address[] bridgeOperators);
+  event BridgeOperatorSetUpdated(uint256 indexed period, uint256 indexed epoch, address[] bridgeOperators);
 
   /// @dev Emitted when the reward of the block producer is deprecated.
   event BlockRewardDeprecated(
@@ -54,12 +54,24 @@ interface ICoinbaseExecution is ISlashingExecution {
   );
 
   /// @dev Emitted when the amount of RON reward is distributed to staking contract.
-  event StakingRewardDistributed(uint256 amount);
+  event StakingRewardDistributed(uint256 totalAmount, address[] consensusAddrs, uint256[] amounts);
   /// @dev Emitted when the contracts fails when distributing the amount of RON to the staking contract.
-  event StakingRewardDistributionFailed(uint256 amount, uint256 contractBalance);
+  event StakingRewardDistributionFailed(
+    uint256 totalAmount,
+    address[] consensusAddrs,
+    uint256[] amounts,
+    uint256 contractBalance
+  );
 
   /// @dev Emitted when the epoch is wrapped up.
   event WrappedUpEpoch(uint256 indexed periodNumber, uint256 indexed epochNumber, bool periodEnding);
+
+  /// @dev Error of method caller must be coinbase
+  error ErrCallerMustBeCoinbase();
+  /// @dev Error of only allowed at the end of epoch
+  error ErrAtEndOfEpochOnly();
+  /// @dev Error of query for already wrapped up epoch
+  error ErrAlreadyWrappedEpoch();
 
   /**
    * @dev Submits reward of the current block.

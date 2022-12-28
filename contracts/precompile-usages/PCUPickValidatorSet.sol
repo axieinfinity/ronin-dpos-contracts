@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-abstract contract PrecompileUsagePickValidatorSet {
+import "./PrecompiledUsage.sol";
+
+abstract contract PCUPickValidatorSet is PrecompiledUsage {
   /// @dev Gets the address of the precompile of picking validator set
   function precompilePickValidatorSetAddress() public view virtual returns (address) {
     return address(0x68);
@@ -49,7 +51,7 @@ abstract contract PrecompileUsagePickValidatorSet {
       _result := add(_result, 0x20)
     }
 
-    require(_success, "PrecompileUsagePickValidatorSet: call to precompile fails");
+    if (!_success) revert ErrCallPrecompiled();
 
     _newValidatorCount = _result.length;
   }

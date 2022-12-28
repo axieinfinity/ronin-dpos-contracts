@@ -34,7 +34,10 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
     uint256 __minEffectiveDaysOnwards,
-    uint256 __numberOfBlocksInEpoch
+    uint256 __numberOfBlocksInEpoch,
+    // __emergencyExitConfigs[0]: emergencyExitLockedAmount
+    // __emergencyExitConfigs[1]: emergencyExpiryDuration
+    uint256[2] calldata __emergencyExitConfigs
   ) external initializer {
     _setSlashIndicatorContract(__slashIndicatorContract);
     _setStakingContract(__stakingContract);
@@ -46,18 +49,17 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setMaxPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
     _setMinEffectiveDaysOnwards(__minEffectiveDaysOnwards);
+    _setEmergencyExitLockedAmount(__emergencyExitConfigs[0]);
+    _setEmergencyExpiryDuration(__emergencyExitConfigs[1]);
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
   }
 
   /**
    * @dev Only receives RON from staking vesting contract (for topping up bonus), and from staking contract (for transferring
-   * deducting amount when slash).
+   * deducting amount on slashing).
    */
   function _fallback() internal view {
-    require(
-      msg.sender == stakingVestingContract() || msg.sender == stakingContract(),
-      "RoninValidatorSet: only receives RON from staking vesting contract or staking contract"
-    );
+    if (msg.sender != stakingVestingContract() && msg.sender != stakingContract()) revert UnauthorizedReceiveRON();
   }
 
   /**
@@ -66,9 +68,9 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
   function _bridgeOperatorOf(address _consensusAddr)
     internal
     view
-    override(CoinbaseExecution, ValidatorInfoStorage)
+    override(EmergencyExit, ValidatorInfoStorage)
     returns (address)
   {
-    return CoinbaseExecution._bridgeOperatorOf(_consensusAddr);
+    return super._bridgeOperatorOf(_consensusAddr);
   }
 }

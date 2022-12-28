@@ -10,40 +10,37 @@ import "../../extensions/RONTransferHelper.sol";
 import "../../interfaces/validator/ICoinbaseExecution.sol";
 import "../../libraries/EnumFlags.sol";
 import "../../libraries/Math.sol";
-import "../../precompile-usages/PrecompileUsageSortValidators.sol";
-import "../../precompile-usages/PrecompileUsagePickValidatorSet.sol";
+import "../../precompile-usages/PCUSortValidators.sol";
+import "../../precompile-usages/PCUPickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
 import "./CandidateManager.sol";
+import "./EmergencyExit.sol";
 
 abstract contract CoinbaseExecution is
   ICoinbaseExecution,
   RONTransferHelper,
-  PrecompileUsageSortValidators,
-  PrecompileUsagePickValidatorSet,
+  PCUSortValidators,
+  PCUPickValidatorSet,
   HasStakingVestingContract,
   HasBridgeTrackingContract,
   HasMaintenanceContract,
   HasSlashIndicatorContract,
-  CandidateManager,
-  CommonStorage
+  EmergencyExit
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
   modifier onlyCoinbase() {
-    require(msg.sender == block.coinbase, "RoninValidatorSet: method caller must be coinbase");
+    if (msg.sender != block.coinbase) revert ErrCallerMustBeCoinbase();
     _;
   }
 
   modifier whenEpochEnding() {
-    require(epochEndingAt(block.number), "RoninValidatorSet: only allowed at the end of epoch");
+    if (!epochEndingAt(block.number)) revert ErrAtEndOfEpochOnly();
     _;
   }
 
   modifier oncePerEpoch() {
-    require(
-      epochOf(_lastUpdatedBlock) < epochOf(block.number),
-      "RoninValidatorSet: query for already wrapped up epoch"
-    );
+    if (epochOf(_lastUpdatedBlock) >= epochOf(block.number)) revert ErrAlreadyWrappedEpoch();
     _lastUpdatedBlock = block.number;
     _;
   }
@@ -104,6 +101,7 @@ abstract contract CoinbaseExecution is
 
     address[] memory _currentValidators = getValidators();
     uint256 _epoch = epochOf(block.number);
+    uint256 _nextEpoch = _epoch + 1;
     uint256 _lastPeriod = currentPeriod();
 
     if (_periodEnding) {
@@ -113,13 +111,14 @@ abstract contract CoinbaseExecution is
         uint256[] memory _delegatingRewards
       ) = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(_lastPeriod, _currentValidators);
       _settleAndTransferDelegatingRewards(_lastPeriod, _currentValidators, _totalDelegatingReward, _delegatingRewards);
+      _tryRecycleLockedFundsFromEmergencyExits();
       _recycleDeprecatedRewards();
       _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
       _currentValidators = _syncValidatorSet(_newPeriod);
     }
-    _revampBlockProducers(_newPeriod, _currentValidators);
+    _revampRoles(_newPeriod, _nextEpoch, _currentValidators);
     emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
-    _periodOf[_epoch + 1] = _newPeriod;
+    _periodOf[_nextEpoch] = _newPeriod;
     _lastUpdatedPeriod = _newPeriod;
   }
 
@@ -189,11 +188,14 @@ abstract contract CoinbaseExecution is
     if (_missedRatio > _ratioTier2) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
-      _jailedUntil[_validator] = Math.max(block.number + _jailDurationTier2, _jailedUntil[_validator]);
-      emit ValidatorPunished(_validator, _period, _jailedUntil[_validator], 0, true, true);
+      _blockProducerJailedBlock[_validator] = Math.max(
+        block.number + _jailDurationTier2,
+        _blockProducerJailedBlock[_validator]
+      );
+      emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, true, true);
     } else if (_missedRatio > _ratioTier1) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
-      emit ValidatorPunished(_validator, _period, _jailedUntil[_validator], 0, false, true);
+      emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, false, true);
     } else if (_totalBallots > 0) {
       _bridgeOperatingReward[_validator] = (_totalBridgeReward * _validatorBallots) / _totalBallots;
     }
@@ -312,11 +314,16 @@ abstract contract CoinbaseExecution is
     if (_totalDelegatingReward > 0) {
       if (_unsafeSendRON(payable(address(_staking)), _totalDelegatingReward)) {
         _staking.recordRewards(_currentValidators, _delegatingRewards, _period);
-        emit StakingRewardDistributed(_totalDelegatingReward);
+        emit StakingRewardDistributed(_totalDelegatingReward, _currentValidators, _delegatingRewards);
         return;
       }
 
-      emit StakingRewardDistributionFailed(_totalDelegatingReward, address(this).balance);
+      emit StakingRewardDistributionFailed(
+        _totalDelegatingReward,
+        _currentValidators,
+        _delegatingRewards,
+        address(this).balance
+      );
     }
   }
 
@@ -350,7 +357,6 @@ abstract contract CoinbaseExecution is
    * @dev Updates the validator set based on the validator candidates from the Staking contract.
    *
    * Emits the `ValidatorSetUpdated` event.
-   * Emits the `BridgeOperatorSetUpdated` event.
    *
    * Note: This method should be called once in the end of each period.
    *
@@ -368,7 +374,6 @@ abstract contract CoinbaseExecution is
       _maxPrioritizedValidatorNumber
     );
     _setNewValidatorSet(_newValidators, _newValidatorCount, _newPeriod);
-    emit BridgeOperatorSetUpdated(_newPeriod, getBridgeOperators());
   }
 
   /**
@@ -414,43 +419,38 @@ abstract contract CoinbaseExecution is
    * - This method is called at the end of each epoch
    *
    * Emits the `BlockProducerSetUpdated` event.
+   * Emits the `BridgeOperatorSetUpdated` event.
    *
    */
-  function _revampBlockProducers(uint256 _newPeriod, address[] memory _currentValidators) private {
+  function _revampRoles(
+    uint256 _newPeriod,
+    uint256 _nextEpoch,
+    address[] memory _currentValidators
+  ) private {
     bool[] memory _maintainedList = _maintenanceContract.checkManyMaintained(_candidates, block.number + 1);
 
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
-      address _currentValidator = _currentValidators[_i];
-      bool _isProducerBefore = isBlockProducer(_currentValidator);
-      bool _isProducerAfter = !(_jailed(_currentValidator) || _maintainedList[_i]);
+      address _validator = _currentValidators[_i];
+      bool _emergencyExitRequested = block.timestamp <= _emergencyExitJailedTimestamp[_validator];
+      bool _isProducerBefore = isBlockProducer(_validator);
+      bool _isProducerAfter = !(_jailed(_validator) || _maintainedList[_i] || _emergencyExitRequested);
 
       if (!_isProducerBefore && _isProducerAfter) {
-        _validatorMap[_currentValidator] = _validatorMap[_currentValidator].addFlag(
-          EnumFlags.ValidatorFlag.BlockProducer
-        );
-        continue;
+        _validatorMap[_validator] = _validatorMap[_validator].addFlag(EnumFlags.ValidatorFlag.BlockProducer);
+      } else if (_isProducerBefore && !_isProducerAfter) {
+        _validatorMap[_validator] = _validatorMap[_validator].removeFlag(EnumFlags.ValidatorFlag.BlockProducer);
       }
 
-      if (_isProducerBefore && !_isProducerAfter) {
-        _validatorMap[_currentValidator] = _validatorMap[_currentValidator].removeFlag(
-          EnumFlags.ValidatorFlag.BlockProducer
-        );
+      bool _isBridgeOperatorBefore = isOperatingBridge(_validator);
+      bool _isBridgeOperatorAfter = !_emergencyExitRequested;
+      if (!_isBridgeOperatorBefore && _isBridgeOperatorAfter) {
+        _validatorMap[_validator] = _validatorMap[_validator].addFlag(EnumFlags.ValidatorFlag.BridgeOperator);
+      } else if (_isBridgeOperatorBefore && !_isBridgeOperatorAfter) {
+        _validatorMap[_validator] = _validatorMap[_validator].removeFlag(EnumFlags.ValidatorFlag.BridgeOperator);
       }
     }
 
-    emit BlockProducerSetUpdated(_newPeriod, getBlockProducers());
-  }
-
-  /**
-   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
-   */
-  function _bridgeOperatorOf(address _consensusAddr)
-    internal
-    view
-    virtual
-    override(CandidateManager, ValidatorInfoStorage)
-    returns (address)
-  {
-    return CandidateManager._bridgeOperatorOf(_consensusAddr);
+    emit BlockProducerSetUpdated(_newPeriod, _nextEpoch, getBlockProducers());
+    emit BridgeOperatorSetUpdated(_newPeriod, _nextEpoch, getBridgeOperators());
   }
 }

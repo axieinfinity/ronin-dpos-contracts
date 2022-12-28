@@ -26,7 +26,7 @@ abstract contract GovernanceProposal is CoreGovernance {
 
     address _lastSigner;
     address _signer;
-    Signature memory _sig;
+    Signature calldata _sig;
     bool _hasValidVotes;
     for (uint256 _i; _i < _signatures.length; _i++) {
       _sig = _signatures[_i];

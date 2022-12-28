@@ -138,4 +138,14 @@ interface ICandidateStaking is IRewardPool {
    *
    */
   function requestRenounce(address _consensusAddr) external;
+
+  /**
+   * @dev Renounces being a validator candidate and takes back the delegating/staking amount.
+   *
+   * Requirements:
+   * - The consensus address is a validator candidate.
+   * - The method caller is the pool admin.
+   *
+   */
+  function requestEmergencyExit(address _consensusAddr) external;
 }
