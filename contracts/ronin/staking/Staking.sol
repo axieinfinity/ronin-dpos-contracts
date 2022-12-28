@@ -38,7 +38,6 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   function getStakingPool(address _poolAddr)
     external
     view
-    poolExists(_poolAddr)
     returns (
       address _admin,
       uint256 _stakingAmount,

@@ -47,8 +47,8 @@ abstract contract BaseStaking is
     _;
   }
 
-  modifier poolExists(address _poolAddr) {
-    require(_validatorContract.isValidatorCandidate(_poolAddr), "BaseStaking: query for non-existent pool");
+  modifier poolIsActive(address _poolAddr) {
+    require(_validatorContract.isValidatorCandidate(_poolAddr), "BaseStaking: query for inactive pool");
     _;
   }
 

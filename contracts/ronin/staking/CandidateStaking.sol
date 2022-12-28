@@ -70,7 +70,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     address _consensusAddr,
     uint256 _effectiveDaysOnwards,
     uint256 _commissionRate
-  ) external override poolExists(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
+  ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
     _validatorContract.execRequestUpdateCommissionRate(_consensusAddr, _effectiveDaysOnwards, _commissionRate);
   }
 
@@ -104,14 +104,19 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   /**
    * @inheritdoc ICandidateStaking
    */
-  function stake(address _consensusAddr) external payable override noEmptyValue poolExists(_consensusAddr) {
+  function stake(address _consensusAddr) external payable override noEmptyValue poolIsActive(_consensusAddr) {
     _stake(_stakingPool[_consensusAddr], msg.sender, msg.value);
   }
 
   /**
    * @inheritdoc ICandidateStaking
    */
-  function unstake(address _consensusAddr, uint256 _amount) external override nonReentrant poolExists(_consensusAddr) {
+  function unstake(address _consensusAddr, uint256 _amount)
+    external
+    override
+    nonReentrant
+    poolIsActive(_consensusAddr)
+  {
     require(_amount > 0, "CandidateStaking: invalid amount");
     address _delegator = msg.sender;
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
@@ -128,7 +133,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   function requestRenounce(address _consensusAddr)
     external
     override
-    poolExists(_consensusAddr)
+    poolIsActive(_consensusAddr)
     onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
   {
     _validatorContract.requestRevokeCandidate(_consensusAddr, _waitingSecsToRevoke);
@@ -140,7 +145,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   function requestEmergencyExit(address _consensusAddr)
     external
     override
-    poolExists(_consensusAddr)
+    poolIsActive(_consensusAddr)
     onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
   {
     _validatorContract.execEmergencyExit(_consensusAddr, _waitingSecsToRevoke);

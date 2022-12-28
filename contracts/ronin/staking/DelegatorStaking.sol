@@ -15,7 +15,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function delegate(address _consensusAddr) external payable noEmptyValue poolExists(_consensusAddr) {
+  function delegate(address _consensusAddr) external payable noEmptyValue poolIsActive(_consensusAddr) {
     require(!isActivePoolAdmin(msg.sender), "DelegatorStaking: admin of an active pool cannot delegate");
     _delegate(_stakingPool[_consensusAddr], msg.sender, msg.value);
   }
@@ -56,7 +56,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     address _consensusAddrSrc,
     address _consensusAddrDst,
     uint256 _amount
-  ) external nonReentrant poolExists(_consensusAddrDst) {
+  ) external nonReentrant poolIsActive(_consensusAddrDst) {
     address _delegator = msg.sender;
     _undelegate(_stakingPool[_consensusAddrSrc], _delegator, _amount);
     _delegate(_stakingPool[_consensusAddrDst], _delegator, _amount);
@@ -82,7 +82,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     external
     override
     nonReentrant
-    poolExists(_consensusAddrDst)
+    poolIsActive(_consensusAddrDst)
     returns (uint256 _amount)
   {
     return _delegateRewards(msg.sender, _consensusAddrList, _consensusAddrDst);
