@@ -33,22 +33,22 @@ abstract contract BaseStaking is
   uint256[49] private ______gap;
 
   modifier noEmptyValue() {
-    require(msg.value > 0, "BaseStaking: query with empty value");
+    if (msg.value == 0) revert ErrZeroMessageValue();
     _;
   }
 
   modifier notPoolAdmin(PoolDetail storage _pool, address _delegator) {
-    require(_pool.admin != _delegator, "BaseStaking: delegator must not be the pool admin");
+    if (_pool.admin == _delegator) revert ErrPoolAdminForbidden();
     _;
   }
 
   modifier onlyPoolAdmin(PoolDetail storage _pool, address _requester) {
-    require(_pool.admin == _requester, "BaseStaking: requester must be the pool admin");
+    if (_pool.admin != _requester) revert ErrOnlyPoolAdminAllowed();
     _;
   }
 
   modifier poolIsActive(address _poolAddr) {
-    require(_validatorContract.isValidatorCandidate(_poolAddr), "BaseStaking: query for inactive pool");
+    if (!_validatorContract.isValidatorCandidate(_poolAddr)) revert ErrInactivePool(_poolAddr);
     _;
   }
 
@@ -130,7 +130,7 @@ abstract contract BaseStaking is
     override
     returns (uint256[] memory _stakingAmounts)
   {
-    require(_poolAddrs.length == _userList.length, "BaseStaking: invalid input array");
+    if (_poolAddrs.length != _userList.length) revert ErrInvalidArrays();
     _stakingAmounts = new uint256[](_poolAddrs.length);
     for (uint _i = 0; _i < _stakingAmounts.length; _i++) {
       _stakingAmounts[_i] = _stakingPool[_poolAddrs[_i]].delegatingAmount[_userList[_i]];

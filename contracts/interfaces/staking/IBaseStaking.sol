@@ -23,6 +23,17 @@ interface IBaseStaking {
   /// @dev Emitted when the number of seconds that a candidate must wait to be revoked.
   event WaitingSecsToRevokeUpdated(uint256 secs);
 
+  /// @dev Error of receiving zero message value.
+  error ErrZeroMessageValue();
+  /// @dev Error of pool admin is not allowed to call.
+  error ErrPoolAdminForbidden();
+  /// @dev Error of no one is allowed to call but the pool's admin.
+  error ErrOnlyPoolAdminAllowed();
+  /// @dev Error of querying inactive pool.
+  error ErrInactivePool(address poolAddr);
+  /// @dev Error of arrays' length are not of the same.
+  error ErrInvalidArrays();
+
   /**
    * @dev Returns whether the `_poolAdminAddr` is currently active.
    */
