@@ -313,7 +313,7 @@ abstract contract CoinbaseExecution is
     IStaking _staking = _stakingContract;
     if (_totalDelegatingReward > 0) {
       if (_unsafeSendRON(payable(address(_staking)), _totalDelegatingReward)) {
-        _staking.recordRewards(_currentValidators, _delegatingRewards, _period);
+        _staking.execRecordRewards(_currentValidators, _delegatingRewards, _period);
         emit StakingRewardDistributed(_totalDelegatingReward, _currentValidators, _delegatingRewards);
         return;
       }

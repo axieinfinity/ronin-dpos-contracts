@@ -15,8 +15,8 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function delegate(address _consensusAddr) external payable noEmptyValue poolExists(_consensusAddr) {
-    require(!isActivePoolAdmin(msg.sender), "DelegatorStaking: admin of an active pool cannot delegate");
+  function delegate(address _consensusAddr) external payable noEmptyValue poolIsActive(_consensusAddr) {
+    if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
     _delegate(_stakingPool[_consensusAddr], msg.sender, msg.value);
   }
 
@@ -26,17 +26,14 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   function undelegate(address _consensusAddr, uint256 _amount) external nonReentrant {
     address payable _delegator = payable(msg.sender);
     _undelegate(_stakingPool[_consensusAddr], _delegator, _amount);
-    require(_sendRON(_delegator, _amount), "DelegatorStaking: could not transfer RON");
+    if (!_sendRON(_delegator, _amount)) revert ErrCannotTransferRON();
   }
 
   /**
    * @inheritdoc IDelegatorStaking
    */
   function bulkUndelegate(address[] calldata _consensusAddrs, uint256[] calldata _amounts) external nonReentrant {
-    require(
-      _consensusAddrs.length > 0 && _consensusAddrs.length == _amounts.length,
-      "DelegatorStaking: invalid array length"
-    );
+    if (_consensusAddrs.length == 0 || _consensusAddrs.length != _amounts.length) revert ErrInvalidArrays();
 
     address payable _delegator = payable(msg.sender);
     uint256 _total;
@@ -46,7 +43,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
       _undelegate(_stakingPool[_consensusAddrs[_i]], _delegator, _amounts[_i]);
     }
 
-    require(_sendRON(_delegator, _total), "DelegatorStaking: could not transfer RON");
+    if (!_sendRON(_delegator, _total)) revert ErrCannotTransferRON();
   }
 
   /**
@@ -56,7 +53,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     address _consensusAddrSrc,
     address _consensusAddrDst,
     uint256 _amount
-  ) external nonReentrant poolExists(_consensusAddrDst) {
+  ) external nonReentrant poolIsActive(_consensusAddrDst) {
     address _delegator = msg.sender;
     _undelegate(_stakingPool[_consensusAddrSrc], _delegator, _amount);
     _delegate(_stakingPool[_consensusAddrDst], _delegator, _amount);
@@ -82,7 +79,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     external
     override
     nonReentrant
-    poolExists(_consensusAddrDst)
+    poolIsActive(_consensusAddrDst)
     returns (uint256 _amount)
   {
     return _delegateRewards(msg.sender, _consensusAddrList, _consensusAddrDst);
@@ -150,12 +147,12 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     address _delegator,
     uint256 _amount
   ) private notPoolAdmin(_pool, _delegator) {
-    require(_amount > 0, "DelegatorStaking: invalid amount");
-    require(_pool.delegatingAmount[_delegator] >= _amount, "DelegatorStaking: insufficient amount to undelegate");
-    require(
-      _pool.lastDelegatingTimestamp[_delegator] + _cooldownSecsToUndelegate < block.timestamp,
-      "DelegatorStaking: undelegate too early"
-    );
+    if (_amount == 0) revert ErrUndelegateZeroAmount();
+    if (_pool.delegatingAmount[_delegator] < _amount) revert ErrInsufficientDelegatingAmount();
+    if (_pool.lastDelegatingTimestamp[_delegator] + _cooldownSecsToUndelegate >= block.timestamp) {
+      revert ErrUndelegateTooEarly();
+    }
+
     _changeDelegatingAmount(
       _pool,
       _delegator,

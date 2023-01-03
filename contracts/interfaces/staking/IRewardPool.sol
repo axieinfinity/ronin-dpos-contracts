@@ -37,6 +37,9 @@ interface IRewardPool is PeriodWrapperConsumer {
   /// @dev Emitted when the contract fails when updating the pools that already set
   event PoolsUpdateConflicted(uint256 indexed period, address[] poolAddrs);
 
+  /// @dev Error of invalid pool share.
+  error ErrInvalidPoolShare();
+
   /**
    * @dev Returns the reward amount that user claimable.
    */

@@ -23,15 +23,47 @@ interface IBaseStaking {
   /// @dev Emitted when the number of seconds that a candidate must wait to be revoked.
   event WaitingSecsToRevokeUpdated(uint256 secs);
 
+  /// @dev Error of cannot transfer RON.
+  error ErrCannotTransferRON();
+  /// @dev Error of receiving zero message value.
+  error ErrZeroValue();
+  /// @dev Error of pool admin is not allowed to call.
+  error ErrPoolAdminForbidden();
+  /// @dev Error of no one is allowed to call but the pool's admin.
+  error ErrOnlyPoolAdminAllowed();
+  /// @dev Error of admin of any active pool cannot delegate.
+  error ErrAdminOfAnyActivePoolForbidden(address admin);
+  /// @dev Error of querying inactive pool.
+  error ErrInactivePool(address poolAddr);
+  /// @dev Error of length of input arrays are not of the same.
+  error ErrInvalidArrays();
+
   /**
    * @dev Returns whether the `_poolAdminAddr` is currently active.
    */
-  function isActivePoolAdmin(address _poolAdminAddr) external view returns (bool);
+  function isAdminOfActivePool(address _poolAdminAddr) external view returns (bool);
 
   /**
    * @dev Returns the consensus address corresponding to the pool admin.
    */
   function getPoolAddressOf(address _poolAdminAddr) external view returns (address);
+
+  /**
+   * @dev Returns the staking pool detail.
+   */
+  function getPoolDetail(address)
+    external
+    view
+    returns (
+      address _admin,
+      uint256 _stakingAmount,
+      uint256 _stakingTotal
+    );
+
+  /**
+   * @dev Returns the self-staking amounts of the pools.
+   */
+  function getManySelfStakings(address[] calldata) external view returns (uint256[] memory);
 
   /**
    * @dev Returns The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.

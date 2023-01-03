@@ -11,7 +11,7 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
    * @dev Records the amount of rewards `_rewards` for the pools `_consensusAddrs`.
    *
    * Requirements:
-   * - The method caller is validator contract.
+   * - The method caller must be validator contract.
    *
    * Emits the event `PoolsUpdated` once the contract recorded the rewards successfully.
    * Emits the event `PoolsUpdateFailed` once the input array lengths are not equal.
@@ -20,7 +20,7 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
    * Note: This method should be called once at the period ending.
    *
    */
-  function recordRewards(
+  function execRecordRewards(
     address[] calldata _consensusAddrs,
     uint256[] calldata _rewards,
     uint256 _period
@@ -30,29 +30,12 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
    * @dev Deducts from staking amount of the validator `_consensusAddr` for `_amount`.
    *
    * Requirements:
-   * - The method caller is validator contract.
+   * - The method caller must be validator contract.
    *
    * Emits the event `Unstaked`.
    *
    */
-  function deductStakingAmount(address _consensusAddr, uint256 _amount)
+  function execDeductStakingAmount(address _consensusAddr, uint256 _amount)
     external
     returns (uint256 _actualDeductingAmount);
-
-  /**
-   * @dev Returns the staking pool detail.
-   */
-  function getStakingPool(address)
-    external
-    view
-    returns (
-      address _admin,
-      uint256 _stakingAmount,
-      uint256 _stakingTotal
-    );
-
-  /**
-   * @dev Returns the self-staking amounts of the pools.
-   */
-  function getManySelfStakings(address[] calldata) external view returns (uint256[] memory);
 }

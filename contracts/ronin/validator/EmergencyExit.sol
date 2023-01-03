@@ -34,7 +34,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     _setRevokingTimestamp(_candidateInfo[_consensusAddr], _revokingTimestamp);
     _emergencyExitJailedTimestamp[_consensusAddr] = _revokingTimestamp;
 
-    uint256 _deductedAmount = _stakingContract.deductStakingAmount(_consensusAddr, _emergencyExitLockedAmount);
+    uint256 _deductedAmount = _stakingContract.execDeductStakingAmount(_consensusAddr, _emergencyExitLockedAmount);
     if (_deductedAmount > 0) {
       uint256 _recyclingAt = block.timestamp + _emergencyExpiryDuration;
       _lockedConsensusList.push(_consensusAddr);
