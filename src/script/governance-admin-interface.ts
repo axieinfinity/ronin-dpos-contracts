@@ -13,13 +13,14 @@ import { RoninGovernanceAdminArguments } from '../utils';
 import { getLastBlockTimestamp } from '../../test/helpers/utils';
 import { defaultTestConfig } from '../../test/helpers/fixture';
 
-export const getGovernanceAdminDomain = (): TypedDataDomain => ({
+export const getGovernanceAdminDomain = (roninChainId: BigNumberish): TypedDataDomain => ({
   name: 'GovernanceAdmin',
-  version: '1',
-  salt: keccak256(AbiCoder.prototype.encode(['string', 'uint256'], ['RONIN_GOVERNANCE_ADMIN', 2020])),
+  version: '2',
+  salt: keccak256(AbiCoder.prototype.encode(['string', 'uint256'], ['RONIN_GOVERNANCE_ADMIN', roninChainId])),
 });
 
-export const calculateGovernanceAdminDomainSeparator = () => _TypedDataEncoder.hashDomain(getGovernanceAdminDomain());
+export const calculateGovernanceAdminDomainSeparator = (roninChainId: BigNumberish) =>
+  _TypedDataEncoder.hashDomain(getGovernanceAdminDomain(roninChainId));
 
 export const mapByteSigToSigStruct = (sig: string): SignatureStruct => {
   const { v, r, s } = ethers.utils.splitSignature(sig);
@@ -34,11 +35,16 @@ export class GovernanceAdminInterface {
   args!: RoninGovernanceAdminArguments;
   address = ethers.constants.AddressZero;
 
-  constructor(contract: RoninGovernanceAdmin, args?: RoninGovernanceAdminArguments, ...signers: SignerWithAddress[]) {
+  constructor(
+    contract: RoninGovernanceAdmin,
+    roninChainId: BigNumberish,
+    args?: RoninGovernanceAdminArguments,
+    ...signers: SignerWithAddress[]
+  ) {
     this.contract = contract;
     this.signers = signers;
     this.address = contract.address;
-    this.domain = getGovernanceAdminDomain();
+    this.domain = getGovernanceAdminDomain(roninChainId);
     this.args = args ?? defaultTestConfig?.governanceAdminArguments!;
     this.interface = new TransparentUpgradeableProxyV2__factory().interface;
   }

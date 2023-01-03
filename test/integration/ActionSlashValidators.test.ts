@@ -94,7 +94,12 @@ describe('[Integration] Slash validators', () => {
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
-    governanceAdminInterface = new GovernanceAdminInterface(governanceAdmin, undefined, trustedOrgs[0].governor);
+    governanceAdminInterface = new GovernanceAdminInterface(
+      governanceAdmin,
+      network.config.chainId!,
+      undefined,
+      trustedOrgs[0].governor
+    );
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();

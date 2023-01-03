@@ -91,6 +91,7 @@ describe('Governance Admin test', () => {
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
+      network.config.chainId!,
       { proposalExpiryDuration },
       ...trustedOrgs.map((_) => _.governor)
     );

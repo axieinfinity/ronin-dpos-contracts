@@ -16,6 +16,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     from: deployer,
     log: true,
     args: [
+      generalMainchainConf[network.name].roninChainId,
       mainchainGovernanceAdminConf[network.name]?.roleSetter,
       generalMainchainConf[network.name].roninTrustedOrganizationContract?.address,
       generalMainchainConf[network.name].bridgeContract,

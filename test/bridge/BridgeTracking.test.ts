@@ -119,6 +119,7 @@ describe('Bridge Tracking test', () => {
     bridgeTracking = BridgeTracking__factory.connect(bridgeTrackingAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
+      network.config.chainId!,
       undefined,
       ...trustedOrgs.map((_) => _.governor)
     );
