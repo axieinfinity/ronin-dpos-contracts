@@ -51,7 +51,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IsolatedGovernance
         _ballot.epoch >= _lastSyncedBridgeOperatorSetInfo.epoch,
       "BOsGovernanceProposal: query for outdated bridge operator set"
     );
-    BridgeOperatorsBallot.verifyBallot(_ballot, _lastSyncedBridgeOperatorSetInfo);
+    BridgeOperatorsBallot.verifyBallot(_ballot);
     require(_signatures.length > 0, "BOsGovernanceProposal: invalid array length");
 
     address _signer;
