@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../extensions/forwarder/Forwarder.sol";
+import "../extensions/forwarderV2/ForwarderV2.sol";
 import "../extensions/RONTransferHelper.sol";
 
 /**
@@ -12,19 +12,23 @@ import "../extensions/RONTransferHelper.sol";
  * - Moderator: forward all calls to the target, can top-up RON, cannot withdraw RON.
  * - Others: can top-up RON, cannot execute any other actions.
  */
-contract VaultForwarder is Forwarder, RONTransferHelper {
+contract VaultForwarder is ForwarderV2, RONTransferHelper {
   /// @dev Emitted when the admin withdraws all RON from the forwarder contract.
   event ForwarderRONWithdrawn(address indexed _recipient, uint256 _value);
 
-  constructor(address _target, address _admin) Forwarder(_target, _admin) {}
+  constructor(
+    address[] memory _targets,
+    address _admin,
+    address _mod
+  ) ForwarderV2(_targets, _admin, _mod) {}
 
   /**
-   * @dev Withdraws all balance from the forward to the admin.
+   * @dev Withdraws all balance from the transfer to the admin.
    *
    * Requirements:
-   * - Only forwarder admin can call this method.
+   * - Only the admin can call this method.
    */
-  function withdrawAll() external adminExecutesOrModeratorForwards {
+  function withdrawAll() external onlyRole(DEFAULT_ADMIN_ROLE) {
     uint256 _value = address(this).balance;
     emit ForwarderRONWithdrawn(msg.sender, _value);
     _transferRON(payable(msg.sender), _value);
