@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { BigNumber } from 'ethers';
-import { ethers, network } from 'hardhat';
+import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import {
@@ -9,13 +9,8 @@ import {
   MockForwarderTarget,
   MockForwarderTarget__factory,
 } from '../../src/types';
-import {
-  DEFAULT_ADDRESS,
-  FORWARDER_ADMIN_SLOT,
-  FORWARDER_TARGET_SLOT,
-  FORWARDER_MODERATOR_SLOT,
-} from '../../src/utils';
-import { calculateAddress } from '../helpers/utils';
+import { DEFAULT_ADDRESS, TARGET_ROLE, DEFAULT_ADMIN_ROLE, MODERATOR_ROLE } from '../../src/utils';
+import { accessControlRevertStr, calculateAddress } from '../helpers/utils';
 import { parseEther } from 'ethers/lib/utils';
 
 let deployer: SignerWithAddress;
@@ -23,7 +18,7 @@ let admin: SignerWithAddress;
 let moderator: SignerWithAddress;
 let unauthorized: SignerWithAddress;
 let forwarder: VaultForwarder;
-let targetBehindForwarder: MockForwarderTarget;
+let targets: MockForwarderTarget[] = [];
 let target: MockForwarderTarget;
 let localData: BigNumber;
 
@@ -32,11 +27,13 @@ describe('Vault forwarder', () => {
     [deployer, admin, moderator, unauthorized] = await ethers.getSigners();
 
     let nonce = await ethers.provider.getTransactionCount(deployer.address);
-    let forwarderAddress = calculateAddress(deployer.address, nonce + 1).address;
+    let forwarderAddress = calculateAddress(deployer.address, nonce + 2).address;
 
     localData = BigNumber.from(0);
     target = await new MockForwarderTarget__factory(deployer).deploy(forwarderAddress, localData);
-    forwarder = await new VaultForwarder__factory(deployer).deploy(target.address, admin.address);
+    targets.push(target);
+    targets.push(await new MockForwarderTarget__factory(deployer).deploy(forwarderAddress, localData));
+    forwarder = await new VaultForwarder__factory(deployer).deploy([target.address], admin.address, DEFAULT_ADDRESS);
 
     await deployer.sendTransaction({
       to: forwarderAddress,
@@ -48,14 +45,12 @@ describe('Vault forwarder', () => {
 
   describe('Configuration test', async () => {
     it('Should the forward config the target correctly', async () => {
-      expect(await network.provider.send('eth_getStorageAt', [forwarder.address, FORWARDER_TARGET_SLOT])).eq(
-        ['0x', '0'.repeat(24), target.address.toLocaleLowerCase().slice(2)].join('')
-      );
+      expect(await forwarder.getRoleMemberCount(TARGET_ROLE)).eq(1);
+      expect(await forwarder.getRoleMember(TARGET_ROLE, 0)).eq(target.address);
     });
     it('Should the forward config the admin correctly', async () => {
-      expect(await network.provider.send('eth_getStorageAt', [forwarder.address, FORWARDER_ADMIN_SLOT])).eq(
-        ['0x', '0'.repeat(24), admin.address.toLocaleLowerCase().slice(2)].join('')
-      );
+      expect(await forwarder.getRoleMemberCount(DEFAULT_ADMIN_ROLE)).eq(1);
+      expect(await forwarder.getRoleMember(DEFAULT_ADMIN_ROLE, 0)).eq(admin.address);
     });
   });
 
@@ -64,10 +59,16 @@ describe('Vault forwarder', () => {
       forwarder = VaultForwarder__factory.connect(forwarder.address, admin);
     });
     it('Should the admin be able to grant moderator role', async () => {
-      await forwarder.changeModeratorTo(moderator.address);
-      expect(await network.provider.send('eth_getStorageAt', [forwarder.address, FORWARDER_MODERATOR_SLOT])).eq(
-        ['0x', '0'.repeat(24), moderator.address.toLocaleLowerCase().slice(2)].join('')
-      );
+      await forwarder.grantRole(MODERATOR_ROLE, moderator.address);
+      expect(await forwarder.hasRole(MODERATOR_ROLE, moderator.address)).eq(true);
+      expect(await forwarder.getRoleMemberCount(MODERATOR_ROLE)).eq(2);
+      expect(await forwarder.getRoleMember(MODERATOR_ROLE, 0)).eq(DEFAULT_ADDRESS);
+      expect(await forwarder.getRoleMember(MODERATOR_ROLE, 1)).eq(moderator.address);
+    });
+    it('Should the admin be able to revoke moderator role', async () => {
+      await forwarder.revokeRole(MODERATOR_ROLE, DEFAULT_ADDRESS);
+      expect(await forwarder.getRoleMemberCount(MODERATOR_ROLE)).eq(1);
+      expect(await forwarder.getRoleMember(MODERATOR_ROLE, 0)).eq(moderator.address);
     });
   });
 
@@ -75,81 +76,101 @@ describe('Vault forwarder', () => {
     before(async () => {
       forwarder = VaultForwarder__factory.connect(forwarder.address, moderator);
       target = MockForwarderTarget__factory.connect(target.address, moderator);
-      targetBehindForwarder = MockForwarderTarget__factory.connect(forwarder.address, moderator);
     });
 
     it('Should be able to call non-payable foo function', async () => {
-      await targetBehindForwarder.foo(2);
+      await forwarder.functionCall(target.address, target.interface.encodeFunctionData('foo', [2]), 0);
       expect(await target.data()).eq(2);
-    });
-
-    it('Should be able to call payable foo function, with fund from caller account', async () => {
-      expect(await targetBehindForwarder.fooPayable(3, { value: 100 })).changeEtherBalances(
-        [moderator.address, target.address],
-        [-100, 100]
-      );
-      expect(await target.data()).eq(3);
-      expect(await target.getBalance()).eq(100);
     });
 
     it('Should be able to call payable foo function, with fund from forwarder account', async () => {
       expect(
-        await forwarder.functionCall(target.interface.encodeFunctionData('fooPayable', [4]), 200)
+        await forwarder.functionCall(target.address, target.interface.encodeFunctionData('fooPayable', [4]), 200)
       ).changeEtherBalances([moderator.address, forwarder.address, target.address], [0, -200, 200]);
       expect(await target.data()).eq(4);
-      expect(await target.getBalance()).eq(300);
+      expect(await target.getBalance()).eq(200);
     });
 
     it('Should the revert message is thrown from target contract', async () => {
-      await expect(targetBehindForwarder.fooRevert()).revertedWith('MockForwarderContract: revert intentionally');
+      await expect(
+        forwarder.functionCall(target.address, target.interface.encodeFunctionData('fooRevert'), 0)
+      ).revertedWith('MockForwarderContract: revert intentionally');
     });
 
     it('Should the silent revert message is thrown from forwarder contract', async () => {
-      await expect(targetBehindForwarder.fooSilentRevert()).revertedWith('Forwarder: target reverts silently');
+      await expect(
+        forwarder.functionCall(target.address, target.interface.encodeFunctionData('fooSilentRevert'), 0)
+      ).revertedWith('Forwarder: target reverts silently');
     });
 
     it('Should the custom error is thrown from forwarder contract', async () => {
-      await expect(targetBehindForwarder.fooCustomErrorRevert()).revertedWithCustomError(target, 'ErrIntentionally');
+      await expect(
+        forwarder.functionCall(target.address, target.interface.encodeFunctionData('fooCustomErrorRevert'), 0)
+      ).revertedWithCustomError(target, 'ErrIntentionally');
     });
 
     it("Should be able to call function of target, that has the same name with admin's function", async () => {
-      await expect(targetBehindForwarder.withdrawAll()).changeEtherBalances(
-        [forwarder.address, target.address, moderator.address],
-        [300, -300, 0]
+      await expect(
+        forwarder.functionCall(target.address, target.interface.encodeFunctionData('withdrawAll'), 0)
+      ).changeEtherBalances([forwarder.address, target.address, moderator.address], [200, -200, 0]);
+    });
+
+    it('Implicit call fallback of target', async () => {
+      await expect(forwarder.functionCall(target.address, '0xdeadbeef', 0)).revertedWith(
+        'MockForwardTarget: hello from fallback'
       );
     });
 
-    it('Fallback: invokes target', async () => {
+    it('Fallback: invokes forwarder', async () => {
       await expect(
         moderator.sendTransaction({
           data: '0xdeadbeef',
-          to: targetBehindForwarder.address,
+          to: forwarder.address,
           value: 200,
         })
-      ).revertedWith('MockForwardTarget: hello from fallback');
+      ).changeEtherBalances([moderator.address, forwarder.address, target.address], [-200, 200, 0]);
     });
 
     it('Receive: invokes forwarder', async () => {
       await expect(
         moderator.sendTransaction({
-          to: targetBehindForwarder.address,
+          to: forwarder.address,
           value: 200,
         })
       ).changeEtherBalances([moderator.address, forwarder.address, target.address], [-200, 200, 0]);
     });
 
     it('Should not be able to call the function of admin', async () => {
-      // overloaded method in target is invoked here
-      let tx;
-      await expect(async () => (tx = forwarder.withdrawAll())).changeEtherBalances(
-        [moderator.address, forwarder.address, target.address],
-        [0, 0, 0]
-      );
+      await expect(forwarder.withdrawAll()).revertedWith(accessControlRevertStr(moderator.address, DEFAULT_ADMIN_ROLE));
+    });
+  });
 
-      await expect(tx)
-        .emit(target, 'TargetWithdrawn')
-        .withArgs(moderator.address, forwarder.address, forwarder.address);
-      await expect(tx).not.emit(forwarder, 'ForwarderRONWithdrawn');
+  describe('Target tests', async () => {
+    it('Should not be able to call to non-target-role contract', async () => {
+      await expect(
+        forwarder
+          .connect(moderator)
+          .functionCall(unauthorized.address, target.interface.encodeFunctionData('foo', [2]), 0)
+      ).revertedWith(accessControlRevertStr(unauthorized.address, TARGET_ROLE));
+    });
+
+    it('Should non-admin not be able to add more target', async () => {
+      await expect(forwarder.connect(moderator).grantRole(TARGET_ROLE, targets[1].address)).revertedWith(
+        accessControlRevertStr(moderator.address, DEFAULT_ADMIN_ROLE)
+      );
+    });
+
+    it('Should admin be able to add more target', async () => {
+      await forwarder.connect(admin).grantRole(TARGET_ROLE, targets[1].address);
+      expect(await forwarder.getRoleMemberCount(TARGET_ROLE)).eq(2);
+      expect(await forwarder.getRoleMember(TARGET_ROLE, 1)).eq(targets[1].address);
+    });
+
+    it('Should the new target can be called', async () => {
+      await forwarder
+        .connect(moderator)
+        .functionCall(targets[1].address, target.interface.encodeFunctionData('foo', [92]), 0);
+      expect(await targets[1].data()).eq(92);
     });
   });
 
@@ -157,34 +178,22 @@ describe('Vault forwarder', () => {
     before(async () => {
       forwarder = VaultForwarder__factory.connect(forwarder.address, admin);
       target = MockForwarderTarget__factory.connect(target.address, admin);
-      targetBehindForwarder = MockForwarderTarget__factory.connect(forwarder.address, admin);
     });
 
-    it('Should not be able to call non-payable foo function', async () => {
-      await expect(targetBehindForwarder.foo(12)).revertedWith('Forwarder: unauthorized call');
-      expect(await target.data()).not.eq(12);
-    });
-
-    it('Should not be able to call non-payable foo function by force `functionCall`', async () => {
-      await expect(forwarder.functionCall(target.interface.encodeFunctionData('foo', [12]), 0)).revertedWith(
-        'Forwarder: unauthorized call'
-      );
-    });
-
-    it('Should not be able to call payable foo function, with fund from forwarder account', async () => {
-      await expect(forwarder.functionCall(target.interface.encodeFunctionData('fooPayable', [13]), 300)).rejectedWith(
-        'Forwarder: unauthorized call'
-      );
+    it('Should not be able to call forwarding method', async () => {
+      await expect(
+        forwarder.functionCall(target.address, target.interface.encodeFunctionData('foo', [2]), 0)
+      ).revertedWith(accessControlRevertStr(admin.address, MODERATOR_ROLE));
     });
 
     it('Fallback: invokes forwarder', async () => {
       await expect(
         admin.sendTransaction({
           data: '0xdeadbeef',
-          to: targetBehindForwarder.address,
+          to: forwarder.address,
           value: 200,
         })
-      ).revertedWith('Forwarder: unauthorized call');
+      ).changeEtherBalances([admin.address, forwarder.address, target.address], [-200, 200, 0]);
     });
 
     it('Receive: invokes forwarder', async () => {
@@ -192,7 +201,7 @@ describe('Vault forwarder', () => {
       await expect(
         async () =>
           (tx = admin.sendTransaction({
-            to: targetBehindForwarder.address,
+            to: forwarder.address,
             value: 200,
           }))
       ).changeEtherBalances([admin.address, forwarder.address, target.address], [-200, 200, 0]);
@@ -217,55 +226,37 @@ describe('Vault forwarder', () => {
     before(async () => {
       forwarder = VaultForwarder__factory.connect(forwarder.address, unauthorized);
       target = MockForwarderTarget__factory.connect(target.address, unauthorized);
-      targetBehindForwarder = MockForwarderTarget__factory.connect(forwarder.address, unauthorized);
     });
 
-    it('Should not be able to call foo function', async () => {
-      await expect(targetBehindForwarder.foo(22)).revertedWith('Forwarder: unauthorized call');
-      await expect(forwarder.functionCall(target.interface.encodeFunctionData('foo', [22]), 0)).revertedWith(
-        'Forwarder: unauthorized call'
-      );
+    it('Should not be able to call forwarding method', async () => {
+      await expect(
+        forwarder.functionCall(target.address, target.interface.encodeFunctionData('foo', [2]), 0)
+      ).revertedWith(accessControlRevertStr(unauthorized.address, MODERATOR_ROLE));
     });
 
-    it('Should not be able to call payable foo function, with fund from caller account', async () => {
-      await expect(targetBehindForwarder.fooPayable(22, { value: 100 })).revertedWith('Forwarder: unauthorized call');
-    });
-
-    it('Should not be able to call payable foo function, with fund from forwarder account', async () => {
-      await expect(forwarder.functionCall(target.interface.encodeFunctionData('fooPayable', [22]), 100)).revertedWith(
-        'Forwarder: unauthorized call'
-      );
-    });
-
-    it('Fallback: revert', async () => {
+    it('Fallback: accept incoming token', async () => {
       await expect(
         unauthorized.sendTransaction({
           data: '0xdeadbeef',
-          to: targetBehindForwarder.address,
+          to: forwarder.address,
           value: 200,
         })
-      ).revertedWith('Forwarder: unauthorized call');
+      ).changeEtherBalances([unauthorized.address, forwarder.address, target.address], [-200, 200, 0]);
     });
 
     it('Receive: accept incoming token', async () => {
       await expect(
         unauthorized.sendTransaction({
-          to: targetBehindForwarder.address,
+          to: forwarder.address,
           value: 200,
         })
       ).changeEtherBalances([unauthorized.address, forwarder.address, target.address], [-200, 200, 0]);
     });
 
     it('Should not be able to call the overloaded method', async () => {
-      await expect(forwarder.withdrawAll()).revertedWith('Forwarder: unauthorized call');
-    });
-
-    it('Should not be able to call the function of admin', async () => {
-      await expect(forwarder.withdrawAll()).revertedWith('Forwarder: unauthorized call');
-    });
-
-    it('Should not be able to call the exposed methods', async () => {
-      await expect(forwarder.changeTargetTo(DEFAULT_ADDRESS)).revertedWith('Forwarder: unauthorized call');
+      await expect(forwarder.withdrawAll()).revertedWith(
+        accessControlRevertStr(unauthorized.address, DEFAULT_ADMIN_ROLE)
+      );
     });
   });
 });

@@ -43,7 +43,6 @@ export const getLastBlockTimestamp = async (): Promise<number> => {
   return blockBefore.timestamp;
 };
 
-
 export const calculateAddress = (from: Address, nonce: number) => ({
   nonce,
   address: ethers.utils.getContractAddress({ from, nonce }),
@@ -51,3 +50,6 @@ export const calculateAddress = (from: Address, nonce: number) => ({
 
 export const compareAddrs = (firstStr: string, secondStr: string) =>
   firstStr.toLowerCase().localeCompare(secondStr.toLowerCase());
+
+export const accessControlRevertStr = (addr: Address, role: string): string =>
+  `AccessControl: account ${addr.toLocaleLowerCase()} is missing role ${role}`;

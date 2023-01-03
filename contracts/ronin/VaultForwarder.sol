@@ -16,15 +16,19 @@ contract VaultForwarder is Forwarder, RONTransferHelper {
   /// @dev Emitted when the admin withdraws all RON from the forwarder contract.
   event ForwarderRONWithdrawn(address indexed _recipient, uint256 _value);
 
-  constructor(address _target, address _admin) Forwarder(_target, _admin) {}
+  constructor(
+    address[] memory _targets,
+    address _admin,
+    address _mod
+  ) Forwarder(_targets, _admin, _mod) {}
 
   /**
-   * @dev Withdraws all balance from the forward to the admin.
+   * @dev Withdraws all balance from the transfer to the admin.
    *
    * Requirements:
-   * - Only forwarder admin can call this method.
+   * - Only the admin can call this method.
    */
-  function withdrawAll() external adminExecutesOrModeratorForwards {
+  function withdrawAll() external onlyRole(DEFAULT_ADMIN_ROLE) {
     uint256 _value = address(this).balance;
     emit ForwarderRONWithdrawn(msg.sender, _value);
     _transferRON(payable(msg.sender), _value);
