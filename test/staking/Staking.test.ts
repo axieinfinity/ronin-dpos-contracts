@@ -138,7 +138,7 @@ describe('Staking test', () => {
     it('Should not be able to stake with empty value', async () => {
       await expect(stakingContract.stake(poolAddrSet.consensusAddr.address, { value: 0 })).revertedWithCustomError(
         stakingContract,
-        'ErrZeroMessageValue'
+        'ErrZeroValue'
       );
     });
 
@@ -347,7 +347,7 @@ describe('Staking test', () => {
     it('Should not be able to delegate with empty value', async () => {
       await expect(stakingContract.delegate(otherPoolAddrSet.consensusAddr.address)).revertedWithCustomError(
         stakingContract,
-        'ErrZeroMessageValue'
+        'ErrZeroValue'
       );
     });
 

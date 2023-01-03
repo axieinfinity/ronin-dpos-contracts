@@ -26,7 +26,7 @@ interface IBaseStaking {
   /// @dev Error of cannot transfer RON.
   error ErrCannotTransferRON();
   /// @dev Error of receiving zero message value.
-  error ErrZeroMessageValue();
+  error ErrZeroValue();
   /// @dev Error of pool admin is not allowed to call.
   error ErrPoolAdminForbidden();
   /// @dev Error of no one is allowed to call but the pool's admin.

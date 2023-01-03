@@ -33,7 +33,7 @@ abstract contract BaseStaking is
   uint256[49] private ______gap;
 
   modifier noEmptyValue() {
-    if (msg.value == 0) revert ErrZeroMessageValue();
+    if (msg.value == 0) revert ErrZeroValue();
     _;
   }
 
