@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../extensions/forwarderV2/ForwarderV2.sol";
+import "../extensions/forwarder/Forwarder.sol";
 import "../extensions/RONTransferHelper.sol";
 
 /**
@@ -12,7 +12,7 @@ import "../extensions/RONTransferHelper.sol";
  * - Moderator: forward all calls to the target, can top-up RON, cannot withdraw RON.
  * - Others: can top-up RON, cannot execute any other actions.
  */
-contract VaultForwarder is ForwarderV2, RONTransferHelper {
+contract VaultForwarder is Forwarder, RONTransferHelper {
   /// @dev Emitted when the admin withdraws all RON from the forwarder contract.
   event ForwarderRONWithdrawn(address indexed _recipient, uint256 _value);
 
@@ -20,7 +20,7 @@ contract VaultForwarder is ForwarderV2, RONTransferHelper {
     address[] memory _targets,
     address _admin,
     address _mod
-  ) ForwarderV2(_targets, _admin, _mod) {}
+  ) Forwarder(_targets, _admin, _mod) {}
 
   /**
    * @dev Withdraws all balance from the transfer to the admin.
