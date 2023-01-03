@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { roninchainNetworks, generalRoninConf, governanceAdminConf } from '../config';
+import { roninchainNetworks, generalRoninConf, roninGovernanceAdminConf } from '../config';
 import { verifyAddress } from '../script/verify-address';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
@@ -18,7 +18,8 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     args: [
       generalRoninConf[network.name].roninTrustedOrganizationContract?.address,
       generalRoninConf[network.name].bridgeContract,
-      governanceAdminConf[network.name]?.proposalExpiryDuration,
+      generalRoninConf[network.name].validatorContract?.address,
+      roninGovernanceAdminConf[network.name]?.proposalExpiryDuration,
     ],
     nonce: generalRoninConf[network.name].governanceAdmin?.nonce,
   });

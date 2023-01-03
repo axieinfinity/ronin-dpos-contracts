@@ -10,6 +10,13 @@ interface IDelegatorStaking is IRewardPool {
   /// @dev Emitted when the delegator unstaked from a validator candidate.
   event Undelegated(address indexed delegator, address indexed consensuAddr, uint256 amount);
 
+  /// @dev Error of undelegating zero amount.
+  error ErrUndelegateZeroAmount();
+  /// @dev Error of undelegating insufficient amount.
+  error ErrInsufficientDelegatingAmount();
+  /// @dev Error of undelegating too early.
+  error ErrUndelegateTooEarly();
+
   /**
    * @dev Stakes for a validator candidate `_consensusAddr`.
    *

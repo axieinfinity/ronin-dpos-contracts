@@ -5,22 +5,22 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   MockPrecompile,
   MockPrecompile__factory,
-  MockPrecompileUsageSortValidators,
-  MockPrecompileUsageSortValidators__factory,
+  MockPCUSortValidators,
+  MockPCUSortValidators__factory,
 } from '../../src/types';
 import { randomInt } from 'crypto';
 
 let deployer: SignerWithAddress;
 let validatorCandidates: SignerWithAddress[];
 let precompileSorting: MockPrecompile;
-let usageSorting: MockPrecompileUsageSortValidators;
+let usageSorting: MockPCUSortValidators;
 
 describe('[Precompile] Sorting validators test', () => {
   before(async () => {
     [deployer, ...validatorCandidates] = await ethers.getSigners();
 
     precompileSorting = await new MockPrecompile__factory(deployer).deploy();
-    usageSorting = await new MockPrecompileUsageSortValidators__factory(deployer).deploy(precompileSorting.address);
+    usageSorting = await new MockPCUSortValidators__factory(deployer).deploy(precompileSorting.address);
   });
 
   it('Should the usage contract correctly configs the precompile address', async () => {
@@ -50,8 +50,9 @@ describe('[Precompile] Sorting validators test', () => {
 
   it('Should the usage contract revert with proper message on calling the precompile contract fails', async () => {
     await usageSorting.setPrecompileSortValidatorAddress(ethers.constants.AddressZero);
-    await expect(usageSorting.callPrecompile([validatorCandidates[0].address], [1])).revertedWith(
-      'PrecompileUsageSortValidators: call to precompile fails'
+    await expect(usageSorting.callPrecompile([validatorCandidates[0].address], [1])).revertedWithCustomError(
+      usageSorting,
+      'ErrCallPrecompiled'
     );
   });
 });

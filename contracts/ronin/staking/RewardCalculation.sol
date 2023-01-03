@@ -132,7 +132,7 @@ abstract contract RewardCalculation is IRewardPool {
     uint256 _diffAmount = _reward.minAmount - _minAmount;
     if (_diffAmount > 0) {
       _reward.minAmount = _minAmount;
-      require(_pool.shares.inner >= _diffAmount, "RewardCalculation: invalid pool shares");
+      if (_pool.shares.inner < _diffAmount) revert ErrInvalidPoolShare();
       _pool.shares.inner -= _diffAmount;
     }
   }

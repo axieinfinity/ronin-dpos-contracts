@@ -123,13 +123,24 @@ export const expects = {
     );
   },
 
-  emitStakingRewardDistributedEvent: async function (tx: ContractTransaction, expectingAmount: BigNumberish) {
+  emitStakingRewardDistributedEvent: async function (
+    tx: ContractTransaction,
+    expectingTotalAmount: BigNumberish,
+    expectingValidators: string[] | undefined,
+    expectingAmounts: BigNumberish[] | undefined
+  ) {
     await expectEvent(
       contractInterface,
       'StakingRewardDistributed',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid distributing reward').eq(expectingAmount);
+        expect(event.args[0], 'invalid total distributing reward').eq(expectingTotalAmount);
+        if (expectingValidators) {
+          expect(event.args[1], 'invalid validator list').eql(expectingValidators);
+        }
+        if (expectingAmounts) {
+          expect(event.args[2], 'invalid amount list').eql(expectingAmounts);
+        }
       },
       1
     );
@@ -154,16 +165,37 @@ export const expects = {
 
   emitBlockProducerSetUpdatedEvent: async function (
     tx: ContractTransaction,
-    expectingPeriod: BigNumberish,
-    expectingBlockProducers: string[]
+    expectingPeriod?: BigNumberish,
+    expectingEpoch?: BigNumberish,
+    expectingBlockProducers?: string[]
   ) {
     await expectEvent(
       contractInterface,
       'BlockProducerSetUpdated',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid period').eq(expectingPeriod);
-        expect(event.args[1], 'invalid validator set').eql(expectingBlockProducers);
+        !!expectingPeriod && expect(event.args[0], 'invalid period').eq(expectingPeriod);
+        !!expectingEpoch && expect(event.args[1], 'invalid epoch').eq(expectingEpoch);
+        !!expectingBlockProducers && expect(event.args[2], 'invalid block producers').eql(expectingBlockProducers);
+      },
+      1
+    );
+  },
+
+  emitBridgeOperatorSetUpdatedEvent: async function (
+    tx: ContractTransaction,
+    expectingPeriod?: BigNumberish,
+    expectingEpoch?: BigNumberish,
+    expectingBridgeOperators?: string[]
+  ) {
+    await expectEvent(
+      contractInterface,
+      'BridgeOperatorSetUpdated',
+      tx,
+      (event) => {
+        !!expectingPeriod && expect(event.args[0], 'invalid period').eq(expectingPeriod);
+        !!expectingEpoch && expect(event.args[1], 'invalid epoch').eq(expectingEpoch);
+        !!expectingBridgeOperators && expect(event.args[2], 'invalid bridge operators').eql(expectingBridgeOperators);
       },
       1
     );

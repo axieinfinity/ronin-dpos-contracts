@@ -21,11 +21,35 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   /// @dev The deprecated reward that has not been withdrawn by admin
   uint256 internal _totalDeprecatedReward;
 
+  /// @dev The amount of RON to lock from a consensus address.
+  uint256 internal _emergencyExitLockedAmount;
+  /// @dev The duration that an emergency request is expired and the fund will be recycled.
+  uint256 internal _emergencyExpiryDuration;
+  /// @dev The address list of consensus addresses that being locked fund.
+  address[] internal _lockedConsensusList;
+  /// @dev Mapping from consensus => request exist info
+  mapping(address => EmergencyExitInfo) internal _exitInfo;
+  /// @dev Mapping from consensus => flag indicating whether the locked fund is released
+  mapping(address => bool) internal _lockedFundReleased;
+
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[49] private ______gap;
+  uint256[44] private ______gap;
+
+  /**
+   * @inheritdoc ICommonInfo
+   */
+  function getEmergencyExitInfo(address _consensusAddr)
+    external
+    view
+    override
+    returns (EmergencyExitInfo memory _info)
+  {
+    _info = _exitInfo[_consensusAddr];
+    require(_info.recyclingAt > 0, "CommonStorage: non-existent info");
+  }
 
   /**
    * @inheritdoc ICommonInfo

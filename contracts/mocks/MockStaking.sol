@@ -30,7 +30,7 @@ contract MockStaking is RewardCalculation {
     uint256[] memory _rewards = new uint256[](1);
     _addrs[0] = poolAddr;
     _rewards[0] = pendingReward;
-    this.recordRewards(_addrs, _rewards);
+    this.execRecordRewards(_addrs, _rewards);
 
     pendingReward = 0;
     lastUpdatedPeriod++;
@@ -64,7 +64,7 @@ contract MockStaking is RewardCalculation {
     pendingReward -= _amount;
   }
 
-  function recordRewards(address[] calldata _addrList, uint256[] calldata _rewards) external {
+  function execRecordRewards(address[] calldata _addrList, uint256[] calldata _rewards) external {
     _recordRewards(_addrList, _rewards, _currentPeriod());
   }
 

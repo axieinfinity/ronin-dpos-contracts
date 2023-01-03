@@ -82,10 +82,17 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
   /**
    * @inheritdoc IValidatorInfo
    */
-  function getBridgeOperators() public view override returns (address[] memory _bridgeOperatorList) {
-    _bridgeOperatorList = new address[](validatorCount);
-    for (uint _i = 0; _i < _bridgeOperatorList.length; _i++) {
-      _bridgeOperatorList[_i] = _bridgeOperatorOf(_validators[_i]);
+  function getBridgeOperators() public view override returns (address[] memory _result) {
+    _result = new address[](validatorCount);
+    uint256 _count = 0;
+    for (uint _i = 0; _i < _result.length; _i++) {
+      if (isBlockProducer(_validators[_i])) {
+        _result[_count++] = _bridgeOperatorOf(_validators[_i]);
+      }
+    }
+
+    assembly {
+      mstore(_result, _count)
     }
   }
 
@@ -94,11 +101,18 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
    */
   function isBridgeOperator(address _bridgeOperatorAddr) external view override returns (bool _result) {
     for (uint _i = 0; _i < validatorCount; _i++) {
-      if (_bridgeOperatorOf(_validators[_i]) == _bridgeOperatorAddr) {
+      if (_bridgeOperatorOf(_validators[_i]) == _bridgeOperatorAddr && isOperatingBridge(_validators[_i])) {
         _result = true;
         break;
       }
     }
+  }
+
+  /**
+   * @inheritdoc IValidatorInfo
+   */
+  function isOperatingBridge(address _consensusAddr) public view override returns (bool) {
+    return _validatorMap[_consensusAddr].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator);
   }
 
   /**
@@ -116,12 +130,14 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
   }
 
   /**
-   * Notice: A validator is always a bride operator
-   *
    * @inheritdoc IValidatorInfo
    */
-  function totalBridgeOperators() public view returns (uint256) {
-    return validatorCount;
+  function totalBridgeOperators() public view returns (uint256 _total) {
+    for (uint _i = 0; _i < validatorCount; _i++) {
+      if (isOperatingBridge(_validators[_i])) {
+        _total++;
+      }
+    }
   }
 
   /**
@@ -139,6 +155,11 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
   }
 
   /**
+   * @dev Returns the bridge operator of a consensus address.
+   */
+  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address);
+
+  /**
    * @dev See `IValidatorInfo-setMaxValidatorNumber`
    */
   function _setMaxValidatorNumber(uint256 _number) internal {
@@ -150,17 +171,8 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
    * @dev See `IValidatorInfo-setMaxPrioritizedValidatorNumber`
    */
   function _setMaxPrioritizedValidatorNumber(uint256 _number) internal {
-    require(
-      _number <= _maxValidatorNumber,
-      "RoninValidatorSet: cannot set number of prioritized greater than number of max validators"
-    );
-
+    if (_number > _maxValidatorNumber) revert InvalidMaxPrioitizedValidatorNumber();
     _maxPrioritizedValidatorNumber = _number;
     emit MaxPrioritizedValidatorNumberUpdated(_number);
   }
-
-  /**
-   * @dev Returns the bridge operator of a consensus address.
-   */
-  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address);
 }

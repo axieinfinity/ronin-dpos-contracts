@@ -24,8 +24,8 @@ abstract contract BaseStaking is
   /// @dev The number of seconds that a candidate must wait to be revoked and take the self-staking amount back.
   uint256 internal _waitingSecsToRevoke;
 
-  /// @dev Mapping from active pool admin address => consensus address.
-  mapping(address => address) internal _activePoolAdminMapping;
+  /// @dev Mapping from admin address of an active pool => consensus address.
+  mapping(address => address) internal _adminOfActivePoolMapping;
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
@@ -33,37 +33,63 @@ abstract contract BaseStaking is
   uint256[49] private ______gap;
 
   modifier noEmptyValue() {
-    require(msg.value > 0, "BaseStaking: query with empty value");
+    if (msg.value == 0) revert ErrZeroValue();
     _;
   }
 
   modifier notPoolAdmin(PoolDetail storage _pool, address _delegator) {
-    require(_pool.admin != _delegator, "BaseStaking: delegator must not be the pool admin");
+    if (_pool.admin == _delegator) revert ErrPoolAdminForbidden();
     _;
   }
 
   modifier onlyPoolAdmin(PoolDetail storage _pool, address _requester) {
-    require(_pool.admin == _requester, "BaseStaking: requester must be the pool admin");
+    if (_pool.admin != _requester) revert ErrOnlyPoolAdminAllowed();
     _;
   }
 
-  modifier poolExists(address _poolAddr) {
-    require(_validatorContract.isValidatorCandidate(_poolAddr), "BaseStaking: query for non-existent pool");
+  modifier poolIsActive(address _poolAddr) {
+    if (!_validatorContract.isValidatorCandidate(_poolAddr)) revert ErrInactivePool(_poolAddr);
     _;
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
-  function isActivePoolAdmin(address _poolAdminAddr) public view override returns (bool) {
-    return _activePoolAdminMapping[_poolAdminAddr] != address(0);
+  function isAdminOfActivePool(address _poolAdminAddr) public view override returns (bool) {
+    return _adminOfActivePoolMapping[_poolAdminAddr] != address(0);
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
   function getPoolAddressOf(address _poolAdminAddr) external view override returns (address) {
-    return _activePoolAdminMapping[_poolAdminAddr];
+    return _adminOfActivePoolMapping[_poolAdminAddr];
+  }
+
+  /**
+   * @inheritdoc IBaseStaking
+   */
+  function getPoolDetail(address _poolAddr)
+    external
+    view
+    returns (
+      address _admin,
+      uint256 _stakingAmount,
+      uint256 _stakingTotal
+    )
+  {
+    PoolDetail storage _pool = _stakingPool[_poolAddr];
+    return (_pool.admin, _pool.stakingAmount, _pool.stakingTotal);
+  }
+
+  /**
+   * @inheritdoc IBaseStaking
+   */
+  function getManySelfStakings(address[] calldata _pools) external view returns (uint256[] memory _selfStakings) {
+    _selfStakings = new uint256[](_pools.length);
+    for (uint _i = 0; _i < _pools.length; _i++) {
+      _selfStakings[_i] = _stakingPool[_pools[_i]].stakingAmount;
+    }
   }
 
   /**
@@ -104,7 +130,7 @@ abstract contract BaseStaking is
     override
     returns (uint256[] memory _stakingAmounts)
   {
-    require(_poolAddrs.length == _userList.length, "BaseStaking: invalid input array");
+    if (_poolAddrs.length != _userList.length) revert ErrInvalidArrays();
     _stakingAmounts = new uint256[](_poolAddrs.length);
     for (uint _i = 0; _i < _stakingAmounts.length; _i++) {
       _stakingAmounts[_i] = _stakingPool[_poolAddrs[_i]].delegatingAmount[_userList[_i]];

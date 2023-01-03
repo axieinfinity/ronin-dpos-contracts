@@ -12,14 +12,17 @@ abstract contract JailingStorage is IJailingInfo {
   mapping(address => mapping(uint256 => bool)) internal _miningRewardBailoutCutOffAtPeriod;
   /// @dev Mapping from consensus address => period number => block operator has no pending reward
   mapping(address => mapping(uint256 => bool)) internal _bridgeRewardDeprecatedAtPeriod;
-  /// @dev Mapping from consensus address => the last block that the validator is jailed
-  mapping(address => uint256) internal _jailedUntil;
+
+  /// @dev Mapping from consensus address => the last block that the block producer is jailed
+  mapping(address => uint256) internal _blockProducerJailedBlock;
+  /// @dev Mapping from consensus address => the last timestamp that the bridge operator is jailed
+  mapping(address => uint256) internal _emergencyExitJailedTimestamp;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[50] private ______gap;
+  uint256[49] private ______gap;
 
   /**
    * @inheritdoc IJailingInfo
@@ -64,7 +67,7 @@ abstract contract JailingStorage is IJailingInfo {
       uint256 epochLeft_
     )
   {
-    uint256 _jailedBlock = _jailedUntil[_addr];
+    uint256 _jailedBlock = _blockProducerJailedBlock[_addr];
     if (_jailedBlock < _blockNum) {
       return (false, 0, 0);
     }
@@ -136,7 +139,7 @@ abstract contract JailingStorage is IJailingInfo {
    * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) at a specific block.
    */
   function _jailedAtBlock(address _validatorAddr, uint256 _blockNum) internal view returns (bool) {
-    return _blockNum <= _jailedUntil[_validatorAddr];
+    return _blockNum <= _blockProducerJailedBlock[_validatorAddr];
   }
 
   /**

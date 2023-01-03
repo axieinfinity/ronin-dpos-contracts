@@ -20,6 +20,7 @@ import {
 } from '../../src/types';
 import { ERC20PresetMinterPauser } from '../../src/types/ERC20PresetMinterPauser';
 import { ReceiptStruct } from '../../src/types/IRoninGatewayV2';
+import { DEFAULT_ADDRESS } from '../../src/utils';
 import {
   createManyTrustedOrganizationAddressSets,
   createManyValidatorCandidateAddressSets,
@@ -43,7 +44,6 @@ let roninValidatorSet: MockRoninValidatorSetExtended;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 let token: ERC20PresetMinterPauser;
-let localEpochController: EpochController;
 
 let period: BigNumberish;
 let receipts: ReceiptStruct[];
@@ -86,7 +86,6 @@ describe('Bridge Tracking test', () => {
       ])
     );
     bridgeContract = RoninGatewayV2__factory.connect(proxy.address, deployer);
-    localEpochController = new EpochController(0, numberOfBlocksInEpoch);
     await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
     // Deploys DPoS contracts
@@ -127,6 +126,7 @@ describe('Bridge Tracking test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
+    await roninValidatorSet.initEpoch();
 
     await TransparentUpgradeableProxyV2__factory.connect(proxy.address, deployer).changeAdmin(governanceAdmin.address);
     await governanceAdminInterface.functionDelegateCalls(
@@ -158,6 +158,10 @@ describe('Bridge Tracking test', () => {
     });
     period = await roninValidatorSet.currentPeriod();
     expect(await roninValidatorSet.getBridgeOperators()).eql(candidates.map((v) => v.bridgeOperator.address));
+  });
+
+  after(async () => {
+    await network.provider.send('hardhat_setCoinbase', [DEFAULT_ADDRESS]);
   });
 
   it('Should be able to get contract configs correctly', async () => {
@@ -250,7 +254,6 @@ describe('Bridge Tracking test', () => {
       submitWithdrawalSignatures.map(() => [])
     );
 
-    await EpochController.setTimestampToPeriodEnding();
     await mineBatchTxs(async () => {
       await roninValidatorSet.endEpoch();
       await roninValidatorSet.connect(coinbase).wrapUpEpoch();
@@ -265,6 +268,11 @@ describe('Bridge Tracking test', () => {
   });
 
   it('Should not record in the next period', async () => {
+    await EpochController.setTimestampToPeriodEnding();
+    await mineBatchTxs(async () => {
+      await roninValidatorSet.endEpoch();
+      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+    });
     const newPeriod = await roninValidatorSet.currentPeriod();
     expect(newPeriod).not.eq(period);
 

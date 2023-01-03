@@ -51,6 +51,29 @@ interface ICandidateManager {
   /// @dev Emitted when the commission rate of a validator is updated.
   event CommissionRateUpdated(address indexed consensusAddr, uint256 rate);
 
+  /// @dev Error of exceeding maximum number of candidates.
+  error ErrExceedsMaxNumberOfCandidate();
+  /// @dev Error of querying for already existent candidate.
+  error ErrExistentCandidate();
+  /// @dev Error of querying for non-existent candidate.
+  error ErrNonExistentCandidate();
+  /// @dev Error of candidate admin already exists.
+  error ErrExistentCandidateAdmin(address _candidateAdminAddr);
+  /// @dev Error of treasury already exists.
+  error ErrExistentTreasury(address _treasuryAddr);
+  /// @dev Error of bridge operator already exists.
+  error ErrExistentBridgeOperator(address _bridgeOperatorAddr);
+  /// @dev Error of invalid commission rate.
+  error ErrInvalidCommissionRate();
+  /// @dev Error of invalid effective days onwards.
+  error ErrInvalidEffectiveDaysOnwards();
+  /// @dev Error of invalid min effective days onwards.
+  error ErrInvalidMinEffectiveDaysOnwards();
+  /// @dev Error of already requested revoking candidate before
+  error ErrAlreadyRequestedRevokingCandidate();
+  /// @dev Error of commission change schedule exists
+  error ErrAlreadyRequestedUpdatingCommissionRate();
+
   /**
    * @dev Returns the maximum number of validator candidate.
    */

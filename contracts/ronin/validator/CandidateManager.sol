@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "../../extensions/collections/HasStakingContract.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/validator/ICandidateManager.sol";
@@ -72,48 +71,15 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     uint256 _commissionRate
   ) external override onlyStakingContract {
     uint256 _length = _candidates.length;
-    require(_length < maxValidatorCandidate(), "CandidateManager: exceeds maximum number of candidates");
-    require(!isValidatorCandidate(_consensusAddr), "CandidateManager: query for already existent candidate");
-    require(_commissionRate <= _MAX_PERCENTAGE, "CandidateManager: invalid comission rate");
+    if (_length >= maxValidatorCandidate()) revert ErrExceedsMaxNumberOfCandidate();
+    if (isValidatorCandidate(_consensusAddr)) revert ErrExistentCandidate();
+    if (_commissionRate > _MAX_PERCENTAGE) revert ErrInvalidCommissionRate();
 
     for (uint _i = 0; _i < _candidates.length; _i++) {
       ValidatorCandidate storage existentInfo = _candidateInfo[_candidates[_i]];
-
-      if (_candidateAdmin == existentInfo.admin) {
-        revert(
-          string(
-            abi.encodePacked(
-              "CandidateManager: candidate admin address ",
-              Strings.toHexString(uint160(_candidateAdmin), 20),
-              " is already exist"
-            )
-          )
-        );
-      }
-
-      if (_treasuryAddr == existentInfo.treasuryAddr) {
-        revert(
-          string(
-            abi.encodePacked(
-              "CandidateManager: treasury address ",
-              Strings.toHexString(uint160(address(_treasuryAddr)), 20),
-              " is already exist"
-            )
-          )
-        );
-      }
-
-      if (_bridgeOperatorAddr == existentInfo.bridgeOperatorAddr) {
-        revert(
-          string(
-            abi.encodePacked(
-              "CandidateManager: bridge operator address ",
-              Strings.toHexString(uint160(_bridgeOperatorAddr), 20),
-              " is already exist"
-            )
-          )
-        );
-      }
+      if (_candidateAdmin == existentInfo.admin) revert ErrExistentCandidateAdmin(_candidateAdmin);
+      if (_treasuryAddr == existentInfo.treasuryAddr) revert ErrExistentTreasury(_treasuryAddr);
+      if (_bridgeOperatorAddr == existentInfo.bridgeOperatorAddr) revert ErrExistentBridgeOperator(_bridgeOperatorAddr);
     }
 
     _candidateIndex[_consensusAddr] = ~_length;
@@ -132,13 +98,9 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    * @inheritdoc ICandidateManager
    */
   function requestRevokeCandidate(address _consensusAddr, uint256 _secsLeft) external override onlyStakingContract {
-    require(isValidatorCandidate(_consensusAddr), "CandidateManager: query for non-existent candidate");
     ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
-    require(_info.revokingTimestamp == 0, "CandidateManager: already requested before");
-
-    uint256 _revokingTimestamp = block.timestamp + _secsLeft;
-    _info.revokingTimestamp = _revokingTimestamp;
-    emit CandidateRevokingTimestampUpdated(_consensusAddr, _revokingTimestamp);
+    if (_info.revokingTimestamp != 0) revert ErrAlreadyRequestedRevokingCandidate();
+    _setRevokingTimestamp(_info, block.timestamp + _secsLeft);
   }
 
   /**
@@ -149,12 +111,11 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     uint256 _effectiveDaysOnwards,
     uint256 _commissionRate
   ) external override onlyStakingContract {
-    require(
-      _candidateCommissionChangeSchedule[_consensusAddr].effectiveTimestamp == 0,
-      "CandidateManager: commission change schedule exists"
-    );
-    require(_commissionRate <= _MAX_PERCENTAGE, "CandidateManager: invalid commission rate");
-    require(_effectiveDaysOnwards >= _minEffectiveDaysOnwards, "CandidateManager: invalid effective date");
+    if (_candidateCommissionChangeSchedule[_consensusAddr].effectiveTimestamp != 0) {
+      revert ErrAlreadyRequestedUpdatingCommissionRate();
+    }
+    if (_commissionRate > _MAX_PERCENTAGE) revert ErrInvalidCommissionRate();
+    if (_effectiveDaysOnwards < _minEffectiveDaysOnwards) revert ErrInvalidEffectiveDaysOnwards();
 
     CommissionSchedule storage _schedule = _candidateCommissionChangeSchedule[_consensusAddr];
     uint256 _effectiveTimestamp = ((block.timestamp / 1 days) + _effectiveDaysOnwards) * 1 days;
@@ -185,7 +146,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    * @inheritdoc ICandidateManager
    */
   function getCandidateInfo(address _candidate) external view override returns (ValidatorCandidate memory) {
-    require(isValidatorCandidate(_candidate), "CandidateManager: query for non-existent candidate");
+    if (!isValidatorCandidate(_candidate)) revert ErrNonExistentCandidate();
     return _candidateInfo[_candidate];
   }
 
@@ -244,7 +205,8 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
         }
 
         // Removes unsastisfied candidates
-        bool _revokingActivated = _info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp;
+        bool _revokingActivated = (_info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp) ||
+          _emergencyExitLockedFundReleased(_addr);
         bool _topupDeadlineMissed = _info.topupDeadline != 0 && _info.topupDeadline <= block.timestamp;
         if (_revokingActivated || _topupDeadlineMissed) {
           _selfStakings[_i] = _selfStakings[--_length];
@@ -307,7 +269,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    *
    */
   function _setMinEffectiveDaysOnwards(uint256 _numOfDays) internal {
-    require(_numOfDays >= 1, "CandidateManager: invalid min effective days onwards");
+    if (_numOfDays < 1) revert ErrInvalidMinEffectiveDaysOnwards();
     _minEffectiveDaysOnwards = _numOfDays;
     emit MinEffectiveDaysOnwardsUpdated(_numOfDays);
   }
@@ -315,7 +277,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /**
    * @dev Removes the candidate.
    */
-  function _removeCandidate(address _addr) private {
+  function _removeCandidate(address _addr) internal virtual {
     uint256 _idx = _candidateIndex[_addr];
     if (_idx == 0) {
       return;
@@ -326,7 +288,6 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     delete _candidateCommissionChangeSchedule[_addr];
 
     address _lastCandidate = _candidates[_candidates.length - 1];
-
     if (_lastCandidate != _addr) {
       _candidateIndex[_lastCandidate] = _idx;
       _candidates[~_idx] = _lastCandidate;
@@ -334,4 +295,18 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
 
     _candidates.pop();
   }
+
+  /**
+   * @dev Sets timestamp to revoke a candidate.
+   */
+  function _setRevokingTimestamp(ValidatorCandidate storage _candidate, uint256 _timestamp) internal {
+    if (!isValidatorCandidate(_candidate.consensusAddr)) revert ErrNonExistentCandidate();
+    _candidate.revokingTimestamp = _timestamp;
+    emit CandidateRevokingTimestampUpdated(_candidate.consensusAddr, _timestamp);
+  }
+
+  /**
+   * @dev Returns a flag indicating whether the fund is unlocked.
+   */
+  function _emergencyExitLockedFundReleased(address _consensusAddr) internal virtual returns (bool);
 }

@@ -22,6 +22,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     address[] againstVoteds; // Array of addresses voting against
     uint256 expiryTimestamp;
     mapping(address => Signature) sig;
+    mapping(address => bool) voted;
   }
 
   /// @dev Emitted when a proposal is created
@@ -108,10 +109,10 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     bytes[] memory _calldatas,
     uint256[] memory _gasAmounts,
     address _creator
-  ) internal virtual returns (uint256 _round) {
+  ) internal virtual returns (Proposal.ProposalDetail memory _proposal) {
     require(_chainId != 0, "CoreGovernance: invalid chain id");
 
-    Proposal.ProposalDetail memory _proposal = Proposal.ProposalDetail(
+    _proposal = Proposal.ProposalDetail(
       round[_chainId] + 1,
       _chainId,
       _expiryTimestamp,
@@ -123,7 +124,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    _round = _createVotingRound(_chainId, _proposalHash, _expiryTimestamp);
+    uint256 _round = _createVotingRound(_chainId, _proposalHash, _expiryTimestamp);
     emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
   }
 
@@ -246,7 +247,11 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       revert(string(abi.encodePacked("CoreGovernance: ", Strings.toHexString(uint160(_voter), 20), " already voted")));
     }
 
-    _vote.sig[_voter] = _signature;
+    _vote.voted[_voter] = true;
+    // Stores the signature if it is not empty
+    if (_signature.r > 0 || _signature.s > 0 || _signature.v > 0) {
+      _vote.sig[_voter] = _signature;
+    }
     emit ProposalVoted(_vote.hash, _voter, _support, _voterWeight);
 
     uint256 _forVoteWeight;
@@ -294,9 +299,11 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       emit ProposalExpired(_proposalVote.hash);
 
       for (uint256 _i; _i < _proposalVote.forVoteds.length; _i++) {
+        delete _proposalVote.voted[_proposalVote.forVoteds[_i]];
         delete _proposalVote.sig[_proposalVote.forVoteds[_i]];
       }
       for (uint256 _i; _i < _proposalVote.againstVoteds.length; _i++) {
+        delete _proposalVote.voted[_proposalVote.againstVoteds[_i]];
         delete _proposalVote.sig[_proposalVote.againstVoteds[_i]];
       }
       delete _proposalVote.status;
@@ -331,7 +338,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
    * @dev Returns whether the voter casted for the proposal.
    */
   function _voted(ProposalVote storage _vote, address _voter) internal view returns (bool) {
-    return _vote.sig[_voter].r != 0;
+    return _vote.voted[_voter];
   }
 
   /**
