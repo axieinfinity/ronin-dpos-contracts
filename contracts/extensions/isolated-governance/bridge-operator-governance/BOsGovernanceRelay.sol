@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "../../../extensions/isolated-governance/IsolatedGovernance.sol";
 import "../../../interfaces/consumers/SignatureConsumer.sol";
 import "../../../libraries/BridgeOperatorsBallot.sol";
+import "../../../libraries/AddressArrayUtils.sol";
 
 abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
   /// @dev The last the brige operator set info.
@@ -40,7 +41,11 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
         _ballot.epoch > _lastSyncedBridgeOperatorSetInfo.epoch),
       "BOsGovernanceRelay: query for outdated bridge operator set"
     );
-    BridgeOperatorsBallot.verifyBallot(_ballot, _lastSyncedBridgeOperatorSetInfo);
+    BridgeOperatorsBallot.verifyBallot(_ballot);
+    require(
+      !AddressArrayUtils.isEqual(_ballot.operators, _lastSyncedBridgeOperatorSetInfo.operators),
+      "BOsGovernanceRelay: bridge operator set is already voted"
+    );
     require(_signatures.length > 0, "BOsGovernanceRelay: invalid array length");
 
     Signature calldata _sig;

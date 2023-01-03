@@ -19,33 +19,15 @@ library BridgeOperatorsBallot {
    *
    * Requirements:
    * - The ballot is not for an empty operator set.
-   * - The epoch and period are not older than the current ones.
-   * - The bridge operator set is changed compared with the latest one.
    * - The operator address list is in order.
    *
    */
-  function verifyBallot(BridgeOperatorSet calldata _ballot, BridgeOperatorSet storage _latest) internal view {
+  function verifyBallot(BridgeOperatorSet calldata _ballot) internal pure {
     require(_ballot.operators.length > 0, "BridgeOperatorsBallot: invalid array length");
-
-    bytes32 _ballotOperatorsHash;
-    bytes32 _latestOperatorsHash;
-    address[] memory _ballotOperators = _ballot.operators;
-    address[] memory _latestOperators = _latest.operators;
-
-    assembly {
-      _ballotOperatorsHash := keccak256(add(_ballotOperators, 32), mul(mload(_ballotOperators), 32))
-      _latestOperatorsHash := keccak256(add(_latestOperators, 32), mul(mload(_latestOperators), 32))
-    }
-
-    require(
-      _ballotOperatorsHash != _latestOperatorsHash,
-      "BridgeOperatorsBallot: bridge operator set is already voted"
-    );
-
-    address _addr = _ballotOperators[0];
-    for (uint _i = 1; _i < _ballotOperators.length; _i++) {
-      require(_addr < _ballotOperators[_i], "BridgeOperatorsBallot: invalid order of bridge operators");
-      _addr = _ballotOperators[_i];
+    address _addr = _ballot.operators[0];
+    for (uint _i = 1; _i < _ballot.operators.length; _i++) {
+      require(_addr < _ballot.operators[_i], "BridgeOperatorsBallot: invalid order of bridge operators");
+      _addr = _ballot.operators[_i];
     }
   }
 

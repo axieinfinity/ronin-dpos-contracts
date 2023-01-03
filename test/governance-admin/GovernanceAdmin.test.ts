@@ -239,13 +239,24 @@ describe('Governance Admin test', () => {
         );
       });
 
-      it('Should not be able to vote for the same operator set again', async () => {
+      it('Should be able to vote for the same operator set again', async () => {
         ballot = {
           ...ballot,
           epoch: BigNumber.from(ballot.epoch).add(1),
         };
-        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWith(
-          'BridgeOperatorsBallot: bridge operator set is already voted'
+        signatures = await Promise.all(
+          trustedOrgs.map((g) =>
+            g.bridgeVoter
+              ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
+              .then(mapByteSigToSigStruct)
+          )
+        );
+        await governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures);
+      });
+
+      it('Should not be able to relay with the same operator set', async () => {
+        await expect(mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures)).revertedWith(
+          'BOsGovernanceRelay: bridge operator set is already voted'
         );
       });
 
