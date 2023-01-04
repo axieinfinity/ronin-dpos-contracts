@@ -50,6 +50,7 @@ export interface AddressExtended {
 
 export interface GeneralConfig {
   [network: LiteralNetwork]: {
+    roninChainId?: BigNumberish;
     governanceAdmin?: AddressExtended;
     maintenanceContract?: AddressExtended;
     stakingVestingContract?: AddressExtended;

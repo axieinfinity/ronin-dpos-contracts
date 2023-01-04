@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { BigNumber, BigNumberish } from 'ethers';
-import { ethers } from 'hardhat';
+import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Address } from 'hardhat-deploy/dist/types';
 
@@ -126,6 +126,7 @@ describe('Arrange validators', () => {
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
+      network.config.chainId!,
       undefined,
       ...trustedOrgs.map((_) => _.governor)
     );
