@@ -2,6 +2,13 @@
 # yarn lockfile v1
 
 
+"@axieinfinity/hardhat-4byte-uploader@^1.0.0":
+  version "1.0.0"
+  resolved "https://npm.pkg.github.com/download/@axieinfinity/hardhat-4byte-uploader/1.0.0/aa70264b493fa1baca5340474d8792a9c26727ab#aa70264b493fa1baca5340474d8792a9c26727ab"
+  integrity sha512-Z3fvd1eGxv41hNI7S2ePilLeEqmUSL7pNct3/Hg9qBzAmqHiMf+ScBlBJ+p/u0ScOWJAJSZaVYucOd7cveR5eg==
+  dependencies:
+    axios "^0.24.0"
+
 "@babel/code-frame@^7.0.0":
   version "7.18.6"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.18.6.tgz#3b25d38c89600baa2dcc219edfa88a74eb2c427a"
@@ -902,13 +909,6 @@
   integrity sha512-29g2SZ29HtsqA58pLCtopI1P/cPy5/UAzlcAXO6T/CNJimG6yA8kx4NaseMyJULiC+TEs02Y9/yeHzClqoA0hw==
   dependencies:
     antlr4ts "^0.5.0-alpha.4"
-
-"@solidstate/hardhat-4byte-uploader@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@solidstate/hardhat-4byte-uploader/-/hardhat-4byte-uploader-1.0.2.tgz#c265d64a82c2f67982851408d088dc2ec58d4cad"
-  integrity sha512-O1trdKctT7ru28LxpLc3RvQtAniBbE1zahi1+y8lc3N04QygOy4k3DneY/QC2NF69xkfnNzloau2m0SnR04zuw==
-  dependencies:
-    axios "^0.24.0"
 
 "@tsconfig/node10@^1.0.7":
   version "1.0.9"
