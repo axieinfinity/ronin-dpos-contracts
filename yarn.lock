@@ -4,8 +4,8 @@
 
 "@axieinfinity/hardhat-4byte-uploader@^1.0.0":
   version "1.0.0"
-  resolved "https://npm.pkg.github.com/download/@axieinfinity/hardhat-4byte-uploader/1.0.0/d44f4604270c5b82f898be98bd1d2c3f75856f42#d44f4604270c5b82f898be98bd1d2c3f75856f42"
-  integrity sha512-sQ6NB006VCL9+u3fUCII0F8podhMaDphRAq2prdKCbnCkhpAdNdqm02B0uR6V0VJdtnHQoJJ9nUdyVTYD8il1Q==
+  resolved "https://npm.pkg.github.com/download/@axieinfinity/hardhat-4byte-uploader/1.0.0/95fb4f6a8138a676118b7962dda18b7b337b5716#95fb4f6a8138a676118b7962dda18b7b337b5716"
+  integrity sha512-ZCZcT3uGjrVkSP8p3t4vs6CNaHoaBF/1/GsHn9GxLijKAagnmea8JzXSl6O2DU7p8loKrDn5WLEgtcU+Eoly+A==
   dependencies:
     axios "^0.24.0"
 
