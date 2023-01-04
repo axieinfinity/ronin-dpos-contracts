@@ -86,7 +86,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
     _result = new address[](validatorCount);
     uint256 _count = 0;
     for (uint _i = 0; _i < _result.length; _i++) {
-      if (isBlockProducer(_validators[_i])) {
+      if (isOperatingBridge(_validators[_i])) {
         _result[_count++] = _bridgeOperatorOf(_validators[_i]);
       }
     }
