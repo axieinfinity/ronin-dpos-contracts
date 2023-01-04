@@ -23,8 +23,6 @@ jobs:
 
       - name: 'Run install'
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           cmd: install
 
