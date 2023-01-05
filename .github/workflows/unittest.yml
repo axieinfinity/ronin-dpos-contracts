@@ -16,10 +16,10 @@ jobs:
   nodejs:
     runs-on: ubuntu-latest
     steps:
-      - name: 'Checkout Repo'
+      - name: "Checkout Repo"
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 #v3.0.2
 
-      - name: 'Setup Node'
+      - name: "Setup Node"
         uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 #v3.4.1
         with:
           node-version: v14.18.1
@@ -29,19 +29,17 @@ jobs:
           echo "@axieinfinity:registry=https://npm.pkg.github.com/" >> .npmrc
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
 
-      - name: 'Run install'
+      - name: "Run install"
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
         with:
           cmd: install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 'Run Compile'
+      - name: "Run Compile"
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
         with:
           cmd: compile
 
-      - name: 'Run Test'
+      - name: "Run Test"
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
         with:
           cmd: test
