@@ -455,7 +455,7 @@ abstract contract CoinbaseExecution is
   }
 
   /**
-   * @dev Override `CandidateManager-isTrustedOrg`.
+   * @dev Override `CandidateManager-_isTrustedOrg`.
    */
   function _isTrustedOrg(address _consensusAddr) internal view override returns (bool) {
     return _roninTrustedOrganizationContract.getConsensusWeight(_consensusAddr) > 0;
