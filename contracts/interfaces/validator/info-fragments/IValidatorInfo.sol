@@ -57,7 +57,7 @@ interface IValidatorInfo {
   function isBridgeOperator(address _addr) external view returns (bool);
 
   /**
-   * @dev Returns whether the consensus address is operatoring the bridge or not.
+   * @dev Returns whether the consensus address is operating the bridge or not.
    */
   function isOperatingBridge(address _consensusAddr) external view returns (bool);
 

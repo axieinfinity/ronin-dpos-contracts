@@ -63,7 +63,7 @@ const zeroTopUpAmount = 0;
 const topUpAmount = BigNumber.from(100_000_000_000);
 const slashDoubleSignAmount = BigNumber.from(2000);
 
-describe('Ronin Validator Set test', () => {
+describe('Ronin Validator Set: Coinbase execution test', () => {
   before(async () => {
     [poolAdmin, consensusAddr, bridgeOperator, deployer, ...signers] = await ethers.getSigners();
     candidateAdmin = poolAdmin;
@@ -195,80 +195,6 @@ describe('Ronin Validator Set test', () => {
       expect(await roninValidatorSet.getValidators()).eql([]);
       expect(await roninValidatorSet.getBlockProducers()).eql([]);
       await expect(tx!).not.emit(roninValidatorSet, 'ValidatorSetUpdated');
-    });
-  });
-
-  describe('Grant validator candidate sanity check', async () => {
-    it('Should not be able to apply for candidate role with existed pool admin address', async () => {
-      let tx = stakingContract
-        .connect(validatorCandidates[3].poolAdmin)
-        .applyValidatorCandidate(
-          validatorCandidates[3].candidateAdmin.address,
-          validatorCandidates[3].consensusAddr.address,
-          validatorCandidates[3].treasuryAddr.address,
-          validatorCandidates[3].bridgeOperator.address,
-          2_00,
-          {
-            value: minValidatorStakingAmount,
-          }
-        );
-
-      await expect(tx)
-        .revertedWithCustomError(stakingContract, 'ErrAdminOfAnyActivePoolForbidden')
-        .withArgs(validatorCandidates[3].poolAdmin.address);
-    });
-
-    it('Should not be able to apply for candidate role with existed candidate admin address', async () => {
-      let tx = stakingContract
-        .connect(validatorCandidates[4].poolAdmin)
-        .applyValidatorCandidate(
-          validatorCandidates[0].candidateAdmin.address,
-          validatorCandidates[4].consensusAddr.address,
-          validatorCandidates[4].treasuryAddr.address,
-          validatorCandidates[4].bridgeOperator.address,
-          2_00,
-          {
-            value: minValidatorStakingAmount,
-          }
-        );
-
-      await expect(tx).revertedWithCustomError(stakingContract, 'ErrThreeInteractionAddrsNotEqual');
-    });
-
-    it('Should not be able to apply for candidate role with existed treasury address', async () => {
-      let tx = stakingContract
-        .connect(validatorCandidates[4].poolAdmin)
-        .applyValidatorCandidate(
-          validatorCandidates[4].candidateAdmin.address,
-          validatorCandidates[4].consensusAddr.address,
-          validatorCandidates[0].treasuryAddr.address,
-          validatorCandidates[4].bridgeOperator.address,
-          2_00,
-          {
-            value: minValidatorStakingAmount,
-          }
-        );
-
-      await expect(tx).revertedWithCustomError(stakingContract, 'ErrThreeInteractionAddrsNotEqual');
-    });
-
-    it('Should not be able to apply for candidate role with existed bridge operator address', async () => {
-      let tx = stakingContract
-        .connect(validatorCandidates[4].poolAdmin)
-        .applyValidatorCandidate(
-          validatorCandidates[4].candidateAdmin.address,
-          validatorCandidates[4].consensusAddr.address,
-          validatorCandidates[4].treasuryAddr.address,
-          validatorCandidates[0].bridgeOperator.address,
-          2_00,
-          {
-            value: minValidatorStakingAmount,
-          }
-        );
-
-      await expect(tx)
-        .revertedWithCustomError(roninValidatorSet, 'ErrExistentBridgeOperator')
-        .withArgs(validatorCandidates[0].bridgeOperator.address);
     });
   });
 
