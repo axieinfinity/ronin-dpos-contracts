@@ -69,10 +69,12 @@ interface ICandidateManager {
   error ErrInvalidEffectiveDaysOnwards();
   /// @dev Error of invalid min effective days onwards.
   error ErrInvalidMinEffectiveDaysOnwards();
-  /// @dev Error of already requested revoking candidate before
+  /// @dev Error of already requested revoking candidate before.
   error ErrAlreadyRequestedRevokingCandidate();
-  /// @dev Error of commission change schedule exists
+  /// @dev Error of commission change schedule exists.
   error ErrAlreadyRequestedUpdatingCommissionRate();
+  /// @dev Error of trusted org cannot renounce.
+  error ErrTrustedOrgCannotRenounce();
 
   /**
    * @dev Returns the maximum number of validator candidate.
@@ -115,7 +117,7 @@ interface ICandidateManager {
    * Emits the event `CandidateGranted`.
    *
    */
-  function grantValidatorCandidate(
+  function execApplyValidatorCandidate(
     address _admin,
     address _consensusAddr,
     address payable _treasuryAddr,
@@ -132,7 +134,7 @@ interface ICandidateManager {
    * Emits the event `CandidateRevokingTimestampUpdated`.
    *
    */
-  function requestRevokeCandidate(address, uint256 _secsLeft) external;
+  function execRequestRenounceCandidate(address, uint256 _secsLeft) external;
 
   /**
    * @dev Fallback function of `CandidateStaking-requestUpdateCommissionRate`.

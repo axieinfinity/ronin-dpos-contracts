@@ -453,4 +453,11 @@ abstract contract CoinbaseExecution is
     emit BlockProducerSetUpdated(_newPeriod, _nextEpoch, getBlockProducers());
     emit BridgeOperatorSetUpdated(_newPeriod, _nextEpoch, getBridgeOperators());
   }
+
+  /**
+   * @dev Override `CandidateManager-isTrustedOrg`.
+   */
+  function _isTrustedOrg(address _consensusAddr) internal view override returns (bool) {
+    return _roninTrustedOrganizationContract.getConsensusWeight(_consensusAddr) > 0;
+  }
 }
