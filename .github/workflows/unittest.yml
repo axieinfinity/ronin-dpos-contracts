@@ -27,7 +27,6 @@ jobs:
       - name: Github private package token in npmrc
         run: |
           echo "@axieinfinity:registry=https://npm.pkg.github.com/" >> .npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
 
       - name: 'Run install'
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
