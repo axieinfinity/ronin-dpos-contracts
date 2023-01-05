@@ -9,6 +9,9 @@ on:
       - main
       - dev
 
+permissions:
+  packages: read
+
 jobs:
   nodejs:
     runs-on: ubuntu-latest
@@ -21,10 +24,17 @@ jobs:
         with:
           node-version: v14.18.1
 
+      - name: Github private package token in npmrc
+        run: |
+          echo "@axieinfinity:registry=https://npm.pkg.github.com/" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+
       - name: 'Run install'
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
         with:
           cmd: install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 'Run Compile'
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
