@@ -15,6 +15,8 @@ export type ValidatorCandidateAddressSet = {
   bridgeOperator: SignerWithAddress;
 };
 
+export type WhitelistedCandidateAddressSet = TrustedOrganizationAddressSet & ValidatorCandidateAddressSet;
+
 export function createTrustedOrganizationAddressSet(
   addrs: SignerWithAddress[]
 ): TrustedOrganizationAddressSet | undefined {
@@ -125,6 +127,26 @@ export function createManyValidatorCandidateAddressSets(
     treasuryAddr: treasuryAddrs![i],
     bridgeOperator: bridgeOperators![i],
   }));
+}
+
+export function mergeToWhitelistedCandidateAddressSet(
+  trustedOrg: TrustedOrganizationAddressSet,
+  candidate: ValidatorCandidateAddressSet
+): WhitelistedCandidateAddressSet {
+  candidate.consensusAddr = trustedOrg.consensusAddr;
+  return { ...trustedOrg, ...candidate };
+}
+
+export function mergeToManyWhitelistedCandidateAddressSets(
+  trustedOrgs: TrustedOrganizationAddressSet[],
+  candidates: ValidatorCandidateAddressSet[]
+): WhitelistedCandidateAddressSet[] {
+  expect(checkArraysHaveSameSize([trustedOrgs, candidates])).eq(
+    true,
+    'mergeToManyWhitelistedCandidateAddressSets: input arrays of signers must have same length'
+  );
+
+  return trustedOrgs.map((org, idx) => mergeToWhitelistedCandidateAddressSet(org, candidates[idx]));
 }
 
 const checkArraysHaveSameSize = (arrays: Array<any>[]) => {
