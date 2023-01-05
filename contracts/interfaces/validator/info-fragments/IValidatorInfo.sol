@@ -9,7 +9,7 @@ interface IValidatorInfo {
   event MaxPrioritizedValidatorNumberUpdated(uint256);
 
   /// @dev Error of number of prioritized greater than number of max validators.
-  error InvalidMaxPrioitizedValidatorNumber();
+  error ErrInvalidMaxPrioritizedValidatorNumber();
 
   /**
    * @dev Returns the maximum number of validators in the epoch.
