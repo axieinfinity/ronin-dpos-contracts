@@ -19,7 +19,7 @@ interface ICommonInfo is ITimingInfo, IJailingInfo, IValidatorInfo {
   event DeprecatedRewardRecycleFailed(address indexed recipientAddr, uint256 amount, uint256 balance);
 
   // Error thrown when receives RON from neither staking vesting contract nor staking contract"
-  error UnauthorizedReceiveRON();
+  error ErrUnauthorizedReceiveRON();
 
   /**
    * @dev Returns the total deprecated reward, which includes reward that is not sent for slashed validators and unsastified bridge operators
