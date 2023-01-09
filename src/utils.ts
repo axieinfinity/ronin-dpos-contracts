@@ -179,3 +179,14 @@ export interface MainchainGovernanceAdminArguments {
 export interface MainchainGovernanceAdminConfig {
   [network: LiteralNetwork]: MainchainGovernanceAdminArguments | undefined;
 }
+
+export interface VaultForwarderArguments {
+  vaultId: string;
+  targets?: Address[];
+  admin?: Address;
+  moderator?: Address;
+}
+
+export interface VaultForwarderConfig {
+  [network: LiteralNetwork]: VaultForwarderArguments[] | undefined;
+}
