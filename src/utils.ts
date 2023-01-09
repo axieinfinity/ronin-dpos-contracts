@@ -1,5 +1,5 @@
 import { BigNumber, BigNumberish } from 'ethers';
-import { ethers } from 'hardhat';
+import { ethers, network } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
 
 import { TrustedOrganizationStruct } from './types/IRoninTrustedOrganization';
@@ -178,4 +178,15 @@ export interface MainchainGovernanceAdminArguments {
 
 export interface MainchainGovernanceAdminConfig {
   [network: LiteralNetwork]: MainchainGovernanceAdminArguments | undefined;
+}
+
+export interface VaultForwarderArguments {
+  vaultId: string;
+  targets?: Address[];
+  admin?: Address;
+  moderator?: Address;
+}
+
+export interface VaultForwarderConfig {
+  [network: LiteralNetwork]: VaultForwarderArguments[] | undefined;
 }
