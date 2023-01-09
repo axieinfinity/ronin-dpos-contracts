@@ -1,5 +1,5 @@
 import { BigNumber, BigNumberish } from 'ethers';
-import { ethers, network } from 'hardhat';
+import { ethers } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
 
 import { TrustedOrganizationStruct } from './types/IRoninTrustedOrganization';
