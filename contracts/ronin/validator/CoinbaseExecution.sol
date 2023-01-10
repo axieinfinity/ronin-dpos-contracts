@@ -97,7 +97,6 @@ abstract contract CoinbaseExecution is
   function wrapUpEpoch() external payable virtual override onlyCoinbase whenEpochEnding oncePerEpoch {
     uint256 _newPeriod = _computePeriod(block.timestamp);
     bool _periodEnding = _isPeriodEnding(_newPeriod);
-    _currentPeriodStartAtBlock = block.number + 1;
 
     address[] memory _currentValidators = getValidators();
     uint256 _epoch = epochOf(block.number);
@@ -105,6 +104,7 @@ abstract contract CoinbaseExecution is
     uint256 _lastPeriod = currentPeriod();
 
     if (_periodEnding) {
+      _currentPeriodStartAtBlock = block.number + 1;
       _syncBridgeOperatingReward(_lastPeriod, _currentValidators);
       (
         uint256 _totalDelegatingReward,
