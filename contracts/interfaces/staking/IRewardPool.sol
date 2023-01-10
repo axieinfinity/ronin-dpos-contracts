@@ -10,8 +10,8 @@ interface IRewardPool is PeriodWrapperConsumer {
     uint256 debited;
     // The last accumulated of the amount rewards per share (one unit staking) that the info updated.
     uint256 aRps;
-    // Min staking amount in the period.
-    uint256 minAmount;
+    // Lowest staking amount in the period.
+    uint256 lowestAmount;
     // Last period number that the info updated.
     uint256 lastPeriod;
   }
