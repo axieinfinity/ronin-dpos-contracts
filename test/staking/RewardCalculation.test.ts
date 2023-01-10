@@ -273,15 +273,21 @@ describe('Reward Calculation test', () => {
       await network.provider.send('evm_revert', [snapshotId]);
     });
 
-    it('Should be able to claim reward at the 1st period', async () => {
+    it('Should be able to claim rewards at the 1st period', async () => {
       await stakingContract.increaseReward(1000);
       tx = await stakingContract.endPeriod(); // period = 1
       txs[0] = await stakingContract.claimReward(userA.address);
       await expect(txs[0]).emit(stakingContract, 'RewardClaimed').withArgs(poolAddr, userA.address, 1000);
       await expect(txs[0]).emit(stakingContract, 'UserRewardUpdated').withArgs(poolAddr, userA.address, 0);
+      txs[0] = await stakingContract.claimReward(userA.address);
+      await expect(txs[0]).emit(stakingContract, 'RewardClaimed').withArgs(poolAddr, userA.address, 0);
+      txs[0] = await stakingContract.claimReward(userA.address);
+      await expect(txs[0]).emit(stakingContract, 'RewardClaimed').withArgs(poolAddr, userA.address, 0);
+      txs[0] = await stakingContract.claimReward(userA.address);
+      await expect(txs[0]).emit(stakingContract, 'RewardClaimed').withArgs(poolAddr, userA.address, 0);
     });
 
-    it('Should be able to claim reward in next periods', async () => {
+    it('Should be able to claim rewards in next periods', async () => {
       await stakingContract.increaseReward(500);
       tx = await stakingContract.endPeriod(); // period = 2
       await stakingContract.increaseReward(1000);
@@ -292,6 +298,12 @@ describe('Reward Calculation test', () => {
       txs[0] = await stakingContract.claimReward(userA.address);
       await expect(txs[0]).emit(stakingContract, 'RewardClaimed').withArgs(poolAddr, userA.address, 2500);
       await expect(txs[0]).emit(stakingContract, 'UserRewardUpdated').withArgs(poolAddr, userA.address, 0);
+      txs[0] = await stakingContract.claimReward(userA.address);
+      await expect(txs[0]).emit(stakingContract, 'RewardClaimed').withArgs(poolAddr, userA.address, 0);
+      txs[0] = await stakingContract.claimReward(userA.address);
+      await expect(txs[0]).emit(stakingContract, 'RewardClaimed').withArgs(poolAddr, userA.address, 0);
+      txs[0] = await stakingContract.claimReward(userA.address);
+      await expect(txs[0]).emit(stakingContract, 'RewardClaimed').withArgs(poolAddr, userA.address, 0);
     });
   });
 });
