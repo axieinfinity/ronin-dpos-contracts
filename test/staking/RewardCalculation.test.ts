@@ -93,7 +93,7 @@ describe('Reward Calculation test', () => {
         expect(await stakingContract.getReward(poolAddr, userA.address)).eq(1500); // 1000 + 500 from the last period
       });
 
-      it('Should not able to reward reward more than once for multiple pools', async () => {
+      it('Should not able to record reward more than once for multiple pools', async () => {
         let addrList = Array.from(Array(10).keys()).map(randomAddress);
         let arr = addrList.map(() => 0);
         tx = await stakingContract.execRecordRewards(
