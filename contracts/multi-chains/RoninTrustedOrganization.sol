@@ -363,7 +363,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
             "RoninTrustedOrganization: query for duplicated bridge voter"
           );
           delete _bridgeVoterWeight[_bridgeVoterList[_i]];
-          _bridgeVoterList[_i] = _v.governor;
+          _bridgeVoterList[_i] = _v.bridgeVoter;
         }
 
         _consensusWeight[_v.consensusAddr] = _v.weight;
