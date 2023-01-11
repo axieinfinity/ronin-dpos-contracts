@@ -52,7 +52,7 @@ This repo contains source code of contracts that will be either deployed on the 
 
 ### Upgradeability & Governance mechanism
 
-Except for the governance contracts and vault forwarder contracts, all other contracts are deployed following the proxy pattern for upgradeability. The [`TransparentUpgradeableProxyV2`](./contracts/extensions/TransparentUpgradeableProxyV2.sol), a extended version of [OpenZeppelin's](https://docs.openzeppelin.com/contracts/3.x/api/proxy#TransparentUpgradeableProxy), is used for deploying the proxies.
+Except for the governance contracts and vault forwarder contracts, all other contracts are deployed following the proxy pattern for upgradeability. The [`TransparentUpgradeableProxyV2`](./contracts/extensions/TransparentUpgradeableProxyV2.sol), an extended version of [OpenZeppelin's](https://docs.openzeppelin.com/contracts/3.x/api/proxy#TransparentUpgradeableProxy), is used for deploying the proxies.
 
 To comply with the [governance process](./docs/README.md#governance), in which requires all modifications to a contract must be approved by a set of governors, the admin role of all proxies must be granted for the governance contract address.
 
