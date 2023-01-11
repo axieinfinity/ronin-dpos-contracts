@@ -10,35 +10,64 @@ The collections of smart contracts that power the Ronin Delegated Proof of Stake
 
 ### Compile & test
 
-```shell
-$ yarn --frozen-lockfile
-$ yarn compile
-$ yarn test
-```
+- Add Github NPM token to install packages, and then replace `{YOUR_TOKEN}` in `.npmrc` file by any arbitrary Github token with `read:packages` permission.
+
+  > **Note**: To create a new token, please refer to [this article](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token). The token must have `read:packages` permission.
+
+  ```shell
+  cp .npmrc.example .npmrc && vim .npmrc
+  ```
+
+- Install packages
+
+  ```shell
+  $ yarn --frozen-lockfile
+  ```
+
+- Compile contracts
+
+  ```shell
+  $ yarn compile
+  ```
+
+- Run test
+
+  ```shell
+  $ yarn test
+  ```
 
 ## Deployment
 
-On main chains, we need to deploy the governance contract and bridge contracts: `RoninTrustedOrganization`, `MainchainGovernanceAdmin` and `MainchainGatewayV2`.
+### Target chain to deploy
 
-On Ronin we deploy `RoninGatewayV2` for bridge operation and the DPoS contracts.
+This repo contains source code of contracts that will be either deployed on the mainchains, or on Ronin.
 
-All contracts (except the governance contracts and vault forwarder contracts) are upgradeable following the governance process. We use [`TransparentUpgradeableProxy`](https://docs.openzeppelin.com/contracts/3.x/api/proxy#TransparentUpgradeableProxy) for this use case, and they should grant the governance contract the role of admin.
+- On mainchains:
+  - Governance contract
+  - Bridge contracts: `RoninTrustedOrganization`, `MainchainGovernanceAdmin` and `MainchainGatewayV2`
+- On Ronin:
+  - `RoninGatewayV2` for bridge operation
+  - DPoS contracts
 
-Here is the deployment steps:
+### Upgradeability & Governance mechanism
 
-- Init the environment variables:
+Except for the governance contracts and vault forwarder contracts, all other contracts are deployed following the proxy pattern for upgradeability. The [`TransparentUpgradeableProxyV2`](./contracts/extensions/TransparentUpgradeableProxyV2.sol), a extended version of [`OpenZeppelin's TransparentUpgradeableProxy`](https://docs.openzeppelin.com/contracts/3.x/api/proxy#TransparentUpgradeableProxy), is used for deploying the proxies. The admin of all proxies must be granted to the governance contract address to comply with the governance process, in which requires all modifications to a contract must be approved by a set of governors.
 
-```shell
-$ cp .env.example .env && vim .env
-```
+### Deployment steps
+
+- Init the environment variables
+
+  ```shell
+  $ cp .env.example .env && vim .env
+  ```
 
 - Update the contract configuration in [`config.ts`](./src/config.ts) file
 
-- Deploy the contracts:
+- Deploy the contracts
 
-```shell
-$ yarn hardhat deploy --network <local|ronin-devnet|ronin-mainnet|ronin-testnet>
-```
+  ```shell
+  $ yarn hardhat deploy --network <local|ronin-devnet|ronin-mainnet|ronin-testnet>
+  ```
 
 ## Documentation
 
