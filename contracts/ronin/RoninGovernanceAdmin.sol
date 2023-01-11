@@ -94,7 +94,7 @@ contract RoninGovernanceAdmin is
     VotingSignature storage _info = _bridgeVoterSig[_period][_epoch];
     _voters = _info.voters;
     _signatures = new Signature[](_voters.length);
-    for (uint _i = 0; _i < _voters.length; _i++) {
+    for (uint _i; _i < _voters.length; _i++) {
       _signatures[_i] = _info.signatureOf[_voters[_i]];
     }
   }
