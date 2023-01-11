@@ -1,32 +1,27 @@
 # Documentation of the DPoS contracts
 
-- [Overview](#ronin-dpos-contracts)
-  - [Staking](#staking)
-    - [Validator Candidate](#validator-candidate)
-    - [Delegator](#delegator)
-    - [Reward Calculation](#reward-calculation)
-  - [Validator Contract & Rewarding](#validator-contract--rewarding)
-    - [Block reward submission](#block-reward-submission)
-    - [Wrapping up epoch/period](#wrapping-up-epochperiod)
-  - [Slashing](#slashing)
-    - [Unavailability block producer](#unavailability-block-producer)
-    - [Double-sign block producer](#double-sign-block-producer)
-    - [Bridge Relayers](#bridge-relayers)
-    - [Bridge Voters (Ronin Trusted Organizations)](#bridge-voters-ronin-trusted-organizations)
-    - [Credit score](#credit-score)
-  - [Maintenance](#maintenance)
-  - [Bridges](#bridges)
-    - [Deposits](#deposits)
-    - [Withdrawals](#withdrawals)
-  - [Governance](#governance)
-    - [Ronin Trusted Organization](#ronin-trusted-organization)
-    - [Bridge Operators Ballot](#bridge-operators-ballot)
-    - [Proposals](#proposals)
-  - [Contract Interaction flow](#contract-interaction-flow)
-- [Development](#development)
-  - [Requirement](#requirement)
-  - [Compile & test](#compile--test)
-- [Deployment](#deployment)
+- [Staking](#staking)
+  - [Validator Candidate](#validator-candidate)
+  - [Delegator](#delegator)
+  - [Reward Calculation](#reward-calculation)
+- [Validator Contract & Rewarding](#validator-contract--rewarding)
+  - [Block reward submission](#block-reward-submission)
+  - [Wrapping up epoch/period](#wrapping-up-epochperiod)
+- [Slashing](#slashing)
+  - [Unavailability block producer](#unavailability-block-producer)
+  - [Double-sign block producer](#double-sign-block-producer)
+  - [Bridge Relayers](#bridge-relayers)
+  - [Bridge Voters (Ronin Trusted Organizations)](#bridge-voters-ronin-trusted-organizations)
+  - [Credit score](#credit-score)
+- [Maintenance](#maintenance)
+- [Bridges](#bridges)
+  - [Deposits](#deposits)
+  - [Withdrawals](#withdrawals)
+- [Governance](#governance)
+  - [Ronin Trusted Organization](#ronin-trusted-organization)
+  - [Bridge Operators Ballot](#bridge-operators-ballot)
+  - [Proposals](#proposals)
+- [Vault Forwarder](#vault-forwarder)
 
 ## Staking
 
@@ -84,6 +79,7 @@ The block miners submit their block reward at the end of each block, and these a
 ### Wrapping up epoch/period
 
 ![image](./assets/Validator%20Contract%20Overview.png)
+
 _Validator contract flow overview_
 
 1. The block producer calls the contract `RoninValidatorSet.wrapUpEpoch()` to filter jailed/maintaining block producers.
@@ -181,6 +177,7 @@ For withdrawal there are certain restrictions:
    There will be another constraint on the number of token that can be withdraw in a day. We propose to cap the value at `dailyWithdrawalLimit(token)`. Since withdrawal of Tier 3 already requires human review, it will not be counted in daily withdrawal limit.
 
 ![image](./assets/Withdrawal.png)
+
 _Normal withdrawal flow (tier 1 + tier 2). For tier 3, a separated human address will need to unlock the fund._
 
 ## Governance
@@ -191,6 +188,7 @@ We have a group of trusted organizations that are chosen by the community and Sk
 - Sync the set of bridge operators to the Ethereum chain every period.
 
 ![image](./assets/Governance.png)
+
 _Governance flow overview_
 
 The governance contracts (`RoninGovernanceAdmin` and `MainchainGovernanceAdmin`) are mainly responsible for the governance process via a decentralized voting mechanism. At any instance, there will be maximum one governance vote going on per network.
