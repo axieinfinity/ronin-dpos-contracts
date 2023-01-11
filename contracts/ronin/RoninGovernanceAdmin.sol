@@ -86,14 +86,16 @@ contract RoninGovernanceAdmin is
    * Please consider filtering for empty signatures after calling this function.
    *
    */
-  function getBridgeOperatorVotingSignatures(
-    uint256 _period,
-    uint256 _epoch,
-    address[] calldata _voters
-  ) external view returns (Signature[] memory _signatures) {
+  function getBridgeOperatorVotingSignatures(uint256 _period, uint256 _epoch)
+    external
+    view
+    returns (address[] memory _voters, Signature[] memory _signatures)
+  {
+    VotingSignature storage _extraData = _bridgeVoterSig[_period][_epoch];
+    _voters = _extraData.voters;
     _signatures = new Signature[](_voters.length);
-    for (uint256 _i; _i < _voters.length; _i++) {
-      _signatures[_i] = _votingSig[_period][_epoch][_voters[_i]];
+    for (uint _i = 0; _i < _voters.length; _i++) {
+      _signatures[_i] = _extraData.signatureOf[_voters[_i]];
     }
   }
 
