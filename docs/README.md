@@ -253,3 +253,8 @@ const TYPE_HASH = 0xdb316eb400de2ddff92ab4255c0cd3cba634cd5236b93386ed9328b7d822
 | `values`        | `uint256[]` | msg.value to send for targets |
 | `calldatas`     | `bytes[]`   | Data to call to the targets   |
 | `gasAmounts`    | `uint256[]` | Gas amount to call            |
+
+## Vault Forwarder
+
+The vaults are used in the Delegation Program, in which Ronin will lend each valid user a vault to have an affordable amount to become a validator. The users will interact with the DPoS contract via the vault. A set of target contracts that the vault can interact to are determined by the admin. The fund is locked in the vault and withdrawn only by the admin of the vault.
+
