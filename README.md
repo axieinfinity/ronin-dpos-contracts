@@ -42,7 +42,9 @@ $ yarn hardhat deploy --network <local|ronin-devnet|ronin-mainnet|ronin-testnet>
 
 ## Documentation
 
-See [docs/README.md](./docs/README.md) for the programming documentation of the contracts.
+See [docs/README.md](./docs/README.md) for the documentation of the contracts.
+
+See [docs/HACK.md](./docs/HACK.md) for the structure of the repo.
 
 For the contract interaction flow, please refer to [DPoS Contract: Interaction Flow](https://skymavis.notion.site/DPoS-Contract-Interaction-Flow-3a535cf9048f46f69dd9a45958ad9b85).
 

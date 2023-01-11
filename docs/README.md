@@ -1,4 +1,4 @@
-Documentation of the DPoS contracts
+# Documentation of the DPoS contracts
 
 - [Overview](#ronin-dpos-contracts)
   - [Staking](#staking)
