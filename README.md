@@ -36,22 +36,25 @@ The collections of smart contracts that power the Ronin Delegated Proof of Stake
   $ yarn test
   ```
 
-## Deployment
-
 ### Target chain to deploy
 
 This repo contains source code of contracts that will be either deployed on the mainchains, or on Ronin.
 
 - On mainchains:
-  - Governance contract
-  - Bridge contracts: `RoninTrustedOrganization`, `MainchainGovernanceAdmin` and `MainchainGatewayV2`
+  - Governance contract: `MainchainGovernanceAdmin`
+  - Bridge contract: `MainchainGatewayV2`
+  - Trusted orgs contract: `RoninTrustedOrganization`
 - On Ronin:
-  - `RoninGatewayV2` for bridge operation
+  - Governance contract: `RoninGovernanceAdmin`
+  - Bridge operation: `RoninGatewayV2`
+  - Trusted orgs contract: `RoninTrustedOrganization`
   - DPoS contracts
 
 ### Upgradeability & Governance mechanism
 
-Except for the governance contracts and vault forwarder contracts, all other contracts are deployed following the proxy pattern for upgradeability. The [`TransparentUpgradeableProxyV2`](./contracts/extensions/TransparentUpgradeableProxyV2.sol), a extended version of [`OpenZeppelin's TransparentUpgradeableProxy`](https://docs.openzeppelin.com/contracts/3.x/api/proxy#TransparentUpgradeableProxy), is used for deploying the proxies. The admin of all proxies must be granted to the governance contract address to comply with the governance process, in which requires all modifications to a contract must be approved by a set of governors.
+Except for the governance contracts and vault forwarder contracts, all other contracts are deployed following the proxy pattern for upgradeability. The [`TransparentUpgradeableProxyV2`](./contracts/extensions/TransparentUpgradeableProxyV2.sol), a extended version of [OpenZeppelin's](https://docs.openzeppelin.com/contracts/3.x/api/proxy#TransparentUpgradeableProxy), is used for deploying the proxies.
+
+To comply with the governance process, in which requires all modifications to a contract must be approved by a set of governors, the admin role of all proxies must be granted for the governance contract address.
 
 ### Deployment steps
 
