@@ -91,11 +91,11 @@ contract RoninGovernanceAdmin is
     view
     returns (address[] memory _voters, Signature[] memory _signatures)
   {
-    VotingSignature storage _extraData = _bridgeVoterSig[_period][_epoch];
-    _voters = _extraData.voters;
+    VotingSignature storage _info = _bridgeVoterSig[_period][_epoch];
+    _voters = _info.voters;
     _signatures = new Signature[](_voters.length);
     for (uint _i = 0; _i < _voters.length; _i++) {
-      _signatures[_i] = _extraData.signatureOf[_voters[_i]];
+      _signatures[_i] = _info.signatureOf[_voters[_i]];
     }
   }
 
