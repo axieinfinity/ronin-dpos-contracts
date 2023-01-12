@@ -7,11 +7,11 @@ The structure of the repo is as follows.
 │   ├── extensions              <-- helpers and shared contracts
 │   ├── interfaces              <-- interfaces
 │   ├── libraries               <-- libraries
-│   ├── mainchain               <-- contracts should only deployed on mainchain (gateway and governance)
+│   ├── mainchain               <-- contracts should only deployed on mainchain
 │   ├── mocks                   <-- mock contracts used in tests
 │   ├── multi-chains            <-- Ronin trusted orgs contracts
 │   ├── precompile-usages       <-- wrapper for precompiled calls
-│   └── ronin                       <-- contracts should only deployed on testnet
+│   └── ronin                       <-- contracts should only deployed on Ronin chain
 │       ├── slash-indicator             <-- slashing and credit score contracts
 │       ├── staking                     <-- pool and staking contracts
 │       ├── validator                   <-- validator set contracts
