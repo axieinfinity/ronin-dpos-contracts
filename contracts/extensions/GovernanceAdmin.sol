@@ -7,8 +7,9 @@ import "../extensions/collections/HasBridgeContract.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 
 abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract, HasBridgeContract {
+  uint256 public roninChainId;
   /// @dev Domain separator
-  bytes32 public constant DOMAIN_SEPARATOR = 0xf8704f8860d9e985bf6c52ec4738bd10fe31487599b36c0944f746ea09dc256b;
+  bytes32 public DOMAIN_SEPARATOR;
 
   modifier onlySelfCall() {
     require(msg.sender == address(this), "GovernanceAdmin: only allowed self-call");
@@ -16,20 +17,19 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
   }
 
   constructor(
+    uint256 _roninChainId,
     address _roninTrustedOrganizationContract,
     address _bridgeContract,
     uint256 _proposalExpiryDuration
   ) CoreGovernance(_proposalExpiryDuration) {
-    require(
-      keccak256(
-        abi.encode(
-          keccak256("EIP712Domain(string name,string version,bytes32 salt)"),
-          keccak256("GovernanceAdmin"), // name hash
-          keccak256("1"), // version hash
-          keccak256(abi.encode("RONIN_GOVERNANCE_ADMIN", 2020)) // salt
-        )
-      ) == DOMAIN_SEPARATOR,
-      "GovernanceAdmin: invalid domain"
+    roninChainId = _roninChainId;
+    DOMAIN_SEPARATOR = keccak256(
+      abi.encode(
+        keccak256("EIP712Domain(string name,string version,bytes32 salt)"),
+        keccak256("GovernanceAdmin"), // name hash
+        keccak256("2"), // version hash
+        keccak256(abi.encode("RONIN_GOVERNANCE_ADMIN", _roninChainId)) // salt
+      )
     );
     _setRoninTrustedOrganizationContract(_roninTrustedOrganizationContract);
     _setBridgeContract(_bridgeContract);

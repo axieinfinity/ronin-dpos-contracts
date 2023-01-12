@@ -63,7 +63,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /**
    * @inheritdoc ICandidateManager
    */
-  function grantValidatorCandidate(
+  function execApplyValidatorCandidate(
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
@@ -97,7 +97,13 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
   /**
    * @inheritdoc ICandidateManager
    */
-  function requestRevokeCandidate(address _consensusAddr, uint256 _secsLeft) external override onlyStakingContract {
+  function execRequestRenounceCandidate(address _consensusAddr, uint256 _secsLeft)
+    external
+    override
+    onlyStakingContract
+  {
+    if (_isTrustedOrg(_consensusAddr)) revert ErrTrustedOrgCannotRenounce();
+
     ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
     if (_info.revokingTimestamp != 0) revert ErrAlreadyRequestedRevokingCandidate();
     _setRevokingTimestamp(_info, block.timestamp + _secsLeft);
@@ -309,4 +315,9 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    * @dev Returns a flag indicating whether the fund is unlocked.
    */
   function _emergencyExitLockedFundReleased(address _consensusAddr) internal virtual returns (bool);
+
+  /**
+   * @dev Returns whether the consensus address is a trusted org or not.
+   */
+  function _isTrustedOrg(address _consensusAddr) internal virtual returns (bool);
 }

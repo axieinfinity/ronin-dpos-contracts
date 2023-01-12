@@ -41,6 +41,7 @@ export interface InitTestOutput {
 }
 
 export interface InitTestInput {
+  roninChainId?: BigNumberish;
   bridgeContract?: Address;
   startedAtBlock?: BigNumberish;
   maintenanceArguments?: MaintenanceArguments;
@@ -137,11 +138,13 @@ export const initTest = (id: string) =>
     if (network.name == Network.Hardhat) {
       generalRoninConf[network.name] = {
         ...generalRoninConf[network.name],
+        roninChainId: options?.roninChainId ?? network.config.chainId,
         bridgeContract: options?.bridgeContract ?? defaultTestConfig.bridgeContract!,
         startedAtBlock: options?.startedAtBlock ?? defaultTestConfig.startedAtBlock!,
       };
       generalMainchainConf[network.name] = {
         ...generalMainchainConf[network.name],
+        roninChainId: options?.roninChainId ?? network.config.chainId,
         bridgeContract: options?.bridgeContract ?? defaultTestConfig.bridgeContract!,
         startedAtBlock: options?.startedAtBlock ?? defaultTestConfig.startedAtBlock!,
       };

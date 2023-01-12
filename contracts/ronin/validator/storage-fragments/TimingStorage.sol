@@ -85,7 +85,7 @@ abstract contract TimingStorage is ITimingInfo {
   /**
    * @dev See `ITimingInfo-isPeriodEnding`
    */
-  function _isPeriodEnding(uint256 _newPeriod) public view virtual returns (bool) {
+  function _isPeriodEnding(uint256 _newPeriod) internal view virtual returns (bool) {
     return _newPeriod > _lastUpdatedPeriod;
   }
 

@@ -136,7 +136,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     poolIsActive(_consensusAddr)
     onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
   {
-    _validatorContract.requestRevokeCandidate(_consensusAddr, _waitingSecsToRevoke);
+    _validatorContract.execRequestRenounceCandidate(_consensusAddr, _waitingSecsToRevoke);
   }
 
   /**
@@ -175,7 +175,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     _diffAddrs[2] = _bridgeOperatorAddr;
     if (AddressArrayUtils.hasDuplicate(_diffAddrs)) revert ErrThreeOperationAddrsNotDistinct();
 
-    _validatorContract.grantValidatorCandidate(
+    _validatorContract.execApplyValidatorCandidate(
       _candidateAdmin,
       _consensusAddr,
       _treasuryAddr,

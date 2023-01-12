@@ -62,8 +62,8 @@ abstract contract RewardCalculation is IRewardPool {
 
     if (_wrappedArps.lastPeriod > 0) {
       // Calculates the last period reward if the aRps at the period is set
-      _aRps = _accumulatedRps[_poolAddr][_reward.lastPeriod].inner;
-      _lastPeriodReward = _reward.minAmount * (_aRps - _reward.aRps);
+      _aRps = _wrappedArps.inner;
+      _lastPeriodReward = _reward.lowestAmount * (_aRps - _reward.aRps);
     } else {
       // Fallbacks to the previous aRps in case the aRps is not set
       _aRps = _reward.aRps;
@@ -125,13 +125,13 @@ abstract contract RewardCalculation is IRewardPool {
     uint256 _currentStakingAmount
   ) internal {
     if (_reward.lastPeriod < _latestPeriod) {
-      _reward.minAmount = _currentStakingAmount;
+      _reward.lowestAmount = _currentStakingAmount;
     }
 
-    uint256 _minAmount = Math.min(_reward.minAmount, _newStakingAmount);
-    uint256 _diffAmount = _reward.minAmount - _minAmount;
+    uint256 _lowestAmount = Math.min(_reward.lowestAmount, _newStakingAmount);
+    uint256 _diffAmount = _reward.lowestAmount - _lowestAmount;
     if (_diffAmount > 0) {
-      _reward.minAmount = _minAmount;
+      _reward.lowestAmount = _lowestAmount;
       if (_pool.shares.inner < _diffAmount) revert ErrInvalidPoolShare();
       _pool.shares.inner -= _diffAmount;
     }
@@ -147,11 +147,19 @@ abstract contract RewardCalculation is IRewardPool {
    */
   function _claimReward(address _poolAddr, address _user) internal returns (uint256 _amount) {
     uint256 _latestPeriod = _currentPeriod();
-    _amount = _getReward(_poolAddr, _user, _latestPeriod, getStakingAmount(_poolAddr, _user));
+    uint256 _currentStakingAmount = getStakingAmount(_poolAddr, _user);
+    _amount = _getReward(_poolAddr, _user, _latestPeriod, _currentStakingAmount);
     emit RewardClaimed(_poolAddr, _user, _amount);
 
     UserRewardFields storage _reward = _userReward[_poolAddr][_user];
     _reward.debited = 0;
+    _syncMinStakingAmount(
+      _stakingPool[_poolAddr],
+      _reward,
+      _latestPeriod,
+      _currentStakingAmount,
+      _currentStakingAmount
+    );
     _reward.lastPeriod = _latestPeriod;
     _reward.aRps = _stakingPool[_poolAddr].aRps;
     emit UserRewardUpdated(_poolAddr, _user, 0);

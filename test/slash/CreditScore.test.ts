@@ -172,6 +172,7 @@ describe('Credit score and bail out test', () => {
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
+      network.config.chainId!,
       undefined,
       ...trustedOrgs.map((_) => _.governor)
     );

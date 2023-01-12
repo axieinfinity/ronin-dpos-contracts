@@ -91,6 +91,7 @@ describe('Governance Admin test', () => {
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
+      network.config.chainId!,
       { proposalExpiryDuration },
       ...trustedOrgs.map((_) => _.governor)
     );
@@ -190,6 +191,7 @@ describe('Governance Admin test', () => {
 
       it('Should be able relay vote bridge operators', async () => {
         expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.false;
+        const [, signatures] = await governanceAdmin.getBridgeOperatorVotingSignatures(ballot.period, ballot.epoch);
         await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures);
         expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.true;
         const bridgeOperators = await bridgeContract.getBridgeOperators();
@@ -239,13 +241,24 @@ describe('Governance Admin test', () => {
         );
       });
 
-      it('Should not be able to vote for the same operator set again', async () => {
+      it('Should be able to vote for the same operator set again', async () => {
         ballot = {
           ...ballot,
           epoch: BigNumber.from(ballot.epoch).add(1),
         };
-        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWith(
-          'BridgeOperatorsBallot: bridge operator set is already voted'
+        signatures = await Promise.all(
+          trustedOrgs.map((g) =>
+            g.bridgeVoter
+              ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
+              .then(mapByteSigToSigStruct)
+          )
+        );
+        await governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures);
+      });
+
+      it('Should not be able to relay with the same operator set', async () => {
+        await expect(mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures)).revertedWith(
+          'BOsGovernanceRelay: bridge operator set is already voted'
         );
       });
 
@@ -298,6 +311,7 @@ describe('Governance Admin test', () => {
       });
 
       it('Should be able relay vote bridge operators', async () => {
+        const [, signatures] = await governanceAdmin.getBridgeOperatorVotingSignatures(ballot.period, ballot.epoch);
         await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures);
         const bridgeOperators = await bridgeContract.getBridgeOperators();
         expect([...bridgeOperators].sort(compareAddrs)).eql(ballot.operators);

@@ -20,6 +20,7 @@ import {
   StakingConfig,
   StakingVestingArguments,
   StakingVestingConfig,
+  VaultForwarderConfig,
 } from './utils';
 
 export const commonNetworks: LiteralNetwork[] = [Network.Local, Network.Hardhat, Network.Devnet];
@@ -43,6 +44,7 @@ export const generalRoninConf: GeneralConfig = {
   [Network.Hardhat]: defaultGeneralConf,
   [Network.Devnet]: defaultGeneralConf,
   [Network.Testnet]: {
+    roninChainId: 2021,
     startedAtBlock: 11710199,
     bridgeContract: '0xCee681C9108c42C710c6A8A949307D5F13C9F3ca',
   },
@@ -53,6 +55,7 @@ export const generalMainchainConf: GeneralConfig = {
   [Network.Hardhat]: defaultGeneralConf,
   [Network.Devnet]: defaultGeneralConf,
   [Network.Goerli]: {
+    roninChainId: 2021,
     startedAtBlock: 0,
     bridgeContract: '0xFc4319Ae9e6134C708b88D5Ad5Da1A4a83372502',
   },
@@ -276,4 +279,22 @@ export const roninGovernanceAdminConf: RoninGovernanceAdminConfig = {
   [Network.Devnet]: defaultGovernanceAdminConf,
   [Network.Goerli]: undefined,
   [Network.Ethereum]: undefined,
+};
+
+export const vaultForwarderConf: VaultForwarderConfig = {
+  [Network.Testnet]: [
+    {
+      vaultId: 'qc-test',
+      targets: [
+        '0x8a320aFb578BEed1A5BB08823CF9A5f60Ea694f4', // RoninGovernanceAdmin
+        '0x7f46c5DD5f13FF0dd973317411d70800db248e7d', // RoninTrustedOrganizationProxy
+        '0x4016C80D97DDCbe4286140446759a3f0c1d20584', // MaintenanceProxy
+        '0xF7837778b6E180Df6696C8Fa986d62f8b6186752', // SlashIndicatorProxy
+        '0x9C245671791834daf3885533D24dce516B763B28', // StakingProxy
+        '0x54B3AC74a90E64E8dDE60671b6fE8F8DDf18eC9d', // RoninValidatorSetProxy
+        '0x61626ba084aDdc5dBFCdFfA257e66F8618d3feAB', // BridgeTrackingProxy
+      ],
+      moderator: '0x8643c5d7048d149297229ded82fd7ac1ec099999',
+    },
+  ],
 };

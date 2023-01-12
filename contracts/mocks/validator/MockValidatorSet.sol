@@ -165,4 +165,6 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   function isOperatingBridge(address) external view returns (bool) {}
 
   function _emergencyExitLockedFundReleased(address _consensusAddr) internal virtual override returns (bool) {}
+
+  function _isTrustedOrg(address _consensusAddr) internal virtual override returns (bool) {}
 }

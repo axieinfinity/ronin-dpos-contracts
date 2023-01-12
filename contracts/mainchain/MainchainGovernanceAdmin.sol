@@ -13,11 +13,12 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
   uint256 private constant DEFAULT_EXPIRY_DURATION = 1 << 255;
 
   constructor(
+    uint256 _roninChainId,
     address _roleSetter,
     address _roninTrustedOrganizationContract,
     address _bridgeContract,
     address[] memory _relayers
-  ) GovernanceAdmin(_roninTrustedOrganizationContract, _bridgeContract, DEFAULT_EXPIRY_DURATION) {
+  ) GovernanceAdmin(_roninChainId, _roninTrustedOrganizationContract, _bridgeContract, DEFAULT_EXPIRY_DURATION) {
     _setupRole(DEFAULT_ADMIN_ROLE, _roleSetter);
     for (uint256 _i; _i < _relayers.length; _i++) {
       _grantRole(RELAYER_ROLE, _relayers[_i]);

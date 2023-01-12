@@ -7,6 +7,7 @@ import { TrustedOrganizationStruct } from './types/IRoninTrustedOrganization';
 export const DEFAULT_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
 export const MODERATOR_ROLE = '0x71f3d55856e4058ed06ee057d79ada615f65cdf5f9ee88181b914225088f834f';
+export const TARGET_ROLE = '0x7eae605229c67d878c4d7fbf24379ada222941e36ec4e2a7c261d740a528b16f';
 export const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 export const MAX_UINT256 = BigNumber.from(
   '115792089237316195423570985008687907853269984665640564039457584007913129639936'
@@ -49,6 +50,7 @@ export interface AddressExtended {
 
 export interface GeneralConfig {
   [network: LiteralNetwork]: {
+    roninChainId?: BigNumberish;
     governanceAdmin?: AddressExtended;
     maintenanceContract?: AddressExtended;
     stakingVestingContract?: AddressExtended;
@@ -176,4 +178,15 @@ export interface MainchainGovernanceAdminArguments {
 
 export interface MainchainGovernanceAdminConfig {
   [network: LiteralNetwork]: MainchainGovernanceAdminArguments | undefined;
+}
+
+export interface VaultForwarderArguments {
+  vaultId: string;
+  targets?: Address[];
+  admin?: Address;
+  moderator?: Address;
+}
+
+export interface VaultForwarderConfig {
+  [network: LiteralNetwork]: VaultForwarderArguments[] | undefined;
 }
