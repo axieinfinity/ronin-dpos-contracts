@@ -99,6 +99,21 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
   /**
    * @inheritdoc IValidatorInfo
    */
+  function getBridgeOperatorsOf(address[] memory _validatorAddrs)
+    public
+    view
+    override
+    returns (address[] memory _result)
+  {
+    _result = new address[](_validatorAddrs.length);
+    for (uint _i = 0; _i < _result.length; _i++) {
+      _result[_i] = _bridgeOperatorOf(_validatorAddrs[_i]);
+    }
+  }
+
+  /**
+   * @inheritdoc IValidatorInfo
+   */
   function isBridgeOperator(address _bridgeOperatorAddr) external view override returns (bool _result) {
     for (uint _i = 0; _i < validatorCount; _i++) {
       if (_bridgeOperatorOf(_validators[_i]) == _bridgeOperatorAddr && isOperatingBridge(_validators[_i])) {
