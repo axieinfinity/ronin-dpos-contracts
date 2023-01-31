@@ -53,13 +53,8 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
       uint256 _actualGain = (_isJailedInPeriod || _isMaintainingInPeriod)
         ? 0
         : Math.subNonNegative(_gainCreditScore, _indicator);
-      uint256 _scoreBeforeGain = _creditScore[_validator];
-      uint256 _scoreAfterGain = Math.addWithUpperbound(_creditScore[_validator], _actualGain, _maxCreditScore);
 
-      if (_scoreBeforeGain != _scoreAfterGain) {
-        _creditScore[_validator] = _scoreAfterGain;
-      }
-
+      _creditScore[_validator] = Math.addWithUpperbound(_creditScore[_validator], _actualGain, _maxCreditScore);
       _updatedCreditScores[_i] = _creditScore[_validator];
     }
 

@@ -212,9 +212,7 @@ abstract contract RewardCalculation is IRewardPool {
       _rps = _pool.shares.inner == 0 ? 0 : (_rewards[_i] * 1e18) / _pool.shares.inner;
       _aRps[_i - _count] = _pool.aRps += _rps;
       _accumulatedRps[_poolAddr][_period] = PeriodWrapper(_pool.aRps, _period);
-      if (_pool.shares.inner != _stakingTotal) {
-        _pool.shares.inner = _stakingTotal;
-      }
+      _pool.shares.inner = _stakingTotal;
       _shares[_i - _count] = _pool.shares.inner;
       _poolAddrs[_i - _count] = _poolAddr;
     }

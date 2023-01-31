@@ -132,7 +132,8 @@ abstract contract CoinbaseExecution is
     IBridgeTracking _bridgeTracking = _bridgeTrackingContract;
     uint256 _totalBridgeBallots = _bridgeTracking.totalBallots(_lastPeriod);
     uint256 _totalBridgeVotes = _bridgeTracking.totalVotes(_lastPeriod);
-    uint256[] memory _bridgeBallots = _bridgeTracking.getManyTotalBallots(_lastPeriod, _currentValidators);
+    address[] memory _correspondingBridgeOperators = getBridgeOperatorsOf(_currentValidators);
+    uint256[] memory _bridgeBallots = _bridgeTracking.getManyTotalBallots(_lastPeriod, _correspondingBridgeOperators);
     (
       uint256 _missingVotesRatioTier1,
       uint256 _missingVotesRatioTier2,
