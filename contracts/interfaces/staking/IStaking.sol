@@ -45,6 +45,8 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
    * Requirements:
    * - The method caller must be the validator contract.
    *
+   * Emits the `RewardClaimed` event and the `UserRewardUpdated` event.
+   *
    * Note:
    * - This method should be called once at the period ending.
    * - This method should only be called when there are revoked candidates.

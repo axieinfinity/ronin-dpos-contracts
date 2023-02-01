@@ -140,7 +140,7 @@ abstract contract RewardCalculation is IRewardPool {
   /**
    * @dev Claims the settled reward for a specific user.
    *
-   * Emits the `PendingRewardUpdated` event and the `SettledRewardUpdated` event.
+   * Emits the `RewardClaimed` event and the `UserRewardUpdated` event.
    *
    * Note: This method should be called before transferring rewards for the user.
    *

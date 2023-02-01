@@ -27,6 +27,7 @@ import {
   TrustedOrganizationAddressSet,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types';
+import { DEFAULT_ADDRESS } from '../../src/utils';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
@@ -502,9 +503,18 @@ describe('[Integration] Slash validators', () => {
           await CandidateManagerExpects.emitCandidatesRevokedEvent(wrapUpEpochTx, expectingRevokedCandidates);
         });
 
+        it('Should the pending reward of the kicked validator get auto claimed', async () => {
+          for (let _addr of expectingRevokedCandidates) {
+            let _validator = validatorCandidates.find((_) => _.consensusAddr.address == _addr);
+            await expect(wrapUpEpochTx)
+              .emit(stakingContract, 'RewardClaimed')
+              .withArgs(_addr, _validator!.poolAdmin.address, 0);
+          }
+        });
+
         it('Should the isValidatorCandidate method return false on kicked candidates', async () => {
           for (let addr of expectingRevokedCandidates) {
-            expect(await validatorContract.isValidatorCandidate(addr)).to.false;
+            await expect(await validatorContract.isValidatorCandidate(addr)).to.false;
           }
         });
       });
