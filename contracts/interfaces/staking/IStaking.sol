@@ -38,4 +38,16 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
   function execDeductStakingAmount(address _consensusAddr, uint256 _amount)
     external
     returns (uint256 _actualDeductingAmount);
+
+  /**
+   * @dev Sends the pending reward of a candidate when (s)he is getting revoked.
+   *
+   * Requirements:
+   * - The method caller must be the validator contract.
+   *
+   * Note:
+   * - This method should be called once at the period ending.
+   * - This method should only be called when there are revoked candidates.
+   */
+  function execPayLastReward(address _consensusAddr) external;
 }
