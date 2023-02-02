@@ -167,8 +167,9 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    * Note: This function does not transfer reward to user.
    */
   function _claimRewards(address _user, address[] memory _poolAddrList) internal returns (uint256 _amount) {
+    uint256 _period = _currentPeriod();
     for (uint256 _i = 0; _i < _poolAddrList.length; _i++) {
-      _amount += _claimReward(_poolAddrList[_i], _user);
+      _amount += _claimReward(_poolAddrList[_i], _user, _period);
     }
   }
 

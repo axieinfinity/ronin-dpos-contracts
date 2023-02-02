@@ -63,7 +63,8 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
    */
   function execPayLastReward(address _consensusAddr) external onlyValidatorContract {
     address _poolAdmin = _stakingPool[_consensusAddr].admin;
-    uint256 _amount = _claimReward(_consensusAddr, _poolAdmin);
+    uint256 _period = _currentPeriod() + 1;
+    uint256 _amount = _claimReward(_consensusAddr, _poolAdmin, _period);
     _transferRON(payable(_poolAdmin), _amount);
   }
 

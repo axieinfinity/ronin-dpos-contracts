@@ -73,7 +73,7 @@ contract MockStaking is RewardCalculation {
   }
 
   function claimReward(address _user) external returns (uint256 _amount) {
-    _amount = _claimReward(poolAddr, _user);
+    _amount = _claimReward(poolAddr, _user, getPeriod());
   }
 
   function getStakingAmount(address, address _user) public view override returns (uint256) {
