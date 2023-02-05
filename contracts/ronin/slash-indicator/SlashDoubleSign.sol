@@ -41,7 +41,12 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
   /**
    * @inheritdoc ISlashDoubleSign
    */
-  function getDoubleSignSlashingConfigs() external view override returns (uint256, uint256) {
+  function getDoubleSignSlashingConfigs()
+    external
+    view
+    override
+    returns (uint256 slashDoubleSignAmount_, uint256 doubleSigningJailUntilBlock_)
+  {
     return (_slashDoubleSignAmount, _doubleSigningJailUntilBlock);
   }
 

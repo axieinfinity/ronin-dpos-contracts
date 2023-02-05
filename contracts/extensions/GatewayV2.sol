@@ -21,7 +21,7 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
   /**
    * @inheritdoc IQuorum
    */
-  function getThreshold() external view virtual returns (uint256, uint256) {
+  function getThreshold() external view virtual returns (uint256 num_, uint256 denom_) {
     return (_num, _denom);
   }
 

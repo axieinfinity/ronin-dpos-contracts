@@ -89,10 +89,10 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
     view
     override
     returns (
-      uint256,
-      uint256,
-      uint256,
-      uint256
+      uint256 unavailabilityTier1Threshold_,
+      uint256 unavailabilityTier2Threshold_,
+      uint256 slashAmountForUnavailabilityTier2Threshold_,
+      uint256 jailDurationForUnavailabilityTier2Threshold_
     )
   {
     return (

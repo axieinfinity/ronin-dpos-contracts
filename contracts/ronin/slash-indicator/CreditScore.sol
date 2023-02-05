@@ -116,10 +116,10 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     view
     override
     returns (
-      uint256,
-      uint256,
-      uint256,
-      uint256
+      uint256 gainCreditScore_,
+      uint256 maxCreditScore_,
+      uint256 bailOutCostMultiplier_,
+      uint256 cutOffPercentageAfterBailout_
     )
   {
     return (_gainCreditScore, _maxCreditScore, _bailOutCostMultiplier, _cutOffPercentageAfterBailout);
