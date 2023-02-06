@@ -357,22 +357,22 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "missingVotesRatioTier1_",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "missingVotesRatioTier2_",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "jailDurationForMissingVotesRatioTier2_",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "skipBridgeOperatorSlashingThreshold_",
           "type": "uint256"
         }
       ],
@@ -385,12 +385,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "bridgeVotingThreshold_",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "bridgeVotingSlashAmount_",
           "type": "uint256"
         }
       ],
@@ -422,22 +422,22 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "gainCreditScore_",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "maxCreditScore_",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "bailOutCostMultiplier_",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "cutOffPercentageAfterBailout_",
           "type": "uint256"
         }
       ],
@@ -450,12 +450,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "slashDoubleSignAmount_",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "doubleSigningJailUntilBlock_",
           "type": "uint256"
         }
       ],
@@ -511,22 +511,22 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "unavailabilityTier1Threshold_",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "unavailabilityTier2Threshold_",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "slashAmountForUnavailabilityTier2Threshold_",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "jailDurationForUnavailabilityTier2Threshold_",
           "type": "uint256"
         }
       ],
@@ -986,17 +986,17 @@
       "getBridgeOperatorSlashingConfigs()": {
         "details": "Returns the configs related to bridge operator slashing.",
         "returns": {
-          "_0": "The bridge reward will be deprecated if (s)he missed more than this ratio.",
-          "_1": "The bridge reward and mining reward will be deprecated and the corresponding block producer will be put in jail if (s)he misses more than this ratio.",
-          "_2": "The number of blocks to jail the corresponding block producer when its bridge operator is slashed tier-2.",
-          "_3": "The threshold to skip slashing the bridge operator in case the total number of votes in the bridge is too small."
+          "jailDurationForMissingVotesRatioTier2_": "The number of blocks to jail the corresponding block producer when its bridge operator is slashed tier-2.",
+          "missingVotesRatioTier1_": "The bridge reward will be deprecated if (s)he missed more than this ratio.",
+          "missingVotesRatioTier2_": "The bridge reward and mining reward will be deprecated and the corresponding block producer will be put in jail if (s)he misses more than this ratio.",
+          "skipBridgeOperatorSlashingThreshold_": "The threshold to skip slashing the bridge operator in case the total number of votes in the bridge is too small."
         }
       },
       "getBridgeVotingSlashingConfigs()": {
         "details": "Returns the configs related to bridge voting slashing.",
         "returns": {
-          "_0": "The threshold to slash when a trusted organization does not vote for bridge operators.",
-          "_1": "The amount of RON to slash bridge voting."
+          "bridgeVotingSlashAmount_": "The amount of RON to slash bridge voting.",
+          "bridgeVotingThreshold_": "The threshold to slash when a trusted organization does not vote for bridge operators."
         }
       },
       "getCreditScore(address)": {
@@ -1005,17 +1005,17 @@
       "getCreditScoreConfigs()": {
         "details": "Returns the configs related to credit score.",
         "returns": {
-          "_0": "The score to gain per period.",
-          "_1": "The max number of credit score that a validator can hold.",
-          "_2": "The number that will be multiplied with the remaining jailed time to get the cost of bailing out.",
-          "_3": "The percentage of reward that the block producer will be cut off from until the end of the period after bailing out."
+          "bailOutCostMultiplier_": "The number that will be multiplied with the remaining jailed time to get the cost of bailing out.",
+          "cutOffPercentageAfterBailout_": "The percentage of reward that the block producer will be cut off from until the end of the period after bailing out.",
+          "gainCreditScore_": "The score to gain per period.",
+          "maxCreditScore_": "The max number of credit score that a validator can hold."
         }
       },
       "getDoubleSignSlashingConfigs()": {
         "details": "Returns the configs related to block producer slashing.",
         "returns": {
-          "_0": "The amount of RON to slash double sign.",
-          "_1": "The block number that the punished validator will be jailed until, due to double signing."
+          "doubleSigningJailUntilBlock_": "The block number that the punished validator will be jailed until, due to double signing.",
+          "slashDoubleSignAmount_": "The amount of RON to slash double sign."
         }
       },
       "getManyCreditScores(address[])": {
@@ -1027,10 +1027,10 @@
       "getUnavailabilitySlashingConfigs()": {
         "details": "Returns the configs related to block producer slashing.",
         "returns": {
-          "_0": "The mining reward will be deprecated, if (s)he missed more than this threshold.",
-          "_1": " The mining reward will be deprecated, (s)he will be put in jailed, and will be deducted self-staking if (s)he misses more than this threshold.",
-          "_2": "The amount of RON to deduct from self-staking of a block producer when (s)he is slashed tier-2.",
-          "_3": "The number of blocks to jail a block producer when (s)he is slashed tier-2."
+          "jailDurationForUnavailabilityTier2Threshold_": "The number of blocks to jail a block producer when (s)he is slashed tier-2.",
+          "slashAmountForUnavailabilityTier2Threshold_": "The amount of RON to deduct from self-staking of a block producer when (s)he is slashed tier-2.",
+          "unavailabilityTier1Threshold_": "The mining reward will be deprecated, if (s)he missed more than this threshold.",
+          "unavailabilityTier2Threshold_": " The mining reward will be deprecated, (s)he will be put in jailed, and will be deducted self-staking if (s)he misses more than this threshold."
         }
       },
       "initialize(address,address,address,address,uint256[4],uint256[2],uint256[2],uint256[4],uint256[4])": {
