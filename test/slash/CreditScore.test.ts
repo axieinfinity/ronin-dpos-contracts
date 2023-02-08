@@ -1,4 +1,4 @@
-import { BigNumber, BytesLike, ContractTransaction, Transaction } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -87,7 +87,7 @@ const slashValidatorUntilTier = async (
   slasherIdx: number,
   slasheeIdx: number,
   slashType: SlashType
-): Promise<Transaction | undefined> => {
+): Promise<ContractTransaction | undefined> => {
   let _threshold;
   switch (slashType) {
     case SlashType.UNAVAILABILITY_TIER_1:
@@ -489,7 +489,7 @@ describe('Credit score and bail out test', () => {
     });
 
     describe('Bailing out from a validator that has been bailed out previously', async () => {
-      let tx: Transaction | undefined;
+      let tx: ContractTransaction | undefined;
       before(async () => {
         for (let i = 0; i < maxCreditScore / gainCreditScore + 1; i++) {
           await endPeriodAndWrapUpAndResetIndicators();
