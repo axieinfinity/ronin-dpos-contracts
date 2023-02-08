@@ -376,12 +376,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "num_",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "denom_",
           "type": "uint256"
         }
       ],

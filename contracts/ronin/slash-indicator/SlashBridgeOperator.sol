@@ -36,10 +36,10 @@ abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, Pe
     view
     override
     returns (
-      uint256,
-      uint256,
-      uint256,
-      uint256
+      uint256 missingVotesRatioTier1_,
+      uint256 missingVotesRatioTier2_,
+      uint256 jailDurationForMissingVotesRatioTier2_,
+      uint256 skipBridgeOperatorSlashingThreshold_
     )
   {
     return (

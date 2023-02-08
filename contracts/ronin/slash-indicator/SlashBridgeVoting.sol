@@ -45,7 +45,12 @@ abstract contract SlashBridgeVoting is
   /**
    * @inheritdoc ISlashBridgeVoting
    */
-  function getBridgeVotingSlashingConfigs() external view override returns (uint256, uint256) {
+  function getBridgeVotingSlashingConfigs()
+    external
+    view
+    override
+    returns (uint256 bridgeVotingThreshold_, uint256 bridgeVotingSlashAmount_)
+  {
     return (_bridgeVotingThreshold, _bridgeVotingSlashAmount);
   }
 
