@@ -83,13 +83,24 @@ const endPeriodAndWrapUpAndResetIndicators = async (includingEpochsNum?: number)
   return wrapUpTx;
 };
 
-const slashUntilValidatorTier = async (slasherIdx: number, slasheeIdx: number, tier: number) => {
-  if (tier != 1 && tier != 2) {
+const slashValidatorUntilTier = async (slasherIdx: number, slasheeIdx: number, tier: number) => {
+  if (tier != 1 && tier != 2 && tier != 3) {
     return;
   }
 
-  let _threshold = tier == 1 ? unavailabilityTier1Threshold : unavailabilityTier2Threshold;
-  let _slashType = tier == 1 ? SlashType.UNAVAILABILITY_TIER_1 : SlashType.UNAVAILABILITY_TIER_2;
+  let _threshold = tier == 2 ? unavailabilityTier2Threshold : unavailabilityTier1Threshold;
+
+  let _slashType;
+  switch (tier) {
+    case 2:
+      _slashType = SlashType.UNAVAILABILITY_TIER_2;
+      break;
+    case 3:
+      _slashType = SlashType.UNAVAILABILITY_TIER_3;
+      break;
+    default:
+      _slashType = SlashType.UNAVAILABILITY_TIER_1;
+  }
 
   let tx;
   let slasher = validatorCandidates[slasherIdx];
@@ -231,7 +242,7 @@ describe('Credit score and bail out test', () => {
       await validateScoreAt(0);
     });
     it('Should the score updated correctly, case: max score (N), in jail (y), unavailability (N)', async () => {
-      await slashUntilValidatorTier(1, 0, 2);
+      await slashValidatorUntilTier(1, 0, 2);
       await wrapUpEpoch();
       await endPeriodAndWrapUpAndResetIndicators();
       localScoreController.increaseAtWithUpperbound(0, maxCreditScore, 0);
@@ -285,7 +296,7 @@ describe('Credit score and bail out test', () => {
 
         await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-        await slashUntilValidatorTier(1, 0, 2);
+        await slashValidatorUntilTier(1, 0, 2);
         let wrapUpTx = await wrapUpEpoch();
         expect(wrapUpTx).emit(validatorContract, 'WrappedUpEpoch').withArgs([anyValue, anyValue, false]);
 
@@ -374,7 +385,7 @@ describe('Credit score and bail out test', () => {
         await validateScoreAt(0);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
 
-        await slashUntilValidatorTier(1, 0, 2);
+        await slashValidatorUntilTier(1, 0, 2);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
       });
 
@@ -403,7 +414,7 @@ describe('Credit score and bail out test', () => {
 
         expect(await validatorContract.isValidator(validatorCandidates[0].consensusAddr.address)).eq(true);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
-        await slashUntilValidatorTier(1, 0, 2);
+        await slashValidatorUntilTier(1, 0, 2);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
       });
 
@@ -484,7 +495,7 @@ describe('Credit score and bail out test', () => {
 
         expect(await validatorContract.isValidator(validatorCandidates[0].consensusAddr.address)).eq(true);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
-        await slashUntilValidatorTier(1, 0, 2);
+        await slashValidatorUntilTier(1, 0, 2);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
 
         let _latestBlockNum = BigNumber.from(await network.provider.send('eth_blockNumber'));
@@ -519,8 +530,11 @@ describe('Credit score and bail out test', () => {
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
       });
 
-      it('Should the bailed-out-validator not be able to bail out second time in the same period', async () => {
-        await slashUntilValidatorTier(1, 0, 2);
+      it('Should the bailed-out-validator is slashed with tier-3', async () => {
+        await slashValidatorUntilTier(1, 0, 3);
+      });
+
+      it('Should the bailed-out-validator not be able to bail out the second time in the same period', async () => {
         await expect(
           slashContract
             .connect(validatorCandidates[0].candidateAdmin)
