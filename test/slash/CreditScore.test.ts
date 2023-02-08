@@ -1,4 +1,4 @@
-import { BigNumber, BytesLike, ContractTransaction, Transaction } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -16,6 +16,7 @@ import {
 } from '../../src/types';
 import { initTest } from '../helpers/fixture';
 import { EpochController, expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
+import { expects as CandidateManagerExpects } from '../helpers/candidate-manager';
 import { IndicatorController, ScoreController } from '../helpers/slash';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import { SlashType } from '../../src/script/slash-indicator';
@@ -46,6 +47,8 @@ let localIndicatorController: IndicatorController;
 let localScoreController: ScoreController;
 let localEpochController: EpochController;
 
+let snapshotId: string;
+
 const gainCreditScore = 50;
 const maxCreditScore = 600;
 const bailOutCostMultiplier = 5;
@@ -63,13 +66,15 @@ const minOffsetToStartSchedule = 200;
 const blockProducerBonusPerBlock = BigNumber.from(5000);
 const submittedRewardEachBlock = BigNumber.from(60);
 
-const wrapUpEpoch = async () => {
+const waitingSecsToRevoke = 7 * 86400;
+
+const wrapUpEpoch = async (): Promise<ContractTransaction> => {
   await localEpochController.mineToBeforeEndOfEpoch();
   await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-  await validatorContract.connect(coinbase).wrapUpEpoch();
+  return await validatorContract.connect(coinbase).wrapUpEpoch();
 };
 
-const endPeriodAndWrapUpAndResetIndicators = async (includingEpochsNum?: number) => {
+const endPeriodAndWrapUpAndResetIndicators = async (includingEpochsNum?: number): Promise<ContractTransaction> => {
   if (includingEpochsNum) {
     expect(includingEpochsNum).gt(0);
   }
@@ -246,6 +251,24 @@ describe('Credit score and bail out test', () => {
         localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
         await validateScoreAt(0);
       }
+    });
+    it('Should the score get reset when the candidate is revoked', async () => {
+      snapshotId = await network.provider.send('evm_snapshot');
+      let snapshotScore = localIndicatorController.getAt(0);
+
+      await stakingContract
+        .connect(validatorCandidates[0].poolAdmin)
+        .requestRenounce(validatorCandidates[0].consensusAddr.address);
+      await network.provider.send('evm_increaseTime', [waitingSecsToRevoke]);
+
+      let tx = await endPeriodAndWrapUpAndResetIndicators();
+      await CandidateManagerExpects.emitCandidatesRevokedEvent(tx, [validatorCandidates[0].consensusAddr.address]);
+
+      localScoreController.resetAt(0);
+      await validateScoreAt(0);
+
+      await network.provider.send('evm_revert', [snapshotId]);
+      localScoreController.setAt(0, snapshotScore);
     });
   });
 
