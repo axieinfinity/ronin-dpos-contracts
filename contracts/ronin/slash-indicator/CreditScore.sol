@@ -151,7 +151,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   /**
    * @inheritdoc ICreditScore
    */
-  function checkBailedOutAtPeriod(address _validator, uint256 _period) external view override returns (bool) {
+  function checkBailedOutAtPeriod(address _validator, uint256 _period) public view virtual override returns (bool) {
     return _checkBailedOutAtPeriod[_validator][_period];
   }
 
