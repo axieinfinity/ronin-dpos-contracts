@@ -254,7 +254,7 @@ describe('Credit score and bail out test', () => {
     });
     it('Should the score get reset when the candidate is revoked', async () => {
       snapshotId = await network.provider.send('evm_snapshot');
-      let snapshotScore = localIndicatorController.getAt(0);
+      let snapshotScore = localScoreController.getAt(0);
 
       await stakingContract
         .connect(validatorCandidates[0].poolAdmin)
