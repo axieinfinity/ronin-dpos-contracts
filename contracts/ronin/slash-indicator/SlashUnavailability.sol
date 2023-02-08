@@ -22,9 +22,12 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
    * self-staking if (s)he misses more than this threshold. This threshold is applied for tier-2 slash.
    */
   uint256 internal _unavailabilityTier2Threshold;
-  /// @dev The amount of RON to deduct from self-staking of a block producer when (s)he is slashed tier-2.
+  /**
+   * @dev The amount of RON to deduct from self-staking of a block producer when (s)he is slashed with
+   * tier-2 or tier-3.
+   **/
   uint256 internal _slashAmountForUnavailabilityTier2Threshold;
-  /// @dev The number of blocks to jail a block producer when (s)he is slashed tier-2.
+  /// @dev The number of blocks to jail a block producer when (s)he is slashed with tier-2 or tier-3.
   uint256 internal _jailDurationForUnavailabilityTier2Threshold;
 
   /**
@@ -63,13 +66,17 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
       );
     } else if (_count == _unavailabilityTier1Threshold) {
       bool _tier1SecondTime = checkBailedOutAtPeriod(_validatorAddr, _period);
-      /// Handles tier-3
-      if (_tier1SecondTime) {
-        emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_3, _period);
-        _validatorContract.execSlash(_validatorAddr, block.number + _jailDurationForUnavailabilityTier2Threshold, 0);
-      } else {
+      if (!_tier1SecondTime) {
         emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_1, _period);
         _validatorContract.execSlash(_validatorAddr, 0, 0);
+      } else {
+        /// Handles tier-3
+        emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_3, _period);
+        _validatorContract.execSlash(
+          _validatorAddr,
+          block.number + _jailDurationForUnavailabilityTier2Threshold,
+          _slashAmountForUnavailabilityTier2Threshold
+        );
       }
     }
   }
