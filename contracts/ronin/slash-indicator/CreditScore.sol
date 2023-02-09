@@ -65,8 +65,8 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
     for (uint _i = 0; _i < _validators.length; _i++) {
       address _validator = _validators[_i];
-      _creditScore[_validator] = 0;
-      _updatedCreditScores[_i] = 0;
+      delete _creditScore[_validator];
+      delete _updatedCreditScores[_i];
     }
     emit CreditScoresUpdated(_validators, _updatedCreditScores);
   }
