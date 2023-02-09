@@ -46,13 +46,13 @@ interface ISlashUnavailability is IBaseSlash {
    * @dev Returns the configs related to block producer slashing.
    *
    * @return _unavailabilityTier1Threshold The mining reward will be deprecated, if (s)he missed more than this
-   * threshold.
+   * threshold. This threshold is applied for tier-1 and tier-3 slash.
    * @return _unavailabilityTier2Threshold  The mining reward will be deprecated, (s)he will be put in jailed, and will
-   * be deducted self-staking if (s)he misses more than this threshold.
+   * be deducted self-staking if (s)he misses more than this threshold. This threshold is applied for tier-2 slash.
    * @return _slashAmountForUnavailabilityTier2Threshold The amount of RON to deduct from self-staking of a block
-   * producer when (s)he is slashed tier-2.
+   * producer when (s)he is slashed with tier-2 or tier-3.
    * @return _jailDurationForUnavailabilityTier2Threshold The number of blocks to jail a block producer when (s)he is
-   * slashed tier-2.
+   * slashed with tier-2 or tier-3.
    *
    */
   function getUnavailabilitySlashingConfigs()

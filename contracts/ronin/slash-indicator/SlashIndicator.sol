@@ -103,6 +103,18 @@ contract SlashIndicator is
   }
 
   /**
+   * @inheritdoc ICreditScore
+   */
+  function checkBailedOutAtPeriod(address _validator, uint256 _period)
+    public
+    view
+    override(CreditScore, ICreditScore, SlashUnavailability)
+    returns (bool)
+  {
+    return CreditScore.checkBailedOutAtPeriod(_validator, _period);
+  }
+
+  /**
    * @dev Sanity check the address to be slashed
    */
   function _shouldSlash(address _addr) internal view override(SlashDoubleSign, SlashUnavailability) returns (bool) {

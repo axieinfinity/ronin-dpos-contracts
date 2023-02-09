@@ -10,7 +10,8 @@ interface IBaseSlash {
     DOUBLE_SIGNING,
     BRIDGE_VOTING,
     BRIDGE_OPERATOR_MISSING_VOTE_TIER_1,
-    BRIDGE_OPERATOR_MISSING_VOTE_TIER_2
+    BRIDGE_OPERATOR_MISSING_VOTE_TIER_2,
+    UNAVAILABILITY_TIER_3
   }
 
   /// @dev Emitted when the validator is slashed.
