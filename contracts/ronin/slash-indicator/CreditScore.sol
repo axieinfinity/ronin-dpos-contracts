@@ -61,6 +61,16 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     emit CreditScoresUpdated(_validators, _updatedCreditScores);
   }
 
+  function execResetCreditScores(address[] calldata _validators) external override onlyValidatorContract {
+    uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
+    for (uint _i = 0; _i < _validators.length; _i++) {
+      address _validator = _validators[_i];
+      delete _creditScore[_validator];
+      delete _updatedCreditScores[_i];
+    }
+    emit CreditScoresUpdated(_validators, _updatedCreditScores);
+  }
+
   /**
    * @inheritdoc ICreditScore
    */

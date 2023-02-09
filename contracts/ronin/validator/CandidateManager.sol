@@ -177,7 +177,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    * Emits the event `CandidatesRevoked` when a candidate is revoked.
    *
    */
-  function _syncCandidateSet() internal {
+  function _syncCandidateSet() internal returns (address[] memory _unsatisfiedCandidates) {
     IStaking _staking = _stakingContract;
     uint256 _waitingSecsToRevoke = _staking.waitingSecsToRevoke();
     uint256 _minStakingAmount = _staking.minValidatorStakingAmount();
@@ -185,7 +185,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
 
     uint256 _length = _candidates.length;
     uint256 _unsatisfiedCount;
-    address[] memory _unsatisfiedCandidates = new address[](_length);
+    _unsatisfiedCandidates = new address[](_length);
 
     {
       uint256 _i;

@@ -99,6 +99,7 @@ abstract contract CoinbaseExecution is
     bool _periodEnding = _isPeriodEnding(_newPeriod);
 
     address[] memory _currentValidators = getValidators();
+    address[] memory _unsastifiedCandidates;
     uint256 _epoch = epochOf(block.number);
     uint256 _nextEpoch = _epoch + 1;
     uint256 _lastPeriod = currentPeriod();
@@ -114,7 +115,8 @@ abstract contract CoinbaseExecution is
       _tryRecycleLockedFundsFromEmergencyExits();
       _recycleDeprecatedRewards();
       _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
-      _currentValidators = _syncValidatorSet(_newPeriod);
+      (_currentValidators, _unsastifiedCandidates) = _syncValidatorSet(_newPeriod);
+      _slashIndicatorContract.execResetCreditScores(_unsastifiedCandidates);
     }
     _revampRoles(_newPeriod, _nextEpoch, _currentValidators);
     emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
@@ -362,8 +364,11 @@ abstract contract CoinbaseExecution is
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _syncValidatorSet(uint256 _newPeriod) private returns (address[] memory _newValidators) {
-    _syncCandidateSet();
+  function _syncValidatorSet(uint256 _newPeriod)
+    private
+    returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates)
+  {
+    _unsastifiedCandidates = _syncCandidateSet();
     uint256[] memory _weights = _stakingContract.getManyStakingTotals(_candidates);
     uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getConsensusWeights(_candidates);
     uint256 _newValidatorCount;
