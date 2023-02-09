@@ -43,11 +43,6 @@ interface ISlashUnavailability is IBaseSlash {
   function getUnavailabilityIndicator(address _validator, uint256 _period) external view returns (uint256);
 
   /**
-   * @dev Returns the block that the `_validator` is still in tier-3 unavailability slash.
-   */
-  function getJailedInTier3Until(address _validator) external view returns (uint256 _block);
-
-  /**
    * @dev Returns the configs related to block producer slashing.
    *
    * @return _unavailabilityTier1Threshold The mining reward will be deprecated, if (s)he missed more than this

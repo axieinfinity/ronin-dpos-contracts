@@ -114,16 +114,6 @@ contract SlashIndicator is
     return CreditScore.checkBailedOutAtPeriod(_validator, _period);
   }
 
-  function getJailedInTier3Until(address _validator)
-    public
-    view
-    virtual
-    override(ISlashUnavailability, SlashUnavailability, CreditScore)
-    returns (uint256 _block)
-  {
-    return SlashUnavailability.getJailedInTier3Until(_validator);
-  }
-
   /**
    * @dev Sanity check the address to be slashed
    */

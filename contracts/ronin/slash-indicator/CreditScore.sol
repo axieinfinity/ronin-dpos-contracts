@@ -89,10 +89,6 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
 
     uint256 _period = _validatorContract.currentPeriod();
     require(!_checkBailedOutAtPeriod[_consensusAddr][_period], "SlashIndicator: validator has bailed out previously");
-    require(
-      block.number > getJailedInTier3Until(_consensusAddr),
-      "SlashIndicator: validator cannot bail out in tier-3 slash"
-    );
 
     uint256 _score = _creditScore[_consensusAddr];
     uint256 _cost = _jailedEpochLeft * _bailOutCostMultiplier;
@@ -168,11 +164,6 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   function checkBailedOutAtPeriod(address _validator, uint256 _period) public view virtual override returns (bool) {
     return _checkBailedOutAtPeriod[_validator][_period];
   }
-
-  /**
-   * @dev See `SlashUnavailability`.
-   */
-  function getJailedInTier3Until(address _validator) public view virtual returns (uint256);
 
   /**
    * @dev See `SlashUnavailability`.
