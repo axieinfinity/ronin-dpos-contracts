@@ -38,7 +38,7 @@ abstract contract SlashBridgeVoting is
     if (block.number - _lastVotedBlock > _bridgeVotingThreshold && !_bridgeVotingSlashed[_consensusAddr][_period]) {
       _bridgeVotingSlashed[_consensusAddr][_period] = true;
       emit Slashed(_consensusAddr, SlashType.BRIDGE_VOTING, _period);
-      _validatorContract.execSlash(_consensusAddr, 0, _bridgeVotingSlashAmount);
+      _validatorContract.execSlash(_consensusAddr, 0, _bridgeVotingSlashAmount, false);
     }
   }
 

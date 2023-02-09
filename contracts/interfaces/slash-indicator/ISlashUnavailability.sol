@@ -38,7 +38,7 @@ interface ISlashUnavailability is IBaseSlash {
   function currentUnavailabilityIndicator(address _validator) external view returns (uint256);
 
   /**
-   * @dev Retursn the unavailability indicator in the period `_period` of a block producer.
+   * @dev Returns the unavailability indicator in the period `_period` of a block producer.
    */
   function getUnavailabilityIndicator(address _validator, uint256 _period) external view returns (uint256);
 

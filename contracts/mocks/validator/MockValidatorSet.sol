@@ -59,7 +59,8 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   function execSlash(
     address _validatorAddr,
     uint256 _newJailedUntil,
-    uint256 _slashAmount
+    uint256 _slashAmount,
+    bool _cannotBailout
   ) external override {}
 
   function execBailOut(address, uint256) external override {}
