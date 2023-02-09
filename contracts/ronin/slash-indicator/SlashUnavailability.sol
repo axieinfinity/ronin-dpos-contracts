@@ -30,11 +30,14 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
   /// @dev The number of blocks to jail a block producer when (s)he is slashed with tier-2 or tier-3.
   uint256 internal _jailDurationForUnavailabilityTier2Threshold;
 
+  /// @dev The block number that the validator is still in tier-3.
+  mapping(address => uint256) internal _jailedInTier3UntilBlock;
+
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[50] private ______gap;
+  uint256[49] private ______gap;
 
   modifier oncePerBlock() {
     require(
@@ -72,11 +75,9 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
       } else {
         /// Handles tier-3
         emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_3, _period);
-        _validatorContract.execSlash(
-          _validatorAddr,
-          block.number + _jailDurationForUnavailabilityTier2Threshold,
-          _slashAmountForUnavailabilityTier2Threshold
-        );
+        uint256 _jailedUntilBlock = block.number + _jailDurationForUnavailabilityTier2Threshold;
+        _jailedInTier3UntilBlock[_validatorAddr] = _jailedUntilBlock;
+        _validatorContract.execSlash(_validatorAddr, _jailedUntilBlock, _slashAmountForUnavailabilityTier2Threshold);
       }
     }
   }
@@ -138,6 +139,13 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
     returns (uint256)
   {
     return _unavailabilityIndicator[_validator][_period];
+  }
+
+  /**
+   * @inheritdoc ISlashUnavailability
+   */
+  function getJailedInTier3Until(address _validator) public view virtual override returns (uint256 _block) {
+    return _jailedInTier3UntilBlock[_validator];
   }
 
   /**
