@@ -589,7 +589,9 @@ describe('Credit score and bail out test', () => {
           slashContract
             .connect(validatorCandidates[0].candidateAdmin)
             .bailOut(validatorCandidates[0].consensusAddr.address)
-        ).revertedWith('SlashIndicator: validator cannot bail out in tier-3 slash');
+        )
+          .revertedWithCustomError(validatorContract, 'ErrCannotBailout')
+          .withArgs(validatorCandidates[0].consensusAddr.address);
       });
     });
   });
