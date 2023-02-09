@@ -191,10 +191,17 @@ abstract contract CoinbaseExecution is
     if (_missedRatio > _ratioTier2) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
+
+      // Cannot saving gas by temp variable here due to too deep stack.
       _blockProducerJailedBlock[_validator] = Math.max(
         block.number + _jailDurationTier2,
         _blockProducerJailedBlock[_validator]
       );
+      _cannotBailoutUntilBlock[_validator] = Math.max(
+        block.number + _jailDurationTier2,
+        _cannotBailoutUntilBlock[_validator]
+      );
+
       emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, true, true);
     } else if (_missedRatio > _ratioTier1) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;

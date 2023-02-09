@@ -15,6 +15,9 @@ interface ISlashingExecution {
   /// @dev Emitted when the validator get out of jail by bailout.
   event ValidatorUnjailed(address indexed validator, uint256 period);
 
+  /// @dev Error of cannot bailout due to high tier slash.
+  error ErrCannotBailout(address validator);
+
   /**
    * @dev Finalize the slash request from slash indicator contract.
    *
@@ -27,7 +30,8 @@ interface ISlashingExecution {
   function execSlash(
     address _validatorAddr,
     uint256 _newJailedUntil,
-    uint256 _slashAmount
+    uint256 _slashAmount,
+    bool _cannotBailout
   ) external;
 
   /**

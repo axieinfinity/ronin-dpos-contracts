@@ -5,6 +5,7 @@ pragma solidity ^0.8.9;
 import "../../extensions/collections/HasSlashIndicatorContract.sol";
 import "../../extensions/collections/HasStakingContract.sol";
 import "../../interfaces/validator/ISlashingExecution.sol";
+import "../../libraries/Math.sol";
 import "./storage-fragments/CommonStorage.sol";
 
 abstract contract SlashingExecution is
@@ -19,7 +20,8 @@ abstract contract SlashingExecution is
   function execSlash(
     address _validatorAddr,
     uint256 _newJailedUntil,
-    uint256 _slashAmount
+    uint256 _slashAmount,
+    bool _cannotBailout
   ) external override onlySlashIndicatorContract {
     uint256 _period = currentPeriod();
     _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = true;
@@ -29,13 +31,15 @@ abstract contract SlashingExecution is
     delete _miningReward[_validatorAddr];
     delete _delegatingReward[_validatorAddr];
 
-    if (_newJailedUntil > _blockProducerJailedBlock[_validatorAddr]) {
-      _blockProducerJailedBlock[_validatorAddr] = _newJailedUntil;
-    }
+    _blockProducerJailedBlock[_validatorAddr] = Math.max(_newJailedUntil, _blockProducerJailedBlock[_validatorAddr]);
 
     if (_slashAmount > 0) {
       uint256 _actualAmount = _stakingContract.execDeductStakingAmount(_validatorAddr, _slashAmount);
       _totalDeprecatedReward += _actualAmount;
+    }
+
+    if (_cannotBailout) {
+      _cannotBailoutUntilBlock[_validatorAddr] = Math.max(_newJailedUntil, _cannotBailoutUntilBlock[_validatorAddr]);
     }
 
     emit ValidatorPunished(
@@ -52,6 +56,8 @@ abstract contract SlashingExecution is
    * @inheritdoc ISlashingExecution
    */
   function execBailOut(address _validatorAddr, uint256 _period) external override onlySlashIndicatorContract {
+    if (block.number <= _cannotBailoutUntilBlock[_validatorAddr]) revert ErrCannotBailout(_validatorAddr);
+
     // Note: Removing rewards of validator in `bailOut` function is not needed, since the rewards have been
     // removed previously in the `slash` function.
     _miningRewardBailoutCutOffAtPeriod[_validatorAddr][_period] = true;

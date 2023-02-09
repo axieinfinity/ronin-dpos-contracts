@@ -65,19 +65,25 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
       _validatorContract.execSlash(
         _validatorAddr,
         block.number + _jailDurationForUnavailabilityTier2Threshold,
-        _slashAmountForUnavailabilityTier2Threshold
+        _slashAmountForUnavailabilityTier2Threshold,
+        false
       );
     } else if (_count == _unavailabilityTier1Threshold) {
       bool _tier1SecondTime = checkBailedOutAtPeriod(_validatorAddr, _period);
       if (!_tier1SecondTime) {
         emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_1, _period);
-        _validatorContract.execSlash(_validatorAddr, 0, 0);
+        _validatorContract.execSlash(_validatorAddr, 0, 0, false);
       } else {
         /// Handles tier-3
         emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_3, _period);
         uint256 _jailedUntilBlock = block.number + _jailDurationForUnavailabilityTier2Threshold;
         _jailedInTier3UntilBlock[_validatorAddr] = _jailedUntilBlock;
-        _validatorContract.execSlash(_validatorAddr, _jailedUntilBlock, _slashAmountForUnavailabilityTier2Threshold);
+        _validatorContract.execSlash(
+          _validatorAddr,
+          _jailedUntilBlock,
+          _slashAmountForUnavailabilityTier2Threshold,
+          true
+        );
       }
     }
   }
