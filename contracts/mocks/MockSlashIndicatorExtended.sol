@@ -6,6 +6,14 @@ import "./MockPrecompile.sol";
 import "../ronin/slash-indicator/SlashIndicator.sol";
 
 contract MockSlashIndicatorExtended is SlashIndicator, MockPrecompile {
+  function slashFelony(address _validatorAddr) external {
+    _validatorContract.execSlash(_validatorAddr, 0, 0, false);
+  }
+
+  function slashMisdemeanor(address _validatorAddr) external {
+    _validatorContract.execSlash(_validatorAddr, 0, 0, false);
+  }
+
   function _pcValidateEvidence(bytes calldata _header1, bytes calldata _header2)
     internal
     pure
