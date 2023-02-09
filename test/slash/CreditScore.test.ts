@@ -580,29 +580,16 @@ describe('Credit score and bail out test', () => {
             .bailOut(validatorCandidates[0].consensusAddr.address)
         ).revertedWith('SlashIndicator: validator has bailed out previously');
       });
+    });
 
-      it('Should the bailed-out-validator be able to bail out in the next periods', async () => {
+    describe('Bailing out from validator in tier-3', async () => {
+      it('Should the tier-3-slashed validator cannot bail out', async () => {
         await endPeriodAndWrapUpAndResetIndicators();
-
-        let _latestBlockNum = BigNumber.from(await network.provider.send('eth_blockNumber'));
-        let _jailLeft = await validatorContract.getJailedTimeLeftAtBlock(
-          validatorCandidates[0].consensusAddr.address,
-          _latestBlockNum.add(1)
-        );
-
-        let _jailEpochLeft = _jailLeft.epochLeft_;
-        let tx = await slashContract
-          .connect(validatorCandidates[0].candidateAdmin)
-          .bailOut(validatorCandidates[0].consensusAddr.address);
-        let _period = validatorContract.currentPeriod();
-
-        expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].consensusAddr.address, _period]);
-        expect(tx)
-          .emit(validatorContract, 'ValidatorUnjailed')
-          .withArgs([validatorCandidates[0].consensusAddr.address]);
-
-        localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailEpochLeft.toNumber());
-        await validateScoreAt(0);
+        await expect(
+          slashContract
+            .connect(validatorCandidates[0].candidateAdmin)
+            .bailOut(validatorCandidates[0].consensusAddr.address)
+        ).revertedWith('SlashIndicator: validator cannot bail out in tier-3 slash');
       });
     });
   });
