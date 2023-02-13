@@ -280,7 +280,7 @@ describe('Credit score and bail out test', () => {
       await CandidateManagerExpects.emitCandidatesRevokedEvent(tx, [validatorCandidates[0].consensusAddr.address]);
       await expect(tx)
         .emit(slashContract, 'CreditScoresUpdated')
-        .withArgs([validatorCandidates[0].consensusAddr.address], [1]);
+        .withArgs([validatorCandidates[0].consensusAddr.address], [0]);
 
       localScoreController.resetAt(0);
       await validateScoreAt(0);
