@@ -60,22 +60,6 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   }
 
   /**
-   * @inheritdoc IStaking
-   */
-  function execSettleAndTransferUnclaimedReward(address[] calldata _consensusAddrs, uint256 _period)
-    external
-    override
-    onlyValidatorContract
-  {
-    for (uint _i = 0; _i < _consensusAddrs.length; _i++) {
-      address _poolAddr = _consensusAddrs[_i];
-      address _poolAdmin = _stakingPool[_poolAddr].admin;
-      uint256 _amount = _claimReward(_poolAddr, _poolAdmin, _period);
-      _transferRON(payable(_poolAdmin), _amount);
-    }
-  }
-
-  /**
    * @inheritdoc RewardCalculation
    */
   function _currentPeriod() internal view virtual override returns (uint256) {

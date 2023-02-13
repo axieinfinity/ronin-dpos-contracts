@@ -117,7 +117,6 @@ abstract contract CoinbaseExecution is
       _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
       (_currentValidators, _revokedCandidates) = _syncValidatorSet(_newPeriod);
       if (_revokedCandidates.length > 0) {
-        _stakingContract.execSettleAndTransferUnclaimedReward(_revokedCandidates, _nextEpoch);
         _slashIndicatorContract.execResetCreditScores(_revokedCandidates);
       }
     }
@@ -378,7 +377,7 @@ abstract contract CoinbaseExecution is
     private
     returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates)
   {
-    _unsastifiedCandidates = _syncCandidateSet();
+    _unsastifiedCandidates = _syncCandidateSet(_newPeriod);
     uint256[] memory _weights = _stakingContract.getManyStakingTotals(_candidates);
     uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getConsensusWeights(_candidates);
     uint256 _newValidatorCount;

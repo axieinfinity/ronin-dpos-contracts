@@ -77,24 +77,29 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   /**
    * @inheritdoc ICandidateStaking
    */
-  function deprecatePools(address[] calldata _pools) external override onlyValidatorContract {
+  function execDeprecatePools(address[] calldata _pools, uint256 _newPeriod) external override onlyValidatorContract {
     if (_pools.length == 0) {
       return;
     }
 
-    uint256 _amount;
     for (uint _i = 0; _i < _pools.length; _i++) {
       PoolDetail storage _pool = _stakingPool[_pools[_i]];
       // Deactivate the pool admin in the active mapping.
       delete _adminOfActivePoolMapping[_pool.admin];
 
       // Deduct and transfer the self staking amount to the pool admin.
-      _amount = _pool.stakingAmount;
-      if (_amount > 0) {
-        _deductStakingAmount(_pool, _amount);
-        if (!_unsafeSendRON(payable(_pool.admin), _amount, 3500)) {
-          emit StakingAmountTransferFailed(_pool.addr, _pool.admin, _amount, address(this).balance);
+      uint256 _deductingAmount = _pool.stakingAmount;
+      if (_deductingAmount > 0) {
+        _deductStakingAmount(_pool, _deductingAmount);
+        if (!_unsafeSendRON(payable(_pool.admin), _deductingAmount, 3500)) {
+          emit StakingAmountTransferFailed(_pool.addr, _pool.admin, _deductingAmount, address(this).balance);
         }
+      }
+
+      // Settle the unclaimed reward and transfer to the pool admin.
+      uint256 _lastRewardAmount = _claimReward(_pools[_i], _pool.admin, _newPeriod);
+      if (_lastRewardAmount > 0) {
+        _unsafeSendRON(payable(_pool.admin), _lastRewardAmount, 3500);
       }
     }
 
