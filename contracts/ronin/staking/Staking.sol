@@ -39,7 +39,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     address[] calldata _consensusAddrs,
     uint256[] calldata _rewards,
     uint256 _period
-  ) external payable onlyValidatorContract {
+  ) external payable override onlyValidatorContract {
     _recordRewards(_consensusAddrs, _rewards, _period);
   }
 
@@ -48,6 +48,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
    */
   function execDeductStakingAmount(address _consensusAddr, uint256 _amount)
     external
+    override
     onlyValidatorContract
     returns (uint256 _actualDeductingAmount)
   {
@@ -61,11 +62,17 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   /**
    * @inheritdoc IStaking
    */
-  function execPayLastReward(address _consensusAddr) external onlyValidatorContract {
-    address _poolAdmin = _stakingPool[_consensusAddr].admin;
-    uint256 _period = _currentPeriod() + 1;
-    uint256 _amount = _claimReward(_consensusAddr, _poolAdmin, _period);
-    _transferRON(payable(_poolAdmin), _amount);
+  function execSettleAndTransferUnclaimedReward(address[] calldata _consensusAddrs, uint256 _period)
+    external
+    override
+    onlyValidatorContract
+  {
+    for (uint _i = 0; _i < _consensusAddrs.length; _i++) {
+      address _poolAddr = _consensusAddrs[_i];
+      address _poolAdmin = _stakingPool[_poolAddr].admin;
+      uint256 _amount = _claimReward(_poolAddr, _poolAdmin, _period);
+      _transferRON(payable(_poolAdmin), _amount);
+    }
   }
 
   /**
