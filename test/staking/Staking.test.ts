@@ -11,6 +11,7 @@ import { MockValidatorSet } from '../../src/types/MockValidatorSet';
 import { createManyValidatorCandidateAddressSets, ValidatorCandidateAddressSet } from '../helpers/address-set-types';
 import { getLastBlockTimestamp } from '../helpers/utils';
 
+let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
 
 let proxyAdmin: SignerWithAddress;
@@ -28,7 +29,7 @@ let validatorCandidates: ValidatorCandidateAddressSet[];
 
 const ONE_DAY = 60 * 60 * 24;
 
-const minValidatorStakingAmount = BigNumber.from(20);
+const minValidatorStakingAmount = BigNumber.from(2_000_000);
 const maxValidatorCandidate = 50;
 const numberOfBlocksInEpoch = 2;
 const cooldownSecsToUndelegate = 3 * 86400;
@@ -38,7 +39,7 @@ const numberOfCandidate = 4;
 
 describe('Staking test', () => {
   before(async () => {
-    [deployer, proxyAdmin, userA, userB, ...signers] = await ethers.getSigners();
+    [coinbase, deployer, proxyAdmin, userA, userB, ...signers] = await ethers.getSigners();
     validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, numberOfCandidate * 3));
     sparePoolAddrSet = validatorCandidates.splice(validatorCandidates.length - 1)[0];
 
