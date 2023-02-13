@@ -268,6 +268,8 @@ describe('Credit score and bail out test', () => {
     it('Should the score get reset when the candidate is revoked', async () => {
       snapshotId = await network.provider.send('evm_snapshot');
       let snapshotScore = localScoreController.getAt(0);
+      await expect(snapshotScore).gt(0);
+      await validateScoreAt(0);
 
       await stakingContract
         .connect(validatorCandidates[0].poolAdmin)
@@ -276,6 +278,9 @@ describe('Credit score and bail out test', () => {
 
       let tx = await endPeriodAndWrapUpAndResetIndicators();
       await CandidateManagerExpects.emitCandidatesRevokedEvent(tx, [validatorCandidates[0].consensusAddr.address]);
+      await expect(tx)
+        .emit(slashContract, 'CreditScoresUpdated')
+        .withArgs([validatorCandidates[0].consensusAddr.address], [1]);
 
       localScoreController.resetAt(0);
       await validateScoreAt(0);
