@@ -2,10 +2,10 @@
 
 ### Contract changes
 
-The table below shows following info:
+The table below shows the following info:
 - **ABI**: the ABI is changed.
-- **Init data**: new storage field is declared and need initialized.
-- **Dependent**: need to be changed due to changes in other contracts.
+- **Init data**: new storage field is declared and needs initializing.
+- **Dependent**: needs to be changed due to changes in other contracts.
 
 | **Contract name** | **ABI** | **Init data** | **Dependent** |
 |-------------------|:-------:|:-------------:|:-------------:|
