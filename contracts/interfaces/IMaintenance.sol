@@ -11,6 +11,8 @@ interface IMaintenance {
 
   /// @dev Emitted when a maintenance is scheduled.
   event MaintenanceScheduled(address indexed consensusAddr, Schedule);
+  /// @dev Emitted when a schedule of maintenance is cancelled.
+  event MaintenanceScheduleCancelled(address indexed consensusAddr);
   /// @dev Emitted when the maintenance config is updated.
   event MaintenanceConfigUpdated(
     uint256 minMaintenanceDurationInBlock,
@@ -129,4 +131,16 @@ interface IMaintenance {
     uint256 _startedAtBlock,
     uint256 _endedAtBlock
   ) external;
+
+  /**
+   * @dev Cancel the schedule of maintenance for the `_consensusAddr`.
+   *
+   * Requirements:
+   * - The candidate `_consensusAddr` is the block producer.
+   * - The method caller is candidate admin of the candidate `_consensusAddr`.
+   * - A schedule for the `_consensusAddr` must be existent and not executed yet.
+   *
+   * Emits the event `MaintenanceScheduleCancelled`.
+   */
+  function cancelSchedule(address _consensusAddr) external;
 }
