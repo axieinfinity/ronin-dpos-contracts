@@ -8,7 +8,7 @@ The table below shows following info:
 - **Dependent**: need to be changed due to changes in other contracts.
 
 | **Contract name** | **ABI** | **Init data** | **Dependent** |
-|-------------------|---------|---------------|---------------|
+|-------------------|:-------:|:-------------:|:-------------:|
 | BridgeTracking    |         |               |               |
 | GovernanceAdmin   |         |               |               |
 | Maintenance       |         |               |               |
