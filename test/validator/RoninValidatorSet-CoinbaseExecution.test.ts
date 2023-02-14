@@ -375,6 +375,10 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       await expect(wrapupEpochTx!)
         .emit(stakingContract, 'RewardClaimed')
         .withArgs(currValidator.consensusAddr.address, currValidator.poolAdmin.address, unclaimedReward);
+
+      expect(await stakingContract.getReward(currValidator.consensusAddr.address, currValidator.poolAdmin.address)).eq(
+        0
+      );
     });
   });
 
