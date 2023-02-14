@@ -85,7 +85,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       stakingContractAddress,
       roninGovernanceAdminAddress,
       stakingVestingContractAddress,
-    } = await initTest('RoninValidatorSet')({
+    } = await initTest('RoninValidatorSet-Coinbase')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
           slashDoubleSignAmount,
