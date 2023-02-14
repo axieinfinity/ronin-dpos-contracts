@@ -109,7 +109,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   function cancelSchedule(address _consensusAddr) external override {
     require(
       _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender),
-      "Maintenance: method caller must be a candidate admin"
+      "Maintenance: method caller must be the candidate admin"
     );
     require(checkScheduled(_consensusAddr), "Maintenance: no schedule exists");
     Schedule storage _sSchedule = _schedule[_consensusAddr];

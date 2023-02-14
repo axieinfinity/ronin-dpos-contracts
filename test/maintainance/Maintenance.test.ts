@@ -345,4 +345,45 @@ describe('Maintenance test', () => {
         .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock);
     });
   });
+
+  describe('Cancel schedule test', () => {
+    it('Should non-admin not be able to cancel the schedule', async () => {
+      await expect(
+        maintenanceContract
+          .connect(validatorCandidates[1].candidateAdmin)
+          .cancelSchedule(validatorCandidates[0].consensusAddr.address)
+      ).revertedWith('Maintenance: method caller must be the candidate admin');
+    });
+
+    it('Should the admin be able to cancel the schedule', async () => {
+      let _totalSchedules = await maintenanceContract.totalSchedules();
+
+      let tx = await maintenanceContract
+        .connect(validatorCandidates[0].candidateAdmin)
+        .cancelSchedule(validatorCandidates[0].consensusAddr.address);
+
+      expect(tx)
+        .emit(maintenanceContract, 'MaintenanceScheduleCancelled')
+        .withArgs(validatorCandidates[0].consensusAddr.address);
+
+      expect(_totalSchedules.sub(await maintenanceContract.totalSchedules())).eq(1);
+      let _cancelledSchedule = await maintenanceContract.getSchedule(validatorCandidates[0].consensusAddr.address);
+      expect(_cancelledSchedule.from).eq(0);
+      expect(_cancelledSchedule.to).eq(0);
+      expect(_cancelledSchedule.lastUpdatedBlock).eq(tx.blockNumber);
+    });
+
+    it('Should the validator not on maintenance mode when the from-block of the cancelled schedule comes', async () => {
+      await localEpochController.mineToBeforeEndOfEpoch();
+      let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
+      let expectingBlockProducerSet = validatorCandidates.map((_) => _.consensusAddr.address);
+      await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
+        tx!,
+        await validatorContract.currentPeriod(),
+        await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
+        expectingBlockProducerSet
+      );
+      expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.map((_) => _.consensusAddr.address));
+    });
+  });
 });
