@@ -106,6 +106,9 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     emit MaintenanceScheduled(_consensusAddr, _sSchedule);
   }
 
+  /**
+   * @inheritdoc IMaintenance
+   */
   function cancelSchedule(address _consensusAddr) external override {
     require(
       _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender),
