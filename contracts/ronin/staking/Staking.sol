@@ -39,7 +39,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     address[] calldata _consensusAddrs,
     uint256[] calldata _rewards,
     uint256 _period
-  ) external payable onlyValidatorContract {
+  ) external payable override onlyValidatorContract {
     _recordRewards(_consensusAddrs, _rewards, _period);
   }
 
@@ -48,6 +48,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
    */
   function execDeductStakingAmount(address _consensusAddr, uint256 _amount)
     external
+    override
     onlyValidatorContract
     returns (uint256 _actualDeductingAmount)
   {

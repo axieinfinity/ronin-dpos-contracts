@@ -86,7 +86,7 @@ describe('Ronin Validator Set: candidate test', () => {
       stakingContractAddress,
       roninGovernanceAdminAddress,
       stakingVestingContractAddress,
-    } = await initTest('RoninValidatorSet')({
+    } = await initTest('RoninValidatorSet-Candidate')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
           slashDoubleSignAmount,

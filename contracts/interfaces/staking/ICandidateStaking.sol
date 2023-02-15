@@ -98,7 +98,7 @@ interface ICandidateStaking is IRewardPool {
    * Emits the event `StakingAmountTransferFailed` if the contract cannot transfer RON back to the pool admin.
    *
    */
-  function deprecatePools(address[] calldata _pools) external;
+  function execDeprecatePools(address[] calldata _pools, uint256 _period) external;
 
   /**
    * @dev Self-delegates to the validator candidate `_consensusAddr`.
