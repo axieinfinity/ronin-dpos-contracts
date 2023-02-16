@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { roninTrustedOrganizationConf, generalRoninConf, roninchainNetworks } from '../../config';
+import { roninTrustedOrganizationConf, generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { verifyAddress } from '../../script/verify-address';
 import { RoninTrustedOrganization__factory } from '../../types';
 

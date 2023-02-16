@@ -27,6 +27,7 @@ export enum Network {
   Testnet = 'ronin-testnet',
   Mainnet = 'ronin-mainnet',
   Goerli = 'goerli',
+  GoerliForDevnet = 'goerli-for-devnet',
   Ethereum = 'ethereum',
 }
 

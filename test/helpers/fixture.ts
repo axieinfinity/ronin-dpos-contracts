@@ -14,7 +14,7 @@ import {
   slashIndicatorConf,
   stakingConfig,
   stakingVestingConfig,
-} from '../../src/config';
+} from '../../src/configs/config';
 import {
   RoninGovernanceAdminArguments,
   MainchainGovernanceAdminArguments,

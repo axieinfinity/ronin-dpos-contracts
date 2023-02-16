@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { stakingConfig, generalRoninConf, roninchainNetworks } from '../../config';
+import { stakingConfig, generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { verifyAddress } from '../../script/verify-address';
 import { Staking__factory } from '../../types';
 

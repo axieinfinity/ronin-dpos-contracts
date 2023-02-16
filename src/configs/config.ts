@@ -21,10 +21,16 @@ import {
   StakingVestingArguments,
   StakingVestingConfig,
   VaultForwarderConfig,
-} from './utils';
+} from '../utils';
+import { trustedOrgSet } from './addresses';
 
 export const commonNetworks: LiteralNetwork[] = [Network.Local, Network.Hardhat, Network.Devnet];
-export const mainchainNetworks: LiteralNetwork[] = [...commonNetworks, Network.Goerli, Network.Ethereum];
+export const mainchainNetworks: LiteralNetwork[] = [
+  ...commonNetworks,
+  Network.Goerli,
+  Network.GoerliForDevnet,
+  Network.Ethereum,
+];
 export const roninchainNetworks: LiteralNetwork[] = [...commonNetworks, Network.Testnet, Network.Mainnet];
 export const allNetworks: LiteralNetwork[] = [
   ...commonNetworks,
@@ -58,6 +64,10 @@ export const generalMainchainConf: GeneralConfig = {
     roninChainId: 2021,
     startedAtBlock: 0,
     bridgeContract: '0xFc4319Ae9e6134C708b88D5Ad5Da1A4a83372502',
+  },
+  [Network.GoerliForDevnet]: {
+    ...defaultGeneralConf,
+    roninChainId: 2022,
   },
 };
 
@@ -253,6 +263,11 @@ export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
     numerator: 9,
     denominator: 11,
   },
+  [Network.GoerliForDevnet]: {
+    trustedOrganizations: trustedOrgSet[Network.GoerliForDevnet],
+    numerator: 9,
+    denominator: 11,
+  },
   [Network.Ethereum]: undefined,
 };
 
@@ -266,6 +281,10 @@ export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
   [Network.Local]: defaultMainchainGovernanceAdminConf,
   [Network.Devnet]: defaultMainchainGovernanceAdminConf,
   [Network.Goerli]: {
+    roleSetter: '0xC37b5d7891D73F2064B0eE044844e053872Ef941',
+    relayers: ['0xC37b5d7891D73F2064B0eE044844e053872Ef941'],
+  },
+  [Network.GoerliForDevnet]: {
     roleSetter: '0xC37b5d7891D73F2064B0eE044844e053872Ef941',
     relayers: ['0xC37b5d7891D73F2064B0eE044844e053872Ef941'],
   },

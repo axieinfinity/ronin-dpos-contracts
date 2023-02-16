@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { mainchainNetworks } from '../../config';
+import { mainchainNetworks } from '../../configs/config';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!mainchainNetworks.includes(network.name!)) {
