@@ -121,8 +121,4 @@ export const namedAddresses: ContractAddress = {
     [Network.Hardhat]: undefined,
     [Network.GoerliForDevnet]: '0x968D0Cd7343f711216817E617d3f92a23dC91c07',
   },
-  governanceAdminRoleSetter: {
-    [Network.Hardhat]: undefined,
-    [Network.GoerliForDevnet]: '0x968D0Cd7343f711216817E617d3f92a23dC91c07',
-  },
 };
