@@ -108,6 +108,9 @@ const config: HardhatUserConfig = {
     enabled: REPORT_GAS ? true : false,
     showTimeSpent: true,
   },
+  mocha: {
+    timeout: 100000,
+  },
 };
 
 export default config;

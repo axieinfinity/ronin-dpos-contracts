@@ -65,29 +65,31 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _setProposalExpiryDuration(_expiryDuration);
   }
 
-  /**
-   * @dev Creates new round voting for the proposal `_proposalHash` of chain `_chainId`.
-   */
-  function _createVotingRound(
-    uint256 _chainId,
-    bytes32 _proposalHash,
-    uint256 _expiryTimestamp
-  ) internal returns (uint256 _round) {
+  function _calculateVotingRoundAndDeleteExpiry(uint256 _chainId) internal returns (uint256 _round) {
     _round = round[_chainId];
-
     // Skip checking for the first ever round
     if (_round == 0) {
       _round = round[_chainId] = 1;
     } else {
       ProposalVote storage _latestProposalVote = vote[_chainId][_round];
       bool _isExpired = _tryDeleteExpiredVotingRound(_latestProposalVote);
-      // Skip increase round number if the latest round is expired, allow the vote to be overridden
+      // Skip increasing round number if the latest round is expired, allow the vote to be overridden
       if (!_isExpired) {
         require(_latestProposalVote.status != VoteStatus.Pending, "CoreGovernance: current proposal is not completed");
         _round = ++round[_chainId];
       }
     }
+  }
 
+  /**
+   * @dev Creates new round voting for the proposal `_proposalHash` of chain `_chainId`.
+   */
+  function _createVotingRound(
+    uint256 _chainId,
+    uint256 _round,
+    bytes32 _proposalHash,
+    uint256 _expiryTimestamp
+  ) internal {
     vote[_chainId][_round].hash = _proposalHash;
     vote[_chainId][_round].expiryTimestamp = _expiryTimestamp;
   }
@@ -111,20 +113,13 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     address _creator
   ) internal virtual returns (Proposal.ProposalDetail memory _proposal) {
     require(_chainId != 0, "CoreGovernance: invalid chain id");
+    uint256 _round = _calculateVotingRoundAndDeleteExpiry(_chainId);
 
-    _proposal = Proposal.ProposalDetail(
-      round[_chainId] + 1,
-      _chainId,
-      _expiryTimestamp,
-      _targets,
-      _values,
-      _calldatas,
-      _gasAmounts
-    );
+    _proposal = Proposal.ProposalDetail(_round, _chainId, _expiryTimestamp, _targets, _values, _calldatas, _gasAmounts);
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    uint256 _round = _createVotingRound(_chainId, _proposalHash, _expiryTimestamp);
+    _createVotingRound(_chainId, _round, _proposalHash, _expiryTimestamp);
     emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
   }
 
@@ -148,7 +143,8 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    _round = _createVotingRound(_chainId, _proposalHash, _proposal.expiryTimestamp);
+    _round = _calculateVotingRoundAndDeleteExpiry(_chainId);
+    _createVotingRound(_chainId, _round, _proposalHash, _proposal.expiryTimestamp);
     require(_round == _proposal.nonce, "CoreGovernance: invalid proposal nonce");
     emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
   }
@@ -165,10 +161,11 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     uint256[] memory _values,
     bytes[] memory _calldatas,
     uint256[] memory _gasAmounts,
-    address _roninTrustedOrganizationContract,
-    address _gatewayContract,
-    address _creator
-  ) internal virtual returns (uint256 _round) {
+    // addressPack[0] _roninTrustedOrganizationContract,
+    // addressPack[1] _gatewayContract,
+    // addressPack[2] _creator,
+    address[] memory addressPack
+  ) internal virtual {
     GlobalProposal.GlobalProposalDetail memory _globalProposal = GlobalProposal.GlobalProposalDetail(
       round[0] + 1,
       _expiryTimestamp,
@@ -177,15 +174,20 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       _calldatas,
       _gasAmounts
     );
-    Proposal.ProposalDetail memory _proposal = _globalProposal.into_proposal_detail(
-      _roninTrustedOrganizationContract,
-      _gatewayContract
-    );
+    Proposal.ProposalDetail memory _proposal = _globalProposal.into_proposal_detail(addressPack[0], addressPack[1]);
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    _round = _createVotingRound(0, _proposalHash, _expiryTimestamp);
-    emit GlobalProposalCreated(_round, _proposalHash, _proposal, _globalProposal.hash(), _globalProposal, _creator);
+    uint256 _round = _calculateVotingRoundAndDeleteExpiry(0);
+    _createVotingRound(0, _round, _proposalHash, _expiryTimestamp);
+    emit GlobalProposalCreated(
+      _round,
+      _proposalHash,
+      _proposal,
+      _globalProposal.hash(),
+      _globalProposal,
+      addressPack[2]
+    );
   }
 
   /**
@@ -202,12 +204,13 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     address _roninTrustedOrganizationContract,
     address _gatewayContract,
     address _creator
-  ) internal virtual returns (Proposal.ProposalDetail memory _proposal, uint256 _round) {
+  ) internal virtual returns (Proposal.ProposalDetail memory _proposal) {
     _proposal = _globalProposal.into_proposal_detail(_roninTrustedOrganizationContract, _gatewayContract);
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    _round = _createVotingRound(0, _proposalHash, _globalProposal.expiryTimestamp);
+    uint256 _round = _calculateVotingRoundAndDeleteExpiry(0);
+    _createVotingRound(0, _round, _proposalHash, _globalProposal.expiryTimestamp);
     require(_round == _proposal.nonce, "CoreGovernance: invalid proposal nonce");
     emit GlobalProposalCreated(_round, _proposalHash, _proposal, _globalProposal.hash(), _globalProposal, _creator);
   }

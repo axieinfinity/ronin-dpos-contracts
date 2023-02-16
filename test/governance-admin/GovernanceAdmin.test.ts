@@ -738,7 +738,7 @@ describe('Governance Admin test', () => {
         await network.provider.send('evm_revert', [snapshotId]);
       });
 
-      it("Should be able to clear when it' is expired", async () => {
+      it('Should be able to clear the proposal when it is expired', async () => {
         expect(
           await governanceAdmin.connect(trustedOrgs[0].governor).deleteExpired(proposal.chainId, proposal.nonce)
         ).emit(governanceAdmin, 'ProposalExpired');

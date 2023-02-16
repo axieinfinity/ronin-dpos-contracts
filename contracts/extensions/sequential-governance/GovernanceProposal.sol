@@ -112,12 +112,7 @@ abstract contract GovernanceProposal is CoreGovernance {
     address _gatewayContract,
     address _creator
   ) internal returns (Proposal.ProposalDetail memory _proposal) {
-    (_proposal, ) = _proposeGlobalStruct(
-      _globalProposal,
-      _roninTrustedOrganizationContract,
-      _gatewayContract,
-      _creator
-    );
+    _proposal = _proposeGlobalStruct(_globalProposal, _roninTrustedOrganizationContract, _gatewayContract, _creator);
     bytes32 _globalProposalHash = _globalProposal.hash();
     _castVotesBySignatures(
       _proposal,

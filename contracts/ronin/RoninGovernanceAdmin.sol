@@ -230,16 +230,12 @@ contract RoninGovernanceAdmin is
     bytes[] calldata _calldatas,
     uint256[] calldata _gasAmounts
   ) external onlyGovernor {
-    _proposeGlobal(
-      _expiryTimestamp,
-      _targetOptions,
-      _values,
-      _calldatas,
-      _gasAmounts,
-      roninTrustedOrganizationContract(),
-      bridgeContract(),
-      msg.sender
-    );
+    address[] memory _addressPack = new address[](3);
+    _addressPack[0] = roninTrustedOrganizationContract();
+    _addressPack[1] = bridgeContract();
+    _addressPack[2] = msg.sender;
+
+    _proposeGlobal(_expiryTimestamp, _targetOptions, _values, _calldatas, _gasAmounts, _addressPack);
   }
 
   /**
