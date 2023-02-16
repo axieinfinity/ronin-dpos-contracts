@@ -32,14 +32,13 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
       ...generalMainchainConf[network.name],
       governanceAdmin: calculateAddress(deployer, nonce++),
       roninTrustedOrganizationContract: calculateAddress(deployer, nonce++),
-      bridgeContract: calculateAddress(deployer, nonce++).address,
     };
   }
 
   // Only for local
-  // if ([Network.Local.toString()].includes(network.name)) {
-  //   generalMainchainConf[network.name].bridgeContract = calculateAddress(deployer, nonce++).address;
-  // }
+  if ([Network.Local.toString()].includes(network.name)) {
+    generalMainchainConf[network.name].bridgeContract = calculateAddress(deployer, nonce++).address;
+  }
 };
 
 deploy.tags = ['CalculateAddresses'];
