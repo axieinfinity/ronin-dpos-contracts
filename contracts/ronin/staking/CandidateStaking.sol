@@ -10,11 +10,14 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   /// @dev The minimum threshold for being a validator candidate.
   uint256 internal _minValidatorStakingAmount;
 
+  /// @dev The max commission rate that the validator can set (in range of [0;100_00] means [0-100%])
+  uint256 internal _maxCommissionRate;
+
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[50] private ______gap;
+  uint256[49] ______gap;
 
   /**
    * @inheritdoc ICandidateStaking
@@ -71,6 +74,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     uint256 _effectiveDaysOnwards,
     uint256 _commissionRate
   ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
+    if (_commissionRate > _maxCommissionRate) revert ErrExceedsMaxCommissionRate();
     _validatorContract.execRequestUpdateCommissionRate(_consensusAddr, _effectiveDaysOnwards, _commissionRate);
   }
 
@@ -171,6 +175,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     if (!_unsafeSendRON(_poolAdmin, 0)) revert ErrCannotInitTransferRON(_poolAdmin, "pool admin");
     if (!_unsafeSendRON(_treasuryAddr, 0)) revert ErrCannotInitTransferRON(_treasuryAddr, "treasury");
     if (_amount < _minValidatorStakingAmount) revert ErrInsufficientStakingAmount();
+    if (_commissionRate > _maxCommissionRate) revert ErrExceedsMaxCommissionRate();
 
     if (_poolAdmin != _candidateAdmin || _candidateAdmin != _treasuryAddr) revert ErrThreeInteractionAddrsNotEqual();
 
@@ -239,5 +244,16 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   function _setMinValidatorStakingAmount(uint256 _threshold) internal {
     _minValidatorStakingAmount = _threshold;
     emit MinValidatorStakingAmountUpdated(_threshold);
+  }
+
+  /**
+   * @dev Sets the max commission rate that a candidate can set.
+   *
+   * Emits the `MaxCommissionRateUpdated` event.
+   *
+   */
+  function _setMaxCommissionRate(uint256 _maxRate) internal {
+    _maxCommissionRate = _maxRate;
+    emit MaxCommissionRateUpdated(_maxRate);
   }
 }

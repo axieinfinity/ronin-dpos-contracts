@@ -7,6 +7,8 @@ import "./IRewardPool.sol";
 interface ICandidateStaking is IRewardPool {
   /// @dev Emitted when the minimum staking amount for being a validator is updated.
   event MinValidatorStakingAmountUpdated(uint256 threshold);
+  /// @dev Emitted when the max commission rate is updated.
+  event MaxCommissionRateUpdated(uint256 maxRate);
 
   /// @dev Emitted when the pool admin staked for themself.
   event Staked(address indexed consensuAddr, uint256 amount);
@@ -46,6 +48,8 @@ interface ICandidateStaking is IRewardPool {
   error ErrInsufficientStakingAmount();
   /// @dev Error of unstaking too early.
   error ErrUnstakeTooEarly();
+  /// @dev Error of setting commission rate exceeds max allowed.
+  error ErrExceedsMaxCommissionRate();
 
   /**
    * @dev Returns the minimum threshold for being a validator candidate.
