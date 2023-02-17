@@ -88,6 +88,7 @@ export interface MaintenanceConfig {
 
 export interface StakingArguments {
   minValidatorStakingAmount?: BigNumberish;
+  maxCommissionRate?: BigNumberish;
   cooldownSecsToUndelegate?: BigNumberish;
   waitingSecsToRevoke?: BigNumberish;
 }

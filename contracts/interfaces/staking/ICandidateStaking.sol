@@ -49,12 +49,17 @@ interface ICandidateStaking is IRewardPool {
   /// @dev Error of unstaking too early.
   error ErrUnstakeTooEarly();
   /// @dev Error of setting commission rate exceeds max allowed.
-  error ErrExceedsMaxCommissionRate();
+  error ErrInvalidCommissionRate();
 
   /**
    * @dev Returns the minimum threshold for being a validator candidate.
    */
   function minValidatorStakingAmount() external view returns (uint256);
+
+  /**
+   * @dev Returns the max commission rate that the candidate can set.
+   */
+  function maxCommissionRate() external view returns (uint256);
 
   /**
    * @dev Sets the minimum threshold for being a validator candidate.
@@ -66,6 +71,17 @@ interface ICandidateStaking is IRewardPool {
    *
    */
   function setMinValidatorStakingAmount(uint256) external;
+
+  /**
+   * @dev Sets the max commission rate that a candidate can set.
+   *
+   * Requirements:
+   * - The method caller is admin.
+   *
+   * Emits the `MaxCommissionRateUpdated` event.
+   *
+   */
+  function setMaxCommissionRate(uint256 _maxRate) external;
 
   /**
    * @dev Proposes a candidate to become a validator.

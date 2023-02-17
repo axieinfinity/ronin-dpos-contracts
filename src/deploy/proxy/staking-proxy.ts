@@ -18,6 +18,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const data = new Staking__factory().interface.encodeFunctionData('initialize', [
     generalRoninConf[network.name]!.validatorContract?.address,
     stakingConfig[network.name]!.minValidatorStakingAmount,
+    stakingConfig[network.name]!.maxCommissionRate,
     stakingConfig[network.name]!.cooldownSecsToUndelegate,
     stakingConfig[network.name]!.waitingSecsToRevoke,
   ]);
