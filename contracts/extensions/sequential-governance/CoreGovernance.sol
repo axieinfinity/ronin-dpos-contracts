@@ -65,7 +65,12 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _setProposalExpiryDuration(_expiryDuration);
   }
 
-  function _calculateVotingRoundAndDeleteExpiry(uint256 _chainId) internal returns (uint256 _round) {
+  /**
+   * @dev Creates new voting round by calculating the `_round` number of chain `_chainId`.
+   * Increase the `_round` number if the previous one is not expired. Delete the previous proposal
+   * if it is expired and not increase the `_round`.
+   */
+  function _createVotingRound(uint256 _chainId) internal returns (uint256 _round) {
     _round = round[_chainId];
     // Skip checking for the first ever round
     if (_round == 0) {
@@ -82,9 +87,9 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   }
 
   /**
-   * @dev Creates new round voting for the proposal `_proposalHash` of chain `_chainId`.
+   * @dev Saves new round voting for the proposal `_proposalHash` of chain `_chainId`.
    */
-  function _createVotingRound(
+  function _saveVotingRound(
     uint256 _chainId,
     uint256 _round,
     bytes32 _proposalHash,
@@ -113,13 +118,13 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     address _creator
   ) internal virtual returns (Proposal.ProposalDetail memory _proposal) {
     require(_chainId != 0, "CoreGovernance: invalid chain id");
-    uint256 _round = _calculateVotingRoundAndDeleteExpiry(_chainId);
+    uint256 _round = _createVotingRound(_chainId);
 
     _proposal = Proposal.ProposalDetail(_round, _chainId, _expiryTimestamp, _targets, _values, _calldatas, _gasAmounts);
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    _createVotingRound(_chainId, _round, _proposalHash, _expiryTimestamp);
+    _saveVotingRound(_chainId, _round, _proposalHash, _expiryTimestamp);
     emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
   }
 
@@ -143,8 +148,8 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    _round = _calculateVotingRoundAndDeleteExpiry(_chainId);
-    _createVotingRound(_chainId, _round, _proposalHash, _proposal.expiryTimestamp);
+    _round = _createVotingRound(_chainId);
+    _saveVotingRound(_chainId, _round, _proposalHash, _proposal.expiryTimestamp);
     require(_round == _proposal.nonce, "CoreGovernance: invalid proposal nonce");
     emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
   }
@@ -164,10 +169,11 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     // addressPack[0] _roninTrustedOrganizationContract,
     // addressPack[1] _gatewayContract,
     // addressPack[2] _creator,
-    address[] memory addressPack
+    address[3] memory addressPack
   ) internal virtual {
+    uint256 _round = _createVotingRound(0);
     GlobalProposal.GlobalProposalDetail memory _globalProposal = GlobalProposal.GlobalProposalDetail(
-      round[0] + 1,
+      _round,
       _expiryTimestamp,
       _targetOptions,
       _values,
@@ -178,8 +184,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    uint256 _round = _calculateVotingRoundAndDeleteExpiry(0);
-    _createVotingRound(0, _round, _proposalHash, _expiryTimestamp);
+    _saveVotingRound(0, _round, _proposalHash, _expiryTimestamp);
     emit GlobalProposalCreated(
       _round,
       _proposalHash,
@@ -209,8 +214,8 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    uint256 _round = _calculateVotingRoundAndDeleteExpiry(0);
-    _createVotingRound(0, _round, _proposalHash, _globalProposal.expiryTimestamp);
+    uint256 _round = _createVotingRound(0);
+    _saveVotingRound(0, _round, _proposalHash, _globalProposal.expiryTimestamp);
     require(_round == _proposal.nonce, "CoreGovernance: invalid proposal nonce");
     emit GlobalProposalCreated(_round, _proposalHash, _proposal, _globalProposal.hash(), _globalProposal, _creator);
   }
