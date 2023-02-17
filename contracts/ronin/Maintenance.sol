@@ -109,7 +109,24 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function getSchedule(address _consensusAddr) external view returns (Schedule memory) {
+  function cancelSchedule(address _consensusAddr) external override {
+    require(
+      _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender),
+      "Maintenance: method caller must be the candidate admin"
+    );
+    require(checkScheduled(_consensusAddr), "Maintenance: no schedule exists");
+    require(!checkMaintained(_consensusAddr, block.number), "Maintenance: already on maintenance");
+    Schedule storage _sSchedule = _schedule[_consensusAddr];
+    delete _sSchedule.from;
+    delete _sSchedule.to;
+    _sSchedule.lastUpdatedBlock = block.number;
+    emit MaintenanceScheduleCancelled(_consensusAddr);
+  }
+
+  /**
+   * @inheritdoc IMaintenance
+   */
+  function getSchedule(address _consensusAddr) external view override returns (Schedule memory) {
     return _schedule[_consensusAddr];
   }
 
