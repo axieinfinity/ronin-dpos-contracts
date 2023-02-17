@@ -39,6 +39,7 @@ let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 
 let localEpochController: EpochController;
+let snapshotId: string;
 
 const unavailabilityTier1Threshold = 50;
 const unavailabilityTier2Threshold = 150;
@@ -355,6 +356,20 @@ describe('Maintenance test', () => {
       ).revertedWith('Maintenance: method caller must be the candidate admin');
     });
 
+    it('Should the admin not be able to cancel the schedule when maintenance starts', async () => {
+      snapshotId = await network.provider.send('evm_snapshot');
+      await localEpochController.mineToBeforeEndOfEpoch();
+      await validatorContract.connect(coinbase).wrapUpEpoch();
+
+      await expect(
+        maintenanceContract
+          .connect(validatorCandidates[0].candidateAdmin)
+          .cancelSchedule(validatorCandidates[0].consensusAddr.address)
+      ).revertedWith('Maintenance: already on maintenance');
+
+      await network.provider.send('evm_revert', [snapshotId]);
+    });
+
     it('Should the admin be able to cancel the schedule', async () => {
       let _totalSchedules = await maintenanceContract.totalSchedules();
 
@@ -371,6 +386,14 @@ describe('Maintenance test', () => {
       expect(_cancelledSchedule.from).eq(0);
       expect(_cancelledSchedule.to).eq(0);
       expect(_cancelledSchedule.lastUpdatedBlock).eq(tx.blockNumber);
+    });
+
+    it('Should the admin not be able to cancel the schedule again', async () => {
+      await expect(
+        maintenanceContract
+          .connect(validatorCandidates[0].candidateAdmin)
+          .cancelSchedule(validatorCandidates[0].consensusAddr.address)
+      ).revertedWith('Maintenance: no schedule exists');
     });
 
     it('Should the validator not on maintenance mode when the from-block of the cancelled schedule comes', async () => {
