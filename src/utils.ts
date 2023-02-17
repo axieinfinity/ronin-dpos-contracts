@@ -70,6 +70,7 @@ export interface MaintenanceArguments {
   minOffsetToStartSchedule?: BigNumberish;
   maxOffsetToStartSchedule?: BigNumberish;
   maxSchedules?: BigNumberish;
+  cooldownSecsToMaintain?: BigNumberish;
 }
 
 export interface RoninTrustedOrganizationArguments {

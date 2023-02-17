@@ -67,6 +67,7 @@ const defaultMaintenanceConf: MaintenanceArguments = {
   minOffsetToStartSchedule: 28800, // requests before maintaining at least ~1 day
   maxOffsetToStartSchedule: 28800 * 7, // requests before maintaining at most ~7 day
   maxSchedules: 3, // only 3 schedules are happening|in the futures
+  cooldownSecsToMaintain: 86400 * 3, // request next maintenance must wait at least 3 days.
 };
 
 // TODO: update config for testnet & mainnet
