@@ -67,7 +67,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
 
   /**
    * @dev Creates new voting round by calculating the `_round` number of chain `_chainId`.
-   * Increase the `_round` number if the previous one is not expired. Delete the previous proposal
+   * Increases the `_round` number if the previous one is not expired. Delete the previous proposal
    * if it is expired and not increase the `_round`.
    */
   function _createVotingRound(uint256 _chainId) internal returns (uint256 _round) {
@@ -90,13 +90,12 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
    * @dev Saves new round voting for the proposal `_proposalHash` of chain `_chainId`.
    */
   function _saveVotingRound(
-    uint256 _chainId,
-    uint256 _round,
+    ProposalVote storage _vote,
     bytes32 _proposalHash,
     uint256 _expiryTimestamp
   ) internal {
-    vote[_chainId][_round].hash = _proposalHash;
-    vote[_chainId][_round].expiryTimestamp = _expiryTimestamp;
+    _vote.hash = _proposalHash;
+    _vote.expiryTimestamp = _expiryTimestamp;
   }
 
   /**
@@ -124,7 +123,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    _saveVotingRound(_chainId, _round, _proposalHash, _expiryTimestamp);
+    _saveVotingRound(vote[_chainId][_round], _proposalHash, _expiryTimestamp);
     emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
   }
 
@@ -149,7 +148,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
 
     bytes32 _proposalHash = _proposal.hash();
     _round = _createVotingRound(_chainId);
-    _saveVotingRound(_chainId, _round, _proposalHash, _proposal.expiryTimestamp);
+    _saveVotingRound(vote[_chainId][_round], _proposalHash, _proposal.expiryTimestamp);
     require(_round == _proposal.nonce, "CoreGovernance: invalid proposal nonce");
     emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
   }
@@ -166,10 +165,9 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     uint256[] memory _values,
     bytes[] memory _calldatas,
     uint256[] memory _gasAmounts,
-    // addressPack[0] _roninTrustedOrganizationContract,
-    // addressPack[1] _gatewayContract,
-    // addressPack[2] _creator,
-    address[3] memory addressPack
+    address _roninTrustedOrganizationContract,
+    address _gatewayContract,
+    address _creator
   ) internal virtual {
     uint256 _round = _createVotingRound(0);
     GlobalProposal.GlobalProposalDetail memory _globalProposal = GlobalProposal.GlobalProposalDetail(
@@ -180,19 +178,15 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       _calldatas,
       _gasAmounts
     );
-    Proposal.ProposalDetail memory _proposal = _globalProposal.into_proposal_detail(addressPack[0], addressPack[1]);
+    Proposal.ProposalDetail memory _proposal = _globalProposal.into_proposal_detail(
+      _roninTrustedOrganizationContract,
+      _gatewayContract
+    );
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
-    _saveVotingRound(0, _round, _proposalHash, _expiryTimestamp);
-    emit GlobalProposalCreated(
-      _round,
-      _proposalHash,
-      _proposal,
-      _globalProposal.hash(),
-      _globalProposal,
-      addressPack[2]
-    );
+    _saveVotingRound(vote[0][_round], _proposalHash, _expiryTimestamp);
+    emit GlobalProposalCreated(_round, _proposalHash, _proposal, _globalProposal.hash(), _globalProposal, _creator);
   }
 
   /**
@@ -215,7 +209,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
 
     bytes32 _proposalHash = _proposal.hash();
     uint256 _round = _createVotingRound(0);
-    _saveVotingRound(0, _round, _proposalHash, _globalProposal.expiryTimestamp);
+    _saveVotingRound(vote[0][_round], _proposalHash, _globalProposal.expiryTimestamp);
     require(_round == _proposal.nonce, "CoreGovernance: invalid proposal nonce");
     emit GlobalProposalCreated(_round, _proposalHash, _proposal, _globalProposal.hash(), _globalProposal, _creator);
   }
@@ -287,17 +281,14 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   }
 
   /**
-   * @dev Delete the expired proposal by its chainId and nonce, without creating a new proposal.
-   */
-  function _deleteExpiredVotingRound(uint256 _chainId, uint256 _round) internal {
-    ProposalVote storage _vote = vote[_chainId][_round];
-    _tryDeleteExpiredVotingRound(_vote);
-  }
-
-  /**
    * @dev When the contract is on Ronin chain, checks whether the proposal is expired and delete it if is expired.
+   *
+   * Emits the event `ProposalExpired` if the vote is expired.
+   *
+   * Note: This function assumes the vote `_proposalVote` is already created, consider verifying the vote's existence
+   * before or it will emit an unexpected event of `ProposalExpired`.
    */
-  function _tryDeleteExpiredVotingRound(ProposalVote storage _proposalVote) private returns (bool _isExpired) {
+  function _tryDeleteExpiredVotingRound(ProposalVote storage _proposalVote) internal returns (bool _isExpired) {
     _isExpired =
       _getChainType() == ChainType.RoninChain &&
       _proposalVote.status == VoteStatus.Pending &&

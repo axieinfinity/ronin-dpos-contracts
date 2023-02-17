@@ -230,12 +230,16 @@ contract RoninGovernanceAdmin is
     bytes[] calldata _calldatas,
     uint256[] calldata _gasAmounts
   ) external onlyGovernor {
-    address[3] memory _addressPack;
-    _addressPack[0] = roninTrustedOrganizationContract();
-    _addressPack[1] = bridgeContract();
-    _addressPack[2] = msg.sender;
-
-    _proposeGlobal(_expiryTimestamp, _targetOptions, _values, _calldatas, _gasAmounts, _addressPack);
+    _proposeGlobal(
+      _expiryTimestamp,
+      _targetOptions,
+      _values,
+      _calldatas,
+      _gasAmounts,
+      roninTrustedOrganizationContract(),
+      bridgeContract(),
+      msg.sender
+    );
   }
 
   /**
@@ -280,10 +284,16 @@ contract RoninGovernanceAdmin is
   }
 
   /**
-   * @dev See `CoreGovernance-_deleteExpiredProposal`
+   * @dev Deletes the expired proposal by its chainId and nonce, without creating a new proposal.
+   *
+   * Requirements:
+   * - The proposal is already created.
+   *
    */
-  function deleteExpired(uint256 chainId, uint256 round) external {
-    _deleteExpiredVotingRound(chainId, round);
+  function deleteExpired(uint256 _chainId, uint256 _round) external {
+    ProposalVote storage _vote = vote[_chainId][_round];
+    require(_vote.hash != bytes32(0), "RoninGovernanceAdmin: query for empty voting");
+    _tryDeleteExpiredVotingRound(_vote);
   }
 
   /**
