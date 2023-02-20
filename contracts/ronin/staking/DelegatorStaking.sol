@@ -82,6 +82,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     poolIsActive(_consensusAddrDst)
     returns (uint256 _amount)
   {
+    if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
     return _delegateRewards(msg.sender, _consensusAddrList, _consensusAddrDst);
   }
 
