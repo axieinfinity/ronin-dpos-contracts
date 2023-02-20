@@ -352,6 +352,8 @@ describe('Governance Admin test', () => {
     let previousSupports: VoteType[];
     let previousSignatures: SignatureStruct[];
 
+    let previousProposal2: ProposalDetailStruct;
+
     it('Should not be able to propose a proposal with invalid expiry time', async () => {
       const newMinValidatorStakingAmount = 1337;
       const latestTimestamp = await getLastBlockTimestamp();
@@ -393,6 +395,7 @@ describe('Governance Admin test', () => {
         500_000
       );
       previousProposal = proposal;
+      previousProposal2 = proposal;
       previousHash = getProposalHash(proposal);
 
       signatures = await governanceAdminInterface.generateSignatures(proposal);
@@ -426,7 +429,9 @@ describe('Governance Admin test', () => {
       ).revertedWith('GovernanceAdmin: cast vote for invalid proposal');
     });
 
-    it('Should the new proposal replace the expired proposal', async () => {
+    it('Should the new proposal replace the expired proposal -- with implicit round', async () => {
+      snapshotId = await network.provider.send('evm_snapshot');
+
       let currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
       expect(currentProposalVote.hash).eq(ZERO_BYTES32);
       expect(currentProposalVote.status).eq(VoteStatus.Pending);
@@ -458,6 +463,55 @@ describe('Governance Admin test', () => {
 
       await governanceAdmin.connect(trustedOrgs[0].governor).castProposalBySignatures(proposal, supports, signatures);
       currentProposalVote = await governanceAdmin.vote(previousProposal.chainId, previousProposal.nonce);
+      expect(currentProposalVote.status).eq(VoteStatus.Executed);
+
+      previousProposal = proposal;
+      previousHash = getProposalHash(proposal);
+
+      await network.provider.send('evm_revert', [snapshotId]);
+    });
+
+    it('Should the new proposal replace the expired proposal -- with explicit round', async () => {
+      let currentProposalVote = await governanceAdmin.vote(previousProposal2.chainId, previousProposal2.nonce);
+      expect(currentProposalVote.hash).eq(ZERO_BYTES32);
+      expect(currentProposalVote.status).eq(VoteStatus.Pending);
+
+      const newMinValidatorStakingAmount = 202881;
+      const latestTimestamp = await getLastBlockTimestamp();
+      const expiryTimestamp = latestTimestamp + proposalExpiryDuration;
+      proposal = await governanceAdminInterface.createProposal(
+        expiryTimestamp,
+        stakingContract.address,
+        0,
+        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          stakingContract.interface.encodeFunctionData('setMinValidatorStakingAmount', [newMinValidatorStakingAmount]),
+        ]),
+        500_000,
+        BigNumber.from(previousProposal2.nonce)
+      );
+
+      previousSignatures = signatures = await governanceAdminInterface.generateSignatures(proposal);
+      previousSupports = supports = signatures.map(() => VoteType.For);
+
+      await governanceAdmin
+        .connect(trustedOrgs[0].governor)
+        .proposeProposalForCurrentNetwork(
+          proposal.expiryTimestamp,
+          proposal.targets,
+          proposal.values,
+          proposal.calldatas,
+          proposal.gasAmounts,
+          supports[0]
+        );
+
+      currentProposalVote = await governanceAdmin.vote(previousProposal2.chainId, previousProposal2.nonce);
+      expect(currentProposalVote.hash).not.eq(previousProposal2);
+      expect(currentProposalVote.status).eq(VoteStatus.Pending);
+
+      supports.splice(0, 1);
+      signatures.splice(0, 1);
+      await governanceAdmin.connect(trustedOrgs[0].governor).castProposalBySignatures(proposal, supports, signatures);
+      currentProposalVote = await governanceAdmin.vote(previousProposal2.chainId, previousProposal2.nonce);
       expect(currentProposalVote.status).eq(VoteStatus.Executed);
 
       previousProposal = proposal;
@@ -738,7 +792,7 @@ describe('Governance Admin test', () => {
         await network.provider.send('evm_revert', [snapshotId]);
       });
 
-      it("Should be able to clear when it' is expired", async () => {
+      it('Should be able to clear the proposal when it is expired', async () => {
         expect(
           await governanceAdmin.connect(trustedOrgs[0].governor).deleteExpired(proposal.chainId, proposal.nonce)
         ).emit(governanceAdmin, 'ProposalExpired');
