@@ -22,6 +22,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     maintenanceConf[network.name]!.minOffsetToStartSchedule,
     maintenanceConf[network.name]!.maxOffsetToStartSchedule,
     maintenanceConf[network.name]!.maxSchedules,
+    maintenanceConf[network.name]!.cooldownSecsToMaintain,
   ]);
 
   const deployment = await deploy('MaintenanceProxy', {

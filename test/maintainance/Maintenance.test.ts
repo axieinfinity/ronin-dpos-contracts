@@ -50,6 +50,8 @@ const minMaintenanceDurationInBlock = 100;
 const maxMaintenanceDurationInBlock = 1000;
 const minOffsetToStartSchedule = 200;
 const maxOffsetToStartSchedule = 200 * 7;
+const cooldownDaysToMaintain = 2;
+const cooldownSecsToMaintain = 86400 * cooldownDaysToMaintain;
 
 let startedAtBlock: BigNumberish = 0;
 let endedAtBlock: BigNumberish = 0;
@@ -86,6 +88,7 @@ describe('Maintenance test', () => {
         maxOffsetToStartSchedule,
         minMaintenanceDurationInBlock,
         maxMaintenanceDurationInBlock,
+        cooldownSecsToMaintain,
       },
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
@@ -337,7 +340,24 @@ describe('Maintenance test', () => {
       expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
     });
 
-    it('Should be able to schedule again in current period when the previous maintenance is done', async () => {
+    it('Should not be able to schedule again when cooldown time is not over', async () => {
+      currentBlock = (await ethers.provider.getBlockNumber()) + 1;
+      startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
+      endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock);
+      await expect(
+        maintenanceContract
+          .connect(validatorCandidates[0].candidateAdmin)
+          .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
+      ).revertedWith('Maintainance: cooldown time not end');
+    });
+
+    it('Should be able to schedule again in current period when the previous maintenance is done, and the cooldown time is over', async () => {
+      for (let i = 0; i < cooldownDaysToMaintain; i++) {
+        await localEpochController.mineToBeforeEndOfEpoch();
+        await EpochController.setTimestampToPeriodEnding();
+        await validatorContract.connect(coinbase).wrapUpEpoch();
+      }
+
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
       endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock);

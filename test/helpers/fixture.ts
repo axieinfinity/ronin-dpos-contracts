@@ -64,6 +64,7 @@ export const defaultTestConfig: InitTestInput = {
     minOffsetToStartSchedule: 200,
     maxOffsetToStartSchedule: 200 * 7,
     maxSchedules: 2,
+    cooldownSecsToMaintain: 86400 * 3,
   },
 
   stakingArguments: {

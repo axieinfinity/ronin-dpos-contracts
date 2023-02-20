@@ -109,7 +109,7 @@ const config: HardhatUserConfig = {
     showTimeSpent: true,
   },
   mocha: {
-    timeout: 100000,
+    timeout: 100000, // 100s
   },
 };
 
