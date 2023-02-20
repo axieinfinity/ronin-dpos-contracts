@@ -120,7 +120,7 @@ abstract contract GovernanceRelay is CoreGovernance {
     address _gatewayContract,
     address _creator
   ) internal {
-    (Proposal.ProposalDetail memory _proposal, ) = _proposeGlobalStruct(
+    Proposal.ProposalDetail memory _proposal = _proposeGlobalStruct(
       _globalProposal,
       _roninTrustedOrganizationContract,
       _gatewayContract,
