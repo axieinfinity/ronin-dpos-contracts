@@ -237,6 +237,18 @@ describe('Staking test', () => {
       ).revertedWithCustomError(validatorContract, 'ErrInvalidCommissionRate');
     });
 
+    it('Should the pool admin not be able to request updating the commission rate exceeding max rate', async () => {
+      await expect(
+        stakingContract
+          .connect(poolAddrSet.poolAdmin)
+          .requestUpdateCommissionRate(
+            poolAddrSet.consensusAddr.address,
+            minEffectiveDaysOnwards,
+            maxCommissionRate + 1
+          )
+      ).revertedWithCustomError(stakingContract, 'ErrInvalidCommissionRate');
+    });
+
     it('Should the pool admin be able to request updating the commission rate', async () => {
       let _info = await validatorContract.getCandidateInfo(poolAddrSet.consensusAddr.address);
       let _previousRate = _info.commissionRate;
