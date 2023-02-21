@@ -82,7 +82,7 @@ export const maintenanceConf: MaintenanceConfig = {
 
 const defaultStakingConf: StakingArguments = {
   minValidatorStakingAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5)), // 100.000 RON
-  maxCommissionRate: 10_00, // 10%
+  maxCommissionRate: 20_00, // 20%
   cooldownSecsToUndelegate: 3 * 86400, // at least 3 days
   waitingSecsToRevoke: 7 * 86400, // at least 7 days
 };
