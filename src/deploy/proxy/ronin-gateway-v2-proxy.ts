@@ -43,6 +43,11 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     '0x262a3cab2bbb6fc414eb78e6755bf544b97dac01',
   ]);
   await execute('RoninGatewayV2Proxy', { from: deployer, log: true }, 'functionDelegateCall', setValidatorData);
+
+  const setBridgeTracking = new RoninGatewayV2__factory().interface.encodeFunctionData('setBridgeTrackingContract', [
+    '0xBf9e491df628A3ab6daacb7b288032C1f84db52C',
+  ]);
+  await execute('RoninGatewayV2Proxy', { from: deployer, log: true }, 'functionDelegateCall', setBridgeTracking);
 };
 
 deploy.tags = ['RoninGatewayV2Proxy'];
