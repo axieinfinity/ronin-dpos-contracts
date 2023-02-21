@@ -50,6 +50,10 @@ interface RoninMappedToken {
 
 export const validatorThreshold: NetworkThreshold = {
   [Network.Hardhat]: undefined,
+  [Network.Devnet]: {
+    numerator: 9,
+    denominator: 11,
+  },
   [Network.GoerliForDevnet]: {
     numerator: 9,
     denominator: 11,
@@ -58,6 +62,11 @@ export const validatorThreshold: NetworkThreshold = {
 
 export const gatewayThreshold: NetworkThreshold = {
   [Network.Hardhat]: undefined,
+  [Network.Devnet]: {
+    numerator: 70,
+    highTierVoteWeightNumerator: 90,
+    denominator: 100,
+  },
   [Network.GoerliForDevnet]: {
     numerator: 70,
     highTierVoteWeightNumerator: 90,
@@ -67,6 +76,7 @@ export const gatewayThreshold: NetworkThreshold = {
 
 export const mainnetChainId: MapNetworkNumberSet = {
   [Network.Hardhat]: undefined,
+  [Network.Devnet]: [5],
   [Network.Testnet]: [3],
   [Network.Goerli]: [5],
   [Network.GoerliForDevnet]: [5],
@@ -75,6 +85,7 @@ export const mainnetChainId: MapNetworkNumberSet = {
 
 export const roninChainId: MapNetworkNumber = {
   [Network.Hardhat]: undefined,
+  [Network.Devnet]: 2022,
   [Network.Testnet]: 2021,
   [Network.Goerli]: 2021,
   [Network.GoerliForDevnet]: 2022,
@@ -122,4 +133,29 @@ export const mainchainMappedToken: MainchainMappedToken = {
 // TODO: fill mainnet config
 export const roninMappedToken: RoninMappedToken = {
   [Network.Hardhat]: undefined,
+  [Network.Devnet]: {
+    roninTokens: [
+      '0x29C6F8349A028E1bdfC68BFa08BDee7bC5D47E16', // WETH
+      '0x3C4e17b9056272Ce1b49F6900d8cFD6171a1869d', // AXS
+      '0x82f5483623D636BC3deBA8Ae67E1751b6CF2Bad2', // SLP
+      '0x04ef1d4f687bb20eedcf05c7f710c078ba39f328', // USDT
+      '0x067FBFf8990c58Ab90BaE3c97241C5d736053F77', // USDC
+    ],
+    mainchainTokens: [
+      '0xfe63586e65ECcAF7A41b1B6D05384a9CA1B246a8', // WETH: https://goerli.etherscan.io/token/0xfe63586e65ECcAF7A41b1B6D05384a9CA1B246a8
+      '0x8816bde63A8A08B90477Dc5A5FE24EfaF5889cdc', // AXS: https://goerli.etherscan.io/token/0x8816bde63A8A08B90477Dc5A5FE24EfaF5889cdc
+      '0x29C6F8349A028E1bdfC68BFa08BDee7bC5D47E16', // SLP: https://goerli.etherscan.io/address/0x29C6F8349A028E1bdfC68BFa08BDee7bC5D47E16
+      '0xd749760B0815a25E54b2868041fa886a697a0AD7', // USDT: https://goerli.etherscan.io/address/0xd749760B0815a25E54b2868041fa886a697a0AD7
+      '0x7A2938588c3616bd2FcC46917bD18EDfbaD69E48', // USDC: https://goerli.etherscan.io/address/0x7A2938588c3616bd2FcC46917bD18EDfbaD69E48
+    ],
+    standards: [0, 0, 0, 0, 0],
+    chainIds: [5, 5, 5, 5, 5],
+    minimumThresholds: [
+      BigNumber.from(10).pow(16), // 0.01 WETH
+      BigNumber.from(10).pow(17).mul(5), // 0.5 AXS
+      BigNumber.from(100), // 100 SLP
+      BigNumber.from(10).pow(18).mul(2), // 20 USDT
+      BigNumber.from(10).pow(6).mul(2), // 20 USDC
+    ],
+  },
 };

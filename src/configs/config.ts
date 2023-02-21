@@ -48,7 +48,11 @@ const defaultGeneralConf = {
 export const generalRoninConf: GeneralConfig = {
   [Network.Local]: defaultGeneralConf,
   [Network.Hardhat]: defaultGeneralConf,
-  [Network.Devnet]: defaultGeneralConf,
+  [Network.Devnet]: {
+    roninChainId: 2022,
+    startedAtBlock: 11710199,
+    bridgeContract: '0xCee681C9108c42C710c6A8A949307D5F13C9F3ca',
+  },
   [Network.Testnet]: {
     roninChainId: 2021,
     startedAtBlock: 11710199,
@@ -59,7 +63,6 @@ export const generalRoninConf: GeneralConfig = {
 export const generalMainchainConf: GeneralConfig = {
   [Network.Local]: defaultGeneralConf,
   [Network.Hardhat]: defaultGeneralConf,
-  [Network.Devnet]: defaultGeneralConf,
   [Network.Goerli]: {
     roninChainId: 2021,
     startedAtBlock: 0,
