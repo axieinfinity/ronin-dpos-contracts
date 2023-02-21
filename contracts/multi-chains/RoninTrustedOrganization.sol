@@ -263,7 +263,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function _addTrustedOrganization(TrustedOrganization memory _v) internal virtual {
     require(_v.addedBlock == 0, "RoninTrustedOrganization: invalid request");
-    _sanityCheckTOData(_v);
+    _sanityCheckTrustedOrganizationData(_v);
 
     if (_consensusWeight[_v.consensusAddr] > 0) {
       revert(
@@ -324,7 +324,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    *
    */
   function _updateTrustedOrganization(TrustedOrganization memory _v) internal virtual {
-    _sanityCheckTOData(_v);
+    _sanityCheckTrustedOrganizationData(_v);
 
     uint256 _weight = _consensusWeight[_v.consensusAddr];
     if (_weight == 0) {
@@ -433,7 +433,14 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
     emit ThresholdUpdated(_nonce++, _numerator, _denominator, _previousNum, _previousDenom);
   }
 
-  function _sanityCheckTOData(TrustedOrganization memory _v) private pure {
+  /**
+   * @dev Hook that checks trusted organization's data. Reverts if the requirements are not met.
+   *
+   * Requirements:
+   * - The weight must be larger than 0.
+   * - The consensus address, governor address, and bridge voter address are different.
+   */
+  function _sanityCheckTrustedOrganizationData(TrustedOrganization memory _v) private pure {
     require(_v.weight > 0, "RoninTrustedOrganization: invalid weight");
 
     address[] memory _addresses = new address[](3);
