@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.9;
 
-interface ISlashBridgeOperator {
+import "./IBaseSlash.sol";
+
+interface ISlashBridgeOperator is IBaseSlash {
   /**
    * @dev Emitted when the configs to slash bridge operator is updated. See the method
    * `getBridgeOperatorSlashingConfigs` for param details.
@@ -13,6 +15,24 @@ interface ISlashBridgeOperator {
     uint256 jailDurationForMissingVotesRatioTier2,
     uint256 skipBridgeOperatorSlashingThreshold
   );
+
+  /**
+   * @dev Acknowledges bridge operator slash and emit `Slashed` event correspondingly.
+   * @param _tier The tier of the slash, in value of {1, 2}, corresponding to `SlashType.BRIDGE_OPERATOR_MISSING_VOTE_TIER_1`
+   * and `SlashType.BRIDGE_OPERATOR_MISSING_VOTE_TIER_2`
+   *
+   * Requirements:
+   * - Only validator contract can invoke this method.
+   * - Should be called only at the end of period.
+   * - Should be called only when there is slash of bridge operator.
+   *
+   * Emits the event `Slashed`.
+   */
+  function execSlashBridgeOperator(
+    address _consensusAddr,
+    uint256 _tier,
+    uint256 _period
+  ) external;
 
   /**
    * @dev Returns the configs related to bridge operator slashing.
