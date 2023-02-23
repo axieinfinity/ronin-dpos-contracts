@@ -33,7 +33,7 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
     if (_pcValidateEvidence(_header1, _header2)) {
       uint256 _period = _validatorContract.currentPeriod();
       emit Slashed(_consensusAddr, SlashType.DOUBLE_SIGNING, _period);
-      _validatorContract.execSlash(_consensusAddr, _doubleSigningJailUntilBlock, _slashDoubleSignAmount, false);
+      _validatorContract.execSlash(_consensusAddr, _doubleSigningJailUntilBlock, _slashDoubleSignAmount, true);
     }
   }
 
