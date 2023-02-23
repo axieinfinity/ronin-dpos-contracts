@@ -105,7 +105,6 @@ abstract contract CoinbaseExecution is
     uint256 _lastPeriod = currentPeriod();
 
     if (_periodEnding) {
-      _currentPeriodStartAtBlock = block.number + 1;
       _syncBridgeOperatingReward(_lastPeriod, _currentValidators);
       (
         uint256 _totalDelegatingReward,
@@ -119,6 +118,7 @@ abstract contract CoinbaseExecution is
       if (_revokedCandidates.length > 0) {
         _slashIndicatorContract.execResetCreditScores(_revokedCandidates);
       }
+      _currentPeriodStartAtBlock = block.number + 1;
     }
     _revampRoles(_newPeriod, _nextEpoch, _currentValidators);
     emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
