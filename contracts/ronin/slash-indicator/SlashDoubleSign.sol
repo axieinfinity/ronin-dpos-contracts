@@ -22,19 +22,18 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
    * @inheritdoc ISlashDoubleSign
    */
   function slashDoubleSign(
-    address _consensuAddr,
+    address _consensusAddr,
     bytes calldata _header1,
     bytes calldata _header2
   ) external override {
-    require(msg.sender == block.coinbase, "SlashIndicator: method caller must be coinbase");
-    if (!_shouldSlash(_consensuAddr)) {
+    if (!_shouldSlash(_consensusAddr)) {
       return;
     }
 
     if (_pcValidateEvidence(_header1, _header2)) {
       uint256 _period = _validatorContract.currentPeriod();
-      emit Slashed(_consensuAddr, SlashType.DOUBLE_SIGNING, _period);
-      _validatorContract.execSlash(_consensuAddr, _doubleSigningJailUntilBlock, _slashDoubleSignAmount, false);
+      emit Slashed(_consensusAddr, SlashType.DOUBLE_SIGNING, _period);
+      _validatorContract.execSlash(_consensusAddr, _doubleSigningJailUntilBlock, _slashDoubleSignAmount, false);
     }
   }
 
