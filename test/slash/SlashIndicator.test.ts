@@ -50,7 +50,15 @@ const numberOfBlocksInEpoch = 600;
 const minValidatorStakingAmount = BigNumber.from(100);
 
 const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(2);
+const jailDurationForUnavailabilityTier2Threshold = 28800 * 2;
 const slashDoubleSignAmount = BigNumber.from(5);
+
+const missingVotesRatioTier1 = 10_00; // 10%
+const missingVotesRatioTier2 = 20_00; // 20%
+const jailDurationForMissingVotesRatioTier2 = 28800 * 2;
+const skipBridgeOperatorSlashingThreshold = 10;
+const bridgeVotingThreshold = 28800 * 3;
+const bridgeVotingSlashAmount = BigNumber.from(10).pow(18).mul(10_000);
 
 const minOffsetToStartSchedule = 200;
 
@@ -73,9 +81,20 @@ describe('Slash indicator test', () => {
             unavailabilityTier1Threshold,
             unavailabilityTier2Threshold,
             slashAmountForUnavailabilityTier2Threshold,
+            jailDurationForUnavailabilityTier2Threshold,
           },
           doubleSignSlashing: {
             slashDoubleSignAmount,
+          },
+          bridgeOperatorSlashing: {
+            missingVotesRatioTier1,
+            missingVotesRatioTier2,
+            jailDurationForMissingVotesRatioTier2,
+            skipBridgeOperatorSlashingThreshold,
+          },
+          bridgeVotingSlashing: {
+            bridgeVotingThreshold,
+            bridgeVotingSlashAmount,
           },
         },
         stakingArguments: {
@@ -145,6 +164,53 @@ describe('Slash indicator test', () => {
 
   after(async () => {
     await network.provider.send('hardhat_setCoinbase', [ethers.constants.AddressZero]);
+  });
+
+  describe('Config test', async () => {
+    it('Should configs of unavailability are set correctly', async () => {
+      let configs = await slashContract.getUnavailabilitySlashingConfigs();
+      expect(configs.unavailabilityTier1Threshold_).eq(
+        unavailabilityTier1Threshold,
+        'wrong unavailability tier 1 config'
+      );
+      expect(configs.unavailabilityTier2Threshold_).eq(
+        unavailabilityTier2Threshold,
+        'wrong unavailability tier 2 config'
+      );
+      expect(configs.slashAmountForUnavailabilityTier2Threshold_).eq(
+        slashAmountForUnavailabilityTier2Threshold,
+        'slash amount tier 2 config'
+      );
+      expect(configs.jailDurationForUnavailabilityTier2Threshold_).eq(
+        jailDurationForUnavailabilityTier2Threshold,
+        'jail duration tier 2 config'
+      );
+    });
+
+    it('Should configs of double signing are set correctly', async () => {
+      let configs = await slashContract.getDoubleSignSlashingConfigs();
+      expect(configs.slashDoubleSignAmount_).eq(slashDoubleSignAmount, 'wrong double sign config');
+    });
+
+    it('Should configs of bridge operator slash are set correctly', async () => {
+      let configs = await slashContract.getBridgeOperatorSlashingConfigs();
+      expect(configs.missingVotesRatioTier1_).eq(missingVotesRatioTier1, 'wrong missing votes ratio tier 1 config');
+      expect(configs.missingVotesRatioTier2_).eq(missingVotesRatioTier2, 'wrong missing votes ratio tier 2 config');
+      expect(configs.jailDurationForMissingVotesRatioTier2_).eq(
+        jailDurationForMissingVotesRatioTier2,
+        'wrong jail duration for vote tier 2 config'
+      );
+      expect(configs.skipBridgeOperatorSlashingThreshold_).eq(
+        skipBridgeOperatorSlashingThreshold,
+        'wrong skip slashing config'
+      );
+    });
+
+    it('Should configs of bridge voting slash are set correctly', async () => {
+      let configs = await slashContract.getBridgeVotingSlashingConfigs();
+      expect(configs.bridgeVotingSlashAmount_).eq(bridgeVotingSlashAmount, 'wrong bridge voting slash amount config');
+      expect(configs.bridgeVotingThreshold_).eq(bridgeVotingThreshold, 'wrong bridge voting threshold config');
+    });
   });
 
   describe('Single flow test', async () => {
