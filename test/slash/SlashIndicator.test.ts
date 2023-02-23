@@ -394,6 +394,26 @@ describe('Slash indicator test', () => {
           .to.emit(slashContract, 'Slashed')
           .withArgs(validatorCandidates[slasheeIdx].consensusAddr.address, SlashType.DOUBLE_SIGNING, period);
       });
+
+      it('Should non-coinbase be able to slash validator with double signing', async () => {
+        const slasherIdx = 0;
+        const slasheeIdx = 1;
+        const coinbaseIdx = 2;
+        await network.provider.send('hardhat_setCoinbase', [validatorCandidates[coinbaseIdx].consensusAddr.address]);
+
+        header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
+        header2 = ethers.utils.toUtf8Bytes('sampleHeader2');
+
+        let tx = await slashContract
+          .connect(validatorCandidates[slasherIdx].consensusAddr)
+          .slashDoubleSign(validatorCandidates[slasheeIdx].consensusAddr.address, header1, header2);
+
+        let period = await validatorContract.currentPeriod();
+
+        await expect(tx)
+          .to.emit(slashContract, 'Slashed')
+          .withArgs(validatorCandidates[slasheeIdx].consensusAddr.address, SlashType.DOUBLE_SIGNING, period);
+      });
     });
   });
 });
