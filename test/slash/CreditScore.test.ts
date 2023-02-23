@@ -5,6 +5,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 
 import {
+  Maintenance,
+  Maintenance__factory,
   MockRoninValidatorSetOverridePrecompile__factory,
   MockSlashIndicatorExtended,
   MockSlashIndicatorExtended__factory,
@@ -28,6 +30,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types';
 
+let maintenanceContract: Maintenance;
 let slashContract: MockSlashIndicatorExtended;
 let mockSlashLogic: MockSlashIndicatorExtended;
 let stakingContract: Staking;
@@ -67,6 +70,8 @@ const blockProducerBonusPerBlock = BigNumber.from(5000);
 const submittedRewardEachBlock = BigNumber.from(60);
 
 const waitingSecsToRevoke = 7 * 86400;
+
+const minMaintenanceDurationInBlock = 100;
 
 const wrapUpEpoch = async (): Promise<ContractTransaction> => {
   await localEpochController.mineToBeforeEndOfEpoch();
@@ -145,45 +150,52 @@ describe('Credit score and bail out test', () => {
     trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
     validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, (maxValidatorNumber + 1) * 3));
 
-    const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
-      await initTest('CreditScore')({
-        slashIndicatorArguments: {
-          unavailabilitySlashing: {
-            unavailabilityTier1Threshold,
-            unavailabilityTier2Threshold,
-            slashAmountForUnavailabilityTier2Threshold,
-          },
-          creditScore: {
-            gainCreditScore,
-            maxCreditScore,
-            bailOutCostMultiplier,
-          },
+    const {
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninGovernanceAdminAddress,
+      maintenanceContractAddress,
+    } = await initTest('CreditScore')({
+      slashIndicatorArguments: {
+        unavailabilitySlashing: {
+          unavailabilityTier1Threshold,
+          unavailabilityTier2Threshold,
+          slashAmountForUnavailabilityTier2Threshold,
         },
-        stakingArguments: {
-          minValidatorStakingAmount,
+        creditScore: {
+          gainCreditScore,
+          maxCreditScore,
+          bailOutCostMultiplier,
         },
-        stakingVestingArguments: {
-          blockProducerBonusPerBlock,
-        },
-        roninValidatorSetArguments: {
-          maxValidatorNumber,
-          numberOfBlocksInEpoch,
-          maxValidatorCandidate,
-        },
-        maintenanceArguments: {
-          minOffsetToStartSchedule,
-        },
-        roninTrustedOrganizationArguments: {
-          trustedOrganizations: trustedOrgs.map((v) => ({
-            consensusAddr: v.consensusAddr.address,
-            governor: v.governor.address,
-            bridgeVoter: v.bridgeVoter.address,
-            weight: 100,
-            addedBlock: 0,
-          })),
-        },
-      });
+      },
+      stakingArguments: {
+        minValidatorStakingAmount,
+      },
+      stakingVestingArguments: {
+        blockProducerBonusPerBlock,
+      },
+      roninValidatorSetArguments: {
+        maxValidatorNumber,
+        numberOfBlocksInEpoch,
+        maxValidatorCandidate,
+      },
+      maintenanceArguments: {
+        minOffsetToStartSchedule,
+        minMaintenanceDurationInBlock,
+      },
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: trustedOrgs.map((v) => ({
+          consensusAddr: v.consensusAddr.address,
+          governor: v.governor.address,
+          bridgeVoter: v.bridgeVoter.address,
+          weight: 100,
+          addedBlock: 0,
+        })),
+      },
+    });
 
+    maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetOverridePrecompile__factory.connect(validatorContractAddress, deployer);
     slashContract = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
@@ -266,11 +278,6 @@ describe('Credit score and bail out test', () => {
       }
     });
     it('Should the score get reset when the candidate is revoked', async () => {
-      snapshotId = await network.provider.send('evm_snapshot');
-      let snapshotScore = localScoreController.getAt(0);
-      await expect(snapshotScore).gt(0);
-      await validateScoreAt(0);
-
       await stakingContract
         .connect(validatorCandidates[0].poolAdmin)
         .requestRenounce(validatorCandidates[0].consensusAddr.address);
@@ -285,8 +292,55 @@ describe('Credit score and bail out test', () => {
       localScoreController.resetAt(0);
       await validateScoreAt(0);
 
-      await network.provider.send('evm_revert', [snapshotId]);
-      localScoreController.setAt(0, snapshotScore);
+      await stakingContract
+        .connect(validatorCandidates[0].poolAdmin)
+        .applyValidatorCandidate(
+          validatorCandidates[0].candidateAdmin.address,
+          validatorCandidates[0].consensusAddr.address,
+          validatorCandidates[0].treasuryAddr.address,
+          validatorCandidates[0].bridgeOperator.address,
+          100_00,
+          { value: minValidatorStakingAmount.mul(2) }
+        );
+
+      await endPeriodAndWrapUpAndResetIndicators();
+    });
+  });
+
+  describe('Credit score and maintenance', async () => {
+    let currentBlock;
+    let startedAtBlock;
+    let endedAtBlock;
+
+    it("Should the credit score increase before validator's maintenance", async () => {
+      currentBlock = (await ethers.provider.getBlockNumber()) + 1;
+      startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock).add(numberOfBlocksInEpoch);
+      endedAtBlock = localEpochController.calculateEndOfEpoch(
+        BigNumber.from(startedAtBlock).add(minMaintenanceDurationInBlock)
+      );
+
+      const tx = await maintenanceContract
+        .connect(validatorCandidates[0].candidateAdmin)
+        .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock);
+      await expect(tx)
+        .emit(maintenanceContract, 'MaintenanceScheduled')
+        .withArgs(validatorCandidates[0].consensusAddr.address, [startedAtBlock, endedAtBlock]);
+      expect(await maintenanceContract.checkScheduled(validatorCandidates[0].consensusAddr.address)).true;
+
+      await endPeriodAndWrapUpAndResetIndicators(2);
+      localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
+      await validateScoreAt(0);
+    });
+
+    it('Should the credit score not increase when validator is on maintenance', async () => {
+      await endPeriodAndWrapUpAndResetIndicators(1);
+      await validateScoreAt(0);
+    });
+
+    it('Should the credit score increase when validator finishes maintenance', async () => {
+      await endPeriodAndWrapUpAndResetIndicators(1);
+      localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
+      await validateScoreAt(0);
     });
   });
 
@@ -325,6 +379,11 @@ describe('Credit score and bail out test', () => {
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
 
         await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+
+        for (let i = 0; i < Math.floor(maxCreditScore / gainCreditScore); i++) {
+          await endPeriodAndWrapUpAndResetIndicators();
+        }
+        localScoreController.increaseAtWithUpperbound(0, maxCreditScore, maxCreditScore);
 
         await slashValidatorUntilTier(1, 0, SlashType.UNAVAILABILITY_TIER_2);
         let wrapUpTx = await wrapUpEpoch();
