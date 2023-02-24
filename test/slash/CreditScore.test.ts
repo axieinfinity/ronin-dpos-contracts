@@ -345,15 +345,17 @@ describe('Credit score and bail out test', () => {
         tx = await slashContract
           .connect(validatorCandidates[0].candidateAdmin)
           .bailOut(validatorCandidates[0].consensusAddr.address);
-        let _period = validatorContract.currentPeriod();
-
-        expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].consensusAddr.address, _period]);
-        expect(tx)
-          .emit(validatorContract, 'ValidatorUnjailed')
-          .withArgs([validatorCandidates[0].consensusAddr.address]);
+        let _period = await validatorContract.currentPeriod();
 
         localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber());
         await validateScoreAt(0);
+
+        await expect(tx)
+          .emit(slashContract, 'BailedOut')
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period, localScoreController.getAt(0));
+        await expect(tx)
+          .emit(validatorContract, 'ValidatorUnjailed')
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period);
       });
 
       it('Should the indicator get reset', async () => {
@@ -398,11 +400,11 @@ describe('Credit score and bail out test', () => {
         let tx = await endPeriodAndWrapUpAndResetIndicators();
         await localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
 
-        expect(tx)
+        await expect(tx)
           .emit(validatorContract, 'MiningRewardDistributed')
           .withArgs(
             validatorCandidates[0].consensusAddr.address,
-            validatorCandidates[0].consensusAddr.address,
+            validatorCandidates[0].poolAdmin.address,
             submittedRewardEachBlock.add(blockProducerBonusPerBlock).div(2)
           );
       });
@@ -453,15 +455,17 @@ describe('Credit score and bail out test', () => {
         let tx = await slashContract
           .connect(validatorCandidates[0].candidateAdmin)
           .bailOut(validatorCandidates[0].consensusAddr.address);
-        let _period = validatorContract.currentPeriod();
-
-        expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].consensusAddr.address, _period]);
-        expect(tx)
-          .emit(validatorContract, 'ValidatorUnjailed')
-          .withArgs([validatorCandidates[0].consensusAddr.address]);
+        let _period = await validatorContract.currentPeriod();
 
         localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber());
         await validateScoreAt(0);
+
+        await expect(tx)
+          .emit(slashContract, 'BailedOut')
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period, localScoreController.getAt(0));
+        await expect(tx)
+          .emit(validatorContract, 'ValidatorUnjailed')
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period);
       });
 
       it('Should the indicator get reset', async () => {
@@ -506,11 +510,11 @@ describe('Credit score and bail out test', () => {
         let tx = await endPeriodAndWrapUpAndResetIndicators();
         await localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
 
-        expect(tx)
+        await expect(tx)
           .emit(validatorContract, 'MiningRewardDistributed')
           .withArgs(
             validatorCandidates[0].consensusAddr.address,
-            validatorCandidates[0].consensusAddr.address,
+            validatorCandidates[0].poolAdmin.address,
             submittedRewardEachBlock.add(blockProducerBonusPerBlock).div(2)
           );
       });
@@ -542,12 +546,7 @@ describe('Credit score and bail out test', () => {
         let tx = await slashContract
           .connect(validatorCandidates[0].candidateAdmin)
           .bailOut(validatorCandidates[0].consensusAddr.address);
-        let _period = validatorContract.currentPeriod();
-
-        expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].consensusAddr.address, _period]);
-        expect(tx)
-          .emit(validatorContract, 'ValidatorUnjailed')
-          .withArgs([validatorCandidates[0].consensusAddr.address]);
+        let _period = await validatorContract.currentPeriod();
 
         localIndicatorController.resetAt(0);
         await validateIndicatorAt(0);
@@ -557,6 +556,13 @@ describe('Credit score and bail out test', () => {
 
         await localEpochController.mineToBeforeEndOfEpoch();
         await wrapUpEpoch();
+
+        await expect(tx)
+          .emit(slashContract, 'BailedOut')
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period, localScoreController.getAt(0));
+        await expect(tx)
+          .emit(validatorContract, 'ValidatorUnjailed')
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period);
 
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
       });
