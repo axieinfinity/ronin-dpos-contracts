@@ -404,26 +404,25 @@ abstract contract CoinbaseExecution is
     uint256 _newValidatorCount,
     uint256 _newPeriod
   ) private {
-    for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
+    // Remove exceeding validators in the current set
+    for (uint256 _i = 0; _i < validatorCount; _i++) {
       delete _validatorMap[_validators[_i]];
       delete _validators[_i];
     }
 
-    uint256 _count;
-    for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
-      address _newValidator = _newValidators[_i];
-      if (_newValidator == _validators[_count]) {
-        _count++;
-        continue;
-      }
-
-      delete _validatorMap[_validators[_count]];
-      _validatorMap[_newValidator] = EnumFlags.ValidatorFlag.Both;
-      _validators[_count] = _newValidator;
-      _count++;
+    // Remove flag for all validator in the current set
+    for (uint _i = 0; _i < _newValidatorCount; _i++) {
+      delete _validatorMap[_validators[_i]];
     }
 
-    validatorCount = _count;
+    // Update new validator set and set flag correspondingly.
+    for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
+      address _newValidator = _newValidators[_i];
+      _validatorMap[_newValidator] = EnumFlags.ValidatorFlag.Both;
+      _validators[_i] = _newValidator;
+    }
+
+    validatorCount = _newValidatorCount;
     emit ValidatorSetUpdated(_newPeriod, _newValidators);
   }
 
