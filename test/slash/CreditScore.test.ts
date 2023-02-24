@@ -346,13 +346,13 @@ describe('Credit score and bail out test', () => {
           .connect(validatorCandidates[0].candidateAdmin)
           .bailOut(validatorCandidates[0].consensusAddr.address);
         let _period = await validatorContract.currentPeriod();
-
-        localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber());
+        let _cost = bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber();
+        localScoreController.subAtNonNegative(0, _cost);
         await validateScoreAt(0);
 
         await expect(tx)
           .emit(slashContract, 'BailedOut')
-          .withArgs(validatorCandidates[0].consensusAddr.address, _period, localScoreController.getAt(0));
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period, _cost);
         await expect(tx)
           .emit(validatorContract, 'ValidatorUnjailed')
           .withArgs(validatorCandidates[0].consensusAddr.address, _period);
@@ -456,13 +456,13 @@ describe('Credit score and bail out test', () => {
           .connect(validatorCandidates[0].candidateAdmin)
           .bailOut(validatorCandidates[0].consensusAddr.address);
         let _period = await validatorContract.currentPeriod();
-
-        localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber());
+        let _cost = bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber();
+        localScoreController.subAtNonNegative(0, _cost);
         await validateScoreAt(0);
 
         await expect(tx)
           .emit(slashContract, 'BailedOut')
-          .withArgs(validatorCandidates[0].consensusAddr.address, _period, localScoreController.getAt(0));
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period, _cost);
         await expect(tx)
           .emit(validatorContract, 'ValidatorUnjailed')
           .withArgs(validatorCandidates[0].consensusAddr.address, _period);
@@ -547,11 +547,12 @@ describe('Credit score and bail out test', () => {
           .connect(validatorCandidates[0].candidateAdmin)
           .bailOut(validatorCandidates[0].consensusAddr.address);
         let _period = await validatorContract.currentPeriod();
+        let _cost = bailOutCostMultiplier * 1;
 
         localIndicatorController.resetAt(0);
         await validateIndicatorAt(0);
 
-        localScoreController.subAtNonNegative(0, bailOutCostMultiplier * 1);
+        localScoreController.subAtNonNegative(0, _cost);
         await validateScoreAt(0);
 
         await localEpochController.mineToBeforeEndOfEpoch();
@@ -559,7 +560,7 @@ describe('Credit score and bail out test', () => {
 
         await expect(tx)
           .emit(slashContract, 'BailedOut')
-          .withArgs(validatorCandidates[0].consensusAddr.address, _period, localScoreController.getAt(0));
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period, _cost);
         await expect(tx)
           .emit(validatorContract, 'ValidatorUnjailed')
           .withArgs(validatorCandidates[0].consensusAddr.address, _period);
