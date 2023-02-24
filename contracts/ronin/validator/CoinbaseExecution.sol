@@ -15,7 +15,6 @@ import "../../precompile-usages/PCUPickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
 import "./CandidateManager.sol";
 import "./EmergencyExit.sol";
-import "hardhat/console.sol";
 
 abstract contract CoinbaseExecution is
   ICoinbaseExecution,
@@ -405,42 +404,26 @@ abstract contract CoinbaseExecution is
     uint256 _newValidatorCount,
     uint256 _newPeriod
   ) private {
-    for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
+    // Remove exceeding validators in the current set
+    for (uint256 _i = 0; _i < validatorCount; _i++) {
       delete _validatorMap[_validators[_i]];
       delete _validators[_i];
     }
 
-    uint256 _count;
+    // Remove flag for all validator in the current set
+    for (uint _i = 0; _i < _newValidatorCount; _i++) {
+      delete _validatorMap[_validators[_i]];
+    }
+
+    // Update new validator set and set flag correspondingly.
     for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
       address _newValidator = _newValidators[_i];
-      // console.log("i", _i);
-      // console.log("count", _count);
-      if (_newValidator == _validators[_count]) {
-        _count++;
-        continue;
-      }
-
-      delete _validatorMap[_validators[_count]];
-      // console.log(
-      //   "_validatorMap[_validators[_count]]",
-      //   _validators[_count],
-      //   uint256(_validatorMap[_validators[_count]])
-      // );
       _validatorMap[_newValidator] = EnumFlags.ValidatorFlag.Both;
-
-      // console.log("_validatorMap[_newValidator]", _newValidator, uint256(_validatorMap[_newValidator]));
-      _validators[_count] = _newValidator;
-      _count++;
+      _validators[_i] = _newValidator;
     }
 
-    validatorCount = _count;
+    validatorCount = _newValidatorCount;
     emit ValidatorSetUpdated(_newPeriod, _newValidators);
-
-    console.log("--- post");
-    for (uint256 _i = 0; _i < validatorCount; _i++) {
-      console.log(_validators[_i], uint8(_validatorMap[_validators[_i]]));
-    }
-    console.log("---");
   }
 
   /**
