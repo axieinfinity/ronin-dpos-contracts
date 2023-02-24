@@ -161,7 +161,8 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
 
     it('Should be able to wrap up epoch when the epoch is ending', async () => {
       let tx: ContractTransaction;
-      epoch = (await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber())).add(1);
+      epoch = await roninValidatorSet.epochOf(await ethers.provider.getBlockNumber());
+      let nextEpoch = epoch.add(1);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await mineBatchTxs(async () => {
         await roninValidatorSet.endEpoch();
@@ -169,7 +170,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       });
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
-      await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(tx!, lastPeriod, epoch, []);
+      await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(tx!, lastPeriod, nextEpoch, []);
       expect(await roninValidatorSet.getValidators()).eql([]);
     });
   });
