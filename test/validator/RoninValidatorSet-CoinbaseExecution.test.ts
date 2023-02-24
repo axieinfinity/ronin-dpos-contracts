@@ -167,7 +167,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
         await roninValidatorSet.endEpoch();
         tx = await roninValidatorSet.connect(consensusAddr).wrapUpEpoch();
       });
-      expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
+      await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(tx!, lastPeriod, epoch, []);
       expect(await roninValidatorSet.getValidators()).eql([]);

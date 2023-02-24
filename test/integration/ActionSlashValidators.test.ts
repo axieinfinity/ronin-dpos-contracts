@@ -244,7 +244,7 @@ describe('[Integration] Slash validators', () => {
           await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
           expectingBlockProducerSet
         );
-        expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
+        await expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
       });
 
       it('Should the validator cannot re-join as a block producer when jail time is not over', async () => {
@@ -258,7 +258,7 @@ describe('[Integration] Slash validators', () => {
           wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
         });
 
-        expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
+        await expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
       });
 
       it('Should the validator re-join as a block producer when jail time is over', async () => {
@@ -280,7 +280,7 @@ describe('[Integration] Slash validators', () => {
           await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
           expectingBlockProducerSet
         );
-        expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
+        await expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
       });
     });
 
@@ -414,7 +414,7 @@ describe('[Integration] Slash validators', () => {
             wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
           });
 
-          expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
+          await expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
         });
 
         it('Should the validator can join as a validator when jail time is over, despite of insufficient fund', async () => {
@@ -437,7 +437,7 @@ describe('[Integration] Slash validators', () => {
             await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
             expectingBlockProducerSet
           );
-          expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
+          await expect(wrapUpEpochTx).not.emit(validatorContract, 'ValidatorSetUpdated');
         });
       });
 

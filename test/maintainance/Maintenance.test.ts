@@ -397,7 +397,7 @@ describe('Maintenance test', () => {
         .connect(validatorCandidates[0].candidateAdmin)
         .cancelSchedule(validatorCandidates[0].consensusAddr.address);
 
-      expect(tx)
+      await expect(tx)
         .emit(maintenanceContract, 'MaintenanceScheduleCancelled')
         .withArgs(validatorCandidates[0].consensusAddr.address);
 
