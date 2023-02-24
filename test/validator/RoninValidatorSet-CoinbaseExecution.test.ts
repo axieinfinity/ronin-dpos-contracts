@@ -55,6 +55,7 @@ let epoch: BigNumber;
 
 let snapshotId: string;
 
+const dummyStakingMultiplier = 5;
 const localValidatorCandidatesLength = 5;
 
 const waitingSecsToRevoke = 3 * 86400;
@@ -188,7 +189,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
             validatorCandidates[i].bridgeOperator.address,
             2_00,
             {
-              value: minValidatorStakingAmount.add(i * 5),
+              value: minValidatorStakingAmount.add(i * dummyStakingMultiplier),
             }
           );
       }
@@ -222,9 +223,6 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
         .slice(0, 4)
         .reverse()
         .map((_) => _.consensusAddr.address);
-
-      console.log(validatorCandidates.map((_) => _.consensusAddr.address));
-      console.log(expectingValidatorsAddr);
 
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
@@ -279,7 +277,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
             validatorCandidates[i].bridgeOperator.address,
             2_00,
             {
-              value: minValidatorStakingAmount.add(i * 5),
+              value: minValidatorStakingAmount.add(i * dummyStakingMultiplier),
             }
           );
       }
@@ -300,9 +298,6 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
           ),
         ];
       });
-
-      console.log(validatorCandidates.map((_) => _.consensusAddr.address));
-      console.log(currentValidatorSet);
 
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
@@ -342,9 +337,6 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
             ),
           ];
         });
-
-        console.log(validatorCandidates.map((_) => _.consensusAddr.address));
-        console.log(expectingValidatorsAddr);
 
         await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
         lastPeriod = await roninValidatorSet.currentPeriod();
@@ -444,13 +436,15 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       lastPeriod = await roninValidatorSet.currentPeriod();
 
       let balanceAfter = await currValidator.poolAdmin.getBalance();
-      expect(balanceAfter.sub(balanceBefore)).eq(minValidatorStakingAmount.add(4).add(unclaimedReward));
+      expect(balanceAfter.sub(balanceBefore)).eq(
+        minValidatorStakingAmount.add(4 * dummyStakingMultiplier).add(unclaimedReward)
+      );
     });
 
     it('Should the self-staking amount get refunded', async () => {
       await expect(wrapupEpochTx!)
         .emit(stakingContract, 'Unstaked')
-        .withArgs(currValidator.consensusAddr.address, minValidatorStakingAmount.add(4));
+        .withArgs(currValidator.consensusAddr.address, minValidatorStakingAmount.add(4 * dummyStakingMultiplier));
     });
 
     it('Should the unclaimed reward amount get transferred on revoke, and the claimable reward get reset', async () => {
