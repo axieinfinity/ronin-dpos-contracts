@@ -99,6 +99,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     _creditScore[_consensusAddr] -= _cost;
     _setUnavailabilityIndicator(_consensusAddr, _period, 0);
     _checkBailedOutAtPeriod[_consensusAddr][_period] = true;
+    emit BailedOut(_consensusAddr, _period, _creditScore[_consensusAddr]);
   }
 
   /**
