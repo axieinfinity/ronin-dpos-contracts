@@ -5,6 +5,7 @@ pragma solidity ^0.8.9;
 import "../../../libraries/EnumFlags.sol";
 import "../../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../../../interfaces/validator/info-fragments/IValidatorInfo.sol";
+import "hardhat/console.sol";
 
 abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganizationContract {
   using EnumFlags for EnumFlags.ValidatorFlag;
@@ -65,6 +66,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
    * @inheritdoc IValidatorInfo
    */
   function isBlockProducer(address _addr) public view override returns (bool) {
+    console.log("---isBlockProducer", _addr, uint8(_validatorMap[_addr]));
     return _validatorMap[_addr].hasFlag(EnumFlags.ValidatorFlag.BlockProducer);
   }
 

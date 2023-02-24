@@ -413,28 +413,34 @@ abstract contract CoinbaseExecution is
     uint256 _count;
     for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
       address _newValidator = _newValidators[_i];
-      console.log("i", _i);
-      console.log("count", _count);
+      // console.log("i", _i);
+      // console.log("count", _count);
       if (_newValidator == _validators[_count]) {
         _count++;
         continue;
       }
 
       delete _validatorMap[_validators[_count]];
-      console.log(
-        "_validatorMap[_validators[_count]]",
-        _validators[_count],
-        uint256(_validatorMap[_validators[_count]])
-      );
+      // console.log(
+      //   "_validatorMap[_validators[_count]]",
+      //   _validators[_count],
+      //   uint256(_validatorMap[_validators[_count]])
+      // );
       _validatorMap[_newValidator] = EnumFlags.ValidatorFlag.Both;
 
-      console.log("_validatorMap[_newValidator]", _newValidator, uint256(_validatorMap[_newValidator]));
+      // console.log("_validatorMap[_newValidator]", _newValidator, uint256(_validatorMap[_newValidator]));
       _validators[_count] = _newValidator;
       _count++;
     }
 
     validatorCount = _count;
     emit ValidatorSetUpdated(_newPeriod, _newValidators);
+
+    console.log("--- post");
+    for (uint256 _i = 0; _i < validatorCount; _i++) {
+      console.log(_validators[_i], uint8(_validatorMap[_validators[_i]]));
+    }
+    console.log("---");
   }
 
   /**
