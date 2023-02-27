@@ -405,7 +405,7 @@ abstract contract CoinbaseExecution is
     uint256 _newPeriod
   ) private {
     // Remove exceeding validators in the current set
-    for (uint256 _i = 0; _i < validatorCount; _i++) {
+    for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
       delete _validatorMap[_validators[_i]];
       delete _validators[_i];
     }
