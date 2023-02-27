@@ -11,6 +11,8 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
   uint256 internal _slashDoubleSignAmount;
   /// @dev The block number that the punished validator will be jailed until, due to double signing.
   uint256 internal _doubleSigningJailUntilBlock;
+  /// @dev The offset from the submitted block to the current block, from which double signing will be invalidated.
+  uint256 internal _doubleSigningOffsetLimitBlock;
   /// @dev Recording of submitted proof to prevent relay attack.
   mapping(bytes32 => bool) _submittedEvidence;
 
@@ -38,7 +40,7 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
       "SlashDoubleSign: evidence already submitted"
     );
 
-    if (_pcValidateEvidence(_header1, _header2)) {
+    if (_pcValidateEvidence(_consensusAddr, _header1, _header2)) {
       uint256 _period = _validatorContract.currentPeriod();
       _submittedEvidence[_header1Checksum] = true;
       _submittedEvidence[_header2Checksum] = true;
@@ -54,25 +56,38 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
     external
     view
     override
-    returns (uint256 slashDoubleSignAmount_, uint256 doubleSigningJailUntilBlock_)
+    returns (
+      uint256 slashDoubleSignAmount_,
+      uint256 doubleSigningJailUntilBlock_,
+      uint256 doubleSigningOffsetLimitBlock_
+    )
   {
-    return (_slashDoubleSignAmount, _doubleSigningJailUntilBlock);
+    return (_slashDoubleSignAmount, _doubleSigningJailUntilBlock, _doubleSigningOffsetLimitBlock);
   }
 
   /**
    * @inheritdoc ISlashDoubleSign
    */
-  function setDoubleSignSlashingConfigs(uint256 _slashAmount, uint256 _jailUntilBlock) external override onlyAdmin {
-    _setDoubleSignSlashingConfigs(_slashAmount, _jailUntilBlock);
+  function setDoubleSignSlashingConfigs(
+    uint256 _slashAmount,
+    uint256 _jailUntilBlock,
+    uint256 _offsetLimitBlock
+  ) external override onlyAdmin {
+    _setDoubleSignSlashingConfigs(_slashAmount, _jailUntilBlock, _offsetLimitBlock);
   }
 
   /**
    * @dev See `ISlashDoubleSign-setDoubleSignSlashingConfigs`.
    */
-  function _setDoubleSignSlashingConfigs(uint256 _slashAmount, uint256 _jailUntilBlock) internal {
+  function _setDoubleSignSlashingConfigs(
+    uint256 _slashAmount,
+    uint256 _jailUntilBlock,
+    uint256 _offsetLimitBlock
+  ) internal {
     _slashDoubleSignAmount = _slashAmount;
     _doubleSigningJailUntilBlock = _jailUntilBlock;
-    emit DoubleSignSlashingConfigsUpdated(_slashAmount, _jailUntilBlock);
+    _doubleSigningOffsetLimitBlock = _offsetLimitBlock;
+    emit DoubleSignSlashingConfigsUpdated(_slashAmount, _jailUntilBlock, _doubleSigningOffsetLimitBlock);
   }
 
   /**

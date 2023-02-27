@@ -41,7 +41,8 @@ contract SlashIndicator is
     uint256[2] calldata _bridgeVotingSlashingConfigs,
     // _doubleSignSlashingConfigs[0]: _slashDoubleSignAmount
     // _doubleSignSlashingConfigs[1]: _doubleSigningJailUntilBlock
-    uint256[2] calldata _doubleSignSlashingConfigs,
+    // _doubleSignSlashingConfigs[2]: _doubleSigningOffsetLimitBlock
+    uint256[3] calldata _doubleSignSlashingConfigs,
     // _unavailabilitySlashingConfigs[0]: _unavailabilityTier1Threshold
     // _unavailabilitySlashingConfigs[1]: _unavailabilityTier2Threshold
     // _unavailabilitySlashingConfigs[2]: _slashAmountForUnavailabilityTier2Threshold
@@ -64,7 +65,11 @@ contract SlashIndicator is
       _bridgeOperatorSlashingConfigs[3]
     );
     _setBridgeVotingSlashingConfigs(_bridgeVotingSlashingConfigs[0], _bridgeVotingSlashingConfigs[1]);
-    _setDoubleSignSlashingConfigs(_doubleSignSlashingConfigs[0], _doubleSignSlashingConfigs[1]);
+    _setDoubleSignSlashingConfigs(
+      _doubleSignSlashingConfigs[0],
+      _doubleSignSlashingConfigs[1],
+      _doubleSignSlashingConfigs[2]
+    );
     _setUnavailabilitySlashingConfigs(
       _unavailabilitySlashingConfigs[0],
       _unavailabilitySlashingConfigs[1],

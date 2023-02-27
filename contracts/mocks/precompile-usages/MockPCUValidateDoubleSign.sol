@@ -19,7 +19,11 @@ contract MockPCUValidateDoubleSign is PCUValidateDoubleSign {
     return _precompileValidateDoubleSignAddress;
   }
 
-  function callPrecompile(bytes calldata _header1, bytes calldata _header2) public view returns (bool) {
-    return _pcValidateEvidence(_header1, _header2);
+  function callPrecompile(
+    address _consensusAddr,
+    bytes calldata _header1,
+    bytes calldata _header2
+  ) public view returns (bool) {
+    return _pcValidateEvidence(_consensusAddr, _header1, _header2);
   }
 }

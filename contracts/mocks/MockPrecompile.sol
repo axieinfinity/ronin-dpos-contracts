@@ -15,6 +15,7 @@ contract MockPrecompile {
   }
 
   function validatingDoubleSignProof(
+    address, /*consensusAddr*/
     bytes calldata, /*_header1*/
     bytes calldata /*_header2*/
   ) public pure returns (bool _validEvidence) {
