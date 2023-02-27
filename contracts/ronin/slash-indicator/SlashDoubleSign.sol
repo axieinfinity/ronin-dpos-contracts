@@ -25,7 +25,7 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
     address _consensusAddr,
     bytes calldata _header1,
     bytes calldata _header2
-  ) external override {
+  ) external override onlyAdmin {
     if (!_shouldSlash(_consensusAddr)) {
       return;
     }
