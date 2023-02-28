@@ -24,6 +24,11 @@ import {
   TrustedOrganizationAddressSet,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types';
+import { getLastBlockTimestamp } from '../helpers/utils';
+import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
+import { getProposalHash, VoteType } from '../../src/script/proposal';
+import { expects as GovernanceAdminExpects } from '../helpers/governance-admin';
+import { Encoder } from '../helpers/encoder';
 
 let slashContract: MockSlashIndicatorExtended;
 let mockSlashLogic: MockSlashIndicatorExtended;
@@ -53,6 +58,7 @@ const slashAmountForUnavailabilityTier2Threshold = BigNumber.from(2);
 const slashDoubleSignAmount = BigNumber.from(5);
 
 const minOffsetToStartSchedule = 200;
+const proposalExpiryDuration = 60;
 
 const validateIndicatorAt = async (idx: number) => {
   expect(await slashContract.currentUnavailabilityIndicator(validatorCandidates[idx].consensusAddr.address)).to.eq(
@@ -98,6 +104,9 @@ describe('Slash indicator test', () => {
             addedBlock: 0,
           })),
         },
+        governanceAdminArguments: {
+          proposalExpiryDuration,
+        },
       });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -107,7 +116,7 @@ describe('Slash indicator test', () => {
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
       network.config.chainId!,
-      undefined,
+      { proposalExpiryDuration },
       ...trustedOrgs.map((_) => _.governor)
     );
 
@@ -359,43 +368,25 @@ describe('Slash indicator test', () => {
       });
     });
 
-    describe('Double signing slash', async () => {
+    describe.only('Double signing slash', async () => {
       let header1: BytesLike;
       let header2: BytesLike;
 
-      it('Should not be able to slash themselves', async () => {
+      it('Should not be able to slash themselves (only admin allowed)', async () => {
         const slasherIdx = 0;
         await network.provider.send('hardhat_setCoinbase', [validatorCandidates[slasherIdx].consensusAddr.address]);
 
         header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
         header2 = ethers.utils.toUtf8Bytes('sampleHeader2');
 
-        let tx = await slashContract
+        let tx = slashContract
           .connect(validatorCandidates[slasherIdx].consensusAddr)
           .slashDoubleSign(validatorCandidates[slasherIdx].consensusAddr.address, header1, header2);
 
-        await expect(tx).to.not.emit(slashContract, 'Slashed');
+        await expect(tx).revertedWith('HasProxyAdmin: unauthorized sender');
       });
 
-      it('Should be able to slash validator with double signing', async () => {
-        const slasherIdx = 0;
-        const slasheeIdx = 1;
-
-        header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
-        header2 = ethers.utils.toUtf8Bytes('sampleHeader2');
-
-        let tx = await slashContract
-          .connect(validatorCandidates[slasherIdx].consensusAddr)
-          .slashDoubleSign(validatorCandidates[slasheeIdx].consensusAddr.address, header1, header2);
-
-        let period = await validatorContract.currentPeriod();
-
-        await expect(tx)
-          .to.emit(slashContract, 'Slashed')
-          .withArgs(validatorCandidates[slasheeIdx].consensusAddr.address, SlashType.DOUBLE_SIGNING, period);
-      });
-
-      it('Should non-coinbase be able to slash validator with double signing', async () => {
+      it('Should non-admin not be able to slash validator with double signing', async () => {
         const slasherIdx = 0;
         const slasheeIdx = 1;
         const coinbaseIdx = 2;
@@ -404,15 +395,136 @@ describe('Slash indicator test', () => {
         header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
         header2 = ethers.utils.toUtf8Bytes('sampleHeader2');
 
-        let tx = await slashContract
+        let tx = slashContract
           .connect(validatorCandidates[slasherIdx].consensusAddr)
           .slashDoubleSign(validatorCandidates[slasheeIdx].consensusAddr.address, header1, header2);
+
+        await expect(tx).revertedWith('HasProxyAdmin: unauthorized sender');
+      });
+
+      it('Should be able to slash validator with double signing', async () => {
+        const slasheeIdx = 1;
+        header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
+        header2 = ethers.utils.toUtf8Bytes('sampleHeader2');
+
+        const latestTimestamp = await getLastBlockTimestamp();
+        let calldata = governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          slashContract.interface.encodeFunctionData('slashDoubleSign', [
+            validatorCandidates[slasheeIdx].consensusAddr.address,
+            header1,
+            header2,
+          ]),
+        ]);
+        let proposal: ProposalDetailStruct = await governanceAdminInterface.createProposal(
+          latestTimestamp + proposalExpiryDuration,
+          slashContract.address,
+          0,
+          calldata,
+          500_000
+        );
+        let signatures = await governanceAdminInterface.generateSignatures(
+          proposal,
+          trustedOrgs.map((_) => _.governor)
+        );
+        let supports = signatures.map(() => VoteType.For);
+
+        let tx = await governanceAdmin
+          .connect(trustedOrgs[0].governor)
+          .proposeProposalStructAndCastVotes(proposal, supports, signatures);
+
+        expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address))
+          .to.true;
+        await expect(tx).emit(governanceAdmin, 'ProposalExecuted');
+        console.log('[test] target', slashContract.address);
+        console.log('[test] calldata', calldata);
+        console.log((await tx.wait()).events?.filter((_) => _.event === 'ProposalExecuted')[0].args);
 
         let period = await validatorContract.currentPeriod();
 
         await expect(tx)
           .to.emit(slashContract, 'Slashed')
           .withArgs(validatorCandidates[slasheeIdx].consensusAddr.address, SlashType.DOUBLE_SIGNING, period);
+      });
+
+      it('Should not be able to slash validator with already submitted evidence', async () => {
+        const slasheeIdx = 1;
+        header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
+        header2 = ethers.utils.toUtf8Bytes('sampleHeaderNew');
+
+        const latestTimestamp = await getLastBlockTimestamp();
+        let calldata = governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          slashContract.interface.encodeFunctionData('slashDoubleSign', [
+            validatorCandidates[slasheeIdx].consensusAddr.address,
+            header1,
+            header2,
+          ]),
+        ]);
+        let proposal: ProposalDetailStruct = await governanceAdminInterface.createProposal(
+          latestTimestamp + proposalExpiryDuration,
+          slashContract.address,
+          0,
+          calldata,
+          500_000
+        );
+        let proposalHash = getProposalHash(proposal);
+        let signatures = await governanceAdminInterface.generateSignatures(
+          proposal,
+          trustedOrgs.map((_) => _.governor)
+        );
+        let supports = signatures.map(() => VoteType.For);
+
+        let tx = await governanceAdmin
+          .connect(trustedOrgs[0].governor)
+          .proposeProposalStructAndCastVotes(proposal, supports, signatures);
+
+        expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address))
+          .to.true;
+        await expect(tx).emit(governanceAdmin, 'ProposalExecuted');
+
+        await GovernanceAdminExpects.emitProposalExecutedEvent(
+          tx,
+          proposalHash,
+          [false],
+          [Encoder.encodeError('SlashDoubleSign: evidence already submitted')]
+        );
+      });
+
+      it('Should be able to slash non-validator with double signing', async () => {
+        const slasheeAddr = signers[1].address;
+        header1 = ethers.utils.toUtf8Bytes('sampleHeader3');
+        header2 = ethers.utils.toUtf8Bytes('sampleHeader4');
+
+        const latestTimestamp = await getLastBlockTimestamp();
+        let calldata = governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          slashContract.interface.encodeFunctionData('slashDoubleSign', [slasheeAddr, header1, header2]),
+        ]);
+        let proposal: ProposalDetailStruct = await governanceAdminInterface.createProposal(
+          latestTimestamp + proposalExpiryDuration,
+          slashContract.address,
+          0,
+          calldata,
+          500_000
+        );
+        let signatures = await governanceAdminInterface.generateSignatures(
+          proposal,
+          trustedOrgs.map((_) => _.governor)
+        );
+        let supports = signatures.map(() => VoteType.For);
+
+        let tx = await governanceAdmin
+          .connect(trustedOrgs[0].governor)
+          .proposeProposalStructAndCastVotes(proposal, supports, signatures);
+
+        expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address))
+          .to.true;
+        await expect(tx).emit(governanceAdmin, 'ProposalExecuted');
+        console.log('[test] target', slashContract.address);
+        console.log('[test] calldata', calldata);
+        console.log((await tx.wait()).events?.filter((_) => _.event === 'ProposalExecuted')[0].args);
+
+        let period = await validatorContract.currentPeriod();
+
+        await expect(tx).to.emit(slashContract, 'Slashed').withArgs(slasheeAddr, SlashType.DOUBLE_SIGNING, period);
       });
     });
   });

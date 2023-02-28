@@ -33,6 +33,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     [
       slashIndicatorConf[network.name]!.doubleSignSlashing?.slashDoubleSignAmount,
       slashIndicatorConf[network.name]!.doubleSignSlashing?.doubleSigningJailUntilBlock,
+      slashIndicatorConf[network.name]!.doubleSignSlashing?.doubleSigningOffsetLimitBlock,
     ],
     [
       slashIndicatorConf[network.name]!.unavailabilitySlashing?.unavailabilityTier1Threshold,

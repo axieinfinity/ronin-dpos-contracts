@@ -122,6 +122,7 @@ export interface BridgeVotingSlashingConfig {
 export interface DoubleSignSlashingConfig {
   slashDoubleSignAmount?: BigNumberish;
   doubleSigningJailUntilBlock?: BigNumberish;
+  doubleSigningOffsetLimitBlock?: BigNumberish;
 }
 
 export interface UnavailabilitySlashing {

@@ -22,6 +22,7 @@ describe('[Precompile] Validate double sign test', () => {
     usageValidating = await new MockPCUValidateDoubleSign__factory(deployer).deploy(precompileValidating.address);
   });
 
+  let consensusAddr = signers[0].address;
   let header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
   let header2 = ethers.utils.toUtf8Bytes('sampleHeader2');
 
@@ -30,13 +31,13 @@ describe('[Precompile] Validate double sign test', () => {
   });
 
   it('Should the usage contract can call the precompile address', async () => {
-    let sortedValidators = await usageValidating.callPrecompile(header1, header2);
+    let sortedValidators = await usageValidating.callPrecompile(consensusAddr, header1, header2);
     expect(sortedValidators).eql(true);
   });
 
   it('Should the usage contract revert with proper message on calling the precompile contract fails', async () => {
     await usageValidating.setPrecompileValidateDoubleSignAddress(ethers.constants.AddressZero);
-    await expect(usageValidating.callPrecompile(header1, header2)).revertedWithCustomError(
+    await expect(usageValidating.callPrecompile(consensusAddr, header1, header2)).revertedWithCustomError(
       usageValidating,
       'ErrCallPrecompiled'
     );
