@@ -129,7 +129,7 @@ const defaultSlashIndicatorConf: SlashIndicatorArguments = {
   doubleSignSlashing: {
     slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10), // 10 RON
     doubleSigningJailUntilBlock: ethers.constants.MaxUint256,
-    doubleSigningOffsetLimitBlock: 28800, // ~1 days
+    doubleSigningOffsetLimitBlock: 28800 * 7, // ~7 days
   },
   unavailabilitySlashing: {
     unavailabilityTier1Threshold: 50,
