@@ -15,14 +15,12 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
    * This parameter is exposed for system transaction.
    **/
   uint256 internal _doubleSigningOffsetLimitBlock;
-  /// @dev Recording of submitted proof to prevent relay attack.
-  mapping(bytes32 => bool) _submittedEvidence;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[48] private ______gap;
+  uint256[49] private ______gap;
 
   /**
    * @inheritdoc ISlashDoubleSign
@@ -32,18 +30,8 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
     bytes calldata _header1,
     bytes calldata _header2
   ) external override onlyAdmin {
-    bytes32 _header1Checksum = keccak256(_header1);
-    bytes32 _header2Checksum = keccak256(_header2);
-
-    require(
-      !_submittedEvidence[_header1Checksum] && !_submittedEvidence[_header2Checksum],
-      "SlashDoubleSign: evidence already submitted"
-    );
-
     if (_pcValidateEvidence(_consensusAddr, _header1, _header2)) {
       uint256 _period = _validatorContract.currentPeriod();
-      _submittedEvidence[_header1Checksum] = true;
-      _submittedEvidence[_header2Checksum] = true;
       emit Slashed(_consensusAddr, SlashType.DOUBLE_SIGNING, _period);
       _validatorContract.execSlash(_consensusAddr, _doubleSigningJailUntilBlock, _slashDoubleSignAmount, true);
     }

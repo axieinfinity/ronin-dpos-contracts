@@ -26,9 +26,7 @@ import {
 } from '../helpers/address-set-types';
 import { getLastBlockTimestamp } from '../helpers/utils';
 import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
-import { getProposalHash, VoteType } from '../../src/script/proposal';
-import { expects as GovernanceAdminExpects } from '../helpers/governance-admin';
-import { Encoder } from '../helpers/encoder';
+import { VoteType } from '../../src/script/proposal';
 
 let slashContract: MockSlashIndicatorExtended;
 let mockSlashLogic: MockSlashIndicatorExtended;
@@ -444,49 +442,6 @@ describe('Slash indicator test', () => {
         await expect(tx)
           .to.emit(slashContract, 'Slashed')
           .withArgs(validatorCandidates[slasheeIdx].consensusAddr.address, SlashType.DOUBLE_SIGNING, period);
-      });
-
-      it('Should not be able to slash validator with already submitted evidence', async () => {
-        const slasheeIdx = 1;
-        header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
-        header2 = ethers.utils.toUtf8Bytes('sampleHeaderNew');
-
-        const latestTimestamp = await getLastBlockTimestamp();
-        let calldata = governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
-          slashContract.interface.encodeFunctionData('slashDoubleSign', [
-            validatorCandidates[slasheeIdx].consensusAddr.address,
-            header1,
-            header2,
-          ]),
-        ]);
-        let proposal: ProposalDetailStruct = await governanceAdminInterface.createProposal(
-          latestTimestamp + proposalExpiryDuration,
-          slashContract.address,
-          0,
-          calldata,
-          500_000
-        );
-        let proposalHash = getProposalHash(proposal);
-        let signatures = await governanceAdminInterface.generateSignatures(
-          proposal,
-          trustedOrgs.map((_) => _.governor)
-        );
-        let supports = signatures.map(() => VoteType.For);
-
-        let tx = await governanceAdmin
-          .connect(trustedOrgs[0].governor)
-          .proposeProposalStructAndCastVotes(proposal, supports, signatures);
-
-        expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address))
-          .to.true;
-        await expect(tx).emit(governanceAdmin, 'ProposalExecuted');
-
-        await GovernanceAdminExpects.emitProposalExecutedEvent(
-          tx,
-          proposalHash,
-          [false],
-          [Encoder.encodeError('SlashDoubleSign: evidence already submitted')]
-        );
       });
 
       it('Should be able to slash non-validator with double signing', async () => {
