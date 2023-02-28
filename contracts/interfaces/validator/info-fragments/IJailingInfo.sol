@@ -54,4 +54,10 @@ interface IJailingInfo {
     external
     view
     returns (bool[] memory);
+
+  /**
+   * @dev Returns whether the incoming reward of the validator with `_consensusAddr` is deprecated in the current period.
+   */
+
+  function checkBridgeRewardDeprecated(address _consensusAddr) external view returns (bool _result);
 }
