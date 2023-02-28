@@ -11,7 +11,9 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
   uint256 internal _slashDoubleSignAmount;
   /// @dev The block number that the punished validator will be jailed until, due to double signing.
   uint256 internal _doubleSigningJailUntilBlock;
-  /// @dev The offset from the submitted block to the current block, from which double signing will be invalidated.
+  /** @dev The offset from the submitted block to the current block, from which double signing will be invalidated.
+   * This parameter is exposed for system transaction.
+   **/
   uint256 internal _doubleSigningOffsetLimitBlock;
   /// @dev Recording of submitted proof to prevent relay attack.
   mapping(bytes32 => bool) _submittedEvidence;
@@ -30,8 +32,6 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
     bytes calldata _header1,
     bytes calldata _header2
   ) external override onlyAdmin {
-    require(_shouldSlash(_consensusAddr), "SlashDoubleSign: invalid slashee");
-
     bytes32 _header1Checksum = keccak256(_header1);
     bytes32 _header2Checksum = keccak256(_header2);
 
