@@ -435,9 +435,6 @@ describe('Slash indicator test', () => {
         expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address))
           .to.true;
         await expect(tx).emit(governanceAdmin, 'ProposalExecuted');
-        console.log('[test] target', slashContract.address);
-        console.log('[test] calldata', calldata);
-        console.log((await tx.wait()).events?.filter((_) => _.event === 'ProposalExecuted')[0].args);
 
         let period = await validatorContract.currentPeriod();
 
@@ -518,10 +515,6 @@ describe('Slash indicator test', () => {
         expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address))
           .to.true;
         await expect(tx).emit(governanceAdmin, 'ProposalExecuted');
-        console.log('[test] target', slashContract.address);
-        console.log('[test] calldata', calldata);
-        console.log((await tx.wait()).events?.filter((_) => _.event === 'ProposalExecuted')[0].args);
-
         let period = await validatorContract.currentPeriod();
 
         await expect(tx).to.emit(slashContract, 'Slashed').withArgs(slasheeAddr, SlashType.DOUBLE_SIGNING, period);
