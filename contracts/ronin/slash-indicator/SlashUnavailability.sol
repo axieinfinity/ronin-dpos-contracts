@@ -51,6 +51,7 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
   function slashUnavailability(address _validatorAddr) external override oncePerBlock {
     require(msg.sender == block.coinbase, "SlashUnavailability: method caller must be coinbase");
     if (!_shouldSlash(_validatorAddr)) {
+      // Should return instead of throwing error since this is a part of system transaction.
       return;
     }
 

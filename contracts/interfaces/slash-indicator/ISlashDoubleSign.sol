@@ -9,7 +9,11 @@ interface ISlashDoubleSign is IBaseSlash {
    * @dev Emitted when the configs to slash double sign is updated. See the method `getDoubleSignSlashingConfigs`
    * for param details.
    */
-  event DoubleSignSlashingConfigsUpdated(uint256 slashDoubleSignAmount, uint256 doubleSigningJailUntilBlock);
+  event DoubleSignSlashingConfigsUpdated(
+    uint256 slashDoubleSignAmount,
+    uint256 doubleSigningJailUntilBlock,
+    uint256 doubleSigningOffsetLimitBlock
+  );
 
   /**
    * @dev Slashes for double signing.
@@ -31,12 +35,18 @@ interface ISlashDoubleSign is IBaseSlash {
    * @return _slashDoubleSignAmount The amount of RON to slash double sign.
    * @return _doubleSigningJailUntilBlock The block number that the punished validator will be jailed until, due to
    * double signing.
+   * @param _doubleSigningOffsetLimitBlock The number of block that the current block is at most far from the double
+   * signing block.
    *
    */
   function getDoubleSignSlashingConfigs()
     external
     view
-    returns (uint256 _slashDoubleSignAmount, uint256 _doubleSigningJailUntilBlock);
+    returns (
+      uint256 _slashDoubleSignAmount,
+      uint256 _doubleSigningJailUntilBlock,
+      uint256 _doubleSigningOffsetLimitBlock
+    );
 
   /**
    * @dev Sets the configs to slash block producers.
@@ -48,7 +58,13 @@ interface ISlashDoubleSign is IBaseSlash {
    *
    * @param _slashAmount The amount of RON to slash double sign.
    * @param _jailUntilBlock The block number that the punished validator will be jailed until, due to double signing.
+   * @param _doubleSigningOffsetLimitBlock The number of block that the current block is at most far from the double
+   * signing block.
    *
    */
-  function setDoubleSignSlashingConfigs(uint256 _slashAmount, uint256 _jailUntilBlock) external;
+  function setDoubleSignSlashingConfigs(
+    uint256 _slashAmount,
+    uint256 _jailUntilBlock,
+    uint256 _doubleSigningOffsetLimitBlock
+  ) external;
 }

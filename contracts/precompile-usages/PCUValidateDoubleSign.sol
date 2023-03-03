@@ -16,16 +16,20 @@ abstract contract PCUValidateDoubleSign is PrecompiledUsage {
    * Note: The recover process is done by pre-compiled contract. This function is marked as
    * virtual for implementing mocking contract for testing purpose.
    */
-  function _pcValidateEvidence(bytes calldata _header1, bytes calldata _header2)
-    internal
-    view
-    virtual
-    returns (bool _validEvidence)
-  {
+  function _pcValidateEvidence(
+    address _consensusAddr,
+    bytes calldata _header1,
+    bytes calldata _header2
+  ) internal view virtual returns (bool _validEvidence) {
     address _smc = precompileValidateDoubleSignAddress();
     bool _success = true;
 
-    bytes memory _payload = abi.encodeWithSignature("validatingDoubleSignProof(bytes,bytes)", _header1, _header2);
+    bytes memory _payload = abi.encodeWithSignature(
+      "validatingDoubleSignProof(address,bytes,bytes)",
+      _consensusAddr,
+      _header1,
+      _header2
+    );
     uint _payloadLength = _payload.length;
     uint[1] memory _output;
 
