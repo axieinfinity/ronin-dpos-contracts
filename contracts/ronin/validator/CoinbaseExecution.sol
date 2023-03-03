@@ -443,7 +443,7 @@ abstract contract CoinbaseExecution is
     uint256 _nextEpoch,
     address[] memory _currentValidators
   ) private {
-    bool[] memory _maintainedList = _maintenanceContract.checkManyMaintained(_candidates, block.number + 1);
+    bool[] memory _maintainedList = _maintenanceContract.checkManyMaintained(_currentValidators, block.number + 1);
 
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
       address _validator = _currentValidators[_i];
