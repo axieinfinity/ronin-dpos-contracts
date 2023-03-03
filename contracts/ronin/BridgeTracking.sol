@@ -202,11 +202,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   function _trySyncPeriodStats() internal {
     uint256 _currentEpoch = _validatorContract.epochOf(block.number);
     if (_temporaryStats.lastEpoch < _currentEpoch) {
-      (bool _filled, uint256 _period) = _validatorContract.tryGetPeriodOfEpoch(_temporaryStats.lastEpoch + 1);
-      if (!_filled) {
-        return;
-      }
-
+      (, uint256 _period) = _validatorContract.tryGetPeriodOfEpoch(_temporaryStats.lastEpoch + 1);
       VoteStats storage _stats = _periodStats[_period];
       _stats.totalVotes += _temporaryStats.info.totalVotes;
       _stats.totalBallots += _temporaryStats.info.totalBallots;
