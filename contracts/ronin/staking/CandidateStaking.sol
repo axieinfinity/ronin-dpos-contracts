@@ -2,19 +2,23 @@
 
 pragma solidity ^0.8.9;
 
+import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../libraries/AddressArrayUtils.sol";
 import "../../interfaces/staking/ICandidateStaking.sol";
 import "./BaseStaking.sol";
 
-abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
+abstract contract CandidateStaking is BaseStaking, ICandidateStaking, PercentageConsumer {
   /// @dev The minimum threshold for being a validator candidate.
   uint256 internal _minValidatorStakingAmount;
+
+  /// @dev The max commission rate that the validator can set (in range of [0;100_00] means [0-100%])
+  uint256 internal _maxCommissionRate;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[50] private ______gap;
+  uint256[49] ______gap;
 
   /**
    * @inheritdoc ICandidateStaking
@@ -26,8 +30,22 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   /**
    * @inheritdoc ICandidateStaking
    */
+  function maxCommissionRate() external view override returns (uint256) {
+    return _maxCommissionRate;
+  }
+
+  /**
+   * @inheritdoc ICandidateStaking
+   */
   function setMinValidatorStakingAmount(uint256 _threshold) external override onlyAdmin {
     _setMinValidatorStakingAmount(_threshold);
+  }
+
+  /**
+   * @inheritdoc ICandidateStaking
+   */
+  function setMaxCommissionRate(uint256 _maxRate) external override onlyAdmin {
+    _setMaxCommissionRate(_maxRate);
   }
 
   /**
@@ -71,6 +89,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     uint256 _effectiveDaysOnwards,
     uint256 _commissionRate
   ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
+    if (_commissionRate > _maxCommissionRate) revert ErrInvalidCommissionRate();
     _validatorContract.execRequestUpdateCommissionRate(_consensusAddr, _effectiveDaysOnwards, _commissionRate);
   }
 
@@ -171,6 +190,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
     if (!_unsafeSendRON(_poolAdmin, 0)) revert ErrCannotInitTransferRON(_poolAdmin, "pool admin");
     if (!_unsafeSendRON(_treasuryAddr, 0)) revert ErrCannotInitTransferRON(_treasuryAddr, "treasury");
     if (_amount < _minValidatorStakingAmount) revert ErrInsufficientStakingAmount();
+    if (_commissionRate > _maxCommissionRate) revert ErrInvalidCommissionRate();
 
     if (_poolAdmin != _candidateAdmin || _candidateAdmin != _treasuryAddr) revert ErrThreeInteractionAddrsNotEqual();
 
@@ -239,5 +259,17 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking {
   function _setMinValidatorStakingAmount(uint256 _threshold) internal {
     _minValidatorStakingAmount = _threshold;
     emit MinValidatorStakingAmountUpdated(_threshold);
+  }
+
+  /**
+   * @dev Sets the max commission rate that a candidate can set.
+   *
+   * Emits the `MaxCommissionRateUpdated` event.
+   *
+   */
+  function _setMaxCommissionRate(uint256 _maxRate) internal {
+    if (_maxRate > _MAX_PERCENTAGE) revert ErrInvalidCommissionRate();
+    _maxCommissionRate = _maxRate;
+    emit MaxCommissionRateUpdated(_maxRate);
   }
 }

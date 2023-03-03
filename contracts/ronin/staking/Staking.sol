@@ -23,11 +23,13 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   function initialize(
     address __validatorContract,
     uint256 __minValidatorStakingAmount,
+    uint256 __maxCommissionRate,
     uint256 __cooldownSecsToUndelegate,
     uint256 __waitingSecsToRevoke
   ) external initializer {
     _setValidatorContract(__validatorContract);
     _setMinValidatorStakingAmount(__minValidatorStakingAmount);
+    _setMaxCommissionRate(__maxCommissionRate);
     _setCooldownSecsToUndelegate(__cooldownSecsToUndelegate);
     _setWaitingSecsToRevoke(__waitingSecsToRevoke);
   }

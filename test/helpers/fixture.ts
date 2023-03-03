@@ -69,6 +69,7 @@ export const defaultTestConfig: InitTestInput = {
 
   stakingArguments: {
     minValidatorStakingAmount: BigNumber.from(100),
+    maxCommissionRate: 100_00,
     cooldownSecsToUndelegate: 3 * 86400,
     waitingSecsToRevoke: 7 * 86400,
   },
