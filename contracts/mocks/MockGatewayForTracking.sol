@@ -39,11 +39,17 @@ contract MockGatewayForTracking is IHasBridgeTrackingContract {
     emit BridgeTrackingContractUpdated(_addr);
   }
 
-  function sendBallot(IBridgeTracking.Request memory _request, address _voter) external {
-    _bridgeTrackingContract.recordVote(_request.kind, _request.id, _voter);
+  function sendBallot(
+    IBridgeTracking.VoteKind _kind,
+    uint256 _id,
+    address[] memory _voters
+  ) external {
+    for (uint256 _i; _i < _voters.length; _i++) {
+      _bridgeTrackingContract.recordVote(_kind, _id, _voters[_i]);
+    }
   }
 
-  function sendApprovedVote(IBridgeTracking.Request memory _request) external {
-    _bridgeTrackingContract.handleVoteApproved(_request.kind, _request.id);
+  function sendApprovedVote(IBridgeTracking.VoteKind _kind, uint256 _id) external {
+    _bridgeTrackingContract.handleVoteApproved(_kind, _id);
   }
 }
