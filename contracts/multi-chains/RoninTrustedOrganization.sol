@@ -263,13 +263,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function _addTrustedOrganization(TrustedOrganization memory _v) internal virtual {
     require(_v.addedBlock == 0, "RoninTrustedOrganization: invalid request");
-    require(_v.weight > 0, "RoninTrustedOrganization: invalid weight");
-
-    address[] memory _addresses = new address[](3);
-    _addresses[0] = _v.consensusAddr;
-    _addresses[1] = _v.governor;
-    _addresses[2] = _v.bridgeVoter;
-    require(!AddressArrayUtils.hasDuplicate(_addresses), "RoninTrustedOrganization: three addresses must be distinct");
+    _sanityCheckTrustedOrganizationData(_v);
 
     if (_consensusWeight[_v.consensusAddr] > 0) {
       revert(
@@ -330,7 +324,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    *
    */
   function _updateTrustedOrganization(TrustedOrganization memory _v) internal virtual {
-    require(_v.weight > 0, "RoninTrustedOrganization: invalid weight");
+    _sanityCheckTrustedOrganizationData(_v);
 
     uint256 _weight = _consensusWeight[_v.consensusAddr];
     if (_weight == 0) {
@@ -437,5 +431,22 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
     _num = _numerator;
     _denom = _denominator;
     emit ThresholdUpdated(_nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+  }
+
+  /**
+   * @dev Hook that checks trusted organization's data. Reverts if the requirements are not met.
+   *
+   * Requirements:
+   * - The weight must be larger than 0.
+   * - The consensus address, governor address, and bridge voter address are different.
+   */
+  function _sanityCheckTrustedOrganizationData(TrustedOrganization memory _v) private pure {
+    require(_v.weight > 0, "RoninTrustedOrganization: invalid weight");
+
+    address[] memory _addresses = new address[](3);
+    _addresses[0] = _v.consensusAddr;
+    _addresses[1] = _v.governor;
+    _addresses[2] = _v.bridgeVoter;
+    require(!AddressArrayUtils.hasDuplicate(_addresses), "RoninTrustedOrganization: three addresses must be distinct");
   }
 }
