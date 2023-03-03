@@ -104,6 +104,7 @@ const config: HardhatUserConfig = {
     'ronin-testnet': testnet,
     'ronin-mainnet': mainnet,
     goerli,
+    'goerli-for-devnet': goerli,
   },
   gasReporter: {
     enabled: REPORT_GAS ? true : false,

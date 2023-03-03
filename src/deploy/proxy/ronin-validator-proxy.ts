@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { roninValidatorSetConf, generalRoninConf, roninchainNetworks } from '../../config';
+import { roninValidatorSetConf, generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { verifyAddress } from '../../script/verify-address';
 import { RoninValidatorSet__factory } from '../../types';
 

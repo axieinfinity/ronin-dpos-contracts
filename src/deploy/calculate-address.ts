@@ -1,7 +1,7 @@
 import { ethers, network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { generalRoninConf, roninchainNetworks, mainchainNetworks, generalMainchainConf } from '../config';
+import { generalRoninConf, roninchainNetworks, mainchainNetworks, generalMainchainConf } from '../configs/config';
 import { Network } from '../utils';
 
 const calculateAddress = (from: string, nonce: number) => ({

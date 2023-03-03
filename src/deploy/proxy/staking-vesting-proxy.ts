@@ -2,7 +2,7 @@ import { BigNumber } from 'ethers';
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { generalRoninConf, roninchainNetworks, stakingVestingConfig } from '../../config';
+import { generalRoninConf, roninchainNetworks, stakingVestingConfig } from '../../configs/config';
 import { verifyAddress } from '../../script/verify-address';
 import { StakingVesting__factory } from '../../types';
 

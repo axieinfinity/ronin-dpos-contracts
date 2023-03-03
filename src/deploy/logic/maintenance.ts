@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { roninchainNetworks } from '../../config';
+import { roninchainNetworks } from '../../configs/config';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
