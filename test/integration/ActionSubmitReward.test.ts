@@ -218,7 +218,7 @@ describe('[Integration] Submit Block Reward', () => {
     });
 
     it('Should the StakingContract not emit event of recording reward', async () => {
-      expect(submitRewardTx).not.to.emit(stakingContract, 'PendingPoolUpdated');
+      await expect(submitRewardTx).not.to.emit(stakingContract, 'PoolsUpdated');
     });
   });
 });
