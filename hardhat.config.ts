@@ -6,6 +6,7 @@ import 'hardhat-gas-reporter';
 import '@nomicfoundation/hardhat-chai-matchers';
 import 'hardhat-contract-sizer';
 import '@axieinfinity/hardhat-4byte-uploader';
+import 'hardhat-storage-layout';
 
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, NetworkUserConfig, SolcUserConfig } from 'hardhat/types';

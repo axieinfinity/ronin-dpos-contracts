@@ -205,9 +205,11 @@ abstract contract CoinbaseExecution is
         _cannotBailoutUntilBlock[_validator]
       );
 
+      _slashIndicatorContract.execSlashBridgeOperator(_validator, 2, _period);
       emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, true, true);
     } else if (_missedRatio > _ratioTier1) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
+      _slashIndicatorContract.execSlashBridgeOperator(_validator, 1, _period);
       emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, false, true);
     } else if (_totalBallots > 0) {
       _bridgeOperatingReward[_validator] = (_totalBridgeReward * _validatorBallots) / _totalBallots;
