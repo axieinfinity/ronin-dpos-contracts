@@ -90,7 +90,7 @@ describe('[Integration] Bridge Tracking test', () => {
 
     // Deploys DPoS contracts
     const { roninGovernanceAdminAddress, stakingContractAddress, validatorContractAddress, bridgeTrackingAddress } =
-      await initTest('BridgeTracking')({
+      await initTest('ActionBridgeTracking')({
         bridgeContract: bridgeContract.address,
         roninTrustedOrganizationArguments: {
           trustedOrganizations: trustedOrgs.map((v) => ({
