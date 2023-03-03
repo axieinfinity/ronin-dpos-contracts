@@ -50,6 +50,8 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function checkMiningRewardDeprecated(address[] calldata) external view override returns (bool[] memory) {}
 
+  function checkBridgeRewardDeprecated(address _consensusAddr) external view returns (bool _result) {}
+
   function epochOf(uint256 _block) external view override returns (uint256) {}
 
   function getValidators() external view override returns (address[] memory) {}
