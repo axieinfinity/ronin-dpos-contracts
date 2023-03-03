@@ -66,7 +66,7 @@ abstract contract SlashBridgeVoting is
    */
   function _setBridgeVotingSlashingConfigs(uint256 _threshold, uint256 _slashAmount) internal {
     _bridgeVotingThreshold = _threshold;
-    _slashAmount = _bridgeVotingSlashAmount;
+    _bridgeVotingSlashAmount = _slashAmount;
     emit BridgeVotingSlashingConfigsUpdated(_threshold, _slashAmount);
   }
 }
