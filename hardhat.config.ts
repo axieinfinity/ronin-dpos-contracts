@@ -46,7 +46,7 @@ const devnet: NetworkUserConfig = {
 
 const testnet: NetworkUserConfig = {
   chainId: 2021,
-  url: TESTNET_URL || 'https://testnet.skymavis.one/rpc',
+  url: TESTNET_URL || 'https://saigon-testnet.roninchain.com/rpc',
   accounts: TESTNET_PK ? [TESTNET_PK] : { mnemonic: DEFAULT_MNEMONIC },
   blockGasLimit: 100000000,
 };
