@@ -191,7 +191,7 @@ abstract contract CoinbaseExecution is
 
     uint256 _votedRatio = (_validatorBallots * _MAX_PERCENTAGE) / _totalVotes;
     uint256 _missedRatio = _MAX_PERCENTAGE - _votedRatio;
-    if (_missedRatio > _ratioTier2) {
+    if (_missedRatio >= _ratioTier2) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
 
@@ -207,7 +207,7 @@ abstract contract CoinbaseExecution is
 
       _slashIndicatorContract.execSlashBridgeOperator(_validator, 2, _period);
       emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, true, true);
-    } else if (_missedRatio > _ratioTier1) {
+    } else if (_missedRatio >= _ratioTier1) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _slashIndicatorContract.execSlashBridgeOperator(_validator, 1, _period);
       emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, false, true);
