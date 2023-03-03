@@ -8,11 +8,6 @@ import "../extensions/collections/HasValidatorContract.sol";
 import "../interfaces/IBridgeTracking.sol";
 
 contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializable, IBridgeTracking {
-  struct Request {
-    VoteKind kind;
-    uint256 id;
-  }
-
   struct PeriodVotingMetric {
     uint256 __deprecated;
     uint256 totalBallots;
