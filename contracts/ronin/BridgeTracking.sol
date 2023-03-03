@@ -125,7 +125,6 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
       uint256 _currentPeriod = _validatorContract.currentPeriod();
       _receiptInfo.approvedPeriod = _currentPeriod;
 
-      _bufferMetric.data.__deprecated++;
       Request storage _bufferRequest = _bufferMetric.data.requests.push();
       _bufferRequest.kind = _kind;
       _bufferRequest.id = _requestId;
