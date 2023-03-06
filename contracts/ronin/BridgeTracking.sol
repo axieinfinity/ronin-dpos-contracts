@@ -22,7 +22,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   }
 
   struct ReceiptTrackingInfo {
-    // The period that the receipt is approved
+    // The period that the receipt is approved. Value 0 means the receipt is not approved yet.
     uint256 approvedPeriod;
     // The address list of voters
     address[] voters;
