@@ -9,32 +9,29 @@ import "../interfaces/IBridgeTracking.sol";
 
 contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializable, IBridgeTracking {
   struct PeriodVotingMetric {
-    uint256 __deprecated;
+    /// @dev Total requests that are tracked in the period. This value is 0 until the {_bufferMetric.requests[]} gets added into a period metric.
+    uint256 totalRequests;
     uint256 totalBallots;
     mapping(address => uint256) totalBallotsOf;
     address[] voters;
-    Request[] requests;
   }
 
   struct PeriodVotingMetricTimeWrapper {
     uint256 lastEpoch;
+    Request[] requests;
     PeriodVotingMetric data;
   }
 
   struct ReceiptTrackingInfo {
-    // The period that the receipt is approved. Value 0 means the receipt is not approved yet.
+    /// @dev The period that the receipt is approved. Value 0 means the receipt is not approved yet.
     uint256 approvedPeriod;
-    // The address list of voters
+    /// @dev The address list of voters
     address[] voters;
-    // Mapping from voter => flag indicating the voter casts vote for this receipt
+    /// @dev Mapping from voter => flag indicating the voter casts vote for this receipt
     mapping(address => bool) voted;
-    // The period that the receipt is tracked, i.e. the metric is transferred from buffer to the period.
-    // Value 0 means the receipt is currently in buffer or not tracked yet.
+    /// @dev The period that the receipt is tracked, i.e. the metric is transferred from buffer to the period. Value 0 means the receipt is currently in buffer or not tracked yet.
     uint256 trackedPeriod;
   }
-
-  /// @dev Deprecated slots.
-  uint256[6] private __deprecated;
 
   /// @dev The block that the contract allows incoming mutable calls.
   uint256 public startedAtBlock;
@@ -74,9 +71,9 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
    * @inheritdoc IBridgeTracking
    */
   function totalVotes(uint256 _period) external view override returns (uint256 _totalVotes) {
-    _totalVotes = _periodMetric[_period].requests.length;
+    _totalVotes = _periodMetric[_period].totalRequests;
     if (_isBufferCountedForPeriod(_period)) {
-      _totalVotes += _bufferMetric.data.requests.length;
+      _totalVotes += _bufferMetric.requests.length;
     }
   }
 
@@ -125,7 +122,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
       uint256 _currentPeriod = _validatorContract.currentPeriod();
       _receiptInfo.approvedPeriod = _currentPeriod;
 
-      Request storage _bufferRequest = _bufferMetric.data.requests.push();
+      Request storage _bufferRequest = _bufferMetric.requests.push();
       _bufferRequest.kind = _kind;
       _bufferRequest.id = _requestId;
 
@@ -210,10 +207,10 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   }
 
   /**
-   * @dev Syncs period stats. Move all data from the buffer metric to a new period metric.
+   * @dev Syncs period stats. Move all data from the buffer metric to the period metric.
    *
    * Requirements:
-   * - The buffer epoch + 1 is already wrapped up.
+   * - The epoch after the buffer epoch is wrapped up.
    */
   function _trySyncBuffer() internal {
     uint256 _currentEpoch = _validatorContract.epochOf(block.number);
@@ -221,25 +218,26 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
       (, uint256 _trackedPeriod) = _validatorContract.tryGetPeriodOfEpoch(_bufferMetric.lastEpoch + 1);
       _bufferMetric.lastEpoch = _currentEpoch;
 
+      // Copy numbers of totals
       PeriodVotingMetric storage _metric = _periodMetric[_trackedPeriod];
+      _metric.totalRequests += _bufferMetric.requests.length;
       _metric.totalBallots += _bufferMetric.data.totalBallots;
 
+      // Copy voters info and voters' ballot
       for (uint _i = 0; _i < _bufferMetric.data.voters.length; _i++) {
         address _voter = _bufferMetric.data.voters[_i];
         _metric.totalBallotsOf[_voter] += _bufferMetric.data.totalBallotsOf[_voter];
         delete _bufferMetric.data.totalBallotsOf[_voter]; // need to manually delete each element, due to mapping
       }
 
-      for (uint _i = 0; _i < _bufferMetric.data.requests.length; _i++) {
-        Request storage _bufferRequest = _bufferMetric.data.requests[_i];
-        Request storage _metricRequest = _metric.requests.push();
-        _metricRequest.kind = _bufferRequest.kind;
-        _metricRequest.id = _bufferRequest.id;
-
-        ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_metricRequest.kind][_metricRequest.id];
+      // Mark all receipts in the buffer as tracked. Keep total number of receipts and delete details.
+      for (uint _i = 0; _i < _bufferMetric.requests.length; _i++) {
+        Request storage _bufferRequest = _bufferMetric.requests[_i];
+        ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_bufferRequest.kind][_bufferRequest.id];
         _receiptInfo.trackedPeriod = _trackedPeriod;
       }
 
+      delete _bufferMetric.requests;
       delete _bufferMetric.data;
     }
   }
