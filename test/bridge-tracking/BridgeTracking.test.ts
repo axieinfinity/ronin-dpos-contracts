@@ -49,7 +49,7 @@ const numerator = 2;
 const denominator = 4;
 const numberOfBlocksInEpoch = 600;
 
-describe('[Integration] Bridge Tracking test', () => {
+describe('Bridge Tracking test', () => {
   before(async () => {
     [deployer, coinbase, ...signers] = await ethers.getSigners();
     candidates = createManyValidatorCandidateAddressSets(signers.slice(0, maxValidatorNumber * 3));
