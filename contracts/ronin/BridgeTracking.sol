@@ -221,11 +221,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   function _trySyncBuffer() internal {
     uint256 _currentEpoch = _validatorContract.epochOf(block.number);
     if (_bufferMetric.lastEpoch < _currentEpoch) {
-      (bool _filled, uint256 _currentPeriod) = _validatorContract.tryGetPeriodOfEpoch(_bufferMetric.lastEpoch + 1);
-      if (!_filled) {
-        return;
-      }
-
+      (, uint256 _currentPeriod) = _validatorContract.tryGetPeriodOfEpoch(_bufferMetric.lastEpoch + 1);
       _bufferMetric.lastEpoch = _currentEpoch;
 
       PeriodVotingMetric storage _metric = _periodMetric[_currentPeriod];
