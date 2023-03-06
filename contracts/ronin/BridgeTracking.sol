@@ -218,10 +218,10 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   function _trySyncBuffer() internal {
     uint256 _currentEpoch = _validatorContract.epochOf(block.number);
     if (_bufferMetric.lastEpoch < _currentEpoch) {
-      (, uint256 _currentPeriod) = _validatorContract.tryGetPeriodOfEpoch(_bufferMetric.lastEpoch + 1);
+      (, uint256 _trackedPeriod) = _validatorContract.tryGetPeriodOfEpoch(_bufferMetric.lastEpoch + 1);
       _bufferMetric.lastEpoch = _currentEpoch;
 
-      PeriodVotingMetric storage _metric = _periodMetric[_currentPeriod];
+      PeriodVotingMetric storage _metric = _periodMetric[_trackedPeriod];
       _metric.totalBallots += _bufferMetric.data.totalBallots;
 
       for (uint _i = 0; _i < _bufferMetric.data.voters.length; _i++) {
@@ -237,7 +237,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
         _metricRequest.id = _bufferRequest.id;
 
         ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_metricRequest.kind][_metricRequest.id];
-        _receiptInfo.trackedPeriod = _currentPeriod;
+        _receiptInfo.trackedPeriod = _trackedPeriod;
       }
 
       delete _bufferMetric.data;
