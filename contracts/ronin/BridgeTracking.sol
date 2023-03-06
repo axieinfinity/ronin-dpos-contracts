@@ -190,9 +190,6 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
     // If the receipt is tracked in the most current tracked period, increase metric in the period.
     else if (_trackedPeriod == _currentPeriod) {
       PeriodVotingMetric storage _metric = _periodMetric[_trackedPeriod];
-      if (_metric.totalBallotsOf[_operator] == 0) {
-        _metric.voters.push(_operator);
-      }
       _metric.totalBallots++;
       _metric.totalBallotsOf[_operator]++;
     }
