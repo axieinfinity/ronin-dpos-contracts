@@ -7,17 +7,21 @@ interface IMaintenance {
     uint256 from;
     uint256 to;
     uint256 lastUpdatedBlock;
+    uint256 requestTimestamp;
   }
 
   /// @dev Emitted when a maintenance is scheduled.
   event MaintenanceScheduled(address indexed consensusAddr, Schedule);
+  /// @dev Emitted when a schedule of maintenance is cancelled.
+  event MaintenanceScheduleCancelled(address indexed consensusAddr);
   /// @dev Emitted when the maintenance config is updated.
   event MaintenanceConfigUpdated(
     uint256 minMaintenanceDurationInBlock,
     uint256 maxMaintenanceDurationInBlock,
     uint256 minOffsetToStartSchedule,
     uint256 maxOffsetToStartSchedule,
-    uint256 maxSchedules
+    uint256 maxSchedules,
+    uint256 cooldownSecsToMaintain
   );
 
   /**
@@ -54,6 +58,11 @@ interface IMaintenance {
   function checkScheduled(address _consensusAddr) external view returns (bool);
 
   /**
+   * @dev Returns whether the validator `_consensusAddr`
+   */
+  function checkCooldownEnds(address _consensusAddr) external view returns (bool);
+
+  /**
    * @dev Returns the detailed schedule of the validator `_consensusAddr`.
    */
   function getSchedule(address _consensusAddr) external view returns (Schedule memory);
@@ -79,7 +88,8 @@ interface IMaintenance {
     uint256 _maxMaintenanceDurationInBlock,
     uint256 _minOffsetToStartSchedule,
     uint256 _maxOffsetToStartSchedule,
-    uint256 _maxSchedules
+    uint256 _maxSchedules,
+    uint256 _cooldownSecsToMaintain
   ) external;
 
   /**
@@ -129,4 +139,16 @@ interface IMaintenance {
     uint256 _startedAtBlock,
     uint256 _endedAtBlock
   ) external;
+
+  /**
+   * @dev Cancel the schedule of maintenance for the `_consensusAddr`.
+   *
+   * Requirements:
+   * - The candidate `_consensusAddr` is the block producer.
+   * - The method caller is candidate admin of the candidate `_consensusAddr`.
+   * - A schedule for the `_consensusAddr` must be existent and not executed yet.
+   *
+   * Emits the event `MaintenanceScheduleCancelled`.
+   */
+  function cancelSchedule(address _consensusAddr) external;
 }

@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { roninchainNetworks, generalRoninConf, roninGovernanceAdminConf } from '../config';
+import { roninchainNetworks, generalRoninConf, roninGovernanceAdminConf } from '../configs/config';
 import { verifyAddress } from '../script/verify-address';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {

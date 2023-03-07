@@ -6,6 +6,7 @@ import 'hardhat-gas-reporter';
 import '@nomicfoundation/hardhat-chai-matchers';
 import 'hardhat-contract-sizer';
 import '@axieinfinity/hardhat-4byte-uploader';
+import 'hardhat-storage-layout';
 
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, NetworkUserConfig, SolcUserConfig } from 'hardhat/types';
@@ -45,7 +46,7 @@ const devnet: NetworkUserConfig = {
 
 const testnet: NetworkUserConfig = {
   chainId: 2021,
-  url: TESTNET_URL || 'https://testnet.skymavis.one/rpc',
+  url: TESTNET_URL || 'https://saigon-testnet.roninchain.com/rpc',
   accounts: TESTNET_PK ? [TESTNET_PK] : { mnemonic: DEFAULT_MNEMONIC },
   blockGasLimit: 100000000,
 };
@@ -103,10 +104,14 @@ const config: HardhatUserConfig = {
     'ronin-testnet': testnet,
     'ronin-mainnet': mainnet,
     goerli,
+    'goerli-for-devnet': goerli,
   },
   gasReporter: {
     enabled: REPORT_GAS ? true : false,
     showTimeSpent: true,
+  },
+  mocha: {
+    timeout: 100000, // 100s
   },
 };
 

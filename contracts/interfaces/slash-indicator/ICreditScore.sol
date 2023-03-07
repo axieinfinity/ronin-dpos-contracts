@@ -10,10 +10,10 @@ interface ICreditScore {
     uint256 bailOutCostMultiplier,
     uint256 cutOffPercentageAfterBailout
   );
-  /// @dev Emitted the credit score of validators is updated
+  /// @dev Emitted the credit score of validators is updated.
   event CreditScoresUpdated(address[] validators, uint256[] creditScores);
-  /// @dev Emitted when a validator bailed out of jail
-  event BailedOut(address indexed validator, uint256 period);
+  /// @dev Emitted when a validator bailed out of jail.
+  event BailedOut(address indexed validator, uint256 period, uint256 usedCreditScore);
 
   /**
    * @dev Updates the credit score for the validators.
@@ -26,6 +26,18 @@ interface ICreditScore {
    *
    */
   function updateCreditScores(address[] calldata _validators, uint256 _period) external;
+
+  /**
+   * @dev Resets the credit score for the revoked validators.
+   *
+   * Requirements:
+   * - Only validator contract can call this method.
+   * - This method is only called at the end of each period.
+   *
+   * Emits the event `CreditScoresUpdated`.
+   *
+   */
+  function execResetCreditScores(address[] calldata _validators) external;
 
   /**
    * @dev A slashed validator use this method to get out of jail.

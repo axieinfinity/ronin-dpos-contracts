@@ -7,6 +7,8 @@ import "./IRewardPool.sol";
 interface ICandidateStaking is IRewardPool {
   /// @dev Emitted when the minimum staking amount for being a validator is updated.
   event MinValidatorStakingAmountUpdated(uint256 threshold);
+  /// @dev Emitted when the max commission rate is updated.
+  event MaxCommissionRateUpdated(uint256 maxRate);
 
   /// @dev Emitted when the pool admin staked for themself.
   event Staked(address indexed consensuAddr, uint256 amount);
@@ -46,11 +48,18 @@ interface ICandidateStaking is IRewardPool {
   error ErrInsufficientStakingAmount();
   /// @dev Error of unstaking too early.
   error ErrUnstakeTooEarly();
+  /// @dev Error of setting commission rate exceeds max allowed.
+  error ErrInvalidCommissionRate();
 
   /**
    * @dev Returns the minimum threshold for being a validator candidate.
    */
   function minValidatorStakingAmount() external view returns (uint256);
+
+  /**
+   * @dev Returns the max commission rate that the candidate can set.
+   */
+  function maxCommissionRate() external view returns (uint256);
 
   /**
    * @dev Sets the minimum threshold for being a validator candidate.
@@ -62,6 +71,17 @@ interface ICandidateStaking is IRewardPool {
    *
    */
   function setMinValidatorStakingAmount(uint256) external;
+
+  /**
+   * @dev Sets the max commission rate that a candidate can set.
+   *
+   * Requirements:
+   * - The method caller is admin.
+   *
+   * Emits the `MaxCommissionRateUpdated` event.
+   *
+   */
+  function setMaxCommissionRate(uint256 _maxRate) external;
 
   /**
    * @dev Proposes a candidate to become a validator.
@@ -98,7 +118,7 @@ interface ICandidateStaking is IRewardPool {
    * Emits the event `StakingAmountTransferFailed` if the contract cannot transfer RON back to the pool admin.
    *
    */
-  function deprecatePools(address[] calldata _pools) external;
+  function execDeprecatePools(address[] calldata _pools, uint256 _period) external;
 
   /**
    * @dev Self-delegates to the validator candidate `_consensusAddr`.

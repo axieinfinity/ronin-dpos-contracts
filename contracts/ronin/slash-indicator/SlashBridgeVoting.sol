@@ -38,14 +38,19 @@ abstract contract SlashBridgeVoting is
     if (block.number - _lastVotedBlock > _bridgeVotingThreshold && !_bridgeVotingSlashed[_consensusAddr][_period]) {
       _bridgeVotingSlashed[_consensusAddr][_period] = true;
       emit Slashed(_consensusAddr, SlashType.BRIDGE_VOTING, _period);
-      _validatorContract.execSlash(_consensusAddr, 0, _bridgeVotingSlashAmount);
+      _validatorContract.execSlash(_consensusAddr, 0, _bridgeVotingSlashAmount, false);
     }
   }
 
   /**
    * @inheritdoc ISlashBridgeVoting
    */
-  function getBridgeVotingSlashingConfigs() external view override returns (uint256, uint256) {
+  function getBridgeVotingSlashingConfigs()
+    external
+    view
+    override
+    returns (uint256 bridgeVotingThreshold_, uint256 bridgeVotingSlashAmount_)
+  {
     return (_bridgeVotingThreshold, _bridgeVotingSlashAmount);
   }
 
@@ -61,7 +66,7 @@ abstract contract SlashBridgeVoting is
    */
   function _setBridgeVotingSlashingConfigs(uint256 _threshold, uint256 _slashAmount) internal {
     _bridgeVotingThreshold = _threshold;
-    _slashAmount = _bridgeVotingSlashAmount;
+    _bridgeVotingSlashAmount = _slashAmount;
     emit BridgeVotingSlashingConfigsUpdated(_threshold, _slashAmount);
   }
 }

@@ -13,8 +13,9 @@
     "docgen": "solidity-docgen -t templates/docs -H templates/docs/helper.js -i contracts -e contracts/mocks -o docs --solc-module solc-0.8",
     "prepare": "husky install",
     "build": "hardhat compile && tsc -p tsconfig.build.json",
-    "plugin:size-contract": "hardhat size-contracts",
-    "plugin:upload-selectors": "hardhat upload-selectors"
+    "plugin:size-contracts": "hardhat size-contracts",
+    "plugin:upload-selectors": "hardhat upload-selectors",
+    "plugin:storage-layout": "hardhat check"
   },
   "lint-staged": {
     "contracts/**/*.sol": "prettier --write",
@@ -22,7 +23,7 @@
     "hardhat.config.{js,ts}": "prettier --write"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.6.0"
+    "@openzeppelin/contracts": "4.7.3"
   },
   "devDependencies": {
     "@axieinfinity/hardhat-4byte-uploader": "^1.0.0",
@@ -41,6 +42,7 @@
     "hardhat-contract-sizer": "^2.6.1",
     "hardhat-deploy": "^0.9.14",
     "hardhat-gas-reporter": "^1.0.8",
+    "hardhat-storage-layout": "^0.1.7",
     "husky": "^7.0.4",
     "lint-staged": ">=10",
     "prettier": "^2.5.1",

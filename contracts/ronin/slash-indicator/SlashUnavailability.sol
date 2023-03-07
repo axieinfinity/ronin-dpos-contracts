@@ -12,16 +12,22 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
   /// @dev Mapping from validator address => period index => unavailability indicator.
   mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
 
-  /// @dev The mining reward will be deprecated, if (s)he missed more than this threshold.
+  /**
+   * @dev The mining reward will be deprecated, if (s)he missed more than this threshold.
+   * This threshold is applied for tier-1 and tier-3 of unavailability slash.
+   */
   uint256 internal _unavailabilityTier1Threshold;
   /**
    * @dev The mining reward will be deprecated, (s)he will be put in jailed, and will be deducted
-   * self-staking if (s)he misses more than this threshold.
+   * self-staking if (s)he misses more than this threshold. This threshold is applied for tier-2 slash.
    */
   uint256 internal _unavailabilityTier2Threshold;
-  /// @dev The amount of RON to deduct from self-staking of a block producer when (s)he is slashed tier-2.
+  /**
+   * @dev The amount of RON to deduct from self-staking of a block producer when (s)he is slashed with
+   * tier-2 or tier-3.
+   **/
   uint256 internal _slashAmountForUnavailabilityTier2Threshold;
-  /// @dev The number of blocks to jail a block producer when (s)he is slashed tier-2.
+  /// @dev The number of blocks to jail a block producer when (s)he is slashed with tier-2 or tier-3.
   uint256 internal _jailDurationForUnavailabilityTier2Threshold;
 
   /**
@@ -45,6 +51,7 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
   function slashUnavailability(address _validatorAddr) external override oncePerBlock {
     require(msg.sender == block.coinbase, "SlashUnavailability: method caller must be coinbase");
     if (!_shouldSlash(_validatorAddr)) {
+      // Should return instead of throwing error since this is a part of system transaction.
       return;
     }
 
@@ -56,11 +63,25 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
       _validatorContract.execSlash(
         _validatorAddr,
         block.number + _jailDurationForUnavailabilityTier2Threshold,
-        _slashAmountForUnavailabilityTier2Threshold
+        _slashAmountForUnavailabilityTier2Threshold,
+        false
       );
     } else if (_count == _unavailabilityTier1Threshold) {
-      emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_1, _period);
-      _validatorContract.execSlash(_validatorAddr, 0, 0);
+      bool _tier1SecondTime = checkBailedOutAtPeriod(_validatorAddr, _period);
+      if (!_tier1SecondTime) {
+        emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_1, _period);
+        _validatorContract.execSlash(_validatorAddr, 0, 0, false);
+      } else {
+        /// Handles tier-3
+        emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_3, _period);
+        uint256 _jailedUntilBlock = block.number + _jailDurationForUnavailabilityTier2Threshold;
+        _validatorContract.execSlash(
+          _validatorAddr,
+          _jailedUntilBlock,
+          _slashAmountForUnavailabilityTier2Threshold,
+          true
+        );
+      }
     }
   }
 
@@ -89,10 +110,10 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
     view
     override
     returns (
-      uint256,
-      uint256,
-      uint256,
-      uint256
+      uint256 unavailabilityTier1Threshold_,
+      uint256 unavailabilityTier2Threshold_,
+      uint256 slashAmountForUnavailabilityTier2Threshold_,
+      uint256 jailDurationForUnavailabilityTier2Threshold_
     )
   {
     return (
@@ -160,4 +181,9 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
    * @dev Returns whether the account `_addr` should be slashed or not.
    */
   function _shouldSlash(address _addr) internal view virtual returns (bool);
+
+  /**
+   * @dev See `ICreditScore-checkBailedOutAtPeriod`
+   */
+  function checkBailedOutAtPeriod(address _validator, uint256 _period) public view virtual returns (bool);
 }

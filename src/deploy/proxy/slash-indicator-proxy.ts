@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { slashIndicatorConf, generalRoninConf, roninchainNetworks } from '../../config';
+import { slashIndicatorConf, generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { verifyAddress } from '../../script/verify-address';
 import { SlashIndicator__factory } from '../../types';
 
@@ -33,6 +33,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     [
       slashIndicatorConf[network.name]!.doubleSignSlashing?.slashDoubleSignAmount,
       slashIndicatorConf[network.name]!.doubleSignSlashing?.doubleSigningJailUntilBlock,
+      slashIndicatorConf[network.name]!.doubleSignSlashing?.doubleSigningOffsetLimitBlock,
     ],
     [
       slashIndicatorConf[network.name]!.unavailabilitySlashing?.unavailabilityTier1Threshold,

@@ -39,6 +39,7 @@ let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 
 let localEpochController: EpochController;
+let snapshotId: string;
 
 const unavailabilityTier1Threshold = 50;
 const unavailabilityTier2Threshold = 150;
@@ -49,6 +50,8 @@ const minMaintenanceDurationInBlock = 100;
 const maxMaintenanceDurationInBlock = 1000;
 const minOffsetToStartSchedule = 200;
 const maxOffsetToStartSchedule = 200 * 7;
+const cooldownDaysToMaintain = 2;
+const cooldownSecsToMaintain = 86400 * cooldownDaysToMaintain;
 
 let startedAtBlock: BigNumberish = 0;
 let endedAtBlock: BigNumberish = 0;
@@ -85,6 +88,7 @@ describe('Maintenance test', () => {
         maxOffsetToStartSchedule,
         minMaintenanceDurationInBlock,
         maxMaintenanceDurationInBlock,
+        cooldownSecsToMaintain,
       },
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
@@ -336,13 +340,93 @@ describe('Maintenance test', () => {
       expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
     });
 
-    it('Should be able to schedule again in current period when the previous maintenance is done', async () => {
+    it('Should not be able to schedule again when cooldown time is not over', async () => {
+      currentBlock = (await ethers.provider.getBlockNumber()) + 1;
+      startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
+      endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock);
+      await expect(
+        maintenanceContract
+          .connect(validatorCandidates[0].candidateAdmin)
+          .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
+      ).revertedWith('Maintainance: cooldown time not end');
+    });
+
+    it('Should be able to schedule again in current period when the previous maintenance is done, and the cooldown time is over', async () => {
+      for (let i = 0; i < cooldownDaysToMaintain; i++) {
+        await localEpochController.mineToBeforeEndOfEpoch();
+        await EpochController.setTimestampToPeriodEnding();
+        await validatorContract.connect(coinbase).wrapUpEpoch();
+      }
+
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
       endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock);
       await maintenanceContract
         .connect(validatorCandidates[0].candidateAdmin)
         .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock);
+    });
+  });
+
+  describe('Cancel schedule test', () => {
+    it('Should non-admin not be able to cancel the schedule', async () => {
+      await expect(
+        maintenanceContract
+          .connect(validatorCandidates[1].candidateAdmin)
+          .cancelSchedule(validatorCandidates[0].consensusAddr.address)
+      ).revertedWith('Maintenance: method caller must be the candidate admin');
+    });
+
+    it('Should the admin not be able to cancel the schedule when maintenance starts', async () => {
+      snapshotId = await network.provider.send('evm_snapshot');
+      await localEpochController.mineToBeforeEndOfEpoch();
+      await validatorContract.connect(coinbase).wrapUpEpoch();
+
+      await expect(
+        maintenanceContract
+          .connect(validatorCandidates[0].candidateAdmin)
+          .cancelSchedule(validatorCandidates[0].consensusAddr.address)
+      ).revertedWith('Maintenance: already on maintenance');
+
+      await network.provider.send('evm_revert', [snapshotId]);
+    });
+
+    it('Should the admin be able to cancel the schedule', async () => {
+      let _totalSchedules = await maintenanceContract.totalSchedules();
+
+      let tx = await maintenanceContract
+        .connect(validatorCandidates[0].candidateAdmin)
+        .cancelSchedule(validatorCandidates[0].consensusAddr.address);
+
+      await expect(tx)
+        .emit(maintenanceContract, 'MaintenanceScheduleCancelled')
+        .withArgs(validatorCandidates[0].consensusAddr.address);
+
+      expect(_totalSchedules.sub(await maintenanceContract.totalSchedules())).eq(1);
+      let _cancelledSchedule = await maintenanceContract.getSchedule(validatorCandidates[0].consensusAddr.address);
+      expect(_cancelledSchedule.from).eq(0);
+      expect(_cancelledSchedule.to).eq(0);
+      expect(_cancelledSchedule.lastUpdatedBlock).eq(tx.blockNumber);
+    });
+
+    it('Should the admin not be able to cancel the schedule again', async () => {
+      await expect(
+        maintenanceContract
+          .connect(validatorCandidates[0].candidateAdmin)
+          .cancelSchedule(validatorCandidates[0].consensusAddr.address)
+      ).revertedWith('Maintenance: no schedule exists');
+    });
+
+    it('Should the validator not on maintenance mode when the from-block of the cancelled schedule comes', async () => {
+      await localEpochController.mineToBeforeEndOfEpoch();
+      let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
+      let expectingBlockProducerSet = validatorCandidates.map((_) => _.consensusAddr.address);
+      await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
+        tx!,
+        await validatorContract.currentPeriod(),
+        await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
+        expectingBlockProducerSet
+      );
+      expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.map((_) => _.consensusAddr.address));
     });
   });
 });

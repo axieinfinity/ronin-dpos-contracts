@@ -201,8 +201,8 @@ contract RoninGatewayV2 is
         bytes32 _hash = _withdrawal.hash();
         VoteStatus _status = _castVote(_proposal, _governor, _weight, _minVoteWeight, _hash);
         if (_status == VoteStatus.Approved) {
-          _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.MainchainWithdrawal, _withdrawalId);
           _proposal.status = VoteStatus.Executed;
+          _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.MainchainWithdrawal, _withdrawalId);
           emit MainchainWithdrew(_hash, _withdrawal);
         }
       }
@@ -280,8 +280,8 @@ contract RoninGatewayV2 is
       IsolatedVote storage _proposal = withdrawalStatVote[_id];
       VoteStatus _status = _castVote(_proposal, _validator, _weight, _minVoteWeight, bytes32(_id));
       if (_status == VoteStatus.Approved) {
-        _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, _id);
         _proposal.status = VoteStatus.Executed;
+        _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, _id);
       }
     }
   }
@@ -386,9 +386,9 @@ contract RoninGatewayV2 is
     bytes32 _receiptHash = _receipt.hash();
     VoteStatus _status = _castVote(_proposal, _validator, _weight, _minVoteWeight, _receiptHash);
     if (_status == VoteStatus.Approved) {
-      _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Deposit, _receipt.id);
       _proposal.status = VoteStatus.Executed;
       _receipt.info.handleAssetTransfer(payable(_receipt.ronin.addr), _receipt.ronin.tokenAddr, IWETH(address(0)));
+      _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Deposit, _receipt.id);
       emit Deposited(_receiptHash, _receipt);
     }
   }

@@ -1,13 +1,14 @@
 import { ethers, network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { gatewayAccountSet, namedAddresses } from '../../configs/addresses';
 
-import { generalMainchainConf } from '../../config';
+import { generalMainchainConf, mainchainNetworks } from '../../configs/config';
+import { GatewayThreshold, gatewayThreshold, mainchainMappedToken, roninChainId } from '../../configs/gateway';
 import { verifyAddress } from '../../script/verify-address';
 import { MainchainGatewayV2__factory } from '../../types';
-import { Network } from '../../utils';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
-  if (![Network.Local.toString()].includes(network.name!)) {
+  if (!mainchainNetworks.includes(network.name!)) {
     return;
   }
 
@@ -16,16 +17,30 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const logicContract = await deployments.get('MainchainGatewayV2Logic');
 
+  const weth = namedAddresses['weth'][network.name];
+  const gatewayRoleSetter = namedAddresses['gatewayRoleSetter'][network.name];
+  const withdrawalUnlockers = gatewayAccountSet['withdrawalUnlockers'][network.name];
+  const { numerator, denominator, highTierVoteWeightNumerator } = gatewayThreshold[network.name]! as GatewayThreshold;
+  const {
+    mainchainTokens,
+    roninTokens,
+    standards,
+    highTierThresholds,
+    lockedThresholds,
+    unlockFeePercentages,
+    dailyWithdrawalLimits,
+  } = mainchainMappedToken[network.name]!;
+
   const data = new MainchainGatewayV2__factory().interface.encodeFunctionData('initialize', [
-    ethers.constants.AddressZero,
-    ethers.constants.AddressZero,
-    0,
-    0,
-    0,
-    1,
-    [[], [], []],
-    [[], [], [], []],
-    [],
+    gatewayRoleSetter,
+    weth,
+    roninChainId[network.name],
+    numerator,
+    highTierVoteWeightNumerator,
+    denominator,
+    [mainchainTokens, roninTokens, withdrawalUnlockers],
+    [highTierThresholds, lockedThresholds, unlockFeePercentages, dailyWithdrawalLimits],
+    standards,
   ]);
 
   const deployment = await deploy('MainchainGatewayV2Proxy', {
@@ -34,6 +49,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     log: true,
     args: [logicContract.address, generalMainchainConf[network.name]!.governanceAdmin?.address, data],
   });
+
   verifyAddress(deployment.address, generalMainchainConf[network.name].bridgeContract);
 };
 

@@ -14,7 +14,7 @@ import {
   slashIndicatorConf,
   stakingConfig,
   stakingVestingConfig,
-} from '../../src/config';
+} from '../../src/configs/config';
 import {
   RoninGovernanceAdminArguments,
   MainchainGovernanceAdminArguments,
@@ -64,10 +64,12 @@ export const defaultTestConfig: InitTestInput = {
     minOffsetToStartSchedule: 200,
     maxOffsetToStartSchedule: 200 * 7,
     maxSchedules: 2,
+    cooldownSecsToMaintain: 86400 * 3,
   },
 
   stakingArguments: {
     minValidatorStakingAmount: BigNumber.from(100),
+    maxCommissionRate: 100_00,
     cooldownSecsToUndelegate: 3 * 86400,
     waitingSecsToRevoke: 7 * 86400,
   },
@@ -92,6 +94,7 @@ export const defaultTestConfig: InitTestInput = {
     doubleSignSlashing: {
       slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10),
       doubleSigningJailUntilBlock: ethers.constants.MaxUint256,
+      doubleSigningOffsetLimitBlock: 28800, // ~1 days
     },
     unavailabilitySlashing: {
       unavailabilityTier1Threshold: 5,

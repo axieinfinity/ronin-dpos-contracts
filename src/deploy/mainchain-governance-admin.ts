@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { mainchainGovernanceAdminConf, generalMainchainConf, mainchainNetworks } from '../config';
+import { mainchainGovernanceAdminConf, generalMainchainConf, mainchainNetworks } from '../configs/config';
 import { verifyAddress } from '../script/verify-address';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {

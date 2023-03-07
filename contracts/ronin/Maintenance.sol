@@ -24,6 +24,8 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   uint256 public maxOffsetToStartSchedule;
   /// @dev The max number of scheduled maintenances.
   uint256 public maxSchedules;
+  /// @dev The cooldown time to request new schedule.
+  uint256 public cooldownSecsToMaintain;
 
   constructor() {
     _disableInitializers();
@@ -38,7 +40,8 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     uint256 _maxMaintenanceDurationInBlock,
     uint256 _minOffsetToStartSchedule,
     uint256 _maxOffsetToStartSchedule,
-    uint256 _maxSchedules
+    uint256 _maxSchedules,
+    uint256 _cooldownSecsToMaintain
   ) external initializer {
     _setValidatorContract(__validatorContract);
     _setMaintenanceConfig(
@@ -46,7 +49,8 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
       _maxMaintenanceDurationInBlock,
       _minOffsetToStartSchedule,
       _maxOffsetToStartSchedule,
-      _maxSchedules
+      _maxSchedules,
+      _cooldownSecsToMaintain
     );
   }
 
@@ -58,14 +62,16 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     uint256 _maxMaintenanceDurationInBlock,
     uint256 _minOffsetToStartSchedule,
     uint256 _maxOffsetToStartSchedule,
-    uint256 _maxSchedules
+    uint256 _maxSchedules,
+    uint256 _cooldownSecsToMaintain
   ) external onlyAdmin {
     _setMaintenanceConfig(
       _minMaintenanceDurationInBlock,
       _maxMaintenanceDurationInBlock,
       _minOffsetToStartSchedule,
       _maxOffsetToStartSchedule,
-      _maxSchedules
+      _maxSchedules,
+      _cooldownSecsToMaintain
     );
   }
 
@@ -85,6 +91,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
       "Maintenance: method caller must be a candidate admin"
     );
     require(!checkScheduled(_consensusAddr), "Maintenance: already scheduled");
+    require(checkCooldownEnds(_consensusAddr), "Maintainance: cooldown time not end");
     require(totalSchedules() < maxSchedules, "Maintenance: exceeds total of schedules");
     require(
       _startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule),
@@ -103,13 +110,31 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     _sSchedule.from = _startedAtBlock;
     _sSchedule.to = _endedAtBlock;
     _sSchedule.lastUpdatedBlock = block.number;
+    _sSchedule.requestTimestamp = block.timestamp;
     emit MaintenanceScheduled(_consensusAddr, _sSchedule);
   }
 
   /**
    * @inheritdoc IMaintenance
    */
-  function getSchedule(address _consensusAddr) external view returns (Schedule memory) {
+  function cancelSchedule(address _consensusAddr) external override {
+    require(
+      _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender),
+      "Maintenance: method caller must be the candidate admin"
+    );
+    require(checkScheduled(_consensusAddr), "Maintenance: no schedule exists");
+    require(!checkMaintained(_consensusAddr, block.number), "Maintenance: already on maintenance");
+    Schedule storage _sSchedule = _schedule[_consensusAddr];
+    delete _sSchedule.from;
+    delete _sSchedule.to;
+    _sSchedule.lastUpdatedBlock = block.number;
+    emit MaintenanceScheduleCancelled(_consensusAddr);
+  }
+
+  /**
+   * @inheritdoc IMaintenance
+   */
+  function getSchedule(address _consensusAddr) external view override returns (Schedule memory) {
     return _schedule[_consensusAddr];
   }
 
@@ -157,7 +182,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function checkMaintained(address _consensusAddr, uint256 _block) public view returns (bool) {
+  function checkMaintained(address _consensusAddr, uint256 _block) public view override returns (bool) {
     Schedule storage _s = _schedule[_consensusAddr];
     return _s.from <= _block && _block <= _s.to;
   }
@@ -181,6 +206,13 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   }
 
   /**
+   * @inheritdoc IMaintenance
+   */
+  function checkCooldownEnds(address _consensusAddr) public view override returns (bool) {
+    return block.timestamp > _schedule[_consensusAddr].requestTimestamp + cooldownSecsToMaintain;
+  }
+
+  /**
    * @dev Sets the min block period and max block period to maintenance.
    *
    * Requirements:
@@ -194,7 +226,8 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     uint256 _maxMaintenanceDurationInBlock,
     uint256 _minOffsetToStartSchedule,
     uint256 _maxOffsetToStartSchedule,
-    uint256 _maxSchedules
+    uint256 _maxSchedules,
+    uint256 _cooldownSecsToMaintain
   ) internal {
     require(
       _minMaintenanceDurationInBlock < _maxMaintenanceDurationInBlock,
@@ -209,12 +242,14 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     minOffsetToStartSchedule = _minOffsetToStartSchedule;
     maxOffsetToStartSchedule = _maxOffsetToStartSchedule;
     maxSchedules = _maxSchedules;
+    cooldownSecsToMaintain = _cooldownSecsToMaintain;
     emit MaintenanceConfigUpdated(
       _minMaintenanceDurationInBlock,
       _maxMaintenanceDurationInBlock,
       _minOffsetToStartSchedule,
       _maxOffsetToStartSchedule,
-      _maxSchedules
+      _maxSchedules,
+      _cooldownSecsToMaintain
     );
   }
 

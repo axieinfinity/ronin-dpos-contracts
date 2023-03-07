@@ -81,9 +81,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IsolatedGovernance
         _lastVotedBlock[_signer] = block.number;
         _info.signatureOf[_signer] = _signatures[_i];
         _info.voters.push(_signer);
-        if (_castVote(_v, _signer, _weight, _minimumVoteWeight, _hash) == VoteStatus.Approved) {
-          return;
-        }
+        _castVote(_v, _signer, _weight, _minimumVoteWeight, _hash);
       }
     }
 

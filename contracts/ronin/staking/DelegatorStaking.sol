@@ -82,6 +82,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     poolIsActive(_consensusAddrDst)
     returns (uint256 _amount)
   {
+    if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
     return _delegateRewards(msg.sender, _consensusAddrList, _consensusAddrDst);
   }
 
@@ -166,9 +167,10 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    * @dev Claims rewards from the pools `_poolAddrList`.
    * Note: This function does not transfer reward to user.
    */
-  function _claimRewards(address _user, address[] calldata _poolAddrList) internal returns (uint256 _amount) {
+  function _claimRewards(address _user, address[] memory _poolAddrList) internal returns (uint256 _amount) {
+    uint256 _period = _currentPeriod();
     for (uint256 _i = 0; _i < _poolAddrList.length; _i++) {
-      _amount += _claimReward(_poolAddrList[_i], _user);
+      _amount += _claimReward(_poolAddrList[_i], _user, _period);
     }
   }
 

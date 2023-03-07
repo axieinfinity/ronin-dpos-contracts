@@ -61,6 +61,16 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     emit CreditScoresUpdated(_validators, _updatedCreditScores);
   }
 
+  function execResetCreditScores(address[] calldata _validators) external override onlyValidatorContract {
+    uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
+    for (uint _i = 0; _i < _validators.length; _i++) {
+      address _validator = _validators[_i];
+      delete _creditScore[_validator];
+      delete _updatedCreditScores[_i];
+    }
+    emit CreditScoresUpdated(_validators, _updatedCreditScores);
+  }
+
   /**
    * @inheritdoc ICreditScore
    */
@@ -89,6 +99,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     _creditScore[_consensusAddr] -= _cost;
     _setUnavailabilityIndicator(_consensusAddr, _period, 0);
     _checkBailedOutAtPeriod[_consensusAddr][_period] = true;
+    emit BailedOut(_consensusAddr, _period, _cost);
   }
 
   /**
@@ -116,10 +127,10 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     view
     override
     returns (
-      uint256,
-      uint256,
-      uint256,
-      uint256
+      uint256 gainCreditScore_,
+      uint256 maxCreditScore_,
+      uint256 bailOutCostMultiplier_,
+      uint256 cutOffPercentageAfterBailout_
     )
   {
     return (_gainCreditScore, _maxCreditScore, _bailOutCostMultiplier, _cutOffPercentageAfterBailout);
@@ -151,7 +162,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   /**
    * @inheritdoc ICreditScore
    */
-  function checkBailedOutAtPeriod(address _validator, uint256 _period) external view override returns (bool) {
+  function checkBailedOutAtPeriod(address _validator, uint256 _period) public view virtual override returns (bool) {
     return _checkBailedOutAtPeriod[_validator][_period];
   }
 

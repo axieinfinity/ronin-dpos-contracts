@@ -6,23 +6,25 @@ import "../../../interfaces/validator/info-fragments/IJailingInfo.sol";
 import "./TimingStorage.sol";
 
 abstract contract JailingStorage is IJailingInfo {
-  /// @dev Mapping from consensus address => period number => block producer has no pending reward
+  /// @dev Mapping from consensus address => period number => block producer has no pending reward.
   mapping(address => mapping(uint256 => bool)) internal _miningRewardDeprecatedAtPeriod;
-  /// @dev Mapping from consensus address => period number => whether the block producer get cut off reward, due to bailout
+  /// @dev Mapping from consensus address => period number => whether the block producer get cut off reward, due to bailout.
   mapping(address => mapping(uint256 => bool)) internal _miningRewardBailoutCutOffAtPeriod;
-  /// @dev Mapping from consensus address => period number => block operator has no pending reward
+  /// @dev Mapping from consensus address => period number => block operator has no pending reward.
   mapping(address => mapping(uint256 => bool)) internal _bridgeRewardDeprecatedAtPeriod;
 
-  /// @dev Mapping from consensus address => the last block that the block producer is jailed
+  /// @dev Mapping from consensus address => the last block that the block producer is jailed.
   mapping(address => uint256) internal _blockProducerJailedBlock;
-  /// @dev Mapping from consensus address => the last timestamp that the bridge operator is jailed
+  /// @dev Mapping from consensus address => the last timestamp that the bridge operator is jailed.
   mapping(address => uint256) internal _emergencyExitJailedTimestamp;
+  /// @dev Mapping from consensus address => the last block that the block producer cannot bailout.
+  mapping(address => uint256) internal _cannotBailoutUntilBlock;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[49] private ______gap;
+  uint256[48] private ______gap;
 
   /**
    * @inheritdoc IJailingInfo
@@ -116,6 +118,14 @@ abstract contract JailingStorage is IJailingInfo {
     for (uint256 _i; _i < _blockProducers.length; _i++) {
       _result[_i] = _miningRewardDeprecated(_blockProducers[_i], _period);
     }
+  }
+
+  /**
+   * @inheritdoc IJailingInfo
+   */
+  function checkBridgeRewardDeprecated(address _consensusAddr) external view override returns (bool _result) {
+    uint256 _period = currentPeriod();
+    return _bridgeRewardDeprecated(_consensusAddr, _period);
   }
 
   /**

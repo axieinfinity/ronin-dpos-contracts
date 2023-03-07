@@ -1,10 +1,12 @@
-import { BigNumber, BytesLike, ContractTransaction, Transaction } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 
 import {
+  Maintenance,
+  Maintenance__factory,
   MockRoninValidatorSetOverridePrecompile__factory,
   MockSlashIndicatorExtended,
   MockSlashIndicatorExtended__factory,
@@ -16,6 +18,7 @@ import {
 } from '../../src/types';
 import { initTest } from '../helpers/fixture';
 import { EpochController, expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
+import { expects as CandidateManagerExpects } from '../helpers/candidate-manager';
 import { IndicatorController, ScoreController } from '../helpers/slash';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import { SlashType } from '../../src/script/slash-indicator';
@@ -27,6 +30,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types';
 
+let maintenanceContract: Maintenance;
 let slashContract: MockSlashIndicatorExtended;
 let mockSlashLogic: MockSlashIndicatorExtended;
 let stakingContract: Staking;
@@ -46,6 +50,8 @@ let localIndicatorController: IndicatorController;
 let localScoreController: ScoreController;
 let localEpochController: EpochController;
 
+let snapshotId: string;
+
 const gainCreditScore = 50;
 const maxCreditScore = 600;
 const bailOutCostMultiplier = 5;
@@ -63,13 +69,17 @@ const minOffsetToStartSchedule = 200;
 const blockProducerBonusPerBlock = BigNumber.from(5000);
 const submittedRewardEachBlock = BigNumber.from(60);
 
-const wrapUpEpoch = async () => {
+const waitingSecsToRevoke = 7 * 86400;
+
+const minMaintenanceDurationInBlock = 100;
+
+const wrapUpEpoch = async (): Promise<ContractTransaction> => {
   await localEpochController.mineToBeforeEndOfEpoch();
   await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-  await validatorContract.connect(coinbase).wrapUpEpoch();
+  return await validatorContract.connect(coinbase).wrapUpEpoch();
 };
 
-const endPeriodAndWrapUpAndResetIndicators = async (includingEpochsNum?: number) => {
+const endPeriodAndWrapUpAndResetIndicators = async (includingEpochsNum?: number): Promise<ContractTransaction> => {
   if (includingEpochsNum) {
     expect(includingEpochsNum).gt(0);
   }
@@ -83,13 +93,25 @@ const endPeriodAndWrapUpAndResetIndicators = async (includingEpochsNum?: number)
   return wrapUpTx;
 };
 
-const slashUntilValidatorTier = async (slasherIdx: number, slasheeIdx: number, tier: number) => {
-  if (tier != 1 && tier != 2) {
-    return;
+const slashValidatorUntilTier = async (
+  slasherIdx: number,
+  slasheeIdx: number,
+  slashType: SlashType
+): Promise<ContractTransaction | undefined> => {
+  let _threshold;
+  switch (slashType) {
+    case SlashType.UNAVAILABILITY_TIER_1:
+      _threshold = unavailabilityTier1Threshold;
+      break;
+    case SlashType.UNAVAILABILITY_TIER_2:
+      _threshold = unavailabilityTier2Threshold;
+      break;
+    case SlashType.UNAVAILABILITY_TIER_3:
+      _threshold = unavailabilityTier1Threshold;
+      break;
+    default:
+      return;
   }
-
-  let _threshold = tier == 1 ? unavailabilityTier1Threshold : unavailabilityTier2Threshold;
-  let _slashType = tier == 1 ? SlashType.UNAVAILABILITY_TIER_1 : SlashType.UNAVAILABILITY_TIER_2;
 
   let tx;
   let slasher = validatorCandidates[slasherIdx];
@@ -104,8 +126,9 @@ const slashUntilValidatorTier = async (slasherIdx: number, slasheeIdx: number, t
   }
 
   let period = await validatorContract.currentPeriod();
-  await expect(tx).to.emit(slashContract, 'Slashed').withArgs(slashee.consensusAddr.address, _slashType, period);
+  await expect(tx).to.emit(slashContract, 'Slashed').withArgs(slashee.consensusAddr.address, slashType, period);
   localIndicatorController.setAt(slasheeIdx, _threshold);
+  return tx;
 };
 
 const validateScoreAt = async (idx: number) => {
@@ -127,45 +150,52 @@ describe('Credit score and bail out test', () => {
     trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
     validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, (maxValidatorNumber + 1) * 3));
 
-    const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
-      await initTest('CreditScore')({
-        slashIndicatorArguments: {
-          unavailabilitySlashing: {
-            unavailabilityTier1Threshold,
-            unavailabilityTier2Threshold,
-            slashAmountForUnavailabilityTier2Threshold,
-          },
-          creditScore: {
-            gainCreditScore,
-            maxCreditScore,
-            bailOutCostMultiplier,
-          },
+    const {
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninGovernanceAdminAddress,
+      maintenanceContractAddress,
+    } = await initTest('CreditScore')({
+      slashIndicatorArguments: {
+        unavailabilitySlashing: {
+          unavailabilityTier1Threshold,
+          unavailabilityTier2Threshold,
+          slashAmountForUnavailabilityTier2Threshold,
         },
-        stakingArguments: {
-          minValidatorStakingAmount,
+        creditScore: {
+          gainCreditScore,
+          maxCreditScore,
+          bailOutCostMultiplier,
         },
-        stakingVestingArguments: {
-          blockProducerBonusPerBlock,
-        },
-        roninValidatorSetArguments: {
-          maxValidatorNumber,
-          numberOfBlocksInEpoch,
-          maxValidatorCandidate,
-        },
-        maintenanceArguments: {
-          minOffsetToStartSchedule,
-        },
-        roninTrustedOrganizationArguments: {
-          trustedOrganizations: trustedOrgs.map((v) => ({
-            consensusAddr: v.consensusAddr.address,
-            governor: v.governor.address,
-            bridgeVoter: v.bridgeVoter.address,
-            weight: 100,
-            addedBlock: 0,
-          })),
-        },
-      });
+      },
+      stakingArguments: {
+        minValidatorStakingAmount,
+      },
+      stakingVestingArguments: {
+        blockProducerBonusPerBlock,
+      },
+      roninValidatorSetArguments: {
+        maxValidatorNumber,
+        numberOfBlocksInEpoch,
+        maxValidatorCandidate,
+      },
+      maintenanceArguments: {
+        minOffsetToStartSchedule,
+        minMaintenanceDurationInBlock,
+      },
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: trustedOrgs.map((v) => ({
+          consensusAddr: v.consensusAddr.address,
+          governor: v.governor.address,
+          bridgeVoter: v.bridgeVoter.address,
+          weight: 100,
+          addedBlock: 0,
+        })),
+      },
+    });
 
+    maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetOverridePrecompile__factory.connect(validatorContractAddress, deployer);
     slashContract = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
@@ -231,7 +261,7 @@ describe('Credit score and bail out test', () => {
       await validateScoreAt(0);
     });
     it('Should the score updated correctly, case: max score (N), in jail (y), unavailability (N)', async () => {
-      await slashUntilValidatorTier(1, 0, 2);
+      await slashValidatorUntilTier(1, 0, SlashType.UNAVAILABILITY_TIER_2);
       await wrapUpEpoch();
       await endPeriodAndWrapUpAndResetIndicators();
       localScoreController.increaseAtWithUpperbound(0, maxCreditScore, 0);
@@ -246,6 +276,71 @@ describe('Credit score and bail out test', () => {
         localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
         await validateScoreAt(0);
       }
+    });
+    it('Should the score get reset when the candidate is revoked', async () => {
+      await stakingContract
+        .connect(validatorCandidates[0].poolAdmin)
+        .requestRenounce(validatorCandidates[0].consensusAddr.address);
+      await network.provider.send('evm_increaseTime', [waitingSecsToRevoke]);
+
+      let tx = await endPeriodAndWrapUpAndResetIndicators();
+      await CandidateManagerExpects.emitCandidatesRevokedEvent(tx, [validatorCandidates[0].consensusAddr.address]);
+      await expect(tx)
+        .emit(slashContract, 'CreditScoresUpdated')
+        .withArgs([validatorCandidates[0].consensusAddr.address], [0]);
+
+      localScoreController.resetAt(0);
+      await validateScoreAt(0);
+
+      await stakingContract
+        .connect(validatorCandidates[0].poolAdmin)
+        .applyValidatorCandidate(
+          validatorCandidates[0].candidateAdmin.address,
+          validatorCandidates[0].consensusAddr.address,
+          validatorCandidates[0].treasuryAddr.address,
+          validatorCandidates[0].bridgeOperator.address,
+          100_00,
+          { value: minValidatorStakingAmount.mul(2) }
+        );
+
+      await endPeriodAndWrapUpAndResetIndicators();
+    });
+  });
+
+  describe('Credit score and maintenance', async () => {
+    let currentBlock;
+    let startedAtBlock;
+    let endedAtBlock;
+
+    it("Should the credit score increase before validator's maintenance", async () => {
+      currentBlock = (await ethers.provider.getBlockNumber()) + 1;
+      startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock).add(numberOfBlocksInEpoch);
+      endedAtBlock = localEpochController.calculateEndOfEpoch(
+        BigNumber.from(startedAtBlock).add(minMaintenanceDurationInBlock)
+      );
+
+      const tx = await maintenanceContract
+        .connect(validatorCandidates[0].candidateAdmin)
+        .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock);
+      await expect(tx)
+        .emit(maintenanceContract, 'MaintenanceScheduled')
+        .withArgs(validatorCandidates[0].consensusAddr.address, [startedAtBlock, endedAtBlock]);
+      expect(await maintenanceContract.checkScheduled(validatorCandidates[0].consensusAddr.address)).true;
+
+      await endPeriodAndWrapUpAndResetIndicators(2);
+      localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
+      await validateScoreAt(0);
+    });
+
+    it('Should the credit score not increase when validator is on maintenance', async () => {
+      await endPeriodAndWrapUpAndResetIndicators(1);
+      await validateScoreAt(0);
+    });
+
+    it('Should the credit score increase when validator finishes maintenance', async () => {
+      await endPeriodAndWrapUpAndResetIndicators(1);
+      localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
+      await validateScoreAt(0);
     });
   });
 
@@ -285,7 +380,12 @@ describe('Credit score and bail out test', () => {
 
         await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-        await slashUntilValidatorTier(1, 0, 2);
+        for (let i = 0; i < Math.floor(maxCreditScore / gainCreditScore); i++) {
+          await endPeriodAndWrapUpAndResetIndicators();
+        }
+        localScoreController.increaseAtWithUpperbound(0, maxCreditScore, maxCreditScore);
+
+        await slashValidatorUntilTier(1, 0, SlashType.UNAVAILABILITY_TIER_2);
         let wrapUpTx = await wrapUpEpoch();
         expect(wrapUpTx).emit(validatorContract, 'WrappedUpEpoch').withArgs([anyValue, anyValue, false]);
 
@@ -304,15 +404,17 @@ describe('Credit score and bail out test', () => {
         tx = await slashContract
           .connect(validatorCandidates[0].candidateAdmin)
           .bailOut(validatorCandidates[0].consensusAddr.address);
-        let _period = validatorContract.currentPeriod();
-
-        expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].consensusAddr.address, _period]);
-        expect(tx)
-          .emit(validatorContract, 'ValidatorUnjailed')
-          .withArgs([validatorCandidates[0].consensusAddr.address]);
-
-        localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber());
+        let _period = await validatorContract.currentPeriod();
+        let _cost = bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber();
+        localScoreController.subAtNonNegative(0, _cost);
         await validateScoreAt(0);
+
+        await expect(tx)
+          .emit(slashContract, 'BailedOut')
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period, _cost);
+        await expect(tx)
+          .emit(validatorContract, 'ValidatorUnjailed')
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period);
       });
 
       it('Should the indicator get reset', async () => {
@@ -357,11 +459,11 @@ describe('Credit score and bail out test', () => {
         let tx = await endPeriodAndWrapUpAndResetIndicators();
         await localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
 
-        expect(tx)
+        await expect(tx)
           .emit(validatorContract, 'MiningRewardDistributed')
           .withArgs(
             validatorCandidates[0].consensusAddr.address,
-            validatorCandidates[0].consensusAddr.address,
+            validatorCandidates[0].poolAdmin.address,
             submittedRewardEachBlock.add(blockProducerBonusPerBlock).div(2)
           );
       });
@@ -374,7 +476,7 @@ describe('Credit score and bail out test', () => {
         await validateScoreAt(0);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
 
-        await slashUntilValidatorTier(1, 0, 2);
+        await slashValidatorUntilTier(1, 0, SlashType.UNAVAILABILITY_TIER_2);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
       });
 
@@ -403,7 +505,7 @@ describe('Credit score and bail out test', () => {
 
         expect(await validatorContract.isValidator(validatorCandidates[0].consensusAddr.address)).eq(true);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
-        await slashUntilValidatorTier(1, 0, 2);
+        await slashValidatorUntilTier(1, 0, SlashType.UNAVAILABILITY_TIER_2);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
       });
 
@@ -412,15 +514,17 @@ describe('Credit score and bail out test', () => {
         let tx = await slashContract
           .connect(validatorCandidates[0].candidateAdmin)
           .bailOut(validatorCandidates[0].consensusAddr.address);
-        let _period = validatorContract.currentPeriod();
-
-        expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].consensusAddr.address, _period]);
-        expect(tx)
-          .emit(validatorContract, 'ValidatorUnjailed')
-          .withArgs([validatorCandidates[0].consensusAddr.address]);
-
-        localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber());
+        let _period = await validatorContract.currentPeriod();
+        let _cost = bailOutCostMultiplier * _jailLeft.epochLeft_.toNumber();
+        localScoreController.subAtNonNegative(0, _cost);
         await validateScoreAt(0);
+
+        await expect(tx)
+          .emit(slashContract, 'BailedOut')
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period, _cost);
+        await expect(tx)
+          .emit(validatorContract, 'ValidatorUnjailed')
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period);
       });
 
       it('Should the indicator get reset', async () => {
@@ -465,17 +569,18 @@ describe('Credit score and bail out test', () => {
         let tx = await endPeriodAndWrapUpAndResetIndicators();
         await localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
 
-        expect(tx)
+        await expect(tx)
           .emit(validatorContract, 'MiningRewardDistributed')
           .withArgs(
             validatorCandidates[0].consensusAddr.address,
-            validatorCandidates[0].consensusAddr.address,
+            validatorCandidates[0].poolAdmin.address,
             submittedRewardEachBlock.add(blockProducerBonusPerBlock).div(2)
           );
       });
     });
 
     describe('Bailing out from a validator that has been bailed out previously', async () => {
+      let tx: ContractTransaction | undefined;
       before(async () => {
         for (let i = 0; i < maxCreditScore / gainCreditScore + 1; i++) {
           await endPeriodAndWrapUpAndResetIndicators();
@@ -484,7 +589,7 @@ describe('Credit score and bail out test', () => {
 
         expect(await validatorContract.isValidator(validatorCandidates[0].consensusAddr.address)).eq(true);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
-        await slashUntilValidatorTier(1, 0, 2);
+        await slashValidatorUntilTier(1, 0, SlashType.UNAVAILABILITY_TIER_2);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
 
         let _latestBlockNum = BigNumber.from(await network.provider.send('eth_blockNumber'));
@@ -500,56 +605,64 @@ describe('Credit score and bail out test', () => {
         let tx = await slashContract
           .connect(validatorCandidates[0].candidateAdmin)
           .bailOut(validatorCandidates[0].consensusAddr.address);
-        let _period = validatorContract.currentPeriod();
-
-        expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].consensusAddr.address, _period]);
-        expect(tx)
-          .emit(validatorContract, 'ValidatorUnjailed')
-          .withArgs([validatorCandidates[0].consensusAddr.address]);
+        let _period = await validatorContract.currentPeriod();
+        let _cost = bailOutCostMultiplier * 1;
 
         localIndicatorController.resetAt(0);
         await validateIndicatorAt(0);
 
-        localScoreController.subAtNonNegative(0, bailOutCostMultiplier * 1);
+        localScoreController.subAtNonNegative(0, _cost);
         await validateScoreAt(0);
 
         await localEpochController.mineToBeforeEndOfEpoch();
         await wrapUpEpoch();
 
+        await expect(tx)
+          .emit(slashContract, 'BailedOut')
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period, _cost);
+        await expect(tx)
+          .emit(validatorContract, 'ValidatorUnjailed')
+          .withArgs(validatorCandidates[0].consensusAddr.address, _period);
+
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
       });
 
-      it('Should the bailed-out-validator not be able to bail out second time in the same period', async () => {
-        await slashUntilValidatorTier(1, 0, 2);
+      it('Should the bailed-out-validator is slashed with tier-3', async () => {
+        tx = await slashValidatorUntilTier(1, 0, SlashType.UNAVAILABILITY_TIER_3);
+      });
+
+      it('Should the validator get deducted staking amount when reaching tier-3', async () => {
+        await expect(tx)
+          .emit(validatorContract, 'ValidatorPunished')
+          .withArgs(
+            validatorCandidates[0].consensusAddr.address,
+            anyValue,
+            anyValue,
+            slashAmountForUnavailabilityTier2Threshold,
+            true,
+            false
+          );
+      });
+
+      it('Should the bailed-out-validator not be able to bail out the second time in the same period', async () => {
         await expect(
           slashContract
             .connect(validatorCandidates[0].candidateAdmin)
             .bailOut(validatorCandidates[0].consensusAddr.address)
         ).revertedWith('SlashIndicator: validator has bailed out previously');
       });
+    });
 
-      it('Should the bailed-out-validator be able to bail out in the next periods', async () => {
+    describe('Bailing out from validator in tier-3', async () => {
+      it('Should the tier-3-slashed validator cannot bail out', async () => {
         await endPeriodAndWrapUpAndResetIndicators();
-
-        let _latestBlockNum = BigNumber.from(await network.provider.send('eth_blockNumber'));
-        let _jailLeft = await validatorContract.getJailedTimeLeftAtBlock(
-          validatorCandidates[0].consensusAddr.address,
-          _latestBlockNum.add(1)
-        );
-
-        let _jailEpochLeft = _jailLeft.epochLeft_;
-        let tx = await slashContract
-          .connect(validatorCandidates[0].candidateAdmin)
-          .bailOut(validatorCandidates[0].consensusAddr.address);
-        let _period = validatorContract.currentPeriod();
-
-        expect(tx).emit(slashContract, 'BailedOut').withArgs([validatorCandidates[0].consensusAddr.address, _period]);
-        expect(tx)
-          .emit(validatorContract, 'ValidatorUnjailed')
-          .withArgs([validatorCandidates[0].consensusAddr.address]);
-
-        localScoreController.subAtNonNegative(0, bailOutCostMultiplier * _jailEpochLeft.toNumber());
-        await validateScoreAt(0);
+        await expect(
+          slashContract
+            .connect(validatorCandidates[0].candidateAdmin)
+            .bailOut(validatorCandidates[0].consensusAddr.address)
+        )
+          .revertedWithCustomError(validatorContract, 'ErrCannotBailout')
+          .withArgs(validatorCandidates[0].consensusAddr.address);
       });
     });
   });

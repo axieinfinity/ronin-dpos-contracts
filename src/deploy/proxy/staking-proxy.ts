@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { stakingConfig, generalRoninConf, roninchainNetworks } from '../../config';
+import { stakingConfig, generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { verifyAddress } from '../../script/verify-address';
 import { Staking__factory } from '../../types';
 
@@ -18,6 +18,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const data = new Staking__factory().interface.encodeFunctionData('initialize', [
     generalRoninConf[network.name]!.validatorContract?.address,
     stakingConfig[network.name]!.minValidatorStakingAmount,
+    stakingConfig[network.name]!.maxCommissionRate,
     stakingConfig[network.name]!.cooldownSecsToUndelegate,
     stakingConfig[network.name]!.waitingSecsToRevoke,
   ]);

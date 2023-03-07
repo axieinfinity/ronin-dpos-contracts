@@ -65,6 +65,7 @@ const bridgeOperatorBonusPerBlock = BigNumber.from(37);
 const zeroTopUpAmount = 0;
 const topUpAmount = BigNumber.from(100_000_000_000);
 const slashDoubleSignAmount = BigNumber.from(2000);
+const maxCommissionRate = 30_00; // 30%
 
 describe('Ronin Validator Set: candidate test', () => {
   before(async () => {
@@ -86,7 +87,7 @@ describe('Ronin Validator Set: candidate test', () => {
       stakingContractAddress,
       roninGovernanceAdminAddress,
       stakingVestingContractAddress,
-    } = await initTest('RoninValidatorSet')({
+    } = await initTest('RoninValidatorSet-Candidate')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
           slashDoubleSignAmount,
@@ -97,6 +98,7 @@ describe('Ronin Validator Set: candidate test', () => {
       },
       stakingArguments: {
         minValidatorStakingAmount,
+        maxCommissionRate,
       },
       stakingVestingArguments: {
         blockProducerBonusPerBlock,
@@ -294,6 +296,23 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx)
         .revertedWithCustomError(roninValidatorSet, 'ErrExistentBridgeOperator')
         .withArgs(validatorCandidates[0].bridgeOperator.address);
+    });
+
+    it('Should not be able to apply for candidate role with commission rate higher than allowed', async () => {
+      let tx = stakingContract
+        .connect(validatorCandidates[5].poolAdmin)
+        .applyValidatorCandidate(
+          validatorCandidates[5].candidateAdmin.address,
+          validatorCandidates[5].consensusAddr.address,
+          validatorCandidates[5].treasuryAddr.address,
+          validatorCandidates[5].bridgeOperator.address,
+          maxCommissionRate + 1,
+          {
+            value: minValidatorStakingAmount,
+          }
+        );
+
+      await expect(tx).revertedWithCustomError(stakingContract, 'ErrInvalidCommissionRate');
     });
   });
 

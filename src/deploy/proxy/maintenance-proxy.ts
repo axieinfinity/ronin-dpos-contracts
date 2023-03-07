@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { maintenanceConf, generalRoninConf, roninchainNetworks } from '../../config';
+import { maintenanceConf, generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { verifyAddress } from '../../script/verify-address';
 import { Maintenance__factory } from '../../types';
 
@@ -22,6 +22,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     maintenanceConf[network.name]!.minOffsetToStartSchedule,
     maintenanceConf[network.name]!.maxOffsetToStartSchedule,
     maintenanceConf[network.name]!.maxSchedules,
+    maintenanceConf[network.name]!.cooldownSecsToMaintain,
   ]);
 
   const deployment = await deploy('MaintenanceProxy', {

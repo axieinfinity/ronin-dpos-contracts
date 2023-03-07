@@ -7,19 +7,18 @@ import "../ronin/slash-indicator/SlashIndicator.sol";
 
 contract MockSlashIndicatorExtended is SlashIndicator, MockPrecompile {
   function slashFelony(address _validatorAddr) external {
-    _validatorContract.execSlash(_validatorAddr, 0, 0);
+    _validatorContract.execSlash(_validatorAddr, 0, 0, false);
   }
 
   function slashMisdemeanor(address _validatorAddr) external {
-    _validatorContract.execSlash(_validatorAddr, 0, 0);
+    _validatorContract.execSlash(_validatorAddr, 0, 0, false);
   }
 
-  function _pcValidateEvidence(bytes calldata _header1, bytes calldata _header2)
-    internal
-    pure
-    override
-    returns (bool _validEvidence)
-  {
-    return validatingDoubleSignProof(_header1, _header2);
+  function _pcValidateEvidence(
+    address _consensusAddr,
+    bytes calldata _header1,
+    bytes calldata _header2
+  ) internal pure override returns (bool _validEvidence) {
+    return validatingDoubleSignProof(_consensusAddr, _header1, _header2);
   }
 }

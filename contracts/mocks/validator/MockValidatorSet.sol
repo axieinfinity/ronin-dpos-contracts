@@ -33,7 +33,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   function submitBlockReward() external payable override {}
 
   function wrapUpEpoch() external payable override {
-    _syncCandidateSet();
+    _syncCandidateSet(_lastUpdatedPeriod + 1);
     _lastUpdatedPeriod = currentPeriod();
   }
 
@@ -50,6 +50,8 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function checkMiningRewardDeprecated(address[] calldata) external view override returns (bool[] memory) {}
 
+  function checkBridgeRewardDeprecated(address _consensusAddr) external view returns (bool _result) {}
+
   function epochOf(uint256 _block) external view override returns (uint256) {}
 
   function getValidators() external view override returns (address[] memory) {}
@@ -59,7 +61,8 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
   function execSlash(
     address _validatorAddr,
     uint256 _newJailedUntil,
-    uint256 _slashAmount
+    uint256 _slashAmount,
+    bool _cannotBailout
   ) external override {}
 
   function execBailOut(address, uint256) external override {}

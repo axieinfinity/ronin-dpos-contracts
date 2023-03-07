@@ -78,12 +78,19 @@ const config: InitTestInput = {
     doubleSignSlashing: {
       slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10),
       doubleSigningJailUntilBlock: ethers.constants.MaxUint256,
+      doubleSigningOffsetLimitBlock: 28800 * 7,
     },
     unavailabilitySlashing: {
       unavailabilityTier1Threshold: 5,
       unavailabilityTier2Threshold: 10,
       slashAmountForUnavailabilityTier2Threshold: BigNumber.from(10).pow(18).mul(1),
       jailDurationForUnavailabilityTier2Threshold: 28800 * 2,
+    },
+    creditScore: {
+      gainCreditScore: 50,
+      maxCreditScore: 600,
+      bailOutCostMultiplier: 5,
+      cutOffPercentageAfterBailout: 50_00, // 50%
     },
   },
   roninValidatorSetArguments: {
@@ -218,6 +225,35 @@ describe('[Integration] Configuration check', () => {
         config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier2,
         config.slashIndicatorArguments?.bridgeOperatorSlashing?.jailDurationForMissingVotesRatioTier2,
         config.slashIndicatorArguments?.bridgeOperatorSlashing?.skipBridgeOperatorSlashingThreshold,
+      ].map(BigNumber.from)
+    );
+    expect(await slashContract.getBridgeVotingSlashingConfigs()).to.eql(
+      [
+        config.slashIndicatorArguments?.bridgeVotingSlashing?.bridgeVotingThreshold,
+        config.slashIndicatorArguments?.bridgeVotingSlashing?.bridgeVotingSlashAmount,
+      ].map(BigNumber.from)
+    );
+    expect(await slashContract.getDoubleSignSlashingConfigs()).to.eql(
+      [
+        config.slashIndicatorArguments?.doubleSignSlashing?.slashDoubleSignAmount,
+        config.slashIndicatorArguments?.doubleSignSlashing?.doubleSigningJailUntilBlock,
+        config.slashIndicatorArguments?.doubleSignSlashing?.doubleSigningOffsetLimitBlock,
+      ].map(BigNumber.from)
+    );
+    expect(await slashContract.getUnavailabilitySlashingConfigs()).to.eql(
+      [
+        config.slashIndicatorArguments?.unavailabilitySlashing?.unavailabilityTier1Threshold,
+        config.slashIndicatorArguments?.unavailabilitySlashing?.unavailabilityTier2Threshold,
+        config.slashIndicatorArguments?.unavailabilitySlashing?.slashAmountForUnavailabilityTier2Threshold,
+        config.slashIndicatorArguments?.unavailabilitySlashing?.jailDurationForUnavailabilityTier2Threshold,
+      ].map(BigNumber.from)
+    );
+    expect(await slashContract.getCreditScoreConfigs()).to.eql(
+      [
+        config.slashIndicatorArguments?.creditScore?.gainCreditScore,
+        config.slashIndicatorArguments?.creditScore?.maxCreditScore,
+        config.slashIndicatorArguments?.creditScore?.bailOutCostMultiplier,
+        config.slashIndicatorArguments?.creditScore?.cutOffPercentageAfterBailout,
       ].map(BigNumber.from)
     );
   });

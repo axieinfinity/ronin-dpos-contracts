@@ -11,6 +11,7 @@ import { MockValidatorSet } from '../../src/types/MockValidatorSet';
 import { createManyValidatorCandidateAddressSets, ValidatorCandidateAddressSet } from '../helpers/address-set-types';
 import { getLastBlockTimestamp } from '../helpers/utils';
 
+let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
 
 let proxyAdmin: SignerWithAddress;
@@ -28,17 +29,18 @@ let validatorCandidates: ValidatorCandidateAddressSet[];
 
 const ONE_DAY = 60 * 60 * 24;
 
-const minValidatorStakingAmount = BigNumber.from(20);
+const minValidatorStakingAmount = BigNumber.from(2_000_000);
 const maxValidatorCandidate = 50;
 const numberOfBlocksInEpoch = 2;
 const cooldownSecsToUndelegate = 3 * 86400;
 const waitingSecsToRevoke = 7 * 86400;
+const maxCommissionRate = 30_00;
 const minEffectiveDaysOnwards = 7;
 const numberOfCandidate = 4;
 
 describe('Staking test', () => {
   before(async () => {
-    [deployer, proxyAdmin, userA, userB, ...signers] = await ethers.getSigners();
+    [coinbase, deployer, proxyAdmin, userA, userB, ...signers] = await ethers.getSigners();
     validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, numberOfCandidate * 3));
     sparePoolAddrSet = validatorCandidates.splice(validatorCandidates.length - 1)[0];
 
@@ -62,6 +64,7 @@ describe('Staking test', () => {
       logicContract.interface.encodeFunctionData('initialize', [
         validatorContract.address,
         minValidatorStakingAmount,
+        maxCommissionRate,
         cooldownSecsToUndelegate,
         waitingSecsToRevoke,
       ])
@@ -222,6 +225,28 @@ describe('Staking test', () => {
           20_00 // 20%
         )
       ).revertedWithCustomError(validatorContract, 'ErrInvalidEffectiveDaysOnwards');
+    });
+
+    it('Should the pool admin not be able to request updating the commission rate higher than max rate allowed', async () => {
+      await expect(
+        stakingContract.connect(poolAddrSet.poolAdmin).requestUpdateCommissionRate(
+          poolAddrSet.consensusAddr.address,
+          minEffectiveDaysOnwards - 1,
+          maxCommissionRate + 1 // 20%
+        )
+      ).revertedWithCustomError(validatorContract, 'ErrInvalidCommissionRate');
+    });
+
+    it('Should the pool admin not be able to request updating the commission rate exceeding max rate', async () => {
+      await expect(
+        stakingContract
+          .connect(poolAddrSet.poolAdmin)
+          .requestUpdateCommissionRate(
+            poolAddrSet.consensusAddr.address,
+            minEffectiveDaysOnwards,
+            maxCommissionRate + 1
+          )
+      ).revertedWithCustomError(stakingContract, 'ErrInvalidCommissionRate');
     });
 
     it('Should the pool admin be able to request updating the commission rate', async () => {

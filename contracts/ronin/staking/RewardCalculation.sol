@@ -140,27 +140,27 @@ abstract contract RewardCalculation is IRewardPool {
   /**
    * @dev Claims the settled reward for a specific user.
    *
-   * Emits the `PendingRewardUpdated` event and the `SettledRewardUpdated` event.
+   * @param _lastPeriod Must be in two possible value: `_currentPeriod` in normal calculation, or
+   * `_currentPeriod + 1` in case of calculating the reward for revoked validators.
+   *
+   * Emits the `RewardClaimed` event and the `UserRewardUpdated` event.
    *
    * Note: This method should be called before transferring rewards for the user.
    *
    */
-  function _claimReward(address _poolAddr, address _user) internal returns (uint256 _amount) {
-    uint256 _latestPeriod = _currentPeriod();
+  function _claimReward(
+    address _poolAddr,
+    address _user,
+    uint256 _lastPeriod
+  ) internal returns (uint256 _amount) {
     uint256 _currentStakingAmount = getStakingAmount(_poolAddr, _user);
-    _amount = _getReward(_poolAddr, _user, _latestPeriod, _currentStakingAmount);
+    _amount = _getReward(_poolAddr, _user, _lastPeriod, _currentStakingAmount);
     emit RewardClaimed(_poolAddr, _user, _amount);
 
     UserRewardFields storage _reward = _userReward[_poolAddr][_user];
     _reward.debited = 0;
-    _syncMinStakingAmount(
-      _stakingPool[_poolAddr],
-      _reward,
-      _latestPeriod,
-      _currentStakingAmount,
-      _currentStakingAmount
-    );
-    _reward.lastPeriod = _latestPeriod;
+    _syncMinStakingAmount(_stakingPool[_poolAddr], _reward, _lastPeriod, _currentStakingAmount, _currentStakingAmount);
+    _reward.lastPeriod = _lastPeriod;
     _reward.aRps = _stakingPool[_poolAddr].aRps;
     emit UserRewardUpdated(_poolAddr, _user, 0);
   }

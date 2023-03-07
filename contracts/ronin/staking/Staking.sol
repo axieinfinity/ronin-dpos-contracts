@@ -23,11 +23,13 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   function initialize(
     address __validatorContract,
     uint256 __minValidatorStakingAmount,
+    uint256 __maxCommissionRate,
     uint256 __cooldownSecsToUndelegate,
     uint256 __waitingSecsToRevoke
   ) external initializer {
     _setValidatorContract(__validatorContract);
     _setMinValidatorStakingAmount(__minValidatorStakingAmount);
+    _setMaxCommissionRate(__maxCommissionRate);
     _setCooldownSecsToUndelegate(__cooldownSecsToUndelegate);
     _setWaitingSecsToRevoke(__waitingSecsToRevoke);
   }
@@ -39,7 +41,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     address[] calldata _consensusAddrs,
     uint256[] calldata _rewards,
     uint256 _period
-  ) external payable onlyValidatorContract {
+  ) external payable override onlyValidatorContract {
     _recordRewards(_consensusAddrs, _rewards, _period);
   }
 
@@ -48,6 +50,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
    */
   function execDeductStakingAmount(address _consensusAddr, uint256 _amount)
     external
+    override
     onlyValidatorContract
     returns (uint256 _actualDeductingAmount)
   {

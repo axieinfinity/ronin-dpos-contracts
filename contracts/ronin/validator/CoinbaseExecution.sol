@@ -83,7 +83,8 @@ abstract contract CoinbaseExecution is
     }
 
     _reward -= _cutOffReward;
-    uint256 _rate = _candidateInfo[_coinbaseAddr].commissionRate;
+    uint256 _maxRate = _stakingContract.maxCommissionRate();
+    uint256 _rate = Math.min(_candidateInfo[_coinbaseAddr].commissionRate, _maxRate);
     uint256 _miningAmount = (_rate * _reward) / _MAX_PERCENTAGE;
     _miningReward[_coinbaseAddr] += _miningAmount;
 
@@ -99,12 +100,12 @@ abstract contract CoinbaseExecution is
     bool _periodEnding = _isPeriodEnding(_newPeriod);
 
     address[] memory _currentValidators = getValidators();
+    address[] memory _revokedCandidates;
     uint256 _epoch = epochOf(block.number);
     uint256 _nextEpoch = _epoch + 1;
     uint256 _lastPeriod = currentPeriod();
 
     if (_periodEnding) {
-      _currentPeriodStartAtBlock = block.number + 1;
       _syncBridgeOperatingReward(_lastPeriod, _currentValidators);
       (
         uint256 _totalDelegatingReward,
@@ -114,7 +115,11 @@ abstract contract CoinbaseExecution is
       _tryRecycleLockedFundsFromEmergencyExits();
       _recycleDeprecatedRewards();
       _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
-      _currentValidators = _syncValidatorSet(_newPeriod);
+      (_currentValidators, _revokedCandidates) = _syncValidatorSet(_newPeriod);
+      if (_revokedCandidates.length > 0) {
+        _slashIndicatorContract.execResetCreditScores(_revokedCandidates);
+      }
+      _currentPeriodStartAtBlock = block.number + 1;
     }
     _revampRoles(_newPeriod, _nextEpoch, _currentValidators);
     emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
@@ -186,16 +191,25 @@ abstract contract CoinbaseExecution is
 
     uint256 _votedRatio = (_validatorBallots * _MAX_PERCENTAGE) / _totalVotes;
     uint256 _missedRatio = _MAX_PERCENTAGE - _votedRatio;
-    if (_missedRatio > _ratioTier2) {
+    if (_missedRatio >= _ratioTier2) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
+
+      // Cannot saving gas by temp variable here due to too deep stack.
       _blockProducerJailedBlock[_validator] = Math.max(
         block.number + _jailDurationTier2,
         _blockProducerJailedBlock[_validator]
       );
+      _cannotBailoutUntilBlock[_validator] = Math.max(
+        block.number + _jailDurationTier2,
+        _cannotBailoutUntilBlock[_validator]
+      );
+
+      _slashIndicatorContract.execSlashBridgeOperator(_validator, 2, _period);
       emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, true, true);
-    } else if (_missedRatio > _ratioTier1) {
+    } else if (_missedRatio >= _ratioTier1) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
+      _slashIndicatorContract.execSlashBridgeOperator(_validator, 1, _period);
       emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, false, true);
     } else if (_totalBallots > 0) {
       _bridgeOperatingReward[_validator] = (_totalBridgeReward * _validatorBallots) / _totalBallots;
@@ -362,8 +376,11 @@ abstract contract CoinbaseExecution is
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _syncValidatorSet(uint256 _newPeriod) private returns (address[] memory _newValidators) {
-    _syncCandidateSet();
+  function _syncValidatorSet(uint256 _newPeriod)
+    private
+    returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates)
+  {
+    _unsastifiedCandidates = _syncCandidateSet(_newPeriod);
     uint256[] memory _weights = _stakingContract.getManyStakingTotals(_candidates);
     uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getConsensusWeights(_candidates);
     uint256 _newValidatorCount;
@@ -390,26 +407,25 @@ abstract contract CoinbaseExecution is
     uint256 _newValidatorCount,
     uint256 _newPeriod
   ) private {
+    // Remove exceeding validators in the current set
     for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
       delete _validatorMap[_validators[_i]];
       delete _validators[_i];
     }
 
-    uint256 _count;
-    for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
-      address _newValidator = _newValidators[_i];
-      if (_newValidator == _validators[_count]) {
-        _count++;
-        continue;
-      }
-
-      delete _validatorMap[_validators[_count]];
-      _validatorMap[_newValidator] = EnumFlags.ValidatorFlag.Both;
-      _validators[_count] = _newValidator;
-      _count++;
+    // Remove flag for all validator in the current set
+    for (uint _i = 0; _i < _newValidatorCount; _i++) {
+      delete _validatorMap[_validators[_i]];
     }
 
-    validatorCount = _count;
+    // Update new validator set and set flag correspondingly.
+    for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
+      address _newValidator = _newValidators[_i];
+      _validatorMap[_newValidator] = EnumFlags.ValidatorFlag.Both;
+      _validators[_i] = _newValidator;
+    }
+
+    validatorCount = _newValidatorCount;
     emit ValidatorSetUpdated(_newPeriod, _newValidators);
   }
 
@@ -428,7 +444,7 @@ abstract contract CoinbaseExecution is
     uint256 _nextEpoch,
     address[] memory _currentValidators
   ) private {
-    bool[] memory _maintainedList = _maintenanceContract.checkManyMaintained(_candidates, block.number + 1);
+    bool[] memory _maintainedList = _maintenanceContract.checkManyMaintained(_currentValidators, block.number + 1);
 
     for (uint _i = 0; _i < _currentValidators.length; _i++) {
       address _validator = _currentValidators[_i];
