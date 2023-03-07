@@ -78,6 +78,7 @@ const config: InitTestInput = {
     doubleSignSlashing: {
       slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(10),
       doubleSigningJailUntilBlock: ethers.constants.MaxUint256,
+      doubleSigningOffsetLimitBlock: 28800 * 7,
     },
     unavailabilitySlashing: {
       unavailabilityTier1Threshold: 5,
@@ -236,6 +237,7 @@ describe('[Integration] Configuration check', () => {
       [
         config.slashIndicatorArguments?.doubleSignSlashing?.slashDoubleSignAmount,
         config.slashIndicatorArguments?.doubleSignSlashing?.doubleSigningJailUntilBlock,
+        config.slashIndicatorArguments?.doubleSignSlashing?.doubleSigningOffsetLimitBlock,
       ].map(BigNumber.from)
     );
     expect(await slashContract.getUnavailabilitySlashingConfigs()).to.eql(

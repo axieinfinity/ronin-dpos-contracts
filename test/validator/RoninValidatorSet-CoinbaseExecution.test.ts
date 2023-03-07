@@ -19,7 +19,7 @@ import { EpochController } from '../helpers/ronin-validator-set';
 import { expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { expects as CandidateManagerExpects } from '../helpers/candidate-manager';
 import { expects as StakingVestingExpects } from '../helpers/staking-vesting';
-import { mineBatchTxs } from '../helpers/utils';
+import { getLastBlockTimestamp, mineBatchTxs } from '../helpers/utils';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import { BlockRewardDeprecatedType } from '../../src/script/ronin-validator-set';
@@ -31,6 +31,8 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types';
 import { SlashType } from '../../src/script/slash-indicator';
+import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
+import { VoteType } from '../../src/script/proposal';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let stakingVesting: StakingVesting;
@@ -68,6 +70,7 @@ const bridgeOperatorBonusPerBlock = BigNumber.from(37);
 const zeroTopUpAmount = 0;
 const topUpAmount = BigNumber.from(100_000_000_000);
 const slashDoubleSignAmount = BigNumber.from(2000);
+const proposalExpiryDuration = 60;
 
 describe('Ronin Validator Set: Coinbase execution test', () => {
   before(async () => {
@@ -119,6 +122,9 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
           addedBlock: 0,
         })),
       },
+      governanceAdminArguments: {
+        proposalExpiryDuration,
+      },
     });
 
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
@@ -129,7 +135,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
       network.config.chainId!,
-      undefined,
+      { proposalExpiryDuration },
       ...trustedOrgs.map((_) => _.governor)
     );
 
@@ -697,17 +703,43 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
 
       expect(await roninValidatorSet.totalDeprecatedReward()).equal(0);
 
+      // --- Create proposal to slash double signing
+      const latestTimestamp = await getLastBlockTimestamp();
+      let calldata = governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+        slashIndicator.interface.encodeFunctionData('slashDoubleSign', [
+          validatorCandidates[2].consensusAddr.address,
+          ethers.utils.toUtf8Bytes('sampleHeader1'),
+          ethers.utils.toUtf8Bytes('sampleHeader2'),
+        ]),
+      ]);
+      let proposal: ProposalDetailStruct = await governanceAdminInterface.createProposal(
+        latestTimestamp + proposalExpiryDuration,
+        slashIndicator.address,
+        0,
+        calldata,
+        500_000
+      );
+      let signatures = await governanceAdminInterface.generateSignatures(
+        proposal,
+        trustedOrgs.map((_) => _.governor)
+      );
+      let supports = signatures.map(() => VoteType.For);
+      /// ---
+
       let slashTx;
       await expect(
         async () =>
-          (slashTx = slashIndicator
-            .connect(consensusAddr)
-            .slashDoubleSign(validatorCandidates[2].consensusAddr.address, '0x', '0x'))
+          (slashTx = await governanceAdmin
+            .connect(trustedOrgs[0].governor)
+            .proposeProposalStructAndCastVotes(proposal, supports, signatures))
       ).changeEtherBalances(
         [stakingContract.address, roninValidatorSet.address],
         [BigNumber.from(0).sub(slashDoubleSignAmount), slashDoubleSignAmount]
       );
 
+      expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address)).to
+        .true;
+      await expect(slashTx).emit(governanceAdmin, 'ProposalExecuted');
       await expect(slashTx).not.emit(stakingContract, 'StakingAmountTransferFailed');
 
       await expect(slashTx)

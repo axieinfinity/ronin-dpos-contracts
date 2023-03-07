@@ -434,7 +434,7 @@ describe('Slash indicator test', () => {
       });
     });
 
-    describe.only('Double signing slash', async () => {
+    describe('Double signing slash', async () => {
       let header1: BytesLike;
       let header2: BytesLike;
 
