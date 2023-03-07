@@ -230,7 +230,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
         delete _bufferMetric.data.totalBallotsOf[_voter]; // need to manually delete each element, due to mapping
       }
 
-      // Mark all receipts in the buffer as tracked. Keep total number of receipts and delete details.
+      // Mark all receipts in the buffer as tracked. Keep total number of receipts and delete receipt details.
       for (uint _i = 0; _i < _bufferMetric.requests.length; _i++) {
         Request storage _bufferRequest = _bufferMetric.requests[_i];
         ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_bufferRequest.kind][_bufferRequest.id];
