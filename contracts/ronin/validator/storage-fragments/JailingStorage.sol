@@ -92,32 +92,21 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @inheritdoc IJailingInfo
    */
-  function checkMiningRewardDeprecated(address[] calldata _blockProducers)
-    external
-    view
-    override
-    returns (bool[] memory _result)
-  {
-    _result = new bool[](_blockProducers.length);
+  function checkMiningRewardDeprecated(address _blockProducer) external view override returns (bool _result) {
     uint256 _period = currentPeriod();
-    for (uint256 _i; _i < _blockProducers.length; _i++) {
-      _result[_i] = _miningRewardDeprecated(_blockProducers[_i], _period);
-    }
+    return _miningRewardDeprecated(_blockProducer, _period);
   }
 
   /**
    * @inheritdoc IJailingInfo
    */
-  function checkMiningRewardDeprecatedAtPeriod(address[] calldata _blockProducers, uint256 _period)
+  function checkMiningRewardDeprecatedAtPeriod(address _blockProducer, uint256 _period)
     external
     view
     override
-    returns (bool[] memory _result)
+    returns (bool _result)
   {
-    _result = new bool[](_blockProducers.length);
-    for (uint256 _i; _i < _blockProducers.length; _i++) {
-      _result[_i] = _miningRewardDeprecated(_blockProducers[_i], _period);
-    }
+    return _miningRewardDeprecated(_blockProducer, _period);
   }
 
   /**

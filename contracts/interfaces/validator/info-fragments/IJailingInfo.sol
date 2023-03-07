@@ -43,17 +43,14 @@ interface IJailingInfo {
   function checkManyJailed(address[] calldata) external view returns (bool[] memory);
 
   /**
-   * @dev Returns whether the incoming reward of the block producers are deprecated during the current period.
+   * @dev Returns whether the incoming reward of the block producer is deprecated during the current period.
    */
-  function checkMiningRewardDeprecated(address[] calldata _blockProducers) external view returns (bool[] memory);
+  function checkMiningRewardDeprecated(address _blockProducer) external view returns (bool);
 
   /**
-   * @dev Returns whether the incoming reward of the block producers are deprecated during a specific period.
+   * @dev Returns whether the incoming reward of the block producer is deprecated during a specific period.
    */
-  function checkMiningRewardDeprecatedAtPeriod(address[] calldata _blockProducers, uint256 _period)
-    external
-    view
-    returns (bool[] memory);
+  function checkMiningRewardDeprecatedAtPeriod(address _blockProducer, uint256 _period) external view returns (bool);
 
   /**
    * @dev Returns whether the incoming reward of the validator with `_consensusAddr` is deprecated in the current period.
