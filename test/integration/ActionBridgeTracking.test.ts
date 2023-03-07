@@ -58,7 +58,7 @@ const denominator = 4;
 const mainchainId = 1;
 const numberOfBlocksInEpoch = 600;
 
-describe('Bridge Tracking test', () => {
+describe('[Integration] Bridge Tracking test', () => {
   before(async () => {
     [deployer, coinbase, ...signers] = await ethers.getSigners();
     candidates = createManyValidatorCandidateAddressSets(signers.slice(0, maxValidatorNumber * 3));
@@ -90,7 +90,7 @@ describe('Bridge Tracking test', () => {
 
     // Deploys DPoS contracts
     const { roninGovernanceAdminAddress, stakingContractAddress, validatorContractAddress, bridgeTrackingAddress } =
-      await initTest('BridgeTracking')({
+      await initTest('ActionBridgeTracking')({
         bridgeContract: bridgeContract.address,
         roninTrustedOrganizationArguments: {
           trustedOrganizations: trustedOrgs.map((v) => ({

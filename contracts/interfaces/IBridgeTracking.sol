@@ -2,6 +2,11 @@
 pragma solidity ^0.8.0;
 
 interface IBridgeTracking {
+  struct Request {
+    VoteKind kind;
+    uint256 id;
+  }
+
   enum VoteKind {
     Deposit,
     Withdrawal,
