@@ -129,6 +129,18 @@ abstract contract JailingStorage is IJailingInfo {
   }
 
   /**
+   * @inheritdoc IJailingInfo
+   */
+  function checkBridgeRewardDeprecatedAtPeriod(address _consensusAddr, uint256 _period)
+    external
+    view
+    override
+    returns (bool _result)
+  {
+    return _bridgeRewardDeprecated(_consensusAddr, _period);
+  }
+
+  /**
    * @dev See `ITimingInfo-epochOf`
    */
   function epochOf(uint256 _block) public view virtual returns (uint256);
