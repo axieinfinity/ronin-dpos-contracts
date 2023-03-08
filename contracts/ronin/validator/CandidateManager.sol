@@ -3,11 +3,12 @@
 pragma solidity ^0.8.9;
 
 import "../../extensions/collections/HasStakingContract.sol";
+import "../../extensions/consumers/GlobalConfigConsumer.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/validator/ICandidateManager.sol";
 import "../../interfaces/staking/IStaking.sol";
 
-abstract contract CandidateManager is ICandidateManager, PercentageConsumer, HasStakingContract {
+abstract contract CandidateManager is ICandidateManager, PercentageConsumer, GlobalConfigConsumer, HasStakingContract {
   /// @dev Maximum number of validator candidate
   uint256 private _maxValidatorCandidate;
 
@@ -124,7 +125,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     if (_effectiveDaysOnwards < _minEffectiveDaysOnwards) revert ErrInvalidEffectiveDaysOnwards();
 
     CommissionSchedule storage _schedule = _candidateCommissionChangeSchedule[_consensusAddr];
-    uint256 _effectiveTimestamp = ((block.timestamp / 1 days) + _effectiveDaysOnwards) * 1 days;
+    uint256 _effectiveTimestamp = ((block.timestamp / PERIOD_DURATION) + _effectiveDaysOnwards) * PERIOD_DURATION;
     _schedule.effectiveTimestamp = _effectiveTimestamp;
     _schedule.commissionRate = _commissionRate;
 

@@ -189,8 +189,14 @@ abstract contract CoinbaseExecution is
       return;
     }
 
+    // unchecked {
     uint256 _votedRatio = (_validatorBallots * _MAX_PERCENTAGE) / _totalVotes;
     uint256 _missedRatio = _MAX_PERCENTAGE - _votedRatio;
+    //   if () {
+    //     emit Error();
+    //   }
+    // }
+
     if (_missedRatio >= _ratioTier2) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
@@ -269,7 +275,7 @@ abstract contract CoinbaseExecution is
   function _distributeMiningReward(address _consensusAddr, address payable _treasury) private {
     uint256 _amount = _miningReward[_consensusAddr];
     if (_amount > 0) {
-      if (_unsafeSendRON(_treasury, _amount, 3500)) {
+      if (_unsafeSendRON(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
         emit MiningRewardDistributed(_consensusAddr, _treasury, _amount);
         return;
       }
@@ -294,7 +300,7 @@ abstract contract CoinbaseExecution is
   ) private {
     uint256 _amount = _bridgeOperatingReward[_consensusAddr];
     if (_amount > 0) {
-      if (_unsafeSendRON(_treasury, _amount, 3500)) {
+      if (_unsafeSendRON(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
         emit BridgeOperatorRewardDistributed(_consensusAddr, _bridgeOperator, _treasury, _amount);
         return;
       }

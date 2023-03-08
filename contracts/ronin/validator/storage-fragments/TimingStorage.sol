@@ -2,12 +2,10 @@
 
 pragma solidity ^0.8.9;
 
+import "../../../extensions/consumers/GlobalConfigConsumer.sol";
 import "../../../interfaces/validator/info-fragments/ITimingInfo.sol";
 
-abstract contract TimingStorage is ITimingInfo {
-  /// @dev Length of period in seconds
-  uint256 internal constant _periodLength = 1 days;
-
+abstract contract TimingStorage is ITimingInfo, GlobalConfigConsumer {
   /// @dev The number of blocks in a epoch
   uint256 internal _numberOfBlocksInEpoch;
   /// @dev The last updated block
@@ -93,6 +91,6 @@ abstract contract TimingStorage is ITimingInfo {
    * @dev Returns the calculated period.
    */
   function _computePeriod(uint256 _timestamp) internal pure returns (uint256) {
-    return _timestamp / _periodLength;
+    return _timestamp / PERIOD_DURATION;
   }
 }
