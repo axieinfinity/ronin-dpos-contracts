@@ -59,6 +59,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, Percentage
     uint256 _commissionRate
   ) external payable override nonReentrant {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
+    if (_commissionRate > _maxCommissionRate) revert ErrInvalidCommissionRate();
 
     uint256 _amount = msg.value;
     address payable _poolAdmin = payable(msg.sender);
