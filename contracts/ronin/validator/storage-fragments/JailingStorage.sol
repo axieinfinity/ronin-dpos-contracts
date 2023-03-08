@@ -111,9 +111,17 @@ abstract contract JailingStorage is IJailingInfo {
 
   /**
    * @inheritdoc IJailingInfo
+   *
+   * @dev Because the information of deprecating bridge reward of a period is only determined at the end of that period, this
+   * method will return the deprecating info of the latest period. A method for querying that info of current period is no need.
    */
-  function checkBridgeRewardDeprecated(address _consensusAddr) external view override returns (bool _result) {
-    uint256 _period = currentPeriod();
+  function checkBridgeRewardDeprecatedAtLatestPeriod(address _consensusAddr)
+    external
+    view
+    override
+    returns (bool _result)
+  {
+    uint256 _period = currentPeriod() - 1;
     return _bridgeRewardDeprecated(_consensusAddr, _period);
   }
 
