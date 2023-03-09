@@ -189,14 +189,8 @@ abstract contract CoinbaseExecution is
       return;
     }
 
-    // unchecked {
     uint256 _votedRatio = (_validatorBallots * _MAX_PERCENTAGE) / _totalVotes;
     uint256 _missedRatio = _MAX_PERCENTAGE - _votedRatio;
-    //   if () {
-    //     emit Error();
-    //   }
-    // }
-
     if (_missedRatio >= _ratioTier2) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
