@@ -2,12 +2,11 @@
 pragma solidity ^0.8.9;
 
 import "../extensions/RONTransferHelper.sol";
-import "hardhat/console.sol";
 
 contract MockPaymentFallback {
   event SafeReceived(address indexed sender, uint256 value);
 
-  /// @dev Fallback function accepts Ether transactions.
+  /// @dev Fallback function accepts ether transactions.
   receive() external payable {
     emit SafeReceived(msg.sender, msg.value);
   }
@@ -21,11 +20,9 @@ contract MockPaymentFallbackExpensive {
     array.push(0);
   }
 
-  /// @dev Fallback function accepts Ether transactions.
+  /// @dev Fallback function accepts ether transactions and set non-zero value to a zero value slot.
   receive() external payable {
-    // console.log(gasleft());
     array.push(block.number);
-    // console.log(gasleft());
     emit SafeReceived(msg.sender, msg.value);
   }
 }
