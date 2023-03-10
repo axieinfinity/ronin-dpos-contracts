@@ -235,10 +235,11 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
       }
     }
 
+    assembly {
+      mstore(_unsatisfiedCandidates, _unsatisfiedCount)
+    }
+
     if (_unsatisfiedCount > 0) {
-      assembly {
-        mstore(_unsatisfiedCandidates, _unsatisfiedCount)
-      }
       emit CandidatesRevoked(_unsatisfiedCandidates);
       _staking.execDeprecatePools(_unsatisfiedCandidates, _nextPeriod);
     }
