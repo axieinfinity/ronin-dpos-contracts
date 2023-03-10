@@ -55,9 +55,14 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     returns (uint256 _actualDeductingAmount)
   {
     _actualDeductingAmount = _deductStakingAmount(_stakingPool[_consensusAddr], _amount);
-    address payable _recipientAddr = payable(validatorContract());
-    if (!_unsafeSendRON(_recipientAddr, _actualDeductingAmount, 3500)) {
-      emit StakingAmountDeductFailed(_consensusAddr, _recipientAddr, _actualDeductingAmount, address(this).balance);
+    address payable _validatorContractAddr = payable(validatorContract());
+    if (!_unsafeSendRON(_validatorContractAddr, _actualDeductingAmount)) {
+      emit StakingAmountDeductFailed(
+        _consensusAddr,
+        _validatorContractAddr,
+        _actualDeductingAmount,
+        address(this).balance
+      );
     }
   }
 

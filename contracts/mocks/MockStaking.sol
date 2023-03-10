@@ -2,9 +2,10 @@
 
 pragma solidity ^0.8.9;
 
+import "../extensions/consumers/GlobalConfigConsumer.sol";
 import "../ronin/staking/RewardCalculation.sol";
 
-contract MockStaking is RewardCalculation {
+contract MockStaking is RewardCalculation, GlobalConfigConsumer {
   /// @dev Mapping from user => staking balance
   mapping(address => uint256) internal _stakingAmount;
   /// @dev Mapping from period number => slashed
@@ -22,7 +23,7 @@ contract MockStaking is RewardCalculation {
 
   function firstEverWrapup() external {
     delete pendingReward;
-    lastUpdatedPeriod = block.timestamp / 1 days + 1;
+    lastUpdatedPeriod = block.timestamp / PERIOD_DURATION + 1;
   }
 
   function endPeriod() external {

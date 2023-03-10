@@ -2,12 +2,13 @@
 
 pragma solidity ^0.8.9;
 
+import "../../extensions/consumers/GlobalConfigConsumer.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../libraries/AddressArrayUtils.sol";
 import "../../interfaces/staking/ICandidateStaking.sol";
 import "./BaseStaking.sol";
 
-abstract contract CandidateStaking is BaseStaking, ICandidateStaking, PercentageConsumer {
+abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConfigConsumer, PercentageConsumer {
   /// @dev The minimum threshold for being a validator candidate.
   uint256 internal _minValidatorStakingAmount;
 
@@ -111,7 +112,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, Percentage
       uint256 _deductingAmount = _pool.stakingAmount;
       if (_deductingAmount > 0) {
         _deductStakingAmount(_pool, _deductingAmount);
-        if (!_unsafeSendRON(payable(_pool.admin), _deductingAmount, 3500)) {
+        if (!_unsafeSendRON(payable(_pool.admin), _deductingAmount, DEFAULT_ADDITION_GAS)) {
           emit StakingAmountTransferFailed(_pool.addr, _pool.admin, _deductingAmount, address(this).balance);
         }
       }
@@ -119,7 +120,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, Percentage
       // Settle the unclaimed reward and transfer to the pool admin.
       uint256 _lastRewardAmount = _claimReward(_pools[_i], _pool.admin, _newPeriod);
       if (_lastRewardAmount > 0) {
-        _unsafeSendRON(payable(_pool.admin), _lastRewardAmount, 3500);
+        _unsafeSendRON(payable(_pool.admin), _lastRewardAmount, DEFAULT_ADDITION_GAS);
       }
     }
 
@@ -149,7 +150,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, Percentage
     if (_remainAmount < _minValidatorStakingAmount) revert ErrStakingAmountLeft();
 
     _unstake(_pool, _requester, _amount);
-    if (!_unsafeSendRON(payable(_requester), _amount, 3500)) revert ErrCannotTransferRON();
+    if (!_unsafeSendRON(payable(_requester), _amount, DEFAULT_ADDITION_GAS)) revert ErrCannotTransferRON();
   }
 
   /**
