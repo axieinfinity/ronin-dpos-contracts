@@ -6,12 +6,19 @@ interface Threshold {
   denominator: BigNumberish;
 }
 
+interface TrustedThreshold {
+  trustedNumerator: BigNumberish;
+  trustedDenominator: BigNumberish;
+}
+
 export type GatewayThreshold = Threshold & {
   highTierVoteWeightNumerator: BigNumberish;
 };
 
+export type GatewayTrustedThreshold = TrustedThreshold;
+
 interface NetworkThreshold {
-  [network: LiteralNetwork]: undefined | Threshold | GatewayThreshold;
+  [network: LiteralNetwork]: undefined | Threshold | TrustedThreshold | GatewayThreshold;
 }
 
 interface MapNetworkNumberSet {
@@ -60,17 +67,33 @@ export const validatorThreshold: NetworkThreshold = {
   },
 };
 
+export const roninGatewayThreshold: NetworkThreshold = {
+  [Network.Hardhat]: undefined,
+  [Network.Devnet]: {
+    trustedNumerator: 70,
+    trustedDenominator: 100,
+  },
+  [Network.GoerliForDevnet]: {
+    trustedNumerator: 70,
+    trustedDenominator: 100,
+  },
+};
+
 export const gatewayThreshold: NetworkThreshold = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
     numerator: 70,
     highTierVoteWeightNumerator: 90,
     denominator: 100,
+    trustedNumerator: 70,
+    trustedDenominator: 100,
   },
   [Network.GoerliForDevnet]: {
     numerator: 70,
     highTierVoteWeightNumerator: 90,
     denominator: 100,
+    trustedNumerator: 70,
+    trustedDenominator: 100,
   },
 };
 

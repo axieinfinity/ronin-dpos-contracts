@@ -180,7 +180,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(tx!, lastPeriod, nextEpoch, []);
-      expect(await roninValidatorSet.getValidators()).eql([]);
+      expect((await roninValidatorSet.getValidators())[0]).eql([]);
     });
   });
 
@@ -208,7 +208,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
         tx = await roninValidatorSet.connect(consensusAddr).wrapUpEpoch();
       });
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, false);
-      expect(await roninValidatorSet.getValidators()).eql([]);
+      expect((await roninValidatorSet.getValidators())[0]).eql([]);
       expect(await roninValidatorSet.getBlockProducers()).eql([]);
       await expect(tx!).not.emit(roninValidatorSet, 'ValidatorSetUpdated');
     });
@@ -234,7 +234,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, expectingValidatorsAddr);
-      expect(await roninValidatorSet.getValidators()).eql(expectingValidatorsAddr);
+      expect((await roninValidatorSet.getValidators())[0]).eql(expectingValidatorsAddr);
       expect(await roninValidatorSet.getBlockProducers()).eql(expectingValidatorsAddr);
     });
 
@@ -261,7 +261,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       expect(await roninValidatorSet.isBridgeOperator(deployer.address)).eq(false);
     });
 
-    it(`Should be able to wrap up epoch at the end of period and pick top ${maxValidatorNumber} to be validators`, async () => {
+    it('Should be able to wrap up epoch at the end of period and pick top `maxValidatorNumber` to be validators', async () => {
       await stakingContract
         .connect(poolAdmin)
         .applyValidatorCandidate(
@@ -309,7 +309,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, currentValidatorSet);
-      expect(await roninValidatorSet.getValidators()).eql(currentValidatorSet);
+      expect((await roninValidatorSet.getValidators())[0]).eql(currentValidatorSet);
       expect(await roninValidatorSet.getBlockProducers()).eql(currentValidatorSet);
     });
   });
@@ -351,7 +351,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       });
 
       it('Should validator is set with correct flags', async () => {
-        expect(await roninValidatorSet.getValidators()).eql(expectingValidatorsAddr);
+        expect((await roninValidatorSet.getValidators())[0]).eql(expectingValidatorsAddr);
         expect(await roninValidatorSet.getBlockProducers()).eql(expectingValidatorsAddr);
         for (let validatorAddr of expectingValidatorsAddr) {
           expect(await roninValidatorSet.isValidator(validatorAddr)).eq(

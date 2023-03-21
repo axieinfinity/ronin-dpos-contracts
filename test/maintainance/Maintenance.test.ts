@@ -141,7 +141,7 @@ describe('Maintenance test', () => {
       validatorCandidates.map((_) => _.consensusAddr.address)
     );
 
-    expect(await validatorContract.getValidators()).eql(validatorCandidates.map((_) => _.consensusAddr.address));
+    expect((await validatorContract.getValidators())[0]).eql(validatorCandidates.map((_) => _.consensusAddr.address));
     expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.map((_) => _.consensusAddr.address));
   });
 

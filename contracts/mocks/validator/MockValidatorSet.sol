@@ -60,7 +60,16 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function epochOf(uint256 _block) external view override returns (uint256) {}
 
-  function getValidators() external view override returns (address[] memory) {}
+  function getValidators()
+    external
+    view
+    override
+    returns (
+      address[] memory,
+      address[] memory,
+      EnumFlags.ValidatorFlag[] memory
+    )
+  {}
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
 

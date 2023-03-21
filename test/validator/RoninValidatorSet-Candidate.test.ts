@@ -182,7 +182,7 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, expectingValidatorsAddr);
-      expect(await roninValidatorSet.getValidators()).eql(expectingValidatorsAddr);
+      expect((await roninValidatorSet.getValidators())[0]).eql(expectingValidatorsAddr);
       expect(await roninValidatorSet.getBlockProducers()).eql(expectingValidatorsAddr);
     });
 
@@ -220,7 +220,7 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, expectingValidatorsAddr);
-      expect(await roninValidatorSet.getValidators()).eql(expectingValidatorsAddr);
+      expect((await roninValidatorSet.getValidators())[0]).eql(expectingValidatorsAddr);
       expect(await roninValidatorSet.getBlockProducers()).eql(expectingValidatorsAddr);
     });
   });

@@ -70,14 +70,14 @@ const compilerConfig: SolcUserConfig = {
   settings: {
     optimizer: {
       enabled: true,
-      runs: 200,
+      runs: 10,
     },
   },
 };
 
 const config: HardhatUserConfig = {
   solidity: {
-    compilers: [compilerConfig, { ...compilerConfig, version: '0.5.17' }],
+    compilers: [compilerConfig],
   },
   typechain: {
     outDir: 'src/types',
