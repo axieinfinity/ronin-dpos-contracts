@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../../../extensions/isolated-governance/IsolatedGovernance.sol";
-import "../../../interfaces/consumers/SignatureConsumer.sol";
-import "../../../libraries/BridgeOperatorsBallot.sol";
-import "../../../libraries/AddressArrayUtils.sol";
+import "../../interfaces/consumers/SignatureConsumer.sol";
+import "../../interfaces/consumers/VoteStatusConsumer.sol";
+import "../../libraries/BridgeOperatorsBallot.sol";
+import "../../libraries/AddressArrayUtils.sol";
+import "../../libraries/IsolatedGovernance.sol";
 
-abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
+abstract contract BOsGovernanceRelay is SignatureConsumer, VoteStatusConsumer {
   /// @dev The last the brige operator set info.
   BridgeOperatorsBallot.BridgeOperatorSet internal _lastSyncedBridgeOperatorSetInfo;
   /// @dev Mapping from period index => epoch index => bridge operators vote
-  mapping(uint256 => mapping(uint256 => IsolatedVote)) internal _vote;
+  mapping(uint256 => mapping(uint256 => IsolatedGovernance.Vote)) internal _vote;
 
   /**
    * @dev Returns the synced bridge operator set info.
@@ -61,7 +62,7 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, IsolatedGovernance {
       _lastSigner = _signers[_i];
     }
 
-    IsolatedVote storage _v = _vote[_ballot.period][_ballot.epoch];
+    IsolatedGovernance.Vote storage _v = _vote[_ballot.period][_ballot.epoch];
     uint256 _totalVoteWeight = _sumBridgeVoterWeights(_signers);
     if (_totalVoteWeight >= _minimumVoteWeight) {
       require(_totalVoteWeight > 0, "BOsGovernanceRelay: invalid vote weight");

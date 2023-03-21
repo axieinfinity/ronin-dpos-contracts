@@ -55,6 +55,8 @@ const maxPrioritizedValidatorNumber = 4;
 const minValidatorStakingAmount = 500;
 const numerator = 2;
 const denominator = 4;
+const trustedNumerator = 0;
+const trustedDenominator = 1;
 const mainchainId = 1;
 const numberOfBlocksInEpoch = 600;
 
@@ -79,6 +81,8 @@ describe('[Integration] Bridge Tracking test', () => {
         ethers.constants.AddressZero,
         numerator,
         denominator,
+        trustedNumerator,
+        trustedDenominator,
         [],
         [[token.address], [token.address]],
         [[mainchainId], [0]],
@@ -89,29 +93,34 @@ describe('[Integration] Bridge Tracking test', () => {
     await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
     // Deploys DPoS contracts
-    const { roninGovernanceAdminAddress, stakingContractAddress, validatorContractAddress, bridgeTrackingAddress } =
-      await initTest('ActionBridgeTracking')({
-        bridgeContract: bridgeContract.address,
-        roninTrustedOrganizationArguments: {
-          trustedOrganizations: trustedOrgs.map((v) => ({
-            consensusAddr: v.consensusAddr.address,
-            governor: v.governor.address,
-            bridgeVoter: v.bridgeVoter.address,
-            weight: 100,
-            addedBlock: 0,
-          })),
-          numerator,
-          denominator,
-        },
-        stakingArguments: {
-          minValidatorStakingAmount,
-        },
-        roninValidatorSetArguments: {
-          maxValidatorNumber,
-          maxPrioritizedValidatorNumber,
-          numberOfBlocksInEpoch,
-        },
-      });
+    const {
+      roninGovernanceAdminAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      bridgeTrackingAddress,
+      roninTrustedOrganizationAddress,
+    } = await initTest('ActionBridgeTracking')({
+      bridgeContract: bridgeContract.address,
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: trustedOrgs.map((v) => ({
+          consensusAddr: v.consensusAddr.address,
+          governor: v.governor.address,
+          bridgeVoter: v.bridgeVoter.address,
+          weight: 100,
+          addedBlock: 0,
+        })),
+        numerator,
+        denominator,
+      },
+      stakingArguments: {
+        minValidatorStakingAmount,
+      },
+      roninValidatorSetArguments: {
+        maxValidatorNumber,
+        maxPrioritizedValidatorNumber,
+        numberOfBlocksInEpoch,
+      },
+    });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
@@ -131,14 +140,17 @@ describe('[Integration] Bridge Tracking test', () => {
 
     await TransparentUpgradeableProxyV2__factory.connect(proxy.address, deployer).changeAdmin(governanceAdmin.address);
     await governanceAdminInterface.functionDelegateCalls(
-      Array.from(Array(2).keys()).map(() => bridgeContract.address),
+      Array.from(Array(3).keys()).map(() => bridgeContract.address),
       [
         bridgeContract.interface.encodeFunctionData('setBridgeTrackingContract', [bridgeTracking.address]),
         bridgeContract.interface.encodeFunctionData('setValidatorContract', [roninValidatorSet.address]),
+        bridgeContract.interface.encodeFunctionData('setRoninTrustedOrganizationContract', [
+          roninTrustedOrganizationAddress,
+        ]),
       ]
     );
 
-    // Applies candidates and double check the bridge operators
+    // Apply candidates and double check the bridge operators
     for (let i = 0; i < candidates.length; i++) {
       await stakingContract
         .connect(candidates[i].poolAdmin)

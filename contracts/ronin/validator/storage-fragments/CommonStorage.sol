@@ -48,7 +48,7 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
     returns (EmergencyExitInfo memory _info)
   {
     _info = _exitInfo[_consensusAddr];
-    require(_info.recyclingAt > 0, "CommonStorage: non-existent info");
+    if (_info.recyclingAt == 0) revert NonExistentRecyclingInfo();
   }
 
   /**

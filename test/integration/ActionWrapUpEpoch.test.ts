@@ -308,7 +308,7 @@ describe('[Integration] Wrap up epoch', () => {
           expectingBlockProducerSet
         );
 
-        expect(await validatorContract.getValidators()).eql(
+        expect((await validatorContract.getValidators())[0]).eql(
           [validators[1], validators[2], validators[3]].map((_) => _.consensusAddr.address).reverse()
         );
         expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);

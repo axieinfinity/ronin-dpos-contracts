@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
-import "../extensions/isolated-governance/bridge-operator-governance/BOsGovernanceRelay.sol";
+import "../extensions/bridge-operator-governance/BOsGovernanceRelay.sol";
 import "../extensions/sequential-governance/GovernanceRelay.sol";
 import "../extensions/TransparentUpgradeableProxyV2.sol";
 import "../extensions/GovernanceAdmin.sol";
@@ -98,14 +98,15 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
    * @inheritdoc GovernanceRelay
    */
   function _sumWeights(address[] memory _governors) internal view virtual override returns (uint256) {
+    bytes4 _selector = IRoninTrustedOrganization.sumGovernorWeights.selector;
     (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
-        abi.encodeWithSelector(IRoninTrustedOrganization.sumGovernorWeights.selector, _governors)
+        abi.encodeWithSelector(_selector, _governors)
       )
     );
-    require(_success, "MainchainGovernanceAdmin: proxy call `sumGovernorWeights(address[])` failed");
+    if (!_success) revert ErrProxyCallFailed(_selector);
     return abi.decode(_returndata, (uint256));
   }
 
@@ -113,14 +114,15 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
    * @inheritdoc BOsGovernanceRelay
    */
   function _sumBridgeVoterWeights(address[] memory _governors) internal view virtual override returns (uint256) {
+    bytes4 _selector = IRoninTrustedOrganization.sumBridgeVoterWeights.selector;
     (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
-        abi.encodeWithSelector(IRoninTrustedOrganization.sumBridgeVoterWeights.selector, _governors)
+        abi.encodeWithSelector(_selector, _governors)
       )
     );
-    require(_success, "MainchainGovernanceAdmin: proxy call `sumBridgeVoterWeights(address[])` failed");
+    if (!_success) revert ErrProxyCallFailed(_selector);
     return abi.decode(_returndata, (uint256));
   }
 

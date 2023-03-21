@@ -11,6 +11,8 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
   /// @dev Domain separator
   bytes32 public DOMAIN_SEPARATOR;
 
+  error ErrProxyCallFailed(bytes4 methodSignature);
+
   modifier onlySelfCall() {
     require(msg.sender == address(this), "GovernanceAdmin: only allowed self-call");
     _;
@@ -72,8 +74,9 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
   function getProxyImplementation(address _proxy) external view returns (address) {
     // We need to manually run the static call since the getter cannot be flagged as view
     // bytes4(keccak256("implementation()")) == 0x5c60da1b
-    (bool _success, bytes memory _returndata) = _proxy.staticcall(hex"5c60da1b");
-    require(_success, "GovernanceAdmin: proxy call `implementation()` failed");
+    bytes4 _selector = 0x5c60da1b;
+    (bool _success, bytes memory _returndata) = _proxy.staticcall(abi.encodeWithSelector(_selector));
+    if (!_success) revert ErrProxyCallFailed(_selector);
     return abi.decode(_returndata, (address));
   }
 
@@ -94,8 +97,9 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
   function getProxyAdmin(address _proxy) external view returns (address) {
     // We need to manually run the static call since the getter cannot be flagged as view
     // bytes4(keccak256("admin()")) == 0xf851a440
-    (bool _success, bytes memory _returndata) = _proxy.staticcall(hex"f851a440");
-    require(_success, "GovernanceAdmin: proxy call `admin()` failed");
+    bytes4 _selector = 0xf851a440;
+    (bool _success, bytes memory _returndata) = _proxy.staticcall(abi.encodeWithSelector(_selector));
+    if (!_success) revert ErrProxyCallFailed(_selector);
     return abi.decode(_returndata, (address));
   }
 
@@ -108,22 +112,24 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
    */
   function changeProxyAdmin(address _proxy, address _newAdmin) external onlySelfCall {
     // bytes4(keccak256("changeAdmin(address)"))
-    (bool _success, ) = _proxy.call(abi.encodeWithSelector(0x8f283970, _newAdmin));
-    require(_success, "GovernanceAdmin: proxy call `changeAdmin(address)` failed");
+    bytes4 _selector = 0x8f283970;
+    (bool _success, ) = _proxy.call(abi.encodeWithSelector(_selector, _newAdmin));
+    if (!_success) revert ErrProxyCallFailed(_selector);
   }
 
   /**
    * @dev Override `CoreGovernance-_getMinimumVoteWeight`.
    */
   function _getMinimumVoteWeight() internal view virtual override returns (uint256) {
+    bytes4 _selector = IQuorum.minimumVoteWeight.selector;
     (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
-        abi.encodeWithSelector(IQuorum.minimumVoteWeight.selector)
+        abi.encodeWithSelector(_selector)
       )
     );
-    require(_success, "GovernanceAdmin: proxy call `minimumVoteWeight()` failed");
+    if (!_success) revert ErrProxyCallFailed(_selector);
     return abi.decode(_returndata, (uint256));
   }
 
@@ -131,14 +137,15 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
    * @dev Override `CoreGovernance-_getTotalWeights`.
    */
   function _getTotalWeights() internal view virtual override returns (uint256) {
+    bytes4 _selector = IRoninTrustedOrganization.totalWeights.selector;
     (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
-        abi.encodeWithSelector(IRoninTrustedOrganization.totalWeights.selector)
+        abi.encodeWithSelector(_selector)
       )
     );
-    require(_success, "GovernanceAdmin: proxy call `totalWeights()` failed");
+    if (!_success) revert ErrProxyCallFailed(_selector);
     return abi.decode(_returndata, (uint256));
   }
 }

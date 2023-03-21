@@ -65,6 +65,8 @@ interface ICoinbaseExecution is ISlashingExecution {
 
   /// @dev Emitted when the epoch is wrapped up.
   event WrappedUpEpoch(uint256 indexed periodNumber, uint256 indexed epochNumber, bool periodEnding);
+  /// @dev Emitted when the bridge tracking contract's response is incorrect
+  event BridgeTrackingIncorrectlyResponded();
 
   /// @dev Error of method caller must be coinbase
   error ErrCallerMustBeCoinbase();

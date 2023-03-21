@@ -15,6 +15,16 @@ interface IRoninGatewayV2 is MappedTokenConsumer {
   event WithdrawalSignaturesRequested(bytes32 receiptHash, Transfer.Receipt);
   /// @dev Emitted when the tokens are mapped
   event TokenMapped(address[] roninTokens, address[] mainchainTokens, uint256[] chainIds, Token.Standard[] standards);
+  /// @dev Emitted when the threshold is updated
+  event TrustedThresholdUpdated(
+    uint256 indexed nonce,
+    uint256 indexed numerator,
+    uint256 indexed denominator,
+    uint256 previousNumerator,
+    uint256 previousDenominator
+  );
+  /// @dev Emitted when a deposit is voted
+  event DepositVoted(address indexed bridgeOperator, uint256 indexed id, uint256 indexed chainId, bytes32 receiptHash);
 
   /**
    * @dev Returns withdrawal count.
