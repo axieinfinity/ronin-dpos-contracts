@@ -190,7 +190,7 @@ abstract contract CoinbaseExecution is
       }
       _sumBallots += _bridgeBallots[_i];
     }
-    _valid = _valid && _sumBallots == _totalBridgeBallots;
+    _valid = _valid && (_sumBallots <= _totalBridgeBallots);
     if (!_valid) {
       emit BridgeTrackingIncorrectlyResponded();
     }
