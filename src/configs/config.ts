@@ -77,9 +77,9 @@ export const generalMainchainConf: GeneralConfig = {
     ...defaultGeneralConf,
     roninChainId: 2022,
   },
-  [Network.Mainnet]: {
+  [Network.Ethereum]: {
     roninChainId: 2020,
-    bridgeContract: '0x64192819ac13ef72bf6b5ae239ac672b43a9af08',
+    bridgeContract: '0x64192819ac13ef72bf6b5ae239ac672b43a9af08', // https://etherscan.io/address/0x64192819ac13ef72bf6b5ae239ac672b43a9af08
   },
 };
 
@@ -297,7 +297,7 @@ export const roninGovernanceAdminConf: RoninGovernanceAdminConfig = {
   [Network.Local]: defaultGovernanceAdminConf,
   [Network.Devnet]: defaultGovernanceAdminConf,
   [Network.Goerli]: undefined,
-  [Network.Ethereum]: defaultGovernanceAdminConf, // TODO: double with PO
+  [Network.Mainnet]: defaultGovernanceAdminConf, // TODO: double with PO
 };
 
 export const vaultForwarderConf: VaultForwarderConfig = {
