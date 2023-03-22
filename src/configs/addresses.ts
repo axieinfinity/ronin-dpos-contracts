@@ -107,11 +107,45 @@ const trustedOrgGoerliForDevnetConfig: TrustedOrganizationStruct[] = [
   },
 ];
 
-// TODO: fill mainnet config
+const testnetTrustedOrgConfig: TrustedOrganizationStruct[] = [
+  '0xAcf8Bf98D1632e602d0B1761771049aF21dd6597',
+  '0xCaba9D9424D6bAD99CE352A943F59279B533417a',
+  '0x9f1Abc67beA4db5560371fF3089F4Bfe934c36Bc',
+  '0xD086D2e3Fac052A3f695a4e8905Ce1722531163C',
+  '0xA85ddDdCeEaB43DccAa259dd4936aC104386F9aa',
+  '0x42c535deCcc071D9039b177Cb3AbF30411531b05',
+  '0x9422d990AcDc3f2b3AA3B97303aD3060F09d7ffC',
+  '0x877eFEfFE7A23E42C39e2C99b977e4AA4BEC7517',
+  '0x95908d03bA55c2a44688330b59E746Fdb2f17E3E',
+  '0x771DEc03db66a566a1DfE3fd635B3f8D404b9291',
+  '0xb212F24D850a0Ed90F2889dee31870E7FF3fED6c',
+].map((addr) => ({
+  consensusAddr: addr,
+  governor: addr,
+  bridgeVoter: addr,
+  weight: 100,
+  addedBlock: 0,
+}));
+
+const mainnetTrustedOrgConfig: TrustedOrganizationStruct[] = [].map((addr) => ({
+  consensusAddr: addr,
+  governor: addr,
+  bridgeVoter: addr,
+  weight: 100,
+  addedBlock: 0,
+}));
+
 export const trustedOrgSet: TrustedOrganizationSet = {
   [Network.Hardhat]: undefined,
+
   [Network.GoerliForDevnet]: trustedOrgGoerliForDevnetConfig,
   [Network.Devnet]: trustedOrgGoerliForDevnetConfig,
+
+  [Network.Testnet]: testnetTrustedOrgConfig,
+  [Network.Goerli]: testnetTrustedOrgConfig,
+
+  [Network.Mainnet]: mainnetTrustedOrgConfig,
+  [Network.Ethereum]: mainnetTrustedOrgConfig,
 };
 
 interface ContractAddress {
