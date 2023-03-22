@@ -115,6 +115,7 @@ export const roninChainId: MapNetworkNumber = {
   [Network.Ethereum]: 2020,
 };
 
+// For mainnet config: https://github.com/axieinfinity/ronin-smart-contracts-v2/blob/aba162542328ef925526f8dcaba99b85849cde48/src/configs.ts#L147-L183
 export const mainchainMappedToken: MainchainMappedToken = {
   [Network.Hardhat]: undefined,
   [Network.GoerliForDevnet]: {
@@ -153,7 +154,7 @@ export const mainchainMappedToken: MainchainMappedToken = {
   },
 };
 
-// TODO: fill mainnet config
+// For mainnet config: https://github.com/axieinfinity/ronin-smart-contracts-v2/blob/aba162542328ef925526f8dcaba99b85849cde48/src/configs.ts#L211-L233
 export const roninMappedToken: RoninMappedToken = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
