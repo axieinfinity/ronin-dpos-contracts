@@ -12,8 +12,8 @@ import {
   ERC20PresetMinterPauser__factory,
   MockRoninValidatorSetExtended,
   MockRoninValidatorSetExtended__factory,
-  RoninGatewayV2Extended,
-  RoninGatewayV2Extended__factory,
+  MockRoninGatewayV2Extended,
+  MockRoninGatewayV2Extended__factory,
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
   Staking,
@@ -38,7 +38,7 @@ let trustedOrgs: TrustedOrganizationAddressSet[];
 let candidates: ValidatorCandidateAddressSet[];
 let signers: SignerWithAddress[];
 
-let bridgeContract: RoninGatewayV2Extended;
+let bridgeContract: MockRoninGatewayV2Extended;
 let bridgeTracking: BridgeTracking;
 let stakingContract: Staking;
 let roninValidatorSet: MockRoninValidatorSetExtended;
@@ -77,7 +77,7 @@ describe('Ronin Gateway V2 test', () => {
 
     // Deploys bridge contracts
     token = await new ERC20PresetMinterPauser__factory(deployer).deploy('ERC20', 'ERC20');
-    const logic = await new RoninGatewayV2Extended__factory(deployer).deploy();
+    const logic = await new MockRoninGatewayV2Extended__factory(deployer).deploy();
     const proxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       logic.address,
       deployer.address,
@@ -93,7 +93,7 @@ describe('Ronin Gateway V2 test', () => {
         [0],
       ])
     );
-    bridgeContract = RoninGatewayV2Extended__factory.connect(proxy.address, deployer);
+    bridgeContract = MockRoninGatewayV2Extended__factory.connect(proxy.address, deployer);
     await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
     // Deploys DPoS contracts
