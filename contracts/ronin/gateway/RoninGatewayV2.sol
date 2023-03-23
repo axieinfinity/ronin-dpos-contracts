@@ -205,7 +205,7 @@ contract RoninGatewayV2 is
   /**
    * @inheritdoc IRoninGatewayV2
    */
-  function depositFor(Transfer.Receipt calldata _receipt) external onlyBridgeOperator {
+  function depositFor(Transfer.Receipt calldata _receipt) external whenNotPaused onlyBridgeOperator {
     address _sender = msg.sender;
     _depositFor(_receipt, _sender, minimumVoteWeight(), minimumTrustedVoteWeight());
     _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Deposit, _receipt.id, _sender);
@@ -249,6 +249,7 @@ contract RoninGatewayV2 is
    */
   function tryBulkDepositFor(Transfer.Receipt[] calldata _receipts)
     external
+    whenNotPaused
     onlyBridgeOperator
     returns (bool[] memory _executedReceipts)
   {
@@ -301,6 +302,7 @@ contract RoninGatewayV2 is
    */
   function bulkSubmitWithdrawalSignatures(uint256[] calldata _withdrawals, bytes[] calldata _signatures)
     external
+    whenNotPaused
     onlyBridgeOperator
   {
     address _validator = msg.sender;
