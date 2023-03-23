@@ -1,7 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { generalRoninConf, mainchainNetworks } from '../configs/config';
+import { generalMainchainConf, mainchainNetworks } from '../configs/config';
 import { gatewayPauseEnforcerConf } from '../configs/gateway';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
@@ -17,7 +17,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     from: deployer,
     log: true,
     args: [
-      generalRoninConf[network.name].bridgeContract,
+      generalMainchainConf[network.name].bridgeContract,
       gatewayPauseEnforcerConf[network.name]?.enforcerAdmin,
       gatewayPauseEnforcerConf[network.name]?.sentries,
     ],
