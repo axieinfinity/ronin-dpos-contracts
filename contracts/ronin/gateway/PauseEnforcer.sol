@@ -35,11 +35,13 @@ contract PauseEnforcer is AccessControlEnumerable {
   constructor(
     IPauseTarget _target,
     address _admin,
-    address _sentry
+    address[] memory _sentries
   ) {
     target = _target;
     _setupRole(DEFAULT_ADMIN_ROLE, _admin);
-    _grantRole(SENTRY_ROLE, _sentry);
+    for (uint _i; _i < _sentries.length; _i++) {
+      _grantRole(SENTRY_ROLE, _sentries[_i]);
+    }
   }
 
   /**

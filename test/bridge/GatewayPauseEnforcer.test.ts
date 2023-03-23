@@ -104,7 +104,7 @@ describe('Ronin Gateway V2 test', () => {
     pauseEnforcer = await new PauseEnforcer__factory(deployer).deploy(
       bridgeContract.address, // target
       enforcerAdmin.address, // admin
-      enforcerSentry.address // sentry
+      [enforcerSentry.address] // sentry
     );
 
     // Deploys DPoS contracts
