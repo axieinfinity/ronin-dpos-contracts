@@ -2,18 +2,14 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
-
-interface PauseTarget {
-  function pause() external;
-
-  function unpause() external;
-
-  function paused() external returns (bool);
-}
+import "../../interfaces/IPauseTarget.sol";
 
 contract PauseEnforcer is AccessControlEnumerable {
   bytes32 public constant SENTRY_ROLE = keccak256("SENTRY_ROLE");
-  PauseTarget _target;
+
+  /// @dev The contract that can be paused or unpaused by the SENTRY_ROLE.
+  IPauseTarget _target;
+  /// @dev Indicating whether or not the target contract is paused in emergency mode.
   bool _emergency;
 
   modifier onEmergency() {
@@ -31,24 +27,45 @@ contract PauseEnforcer is AccessControlEnumerable {
     _;
   }
 
-  constructor(address admin, PauseTarget target) {
+  constructor(address admin, IPauseTarget target) {
     _setupRole(DEFAULT_ADMIN_ROLE, admin);
     _target = target;
   }
 
+  /**
+   * @dev Grants the SENTRY_ROLE to the specified address.
+   */
   function grantSentry(address _sentry) external onlyRole(DEFAULT_ADMIN_ROLE) {
     _grantRole(SENTRY_ROLE, _sentry);
   }
 
+  /**
+   * @dev Revokes the SENTRY_ROLE from the specified address.
+   */
   function revokeSentry(address _sentry) external onlyRole(DEFAULT_ADMIN_ROLE) {
     _revokeRole(SENTRY_ROLE, _sentry);
   }
 
+  /**
+   * @dev Triggers a pause on the target contract.
+   *
+   * Requirements:
+   * - Only be called by accounts with the SENTRY_ROLE,
+   * - The target contract is not already paused.
+   */
   function triggerPause() external onlyRole(SENTRY_ROLE) targetNotPaused {
     _emergency = true;
     _target.pause();
   }
 
+  /**
+   * @dev Triggers an unpause on the target contract.
+   *
+   * Requirements:
+   * - Only be called by accounts with the SENTRY_ROLE,
+   * - The target contract is already paused.
+   * - The target contract is paused in emergency mode.
+   */
   function triggerUnpause() external onlyRole(SENTRY_ROLE) onEmergency targetPaused {
     _emergency = false;
     _target.unpause();
