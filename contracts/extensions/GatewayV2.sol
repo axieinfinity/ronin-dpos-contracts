@@ -12,18 +12,13 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
   address private ______deprecated;
   uint256 public nonce;
 
-  mapping(address => bool) public emergencyPauser;
+  address public emergencyPauser;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
   uint256[49] private ______gap;
-
-  modifier onlyEmergencyPauser() {
-    require(emergencyPauser[msg.sender], "GatewayV2: not emergency pauser");
-    _;
-  }
 
   /**
    * @inheritdoc IQuorum
@@ -54,14 +49,16 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
   /**
    * @dev Triggers paused state.
    */
-  function pause() external onlyAdmin {
+  function pause() external {
+    require(msg.sender == _getAdmin() || msg.sender == emergencyPauser, "GatewayV2: not authorized pauser");
     _pause();
   }
 
   /**
    * @dev Triggers unpaused state.
    */
-  function unpause() external onlyAdmin {
+  function unpause() external {
+    require(msg.sender == _getAdmin() || msg.sender == emergencyPauser, "GatewayV2: not authorized pauser");
     _unpause();
   }
 
@@ -104,30 +101,9 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
   function _getTotalWeight() internal view virtual returns (uint256);
 
   /**
-   * @dev Triggers emergency paused state.
-   */
-  function emergencyPause() external onlyEmergencyPauser {
-    _pause();
-  }
-
-  /**
-   * @dev Triggers emergency unpaused state.
-   */
-  function emergencyUnpause() external onlyEmergencyPauser {
-    _unpause();
-  }
-
-  /**
    * @dev Grant emergency pauser role for `_addr`.
    */
   function grantEmergencyPauser(address _addr) external onlyAdmin {
-    emergencyPauser[_addr] = true;
-  }
-
-  /**
-   * @dev Revoke emergency pauser role for `_addr`.
-   */
-  function revokeEmergencyPauser(address _addr) external onlyAdmin {
-    emergencyPauser[_addr] = false;
+    emergencyPauser = _addr;
   }
 }
