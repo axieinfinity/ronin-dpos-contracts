@@ -21,6 +21,13 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
   uint256[49] private ______gap;
 
   /**
+   * @dev Grant emergency pauser role for `_addr`.
+   */
+  function grantEmergencyPauser(address _addr) external onlyAdmin {
+    emergencyPauser = _addr;
+  }
+
+  /**
    * @inheritdoc IQuorum
    */
   function getThreshold() external view virtual returns (uint256 num_, uint256 denom_) {
@@ -99,11 +106,4 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
    * @dev Returns the total weight.
    */
   function _getTotalWeight() internal view virtual returns (uint256);
-
-  /**
-   * @dev Grant emergency pauser role for `_addr`.
-   */
-  function grantEmergencyPauser(address _addr) external onlyAdmin {
-    emergencyPauser = _addr;
-  }
 }
