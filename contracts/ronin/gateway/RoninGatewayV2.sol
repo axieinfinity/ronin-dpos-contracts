@@ -3,19 +3,19 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../extensions/GatewayV2.sol";
-import "../extensions/MinimumWithdrawal.sol";
-import "../interfaces/IERC20Mintable.sol";
-import "../interfaces/IERC721Mintable.sol";
-import "../interfaces/IBridgeTracking.sol";
-import "../interfaces/IRoninGatewayV2.sol";
-import "../interfaces/IRoninTrustedOrganization.sol";
-import "../interfaces/consumers/VoteStatusConsumer.sol";
-import "../interfaces/validator/IRoninValidatorSet.sol";
-import "../interfaces/collections/IHasValidatorContract.sol";
-import "../interfaces/collections/IHasBridgeTrackingContract.sol";
-import "../interfaces/collections/IHasRoninTrustedOrganizationContract.sol";
-import "../libraries/IsolatedGovernance.sol";
+import "../../extensions/GatewayV2.sol";
+import "../../extensions/MinimumWithdrawal.sol";
+import "../../interfaces/IERC20Mintable.sol";
+import "../../interfaces/IERC721Mintable.sol";
+import "../../interfaces/IBridgeTracking.sol";
+import "../../interfaces/IRoninGatewayV2.sol";
+import "../../interfaces/IRoninTrustedOrganization.sol";
+import "../../interfaces/consumers/VoteStatusConsumer.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
+import "../../interfaces/collections/IHasValidatorContract.sol";
+import "../../interfaces/collections/IHasBridgeTrackingContract.sol";
+import "../../interfaces/collections/IHasRoninTrustedOrganizationContract.sol";
+import "../../libraries/IsolatedGovernance.sol";
 
 contract RoninGatewayV2 is
   GatewayV2,
