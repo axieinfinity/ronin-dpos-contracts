@@ -196,3 +196,12 @@ export interface VaultForwarderArguments {
 export interface VaultForwarderConfig {
   [network: LiteralNetwork]: VaultForwarderArguments[] | undefined;
 }
+
+export interface GatewayPauseEnforcerArguments {
+  enforcerAdmin: Address;
+  sentries?: Address[];
+}
+
+export interface GatewayPauseEnforcerConfig {
+  [network: LiteralNetwork]: GatewayPauseEnforcerArguments | undefined;
+}
