@@ -12,6 +12,11 @@ contract PauseEnforcer is AccessControlEnumerable {
   /// @dev Indicating whether or not the target contract is paused in emergency mode.
   bool public emergency;
 
+  /// @dev Emitted when the emergency ppause is triggered by `account`.
+  event EmergencyPaused(address account);
+  /// @dev Emitted when the emergency unpause is triggered by `account`.
+  event EmergencyUnpaused(address account);
+
   modifier onEmergency() {
     require(emergency, "PauseEnforcer: not on emergency pause");
     _;
@@ -61,6 +66,7 @@ contract PauseEnforcer is AccessControlEnumerable {
   function triggerPause() external onlyRole(SENTRY_ROLE) targetNotPaused {
     emergency = true;
     target.pause();
+    emit EmergencyPaused(msg.sender);
   }
 
   /**
@@ -74,5 +80,6 @@ contract PauseEnforcer is AccessControlEnumerable {
   function triggerUnpause() external onlyRole(SENTRY_ROLE) onEmergency targetPaused {
     emergency = false;
     target.unpause();
+    emit EmergencyUnpaused(msg.sender);
   }
 }
