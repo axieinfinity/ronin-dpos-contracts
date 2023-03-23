@@ -6,13 +6,16 @@ import { ethers, network } from 'hardhat';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import {
   BridgeTracking,
+  BridgeTracking__factory,
   ERC20PresetMinterPauser__factory,
   MockRoninValidatorSetExtended,
   MockRoninValidatorSetExtended__factory,
   MockRoninGatewayV2Extended,
   MockRoninGatewayV2Extended__factory,
   RoninGovernanceAdmin,
+  RoninGovernanceAdmin__factory,
   Staking,
+  Staking__factory,
   TransparentUpgradeableProxyV2__factory,
   PauseEnforcer,
   PauseEnforcer__factory,
@@ -105,7 +108,13 @@ describe('Ronin Gateway V2 test', () => {
     );
 
     // Deploys DPoS contracts
-    const { roninTrustedOrganizationAddress } = await initTest('RoninGatewayV2-PauseEnforcer')({
+    const {
+      bridgeTrackingAddress,
+      stakingContractAddress,
+      roninGovernanceAdminAddress,
+      roninTrustedOrganizationAddress,
+      validatorContractAddress,
+    } = await initTest('RoninGatewayV2-PauseEnforcer')({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
@@ -128,6 +137,10 @@ describe('Ronin Gateway V2 test', () => {
       },
     });
 
+    stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
+    governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
+    roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
+    bridgeTracking = BridgeTracking__factory.connect(bridgeTrackingAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
       network.config.chainId!,
