@@ -23,7 +23,7 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
   /**
    * @dev Grant emergency pauser role for `_addr`.
    */
-  function grantEmergencyPauser(address _addr) external onlyAdmin {
+  function setEmergencyPauser(address _addr) external onlyAdmin {
     emergencyPauser = _addr;
   }
 
