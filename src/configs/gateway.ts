@@ -195,10 +195,10 @@ export const gatewayPauseEnforcerConf: GatewayPauseEnforcerConfig = {
   },
   [Network.Mainnet]: {
     enforcerAdmin: '0x8417AC6838be147Ab0e201496B2E5eDf90A48cC5', // https://explorer.roninchain.com/address/ronin:8417AC6838be147Ab0e201496B2E5eDf90A48cC5
-    sentries: [],
+    sentries: ['0x8B35C5E273525a4Ca61025812f29C17727948f57'],
   },
   [Network.Ethereum]: {
     enforcerAdmin: '0x2DA02aC5f19Ae362a4121718d990e655eB628D96', // https://etherscan.io/address/0x2DA02aC5f19Ae362a4121718d990e655eB628D96
-    sentries: [],
+    sentries: ['0x8B35C5E273525a4Ca61025812f29C17727948f57'],
   },
 };
