@@ -345,7 +345,7 @@ export const roninGovernanceAdminConf: RoninGovernanceAdminConfig = {
   [Network.Local]: defaultGovernanceAdminConf,
   [Network.Devnet]: defaultGovernanceAdminConf,
   [Network.Goerli]: undefined,
-  [Network.Mainnet]: defaultGovernanceAdminConf, // TODO: double with PO
+  [Network.Mainnet]: defaultGovernanceAdminConf,
 };
 
 export const vaultForwarderConf: VaultForwarderConfig = {
