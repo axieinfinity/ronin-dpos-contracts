@@ -127,13 +127,15 @@ const testnetTrustedOrgConfig: TrustedOrganizationStruct[] = [
   addedBlock: 0,
 }));
 
-const mainnetTrustedOrgConfig: TrustedOrganizationStruct[] = [].map((addr) => ({
-  consensusAddr: addr,
-  governor: addr,
-  bridgeVoter: addr,
-  weight: 100,
-  addedBlock: 0,
-}));
+const mainnetTrustedOrgConfig: TrustedOrganizationStruct[] = [
+  {
+    consensusAddr: '0xf41af21f0a800dc4d86efb14ad46cfb9884fdf38',
+    governor: '0xe880802580a1fbdef67ace39d1b21c5b2c74f059',
+    bridgeVoter: '0x7bb3127bdb8eb364c3cc827331252e53af119993',
+    weight: 100,
+    addedBlock: 0,
+  },
+];
 
 export const trustedOrgSet: TrustedOrganizationSet = {
   [Network.Hardhat]: undefined,
