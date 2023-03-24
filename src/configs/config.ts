@@ -92,7 +92,6 @@ const defaultMaintenanceConf: MaintenanceArguments = {
   cooldownSecsToMaintain: 86400 * 3, // request next maintenance must wait at least 3 days.
 };
 
-// TODO: update config for testnet & mainnet
 export const maintenanceConf: MaintenanceConfig = {
   [Network.Local]: defaultMaintenanceConf,
   [Network.Devnet]: defaultMaintenanceConf,
@@ -113,7 +112,6 @@ const defaultStakingConf: StakingArguments = {
   waitingSecsToRevoke: 7 * 86400, // at least 7 days
 };
 
-// TODO: update config for testnet & mainnet
 export const stakingConfig: StakingConfig = {
   [Network.Local]: defaultStakingConf,
   [Network.Devnet]: defaultStakingConf,
@@ -122,7 +120,7 @@ export const stakingConfig: StakingConfig = {
     minValidatorStakingAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5).mul(5)), // 500.000 RON
   },
   [Network.Mainnet]: {
-    ...defaultStakingConf, // TODO: double check with PO
+    ...defaultStakingConf,
     minValidatorStakingAmount: BigNumber.from(10).pow(18).mul(250_000), // 250.000 RON
   },
 };
@@ -133,7 +131,6 @@ const defaultStakingVestingConf: StakingVestingArguments = {
   topupAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(4)), // 10.000 RON
 };
 
-// TODO: update config for testnet & mainnet
 export const stakingVestingConfig: StakingVestingConfig = {
   [Network.Local]: defaultStakingVestingConf,
   [Network.Devnet]: defaultStakingVestingConf,
@@ -179,7 +176,6 @@ const defaultSlashIndicatorConf: SlashIndicatorArguments = {
   },
 };
 
-// TODO: update config for testnet & mainnet
 export const slashIndicatorConf: SlashIndicatorConfig = {
   [Network.Local]: defaultSlashIndicatorConf,
   [Network.Devnet]: defaultSlashIndicatorConf,
@@ -237,7 +233,6 @@ const defaultRoninValidatorSetConf: RoninValidatorSetArguments = {
   emergencyExpiryDuration: 14 * 86400, // 14 days
 };
 
-// TODO: update config for testnet & mainnet
 export const roninValidatorSetConf: RoninValidatorSetConfig = {
   [Network.Local]: defaultRoninValidatorSetConf,
   [Network.Devnet]: defaultRoninValidatorSetConf,
@@ -251,7 +246,7 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
   [Network.Mainnet]: {
     maxValidatorNumber: 22,
     maxPrioritizedValidatorNumber: 12,
-    maxValidatorCandidate: 50,
+    maxValidatorCandidate: 100,
     numberOfBlocksInEpoch: 200,
     minEffectiveDaysOnwards: 7,
     emergencyExitLockedAmount: BigNumber.from(10).pow(18).mul(50_000), // 50.000 RON
@@ -271,7 +266,6 @@ const defaultRoninTrustedOrganizationConf: RoninTrustedOrganizationArguments = {
   denominator: 1,
 };
 
-// TODO: update config for testnet vs. goerli, mainnet vs. ethereum
 export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
   [Network.Local]: defaultRoninTrustedOrganizationConf,
   [Network.Devnet]: defaultRoninTrustedOrganizationConf,
@@ -307,7 +301,6 @@ const defaultMainchainGovernanceAdminConf: MainchainGovernanceAdminArguments = {
   relayers: ['0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1'],
 };
 
-// TODO: update config for goerli, ethereum
 export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
   [Network.Local]: defaultMainchainGovernanceAdminConf,
   [Network.Devnet]: defaultMainchainGovernanceAdminConf,
@@ -340,7 +333,7 @@ const defaultGovernanceAdminConf: RoninGovernanceAdminArguments = {
   proposalExpiryDuration: 60 * 60 * 24 * 14, // 14 days
 };
 
-// TODO: update config for goerli, ethereum
+// TODO: update config for goerli
 export const roninGovernanceAdminConf: RoninGovernanceAdminConfig = {
   [Network.Local]: defaultGovernanceAdminConf,
   [Network.Devnet]: defaultGovernanceAdminConf,
