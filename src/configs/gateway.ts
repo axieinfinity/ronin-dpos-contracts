@@ -1,5 +1,5 @@
 import { BigNumber, BigNumberish } from 'ethers';
-import { LiteralNetwork, Network } from '../utils';
+import { GatewayPauseEnforcerConfig, LiteralNetwork, Network } from '../utils';
 
 interface Threshold {
   numerator: BigNumberish;
@@ -181,4 +181,17 @@ export const roninMappedToken: RoninMappedToken = {
       BigNumber.from(10).pow(6).mul(2), // 20 USDC
     ],
   },
+};
+
+export const gatewayPauseEnforcerConf: GatewayPauseEnforcerConfig = {
+  [Network.Testnet]: {
+    enforcerAdmin: '0x968d0cd7343f711216817e617d3f92a23dc91c07',
+    sentries: ['0x968D0Cd7343f711216817E617d3f92a23dC91c07'],
+  },
+  [Network.Goerli]: {
+    enforcerAdmin: '0x968d0cd7343f711216817e617d3f92a23dc91c07',
+    sentries: ['0x968D0Cd7343f711216817E617d3f92a23dC91c07'],
+  },
+  [Network.Mainnet]: undefined,
+  [Network.Ethereum]: undefined,
 };

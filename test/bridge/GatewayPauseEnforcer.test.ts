@@ -2,10 +2,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumberish } from 'ethers';
 import { ethers, network } from 'hardhat';
-import { getReceiptHash } from '../../src/script/bridge';
 
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
-import { VoteStatus } from '../../src/script/proposal';
 import {
   BridgeTracking,
   BridgeTracking__factory,
@@ -19,10 +17,12 @@ import {
   Staking,
   Staking__factory,
   TransparentUpgradeableProxyV2__factory,
+  PauseEnforcer,
+  PauseEnforcer__factory,
 } from '../../src/types';
 import { ERC20PresetMinterPauser } from '../../src/types/ERC20PresetMinterPauser';
 import { ReceiptStruct } from '../../src/types/IRoninGatewayV2';
-import { DEFAULT_ADDRESS } from '../../src/utils';
+import { DEFAULT_ADDRESS, DEFAULT_ADMIN_ROLE, SENTRY_ROLE } from '../../src/utils';
 import {
   createManyTrustedOrganizationAddressSets,
   createManyValidatorCandidateAddressSets,
@@ -34,6 +34,8 @@ import { mineBatchTxs } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
+let enforcerAdmin: SignerWithAddress;
+let enforcerSentry: SignerWithAddress;
 let trustedOrgs: TrustedOrganizationAddressSet[];
 let candidates: ValidatorCandidateAddressSet[];
 let signers: SignerWithAddress[];
@@ -45,6 +47,8 @@ let roninValidatorSet: MockRoninValidatorSetExtended;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 let token: ERC20PresetMinterPauser;
+
+let pauseEnforcer: PauseEnforcer;
 
 let period: BigNumberish;
 let receipts: ReceiptStruct[];
@@ -66,7 +70,7 @@ const numberOfBlocksInEpoch = 600;
 
 describe('Ronin Gateway V2 test', () => {
   before(async () => {
-    [deployer, coinbase, ...signers] = await ethers.getSigners();
+    [deployer, coinbase, enforcerAdmin, enforcerSentry, ...signers] = await ethers.getSigners();
     // Set up that all candidates except the 2 last ones are trusted org
     candidates = createManyValidatorCandidateAddressSets(signers.splice(0, maxValidatorNumber * 3));
     trustedOrgs = createManyTrustedOrganizationAddressSets(
@@ -96,14 +100,21 @@ describe('Ronin Gateway V2 test', () => {
     bridgeContract = MockRoninGatewayV2Extended__factory.connect(proxy.address, deployer);
     await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
+    // Deploys pauser
+    pauseEnforcer = await new PauseEnforcer__factory(deployer).deploy(
+      bridgeContract.address, // target
+      enforcerAdmin.address, // admin
+      [enforcerSentry.address] // sentry
+    );
+
     // Deploys DPoS contracts
     const {
-      roninGovernanceAdminAddress,
-      stakingContractAddress,
-      validatorContractAddress,
       bridgeTrackingAddress,
+      stakingContractAddress,
+      roninGovernanceAdminAddress,
       roninTrustedOrganizationAddress,
-    } = await initTest('RoninGatewayV2')({
+      validatorContractAddress,
+    } = await initTest('RoninGatewayV2-PauseEnforcer')({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
@@ -181,21 +192,75 @@ describe('Ronin Gateway V2 test', () => {
     await network.provider.send('hardhat_setCoinbase', [DEFAULT_ADDRESS]);
   });
 
-  describe('Voting Test', () => {
-    let snapshotId: any;
-    before(async () => {
-      snapshotId = await network.provider.send('evm_snapshot');
+  describe('Set up emergency pauser contract', () => {
+    it('Should be able to call set up emergency pauser contract in the gateway', async () => {
       await governanceAdminInterface.functionDelegateCalls(
-        Array.from(Array(1).keys()).map(() => bridgeContract.address),
-        [bridgeContract.interface.encodeFunctionData('setTrustedThreshold', [0, 1])]
+        [bridgeContract.address],
+        [bridgeContract.interface.encodeFunctionData('setEmergencyPauser', [pauseEnforcer.address])]
       );
     });
 
-    after(async () => {
-      await network.provider.send('evm_revert', [snapshotId]);
+    it('Should the gateway set up pauser correctly', async () => {
+      expect(await bridgeContract.emergencyPauser()).eq(pauseEnforcer.address);
     });
 
-    it('Should be able to bulk deposits using bridge operator accounts', async () => {
+    it('Should the pauser set up config correctly', async () => {
+      expect(await pauseEnforcer.target()).eq(bridgeContract.address);
+      expect(await pauseEnforcer.hasRole(SENTRY_ROLE, enforcerSentry.address)).eq(true);
+    });
+  });
+
+  describe('Emergency pause & emergency unpause', () => {
+    it('Should be able to emergency pause', async () => {
+      expect(await pauseEnforcer.connect(enforcerSentry).triggerPause())
+        .emit(pauseEnforcer, 'EmergencyPaused')
+        .withArgs(enforcerSentry.address);
+
+      expect(await pauseEnforcer.emergency()).eq(true);
+      expect(await bridgeContract.paused()).eq(true);
+    });
+
+    it('Should the gateway cannot interacted when on pause', async () => {
+      receipts = [
+        {
+          id: 0,
+          kind: 0,
+          mainchain: {
+            addr: deployer.address,
+            tokenAddr: token.address,
+            chainId: mainchainId,
+          },
+          ronin: {
+            addr: deployer.address,
+            tokenAddr: token.address,
+            chainId: network.config.chainId!,
+          },
+          info: { erc: 0, id: 0, quantity: 100 },
+        },
+      ];
+      receipts.push({ ...receipts[0], id: 1 });
+
+      await expect(bridgeContract.connect(candidates[0].bridgeOperator).tryBulkDepositFor(receipts)).revertedWith(
+        'Pausable: paused'
+      );
+    });
+
+    it('Should not be able to emergency pause for a second time', async () => {
+      await expect(pauseEnforcer.connect(enforcerSentry).triggerPause()).revertedWith(
+        'PauseEnforcer: target is not on pause'
+      );
+    });
+
+    it('Should be able to emergency unpause', async () => {
+      expect(await pauseEnforcer.connect(enforcerSentry).triggerUnpause())
+        .emit(pauseEnforcer, 'EmergencyUnpaused')
+        .withArgs(enforcerSentry.address);
+
+      expect(await pauseEnforcer.emergency()).eq(false);
+      expect(await bridgeContract.paused()).eq(false);
+    });
+
+    it('Should the gateway can be interacted after unpause', async () => {
       receipts = [
         {
           id: 0,
@@ -219,112 +284,59 @@ describe('Ronin Gateway V2 test', () => {
         const tx = await bridgeContract.connect(candidates[i].bridgeOperator).tryBulkDepositFor(receipts);
         await expect(tx).not.emit(bridgeContract, 'Deposited');
       }
-
-      for (let i = 0; i < receipts.length; i++) {
-        const vote = await bridgeContract.depositVote(receipts[i].mainchain.chainId, receipts[i].id);
-        expect(vote.status).eq(VoteStatus.Pending);
-        const [totalWeight, trustedWeight] = await bridgeContract.getDepositVoteWeight(
-          mainchainId,
-          i,
-          getReceiptHash(receipts[i])
-        );
-        expect(totalWeight).eq(numerator - 1);
-        expect(trustedWeight).eq(numerator - 1);
-      }
-    });
-
-    it('Should be able to update the vote weights when a bridge operator exited', async () => {
-      await stakingContract.connect(candidates[0].poolAdmin).requestEmergencyExit(candidates[0].consensusAddr.address);
-      await mineBatchTxs(async () => {
-        await roninValidatorSet.endEpoch();
-        await roninValidatorSet.connect(coinbase).wrapUpEpoch();
-      });
-      {
-        const [totalWeight, trustedWeight] = await bridgeContract.getDepositVoteWeight(
-          mainchainId,
-          0,
-          getReceiptHash(receipts[0])
-        );
-        expect(totalWeight).eq(1);
-        expect(trustedWeight).eq(1);
-      }
-      {
-        const [totalWeight, trustedWeight] = await bridgeContract.getDepositVoteWeight(
-          mainchainId,
-          1,
-          getReceiptHash(receipts[1])
-        );
-        expect(totalWeight).eq(1);
-        expect(trustedWeight).eq(1);
-      }
-    });
-
-    it('Should be able to continue to vote on the votes, the later vote is not counted but is tracked', async () => {
-      for (let i = numerator - 1; i < candidates.length; i++) {
-        await bridgeContract.connect(candidates[i].bridgeOperator).tryBulkDepositFor(receipts);
-      }
-
-      for (let i = 0; i < receipts.length; i++) {
-        const vote = await bridgeContract.depositVote(receipts[i].mainchain.chainId, receipts[i].id);
-        expect(vote.status).eq(VoteStatus.Executed);
-        const [totalWeight, trustedWeight] = await bridgeContract.getDepositVoteWeight(
-          mainchainId,
-          i,
-          getReceiptHash(receipts[i])
-        );
-        expect(totalWeight).eq(numerator);
-        expect(trustedWeight).eq(numerator);
-      }
     });
   });
 
-  describe('Trusted Organization Restriction', () => {
-    let snapshotId: any;
-    before(async () => {
-      snapshotId = await network.provider.send('evm_snapshot');
+  describe('Normal pause & emergency unpause', () => {
+    it('Should gateway admin can pause the gateway through voting', async () => {
+      let tx = await governanceAdminInterface.functionDelegateCalls(
+        [bridgeContract.address],
+        [bridgeContract.interface.encodeFunctionData('pause')]
+      );
+
+      expect(tx).emit(bridgeContract, 'Paused').withArgs(governanceAdmin.address);
+      expect(await pauseEnforcer.emergency()).eq(false);
+      expect(await bridgeContract.paused()).eq(true);
     });
 
-    after(async () => {
-      await network.provider.send('evm_revert', [snapshotId]);
+    it('Should not be able to emergency unpause', async () => {
+      await expect(pauseEnforcer.connect(enforcerSentry).triggerUnpause()).revertedWith(
+        'PauseEnforcer: not on emergency pause'
+      );
     });
 
-    it('Should not approve the vote if there is insufficient trusted votes yet', async () => {
-      receipts = [
-        {
-          id: 0,
-          kind: 0,
-          mainchain: {
-            addr: deployer.address,
-            tokenAddr: token.address,
-            chainId: mainchainId,
-          },
-          ronin: {
-            addr: deployer.address,
-            tokenAddr: token.address,
-            chainId: network.config.chainId!,
-          },
-          info: { erc: 0, id: 0, quantity: 1 },
-        },
-      ];
-      receipts.push({ ...receipts[0], id: 1 });
-
-      await bridgeContract
-        .connect(candidates[maxPrioritizedValidatorNumber].bridgeOperator)
-        .tryBulkDepositFor(receipts);
-      const tx = await bridgeContract
-        .connect(candidates[maxPrioritizedValidatorNumber + 1].bridgeOperator)
-        .tryBulkDepositFor(receipts);
-      await expect(tx).not.emit(bridgeContract, 'Deposited');
-      const vote = await bridgeContract.depositVote(receipts[0].mainchain.chainId, receipts[0].id);
-      expect(vote.status).eq(VoteStatus.Pending);
+    it('Should not be able to override by emergency pause and emergency unpause', async () => {
+      await expect(pauseEnforcer.connect(enforcerSentry).triggerPause()).revertedWith(
+        'PauseEnforcer: target is not on pause'
+      );
+      await expect(pauseEnforcer.connect(enforcerSentry).triggerUnpause()).revertedWith(
+        'PauseEnforcer: not on emergency pause'
+      );
     });
 
-    it('Should approve the vote if enough trusted votes is submitted', async () => {
-      const tx = await bridgeContract.connect(candidates[0].bridgeOperator).tryBulkDepositFor(receipts);
-      await expect(tx).emit(bridgeContract, 'Deposited');
+    it('Should gateway admin can unpause the gateway through voting', async () => {
+      let tx = await governanceAdminInterface.functionDelegateCalls(
+        [bridgeContract.address],
+        [bridgeContract.interface.encodeFunctionData('unpause')]
+      );
 
-      const vote = await bridgeContract.depositVote(receipts[0].mainchain.chainId, receipts[0].id);
-      expect(vote.status).eq(VoteStatus.Executed);
+      expect(tx).emit(bridgeContract, 'Unpaused').withArgs(governanceAdmin.address);
+      expect(await pauseEnforcer.emergency()).eq(false);
+      expect(await bridgeContract.paused()).eq(false);
+    });
+  });
+
+  describe('Access control', () => {
+    it('Should admin of pause enforcer can be change', async () => {
+      let newEnforcerAdmin = signers[0];
+      await pauseEnforcer.connect(enforcerAdmin).grantRole(DEFAULT_ADMIN_ROLE, newEnforcerAdmin.address);
+      expect(await pauseEnforcer.hasRole(DEFAULT_ADMIN_ROLE, newEnforcerAdmin.address)).eq(true);
+    });
+
+    it('Should previous admin of pause enforcer can be revoked', async () => {
+      expect(await pauseEnforcer.hasRole(DEFAULT_ADMIN_ROLE, enforcerAdmin.address)).eq(true);
+      await pauseEnforcer.connect(enforcerAdmin).renounceRole(DEFAULT_ADMIN_ROLE, enforcerAdmin.address);
+      expect(await pauseEnforcer.hasRole(DEFAULT_ADMIN_ROLE, enforcerAdmin.address)).eq(false);
     });
   });
 });

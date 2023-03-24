@@ -12,11 +12,20 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
   address private ______deprecated;
   uint256 public nonce;
 
+  address public emergencyPauser;
+
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[50] private ______gap;
+  uint256[49] private ______gap;
+
+  /**
+   * @dev Grant emergency pauser role for `_addr`.
+   */
+  function setEmergencyPauser(address _addr) external onlyAdmin {
+    emergencyPauser = _addr;
+  }
 
   /**
    * @inheritdoc IQuorum
@@ -47,14 +56,16 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
   /**
    * @dev Triggers paused state.
    */
-  function pause() external onlyAdmin {
+  function pause() external {
+    require(msg.sender == _getAdmin() || msg.sender == emergencyPauser, "GatewayV2: not authorized pauser");
     _pause();
   }
 
   /**
    * @dev Triggers unpaused state.
    */
-  function unpause() external onlyAdmin {
+  function unpause() external {
+    require(msg.sender == _getAdmin() || msg.sender == emergencyPauser, "GatewayV2: not authorized pauser");
     _unpause();
   }
 

@@ -3,19 +3,19 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../extensions/GatewayV2.sol";
-import "../extensions/MinimumWithdrawal.sol";
-import "../interfaces/IERC20Mintable.sol";
-import "../interfaces/IERC721Mintable.sol";
-import "../interfaces/IBridgeTracking.sol";
-import "../interfaces/IRoninGatewayV2.sol";
-import "../interfaces/IRoninTrustedOrganization.sol";
-import "../interfaces/consumers/VoteStatusConsumer.sol";
-import "../interfaces/validator/IRoninValidatorSet.sol";
-import "../interfaces/collections/IHasValidatorContract.sol";
-import "../interfaces/collections/IHasBridgeTrackingContract.sol";
-import "../interfaces/collections/IHasRoninTrustedOrganizationContract.sol";
-import "../libraries/IsolatedGovernance.sol";
+import "../../extensions/GatewayV2.sol";
+import "../../extensions/MinimumWithdrawal.sol";
+import "../../interfaces/IERC20Mintable.sol";
+import "../../interfaces/IERC721Mintable.sol";
+import "../../interfaces/IBridgeTracking.sol";
+import "../../interfaces/IRoninGatewayV2.sol";
+import "../../interfaces/IRoninTrustedOrganization.sol";
+import "../../interfaces/consumers/VoteStatusConsumer.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
+import "../../interfaces/collections/IHasValidatorContract.sol";
+import "../../interfaces/collections/IHasBridgeTrackingContract.sol";
+import "../../interfaces/collections/IHasRoninTrustedOrganizationContract.sol";
+import "../../libraries/IsolatedGovernance.sol";
 
 contract RoninGatewayV2 is
   GatewayV2,
@@ -205,7 +205,7 @@ contract RoninGatewayV2 is
   /**
    * @inheritdoc IRoninGatewayV2
    */
-  function depositFor(Transfer.Receipt calldata _receipt) external onlyBridgeOperator {
+  function depositFor(Transfer.Receipt calldata _receipt) external whenNotPaused onlyBridgeOperator {
     address _sender = msg.sender;
     _depositFor(_receipt, _sender, minimumVoteWeight(), minimumTrustedVoteWeight());
     _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Deposit, _receipt.id, _sender);
@@ -249,6 +249,7 @@ contract RoninGatewayV2 is
    */
   function tryBulkDepositFor(Transfer.Receipt[] calldata _receipts)
     external
+    whenNotPaused
     onlyBridgeOperator
     returns (bool[] memory _executedReceipts)
   {
@@ -301,6 +302,7 @@ contract RoninGatewayV2 is
    */
   function bulkSubmitWithdrawalSignatures(uint256[] calldata _withdrawals, bytes[] calldata _signatures)
     external
+    whenNotPaused
     onlyBridgeOperator
   {
     address _validator = msg.sender;
