@@ -140,8 +140,8 @@ export const stakingVestingConfig: StakingVestingConfig = {
   },
   [Network.Mainnet]: {
     ...defaultStakingVestingConf,
-    blockProducerBonusPerBlock: BigNumber.from('2853881278540000000'), // 2.853_881_278_540_000_000 RON per block
-    bridgeOperatorBonusPerBlock: BigNumber.from('95129375950000000'), // 0.095_129_375_950_000_000 RON per block
+    blockProducerBonusPerBlock: BigNumber.from('2853881278540000000'), // 2.85388127854 RON per block
+    bridgeOperatorBonusPerBlock: BigNumber.from('95129375950000000'), // 0.09512937595 RON per block
     topupAmount: 0,
   },
 };
