@@ -246,7 +246,7 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
   [Network.Mainnet]: {
     maxValidatorNumber: 22,
     maxPrioritizedValidatorNumber: 12,
-    maxValidatorCandidate: 100,
+    maxValidatorCandidate: 50,
     numberOfBlocksInEpoch: 200,
     minEffectiveDaysOnwards: 7,
     emergencyExitLockedAmount: BigNumber.from(10).pow(18).mul(50_000), // 50.000 RON
