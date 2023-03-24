@@ -133,6 +133,9 @@ const config: HardhatUserConfig = {
     enabled: REPORT_GAS ? true : false,
     showTimeSpent: true,
   },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
   mocha: {
     timeout: 100000, // 100s
   },
