@@ -60,7 +60,7 @@ export const generalRoninConf: GeneralConfig = {
   },
   [Network.Mainnet]: {
     roninChainId: 2020,
-    startedAtBlock: 23157000,
+    startedAtBlock: 23155200,
     bridgeContract: '0x0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df', // https://explorer.roninchain.com/address/ronin:0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df
   },
 };
