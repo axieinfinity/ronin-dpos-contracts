@@ -283,8 +283,19 @@ export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
     relayers: ['0xC37b5d7891D73F2064B0eE044844e053872Ef941'],
   },
   [Network.Ethereum]: {
-    roleSetter: '0x0000000000000000000000000000000000000000', // TODO: fill config
-    relayers: ['0x0000000000000000000000000000000000000000'], // TODO: fill config
+    roleSetter: '0x2DA02aC5f19Ae362a4121718d990e655eB628D96', // https://etherscan.io/address/0x2DA02aC5f19Ae362a4121718d990e655eB628D96
+    relayers: [
+      '0xbb772579dfe08f7c7c73daca0a414fca4c9e57ac',
+      '0xE5EB222996967BE79468C28bA39D665fd96E8b30',
+      '0x77Ab649Caa7B4b673C9f2cF069900DF48114d79D',
+      '0xaaBD1f9bA401F4C56F7717c71C4fD9369Dacf7cE',
+      '0x1FE5F98A40602Fc002d57EA803C2d6951649d637',
+      '0x60c4b72fc62b3e3a74e283aa9ba20d61dd4d8f1b',
+      '0xD5877c63744903a459CCBa94c909CDaAE90575f8',
+      '0xD1cF86f5D3fB220730D8d9F06C940EFA8683a2af',
+      '0x02201f9bfd2face1b9f9d30d776e77382213da1a',
+      '0x58aBcBCAb52dEE942491700CD0DB67826BBAA8C6',
+    ], // Combined from DPoS Trusted Org and Master sheet
   },
 };
 
