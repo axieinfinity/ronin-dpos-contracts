@@ -60,7 +60,7 @@ export const generalRoninConf: GeneralConfig = {
   },
   [Network.Mainnet]: {
     roninChainId: 2020,
-    startedAtBlock: 0, // TODO: update this variable
+    startedAtBlock: 23157000,
     bridgeContract: '0x0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df', // https://explorer.roninchain.com/address/ronin:0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df
   },
 };
@@ -101,7 +101,8 @@ export const maintenanceConf: MaintenanceConfig = {
     minMaintenanceDurationInBlock: 200,
   },
   [Network.Mainnet]: {
-    ...defaultMaintenanceConf, // TODO: double check with PO
+    ...defaultMaintenanceConf,
+    minOffsetToStartSchedule: 1000,
   },
 };
 
@@ -122,6 +123,7 @@ export const stakingConfig: StakingConfig = {
   },
   [Network.Mainnet]: {
     ...defaultStakingConf, // TODO: double check with PO
+    minValidatorStakingAmount: BigNumber.from(10).pow(18).mul(250_000), // 250.000 RON
   },
 };
 
@@ -140,7 +142,10 @@ export const stakingVestingConfig: StakingVestingConfig = {
     topupAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5)), // 100.000 RON
   },
   [Network.Mainnet]: {
-    ...defaultStakingVestingConf, // TODO: double check with PO
+    ...defaultStakingVestingConf,
+    blockProducerBonusPerBlock: BigNumber.from('2853881278540000000'), // 2.853_881_278_540_000_000 RON per block
+    bridgeOperatorBonusPerBlock: BigNumber.from('95129375950000000'), // 0.095_129_375_950_000_000 RON per block
+    topupAmount: 0,
   },
 };
 
@@ -192,7 +197,33 @@ export const slashIndicatorConf: SlashIndicatorConfig = {
     },
   },
   [Network.Mainnet]: {
-    ...defaultSlashIndicatorConf, // TODO: double check with PO
+    bridgeOperatorSlashing: {
+      missingVotesRatioTier1: 10_00, // 10%
+      missingVotesRatioTier2: 30_00, // 30%
+      jailDurationForMissingVotesRatioTier2: 28800 * 2, // jails for 2 days
+      skipBridgeOperatorSlashingThreshold: 50,
+    },
+    bridgeVotingSlashing: {
+      bridgeVotingThreshold: 28800 * 3, // ~3 days
+      bridgeVotingSlashAmount: BigNumber.from(10).pow(18).mul(10_000), // 10.000 RON
+    },
+    doubleSignSlashing: {
+      slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(250_000), // 250.000 RON
+      doubleSigningJailUntilBlock: ethers.constants.MaxUint256,
+      doubleSigningOffsetLimitBlock: 28800 * 7, // ~7 days
+    },
+    unavailabilitySlashing: {
+      unavailabilityTier1Threshold: 50,
+      unavailabilityTier2Threshold: 150,
+      slashAmountForUnavailabilityTier2Threshold: BigNumber.from(10).pow(18).mul(10_000), // 10.000 RON
+      jailDurationForUnavailabilityTier2Threshold: 2 * 28800, // jails for 2 days
+    },
+    creditScore: {
+      gainCreditScore: 50,
+      maxCreditScore: 600,
+      bailOutCostMultiplier: 2,
+      cutOffPercentageAfterBailout: 50_00, // 50%
+    },
   },
 };
 
@@ -218,7 +249,13 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
     minEffectiveDaysOnwards: 7,
   },
   [Network.Mainnet]: {
-    ...defaultRoninValidatorSetConf, // TODO: double check with PO
+    maxValidatorNumber: 22,
+    maxPrioritizedValidatorNumber: 12,
+    maxValidatorCandidate: 50,
+    numberOfBlocksInEpoch: 200,
+    minEffectiveDaysOnwards: 7,
+    emergencyExitLockedAmount: BigNumber.from(10).pow(18).mul(50_000), // 50.000 RON
+    emergencyExpiryDuration: 14 * 86400, // 14 days
   },
 };
 
@@ -256,12 +293,12 @@ export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
   [Network.Mainnet]: {
     trustedOrganizations: trustedOrgSet[Network.Mainnet],
     numerator: 9,
-    denominator: 11,
+    denominator: 12,
   },
   [Network.Ethereum]: {
     trustedOrganizations: trustedOrgSet[Network.Ethereum],
     numerator: 9,
-    denominator: 11,
+    denominator: 12,
   },
 };
 
