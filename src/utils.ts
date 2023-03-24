@@ -62,7 +62,7 @@ export interface GeneralConfig {
     validatorContract?: AddressExtended;
     roninTrustedOrganizationContract?: AddressExtended;
     bridgeTrackingContract?: AddressExtended;
-    startedAtBlock: BigNumberish;
+    startedAtBlock?: BigNumberish;
     bridgeContract: Address;
   };
 }
