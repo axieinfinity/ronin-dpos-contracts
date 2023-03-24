@@ -84,4 +84,15 @@ contract PauseEnforcer is AccessControlEnumerable {
     target.unpause();
     emit EmergencyUnpaused(msg.sender);
   }
+
+  /**
+   * @dev Helper function to reset emergency status.
+   */
+  function resetEmergency() external {
+    require(
+      hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(SENTRY_ROLE, msg.sender),
+      "PauseEnforcer: Unauthorized reset"
+    );
+    emergency = false;
+  }
 }
