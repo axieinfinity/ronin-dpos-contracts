@@ -1,10 +1,10 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { Network } from '../../utils';
+import { mainchainNetworks } from '../../configs/config';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
-  if (![Network.Local.toString()].includes(network.name!)) {
+  if (!mainchainNetworks.includes(network.name!)) {
     return;
   }
 
