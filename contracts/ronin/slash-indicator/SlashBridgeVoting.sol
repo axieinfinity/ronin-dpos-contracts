@@ -30,16 +30,20 @@ abstract contract SlashBridgeVoting is
   /**
    * @inheritdoc ISlashBridgeVoting
    */
-  function slashBridgeVoting(address _consensusAddr) external {
+  function slashBridgeVoting(address _consensusAddr) external onlyAdmin {
     IRoninTrustedOrganization.TrustedOrganization memory _org = _roninTrustedOrganizationContract
       .getTrustedOrganization(_consensusAddr);
     uint256 _lastVotedBlock = Math.max(_roninGovernanceAdminContract.lastVotedBlock(_org.bridgeVoter), _org.addedBlock);
     uint256 _period = _validatorContract.currentPeriod();
-    if (block.number - _lastVotedBlock > _bridgeVotingThreshold && !_bridgeVotingSlashed[_consensusAddr][_period]) {
-      _bridgeVotingSlashed[_consensusAddr][_period] = true;
-      emit Slashed(_consensusAddr, SlashType.BRIDGE_VOTING, _period);
-      _validatorContract.execSlash(_consensusAddr, 0, _bridgeVotingSlashAmount, false);
-    }
+
+    require(
+      block.number - _lastVotedBlock > _bridgeVotingThreshold && !_bridgeVotingSlashed[_consensusAddr][_period],
+      "SlashBridgeVoting: invalid slash"
+    );
+
+    _bridgeVotingSlashed[_consensusAddr][_period] = true;
+    emit Slashed(_consensusAddr, SlashType.BRIDGE_VOTING, _period);
+    _validatorContract.execSlash(_consensusAddr, 0, _bridgeVotingSlashAmount, false);
   }
 
   /**
