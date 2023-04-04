@@ -16,6 +16,8 @@ contract PauseEnforcer is AccessControlEnumerable {
   event EmergencyPaused(address account);
   /// @dev Emitted when the emergency unpause is triggered by `account`.
   event EmergencyUnpaused(address account);
+  /// @dev Emitted when the target is changed.
+  event TargetChanged(IPauseTarget target);
 
   modifier onEmergency() {
     require(emergency, "PauseEnforcer: not on emergency pause");
@@ -37,7 +39,7 @@ contract PauseEnforcer is AccessControlEnumerable {
     address _admin,
     address[] memory _sentries
   ) {
-    target = _target;
+    _changeTarget(_target);
     _setupRole(DEFAULT_ADMIN_ROLE, _admin);
     for (uint _i; _i < _sentries.length; _i++) {
       _grantRole(SENTRY_ROLE, _sentries[_i]);
@@ -94,5 +96,23 @@ contract PauseEnforcer is AccessControlEnumerable {
       "PauseEnforcer: Unauthorized reset"
     );
     emergency = false;
+  }
+
+  /**
+   * @dev Setter for `target`.
+   *
+   * Requirements:
+   * - Only admin can call this method.
+   */
+  function changeTarget(IPauseTarget _target) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    _changeTarget(_target);
+  }
+
+  /**
+   * @dev Internal helper for setting value to `target`.
+   */
+  function _changeTarget(IPauseTarget _target) internal {
+    target = _target;
+    emit TargetChanged(_target);
   }
 }
