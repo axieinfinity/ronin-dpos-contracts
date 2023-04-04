@@ -144,7 +144,7 @@ contract RoninGatewayV2 is
    * @inheritdoc IHasRoninTrustedOrganizationContract
    */
   function roninTrustedOrganizationContract() external view override returns (address) {
-    return address(_bridgeTrackingContract);
+    return address(_trustedOrgContract);
   }
 
   /**
