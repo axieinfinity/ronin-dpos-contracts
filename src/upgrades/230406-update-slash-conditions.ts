@@ -69,14 +69,6 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     'RoninGovernanceAdmin',
     { from: governor, log: true },
     'proposeProposalForCurrentNetwork',
-    // RoninGovernanceAdminContract.proposeProposalForCurrentNetwork(
-    //   expiryTimestamp,
-    //   targets,
-    //   values,
-    //   datas,
-    //   gasAmounts,
-    //   Ballot.VoteType.For
-    // );
     proposalExpiryTimestamp, // expiryTimestamp
     instructions.map(() => slashProxyAddress), // targets
     instructions.map(() => 0), // values
