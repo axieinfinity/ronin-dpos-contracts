@@ -213,15 +213,9 @@ abstract contract CoinbaseExecution is
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
 
-      // Cannot saving gas by temp variable here due to too deep stack.
-      _blockProducerJailedBlock[_validator] = Math.max(
-        block.number + _jailDurationTier2,
-        _blockProducerJailedBlock[_validator]
-      );
-      _cannotBailoutUntilBlock[_validator] = Math.max(
-        block.number + _jailDurationTier2,
-        _cannotBailoutUntilBlock[_validator]
-      );
+      uint256 _newJailUntilBlock = Math.addIfNonZero(block.number, _jailDurationTier2);
+      _blockProducerJailedBlock[_validator] = Math.max(_newJailUntilBlock, _blockProducerJailedBlock[_validator]);
+      _cannotBailoutUntilBlock[_validator] = Math.max(_newJailUntilBlock, _cannotBailoutUntilBlock[_validator]);
 
       _slashIndicatorContract.execSlashBridgeOperator(_validator, 2, _period);
       emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, true, true);
@@ -466,7 +460,9 @@ abstract contract CoinbaseExecution is
       address _validator = _currentValidators[_i];
       bool _emergencyExitRequested = block.timestamp <= _emergencyExitJailedTimestamp[_validator];
       bool _isProducerBefore = isBlockProducer(_validator);
-      bool _isProducerAfter = !(_jailed(_validator) || _maintainedList[_i] || _emergencyExitRequested);
+      bool _isProducerAfter = !(_jailedAtBlock(_validator, block.number + 1) ||
+        _maintainedList[_i] ||
+        _emergencyExitRequested);
 
       if (!_isProducerBefore && _isProducerAfter) {
         _validatorMap[_validator] = _validatorMap[_validator].addFlag(EnumFlags.ValidatorFlag.BlockProducer);
