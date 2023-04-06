@@ -5,14 +5,18 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { VoteType } from '../script/proposal';
 import { SlashIndicator__factory } from '../types';
 import { SlashIndicatorArguments } from '../utils';
-import { proxyCall } from './upgradeUtils';
+import { proxyCall, proxyInterface } from './upgradeUtils';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   const { execute } = deployments;
   let { governor } = await getNamedAccounts(); // NOTE: Should double check the `governor` account in the `hardhat.config.ts` file
   console.log('Governor:', governor);
 
-  const slashProxyAddress = '0xEBFFF2b32fA0dF9C5C8C5d5AAa7e8b51d5207bA3'; // https://explorer.roninchain.com/address/ronin:EBFFF2b32fA0dF9C5C8C5d5AAa7e8b51d5207bA3
+  const slashIndicatorProxy = await deployments.get('SlashIndicatorProxy');
+  const validatorSetProxy = await deployments.get('RoninValidatorSetProxy');
+
+  const newSlashIndicatorLogic = '0x056500E6028048dB7FCA81Ac307008A9042605f3';
+  const newValidatorSetLogic = '0x112119F52eC8760Dacc84907953F2baC6FE5107B';
 
   const slashInterface = new SlashIndicator__factory().interface;
   const newSlashConfig: SlashIndicatorArguments = {
@@ -34,7 +38,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     },
   };
 
-  const instructions = [
+  const slashIndicatorInstructions = [
     proxyCall(
       slashInterface.encodeFunctionData('setBridgeOperatorSlashingConfigs', [
         newSlashConfig.bridgeOperatorSlashing!.missingVotesRatioTier1,
@@ -57,7 +61,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
         newSlashConfig.bridgeVotingSlashing!.bridgeVotingSlashAmount,
       ])
     ),
+    proxyInterface.encodeFunctionData('upgradeTo', [newSlashIndicatorLogic]),
   ];
+
+  const validatorSetInstructions = [proxyInterface.encodeFunctionData('upgradeTo', [newValidatorSetLogic])];
 
   const blockNumBefore = await ethers.provider.getBlockNumber();
   const blockBefore = await ethers.provider.getBlock(blockNumBefore);
@@ -70,10 +77,13 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     { from: governor, log: true },
     'proposeProposalForCurrentNetwork',
     proposalExpiryTimestamp, // expiryTimestamp
-    instructions.map(() => slashProxyAddress), // targets
-    instructions.map(() => 0), // values
-    instructions, // datas
-    instructions.map(() => 1_000_000), // gasAmounts
+    [
+      ...slashIndicatorInstructions.map(() => slashIndicatorProxy.address),
+      ...validatorSetInstructions.map(() => validatorSetProxy.address),
+    ], // targets
+    [...slashIndicatorInstructions, ...validatorSetInstructions].map(() => 0), // values
+    [...slashIndicatorInstructions, ...validatorSetInstructions], // datas
+    [...slashIndicatorInstructions, ...validatorSetInstructions].map(() => 1_000_000), // gasAmounts
     VoteType.For // ballot type
   );
 
