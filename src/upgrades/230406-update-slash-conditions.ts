@@ -13,7 +13,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   const slashProxyAddress = '0xEBFFF2b32fA0dF9C5C8C5d5AAa7e8b51d5207bA3'; // https://explorer.roninchain.com/address/ronin:EBFFF2b32fA0dF9C5C8C5d5AAa7e8b51d5207bA3
 
-  const slashInterface = SlashIndicator__factory.createInterface();
+  const slashInterface = new SlashIndicator__factory().interface;
   const newSlashConfig: SlashIndicatorArguments = {
     bridgeOperatorSlashing: {
       missingVotesRatioTier1: 10_00, // 10% (no change)
