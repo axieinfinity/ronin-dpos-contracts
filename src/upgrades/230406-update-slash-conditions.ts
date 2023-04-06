@@ -2,6 +2,7 @@
 
 import { BigNumber } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { VoteType } from '../script/proposal';
 import { SlashIndicator__factory } from '../types';
 import { SlashIndicatorArguments } from '../utils';
 import { proxyCall } from './upgradeUtils';
@@ -67,13 +68,21 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const tx = await execute(
     'RoninGovernanceAdmin',
     { from: governor, log: true },
-    'propose',
-    2020,
+    'proposeProposalForCurrentNetwork',
+    // RoninGovernanceAdminContract.proposeProposalForCurrentNetwork(
+    //   expiryTimestamp,
+    //   targets,
+    //   values,
+    //   datas,
+    //   gasAmounts,
+    //   Ballot.VoteType.For
+    // );
     proposalExpiryTimestamp,
     instructions.map(() => slashProxyAddress),
     instructions.map(() => 0),
     instructions,
-    instructions.map(() => 1_000_000)
+    instructions.map(() => 1_000_000),
+    VoteType.For
   );
 
   console.log(`https://explorer.roninchain.com/tx/${tx.transactionHash}`);
