@@ -57,12 +57,13 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
 
     uint256 _period = _validatorContract.currentPeriod();
     uint256 _count = ++_unavailabilityIndicator[_validatorAddr][_period];
+    uint256 _newJailedUntilBlock = Math.addIfNonZero(block.number, _jailDurationForUnavailabilityTier2Threshold);
 
     if (_count == _unavailabilityTier2Threshold) {
       emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_2, _period);
       _validatorContract.execSlash(
         _validatorAddr,
-        block.number + _jailDurationForUnavailabilityTier2Threshold,
+        _newJailedUntilBlock,
         _slashAmountForUnavailabilityTier2Threshold,
         false
       );
@@ -74,10 +75,9 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
       } else {
         /// Handles tier-3
         emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_3, _period);
-        uint256 _jailedUntilBlock = block.number + _jailDurationForUnavailabilityTier2Threshold;
         _validatorContract.execSlash(
           _validatorAddr,
-          _jailedUntilBlock,
+          _newJailedUntilBlock,
           _slashAmountForUnavailabilityTier2Threshold,
           true
         );

@@ -55,6 +55,13 @@ library Math {
    * @dev Returns value of a - b; in case of negative result, 0 is returned.
    */
   function subNonNegative(uint256 a, uint256 b) internal pure returns (uint256) {
-    return a - min(a, b);
+    return a > b ? a - b : 0;
+  }
+
+  /**
+   * @dev Returns value of `a + zeroable` if zerobale is not 0; otherwise, return 0.
+   */
+  function addIfNonZero(uint256 a, uint256 zeroable) internal pure returns (uint256) {
+    return zeroable != 0 ? a + zeroable : 0;
   }
 }
