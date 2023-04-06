@@ -63,13 +63,6 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const timestampBefore = blockBefore.timestamp;
   const proposalExpiryTimestamp = timestampBefore + 3600 * 24 * 10; // expired in 10 days
 
-  console.log(2020);
-  console.log(proposalExpiryTimestamp);
-  console.log(instructions.map(() => slashProxyAddress));
-  console.log(instructions.map(() => 0));
-  console.log(instructions);
-  console.log(instructions.map(() => 1_000_000));
-
   // NOTE: Should double check the RoninGovernanceAdmin address in `deployments` folder is 0x946397deDFd2f79b75a72B322944a21C3240c9c3
   const tx = await execute(
     'RoninGovernanceAdmin',
