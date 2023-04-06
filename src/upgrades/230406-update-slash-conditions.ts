@@ -77,12 +77,12 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     //   gasAmounts,
     //   Ballot.VoteType.For
     // );
-    proposalExpiryTimestamp,
-    instructions.map(() => slashProxyAddress),
-    instructions.map(() => 0),
-    instructions,
-    instructions.map(() => 1_000_000),
-    VoteType.For
+    proposalExpiryTimestamp, // expiryTimestamp
+    instructions.map(() => slashProxyAddress), // targets
+    instructions.map(() => 0), // values
+    instructions, // datas
+    instructions.map(() => 1_000_000), // gasAmounts
+    VoteType.For // ballot type
   );
 
   console.log(`https://explorer.roninchain.com/tx/${tx.transactionHash}`);
