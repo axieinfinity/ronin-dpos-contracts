@@ -3,7 +3,7 @@
 import { BigNumber } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { VoteType } from '../script/proposal';
-import { SlashIndicator__factory } from '../types';
+import { RoninValidatorSet__factory, SlashIndicator__factory } from '../types';
 import { SlashIndicatorArguments } from '../utils';
 import { proxyCall, proxyInterface } from './upgradeUtils';
 
@@ -19,6 +19,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const newValidatorSetLogic = '0x112119F52eC8760Dacc84907953F2baC6FE5107B';
 
   const slashInterface = new SlashIndicator__factory().interface;
+  const validatorSetInterface = new RoninValidatorSet__factory().interface;
   const newSlashConfig: SlashIndicatorArguments = {
     bridgeOperatorSlashing: {
       missingVotesRatioTier1: 10_00, // 10% (no change)
@@ -64,7 +65,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     proxyInterface.encodeFunctionData('upgradeTo', [newSlashIndicatorLogic]),
   ];
 
-  const validatorSetInstructions = [proxyInterface.encodeFunctionData('upgradeTo', [newValidatorSetLogic])];
+  const validatorSetInstructions = [
+    proxyCall(validatorSetInterface.encodeFunctionData('setMaxValidatorCandidate', [100])),
+    proxyInterface.encodeFunctionData('upgradeTo', [newValidatorSetLogic]),
+  ];
 
   const blockNumBefore = await ethers.provider.getBlockNumber();
   const blockBefore = await ethers.provider.getBlock(blockNumBefore);
