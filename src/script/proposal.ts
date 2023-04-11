@@ -1,6 +1,6 @@
 import { BigNumberish } from 'ethers';
 import { AbiCoder, keccak256, solidityKeccak256 } from 'ethers/lib/utils';
-import { Address } from 'hardhat-deploy/dist/types';
+import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
 
 import { GlobalProposalDetailStruct, ProposalDetailStruct } from '../types/GovernanceAdmin';
 

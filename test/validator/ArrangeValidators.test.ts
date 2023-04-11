@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { BigNumber, BigNumberish } from 'ethers';
 import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { Address } from 'hardhat-deploy/dist/types';
+import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
 
 import {
   MockRoninValidatorSetExtended,

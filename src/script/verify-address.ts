@@ -1,4 +1,4 @@
-import { Address } from 'hardhat-deploy/dist/types';
+import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
 
 export const verifyAddress = (actual: Address, expected?: Address) => {
   if (actual.toLowerCase() != (expected || '').toLowerCase()) {

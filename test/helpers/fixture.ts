@@ -1,6 +1,6 @@
 import { BigNumber, BigNumberish } from 'ethers';
 import { deployments, ethers, network } from 'hardhat';
-import { Address } from 'hardhat-deploy/dist/types';
+import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
 
 import { EpochController } from './ronin-validator-set';
 import {
