@@ -105,11 +105,12 @@ const config: HardhatUserConfig = {
     outDir: 'src/types',
   },
   paths: {
-    deploy: 'src/deploy',
+    deploy: ['src/deploy', 'src/upgrades'],
   },
   namedAccounts: {
     deployer: 0,
-    // trezor: 'trezor://0x0000000000000000000000000000000000000000',
+    // governor: '0x00000000000000000000000000000000deadbeef',
+    // governor: 'trezor://0x0000000000000000000000000000000000000000',
   },
   networks: {
     hardhat: {
