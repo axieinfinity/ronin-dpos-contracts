@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { network, ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { Address } from 'hardhat-deploy/dist/types';
+import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
 import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
 
 import {

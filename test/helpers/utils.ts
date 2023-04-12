@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { ContractTransaction } from 'ethers';
 import { Interface, LogDescription } from 'ethers/lib/utils';
 import { ethers, network } from 'hardhat';
-import { Address } from 'hardhat-deploy/dist/types';
+import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
 
 export const expectEvent = async (
   contractInterface: Interface,

@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, BigNumberish, BytesLike } from 'ethers';
 import { ethers, network } from 'hardhat';
-import { Address } from 'hardhat-deploy/dist/types';
+import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
 import { TypedDataDomain } from '@ethersproject/abstract-signer';
 import { AbiCoder, Interface, keccak256, _TypedDataEncoder } from 'ethers/lib/utils';
 
