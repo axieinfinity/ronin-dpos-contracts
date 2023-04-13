@@ -112,20 +112,16 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const timestampBefore = blockBefore.timestamp;
   const proposalExpiryTimestamp = timestampBefore + 3600 * 24 * 10; // expired in 10 days
 
-  console.log(trustedOrgInstructions.map(() => trustedOrgProxy.address));
-  console.log(trustedOrgInstructions);
-
   // NOTE: Should double check the RoninGovernanceAdmin address in `deployments` folder is 0x946397deDFd2f79b75a72B322944a21C3240c9c3
   const tx = await execute(
     'RoninGovernanceAdmin',
     { from: governor, log: true },
-    'proposeProposalForCurrentNetwork',
+    'proposeGlobal',
     proposalExpiryTimestamp, // expiryTimestamp
-    trustedOrgInstructions.map(() => trustedOrgProxy.address),
+    trustedOrgInstructions.map(() => 0), // _targetOptions
     trustedOrgInstructions.map(() => 0), // values
     trustedOrgInstructions, // datas
-    trustedOrgInstructions.map(() => 2_000_000), // gasAmounts
-    VoteType.For // ballot type
+    trustedOrgInstructions.map(() => 2_000_000) // gasAmounts
   );
 
   console.log(`https://explorer.roninchain.com/tx/${tx.transactionHash}`);
