@@ -53,6 +53,8 @@ export function createManyTrustedOrganizationAddressSets(
     consensusAddrs = signers.splice(0, _length);
     governors = signers.splice(0, _length);
     bridgeVoters = signers.splice(0, _length);
+  } else {
+    consensusAddrs = signers;
   }
 
   governors.sort((v1, v2) => v1.address.toLowerCase().localeCompare(v2.address.toLowerCase()));
@@ -113,6 +115,8 @@ export function createManyValidatorCandidateAddressSets(
     treasuryAddrs = poolAdmins;
     consensusAddrs = signers.splice(0, _length);
     bridgeOperators = signers.splice(0, _length);
+  } else {
+    poolAdmins = signers;
   }
 
   expect(checkArraysHaveSameSize([poolAdmins, candidateAdmins, consensusAddrs, treasuryAddrs, bridgeOperators])).eq(

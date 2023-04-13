@@ -1,7 +1,7 @@
 import '@typechain/hardhat';
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
-import 'hardhat-deploy';
+import '@axieinfinity/hardhat-deploy';
 import 'hardhat-gas-reporter';
 import '@nomicfoundation/hardhat-chai-matchers';
 import 'hardhat-contract-sizer';
@@ -15,8 +15,19 @@ dotenv.config();
 
 const DEFAULT_MNEMONIC = 'title spike pink garlic hamster sorry few damage silver mushroom clever window';
 
-const { REPORT_GAS, DEVNET_PK, DEVNET_URL, TESTNET_PK, TESTNET_URL, MAINNET_PK, MAINNET_URL, GOERLI_URL, GOERLI_PK } =
-  process.env;
+const {
+  REPORT_GAS,
+  DEVNET_PK,
+  DEVNET_URL,
+  TESTNET_PK,
+  TESTNET_URL,
+  MAINNET_PK,
+  MAINNET_URL,
+  GOERLI_URL,
+  GOERLI_PK,
+  ETHEREUM_URL,
+  ETHEREUM_PK,
+} = process.env;
 
 if (!DEVNET_PK) {
   console.warn('DEVNET_PK is unset. Using DEFAULT_MNEMONIC');
@@ -32,6 +43,10 @@ if (!MAINNET_PK) {
 
 if (!GOERLI_PK) {
   console.warn('GOERLI_PK is unset. Using DEFAULT_MNEMONIC');
+}
+
+if (!ETHEREUM_PK) {
+  console.warn('ETHEREUM_PK is unset. Using DEFAULT_MNEMONIC');
 }
 
 const local: NetworkUserConfig = {
@@ -65,29 +80,37 @@ const goerli: NetworkUserConfig = {
   blockGasLimit: 100000000,
 };
 
+const ethereum: NetworkUserConfig = {
+  chainId: 1,
+  url: ETHEREUM_URL || '',
+  accounts: ETHEREUM_PK ? [ETHEREUM_PK] : { mnemonic: DEFAULT_MNEMONIC },
+  blockGasLimit: 100000000,
+};
+
 const compilerConfig: SolcUserConfig = {
   version: '0.8.17',
   settings: {
     optimizer: {
       enabled: true,
-      runs: 200,
+      runs: 10,
     },
   },
 };
 
 const config: HardhatUserConfig = {
   solidity: {
-    compilers: [compilerConfig, { ...compilerConfig, version: '0.5.17' }],
+    compilers: [compilerConfig],
   },
   typechain: {
     outDir: 'src/types',
   },
   paths: {
-    deploy: 'src/deploy',
+    deploy: ['src/deploy', 'src/upgrades'],
   },
   namedAccounts: {
     deployer: 0,
-    // trezor: 'trezor://0x0000000000000000000000000000000000000000',
+    // governor: '0x00000000000000000000000000000000deadbeef',
+    // governor: 'trezor://0x0000000000000000000000000000000000000000',
   },
   networks: {
     hardhat: {
@@ -105,11 +128,15 @@ const config: HardhatUserConfig = {
     'ronin-mainnet': mainnet,
     goerli,
     'goerli-for-devnet': goerli,
+    ethereum,
   },
   gasReporter: {
     enabled: REPORT_GAS ? true : false,
     showTimeSpent: true,
   },
+  // etherscan: {
+  //   apiKey: process.env.ETHERSCAN_API_KEY,
+  // },
   mocha: {
     timeout: 100000, // 100s
   },

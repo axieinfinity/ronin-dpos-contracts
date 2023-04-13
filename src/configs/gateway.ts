@@ -1,17 +1,24 @@
 import { BigNumber, BigNumberish } from 'ethers';
-import { LiteralNetwork, Network } from '../utils';
+import { GatewayPauseEnforcerConfig, LiteralNetwork, Network } from '../utils';
 
 interface Threshold {
   numerator: BigNumberish;
   denominator: BigNumberish;
 }
 
+interface TrustedThreshold {
+  trustedNumerator: BigNumberish;
+  trustedDenominator: BigNumberish;
+}
+
 export type GatewayThreshold = Threshold & {
   highTierVoteWeightNumerator: BigNumberish;
 };
 
+export type GatewayTrustedThreshold = TrustedThreshold;
+
 interface NetworkThreshold {
-  [network: LiteralNetwork]: undefined | Threshold | GatewayThreshold;
+  [network: LiteralNetwork]: undefined | Threshold | TrustedThreshold | GatewayThreshold;
 }
 
 interface MapNetworkNumberSet {
@@ -60,17 +67,33 @@ export const validatorThreshold: NetworkThreshold = {
   },
 };
 
+export const roninGatewayThreshold: NetworkThreshold = {
+  [Network.Hardhat]: undefined,
+  [Network.Devnet]: {
+    trustedNumerator: 70,
+    trustedDenominator: 100,
+  },
+  [Network.GoerliForDevnet]: {
+    trustedNumerator: 70,
+    trustedDenominator: 100,
+  },
+};
+
 export const gatewayThreshold: NetworkThreshold = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
     numerator: 70,
     highTierVoteWeightNumerator: 90,
     denominator: 100,
+    trustedNumerator: 70,
+    trustedDenominator: 100,
   },
   [Network.GoerliForDevnet]: {
     numerator: 70,
     highTierVoteWeightNumerator: 90,
     denominator: 100,
+    trustedNumerator: 70,
+    trustedDenominator: 100,
   },
 };
 
@@ -92,6 +115,7 @@ export const roninChainId: MapNetworkNumber = {
   [Network.Ethereum]: 2020,
 };
 
+// For mainnet config: https://github.com/axieinfinity/ronin-smart-contracts-v2/blob/aba162542328ef925526f8dcaba99b85849cde48/src/configs.ts#L147-L183
 export const mainchainMappedToken: MainchainMappedToken = {
   [Network.Hardhat]: undefined,
   [Network.GoerliForDevnet]: {
@@ -130,7 +154,7 @@ export const mainchainMappedToken: MainchainMappedToken = {
   },
 };
 
-// TODO: fill mainnet config
+// For mainnet config: https://github.com/axieinfinity/ronin-smart-contracts-v2/blob/aba162542328ef925526f8dcaba99b85849cde48/src/configs.ts#L211-L233
 export const roninMappedToken: RoninMappedToken = {
   [Network.Hardhat]: undefined,
   [Network.Devnet]: {
@@ -157,5 +181,24 @@ export const roninMappedToken: RoninMappedToken = {
       BigNumber.from(10).pow(18).mul(2), // 20 USDT
       BigNumber.from(10).pow(6).mul(2), // 20 USDC
     ],
+  },
+};
+
+export const gatewayPauseEnforcerConf: GatewayPauseEnforcerConfig = {
+  [Network.Testnet]: {
+    enforcerAdmin: '0x968d0cd7343f711216817e617d3f92a23dc91c07',
+    sentries: ['0x968D0Cd7343f711216817E617d3f92a23dC91c07'],
+  },
+  [Network.Goerli]: {
+    enforcerAdmin: '0x968d0cd7343f711216817e617d3f92a23dc91c07',
+    sentries: ['0x968D0Cd7343f711216817E617d3f92a23dC91c07'],
+  },
+  [Network.Mainnet]: {
+    enforcerAdmin: '0x8417AC6838be147Ab0e201496B2E5eDf90A48cC5', // https://explorer.roninchain.com/address/ronin:8417AC6838be147Ab0e201496B2E5eDf90A48cC5
+    sentries: ['0x8B35C5E273525a4Ca61025812f29C17727948f57'],
+  },
+  [Network.Ethereum]: {
+    enforcerAdmin: '0x2DA02aC5f19Ae362a4121718d990e655eB628D96', // https://etherscan.io/address/0x2DA02aC5f19Ae362a4121718d990e655eB628D96
+    sentries: ['0x8B35C5E273525a4Ca61025812f29C17727948f57'],
   },
 };

@@ -49,47 +49,44 @@ abstract contract CoinbaseExecution is
    * @inheritdoc ICoinbaseExecution
    */
   function submitBlockReward() external payable override onlyCoinbase {
-    uint256 _submittedReward = msg.value;
-    address _coinbaseAddr = msg.sender;
-    bool _requestForBlockProducer = isBlockProducer(_coinbaseAddr) &&
-      !_jailed(_coinbaseAddr) &&
-      !_miningRewardDeprecated(_coinbaseAddr, currentPeriod());
-    bool _requestForBridgeOperator = true;
+    bool _requestForBlockProducer = isBlockProducer(msg.sender) &&
+      !_jailed(msg.sender) &&
+      !_miningRewardDeprecated(msg.sender, currentPeriod());
 
     (, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus) = _stakingVestingContract.requestBonus(
       _requestForBlockProducer,
-      _requestForBridgeOperator
+      true // _requestForBridgeOperator
     );
 
     _totalBridgeReward += _bridgeOperatorBonus;
 
     // Deprecates reward for non-validator or slashed validator
     if (!_requestForBlockProducer) {
-      _totalDeprecatedReward += _submittedReward;
-      emit BlockRewardDeprecated(_coinbaseAddr, _submittedReward, BlockRewardDeprecatedType.UNAVAILABILITY);
+      _totalDeprecatedReward += msg.value;
+      emit BlockRewardDeprecated(msg.sender, msg.value, BlockRewardDeprecatedType.UNAVAILABILITY);
       return;
     }
 
-    emit BlockRewardSubmitted(_coinbaseAddr, _submittedReward, _blockProducerBonus);
+    emit BlockRewardSubmitted(msg.sender, msg.value, _blockProducerBonus);
 
     uint256 _period = currentPeriod();
-    uint256 _reward = _submittedReward + _blockProducerBonus;
+    uint256 _reward = msg.value + _blockProducerBonus;
     uint256 _cutOffReward;
-    if (_miningRewardBailoutCutOffAtPeriod[_coinbaseAddr][_period]) {
+    if (_miningRewardBailoutCutOffAtPeriod[msg.sender][_period]) {
       (, , , uint256 _cutOffPercentage) = _slashIndicatorContract.getCreditScoreConfigs();
       _cutOffReward = (_reward * _cutOffPercentage) / _MAX_PERCENTAGE;
       _totalDeprecatedReward += _cutOffReward;
-      emit BlockRewardDeprecated(_coinbaseAddr, _cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
+      emit BlockRewardDeprecated(msg.sender, _cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
     }
 
     _reward -= _cutOffReward;
     uint256 _maxRate = _stakingContract.maxCommissionRate();
-    uint256 _rate = Math.min(_candidateInfo[_coinbaseAddr].commissionRate, _maxRate);
+    uint256 _rate = Math.min(_candidateInfo[msg.sender].commissionRate, _maxRate);
     uint256 _miningAmount = (_rate * _reward) / _MAX_PERCENTAGE;
-    _miningReward[_coinbaseAddr] += _miningAmount;
+    _miningReward[msg.sender] += _miningAmount;
 
     uint256 _delegatingAmount = _reward - _miningAmount;
-    _delegatingReward[_coinbaseAddr] += _delegatingAmount;
+    _delegatingReward[msg.sender] += _delegatingAmount;
   }
 
   /**
@@ -99,7 +96,7 @@ abstract contract CoinbaseExecution is
     uint256 _newPeriod = _computePeriod(block.timestamp);
     bool _periodEnding = _isPeriodEnding(_newPeriod);
 
-    address[] memory _currentValidators = getValidators();
+    (address[] memory _currentValidators, , ) = getValidators();
     address[] memory _revokedCandidates;
     uint256 _epoch = epochOf(block.number);
     uint256 _nextEpoch = _epoch + 1;
@@ -134,76 +131,91 @@ abstract contract CoinbaseExecution is
    *
    */
   function _syncBridgeOperatingReward(uint256 _lastPeriod, address[] memory _currentValidators) internal {
-    IBridgeTracking _bridgeTracking = _bridgeTrackingContract;
-    uint256 _totalBridgeBallots = _bridgeTracking.totalBallots(_lastPeriod);
-    uint256 _totalBridgeVotes = _bridgeTracking.totalVotes(_lastPeriod);
-    address[] memory _correspondingBridgeOperators = getBridgeOperatorsOf(_currentValidators);
-    uint256[] memory _bridgeBallots = _bridgeTracking.getManyTotalBallots(_lastPeriod, _correspondingBridgeOperators);
+    uint256 _totalBridgeBallots = _bridgeTrackingContract.totalBallots(_lastPeriod);
+    uint256 _totalBridgeVotes = _bridgeTrackingContract.totalVotes(_lastPeriod);
+    uint256[] memory _bridgeBallots = _bridgeTrackingContract.getManyTotalBallots(
+      _lastPeriod,
+      getBridgeOperatorsOf(_currentValidators)
+    );
+
+    if (
+      !_validateBridgeTrackingResponse(_totalBridgeBallots, _totalBridgeVotes, _bridgeBallots) || _totalBridgeVotes == 0
+    ) {
+      // Shares equally in case the bridge has nothing to vote or bridge tracking response is incorrect
+      for (uint256 _i; _i < _currentValidators.length; _i++) {
+        _bridgeOperatingReward[_currentValidators[_i]] = _totalBridgeReward / _currentValidators.length;
+      }
+      return;
+    }
+
     (
       uint256 _missingVotesRatioTier1,
       uint256 _missingVotesRatioTier2,
       uint256 _jailDurationForMissingVotesRatioTier2,
       uint256 _skipBridgeOperatorSlashingThreshold
     ) = _slashIndicatorContract.getBridgeOperatorSlashingConfigs();
-    for (uint _i = 0; _i < _currentValidators.length; _i++) {
-      _updateValidatorRewardBaseOnBridgeOperatingPerformance(
-        _lastPeriod,
-        _currentValidators[_i],
-        _bridgeBallots[_i],
-        _totalBridgeVotes,
-        _totalBridgeBallots,
-        _missingVotesRatioTier1,
-        _missingVotesRatioTier2,
-        _jailDurationForMissingVotesRatioTier2,
-        _skipBridgeOperatorSlashingThreshold
-      );
+
+    // Slashes the bridge reward if the total of votes exceeds the slashing threshold.
+    bool _shouldSlash = _totalBridgeVotes > _skipBridgeOperatorSlashingThreshold;
+    for (uint256 _i; _i < _currentValidators.length; _i++) {
+      // Shares the bridge operators reward proportionally.
+      _bridgeOperatingReward[_currentValidators[_i]] = (_totalBridgeReward * _bridgeBallots[_i]) / _totalBridgeBallots;
+      if (_shouldSlash) {
+        _slashBridgeOperatorBasedOnPerformance(
+          _lastPeriod,
+          _currentValidators[_i],
+          _MAX_PERCENTAGE - (_bridgeBallots[_i] * _MAX_PERCENTAGE) / _totalBridgeVotes,
+          _jailDurationForMissingVotesRatioTier2,
+          _missingVotesRatioTier1,
+          _missingVotesRatioTier2
+        );
+      }
     }
   }
 
   /**
-   * @dev Updates validator reward based on the corresponding bridge operator performance.
+   * @dev Returns whether the responses from bridge tracking are correct.
    */
-  function _updateValidatorRewardBaseOnBridgeOperatingPerformance(
+  function _validateBridgeTrackingResponse(
+    uint256 _totalBridgeBallots,
+    uint256 _totalBridgeVotes,
+    uint256[] memory _bridgeBallots
+  ) private returns (bool _valid) {
+    _valid = true;
+    uint256 _sumBallots;
+    for (uint _i; _i < _bridgeBallots.length; _i++) {
+      if (_bridgeBallots[_i] > _totalBridgeVotes) {
+        _valid = false;
+        break;
+      }
+      _sumBallots += _bridgeBallots[_i];
+    }
+    _valid = _valid && (_sumBallots <= _totalBridgeBallots);
+    if (!_valid) {
+      emit BridgeTrackingIncorrectlyResponded();
+    }
+  }
+
+  /**
+   * @dev Slashes the validator on the corresponding bridge operator performance. Updates the status of the deprecated reward. Not update the reward amount.
+   *
+   * Consider validating the bridge tracking response by using the method `_validateBridgeTrackingResponse` before calling this function.
+   */
+  function _slashBridgeOperatorBasedOnPerformance(
     uint256 _period,
     address _validator,
-    uint256 _validatorBallots,
-    uint256 _totalVotes,
-    uint256 _totalBallots,
-    uint256 _ratioTier1,
-    uint256 _ratioTier2,
+    uint256 _missedRatio,
     uint256 _jailDurationTier2,
-    uint256 _skipBridgeOperatorSlashingThreshold
+    uint256 _ratioTier1,
+    uint256 _ratioTier2
   ) internal {
-    // Shares equally in case the bridge has nothing to votes
-    bool _emptyBallot = _totalBallots == 0;
-    if (_emptyBallot && _totalVotes == 0) {
-      _bridgeOperatingReward[_validator] = _totalBridgeReward / totalBridgeOperators();
-      return;
-    } else if (_emptyBallot) {
-      return;
-    }
-
-    // Skips slashing in case the total number of votes is too small
-    if (_totalVotes <= _skipBridgeOperatorSlashingThreshold) {
-      _bridgeOperatingReward[_validator] = (_totalBridgeReward * _validatorBallots) / _totalBallots;
-      return;
-    }
-
-    uint256 _votedRatio = (_validatorBallots * _MAX_PERCENTAGE) / _totalVotes;
-    uint256 _missedRatio = _MAX_PERCENTAGE - _votedRatio;
     if (_missedRatio >= _ratioTier2) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
 
-      // Cannot saving gas by temp variable here due to too deep stack.
-      _blockProducerJailedBlock[_validator] = Math.max(
-        block.number + _jailDurationTier2,
-        _blockProducerJailedBlock[_validator]
-      );
-      _cannotBailoutUntilBlock[_validator] = Math.max(
-        block.number + _jailDurationTier2,
-        _cannotBailoutUntilBlock[_validator]
-      );
+      uint256 _newJailUntilBlock = Math.addIfNonZero(block.number, _jailDurationTier2);
+      _blockProducerJailedBlock[_validator] = Math.max(_newJailUntilBlock, _blockProducerJailedBlock[_validator]);
+      _cannotBailoutUntilBlock[_validator] = Math.max(_newJailUntilBlock, _cannotBailoutUntilBlock[_validator]);
 
       _slashIndicatorContract.execSlashBridgeOperator(_validator, 2, _period);
       emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, true, true);
@@ -211,8 +223,6 @@ abstract contract CoinbaseExecution is
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _slashIndicatorContract.execSlashBridgeOperator(_validator, 1, _period);
       emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, false, true);
-    } else if (_totalBallots > 0) {
-      _bridgeOperatingReward[_validator] = (_totalBridgeReward * _validatorBallots) / _totalBallots;
     }
   }
 
@@ -232,7 +242,7 @@ abstract contract CoinbaseExecution is
     address _consensusAddr;
     address payable _treasury;
     _delegatingRewards = new uint256[](_currentValidators.length);
-    for (uint _i = 0; _i < _currentValidators.length; _i++) {
+    for (uint _i; _i < _currentValidators.length; _i++) {
       _consensusAddr = _currentValidators[_i];
       _treasury = _candidateInfo[_consensusAddr].treasuryAddr;
 
@@ -269,7 +279,7 @@ abstract contract CoinbaseExecution is
   function _distributeMiningReward(address _consensusAddr, address payable _treasury) private {
     uint256 _amount = _miningReward[_consensusAddr];
     if (_amount > 0) {
-      if (_unsafeSendRON(_treasury, _amount, 3500)) {
+      if (_unsafeSendRON(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
         emit MiningRewardDistributed(_consensusAddr, _treasury, _amount);
         return;
       }
@@ -294,7 +304,7 @@ abstract contract CoinbaseExecution is
   ) private {
     uint256 _amount = _bridgeOperatingReward[_consensusAddr];
     if (_amount > 0) {
-      if (_unsafeSendRON(_treasury, _amount, 3500)) {
+      if (_unsafeSendRON(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
         emit BridgeOperatorRewardDistributed(_consensusAddr, _bridgeOperator, _treasury, _amount);
         return;
       }
@@ -414,12 +424,12 @@ abstract contract CoinbaseExecution is
     }
 
     // Remove flag for all validator in the current set
-    for (uint _i = 0; _i < _newValidatorCount; _i++) {
+    for (uint _i; _i < _newValidatorCount; _i++) {
       delete _validatorMap[_validators[_i]];
     }
 
     // Update new validator set and set flag correspondingly.
-    for (uint256 _i = 0; _i < _newValidatorCount; _i++) {
+    for (uint256 _i; _i < _newValidatorCount; _i++) {
       address _newValidator = _newValidators[_i];
       _validatorMap[_newValidator] = EnumFlags.ValidatorFlag.Both;
       _validators[_i] = _newValidator;
@@ -446,11 +456,13 @@ abstract contract CoinbaseExecution is
   ) private {
     bool[] memory _maintainedList = _maintenanceContract.checkManyMaintained(_currentValidators, block.number + 1);
 
-    for (uint _i = 0; _i < _currentValidators.length; _i++) {
+    for (uint _i; _i < _currentValidators.length; _i++) {
       address _validator = _currentValidators[_i];
       bool _emergencyExitRequested = block.timestamp <= _emergencyExitJailedTimestamp[_validator];
       bool _isProducerBefore = isBlockProducer(_validator);
-      bool _isProducerAfter = !(_jailed(_validator) || _maintainedList[_i] || _emergencyExitRequested);
+      bool _isProducerAfter = !(_jailedAtBlock(_validator, block.number + 1) ||
+        _maintainedList[_i] ||
+        _emergencyExitRequested);
 
       if (!_isProducerBefore && _isProducerAfter) {
         _validatorMap[_validator] = _validatorMap[_validator].addFlag(EnumFlags.ValidatorFlag.BlockProducer);

@@ -3,7 +3,7 @@ import { BigNumberish, ContractTransaction } from 'ethers';
 
 import { expectEvent } from './utils';
 import { StakingVesting__factory } from '../../src/types';
-import { Address } from 'hardhat-deploy/dist/types';
+import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
 
 const contractInterface = StakingVesting__factory.createInterface();
 

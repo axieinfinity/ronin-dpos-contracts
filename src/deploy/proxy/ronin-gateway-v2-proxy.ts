@@ -3,7 +3,13 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { gatewayAccountSet, namedAddresses } from '../../configs/addresses';
 
 import { roninchainNetworks } from '../../configs/config';
-import { GatewayThreshold, gatewayThreshold, roninMappedToken } from '../../configs/gateway';
+import {
+  GatewayThreshold,
+  gatewayThreshold,
+  GatewayTrustedThreshold,
+  roninGatewayThreshold,
+  roninMappedToken,
+} from '../../configs/gateway';
 import { RoninGatewayV2__factory } from '../../types';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
@@ -19,6 +25,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const gatewayRoleSetter = namedAddresses['gatewayRoleSetter'][network.name];
   const withdrawalMigrators = gatewayAccountSet['withdrawalMigrators'][network.name];
+  const { trustedNumerator, trustedDenominator } = roninGatewayThreshold[network.name]! as GatewayTrustedThreshold;
   const { numerator, denominator } = gatewayThreshold[network.name]! as GatewayThreshold;
   const { mainchainTokens, roninTokens, standards, minimumThresholds, chainIds } = roninMappedToken[network.name]!;
 
@@ -26,6 +33,8 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     gatewayRoleSetter,
     numerator,
     denominator,
+    trustedNumerator,
+    trustedDenominator,
     withdrawalMigrators,
     [roninTokens, mainchainTokens],
     [chainIds, minimumThresholds],

@@ -3,9 +3,9 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../extensions/collections/HasBridgeContract.sol";
-import "../extensions/collections/HasValidatorContract.sol";
-import "../interfaces/IBridgeTracking.sol";
+import "../../extensions/collections/HasBridgeContract.sol";
+import "../../extensions/collections/HasValidatorContract.sol";
+import "../../interfaces/IBridgeTracking.sol";
 
 contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializable, IBridgeTracking {
   struct PeriodVotingMetric {

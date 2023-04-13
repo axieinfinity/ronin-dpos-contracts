@@ -18,7 +18,7 @@ import { EpochController, expects as ValidatorSetExpects } from '../helpers/roni
 import { mineBatchTxs } from '../helpers/utils';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
-import { Address } from 'hardhat-deploy/dist/types';
+import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
 import {
   createManyTrustedOrganizationAddressSets,
   createManyValidatorCandidateAddressSets,
@@ -308,7 +308,7 @@ describe('[Integration] Wrap up epoch', () => {
           expectingBlockProducerSet
         );
 
-        expect(await validatorContract.getValidators()).eql(
+        expect((await validatorContract.getValidators())[0]).eql(
           [validators[1], validators[2], validators[3]].map((_) => _.consensusAddr.address).reverse()
         );
         expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);

@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.9;
 
+import "../../../libraries/EnumFlags.sol";
+
 interface IValidatorInfo {
   /// @dev Emitted when the number of max validator is updated.
   event MaxValidatorNumberUpdated(uint256);
@@ -24,7 +26,14 @@ interface IValidatorInfo {
   /**
    * @dev Returns the current validator list.
    */
-  function getValidators() external view returns (address[] memory);
+  function getValidators()
+    external
+    view
+    returns (
+      address[] memory _validatorList,
+      address[] memory _bridgeOperators,
+      EnumFlags.ValidatorFlag[] memory _flags
+    );
 
   /**
    * @dev Returns whether the address is either a bridge operator or a block producer.
@@ -57,9 +66,9 @@ interface IValidatorInfo {
   function getBridgeOperatorsOf(address[] memory _validatorAddrs) external view returns (address[] memory);
 
   /**
-   * @dev Returns whether the address is bridge operator or not.
+   * @dev Returns whether the address is bridge operator.
    */
-  function isBridgeOperator(address _addr) external view returns (bool);
+  function isBridgeOperator(address _addr) external view returns (bool isOperator);
 
   /**
    * @dev Returns whether the consensus address is operating the bridge or not.

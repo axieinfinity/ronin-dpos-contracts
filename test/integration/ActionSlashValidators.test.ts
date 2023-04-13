@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { network, ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { Address } from 'hardhat-deploy/dist/types';
+import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
 import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
 
 import {
@@ -183,7 +183,7 @@ describe('[Integration] Slash validators', () => {
         expectingBlockProducerSet.push(slashee.consensusAddr.address);
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
 
-        expect(await validatorContract.getValidators()).eql(expectingValidatorSet);
+        expect((await validatorContract.getValidators())[0]).eql(expectingValidatorSet);
         expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
       });
 
@@ -328,7 +328,7 @@ describe('[Integration] Slash validators', () => {
 
         period = await validatorContract.currentPeriod();
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
-        expect(await validatorContract.getValidators()).eql(expectingValidatorSet);
+        expect((await validatorContract.getValidators())[0]).eql(expectingValidatorSet);
       });
 
       describe('Check effects on indicator and staking amount', async () => {
@@ -430,7 +430,7 @@ describe('[Integration] Slash validators', () => {
 
           slashees.forEach((slashee) => expectingBlockProducerSet.push(slashee.consensusAddr.address));
           expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
-          expect(await validatorContract.getValidators()).eql(expectingBlockProducerSet);
+          expect((await validatorContract.getValidators())[0]).eql(expectingBlockProducerSet);
           await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
             wrapUpEpochTx!,
             period,
@@ -461,7 +461,7 @@ describe('[Integration] Slash validators', () => {
           period = await validatorContract.currentPeriod();
           await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
           expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
-          expect(await validatorContract.getValidators()).eql(expectingValidatorSet);
+          expect((await validatorContract.getValidators())[0]).eql(expectingValidatorSet);
         });
 
         it('The validator should be able to top up before deadline', async () => {
@@ -496,7 +496,7 @@ describe('[Integration] Slash validators', () => {
 
           await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
           expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
-          expect(await validatorContract.getValidators()).eql(expectingValidatorSet);
+          expect((await validatorContract.getValidators())[0]).eql(expectingValidatorSet);
         });
 
         it('Should the event of revoking under balance candidates emitted', async () => {

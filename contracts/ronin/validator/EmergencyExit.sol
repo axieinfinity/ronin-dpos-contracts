@@ -33,6 +33,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     uint256 _revokingTimestamp = block.timestamp + _secLeftToRevoke;
     _setRevokingTimestamp(_candidateInfo[_consensusAddr], _revokingTimestamp);
     _emergencyExitJailedTimestamp[_consensusAddr] = _revokingTimestamp;
+    _bridgeRewardDeprecatedAtPeriod[_consensusAddr][currentPeriod()] = true;
 
     uint256 _deductedAmount = _stakingContract.execDeductStakingAmount(_consensusAddr, _emergencyExitLockedAmount);
     if (_deductedAmount > 0) {
@@ -78,7 +79,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     uint256 _length = _lockedConsensusList.length;
     uint256 _index = _length;
 
-    for (uint _i = 0; _i < _length; _i++) {
+    for (uint _i; _i < _length; _i++) {
       if (_lockedConsensusList[_i] == _consensusAddr) {
         _index = _i;
         break;
@@ -99,7 +100,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
       _lockedConsensusList.pop();
 
       _lockedFundReleased[_consensusAddr] = true;
-      if (_unsafeSendRON(_recipient, _amount, 3500)) {
+      if (_unsafeSendRON(_recipient, _amount, DEFAULT_ADDITION_GAS)) {
         emit EmergencyExitLockedFundReleased(_consensusAddr, _recipient, _amount);
         return;
       }

@@ -19,7 +19,7 @@ import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
-import { Address } from 'hardhat-deploy/dist/types';
+import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
 import {
   createManyTrustedOrganizationAddressSets,
   createManyValidatorCandidateAddressSets,
@@ -182,7 +182,7 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, expectingValidatorsAddr);
-      expect(await roninValidatorSet.getValidators()).eql(expectingValidatorsAddr);
+      expect((await roninValidatorSet.getValidators())[0]).eql(expectingValidatorsAddr);
       expect(await roninValidatorSet.getBlockProducers()).eql(expectingValidatorsAddr);
     });
 
@@ -220,7 +220,7 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, expectingValidatorsAddr);
-      expect(await roninValidatorSet.getValidators()).eql(expectingValidatorsAddr);
+      expect((await roninValidatorSet.getValidators())[0]).eql(expectingValidatorsAddr);
       expect(await roninValidatorSet.getBlockProducers()).eql(expectingValidatorsAddr);
     });
   });

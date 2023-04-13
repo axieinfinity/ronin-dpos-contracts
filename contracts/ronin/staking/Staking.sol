@@ -3,6 +3,7 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "../../libraries/Math.sol";
 import "../../interfaces/staking/IStaking.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "./CandidateStaking.sol";
@@ -55,9 +56,14 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     returns (uint256 _actualDeductingAmount)
   {
     _actualDeductingAmount = _deductStakingAmount(_stakingPool[_consensusAddr], _amount);
-    address payable _recipientAddr = payable(validatorContract());
-    if (!_unsafeSendRON(_recipientAddr, _actualDeductingAmount, 3500)) {
-      emit StakingAmountDeductFailed(_consensusAddr, _recipientAddr, _actualDeductingAmount, address(this).balance);
+    address payable _validatorContractAddr = payable(validatorContract());
+    if (!_unsafeSendRON(_validatorContractAddr, _actualDeductingAmount)) {
+      emit StakingAmountDeductFailed(
+        _consensusAddr,
+        _validatorContractAddr,
+        _actualDeductingAmount,
+        address(this).balance
+      );
     }
   }
 
@@ -79,7 +85,12 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     _actualDeductingAmount = Math.min(_pool.stakingAmount, _amount);
 
     _pool.stakingAmount -= _actualDeductingAmount;
-    _changeDelegatingAmount(_pool, _pool.admin, _pool.stakingAmount, _pool.stakingTotal - _actualDeductingAmount);
+    _changeDelegatingAmount(
+      _pool,
+      _pool.admin,
+      _pool.stakingAmount,
+      Math.subNonNegative(_pool.stakingTotal, _actualDeductingAmount)
+    );
     emit Unstaked(_pool.addr, _actualDeductingAmount);
   }
 }

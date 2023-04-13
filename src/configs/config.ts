@@ -58,6 +58,11 @@ export const generalRoninConf: GeneralConfig = {
     startedAtBlock: 11710199,
     bridgeContract: '0xCee681C9108c42C710c6A8A949307D5F13C9F3ca',
   },
+  [Network.Mainnet]: {
+    roninChainId: 2020,
+    startedAtBlock: 23155200,
+    bridgeContract: '0x0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df', // https://explorer.roninchain.com/address/ronin:0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df
+  },
 };
 
 export const generalMainchainConf: GeneralConfig = {
@@ -72,6 +77,10 @@ export const generalMainchainConf: GeneralConfig = {
     ...defaultGeneralConf,
     roninChainId: 2022,
   },
+  [Network.Ethereum]: {
+    roninChainId: 2020,
+    bridgeContract: '0x64192819ac13ef72bf6b5ae239ac672b43a9af08', // https://etherscan.io/address/0x64192819ac13ef72bf6b5ae239ac672b43a9af08
+  },
 };
 
 const defaultMaintenanceConf: MaintenanceArguments = {
@@ -83,7 +92,6 @@ const defaultMaintenanceConf: MaintenanceArguments = {
   cooldownSecsToMaintain: 86400 * 3, // request next maintenance must wait at least 3 days.
 };
 
-// TODO: update config for testnet & mainnet
 export const maintenanceConf: MaintenanceConfig = {
   [Network.Local]: defaultMaintenanceConf,
   [Network.Devnet]: defaultMaintenanceConf,
@@ -91,7 +99,10 @@ export const maintenanceConf: MaintenanceConfig = {
     ...defaultMaintenanceConf,
     minMaintenanceDurationInBlock: 200,
   },
-  [Network.Mainnet]: undefined,
+  [Network.Mainnet]: {
+    ...defaultMaintenanceConf,
+    minOffsetToStartSchedule: 1000,
+  },
 };
 
 const defaultStakingConf: StakingArguments = {
@@ -101,7 +112,6 @@ const defaultStakingConf: StakingArguments = {
   waitingSecsToRevoke: 7 * 86400, // at least 7 days
 };
 
-// TODO: update config for testnet & mainnet
 export const stakingConfig: StakingConfig = {
   [Network.Local]: defaultStakingConf,
   [Network.Devnet]: defaultStakingConf,
@@ -109,7 +119,10 @@ export const stakingConfig: StakingConfig = {
     ...defaultStakingConf,
     minValidatorStakingAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5).mul(5)), // 500.000 RON
   },
-  [Network.Mainnet]: undefined,
+  [Network.Mainnet]: {
+    ...defaultStakingConf,
+    minValidatorStakingAmount: BigNumber.from(10).pow(18).mul(250_000), // 250.000 RON
+  },
 };
 
 const defaultStakingVestingConf: StakingVestingArguments = {
@@ -118,7 +131,6 @@ const defaultStakingVestingConf: StakingVestingArguments = {
   topupAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(4)), // 10.000 RON
 };
 
-// TODO: update config for testnet & mainnet
 export const stakingVestingConfig: StakingVestingConfig = {
   [Network.Local]: defaultStakingVestingConf,
   [Network.Devnet]: defaultStakingVestingConf,
@@ -126,7 +138,12 @@ export const stakingVestingConfig: StakingVestingConfig = {
     ...defaultStakingVestingConf,
     topupAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5)), // 100.000 RON
   },
-  [Network.Mainnet]: undefined,
+  [Network.Mainnet]: {
+    ...defaultStakingVestingConf,
+    blockProducerBonusPerBlock: BigNumber.from('2853881278540000000'), // 2.85388127854 RON per block
+    bridgeOperatorBonusPerBlock: BigNumber.from('95129375950000000'), // 0.09512937595 RON per block
+    topupAmount: 0,
+  },
 };
 
 const defaultSlashIndicatorConf: SlashIndicatorArguments = {
@@ -159,7 +176,6 @@ const defaultSlashIndicatorConf: SlashIndicatorArguments = {
   },
 };
 
-// TODO: update config for testnet & mainnet
 export const slashIndicatorConf: SlashIndicatorConfig = {
   [Network.Local]: defaultSlashIndicatorConf,
   [Network.Devnet]: defaultSlashIndicatorConf,
@@ -176,7 +192,35 @@ export const slashIndicatorConf: SlashIndicatorConfig = {
       jailDurationForUnavailabilityTier2Threshold: 2 * 28800, // jails for 2 days
     },
   },
-  [Network.Mainnet]: undefined,
+  [Network.Mainnet]: {
+    bridgeOperatorSlashing: {
+      missingVotesRatioTier1: 10_00, // 10%
+      missingVotesRatioTier2: 30_00, // 30%
+      jailDurationForMissingVotesRatioTier2: 28800 * 2, // jails for 2 days
+      skipBridgeOperatorSlashingThreshold: 50,
+    },
+    bridgeVotingSlashing: {
+      bridgeVotingThreshold: 28800 * 3, // ~3 days
+      bridgeVotingSlashAmount: BigNumber.from(10).pow(18).mul(10_000), // 10.000 RON
+    },
+    doubleSignSlashing: {
+      slashDoubleSignAmount: BigNumber.from(10).pow(18).mul(250_000), // 250.000 RON
+      doubleSigningJailUntilBlock: ethers.constants.MaxUint256,
+      doubleSigningOffsetLimitBlock: 28800 * 7, // ~7 days
+    },
+    unavailabilitySlashing: {
+      unavailabilityTier1Threshold: 50,
+      unavailabilityTier2Threshold: 150,
+      slashAmountForUnavailabilityTier2Threshold: BigNumber.from(10).pow(18).mul(10_000), // 10.000 RON
+      jailDurationForUnavailabilityTier2Threshold: 2 * 28800, // jails for 2 days
+    },
+    creditScore: {
+      gainCreditScore: 50,
+      maxCreditScore: 600,
+      bailOutCostMultiplier: 2,
+      cutOffPercentageAfterBailout: 50_00, // 50%
+    },
+  },
 };
 
 const defaultRoninValidatorSetConf: RoninValidatorSetArguments = {
@@ -189,7 +233,6 @@ const defaultRoninValidatorSetConf: RoninValidatorSetArguments = {
   emergencyExpiryDuration: 14 * 86400, // 14 days
 };
 
-// TODO: update config for testnet & mainnet
 export const roninValidatorSetConf: RoninValidatorSetConfig = {
   [Network.Local]: defaultRoninValidatorSetConf,
   [Network.Devnet]: defaultRoninValidatorSetConf,
@@ -200,7 +243,15 @@ export const roninValidatorSetConf: RoninValidatorSetConfig = {
     numberOfBlocksInEpoch: 200,
     minEffectiveDaysOnwards: 7,
   },
-  [Network.Mainnet]: undefined,
+  [Network.Mainnet]: {
+    maxValidatorNumber: 22,
+    maxPrioritizedValidatorNumber: 12,
+    maxValidatorCandidate: 50,
+    numberOfBlocksInEpoch: 200,
+    minEffectiveDaysOnwards: 7,
+    emergencyExitLockedAmount: BigNumber.from(10).pow(18).mul(50_000), // 50.000 RON
+    emergencyExpiryDuration: 14 * 86400, // 14 days
+  },
 };
 
 const defaultRoninTrustedOrganizationConf: RoninTrustedOrganizationArguments = {
@@ -215,54 +266,16 @@ const defaultRoninTrustedOrganizationConf: RoninTrustedOrganizationArguments = {
   denominator: 1,
 };
 
-// TODO: update config for testnet vs. goerli, mainnet vs. ethereum
 export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
   [Network.Local]: defaultRoninTrustedOrganizationConf,
   [Network.Devnet]: defaultRoninTrustedOrganizationConf,
   [Network.Testnet]: {
-    trustedOrganizations: [
-      '0xAcf8Bf98D1632e602d0B1761771049aF21dd6597',
-      '0xCaba9D9424D6bAD99CE352A943F59279B533417a',
-      '0x9f1Abc67beA4db5560371fF3089F4Bfe934c36Bc',
-      '0xD086D2e3Fac052A3f695a4e8905Ce1722531163C',
-      '0xA85ddDdCeEaB43DccAa259dd4936aC104386F9aa',
-      '0x42c535deCcc071D9039b177Cb3AbF30411531b05',
-      '0x9422d990AcDc3f2b3AA3B97303aD3060F09d7ffC',
-      '0x877eFEfFE7A23E42C39e2C99b977e4AA4BEC7517',
-      '0x95908d03bA55c2a44688330b59E746Fdb2f17E3E',
-      '0x771DEc03db66a566a1DfE3fd635B3f8D404b9291',
-      '0xb212F24D850a0Ed90F2889dee31870E7FF3fED6c',
-    ].map((addr) => ({
-      consensusAddr: addr,
-      governor: addr,
-      bridgeVoter: addr,
-      weight: 100,
-      addedBlock: 0,
-    })),
+    trustedOrganizations: trustedOrgSet[Network.Testnet],
     numerator: 9,
     denominator: 11,
   },
-  [Network.Mainnet]: undefined,
   [Network.Goerli]: {
-    trustedOrganizations: [
-      '0xAcf8Bf98D1632e602d0B1761771049aF21dd6597',
-      '0xCaba9D9424D6bAD99CE352A943F59279B533417a',
-      '0x9f1Abc67beA4db5560371fF3089F4Bfe934c36Bc',
-      '0xD086D2e3Fac052A3f695a4e8905Ce1722531163C',
-      '0xA85ddDdCeEaB43DccAa259dd4936aC104386F9aa',
-      '0x42c535deCcc071D9039b177Cb3AbF30411531b05',
-      '0x9422d990AcDc3f2b3AA3B97303aD3060F09d7ffC',
-      '0x877eFEfFE7A23E42C39e2C99b977e4AA4BEC7517',
-      '0x95908d03bA55c2a44688330b59E746Fdb2f17E3E',
-      '0x771DEc03db66a566a1DfE3fd635B3f8D404b9291',
-      '0xb212F24D850a0Ed90F2889dee31870E7FF3fED6c',
-    ].map((addr) => ({
-      consensusAddr: addr,
-      governor: addr,
-      bridgeVoter: addr,
-      weight: 100,
-      addedBlock: 0,
-    })),
+    trustedOrganizations: trustedOrgSet[Network.Goerli],
     numerator: 9,
     denominator: 11,
   },
@@ -271,7 +284,16 @@ export const roninTrustedOrganizationConf: RoninTrustedOrganizationConfig = {
     numerator: 9,
     denominator: 11,
   },
-  [Network.Ethereum]: undefined,
+  [Network.Mainnet]: {
+    trustedOrganizations: trustedOrgSet[Network.Mainnet],
+    numerator: 9,
+    denominator: 12,
+  },
+  [Network.Ethereum]: {
+    trustedOrganizations: trustedOrgSet[Network.Ethereum],
+    numerator: 9,
+    denominator: 12,
+  },
 };
 
 const defaultMainchainGovernanceAdminConf: MainchainGovernanceAdminArguments = {
@@ -279,7 +301,6 @@ const defaultMainchainGovernanceAdminConf: MainchainGovernanceAdminArguments = {
   relayers: ['0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1'],
 };
 
-// TODO: update config for goerli, ethereum
 export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
   [Network.Local]: defaultMainchainGovernanceAdminConf,
   [Network.Devnet]: defaultMainchainGovernanceAdminConf,
@@ -291,19 +312,33 @@ export const mainchainGovernanceAdminConf: MainchainGovernanceAdminConfig = {
     roleSetter: '0xC37b5d7891D73F2064B0eE044844e053872Ef941',
     relayers: ['0xC37b5d7891D73F2064B0eE044844e053872Ef941'],
   },
-  [Network.Ethereum]: undefined,
+  [Network.Ethereum]: {
+    roleSetter: '0x2DA02aC5f19Ae362a4121718d990e655eB628D96', // https://etherscan.io/address/0x2DA02aC5f19Ae362a4121718d990e655eB628D96
+    relayers: [
+      '0xbb772579dfe08f7c7c73daca0a414fca4c9e57ac',
+      '0xE5EB222996967BE79468C28bA39D665fd96E8b30',
+      '0x77Ab649Caa7B4b673C9f2cF069900DF48114d79D',
+      '0xaaBD1f9bA401F4C56F7717c71C4fD9369Dacf7cE',
+      '0x1FE5F98A40602Fc002d57EA803C2d6951649d637',
+      '0x60c4b72fc62b3e3a74e283aa9ba20d61dd4d8f1b',
+      '0xD5877c63744903a459CCBa94c909CDaAE90575f8',
+      '0xD1cF86f5D3fB220730D8d9F06C940EFA8683a2af',
+      '0x02201f9bfd2face1b9f9d30d776e77382213da1a',
+      '0x58aBcBCAb52dEE942491700CD0DB67826BBAA8C6',
+    ], // Combined from DPoS Trusted Org and Master sheet
+  },
 };
 
 const defaultGovernanceAdminConf: RoninGovernanceAdminArguments = {
   proposalExpiryDuration: 60 * 60 * 24 * 14, // 14 days
 };
 
-// TODO: update config for goerli, ethereum
+// TODO: update config for goerli
 export const roninGovernanceAdminConf: RoninGovernanceAdminConfig = {
   [Network.Local]: defaultGovernanceAdminConf,
   [Network.Devnet]: defaultGovernanceAdminConf,
   [Network.Goerli]: undefined,
-  [Network.Ethereum]: undefined,
+  [Network.Mainnet]: defaultGovernanceAdminConf,
 };
 
 export const vaultForwarderConf: VaultForwarderConfig = {

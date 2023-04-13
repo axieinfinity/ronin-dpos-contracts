@@ -3,11 +3,12 @@
 pragma solidity ^0.8.9;
 
 import "../../extensions/collections/HasStakingContract.sol";
+import "../../extensions/consumers/GlobalConfigConsumer.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/validator/ICandidateManager.sol";
 import "../../interfaces/staking/IStaking.sol";
 
-abstract contract CandidateManager is ICandidateManager, PercentageConsumer, HasStakingContract {
+abstract contract CandidateManager is ICandidateManager, PercentageConsumer, GlobalConfigConsumer, HasStakingContract {
   /// @dev Maximum number of validator candidate
   uint256 private _maxValidatorCandidate;
 
@@ -75,7 +76,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     if (isValidatorCandidate(_consensusAddr)) revert ErrExistentCandidate();
     if (_commissionRate > _MAX_PERCENTAGE) revert ErrInvalidCommissionRate();
 
-    for (uint _i = 0; _i < _candidates.length; _i++) {
+    for (uint _i; _i < _candidates.length; _i++) {
       ValidatorCandidate storage existentInfo = _candidateInfo[_candidates[_i]];
       if (_candidateAdmin == existentInfo.admin) revert ErrExistentCandidateAdmin(_candidateAdmin);
       if (_treasuryAddr == existentInfo.treasuryAddr) revert ErrExistentTreasury(_treasuryAddr);
@@ -124,7 +125,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
     if (_effectiveDaysOnwards < _minEffectiveDaysOnwards) revert ErrInvalidEffectiveDaysOnwards();
 
     CommissionSchedule storage _schedule = _candidateCommissionChangeSchedule[_consensusAddr];
-    uint256 _effectiveTimestamp = ((block.timestamp / 1 days) + _effectiveDaysOnwards) * 1 days;
+    uint256 _effectiveTimestamp = ((block.timestamp / PERIOD_DURATION) + _effectiveDaysOnwards) * PERIOD_DURATION;
     _schedule.effectiveTimestamp = _effectiveTimestamp;
     _schedule.commissionRate = _commissionRate;
 
@@ -143,7 +144,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
    */
   function getCandidateInfos() external view override returns (ValidatorCandidate[] memory _list) {
     _list = new ValidatorCandidate[](_candidates.length);
-    for (uint _i = 0; _i < _list.length; _i++) {
+    for (uint _i; _i < _list.length; _i++) {
       _list[_i] = _candidateInfo[_candidates[_i]];
     }
   }
@@ -234,10 +235,11 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Has
       }
     }
 
+    assembly {
+      mstore(_unsatisfiedCandidates, _unsatisfiedCount)
+    }
+
     if (_unsatisfiedCount > 0) {
-      assembly {
-        mstore(_unsatisfiedCandidates, _unsatisfiedCount)
-      }
       emit CandidatesRevoked(_unsatisfiedCandidates);
       _staking.execDeprecatePools(_unsatisfiedCandidates, _nextPeriod);
     }
