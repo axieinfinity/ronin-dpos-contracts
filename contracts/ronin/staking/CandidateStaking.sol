@@ -62,7 +62,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     uint256 _commissionRate
   ) external payable override nonReentrant {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
-    if (_commissionRate > _maxCommissionRate) revert ErrInvalidCommissionRate();
+    if (_commissionRate > _maxCommissionRate || _commissionRate < _minCommissionRate) revert ErrInvalidCommissionRate();
 
     uint256 _amount = msg.value;
     address payable _poolAdmin = payable(msg.sender);
@@ -93,7 +93,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     uint256 _effectiveDaysOnwards,
     uint256 _commissionRate
   ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
-    if (_commissionRate > _maxCommissionRate) revert ErrInvalidCommissionRate();
+    if (_commissionRate > _maxCommissionRate || _commissionRate < _minCommissionRate) revert ErrInvalidCommissionRate();
     _validatorContract.execRequestUpdateCommissionRate(_consensusAddr, _effectiveDaysOnwards, _commissionRate);
   }
 
@@ -194,8 +194,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     if (!_unsafeSendRON(_poolAdmin, 0)) revert ErrCannotInitTransferRON(_poolAdmin, "pool admin");
     if (!_unsafeSendRON(_treasuryAddr, 0)) revert ErrCannotInitTransferRON(_treasuryAddr, "treasury");
     if (_amount < _minValidatorStakingAmount) revert ErrInsufficientStakingAmount();
-    if (_commissionRate > _maxCommissionRate) revert ErrInvalidCommissionRate();
-
     if (_poolAdmin != _candidateAdmin || _candidateAdmin != _treasuryAddr) revert ErrThreeInteractionAddrsNotEqual();
 
     address[] memory _diffAddrs = new address[](3);
