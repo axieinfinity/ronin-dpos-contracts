@@ -30,7 +30,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   ) external initializer {
     _setValidatorContract(__validatorContract);
     _setMinValidatorStakingAmount(__minValidatorStakingAmount);
-    _setMaxCommissionRate(__maxCommissionRate);
+    _setCommissionRateRange(0, __maxCommissionRate);
     _setCooldownSecsToUndelegate(__cooldownSecsToUndelegate);
     _setWaitingSecsToRevoke(__waitingSecsToRevoke);
   }

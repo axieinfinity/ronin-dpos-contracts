@@ -14,12 +14,14 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
 
   /// @dev The max commission rate that the validator can set (in range of [0;100_00] means [0-100%])
   uint256 internal _maxCommissionRate;
+  /// @dev The min commission rate that the validator can set (in range of [0;100_00] means [0-100%])
+  uint256 internal _minCommissionRate;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[49] ______gap;
+  uint256[48] ______gap;
 
   /**
    * @inheritdoc ICandidateStaking
@@ -31,8 +33,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   /**
    * @inheritdoc ICandidateStaking
    */
-  function maxCommissionRate() external view override returns (uint256) {
-    return _maxCommissionRate;
+  function getCommissionRateRange() external view override returns (uint256, uint256) {
+    return (_minCommissionRate, _maxCommissionRate);
   }
 
   /**
@@ -45,8 +47,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   /**
    * @inheritdoc ICandidateStaking
    */
-  function setMaxCommissionRate(uint256 _maxRate) external override onlyAdmin {
-    _setMaxCommissionRate(_maxRate);
+  function setCommissionRateRange(uint256 _minRate, uint256 _maxRate) external override onlyAdmin {
+    _setCommissionRateRange(_minRate, _maxRate);
   }
 
   /**
@@ -269,9 +271,10 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
    * Emits the `MaxCommissionRateUpdated` event.
    *
    */
-  function _setMaxCommissionRate(uint256 _maxRate) internal {
-    if (_maxRate > _MAX_PERCENTAGE) revert ErrInvalidCommissionRate();
+  function _setCommissionRateRange(uint256 _minRate, uint256 _maxRate) internal {
+    if (_maxRate > _MAX_PERCENTAGE || _minRate > _maxRate) revert ErrInvalidCommissionRate();
     _maxCommissionRate = _maxRate;
-    emit MaxCommissionRateUpdated(_maxRate);
+    _minCommissionRate = _minRate;
+    emit CommissionRateRangeUpdated(_minRate, _maxRate);
   }
 }
