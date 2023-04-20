@@ -498,5 +498,21 @@ describe('Staking test', () => {
         )
       ).eql([0, 1].map(BigNumber.from));
     });
+
+    it('Should be able to delegate for a renouncing candidate', async () => {
+      await stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address);
+      await stakingContract.connect(userA).delegate(poolAddrSet.consensusAddr.address, { value: 2 });
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, userA.address)).eq(2);
+    });
+
+    it('Should be able to undelegate for a renouncing candidate without waiting for cooldown', async () => {
+      let tx = await stakingContract.connect(userA).undelegate(poolAddrSet.consensusAddr.address, 1);
+      await expect(tx).not.revertedWithCustomError(stakingContract, 'ErrUndelegateTooEarly');
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, userA.address)).eq(1);
+
+      await network.provider.send('evm_increaseTime', [cooldownSecsToUndelegate + 1]);
+      await stakingContract.connect(userA).undelegate(poolAddrSet.consensusAddr.address, 1);
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, userA.address)).eq(0);
+    });
   });
 });
