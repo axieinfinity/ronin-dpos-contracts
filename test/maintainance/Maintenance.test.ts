@@ -44,7 +44,7 @@ let snapshotId: string;
 const unavailabilityTier1Threshold = 50;
 const unavailabilityTier2Threshold = 150;
 const maxValidatorNumber = 4;
-const numberOfBlocksInEpoch = 600;
+const numberOfBlocksInEpoch = 50;
 const minValidatorStakingAmount = BigNumber.from(100);
 const minMaintenanceDurationInBlock = 100;
 const maxMaintenanceDurationInBlock = 1000;
@@ -154,7 +154,7 @@ describe('Maintenance test', () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
     });
 
-    it('Should be not able to schedule maintenance with invalid start block', async () => {
+    it('Should not be able to schedule maintenance with invalid start block', async () => {
       startedAtBlock = 0;
       endedAtBlock = 100;
       expect(startedAtBlock - currentBlock).lt(minOffsetToStartSchedule);
@@ -183,7 +183,7 @@ describe('Maintenance test', () => {
       ).revertedWith('Maintenance: start block is out of offset');
     });
 
-    it('Should be not able to schedule maintenance in case of: start block >= end block', async () => {
+    it('Should not be able to schedule maintenance in case of: start block >= end block', async () => {
       startedAtBlock = currentBlock + minOffsetToStartSchedule;
       endedAtBlock = currentBlock;
       expect(endedAtBlock).lte(startedAtBlock);
@@ -202,7 +202,7 @@ describe('Maintenance test', () => {
       ).revertedWith('Maintenance: start block must be less than end block');
     });
 
-    it('Should be not able to schedule maintenance when the maintenance period is too small or large', async () => {
+    it('Should not be able to schedule maintenance when the maintenance period is too small or large', async () => {
       endedAtBlock = BigNumber.from(startedAtBlock).add(1);
       expect(endedAtBlock.sub(startedAtBlock)).lt(minMaintenanceDurationInBlock);
       await expect(
@@ -220,7 +220,7 @@ describe('Maintenance test', () => {
       ).revertedWith('Maintenance: invalid maintenance duration');
     });
 
-    it('Should be not able to schedule maintenance when the start block is not at the start of an epoch', async () => {
+    it('Should not be able to schedule maintenance when the start block is not at the start of an epoch', async () => {
       startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock).add(1);
       endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock.add(minMaintenanceDurationInBlock));
 
@@ -233,7 +233,7 @@ describe('Maintenance test', () => {
       ).revertedWith('Maintenance: start block is not at the start of an epoch');
     });
 
-    it('Should be not able to schedule maintenance when the end block is not at the end of an epoch', async () => {
+    it('Should not be able to schedule maintenance when the end block is not at the end of an epoch', async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
       endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock.add(minMaintenanceDurationInBlock)).add(1);
@@ -264,9 +264,11 @@ describe('Maintenance test', () => {
     it('Should be able to schedule maintenance using validator admin account', async () => {
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock).add(numberOfBlocksInEpoch);
-      endedAtBlock = localEpochController.calculateEndOfEpoch(
-        BigNumber.from(startedAtBlock).add(minMaintenanceDurationInBlock)
-      );
+      endedAtBlock = localEpochController
+        .calculateEndOfEpoch(BigNumber.from(startedAtBlock))
+        .add(
+          BigNumber.from(minMaintenanceDurationInBlock).div(numberOfBlocksInEpoch).sub(1).mul(numberOfBlocksInEpoch)
+        );
 
       const tx = await maintenanceContract
         .connect(validatorCandidates[0].candidateAdmin)
@@ -275,6 +277,10 @@ describe('Maintenance test', () => {
         .emit(maintenanceContract, 'MaintenanceScheduled')
         .withArgs(validatorCandidates[0].consensusAddr.address, [startedAtBlock, endedAtBlock]);
       expect(await maintenanceContract.checkScheduled(validatorCandidates[0].consensusAddr.address)).true;
+    });
+
+    it('Should the maintenance elapsed blocks equal to min maintenance duration', async () => {
+      expect(BigNumber.from(endedAtBlock).sub(startedAtBlock).add(1)).eq(minMaintenanceDurationInBlock);
     });
 
     it('Should not be able to schedule maintenance again', async () => {
@@ -302,12 +308,18 @@ describe('Maintenance test', () => {
     it('Should the validator still appear in the block producer list since it is not maintenance time yet', async () => {
       await localEpochController.mineToBeforeEndOfEpoch();
       let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
+
+      currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.map((_) => _.consensusAddr.address));
     });
 
     it('Should the validator not appear in the block producer list since the maintenance is started', async () => {
-      await localEpochController.mineToBeforeEndOfEpoch();
+      await localEpochController.mineToBeforeEndOfEpoch(
+        BigNumber.from(minOffsetToStartSchedule).div(numberOfBlocksInEpoch).add(1)
+      );
       let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
+
+      currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       let expectingBlockProducerSet = validatorCandidates.slice(2).map((_) => _.consensusAddr.address);
       await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
         tx!,
@@ -328,7 +340,9 @@ describe('Maintenance test', () => {
     });
 
     it('Should the validator appear in the block producer list since the maintenance time is ended', async () => {
-      await localEpochController.mineToBeforeEndOfEpoch();
+      await localEpochController.mineToBeforeEndOfEpoch(
+        BigNumber.from(minMaintenanceDurationInBlock).div(numberOfBlocksInEpoch)
+      );
       let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
       let expectingBlockProducerSet = validatorCandidates.map((_) => _.consensusAddr.address);
       await ValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
@@ -360,10 +374,18 @@ describe('Maintenance test', () => {
 
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
       startedAtBlock = localEpochController.calculateStartOfEpoch(currentBlock);
-      endedAtBlock = localEpochController.calculateEndOfEpoch(startedAtBlock);
+      endedAtBlock = localEpochController
+        .calculateEndOfEpoch(BigNumber.from(startedAtBlock))
+        .add(
+          BigNumber.from(maxMaintenanceDurationInBlock).div(numberOfBlocksInEpoch).sub(1).mul(numberOfBlocksInEpoch)
+        );
       await maintenanceContract
         .connect(validatorCandidates[0].candidateAdmin)
         .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock);
+    });
+
+    it('Should the maintenance elapsed blocks equal to max maintenance duration', async () => {
+      expect(BigNumber.from(endedAtBlock).sub(startedAtBlock).add(1)).eq(maxMaintenanceDurationInBlock);
     });
   });
 
@@ -378,7 +400,9 @@ describe('Maintenance test', () => {
 
     it('Should the admin not be able to cancel the schedule when maintenance starts', async () => {
       snapshotId = await network.provider.send('evm_snapshot');
-      await localEpochController.mineToBeforeEndOfEpoch();
+      await localEpochController.mineToBeforeEndOfEpoch(
+        BigNumber.from(minOffsetToStartSchedule).div(numberOfBlocksInEpoch).add(1)
+      );
       await validatorContract.connect(coinbase).wrapUpEpoch();
 
       await expect(
