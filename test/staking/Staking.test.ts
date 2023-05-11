@@ -353,6 +353,7 @@ describe('Staking test', () => {
   });
 
   describe('Delegator test', () => {
+    let increaseTimeOffset: number;
     before(() => {
       otherPoolAddrSet = validatorCandidates[1];
       anotherActivePoolSet = validatorCandidates[2];
@@ -497,6 +498,43 @@ describe('Staking test', () => {
           [userA.address, userB.address]
         )
       ).eql([0, 1].map(BigNumber.from));
+    });
+
+    it('Should be able to delegate for a renouncing candidate', async () => {
+      await stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address);
+      await stakingContract.connect(userA).delegate(poolAddrSet.consensusAddr.address, { value: 2 });
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, userA.address)).eq(2);
+    });
+
+    it('Should be able to undelegate for a renouncing candidate without waiting for cooldown', async () => {
+      let tx = await stakingContract.connect(userA).undelegate(poolAddrSet.consensusAddr.address, 1);
+      await expect(tx).not.revertedWithCustomError(stakingContract, 'ErrUndelegateTooEarly');
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, userA.address)).eq(1);
+
+      await network.provider.send('evm_increaseTime', [cooldownSecsToUndelegate + 1]);
+      await stakingContract.connect(userA).undelegate(poolAddrSet.consensusAddr.address, 1);
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, userA.address)).eq(0);
+    });
+
+    it('Should be able to delegate for a renouncing candidate #2', async () => {
+      increaseTimeOffset = 86400;
+      await network.provider.send('evm_increaseTime', [
+        waitingSecsToRevoke - (cooldownSecsToUndelegate + 1) - increaseTimeOffset,
+      ]); // wrap up epoch before revoking time
+      await validatorContract.wrapUpEpoch();
+      expect(await validatorContract.isValidatorCandidate(poolAddrSet.consensusAddr.address)).eq(true);
+
+      await stakingContract.connect(userB).delegate(poolAddrSet.consensusAddr.address, { value: 2 });
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, userB.address)).eq(3);
+    });
+
+    it('Should be able to undelegate for revoked candidate without waiting for cooldown', async () => {
+      await network.provider.send('evm_increaseTime', [increaseTimeOffset]); // wrap up after before revoking time
+      await validatorContract.wrapUpEpoch();
+      expect(await validatorContract.isValidatorCandidate(poolAddrSet.consensusAddr.address)).eq(false);
+
+      await stakingContract.connect(userB).undelegate(poolAddrSet.consensusAddr.address, 2);
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, userB.address)).eq(1);
     });
   });
 });

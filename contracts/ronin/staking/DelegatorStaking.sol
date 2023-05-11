@@ -150,9 +150,12 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   ) private notPoolAdmin(_pool, _delegator) {
     if (_amount == 0) revert ErrUndelegateZeroAmount();
     if (_pool.delegatingAmount[_delegator] < _amount) revert ErrInsufficientDelegatingAmount();
-    if (_pool.lastDelegatingTimestamp[_delegator] + _cooldownSecsToUndelegate >= block.timestamp) {
-      revert ErrUndelegateTooEarly();
-    }
+
+    if (
+      _validatorContract.isValidatorCandidate(_pool.addr) &&
+      _validatorContract.getCandidateInfo(_pool.addr).revokingTimestamp == 0 && // if candidate is not on renunciation
+      _pool.lastDelegatingTimestamp[_delegator] + _cooldownSecsToUndelegate >= block.timestamp // delegator is still in cooldown
+    ) revert ErrUndelegateTooEarly();
 
     _changeDelegatingAmount(
       _pool,
