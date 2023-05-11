@@ -98,9 +98,9 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
       "Maintenance: start block is out of offset"
     );
     require(_startedAtBlock < _endedAtBlock, "Maintenance: start block must be less than end block");
-    uint256 _blockPeriod = _endedAtBlock - _startedAtBlock;
+    uint256 _maintenanceElapsed = _endedAtBlock - _startedAtBlock + 1;
     require(
-      _blockPeriod.inRange(minMaintenanceDurationInBlock, maxMaintenanceDurationInBlock),
+      _maintenanceElapsed.inRange(minMaintenanceDurationInBlock, maxMaintenanceDurationInBlock),
       "Maintenance: invalid maintenance duration"
     );
     require(_validator.epochEndingAt(_startedAtBlock - 1), "Maintenance: start block is not at the start of an epoch");
