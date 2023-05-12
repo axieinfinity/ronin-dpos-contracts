@@ -12,3 +12,4 @@ refs/
 .vscode
 remix-compiler.config.js
 foundry
+.npmrc

@@ -4,7 +4,12 @@ import { expect } from 'chai';
 import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
 import { ethers, network } from 'hardhat';
 
-import { Staking, Staking__factory, TransparentUpgradeableProxyV2__factory } from '../../src/types';
+import {
+  Staking,
+  Staking__factory,
+  TransparentUpgradeableProxyV2,
+  TransparentUpgradeableProxyV2__factory,
+} from '../../src/types';
 import { MockValidatorSet__factory } from '../../src/types/factories/MockValidatorSet__factory';
 import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
@@ -22,6 +27,7 @@ let otherPoolAddrSet: ValidatorCandidateAddressSet;
 let anotherActivePoolSet: ValidatorCandidateAddressSet;
 let sparePoolAddrSet: ValidatorCandidateAddressSet;
 
+let proxyContract: TransparentUpgradeableProxyV2;
 let validatorContract: MockValidatorSet;
 let stakingContract: Staking;
 let signers: SignerWithAddress[];
@@ -58,7 +64,7 @@ describe('Staking test', () => {
     await validatorContract.deployed();
     const logicContract = await new Staking__factory(deployer).deploy();
     await logicContract.deployed();
-    const proxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
+    proxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       logicContract.address,
       proxyAdmin.address,
       logicContract.interface.encodeFunctionData('initialize', [
@@ -235,6 +241,24 @@ describe('Staking test', () => {
           maxCommissionRate + 1 // 20%
         )
       ).revertedWithCustomError(validatorContract, 'ErrInvalidCommissionRate');
+    });
+    it('Should the pool admin not be able to request updating the commission rate lower than min rate allowed', async () => {
+      const minCommissionRate = 10_00;
+      const data = stakingContract.interface.encodeFunctionData('setCommissionRateRange', [
+        minCommissionRate,
+        maxCommissionRate,
+      ]);
+      await proxyContract.connect(proxyAdmin).functionDelegateCall(data);
+
+      await expect(
+        stakingContract
+          .connect(poolAddrSet.poolAdmin)
+          .requestUpdateCommissionRate(
+            poolAddrSet.consensusAddr.address,
+            minEffectiveDaysOnwards,
+            minCommissionRate - 1
+          )
+      ).revertedWithCustomError(stakingContract, 'ErrInvalidCommissionRate');
     });
 
     it('Should the pool admin not be able to request updating the commission rate exceeding max rate', async () => {
