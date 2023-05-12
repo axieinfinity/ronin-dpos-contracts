@@ -45,7 +45,7 @@ const defaultMinCommissionRate = 0;
 const minEffectiveDaysOnwards = 7;
 const numberOfCandidate = 4;
 
-describe.only('Staking test', () => {
+describe('Staking test', () => {
   before(async () => {
     [coinbase, deployer, proxyAdmin, userA, userB, ...signers] = await ethers.getSigners();
     validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, numberOfCandidate * 3));
