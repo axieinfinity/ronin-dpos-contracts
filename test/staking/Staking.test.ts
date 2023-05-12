@@ -41,10 +41,11 @@ const numberOfBlocksInEpoch = 2;
 const cooldownSecsToUndelegate = 3 * 86400;
 const waitingSecsToRevoke = 7 * 86400;
 const maxCommissionRate = 30_00;
+const defaultMinCommissionRate = 0;
 const minEffectiveDaysOnwards = 7;
 const numberOfCandidate = 4;
 
-describe('Staking test', () => {
+describe.only('Staking test', () => {
   before(async () => {
     [coinbase, deployer, proxyAdmin, userA, userB, ...signers] = await ethers.getSigners();
     validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, numberOfCandidate * 3));
@@ -244,7 +245,7 @@ describe('Staking test', () => {
     });
     it('Should the pool admin not be able to request updating the commission rate lower than min rate allowed', async () => {
       const minCommissionRate = 10_00;
-      const data = stakingContract.interface.encodeFunctionData('setCommissionRateRange', [
+      let data = stakingContract.interface.encodeFunctionData('setCommissionRateRange', [
         minCommissionRate,
         maxCommissionRate,
       ]);
@@ -259,6 +260,11 @@ describe('Staking test', () => {
             minCommissionRate - 1
           )
       ).revertedWithCustomError(stakingContract, 'ErrInvalidCommissionRate');
+      data = stakingContract.interface.encodeFunctionData('setCommissionRateRange', [
+        defaultMinCommissionRate,
+        maxCommissionRate,
+      ]);
+      await proxyContract.connect(proxyAdmin).functionDelegateCall(data);
     });
 
     it('Should the pool admin not be able to request updating the commission rate exceeding max rate', async () => {
@@ -344,7 +350,6 @@ describe('Staking test', () => {
       await expect(tx)
         .emit(stakingContract, 'PoolApproved')
         .withArgs(poolAddrSet.consensusAddr.address, poolAddrSet.poolAdmin.address);
-
       expect(
         await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, poolAddrSet.candidateAdmin.address)
       ).eq(minValidatorStakingAmount.mul(2));
