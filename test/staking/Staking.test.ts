@@ -325,7 +325,7 @@ describe('Staking test', () => {
     it('Should the consensus account is no longer be a candidate, and the staked amount is transferred back to the pool admin', async () => {
       await network.provider.send('evm_increaseTime', [waitingSecsToRevoke]);
       const stakingAmount = minValidatorStakingAmount.mul(2);
-      expect(await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address)).eql([
+      expect(await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address)).deep.equal([
         poolAddrSet.poolAdmin.address,
         stakingAmount,
         stakingAmount.add(9),
@@ -497,7 +497,7 @@ describe('Staking test', () => {
           2,
           /* 0.02% */ { value: minValidatorStakingAmount }
         );
-      expect(await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address)).eql([
+      expect(await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address)).deep.equal([
         poolAddrSet.poolAdmin.address,
         minValidatorStakingAmount,
         minValidatorStakingAmount.add(8),
@@ -516,7 +516,7 @@ describe('Staking test', () => {
           [poolAddrSet.consensusAddr.address, poolAddrSet.consensusAddr.address],
           [userA.address, userB.address]
         )
-      ).eql([2, 2].map(BigNumber.from));
+      ).deep.equal([2, 2].map(BigNumber.from));
 
       await network.provider.send('evm_increaseTime', [cooldownSecsToUndelegate + 1]);
       await stakingContract.connect(userA).undelegate(poolAddrSet.consensusAddr.address, 2);
@@ -526,7 +526,7 @@ describe('Staking test', () => {
           [poolAddrSet.consensusAddr.address, poolAddrSet.consensusAddr.address],
           [userA.address, userB.address]
         )
-      ).eql([0, 1].map(BigNumber.from));
+      ).deep.equal([0, 1].map(BigNumber.from));
     });
 
     it('Should be able to delegate for a renouncing candidate', async () => {

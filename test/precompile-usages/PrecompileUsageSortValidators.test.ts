@@ -45,7 +45,7 @@ describe('[Precompile] Sorting validators test', () => {
       .sort((a, b) => (a.balance > b.balance ? -1 : 1))
       .map((_) => _.address);
 
-    expect(sortedValidators).eql(expectingValidators);
+    expect(sortedValidators).deep.equal(expectingValidators);
   });
 
   it('Should the usage contract revert with proper message on calling the precompile contract fails', async () => {

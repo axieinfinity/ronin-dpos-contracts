@@ -141,8 +141,12 @@ describe('Maintenance test', () => {
       validatorCandidates.map((_) => _.consensusAddr.address)
     );
 
-    expect((await validatorContract.getValidators())[0]).eql(validatorCandidates.map((_) => _.consensusAddr.address));
-    expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.map((_) => _.consensusAddr.address));
+    expect((await validatorContract.getValidators())[0]).deep.equal(
+      validatorCandidates.map((_) => _.consensusAddr.address)
+    );
+    expect(await validatorContract.getBlockProducers()).deep.equal(
+      validatorCandidates.map((_) => _.consensusAddr.address)
+    );
   });
 
   after(async () => {
@@ -310,7 +314,9 @@ describe('Maintenance test', () => {
       let tx = await validatorContract.connect(coinbase).wrapUpEpoch();
 
       currentBlock = (await ethers.provider.getBlockNumber()) + 1;
-      expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.map((_) => _.consensusAddr.address));
+      expect(await validatorContract.getBlockProducers()).deep.equal(
+        validatorCandidates.map((_) => _.consensusAddr.address)
+      );
     });
 
     it('Should the validator not appear in the block producer list since the maintenance is started', async () => {
@@ -327,7 +333,7 @@ describe('Maintenance test', () => {
         await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
         expectingBlockProducerSet
       );
-      expect(await validatorContract.getBlockProducers()).eql(
+      expect(await validatorContract.getBlockProducers()).deep.equal(
         validatorCandidates.slice(2).map((_) => _.consensusAddr.address)
       );
     });
@@ -351,7 +357,7 @@ describe('Maintenance test', () => {
         await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
         expectingBlockProducerSet
       );
-      expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
+      expect(await validatorContract.getBlockProducers()).deep.equal(expectingBlockProducerSet);
     });
 
     it('Should not be able to schedule again when cooldown time is not over', async () => {
@@ -450,7 +456,9 @@ describe('Maintenance test', () => {
         await validatorContract.epochOf((await ethers.provider.getBlockNumber()) + 1),
         expectingBlockProducerSet
       );
-      expect(await validatorContract.getBlockProducers()).eql(validatorCandidates.map((_) => _.consensusAddr.address));
+      expect(await validatorContract.getBlockProducers()).deep.equal(
+        validatorCandidates.map((_) => _.consensusAddr.address)
+      );
     });
   });
 });

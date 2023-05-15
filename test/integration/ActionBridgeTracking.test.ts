@@ -170,7 +170,7 @@ describe('[Integration] Bridge Tracking test', () => {
       await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
     period = await roninValidatorSet.currentPeriod();
-    expect(await roninValidatorSet.getBridgeOperators()).eql(candidates.map((v) => v.bridgeOperator.address));
+    expect(await roninValidatorSet.getBridgeOperators()).deep.equal(candidates.map((v) => v.bridgeOperator.address));
   });
 
   after(async () => {
@@ -181,7 +181,7 @@ describe('[Integration] Bridge Tracking test', () => {
     expect(await bridgeTracking.bridgeContract()).eq(bridgeContract.address);
     expect(await bridgeContract.bridgeTrackingContract()).eq(bridgeTracking.address);
     expect(await bridgeContract.validatorContract()).eq(roninValidatorSet.address);
-    expect(await bridgeContract.getMainchainToken(token.address, mainchainId)).eql([0, token.address]);
+    expect(await bridgeContract.getMainchainToken(token.address, mainchainId)).deep.equal([0, token.address]);
     expect(await roninValidatorSet.currentPeriod()).eq(period);
   });
 

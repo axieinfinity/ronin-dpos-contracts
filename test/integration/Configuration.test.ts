@@ -26,6 +26,7 @@ import {
 import { initTest, InitTestInput } from '../helpers/fixture';
 import { MAX_UINT255, randomAddress } from '../../src/utils';
 import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
+import { compareBigNumbers } from '../helpers/utils';
 
 let stakingVestingContract: StakingVesting;
 let maintenanceContract: Maintenance;
@@ -198,7 +199,7 @@ describe('[Integration] Configuration check', () => {
           addedBlock: undefined,
         })
       )
-    ).eql(
+    ).deep.equal(
       trustedOrgs.map((v) => ({
         consensusAddr: v.consensusAddr.address,
         governor: v.governor.address,
@@ -207,7 +208,7 @@ describe('[Integration] Configuration check', () => {
         addedBlock: undefined,
       }))
     );
-    expect(await roninTrustedOrganizationContract.getThreshold()).eql(
+    expect(await roninTrustedOrganizationContract.getThreshold()).deep.equal(
       [config.roninTrustedOrganizationArguments?.numerator, config.roninTrustedOrganizationArguments?.denominator].map(
         BigNumber.from
       )
@@ -219,7 +220,8 @@ describe('[Integration] Configuration check', () => {
     expect(await slashContract.maintenanceContract()).to.eq(maintenanceContract.address);
     expect(await slashContract.roninTrustedOrganizationContract()).to.eq(roninTrustedOrganizationContract.address);
     expect(await slashContract.roninGovernanceAdminContract()).to.eq(roninGovernanceAdminContract.address);
-    expect(await slashContract.getBridgeOperatorSlashingConfigs()).to.eql(
+    await compareBigNumbers(
+      await slashContract.getBridgeOperatorSlashingConfigs(),
       [
         config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier1,
         config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier2,
@@ -227,20 +229,23 @@ describe('[Integration] Configuration check', () => {
         config.slashIndicatorArguments?.bridgeOperatorSlashing?.skipBridgeOperatorSlashingThreshold,
       ].map(BigNumber.from)
     );
-    expect(await slashContract.getBridgeVotingSlashingConfigs()).to.eql(
+    await compareBigNumbers(
+      await slashContract.getBridgeVotingSlashingConfigs(),
       [
         config.slashIndicatorArguments?.bridgeVotingSlashing?.bridgeVotingThreshold,
         config.slashIndicatorArguments?.bridgeVotingSlashing?.bridgeVotingSlashAmount,
       ].map(BigNumber.from)
     );
-    expect(await slashContract.getDoubleSignSlashingConfigs()).to.eql(
+    await compareBigNumbers(
+      await slashContract.getDoubleSignSlashingConfigs(),
       [
         config.slashIndicatorArguments?.doubleSignSlashing?.slashDoubleSignAmount,
         config.slashIndicatorArguments?.doubleSignSlashing?.doubleSigningJailUntilBlock,
         config.slashIndicatorArguments?.doubleSignSlashing?.doubleSigningOffsetLimitBlock,
       ].map(BigNumber.from)
     );
-    expect(await slashContract.getUnavailabilitySlashingConfigs()).to.eql(
+    await compareBigNumbers(
+      await slashContract.getUnavailabilitySlashingConfigs(),
       [
         config.slashIndicatorArguments?.unavailabilitySlashing?.unavailabilityTier1Threshold,
         config.slashIndicatorArguments?.unavailabilitySlashing?.unavailabilityTier2Threshold,
@@ -248,7 +253,8 @@ describe('[Integration] Configuration check', () => {
         config.slashIndicatorArguments?.unavailabilitySlashing?.jailDurationForUnavailabilityTier2Threshold,
       ].map(BigNumber.from)
     );
-    expect(await slashContract.getCreditScoreConfigs()).to.eql(
+    await compareBigNumbers(
+      await slashContract.getCreditScoreConfigs(),
       [
         config.slashIndicatorArguments?.creditScore?.gainCreditScore,
         config.slashIndicatorArguments?.creditScore?.maxCreditScore,

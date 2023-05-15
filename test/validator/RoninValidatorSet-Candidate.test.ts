@@ -185,8 +185,8 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, expectingValidatorsAddr);
-      expect((await roninValidatorSet.getValidators())[0]).eql(expectingValidatorsAddr);
-      expect(await roninValidatorSet.getBlockProducers()).eql(expectingValidatorsAddr);
+      expect((await roninValidatorSet.getValidators())[0]).deep.equal(expectingValidatorsAddr);
+      expect(await roninValidatorSet.getBlockProducers()).deep.equal(expectingValidatorsAddr);
     });
 
     it('Should trusted org can apply for candidate and the set get synced', async () => {
@@ -223,8 +223,8 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, expectingValidatorsAddr);
-      expect((await roninValidatorSet.getValidators())[0]).eql(expectingValidatorsAddr);
-      expect(await roninValidatorSet.getBlockProducers()).eql(expectingValidatorsAddr);
+      expect((await roninValidatorSet.getValidators())[0]).deep.equal(expectingValidatorsAddr);
+      expect(await roninValidatorSet.getBlockProducers()).deep.equal(expectingValidatorsAddr);
     });
   });
 
