@@ -80,8 +80,8 @@ abstract contract CoinbaseExecution is
     }
 
     _reward -= _cutOffReward;
-    uint256 _maxRate = _stakingContract.maxCommissionRate();
-    uint256 _rate = Math.min(_candidateInfo[msg.sender].commissionRate, _maxRate);
+    (uint256 _minRate, uint256 _maxRate) = _stakingContract.getCommissionRateRange();
+    uint256 _rate = Math.max(Math.min(_candidateInfo[msg.sender].commissionRate, _maxRate), _minRate);
     uint256 _miningAmount = (_rate * _reward) / _MAX_PERCENTAGE;
     _miningReward[msg.sender] += _miningAmount;
 
