@@ -20,7 +20,7 @@ import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import { getLastBlockTimestamp, mineBatchTxs } from '../helpers/utils';
 import { defaultTestConfig, initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
-import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
+import { Address } from 'hardhat-deploy/dist/types';
 import {
   createManyTrustedOrganizationAddressSets,
   createManyValidatorCandidateAddressSets,
