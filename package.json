@@ -26,10 +26,10 @@
     "@openzeppelin/contracts": "4.7.3"
   },
   "devDependencies": {
-    "@axieinfinity/hardhat-4byte-uploader": "^1.0.0",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",
     "@nomiclabs/hardhat-ethers": "^2.0.3",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@solidstate/hardhat-4byte-uploader": "^1.1.0",
     "@typechain/ethers-v5": "^8.0.5",
     "@typechain/hardhat": "^3.0.0",
     "@types/chai": "^4.3.0",
