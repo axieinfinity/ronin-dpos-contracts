@@ -1,7 +1,7 @@
 import '@typechain/hardhat';
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
-import '@axieinfinity/hardhat-deploy';
+import 'hardhat-deploy';
 import 'hardhat-gas-reporter';
 import '@nomicfoundation/hardhat-chai-matchers';
 import 'hardhat-contract-sizer';

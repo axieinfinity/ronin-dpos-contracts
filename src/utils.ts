@@ -1,6 +1,6 @@
 import { BigNumber, BigNumberish } from 'ethers';
 import { ethers } from 'hardhat';
-import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
+import { Address } from 'hardhat-deploy/dist/types';
 
 import { TrustedOrganizationStruct } from './types/IRoninTrustedOrganization';
 
