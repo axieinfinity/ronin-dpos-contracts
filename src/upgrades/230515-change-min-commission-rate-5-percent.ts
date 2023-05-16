@@ -3,11 +3,12 @@
 /// This script does the following:
 /// - Upgrade Maintenance, Staking, Validator contract
 /// - Set `minCommissionRate`
+/// - Set new enforcer for gateway
 
 import { BigNumber } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { VoteType } from '../script/proposal';
-import { Staking__factory } from '../types';
+import { GatewayV2__factory, Staking__factory } from '../types';
 import { StakingArguments } from '../utils';
 import { proxyCall, proxyInterface } from './upgradeUtils';
 
@@ -21,10 +22,12 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const newMaintenanceLogic = '0xB6a13e481f060c6a9130238EEb84a3c98A0A5FEa';
   const newValidatorSetLogic = '0xaB2985fa821CAae0524f6C5657aE40DaBDf2Eae0';
   const newStakingLogic = '0x9B0E61e629EB44875CFf534DE0c176078CaC502f';
+  const newRoninPauseEnforcerLogic = '0x2367cD5468c2b3cD18aA74AdB7e14E43426aF837';
 
   const maintenanceProxy = await deployments.get('MaintenanceProxy');
   const validatorSetProxy = await deployments.get('ValidatorSetProxy');
   const stakingProxy = await deployments.get('StakingProxy');
+  const roninGatewayProxy = await deployments.get('RoninGatewayV2Proxy');
 
   const maintenanceInstructions = [proxyInterface.encodeFunctionData('upgradeTo', [newMaintenanceLogic])];
   const validatorSetInstructions = [proxyInterface.encodeFunctionData('upgradeTo', [newValidatorSetLogic])];
@@ -47,6 +50,12 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     ),
   ];
 
+  /// Set new enforcer for gateway
+  const GatewayInterface = GatewayV2__factory.createInterface();
+  const gatewayInstructions = [
+    proxyCall(GatewayInterface.encodeFunctionData('setEmergencyPauser', [newRoninPauseEnforcerLogic])),
+  ];
+
   const blockNumBefore = await ethers.provider.getBlockNumber();
   const blockBefore = await ethers.provider.getBlock(blockNumBefore);
   const timestampBefore = blockBefore.timestamp;
@@ -62,10 +71,15 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
       ...maintenanceInstructions.map(() => maintenanceProxy.address),
       ...validatorSetInstructions.map(() => validatorSetProxy.address),
       ...stakingInstructions.map(() => stakingProxy.address),
+      ...gatewayInstructions.map(() => roninGatewayProxy.address),
     ], // targets
-    [...maintenanceInstructions, ...validatorSetInstructions, ...stakingInstructions].map(() => 0), // values
-    [...maintenanceInstructions, ...validatorSetInstructions, ...stakingInstructions], // datas
-    [...maintenanceInstructions, ...validatorSetInstructions, ...stakingInstructions].map(() => 1_000_000), // gasAmounts
+    [...maintenanceInstructions, ...validatorSetInstructions, ...stakingInstructions, ...gatewayInstructions].map(
+      () => 0
+    ), // values
+    [...maintenanceInstructions, ...validatorSetInstructions, ...stakingInstructions, ...gatewayInstructions], // datas
+    [...maintenanceInstructions, ...validatorSetInstructions, ...stakingInstructions, ...gatewayInstructions].map(
+      () => 1_000_000
+    ), // gasAmounts
     VoteType.For // ballot type
   );
 
