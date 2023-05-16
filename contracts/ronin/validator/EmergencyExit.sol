@@ -117,45 +117,72 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
    * @dev Tries to recycle the locked funds from emergency exit requests.
    */
   function _tryRecycleLockedFundsFromEmergencyExits() internal {
-    uint256 _length = _lockedConsensusList.length;
+    assembly {
+      let length := sload(_lockedConsensusList.slot)
+      mstore(0x00, _lockedConsensusList.slot)
+      let offset := keccak256(0x00, 0x20)
 
-    uint256 _i;
-    address _addr;
-    EmergencyExitInfo storage _info;
+      mstore(0x20, _exitInfo.slot)
+      let i
+      let totalDeprecatedReward_ := sload(_totalDeprecatedReward.slot)
+      for {
 
-    while (_i < _length) {
-      _addr = _lockedConsensusList[_i];
-      _info = _exitInfo[_addr];
+      } lt(i, length) {
 
-      if (_info.recyclingAt <= block.timestamp) {
-        _totalDeprecatedReward += _info.lockedAmount;
+      } {
+        let idxOffset := add(offset, i)
+        let addr := sload(idxOffset)
+        mstore(0x00, addr)
+        let key := keccak256(0x00, 0x40)
 
-        delete _exitInfo[_addr];
-        if (--_length > 0) {
-          _lockedConsensusList[_i] = _lockedConsensusList[_length];
+        let recyclingAtKey := add(1, key)
+        if iszero(gt(sload(recyclingAtKey), timestamp())) {
+          totalDeprecatedReward_ := add(totalDeprecatedReward_, sload(key))
+
+          /// @dev delete _exitInfo[_addr]
+          sstore(key, 0) // delete lockedAmount
+          sstore(recyclingAtKey, 0) // delete recyclingAt
+
+          length := sub(length, 1)
+          if iszero(iszero(length)) {
+            let tailOffset := add(offset, length)
+            sstore(idxOffset, tailOffset)
+
+            // /// @dev remove tail
+            // sstore(tailOffset, 0)
+          }
+
+          continue
         }
-        _lockedConsensusList.pop();
-        continue;
+
+        i := add(1, i)
       }
 
-      unchecked {
-        _i++;
-      }
+      sstore(_lockedConsensusList.slot, length)
+      sstore(_totalDeprecatedReward.slot, totalDeprecatedReward_)
     }
   }
 
   /**
    * @dev Override `CandidateManager-_emergencyExitLockedFundReleased`.
    */
-  function _emergencyExitLockedFundReleased(address _consensusAddr) internal virtual override returns (bool) {
-    return _lockedFundReleased[_consensusAddr];
+  function _emergencyExitLockedFundReleased(address _consensusAddr) internal virtual override returns (bool yes) {
+    assembly {
+      mstore(0x00, _consensusAddr)
+      mstore(0x20, _lockedFundReleased.slot)
+      yes := and(sload(keccak256(0x00, 0x40)), 0xff)
+    }
   }
 
   /**
    * @dev Override `CandidateManager-_removeCandidate`.
    */
   function _removeCandidate(address _consensusAddr) internal override {
-    delete _lockedFundReleased[_consensusAddr];
+    assembly {
+      mstore(0x00, _consensusAddr)
+      mstore(0x20, _lockedFundReleased.slot)
+      sstore(keccak256(0x00, 0x40), 0)
+    }
     super._removeCandidate(_consensusAddr);
   }
 

@@ -109,7 +109,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
    */
   function getBridgeOperators() public view override returns (address[] memory _result) {
     _result = new address[](validatorCount);
-    uint256 _count = 0;
+    uint256 _count;
     unchecked {
       for (uint _i; _i < _result.length; _i++) {
         if (isOperatingBridge(_validators[_i])) {
@@ -212,16 +212,37 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
    * @dev See `IValidatorInfo-setMaxValidatorNumber`
    */
   function _setMaxValidatorNumber(uint256 _number) internal {
-    _maxValidatorNumber = _number;
-    emit MaxValidatorNumberUpdated(_number);
+    assembly {
+      sstore(_maxValidatorNumber.slot, _number)
+      mstore(0x00, _number)
+      log1(
+        0x00,
+        0x20,
+        /// @dev value is equal to keccak256("MaxValidatorNumberUpdated(uint256)")
+        0xb5464c05fd0e0f000c535850116cda2742ee1f7b34384cb920ad7b8e802138b5
+      )
+    }
   }
 
   /**
    * @dev See `IValidatorInfo-setMaxPrioritizedValidatorNumber`
    */
   function _setMaxPrioritizedValidatorNumber(uint256 _number) internal {
-    if (_number > _maxValidatorNumber) revert ErrInvalidMaxPrioritizedValidatorNumber();
-    _maxPrioritizedValidatorNumber = _number;
-    emit MaxPrioritizedValidatorNumberUpdated(_number);
+    assembly {
+      if gt(_number, sload(_maxValidatorNumber.slot)) {
+        /// @dev value is equal to bytes4(keccak256("ErrInvalidMaxPrioritizedValidatorNumber()"))
+        mstore(0x00, 0xaa8119d2)
+        revert(0x1c, 0x04)
+      }
+
+      sstore(_maxPrioritizedValidatorNumber.slot, _number)
+      mstore(0x00, _number)
+      log1(
+        0x00,
+        0x20,
+        /// @dev value is equal to keccak256("MaxPrioritizedValidatorNumberUpdated(uint256)")
+        0xa9588dc77416849bd922605ce4fc806712281ad8a8f32d4238d6c8cca548e15e
+      )
+    }
   }
 }

@@ -6,7 +6,7 @@ library Math {
   /**
    * @dev Returns the largest of two numbers.
    */
-  function max(uint256 a, uint256 b) internal pure returns (uint256) {
+  function max(uint256 a, uint256 b) internal pure returns (uint256 c) {
     return a >= b ? a : b;
   }
 
@@ -24,8 +24,10 @@ library Math {
     uint256 c,
     uint256 a,
     uint256 b
-  ) internal pure returns (bool) {
-    return a <= c && c <= b;
+  ) internal pure returns (bool yes) {
+    assembly {
+      yes := iszero(or(gt(a, c), gt(c, b)))
+    }
   }
 
   /**
@@ -54,14 +56,25 @@ library Math {
   /**
    * @dev Returns value of a - b; in case of negative result, 0 is returned.
    */
-  function subNonNegative(uint256 a, uint256 b) internal pure returns (uint256) {
-    return a > b ? a - b : 0;
+  function subNonNegative(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    assembly {
+      if gt(a, b) {
+        c := sub(a, b)
+      }
+    }
   }
 
   /**
    * @dev Returns value of `a + zeroable` if zerobale is not 0; otherwise, return 0.
    */
-  function addIfNonZero(uint256 a, uint256 zeroable) internal pure returns (uint256) {
-    return zeroable != 0 ? a + zeroable : 0;
+  function addIfNonZero(uint256 a, uint256 zeroable) internal pure returns (uint256 b) {
+    assembly {
+      if iszero(iszero(zeroable)) {
+        b := add(a, zeroable)
+        if lt(b, a) {
+          revert(0, 0)
+        }
+      }
+    }
   }
 }

@@ -14,21 +14,34 @@ contract HasSlashIndicatorContract is IHasSlashIndicatorContract, HasProxyAdmin 
   }
 
   function _requiresSlashIndicatorContract() internal view {
-    if (slashIndicatorContract() != msg.sender) revert ErrCallerMustBeSlashIndicatorContract();
+    assembly {
+      if iszero(eq(caller(), sload(_slashIndicatorContract.slot))) {
+        mstore(0x00, 0xa2e7092c)
+        revert(0x1c, 0x04)
+      }
+    }
   }
 
   /**
    * @inheritdoc IHasSlashIndicatorContract
    */
-  function slashIndicatorContract() public view override returns (address) {
-    return address(_slashIndicatorContract);
+  function slashIndicatorContract() public view override returns (address addr) {
+    assembly {
+      addr := sload(_slashIndicatorContract.slot)
+    }
   }
 
   /**
    * @inheritdoc IHasSlashIndicatorContract
    */
   function setSlashIndicatorContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract();
+    assembly {
+      if iszero(extcodesize(_addr)) {
+        /// @dev value is equal to bytes4(keccak256("ErrZeroCodeContract()"))
+        mstore(0x00, 0x7bcd5091)
+        revert(0x1c, 0x04)
+      }
+    }
     _setSlashIndicatorContract(_addr);
   }
 
@@ -39,7 +52,15 @@ contract HasSlashIndicatorContract is IHasSlashIndicatorContract, HasProxyAdmin 
    *
    */
   function _setSlashIndicatorContract(address _addr) internal {
-    _slashIndicatorContract = ISlashIndicator(_addr);
-    emit SlashIndicatorContractUpdated(_addr);
+    assembly {
+      sstore(_slashIndicatorContract.slot, _addr)
+      mstore(0x00, _addr)
+      log1(
+        0x00,
+        0x20,
+        /// @dev value is equal to keccak256("SlashIndicatorContractUpdated(address)")
+        0xaa5b07dd43aa44c69b70a6a2b9c3fcfed12b6e5f6323596ba7ac91035ab80a4f
+      )
+    }
   }
 }

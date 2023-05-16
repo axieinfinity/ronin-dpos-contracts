@@ -16,15 +16,23 @@ contract HasStakingVestingContract is IHasStakingVestingContract, HasProxyAdmin 
   /**
    * @inheritdoc IHasStakingVestingContract
    */
-  function stakingVestingContract() public view override returns (address) {
-    return address(_stakingVestingContract);
+  function stakingVestingContract() public view override returns (address addr) {
+    assembly {
+      addr := sload(_stakingVestingContract.slot)
+    }
   }
 
   /**
    * @inheritdoc IHasStakingVestingContract
    */
   function setStakingVestingContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract();
+    assembly {
+      if iszero(extcodesize(_addr)) {
+        /// @dev value is equal to bytes4(keccak256("ErrZeroCodeContract()"))
+        mstore(0x00, 0x7bcd5091)
+        revert(0x1c, 0x04)
+      }
+    }
     _setStakingVestingContract(_addr);
   }
 
@@ -35,7 +43,15 @@ contract HasStakingVestingContract is IHasStakingVestingContract, HasProxyAdmin 
    *
    */
   function _setStakingVestingContract(address _addr) internal {
-    _stakingVestingContract = IStakingVesting(_addr);
-    emit StakingVestingContractUpdated(_addr);
+    assembly {
+      sstore(_stakingVestingContract.slot, _addr)
+      mstore(0x00, _addr)
+      log1(
+        0x00,
+        0x20,
+        /// @dev value is equal to keccak256("StakingVestingContractUpdated(address)")
+        0xc328090a37d855191ab58469296f98f87a851ca57d5cdfd1e9ac3c83e9e7096d
+      )
+    }
   }
 }

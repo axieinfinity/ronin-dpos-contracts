@@ -64,8 +64,7 @@ abstract contract CoinbaseExecution is
    */
   function submitBlockReward() external payable override onlyCoinbase {
     bool _requestForBlockProducer = isBlockProducer(msg.sender) &&
-      !_jailed(msg.sender) &&
-      !_miningRewardDeprecated(msg.sender, currentPeriod());
+      !(_jailed(msg.sender) || _miningRewardDeprecated(msg.sender, currentPeriod()));
 
     (, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus) = _stakingVestingContract.requestBonus(
       _requestForBlockProducer,

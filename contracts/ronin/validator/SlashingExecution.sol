@@ -59,10 +59,34 @@ abstract contract SlashingExecution is
 
     // Note: Removing rewards of validator in `bailOut` function is not needed, since the rewards have been
     // removed previously in the `slash` function.
-    _miningRewardBailoutCutOffAtPeriod[_validatorAddr][_period] = true;
-    _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = false;
-    _blockProducerJailedBlock[_validatorAddr] = block.number - 1;
+    assembly {
+      mstore(0x00, _validatorAddr)
+      mstore(0x20, _miningRewardBailoutCutOffAtPeriod.slot)
+      mstore(0x20, keccak256(0x00, 0x40))
+      mstore(0x00, _period)
+      let key := keccak256(0x00, 0x40)
+      sstore(key, 1)
 
-    emit ValidatorUnjailed(_validatorAddr, _period);
+      mstore(0x00, _validatorAddr)
+      mstore(0x20, _miningRewardDeprecatedAtPeriod.slot)
+      mstore(0x20, keccak256(0x00, 0x40))
+      mstore(0x00, _period)
+      key := keccak256(0x00, 0x40)
+      sstore(key, 0)
+
+      mstore(0x00, _validatorAddr)
+      mstore(0x20, _blockProducerJailedBlock.slot)
+      key := keccak256(0x00, 0x40)
+      sstore(key, sub(number(), 1))
+
+      mstore(0x00, _period)
+      log2(
+        0x00,
+        0x20,
+        /// @dev value is equal to keccak256("ValidatorUnjailed(address,uint256)")
+        0x6bb2436cb6b6eb65d5a52fac2ae0373a77ade6661e523ef3004ee2d5524e6c6e,
+        _validatorAddr
+      )
+    }
   }
 }

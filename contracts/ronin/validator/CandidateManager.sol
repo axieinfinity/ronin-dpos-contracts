@@ -290,8 +290,16 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
    *
    */
   function _setMaxValidatorCandidate(uint256 _threshold) internal {
-    _maxValidatorCandidate = _threshold;
-    emit MaxValidatorCandidateUpdated(_threshold);
+    assembly {
+      sstore(_maxValidatorCandidate.slot, _threshold)
+      mstore(0x00, _threshold)
+      log1(
+        0x00,
+        0x20,
+        /// @dev value is equal to keccak256("MaxValidatorCandidateUpdated(uint256)")
+        0x82d5dc32d1b741512ad09c32404d7e7921e8934c6222343d95f55f7a2b9b2ab4
+      )
+    }
   }
 
   /**
@@ -301,9 +309,20 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
    *
    */
   function _setMinEffectiveDaysOnwards(uint256 _numOfDays) internal {
-    if (_numOfDays < 1) revert ErrInvalidMinEffectiveDaysOnwards();
-    _minEffectiveDaysOnwards = _numOfDays;
-    emit MinEffectiveDaysOnwardsUpdated(_numOfDays);
+    assembly {
+      if lt(_numOfDays, 1) {
+        mstore(0x00, 0x17b8970f)
+        revert(0x1c, 0x04)
+      }
+      sstore(_minEffectiveDaysOnwards.slot, _numOfDays)
+      mstore(0x00, _numOfDays)
+      log1(
+        0x00,
+        0x20,
+        /// @dev value is equal to keccak256("MinEffectiveDaysOnwardsUpdated(uint256)")
+        0x266d432ffe659e3565750d26ec685b822a58041eee724b67a5afec3168a25267
+      )
+    }
   }
 
   /**

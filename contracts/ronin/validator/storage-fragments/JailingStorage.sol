@@ -70,13 +70,11 @@ abstract contract JailingStorage is IJailingInfo {
     )
   {
     uint256 _jailedBlock = _blockProducerJailedBlock[_addr];
-    if (_jailedBlock < _blockNum) {
-      return (false, 0, 0);
+    if (_jailedBlock >= _blockNum) {
+      isJailed_ = true;
+      blockLeft_ = _jailedBlock - _blockNum + 1;
+      epochLeft_ = epochOf(_jailedBlock) - epochOf(_blockNum) + 1;
     }
-
-    isJailed_ = true;
-    blockLeft_ = _jailedBlock - _blockNum + 1;
-    epochLeft_ = epochOf(_jailedBlock) - epochOf(_blockNum) + 1;
   }
 
   /**
@@ -161,21 +159,38 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) at a specific block.
    */
-  function _jailedAtBlock(address _validatorAddr, uint256 _blockNum) internal view returns (bool) {
-    return _blockNum <= _blockProducerJailedBlock[_validatorAddr];
+  function _jailedAtBlock(address _validatorAddr, uint256 _blockNum) internal view returns (bool yes) {
+    assembly {
+      mstore(0x00, _validatorAddr)
+      mstore(0x20, _blockProducerJailedBlock.slot)
+      yes := iszero(gt(_blockNum, sload(keccak256(0x00, 0x40))))
+    }
   }
 
   /**
    * @dev Returns whether the block producer has no pending reward in that period.
    */
-  function _miningRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
-    return _miningRewardDeprecatedAtPeriod[_validatorAddr][_period];
+  function _miningRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool yes) {
+    assembly {
+      mstore(0x00, _validatorAddr)
+      mstore(0x20, _miningRewardDeprecatedAtPeriod.slot)
+      mstore(0x20, keccak256(0x00, 0x40))
+      mstore(0x00, _period)
+
+      yes := and(sload(keccak256(0x00, 0x40)), 0xff)
+    }
   }
 
   /**
    * @dev Returns whether the bridge operator has no pending reward in the period.
    */
-  function _bridgeRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
-    return _bridgeRewardDeprecatedAtPeriod[_validatorAddr][_period];
+  function _bridgeRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool yes) {
+    assembly {
+      mstore(0x00, _validatorAddr)
+      mstore(0x20, _bridgeRewardDeprecatedAtPeriod.slot)
+      mstore(0x20, keccak256(0x00, 0x40))
+      mstore(0x00, _period)
+      yes := and(sload(keccak256(0x00, 0x40)), 0xff)
+    }
   }
 }
