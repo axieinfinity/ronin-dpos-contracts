@@ -15,13 +15,21 @@ abstract contract HasProxyAdmin {
   }
 
   function _requiresAdmin() internal view {
-    if (msg.sender != _getAdmin()) revert Unauthorized();
+    assembly {
+      if iszero(eq(caller(), sload(_ADMIN_SLOT))) {
+        /// @dev value is equal to bytes4(keccak256("Unauthorized()"))
+        mstore(0x00, 0x82b42900)
+        revert(0x1c, 0x04)
+      }
+    }
   }
 
   /**
-   * @dev Returns proxy admin.
+   * @dev Returns proxy admin.ƒ
    */
-  function _getAdmin() internal view returns (address) {
-    return StorageSlot.getAddressSlot(_ADMIN_SLOT).value;
+  function _getAdmin() internal view returns (address admin) {
+    assembly {
+      admin := sload(_ADMIN_SLOT)
+    }
   }
 }

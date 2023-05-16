@@ -35,10 +35,10 @@ abstract contract CoinbaseExecution is
   }
 
   function _requiresCoinbase() internal view {
-    bytes4 errCallerMustBeCoinbase = ErrCallerMustBeCoinbase.selector;
     assembly {
       if iszero(eq(caller(), coinbase())) {
-        mstore(0x00, errCallerMustBeCoinbase)
+        /// @dev value is equal to bytes4(keccak256("ErrCallerMustBeCoinbase()"))
+        mstore(0x00, 0x09f358fd)
         revert(0x1c, 0x04)
       }
     }

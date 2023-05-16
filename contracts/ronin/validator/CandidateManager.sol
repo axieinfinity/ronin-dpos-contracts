@@ -139,8 +139,12 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
   /**
    * @inheritdoc ICandidateManager
    */
-  function isValidatorCandidate(address _addr) public view override returns (bool) {
-    return _candidateIndex[_addr] != 0;
+  function isValidatorCandidate(address _addr) public view override returns (bool yes) {
+    assembly {
+      mstore(0x00, _addr)
+      mstore(0x20, _candidateIndex.slot)
+      yes := iszero(iszero(sload(keccak256(0x00, 0x40))))
+    }
   }
 
   /**
@@ -258,15 +262,25 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
   /**
    * @inheritdoc ICandidateManager
    */
-  function isCandidateAdmin(address _candidate, address _admin) external view override returns (bool) {
-    return _candidateInfo[_candidate].admin == _admin;
+  function isCandidateAdmin(address _candidate, address _admin) external view override returns (bool yes) {
+    assembly {
+      mstore(0x00, _candidate)
+      mstore(0x20, _candidateInfo.slot)
+
+      yes := eq(sload(keccak256(0x00, 0x40)), _admin)
+    }
   }
 
   /**
    * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
    */
-  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address) {
-    return _candidateInfo[_consensusAddr].bridgeOperatorAddr;
+  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address bridgeOperator) {
+    assembly {
+      mstore(0x00, _consensusAddr)
+      mstore(0x20, _candidateInfo.slot)
+
+      bridgeOperator := sload(add(3, keccak256(0x00, 0x40)))
+    }
   }
 
   /**
@@ -296,34 +310,66 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
    * @dev Removes the candidate.
    */
   function _removeCandidate(address _addr) internal virtual {
-    uint256 _idx = _candidateIndex[_addr];
-    if (_idx == 0) {
-      return;
-    }
-
     assembly {
+      /// @dev prestore _addr for hashing
       mstore(0x00, _addr)
-      mstore(0x20, _candidateInfo.slot)
 
-      let key := keccak256(0x00, 0x40)
-      sstore(key, 0)
       mstore(0x20, _candidateIndex.slot)
+      let idx := sload(keccak256(0x00, 0x40))
 
-      key := keccak256(0x00, 0x40)
-      sstore(key, 0)
-      mstore(0x20, _candidateCommissionChangeSchedule.slot)
+      /// @dev if idx != 0 continue
+      if iszero(iszero(idx)) {
+        /// @dev delete _candidateInfo[_addr]
+        mstore(0x20, _candidateInfo.slot)
 
-      key := keccak256(0x00, 0x40)
-      sstore(key, 0)
+        let key := keccak256(0x00, 0x40)
+        sstore(key, 0) // delete admin
+        sstore(add(1, key), 0) // delete consensusAddr
+        sstore(add(2, key), 0) // delete treasuryAddr
+        sstore(add(3, key), 0) // delete bridgeOperatorAddr
+        sstore(add(4, key), 0) // delete comissionRate
+        sstore(add(5, key), 0) // delete revokingTimestamp
+        sstore(add(6, key), 0) // delete topupDeadline
+
+        /// @dev delete _candidateCommissionChangeSchedule[_addr]
+        mstore(0x20, _candidateCommissionChangeSchedule.slot)
+        key := keccak256(0x00, 0x40)
+        sstore(key, 0) // delete effectiveTimestamp
+        sstore(add(1, key), 0) // delete commissionRate
+
+        /// @dev delete _candidateIndex[_addr]
+        mstore(0x20, _candidateIndex.slot)
+        key := keccak256(0x00, 0x40)
+        sstore(key, 0)
+
+        mstore(0x00, _candidates.slot)
+        /// @dev get _candidates offset
+        key := keccak256(0x00, 0x20)
+
+        /// @dev _lastCandidate = _candidates[_candidates.length - 1]
+        let lastIdx := sub(sload(_candidates.slot), 1)
+        let lastIdxOffset := add(key, lastIdx)
+        let lastCandidate := sload(lastIdxOffset)
+
+        /// @dev reduce _candidates length by 1
+        sstore(_candidates.slot, lastIdx)
+        /// @dev delete _candidates[_candidates.length]
+        sstore(lastIdxOffset, 0)
+
+        if iszero(eq(_addr, lastCandidate)) {
+          /// @dev _candidateIndex[_lastCandidate] = _idx
+          mstore(0x00, lastCandidate)
+          key := keccak256(0x00, 0x40)
+          sstore(key, idx)
+
+          /// @dev _candidates[~_idx] = _lastCandidate
+          mstore(0x00, not(idx))
+          mstore(0x20, _candidates.slot)
+          key := keccak256(0x00, 0x40)
+          sstore(key, lastCandidate)
+        }
+      }
     }
-
-    address _lastCandidate = _candidates[_candidates.length - 1];
-    if (_lastCandidate != _addr) {
-      _candidateIndex[_lastCandidate] = _idx;
-      _candidates[~_idx] = _lastCandidate;
-    }
-
-    _candidates.pop();
   }
 
   /**
