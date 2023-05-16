@@ -76,11 +76,15 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
     if (isValidatorCandidate(_consensusAddr)) revert ErrExistentCandidate();
     if (_commissionRate > _MAX_PERCENTAGE) revert ErrInvalidCommissionRate();
 
-    for (uint _i; _i < _candidates.length; _i++) {
+    for (uint _i; _i < _length; ) {
       ValidatorCandidate storage existentInfo = _candidateInfo[_candidates[_i]];
       if (_candidateAdmin == existentInfo.admin) revert ErrExistentCandidateAdmin(_candidateAdmin);
       if (_treasuryAddr == existentInfo.treasuryAddr) revert ErrExistentTreasury(_treasuryAddr);
       if (_bridgeOperatorAddr == existentInfo.bridgeOperatorAddr) revert ErrExistentBridgeOperator(_bridgeOperatorAddr);
+
+      unchecked {
+        ++_i;
+      }
     }
 
     _candidateIndex[_consensusAddr] = ~_length;
@@ -144,8 +148,12 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
    */
   function getCandidateInfos() external view override returns (ValidatorCandidate[] memory _list) {
     _list = new ValidatorCandidate[](_candidates.length);
-    for (uint _i; _i < _list.length; _i++) {
+    for (uint _i; _i < _list.length; ) {
       _list[_i] = _candidateInfo[_candidates[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -231,7 +239,9 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
           emit CommissionRateUpdated(_addr, _commisionRate);
         }
 
-        _i++;
+        unchecked {
+          _i++;
+        }
       }
     }
 
@@ -291,9 +301,21 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
       return;
     }
 
-    delete _candidateInfo[_addr];
-    delete _candidateIndex[_addr];
-    delete _candidateCommissionChangeSchedule[_addr];
+    assembly {
+      mstore(0x00, _addr)
+      mstore(0x20, _candidateInfo.slot)
+
+      let key := keccak256(0x00, 0x40)
+      sstore(key, 0)
+      mstore(0x20, _candidateIndex.slot)
+
+      key := keccak256(0x00, 0x40)
+      sstore(key, 0)
+      mstore(0x20, _candidateCommissionChangeSchedule.slot)
+
+      key := keccak256(0x00, 0x40)
+      sstore(key, 0)
+    }
 
     address _lastCandidate = _candidates[_candidates.length - 1];
     if (_lastCandidate != _addr) {

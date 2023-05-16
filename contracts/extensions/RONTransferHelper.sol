@@ -25,7 +25,12 @@ abstract contract RONTransferHelper {
    *
    */
   function _sendRON(address payable _recipient, uint256 _amount) internal returns (bool _success) {
-    if (address(this).balance < _amount) revert ErrInsufficientBalance();
+    assembly {
+      if lt(selfbalance(), _amount) {
+        mstore(0x00, 0x08c2348a)
+        revert(0x1c, 0x04)
+      }
+    }
     return _unsafeSendRON(_recipient, _amount);
   }
 
@@ -39,18 +44,26 @@ abstract contract RONTransferHelper {
    * - Consider using `ReentrancyGuard` before calling this function.
    *
    */
-  function _unsafeSendRON(address payable _recipient, uint256 _amount) internal returns (bool _success) {
-    (_success, ) = _recipient.call{ value: _amount }("");
+  function _unsafeSendRON(address _recipient, uint256 _amount) internal returns (bool _success) {
+    /// @solidity memory-safe-assembly
+    assembly {
+      // Transfer the RON and check if it succeeded or not.
+      _success := call(gas(), _recipient, _amount, 0, 0, 0, 0)
+    }
   }
 
   /**
    * @dev Same purpose with {_unsafeSendRON(address,uin256)} but containing gas limit stipend forwarded in the call.
    */
   function _unsafeSendRON(
-    address payable _recipient,
+    address _recipient,
     uint256 _amount,
     uint256 _gas
   ) internal returns (bool _success) {
-    (_success, ) = _recipient.call{ value: _amount, gas: _gas }("");
+    /// @solidity memory-safe-assembly
+    assembly {
+      // Transfer the RON and check if it succeeded or not.
+      _success := call(_gas, _recipient, _amount, 0, 0, 0, 0)
+    }
   }
 }

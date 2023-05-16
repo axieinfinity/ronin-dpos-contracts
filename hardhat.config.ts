@@ -90,9 +90,12 @@ const ethereum: NetworkUserConfig = {
 const compilerConfig: SolcUserConfig = {
   version: '0.8.17',
   settings: {
+    metadata: {
+      bytecodeHash: 'none',
+    },
     optimizer: {
       enabled: true,
-      runs: 10,
+      runs: 1,
     },
   },
 };
@@ -139,6 +142,11 @@ const config: HardhatUserConfig = {
   // },
   mocha: {
     timeout: 100000, // 100s
+  },
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: true,
+    disambiguatePaths: false,
   },
 };
 

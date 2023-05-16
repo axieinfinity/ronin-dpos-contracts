@@ -79,10 +79,14 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     uint256 _length = _lockedConsensusList.length;
     uint256 _index = _length;
 
-    for (uint _i; _i < _length; _i++) {
+    for (uint _i; _i < _length; ) {
       if (_lockedConsensusList[_i] == _consensusAddr) {
         _index = _i;
         break;
+      }
+
+      unchecked {
+        ++_i;
       }
     }
 
@@ -134,7 +138,9 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
         continue;
       }
 
-      _i++;
+      unchecked {
+        _i++;
+      }
     }
   }
 

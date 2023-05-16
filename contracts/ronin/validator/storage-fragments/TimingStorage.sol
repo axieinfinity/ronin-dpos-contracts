@@ -42,7 +42,8 @@ abstract contract TimingStorage is ITimingInfo, GlobalConfigConsumer {
    * @inheritdoc ITimingInfo
    */
   function tryGetPeriodOfEpoch(uint256 _epoch) external view returns (bool _filled, uint256 _periodNumber) {
-    return (_epoch <= epochOf(block.number) || _periodOf[_epoch] > 0, _periodOf[_epoch]);
+    uint256 periodOf = _periodOf[_epoch];
+    return (_epoch <= epochOf(block.number) || periodOf > 0, periodOf);
   }
 
   /**
@@ -56,7 +57,8 @@ abstract contract TimingStorage is ITimingInfo, GlobalConfigConsumer {
    * @inheritdoc ITimingInfo
    */
   function epochEndingAt(uint256 _block) public view virtual override returns (bool) {
-    return _block % _numberOfBlocksInEpoch == _numberOfBlocksInEpoch - 1;
+    uint256 numberOfBlocksInEpoch_ = _numberOfBlocksInEpoch;
+    return _block % numberOfBlocksInEpoch_ == numberOfBlocksInEpoch_ - 1;
   }
 
   /**

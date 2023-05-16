@@ -9,8 +9,12 @@ contract HasStakingContract is IHasStakingContract, HasProxyAdmin {
   IStaking internal _stakingContract;
 
   modifier onlyStakingContract() {
-    if (stakingContract() != msg.sender) revert ErrCallerMustBeStakingContract();
+    _requiresStakingContract();
     _;
+  }
+
+  function _requiresStakingContract() internal view {
+    if (stakingContract() != msg.sender) revert ErrCallerMustBeStakingContract();
   }
 
   /**

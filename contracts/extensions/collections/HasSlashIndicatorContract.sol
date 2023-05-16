@@ -9,8 +9,12 @@ contract HasSlashIndicatorContract is IHasSlashIndicatorContract, HasProxyAdmin 
   ISlashIndicator internal _slashIndicatorContract;
 
   modifier onlySlashIndicatorContract() {
-    if (slashIndicatorContract() != msg.sender) revert ErrCallerMustBeSlashIndicatorContract();
+    _requiresSlashIndicatorContract();
     _;
+  }
+
+  function _requiresSlashIndicatorContract() internal view {
+    if (slashIndicatorContract() != msg.sender) revert ErrCallerMustBeSlashIndicatorContract();
   }
 
   /**
