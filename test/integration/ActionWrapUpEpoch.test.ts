@@ -219,7 +219,7 @@ describe('[Integration] Wrap up epoch', () => {
           await Promise.all(
             validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.consensusAddr.address))
           )
-        ).eql(
+        ).deep.equal(
           validators.map((v) => (v.consensusAddr.address == coinbase.address ? BigNumber.from(0) : BigNumber.from(1)))
         );
       });
@@ -234,7 +234,7 @@ describe('[Integration] Wrap up epoch', () => {
           await Promise.all(
             validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.consensusAddr.address))
           )
-        ).eql(validators.map(() => BigNumber.from(0)));
+        ).deep.equal(validators.map(() => BigNumber.from(0)));
       });
     });
   });
@@ -308,10 +308,10 @@ describe('[Integration] Wrap up epoch', () => {
           expectingBlockProducerSet
         );
 
-        expect((await validatorContract.getValidators())[0]).eql(
+        expect((await validatorContract.getValidators())[0]).deep.equal(
           [validators[1], validators[2], validators[3]].map((_) => _.consensusAddr.address).reverse()
         );
-        expect(await validatorContract.getBlockProducers()).eql(expectingBlockProducerSet);
+        expect(await validatorContract.getBlockProducers()).deep.equal(expectingBlockProducerSet);
       });
 
       it('Should the validators in the previous epoch (including slashed one) got slashing counter reset, when the epoch ends', async () => {
@@ -324,7 +324,7 @@ describe('[Integration] Wrap up epoch', () => {
           await Promise.all(
             validators.map(async (v) => slashContract.currentUnavailabilityIndicator(v.consensusAddr.address))
           )
-        ).eql(validators.map(() => BigNumber.from(0)));
+        ).deep.equal(validators.map(() => BigNumber.from(0)));
       });
     });
   });

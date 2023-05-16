@@ -163,7 +163,9 @@ describe('Emergency Exit test', () => {
   });
 
   it('Should be able to get list of the validator candidates', async () => {
-    expect(validatorCandidates.map((v) => v.consensusAddr.address)).eql(await roninValidatorSet.getBlockProducers());
+    expect(validatorCandidates.map((v) => v.consensusAddr.address)).deep.equal(
+      await roninValidatorSet.getBlockProducers()
+    );
   });
 
   it('Should not be able to request emergency exit using unauthorized accounts', async () => {
@@ -212,7 +214,9 @@ describe('Emergency Exit test', () => {
   });
 
   it("Should the emergency exit's requester be still in the validator list", async () => {
-    expect(validatorCandidates.map((v) => v.consensusAddr.address)).eql(await roninValidatorSet.getBlockProducers());
+    expect(validatorCandidates.map((v) => v.consensusAddr.address)).deep.equal(
+      await roninValidatorSet.getBlockProducers()
+    );
     expect(await roninValidatorSet.isValidator(compromisedValidator.consensusAddr.address)).to.true;
     expect(await roninValidatorSet.isBlockProducer(compromisedValidator.consensusAddr.address)).to.true;
     expect(await roninValidatorSet.isOperatingBridge(compromisedValidator.consensusAddr.address)).to.true;

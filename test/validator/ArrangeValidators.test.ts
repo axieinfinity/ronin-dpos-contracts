@@ -218,7 +218,7 @@ describe('Arrange validators', () => {
         maxPrioritizedValidatorNumber
       );
 
-      expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).deep.equal(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) == MaxNum(prioritized); Actual(regular) >  MaxNum(regular)', async () => {
@@ -244,7 +244,7 @@ describe('Arrange validators', () => {
         maxValidatorNumber,
         maxPrioritizedValidatorNumber
       );
-      expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).deep.equal(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) == MaxNum(prioritized); Actual(regular) <  MaxNum(regular)', async () => {
@@ -270,7 +270,7 @@ describe('Arrange validators', () => {
         actualPrioritizedNumber + actualRegularNumber,
         maxPrioritizedValidatorNumber
       );
-      expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).deep.equal(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) >  MaxNum(prioritized); Actual(regular) == MaxNum(regular)', async () => {
@@ -296,7 +296,7 @@ describe('Arrange validators', () => {
         maxValidatorNumber,
         maxPrioritizedValidatorNumber
       );
-      expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).deep.equal(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) >  MaxNum(prioritized); Actual(regular) >  MaxNum(regular)', async () => {
@@ -322,7 +322,7 @@ describe('Arrange validators', () => {
         maxValidatorNumber,
         maxPrioritizedValidatorNumber
       );
-      expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).deep.equal(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) >  MaxNum(prioritized); Actual(regular) <  MaxNum(regular)', async () => {
@@ -350,7 +350,7 @@ describe('Arrange validators', () => {
         maxValidatorNumber,
         maxPrioritizedValidatorNumber
       );
-      expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).deep.equal(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) <  MaxNum(prioritized); Actual(regular) == MaxNum(regular)', async () => {
@@ -376,7 +376,7 @@ describe('Arrange validators', () => {
         actualPrioritizedNumber + actualRegularNumber,
         maxPrioritizedValidatorNumber
       );
-      expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).deep.equal(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) <  MaxNum(prioritized); Actual(regular) >  MaxNum(regular)', async () => {
@@ -404,7 +404,7 @@ describe('Arrange validators', () => {
         maxValidatorNumber,
         maxPrioritizedValidatorNumber
       );
-      expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).deep.equal(expectingValidatorAddrs);
     });
 
     it('Actual(prioritized) <  MaxNum(prioritized); Actual(regular) <  MaxNum(regular)', async () => {
@@ -430,7 +430,7 @@ describe('Arrange validators', () => {
         actualPrioritizedNumber + actualRegularNumber,
         maxPrioritizedValidatorNumber
       );
-      expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).deep.equal(expectingValidatorAddrs);
     });
   });
 
@@ -457,7 +457,7 @@ describe('Arrange validators', () => {
         maxValidatorNumber,
         maxPrioritizedValidatorNumber
       );
-      expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).deep.equal(expectingValidatorAddrs);
     });
 
     it('Shuffled: Actual(prioritized) >  MaxNum(prioritized); Actual(regular) <  MaxNum(regular)', async () => {
@@ -476,7 +476,7 @@ describe('Arrange validators', () => {
         maxValidatorNumber,
         maxPrioritizedValidatorNumber
       );
-      expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).deep.equal(expectingValidatorAddrs);
     });
 
     it('Shuffled: Actual(prioritized) <  MaxNum(prioritized); Actual(regular) >  MaxNum(regular)', async () => {
@@ -495,7 +495,7 @@ describe('Arrange validators', () => {
         maxValidatorNumber,
         maxPrioritizedValidatorNumber
       );
-      expect(outputValidators).eql(expectingValidatorAddrs);
+      expect(outputValidators).deep.equal(expectingValidatorAddrs);
     });
   });
 });

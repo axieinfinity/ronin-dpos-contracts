@@ -35,7 +35,7 @@ describe('[Precompile] Validate double sign test', () => {
 
   it('Should the usage contract can call the precompile address', async () => {
     let sortedValidators = await usageValidating.callPrecompile(slasheeAddr, header1, header2);
-    expect(sortedValidators).eql(true);
+    expect(sortedValidators).deep.equal(true);
   });
 
   it('Should the usage contract revert with proper message on calling the precompile contract fails', async () => {
