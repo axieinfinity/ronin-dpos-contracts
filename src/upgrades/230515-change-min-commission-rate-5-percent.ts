@@ -1,18 +1,35 @@
 /// npx hardhat deploy --tags 230515ChangeMinCommissionRate5Percent --network ronin-mainnet
 
+/// This script does the following:
+/// - Upgrade Maintenance, Staking, Validator contract
+/// - Set `minCommissionRate`
+
 import { BigNumber } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { VoteType } from '../script/proposal';
 import { Staking__factory } from '../types';
 import { StakingArguments } from '../utils';
-import { proxyCall } from './upgradeUtils';
+import { proxyCall, proxyInterface } from './upgradeUtils';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   const { execute } = deployments;
   let { governor } = await getNamedAccounts(); // NOTE: Should double check the `governor` account in the `hardhat.config.ts` file
   console.log('Governor:', governor);
 
+  /// Upgrade contracts
+
+  const newMaintenanceLogic = '0xB6a13e481f060c6a9130238EEb84a3c98A0A5FEa';
+  const newValidatorSetLogic = '0xaB2985fa821CAae0524f6C5657aE40DaBDf2Eae0';
+  const newStakingLogic = '0x9B0E61e629EB44875CFf534DE0c176078CaC502f';
+
+  const maintenanceProxy = await deployments.get('MaintenanceProxy');
+  const validatorSetProxy = await deployments.get('ValidatorSetProxy');
   const stakingProxy = await deployments.get('StakingProxy');
+
+  const maintenanceInstructions = [proxyInterface.encodeFunctionData('upgradeTo', [newMaintenanceLogic])];
+  const validatorSetInstructions = [proxyInterface.encodeFunctionData('upgradeTo', [newValidatorSetLogic])];
+
+  /// Set `minCommissionRate`
 
   const StakingInterface = new Staking__factory().interface;
   const newStakingConfig: StakingArguments = {
@@ -21,6 +38,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   };
 
   const stakingInstructions = [
+    proxyInterface.encodeFunctionData('upgradeTo', [newStakingLogic]),
     proxyCall(
       StakingInterface.encodeFunctionData('setCommissionRateRange', [
         newStakingConfig.minCommissionRate,
@@ -40,10 +58,14 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     { from: governor, log: true },
     'proposeProposalForCurrentNetwork',
     proposalExpiryTimestamp, // expiryTimestamp
-    stakingInstructions.map(() => stakingProxy.address), // targets
-    stakingInstructions.map(() => 0), // values
-    stakingInstructions, // datas
-    stakingInstructions.map(() => 1_000_000), // gasAmounts
+    [
+      ...maintenanceInstructions.map(() => maintenanceProxy.address),
+      ...validatorSetInstructions.map(() => validatorSetProxy.address),
+      ...stakingInstructions.map(() => stakingProxy.address),
+    ], // targets
+    [...maintenanceInstructions, ...validatorSetInstructions, ...stakingInstructions].map(() => 0), // values
+    [...maintenanceInstructions, ...validatorSetInstructions, ...stakingInstructions], // datas
+    [...maintenanceInstructions, ...validatorSetInstructions, ...stakingInstructions].map(() => 1_000_000), // gasAmounts
     VoteType.For // ballot type
   );
 
