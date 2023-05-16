@@ -17,6 +17,11 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const newMainchainPauseEnforcerLogic = ''; // TODO: Should input new pause enforcer here
   const mainchainGatewayProxy = await deployments.get('MainchainGatewayV2Proxy');
 
+  if (newMainchainPauseEnforcerLogic == '') {
+    console.log('Error: Address of new enforcer not set.');
+    return;
+  }
+
   /// Set new enforcer for gateway
   const GatewayInterface = GatewayV2__factory.createInterface();
   const gatewayInstructions = [
