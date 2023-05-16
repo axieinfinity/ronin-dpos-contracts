@@ -449,7 +449,7 @@ describe('Slash indicator test', () => {
           .connect(validatorCandidates[slasherIdx].consensusAddr)
           .slashDoubleSign(validatorCandidates[slasherIdx].consensusAddr.address, header1, header2);
 
-        await expect(tx).revertedWith('HasProxyAdmin: unauthorized sender');
+        await expect(tx).revertedWithCustomError(slashContract, 'Unauthorized');
       });
 
       it('Should non-admin not be able to slash validator with double signing', async () => {
@@ -465,7 +465,7 @@ describe('Slash indicator test', () => {
           .connect(validatorCandidates[slasherIdx].consensusAddr)
           .slashDoubleSign(validatorCandidates[slasheeIdx].consensusAddr.address, header1, header2);
 
-        await expect(tx).revertedWith('HasProxyAdmin: unauthorized sender');
+        await expect(tx).revertedWithCustomError(slashContract, 'Unauthorized');
       });
 
       it('Should be able to slash validator with double signing', async () => {
