@@ -344,11 +344,11 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
 
         mstore(0x00, _candidates.slot)
         /// @dev get _candidates offset
-        key := keccak256(0x00, 0x20)
+        let candidateOffset := keccak256(0x00, 0x20)
 
         /// @dev _lastCandidate = _candidates[_candidates.length - 1]
         let lastIdx := sub(sload(_candidates.slot), 1)
-        let lastIdxOffset := add(key, lastIdx)
+        let lastIdxOffset := add(candidateOffset, lastIdx)
         let lastCandidate := sload(lastIdxOffset)
 
         /// @dev reduce _candidates length by 1
@@ -363,10 +363,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
           sstore(key, idx)
 
           /// @dev _candidates[~_idx] = _lastCandidate
-          mstore(0x00, not(idx))
-          mstore(0x20, _candidates.slot)
-          key := keccak256(0x00, 0x40)
-          sstore(key, lastCandidate)
+          sstore(add(not(idx), candidateOffset), lastCandidate)
         }
       }
     }
