@@ -154,12 +154,11 @@ abstract contract CoinbaseExecution is
     );
 
     if (
-      !_validateBridgeTrackingResponse(_totalBridgeBallots, _totalBridgeVotes, _bridgeBallots) || _totalBridgeVotes == 0
+      _totalBridgeVotes == 0 || !_validateBridgeTrackingResponse(_totalBridgeBallots, _totalBridgeVotes, _bridgeBallots)
     ) {
-      uint256 totalBridgeReward = _totalBridgeReward;
       // Shares equally in case the bridge has nothing to vote or bridge tracking response is incorrect
       for (uint256 _i; _i < _currentValidators.length; ) {
-        _bridgeOperatingReward[_currentValidators[_i]] = totalBridgeReward / _currentValidators.length;
+        _bridgeOperatingReward[_currentValidators[_i]] = _totalBridgeReward / _currentValidators.length;
 
         unchecked {
           ++_i;
