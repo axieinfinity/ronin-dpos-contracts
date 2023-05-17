@@ -429,8 +429,8 @@ abstract contract CoinbaseExecution is
     uint256 _newValidatorCount;
     (_newValidators, _newValidatorCount) = _pcPickValidatorSet(
       candidates,
-      _stakingContract.getManyStakingTotals(candidates),
-      _roninTrustedOrganizationContract.getConsensusWeights(candidates),
+      _stakingContract.getManyStakingTotals(candidates), // _weights
+      _roninTrustedOrganizationContract.getConsensusWeights(candidates), // _trustedWeights
       _maxValidatorNumber,
       _maxPrioritizedValidatorNumber
     );
