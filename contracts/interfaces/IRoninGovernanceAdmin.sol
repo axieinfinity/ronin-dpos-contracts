@@ -18,6 +18,8 @@ interface IRoninGovernanceAdmin {
   event EmergencyExitPollApproved(bytes32 _voteHash);
   /// @dev Emitted when an emergency exit poll is expired.
   event EmergencyExitPollExpired(bytes32 _voteHash);
+  /// @dev Emitted when an emergency exit poll is voted.
+  event EmergencyExitPollVoted(bytes32 indexed _voteHash);
 
   /**
    * @dev Returns the last voted block of the bridge voter.

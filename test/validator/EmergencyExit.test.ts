@@ -251,7 +251,6 @@ describe('Emergency Exit test', () => {
         .filter((v) => v != compromisedValidator.bridgeOperator.address)
     );
   });
-
   describe('Valid emergency exit', () => {
     let balance: BigNumberish;
 
@@ -268,6 +267,9 @@ describe('Emergency Exit test', () => {
       tx = await governanceAdmin
         .connect(trustedOrgs[0].governor)
         .voteEmergencyExit(voteHash, consensusAddr, recipientAfterUnlockedFund, requestedAt, expiredAt);
+    });
+    it('Should the vote tx emit event EmergencyExitPollVoted', async () => {
+      await expect(tx).emit(governanceAdmin, 'EmergencyExitPollVoted').withArgs(voteHash);
     });
 
     it('Should the vote tx emit event EmergencyExitPollApproved', async () => {
