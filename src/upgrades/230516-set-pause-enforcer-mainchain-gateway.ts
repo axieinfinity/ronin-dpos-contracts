@@ -15,7 +15,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   console.log('Governor:', governor);
 
   const newMainchainPauseEnforcerLogic = ''; // TODO: Should input new pause enforcer here
-  const mainchainGatewayProxy = await deployments.get('MainchainGatewayV2Proxy');
+  const mainchainGatewayProxyAddress = '0x1A2a1c938CE3eC39b6D47113c7955bAa9DD454F2'; // NOTE: Please double check this address
 
   if (newMainchainPauseEnforcerLogic == '') {
     console.log('Error: Address of new enforcer not set.');
@@ -51,7 +51,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
     proposalChainId,
     proposalExpiryTimestamp, // expiryTimestamp
-    gatewayInstructions.map(() => mainchainGatewayProxy.address), // targets
+    gatewayInstructions.map(() => mainchainGatewayProxyAddress), // targets
     gatewayInstructions.map(() => 0), // values
     gatewayInstructions, // datas
     gatewayInstructions.map(() => 1_000_000) // gasAmounts
