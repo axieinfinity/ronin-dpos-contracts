@@ -19,8 +19,8 @@ export const expects = {
       tx,
       (event) => {
         expect(event.args[0], 'invalid proposal hash').eq(expectingProposalHash);
-        expect(event.args[1], 'invalid success calls').eql(expectingSuccessCalls);
-        expect(event.args[2], 'invalid returned datas').eql(expectingReturnedDatas);
+        expect(event.args[1], 'invalid success calls').deep.equal(expectingSuccessCalls);
+        expect(event.args[2], 'invalid returned datas').deep.equal(expectingReturnedDatas);
       },
       1
     );

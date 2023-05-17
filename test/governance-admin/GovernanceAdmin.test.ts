@@ -156,7 +156,7 @@ describe('Governance Admin test', () => {
         const latestBOset = await governanceAdmin.lastSyncedBridgeOperatorSetInfo();
         expect(latestBOset.period).eq(0);
         expect(latestBOset.epoch).eq(0);
-        expect(latestBOset.operators).eql([]);
+        expect(latestBOset.operators).deep.equal([]);
       });
 
       it('Should be able to vote bridge operators', async () => {
@@ -186,7 +186,7 @@ describe('Governance Admin test', () => {
         const latestBOset = await governanceAdmin.lastSyncedBridgeOperatorSetInfo();
         expect(latestBOset.period).eq(ballot.period);
         expect(latestBOset.epoch).eq(ballot.epoch);
-        expect(latestBOset.operators).eql(ballot.operators);
+        expect(latestBOset.operators).deep.equal(ballot.operators);
       });
 
       it('Should be able relay vote bridge operators', async () => {
@@ -195,11 +195,11 @@ describe('Governance Admin test', () => {
         await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures);
         expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.true;
         const bridgeOperators = await bridgeContract.getBridgeOperators();
-        expect([...bridgeOperators].sort(compareAddrs)).eql(ballot.operators);
+        expect([...bridgeOperators].sort(compareAddrs)).deep.equal(ballot.operators);
         const latestBOset = await mainchainGovernanceAdmin.lastSyncedBridgeOperatorSetInfo();
         expect(latestBOset.period).eq(ballot.period);
         expect(latestBOset.epoch).eq(ballot.epoch);
-        expect(latestBOset.operators).eql(ballot.operators);
+        expect(latestBOset.operators).deep.equal(ballot.operators);
       });
 
       it('Should not able to relay again', async () => {
@@ -307,18 +307,18 @@ describe('Governance Admin test', () => {
         expect(lastLength).not.eq(ballot.operators.length);
         expect(latestBOset.period).eq(ballot.period);
         expect(latestBOset.epoch).eq(ballot.epoch);
-        expect(latestBOset.operators).eql(ballot.operators);
+        expect(latestBOset.operators).deep.equal(ballot.operators);
       });
 
       it('Should be able relay vote bridge operators', async () => {
         const [, signatures] = await governanceAdmin.getBridgeOperatorVotingSignatures(ballot.period, ballot.epoch);
         await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures);
         const bridgeOperators = await bridgeContract.getBridgeOperators();
-        expect([...bridgeOperators].sort(compareAddrs)).eql(ballot.operators);
+        expect([...bridgeOperators].sort(compareAddrs)).deep.equal(ballot.operators);
         const latestBOset = await mainchainGovernanceAdmin.lastSyncedBridgeOperatorSetInfo();
         expect(latestBOset.period).eq(ballot.period);
         expect(latestBOset.epoch).eq(ballot.epoch);
-        expect(latestBOset.operators).eql(ballot.operators);
+        expect(latestBOset.operators).deep.equal(ballot.operators);
       });
 
       it('Should be able to vote for a same number of bridge operators', async () => {
@@ -341,7 +341,7 @@ describe('Governance Admin test', () => {
         expect(lastLength).eq(ballot.operators.length);
         expect(latestBOset.period).eq(ballot.period);
         expect(latestBOset.epoch).eq(ballot.epoch);
-        expect(latestBOset.operators).eql(ballot.operators);
+        expect(latestBOset.operators).deep.equal(ballot.operators);
       });
     });
   });
@@ -766,14 +766,14 @@ describe('Governance Admin test', () => {
         proposal.chainId,
         proposal.nonce
       );
-      expect(voters).eql([
+      expect(voters).deep.equal([
         trustedOrgs[1].governor.address,
         trustedOrgs[0].governor.address,
         trustedOrgs[2].governor.address,
       ]);
-      expect(supports).eql([VoteType.For, VoteType.Against, VoteType.Against]);
+      expect(supports).deep.equal([VoteType.For, VoteType.Against, VoteType.Against]);
       const emptySignatures = [0, ethers.constants.HashZero, ethers.constants.HashZero];
-      expect(signatures).eql([
+      expect(signatures).deep.equal([
         emptySignatures,
         emptySignatures,
         ...votedSignatures.map((sig) => [sig.v, sig.r, sig.s]),

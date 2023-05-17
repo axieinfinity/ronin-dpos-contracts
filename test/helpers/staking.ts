@@ -19,13 +19,13 @@ export const expects = {
       tx,
       (event) => {
         if (!!expectingPeriod) {
-          expect(event.args[0], 'invalid period').eql(expectingPeriod);
+          expect(event.args[0], 'invalid period').deep.equal(expectingPeriod);
         }
         if (!!expectingPoolAddressList) {
-          expect(event.args[1], 'invalid pool address list').eql(expectingPoolAddressList);
+          expect(event.args[1], 'invalid pool address list').deep.equal(expectingPoolAddressList);
         }
         if (!!expectingAccumulatedRpsList) {
-          expect(event.args[2], 'invalid accumulated rps list').eql(expectingAccumulatedRpsList);
+          expect(event.args[2], 'invalid accumulated rps list').deep.equal(expectingAccumulatedRpsList);
         }
       },
       1

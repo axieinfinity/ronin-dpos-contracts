@@ -38,7 +38,7 @@ const runSortWithNRecords = async (numOfRecords: number) => {
     balances.map((_) => _.value)
   );
 
-  expect(sorted).eql(balances.map((_) => _.address));
+  expect(sorted).deep.equal(balances.map((_) => _.address));
   return gasUsed.toString();
 };
 

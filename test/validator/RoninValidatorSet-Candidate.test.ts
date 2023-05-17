@@ -14,12 +14,13 @@ import {
   RoninGovernanceAdmin,
   StakingVesting__factory,
   StakingVesting,
+  TransparentUpgradeableProxyV2__factory,
 } from '../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
-import { mineBatchTxs } from '../helpers/utils';
-import { initTest } from '../helpers/fixture';
+import { getLastBlockTimestamp, mineBatchTxs } from '../helpers/utils';
+import { defaultTestConfig, initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
-import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
+import { Address } from 'hardhat-deploy/dist/types';
 import {
   createManyTrustedOrganizationAddressSets,
   createManyValidatorCandidateAddressSets,
@@ -29,6 +30,7 @@ import {
   WhitelistedCandidateAddressSet,
 } from '../helpers/address-set-types';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+import { VoteType } from '../../src/script/proposal';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let stakingVesting: StakingVesting;
@@ -66,6 +68,7 @@ const zeroTopUpAmount = 0;
 const topUpAmount = BigNumber.from(100_000_000_000);
 const slashDoubleSignAmount = BigNumber.from(2000);
 const maxCommissionRate = 30_00; // 30%
+const defaultMinCommissionRate = 0;
 
 describe('Ronin Validator Set: candidate test', () => {
   before(async () => {
@@ -182,8 +185,8 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, expectingValidatorsAddr);
-      expect((await roninValidatorSet.getValidators())[0]).eql(expectingValidatorsAddr);
-      expect(await roninValidatorSet.getBlockProducers()).eql(expectingValidatorsAddr);
+      expect((await roninValidatorSet.getValidators())[0]).deep.equal(expectingValidatorsAddr);
+      expect(await roninValidatorSet.getBlockProducers()).deep.equal(expectingValidatorsAddr);
     });
 
     it('Should trusted org can apply for candidate and the set get synced', async () => {
@@ -220,8 +223,8 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, expectingValidatorsAddr);
-      expect((await roninValidatorSet.getValidators())[0]).eql(expectingValidatorsAddr);
-      expect(await roninValidatorSet.getBlockProducers()).eql(expectingValidatorsAddr);
+      expect((await roninValidatorSet.getValidators())[0]).deep.equal(expectingValidatorsAddr);
+      expect(await roninValidatorSet.getBlockProducers()).deep.equal(expectingValidatorsAddr);
     });
   });
 
@@ -313,6 +316,59 @@ describe('Ronin Validator Set: candidate test', () => {
         );
 
       await expect(tx).revertedWithCustomError(stakingContract, 'ErrInvalidCommissionRate');
+    });
+    it('Should not be able to apply for candidate role with commission rate lower than allowed', async () => {
+      const minCommissionRate = 10_00;
+      const proposalChanging = await governanceAdminInterface.createProposal(
+        (await getLastBlockTimestamp()) +
+          BigNumber.from(defaultTestConfig.governanceAdminArguments?.proposalExpiryDuration).toNumber(),
+        stakingContract.address,
+        0,
+        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          stakingContract.interface.encodeFunctionData('setCommissionRateRange', [
+            minCommissionRate,
+            maxCommissionRate,
+          ]),
+        ]),
+        500_000
+      );
+      const signaturesOfChangingProposal = await governanceAdminInterface.generateSignatures(proposalChanging);
+      const supportsOfSignatureChanging = signaturesOfChangingProposal.map(() => VoteType.For);
+      await governanceAdmin
+        .connect(trustedOrgs[0].governor)
+        .proposeProposalStructAndCastVotes(proposalChanging, supportsOfSignatureChanging, signaturesOfChangingProposal);
+      let tx = stakingContract
+        .connect(validatorCandidates[5].poolAdmin)
+        .applyValidatorCandidate(
+          validatorCandidates[5].candidateAdmin.address,
+          validatorCandidates[5].consensusAddr.address,
+          validatorCandidates[5].treasuryAddr.address,
+          validatorCandidates[5].bridgeOperator.address,
+          minCommissionRate - 1,
+          {
+            value: minValidatorStakingAmount,
+          }
+        );
+
+      await expect(tx).revertedWithCustomError(stakingContract, 'ErrInvalidCommissionRate');
+      const proposalRecover = await governanceAdminInterface.createProposal(
+        (await getLastBlockTimestamp()) +
+          BigNumber.from(defaultTestConfig.governanceAdminArguments?.proposalExpiryDuration).toNumber(),
+        stakingContract.address,
+        0,
+        governanceAdminInterface.interface.encodeFunctionData('functionDelegateCall', [
+          stakingContract.interface.encodeFunctionData('setCommissionRateRange', [
+            defaultMinCommissionRate,
+            maxCommissionRate,
+          ]),
+        ]),
+        500_000
+      );
+      const signaturesOfRecoverProposal = await governanceAdminInterface.generateSignatures(proposalRecover);
+      const supportsOfSignaturesRecover = signaturesOfRecoverProposal.map(() => VoteType.For);
+      await governanceAdmin
+        .connect(trustedOrgs[0].governor)
+        .proposeProposalStructAndCastVotes(proposalRecover, supportsOfSignaturesRecover, signaturesOfRecoverProposal);
     });
   });
 

@@ -174,7 +174,7 @@ describe('Ronin Gateway V2 test', () => {
       await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
     period = await roninValidatorSet.currentPeriod();
-    expect(await roninValidatorSet.getBridgeOperators()).eql(candidates.map((v) => v.bridgeOperator.address));
+    expect(await roninValidatorSet.getBridgeOperators()).deep.equal(candidates.map((v) => v.bridgeOperator.address));
   });
 
   after(async () => {
