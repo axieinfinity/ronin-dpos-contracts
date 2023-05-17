@@ -10,7 +10,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { VoteType } from '../script/proposal';
 import { GatewayV2__factory, Staking__factory } from '../types';
 import { StakingArguments } from '../utils';
-import { proxyCall, proxyInterface } from './upgradeUtils';
+import { EXPLORER_URL, proxyCall, proxyInterface } from './upgradeUtils';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   const { execute } = deployments;
@@ -83,7 +83,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     VoteType.For // ballot type
   );
 
-  console.log(`https://explorer.roninchain.com/tx/${tx.transactionHash}`);
+  console.log(`${EXPLORER_URL}/tx/${tx.transactionHash}`);
 };
 
 deploy.tags = ['230515ChangeMinCommissionRate5Percent'];
