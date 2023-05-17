@@ -10,7 +10,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { VoteType } from '../script/proposal';
 import { GatewayV2__factory, Staking__factory } from '../types';
 import { StakingArguments } from '../utils';
-import { proxyCall, proxyInterface } from './upgradeUtils';
+import { EXPLORER_URL, proxyCall, proxyInterface } from './upgradeUtils';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   const { execute } = deployments;
@@ -25,9 +25,9 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const newRoninPauseEnforcerLogic = '0x2367cD5468c2b3cD18aA74AdB7e14E43426aF837';
 
   const maintenanceProxy = await deployments.get('MaintenanceProxy');
-  const validatorSetProxy = await deployments.get('ValidatorSetProxy');
+  const validatorSetProxy = await deployments.get('RoninValidatorSetProxy');
   const stakingProxy = await deployments.get('StakingProxy');
-  const roninGatewayProxy = await deployments.get('RoninGatewayV2Proxy');
+  const roninGatewayAddress = '0x0cf8ff40a508bdbc39fbe1bb679dcba64e65c7df';
 
   const maintenanceInstructions = [proxyInterface.encodeFunctionData('upgradeTo', [newMaintenanceLogic])];
   const validatorSetInstructions = [proxyInterface.encodeFunctionData('upgradeTo', [newValidatorSetLogic])];
@@ -71,7 +71,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
       ...maintenanceInstructions.map(() => maintenanceProxy.address),
       ...validatorSetInstructions.map(() => validatorSetProxy.address),
       ...stakingInstructions.map(() => stakingProxy.address),
-      ...gatewayInstructions.map(() => roninGatewayProxy.address),
+      ...gatewayInstructions.map(() => roninGatewayAddress),
     ], // targets
     [...maintenanceInstructions, ...validatorSetInstructions, ...stakingInstructions, ...gatewayInstructions].map(
       () => 0
@@ -83,7 +83,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     VoteType.For // ballot type
   );
 
-  console.log(`https://explorer.roninchain.com/tx/${tx.transactionHash}`);
+  console.log(`${EXPLORER_URL}/tx/${tx.transactionHash}`);
 };
 
 deploy.tags = ['230515ChangeMinCommissionRate5Percent'];
