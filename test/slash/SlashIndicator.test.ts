@@ -451,7 +451,7 @@ describe('Slash indicator test', () => {
           .connect(validatorCandidates[slasherIdx].consensusAddr)
           .slashDoubleSign(validatorCandidates[slasherIdx].consensusAddr.address, header1, header2);
 
-        await expect(tx).revertedWithCustomError(slashContract, 'Unauthorized');
+        await expect(tx).revertedWithCustomError(slashContract, 'ErrUnauthorized');
       });
 
       it('Should non-admin not be able to slash validator with double signing', async () => {
@@ -467,7 +467,7 @@ describe('Slash indicator test', () => {
           .connect(validatorCandidates[slasherIdx].consensusAddr)
           .slashDoubleSign(validatorCandidates[slasheeIdx].consensusAddr.address, header1, header2);
 
-        await expect(tx).revertedWithCustomError(slashContract, 'Unauthorized');
+        await expect(tx).revertedWithCustomError(slashContract, 'ErrUnauthorized');
       });
 
       it('Should be able to slash validator with double signing', async () => {
