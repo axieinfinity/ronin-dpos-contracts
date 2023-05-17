@@ -1,8 +1,8 @@
 import { expect } from 'chai';
-import { ContractTransaction } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
 import { Interface, LogDescription } from 'ethers/lib/utils';
 import { ethers, network } from 'hardhat';
-import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
+import { Address } from 'hardhat-deploy/dist/types';
 
 export const expectEvent = async (
   contractInterface: Interface,
@@ -53,3 +53,6 @@ export const compareAddrs = (firstStr: string, secondStr: string) =>
 
 export const accessControlRevertStr = (addr: Address, role: string): string =>
   `AccessControl: account ${addr.toLocaleLowerCase()} is missing role ${role}`;
+
+export const compareBigNumbers = (firstBigNumbers: BigNumber[], secondBigNumbers: BigNumber[]) =>
+  expect(firstBigNumbers.map((_) => _.toHexString())).deep.equal(secondBigNumbers.map((_) => _.toHexString()));

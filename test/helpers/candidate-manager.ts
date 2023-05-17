@@ -15,7 +15,7 @@ export const expects = {
       'CandidatesRevoked',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid revoked candidates').eql(expectingRevokedCandidates);
+        expect(event.args[0], 'invalid revoked candidates').deep.equal(expectingRevokedCandidates);
       },
       1
     );
@@ -33,10 +33,10 @@ export const expects = {
       'CandidateGranted',
       tx,
       (event) => {
-        expect(event.args[0], 'invalid consensus address').eql(expectingConsensusAddr);
-        expect(event.args[1], 'invalid treasury address').eql(expectingTreasuryAddr);
-        expect(event.args[2], 'invalid admin address').eql(expectingAdmin);
-        expect(event.args[3], 'invalid bridge operator address').eql(expectingBridgeOperatorAddr);
+        expect(event.args[0], 'invalid consensus address').deep.equal(expectingConsensusAddr);
+        expect(event.args[1], 'invalid treasury address').deep.equal(expectingTreasuryAddr);
+        expect(event.args[2], 'invalid admin address').deep.equal(expectingAdmin);
+        expect(event.args[3], 'invalid bridge operator address').deep.equal(expectingBridgeOperatorAddr);
       },
       1
     );

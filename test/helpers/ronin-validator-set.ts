@@ -136,10 +136,10 @@ export const expects = {
       (event) => {
         expect(event.args[0], 'invalid total distributing reward').eq(expectingTotalAmount);
         if (expectingValidators) {
-          expect(event.args[1], 'invalid validator list').eql(expectingValidators);
+          expect(event.args[1], 'invalid validator list').deep.equal(expectingValidators);
         }
         if (expectingAmounts) {
-          expect(event.args[2], 'invalid amount list').eql(expectingAmounts);
+          expect(event.args[2], 'invalid amount list').deep.equal(expectingAmounts);
         }
       },
       1
@@ -157,7 +157,7 @@ export const expects = {
       tx,
       (event) => {
         expect(event.args[0], 'invalid period').eq(expectingPeriod);
-        expect(event.args[1], 'invalid validator set').eql(expectingValidators);
+        expect(event.args[1], 'invalid validator set').deep.equal(expectingValidators);
       },
       1
     );
@@ -176,7 +176,8 @@ export const expects = {
       (event) => {
         !!expectingPeriod && expect(event.args[0], 'invalid period').eq(expectingPeriod);
         !!expectingEpoch && expect(event.args[1], 'invalid epoch').eq(expectingEpoch);
-        !!expectingBlockProducers && expect(event.args[2], 'invalid block producers').eql(expectingBlockProducers);
+        !!expectingBlockProducers &&
+          expect(event.args[2], 'invalid block producers').deep.equal(expectingBlockProducers);
       },
       1
     );
@@ -195,7 +196,8 @@ export const expects = {
       (event) => {
         !!expectingPeriod && expect(event.args[0], 'invalid period').eq(expectingPeriod);
         !!expectingEpoch && expect(event.args[1], 'invalid epoch').eq(expectingEpoch);
-        !!expectingBridgeOperators && expect(event.args[2], 'invalid bridge operators').eql(expectingBridgeOperators);
+        !!expectingBridgeOperators &&
+          expect(event.args[2], 'invalid bridge operators').deep.equal(expectingBridgeOperators);
       },
       1
     );
@@ -213,8 +215,8 @@ export const expects = {
       tx,
       (event) => {
         expect(event.args[0], 'invalid validator').eq(expectingValidator);
-        expect(event.args[1], 'invalid removed reward').eql(expectingRemovedReward);
-        expect(event.args[2], 'invalid deprecated type').eql(expectingDeprecatedType);
+        expect(event.args[1], 'invalid removed reward').deep.equal(expectingRemovedReward);
+        expect(event.args[2], 'invalid deprecated type').deep.equal(expectingDeprecatedType);
       },
       1
     );
@@ -231,7 +233,7 @@ export const expects = {
       tx,
       (event) => {
         expect(event.args[0], 'invalid withdraw target').eq(expectingWithdrawnTarget);
-        expect(event.args[1], 'invalid withdraw amount').eql(expectingWithdrawnAmount);
+        expect(event.args[1], 'invalid withdraw amount').deep.equal(expectingWithdrawnAmount);
       },
       1
     );
