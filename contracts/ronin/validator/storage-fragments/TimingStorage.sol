@@ -42,8 +42,8 @@ abstract contract TimingStorage is ITimingInfo, GlobalConfigConsumer {
    * @inheritdoc ITimingInfo
    */
   function tryGetPeriodOfEpoch(uint256 _epoch) external view returns (bool _filled, uint256 _periodNumber) {
-    uint256 periodOf = _periodOf[_epoch];
-    return (_epoch <= epochOf(block.number) || periodOf > 0, periodOf);
+    uint256 periodOfEpoch = _periodOf[_epoch];
+    return (_epoch <= epochOf(block.number) || periodOfEpoch > 0, periodOfEpoch);
   }
 
   /**
