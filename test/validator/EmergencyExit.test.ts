@@ -62,7 +62,7 @@ let voteHash: string;
 let snapshotId: string;
 let totalStakedAmount: BigNumber;
 
-describe.only('Emergency Exit test', () => {
+describe('Emergency Exit test', () => {
   let tx: ContractTransaction;
   let requestBlock: EthersType.providers.Block;
 
