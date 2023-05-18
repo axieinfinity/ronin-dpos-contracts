@@ -62,7 +62,7 @@ let voteHash: string;
 let snapshotId: string;
 let totalStakedAmount: BigNumber;
 
-describe('Emergency Exit test', () => {
+describe.only('Emergency Exit test', () => {
   let tx: ContractTransaction;
   let requestBlock: EthersType.providers.Block;
 
@@ -269,7 +269,9 @@ describe('Emergency Exit test', () => {
         .voteEmergencyExit(voteHash, consensusAddr, recipientAfterUnlockedFund, requestedAt, expiredAt);
     });
     it('Should the vote tx emit event EmergencyExitPollVoted', async () => {
-      await expect(tx).emit(governanceAdmin, 'EmergencyExitPollVoted').withArgs(voteHash);
+      await expect(tx)
+        .emit(governanceAdmin, 'EmergencyExitPollVoted')
+        .withArgs(voteHash, trustedOrgs[0].governor.address);
     });
 
     it('Should the vote tx emit event EmergencyExitPollApproved', async () => {
