@@ -7,6 +7,8 @@ import "./ICandidateStaking.sol";
 import "./IDelegatorStaking.sol";
 
 interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorStaking {
+  error ErrAlreadyInitialized();
+
   /**
    * @dev Records the amount of rewards `_rewards` for the pools `_consensusAddrs`.
    *

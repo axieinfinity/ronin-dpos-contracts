@@ -17,20 +17,24 @@ abstract contract BaseStaking is
   IBaseStaking
 {
   /// @dev Mapping from pool address => staking pool detail
-  mapping(address => PoolDetail) internal _stakingPool;
+  mapping(address => PoolDetail) private _stakingPool;
 
   /// @dev The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.
   uint256 internal _cooldownSecsToUndelegate;
   /// @dev The number of seconds that a candidate must wait to be revoked and take the self-staking amount back.
   uint256 internal _waitingSecsToRevoke;
 
-  /// @dev Mapping from admin address of an active pool => consensus address.
+  /// @dev Mapping from admin address of an active pool => pool address.
   mapping(address => address) internal _adminOfActivePoolMapping;
+
+  /// @dev Mapping from consensus address => pool address
+  mapping(address => address) public poolOfConsensusMapping;
+
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[49] private ______gap;
+  uint256[47] private ______gap;
 
   modifier noEmptyValue() {
     if (msg.value == 0) revert ErrZeroValue();
@@ -62,14 +66,18 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IBaseStaking
    */
-  function getPoolAddressOf(address _poolAdminAddr) external view override returns (address) {
+  function getPoolAddressOfAdmin(address _poolAdminAddr) external view override returns (address) {
     return _adminOfActivePoolMapping[_poolAdminAddr];
+  }
+
+  function _getStakingPool(address _consensusAddr) internal view returns (PoolDetail storage) {
+    return _stakingPool[poolOfConsensusMapping[_consensusAddr]];
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
-  function getPoolDetail(address _poolAddr)
+  function getPoolDetail(address _consensusAddr)
     external
     view
     returns (
@@ -78,62 +86,72 @@ abstract contract BaseStaking is
       uint256 _stakingTotal
     )
   {
-    PoolDetail storage _pool = _stakingPool[_poolAddr];
+    PoolDetail storage _pool = _getStakingPool(_consensusAddr);
     return (_pool.admin, _pool.stakingAmount, _pool.stakingTotal);
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
-  function getManySelfStakings(address[] calldata _pools) external view returns (uint256[] memory _selfStakings) {
-    _selfStakings = new uint256[](_pools.length);
-    for (uint _i = 0; _i < _pools.length; _i++) {
-      _selfStakings[_i] = _stakingPool[_pools[_i]].stakingAmount;
+  function getManySelfStakings(address[] calldata _consensusAddrs)
+    external
+    view
+    returns (uint256[] memory _selfStakings)
+  {
+    _selfStakings = new uint256[](_consensusAddrs.length);
+    for (uint _i = 0; _i < _consensusAddrs.length; ) {
+      _selfStakings[_i] = _getStakingPool(_consensusAddrs[_i]).stakingAmount;
+      unchecked {
+        ++_i;
+      }
     }
   }
 
   /**
    * @inheritdoc IRewardPool
    */
-  function getStakingTotal(address _poolAddr) public view override returns (uint256) {
-    return _stakingPool[_poolAddr].stakingTotal;
+  function getStakingTotal(address _consensusAddr) public view override returns (uint256) {
+    return _getStakingPool(_consensusAddr).stakingTotal;
   }
 
   /**
    * @inheritdoc IRewardPool
    */
-  function getManyStakingTotals(address[] calldata _poolList)
+  function getManyStakingTotals(address[] calldata _consensusAddrs)
     public
     view
     override
     returns (uint256[] memory _stakingAmounts)
   {
-    _stakingAmounts = new uint256[](_poolList.length);
-    for (uint _i = 0; _i < _poolList.length; _i++) {
-      _stakingAmounts[_i] = getStakingTotal(_poolList[_i]);
+    _stakingAmounts = new uint256[](_consensusAddrs.length);
+    for (uint _i = 0; _i < _consensusAddrs.length; ) {
+      _stakingAmounts[_i] = getStakingTotal(_consensusAddrs[_i]);
+      unchecked {
+        ++_i;
+      }
     }
   }
 
   /**
    * @inheritdoc IRewardPool
    */
-  function getStakingAmount(address _poolAddr, address _user) public view override returns (uint256) {
-    return _stakingPool[_poolAddr].delegatingAmount[_user];
+  function getStakingAmount(address _consensusAddr, address _user) public view override returns (uint256) {
+    return _getStakingPool(_consensusAddr).delegatingAmount[_user];
   }
 
   /**
    * @inheritdoc IRewardPool
    */
-  function getManyStakingAmounts(address[] calldata _poolAddrs, address[] calldata _userList)
+  function getManyStakingAmounts(address[] calldata _consensusAddrs, address[] calldata _userList)
     external
     view
     override
     returns (uint256[] memory _stakingAmounts)
   {
-    if (_poolAddrs.length != _userList.length) revert ErrInvalidArrays();
-    _stakingAmounts = new uint256[](_poolAddrs.length);
+    if (_consensusAddrs.length != _userList.length) revert ErrInvalidArrays();
+    _stakingAmounts = new uint256[](_consensusAddrs.length);
     for (uint _i = 0; _i < _stakingAmounts.length; _i++) {
-      _stakingAmounts[_i] = _stakingPool[_poolAddrs[_i]].delegatingAmount[_userList[_i]];
+      _stakingAmounts[_i] = _getStakingPool(_consensusAddrs[_i]).delegatingAmount[_userList[_i]];
     }
   }
 

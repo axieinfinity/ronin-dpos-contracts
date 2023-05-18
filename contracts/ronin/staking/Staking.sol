@@ -36,6 +36,16 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   }
 
   /**
+   * @dev Initializes the mapping for consensus address => pool address.
+   * @param _consensusAddrs List of consensus addresses, including both active and unactive ones.
+   */
+  function initializeV2(address[] calldata _consensusAddrs) external reinitializer(2) {
+    for (uint _i; _i < _consensusAddrs.length; ) {
+      poolOfConsensusMapping[_consensusAddrs[_i]] = _consensusAddrs[_i];
+    }
+  }
+
+  /**
    * @inheritdoc IStaking
    */
   function execRecordRewards(
@@ -55,7 +65,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     onlyValidatorContract
     returns (uint256 _actualDeductingAmount)
   {
-    _actualDeductingAmount = _deductStakingAmount(_stakingPool[_consensusAddr], _amount);
+    _actualDeductingAmount = _deductStakingAmount(_getStakingPool(_consensusAddr), _amount);
     address payable _validatorContractAddr = payable(validatorContract());
     if (!_unsafeSendRON(_validatorContractAddr, _actualDeductingAmount)) {
       emit StakingAmountDeductFailed(

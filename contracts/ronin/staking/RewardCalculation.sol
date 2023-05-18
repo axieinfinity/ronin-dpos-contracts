@@ -15,7 +15,7 @@ abstract contract RewardCalculation is IRewardPool {
   /// @dev Mapping from the pool address => user address => the reward info of the user
   mapping(address => mapping(address => UserRewardFields)) private _userReward;
   /// @dev Mapping from the pool address => reward pool fields
-  mapping(address => PoolFields) private _stakingPool;
+  mapping(address => PoolFields) private _stakingPoolField;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
@@ -57,7 +57,7 @@ abstract contract RewardCalculation is IRewardPool {
 
     uint256 _aRps;
     uint256 _lastPeriodReward;
-    PoolFields storage _pool = _stakingPool[_poolAddr];
+    PoolFields storage _pool = _stakingPoolField[_poolAddr];
     PeriodWrapper storage _wrappedArps = _accumulatedRps[_poolAddr][_reward.lastPeriod];
 
     if (_wrappedArps.lastPeriod > 0) {
@@ -88,7 +88,7 @@ abstract contract RewardCalculation is IRewardPool {
     uint256 _newStakingAmount
   ) internal {
     uint256 _period = _currentPeriod();
-    PoolFields storage _pool = _stakingPool[_poolAddr];
+    PoolFields storage _pool = _stakingPoolField[_poolAddr];
     uint256 _lastShares = _pool.shares.inner;
 
     // Updates the pool shares if it is outdated
@@ -159,9 +159,15 @@ abstract contract RewardCalculation is IRewardPool {
 
     UserRewardFields storage _reward = _userReward[_poolAddr][_user];
     _reward.debited = 0;
-    _syncMinStakingAmount(_stakingPool[_poolAddr], _reward, _lastPeriod, _currentStakingAmount, _currentStakingAmount);
+    _syncMinStakingAmount(
+      _stakingPoolField[_poolAddr],
+      _reward,
+      _lastPeriod,
+      _currentStakingAmount,
+      _currentStakingAmount
+    );
     _reward.lastPeriod = _lastPeriod;
-    _reward.aRps = _stakingPool[_poolAddr].aRps;
+    _reward.aRps = _stakingPoolField[_poolAddr].aRps;
     emit UserRewardUpdated(_poolAddr, _user, 0);
   }
 
@@ -195,7 +201,7 @@ abstract contract RewardCalculation is IRewardPool {
 
     for (uint _i = 0; _i < _poolAddrs.length; _i++) {
       _poolAddr = _poolAddrs[_i];
-      PoolFields storage _pool = _stakingPool[_poolAddr];
+      PoolFields storage _pool = _stakingPoolField[_poolAddr];
       _stakingTotal = getStakingTotal(_poolAddr);
 
       if (_accumulatedRps[_poolAddr][_period].lastPeriod == _period) {

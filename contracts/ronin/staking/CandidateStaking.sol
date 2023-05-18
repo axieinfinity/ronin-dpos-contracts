@@ -76,12 +76,12 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       _amount
     );
 
-    PoolDetail storage _pool = _stakingPool[_consensusAddr];
+    PoolDetail storage _pool = _getStakingPool(_consensusAddr);
     _pool.admin = _poolAdmin;
     _pool.addr = _consensusAddr;
     _adminOfActivePoolMapping[_poolAdmin] = _consensusAddr;
 
-    _stake(_stakingPool[_consensusAddr], _poolAdmin, _amount);
+    _stake(_getStakingPool(_consensusAddr), _poolAdmin, _amount);
     emit PoolApproved(_consensusAddr, _poolAdmin);
   }
 
@@ -92,7 +92,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     address _consensusAddr,
     uint256 _effectiveDaysOnwards,
     uint256 _commissionRate
-  ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
+  ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_getStakingPool(_consensusAddr), msg.sender) {
     if (_commissionRate > _maxCommissionRate || _commissionRate < _minCommissionRate) revert ErrInvalidCommissionRate();
     _validatorContract.execRequestUpdateCommissionRate(_consensusAddr, _effectiveDaysOnwards, _commissionRate);
   }
@@ -100,13 +100,21 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   /**
    * @inheritdoc ICandidateStaking
    */
-  function execDeprecatePools(address[] calldata _pools, uint256 _newPeriod) external override onlyValidatorContract {
-    if (_pools.length == 0) {
+  function execDeprecatePools(address[] calldata _consensusAddrs, uint256 _newPeriod)
+    external
+    override
+    onlyValidatorContract
+  {
+    if (_consensusAddrs.length == 0) {
       return;
     }
 
-    for (uint _i = 0; _i < _pools.length; _i++) {
-      PoolDetail storage _pool = _stakingPool[_pools[_i]];
+    address[] memory _pools = new address[](_consensusAddrs.length);
+
+    for (uint _i = 0; _i < _consensusAddrs.length; _i++) {
+      _pools[_i] = poolOfConsensusMapping[_consensusAddrs[_i]];
+      PoolDetail storage _pool = _getStakingPool(_pools[_i]);
+
       // Deactivate the pool admin in the active mapping.
       delete _adminOfActivePoolMapping[_pool.admin];
 
@@ -133,7 +141,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
    * @inheritdoc ICandidateStaking
    */
   function stake(address _consensusAddr) external payable override noEmptyValue poolIsActive(_consensusAddr) {
-    _stake(_stakingPool[_consensusAddr], msg.sender, msg.value);
+    _stake(_getStakingPool(_consensusAddr), msg.sender, msg.value);
   }
 
   /**
@@ -147,12 +155,23 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   {
     if (_amount == 0) revert ErrUnstakeZeroAmount();
     address _requester = msg.sender;
-    PoolDetail storage _pool = _stakingPool[_consensusAddr];
+    PoolDetail storage _pool = _getStakingPool(_consensusAddr);
     uint256 _remainAmount = _pool.stakingAmount - _amount;
     if (_remainAmount < _minValidatorStakingAmount) revert ErrStakingAmountLeft();
 
     _unstake(_pool, _requester, _amount);
     if (!_unsafeSendRON(payable(_requester), _amount, DEFAULT_ADDITION_GAS)) revert ErrCannotTransferRON();
+  }
+
+  function updateConsensusAddr(address _oldConsensusAddr, address _newConsensusAddr)
+    external
+    poolIsActive(_oldConsensusAddr)
+    onlyPoolAdmin(_getStakingPool(_oldConsensusAddr), msg.sender)
+  {
+    if (_oldConsensusAddr == _newConsensusAddr) revert ErrInvalidInput();
+    address _poolAddr = poolOfConsensusMapping[_oldConsensusAddr];
+    poolOfConsensusMapping[_oldConsensusAddr] = address(0);
+    poolOfConsensusMapping[_newConsensusAddr] = _poolAddr;
   }
 
   /**
@@ -162,7 +181,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     external
     override
     poolIsActive(_consensusAddr)
-    onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
+    onlyPoolAdmin(_getStakingPool(_consensusAddr), msg.sender)
   {
     _validatorContract.execRequestRenounceCandidate(_consensusAddr, _waitingSecsToRevoke);
   }
@@ -174,7 +193,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     external
     override
     poolIsActive(_consensusAddr)
-    onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
+    onlyPoolAdmin(_getStakingPool(_consensusAddr), msg.sender)
   {
     _validatorContract.execEmergencyExit(_consensusAddr, _waitingSecsToRevoke);
   }

@@ -44,9 +44,9 @@ interface IBaseStaking {
   function isAdminOfActivePool(address _poolAdminAddr) external view returns (bool);
 
   /**
-   * @dev Returns the consensus address corresponding to the pool admin.
+   * @dev Returns the pool address corresponding to the pool admin.
    */
-  function getPoolAddressOf(address _poolAdminAddr) external view returns (address);
+  function getPoolAddressOfAdmin(address _poolAdminAddr) external view returns (address);
 
   /**
    * @dev Returns the staking pool detail.

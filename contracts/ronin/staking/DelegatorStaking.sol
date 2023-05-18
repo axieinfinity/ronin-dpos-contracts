@@ -17,7 +17,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    */
   function delegate(address _consensusAddr) external payable noEmptyValue poolIsActive(_consensusAddr) {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
-    _delegate(_stakingPool[_consensusAddr], msg.sender, msg.value);
+    _delegate(_getStakingPool(_consensusAddr), msg.sender, msg.value);
   }
 
   /**
@@ -25,7 +25,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    */
   function undelegate(address _consensusAddr, uint256 _amount) external nonReentrant {
     address payable _delegator = payable(msg.sender);
-    _undelegate(_stakingPool[_consensusAddr], _delegator, _amount);
+    _undelegate(_getStakingPool(_consensusAddr), _delegator, _amount);
     if (!_sendRON(_delegator, _amount)) revert ErrCannotTransferRON();
   }
 
@@ -40,7 +40,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
 
     for (uint _i = 0; _i < _consensusAddrs.length; _i++) {
       _total += _amounts[_i];
-      _undelegate(_stakingPool[_consensusAddrs[_i]], _delegator, _amounts[_i]);
+      _undelegate(_getStakingPool(_consensusAddrs[_i]), _delegator, _amounts[_i]);
     }
 
     if (!_sendRON(_delegator, _total)) revert ErrCannotTransferRON();
@@ -55,8 +55,8 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     uint256 _amount
   ) external nonReentrant poolIsActive(_consensusAddrDst) {
     address _delegator = msg.sender;
-    _undelegate(_stakingPool[_consensusAddrSrc], _delegator, _amount);
-    _delegate(_stakingPool[_consensusAddrDst], _delegator, _amount);
+    _undelegate(_getStakingPool(_consensusAddrSrc), _delegator, _amount);
+    _delegate(_getStakingPool(_consensusAddrDst), _delegator, _amount);
   }
 
   /**
@@ -186,6 +186,6 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     address _poolAddrDst
   ) internal returns (uint256 _amount) {
     _amount = _claimRewards(_user, _poolAddrList);
-    _delegate(_stakingPool[_poolAddrDst], _user, _amount);
+    _delegate(_getStakingPool(_poolAddrDst), _user, _amount);
   }
 }
