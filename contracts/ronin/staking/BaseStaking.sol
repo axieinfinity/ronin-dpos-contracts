@@ -16,7 +16,10 @@ abstract contract BaseStaking is
   HasValidatorContract,
   IBaseStaking
 {
-  /// @dev Mapping from pool address => staking pool detail
+  /**
+   * @dev Mapping from pool address => staking pool detail.
+   * Access to this variable must go through `_getStakingPool` function.
+   */
   mapping(address => PoolDetail) private _stakingPool;
 
   /// @dev The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.
@@ -34,7 +37,7 @@ abstract contract BaseStaking is
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[47] private ______gap;
+  uint256[48] private ______gap;
 
   modifier noEmptyValue() {
     if (msg.value == 0) revert ErrZeroValue();

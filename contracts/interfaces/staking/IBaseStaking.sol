@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 interface IBaseStaking {
   struct PoolDetail {
-    // Address of the pool i.e. consensus address of the validator
+    // Address of the pool i.e. normally is consensus address of the validator unless it is requested to be changed
     address addr;
     // Pool admin address
     address admin;

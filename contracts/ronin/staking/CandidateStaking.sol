@@ -76,13 +76,14 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       _amount
     );
 
+    poolOfConsensusMapping[_consensusAddr] = _consensusAddr;
+
     PoolDetail storage _pool = _getStakingPool(_consensusAddr);
     _pool.admin = _poolAdmin;
     _pool.addr = _consensusAddr;
     _adminOfActivePoolMapping[_poolAdmin] = _consensusAddr;
-    poolOfConsensusMapping[_consensusAddr] = _consensusAddr;
 
-    _stake(_getStakingPool(_consensusAddr), _poolAdmin, _amount);
+    _stake(_pool, _poolAdmin, _amount);
     emit PoolApproved(_consensusAddr, _poolAdmin);
   }
 
@@ -172,6 +173,9 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     onlyPoolAdmin(_getStakingPool(_oldConsensusAddr), msg.sender)
   {
     if (_oldConsensusAddr == _newConsensusAddr) revert ErrInvalidInput();
+    PoolDetail storage _pool = _getStakingPool(_oldConsensusAddr);
+
+    _adminOfActivePoolMapping[_pool.admin] = _newConsensusAddr;
     poolOfConsensusMapping[_newConsensusAddr] = poolOfConsensusMapping[_oldConsensusAddr];
     delete poolOfConsensusMapping[_oldConsensusAddr];
   }
