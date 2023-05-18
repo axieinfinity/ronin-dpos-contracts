@@ -80,6 +80,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     _pool.admin = _poolAdmin;
     _pool.addr = _consensusAddr;
     _adminOfActivePoolMapping[_poolAdmin] = _consensusAddr;
+    poolOfConsensusMapping[_consensusAddr] = _consensusAddr;
 
     _stake(_getStakingPool(_consensusAddr), _poolAdmin, _amount);
     emit PoolApproved(_consensusAddr, _poolAdmin);
@@ -132,6 +133,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       if (_lastRewardAmount > 0) {
         _unsafeSendRON(payable(_pool.admin), _lastRewardAmount, DEFAULT_ADDITION_GAS);
       }
+
+      delete poolOfConsensusMapping[_consensusAddrs[_i]];
     }
 
     emit PoolsDeprecated(_pools);
@@ -169,9 +172,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     onlyPoolAdmin(_getStakingPool(_oldConsensusAddr), msg.sender)
   {
     if (_oldConsensusAddr == _newConsensusAddr) revert ErrInvalidInput();
-    address _poolAddr = poolOfConsensusMapping[_oldConsensusAddr];
-    poolOfConsensusMapping[_oldConsensusAddr] = address(0);
-    poolOfConsensusMapping[_newConsensusAddr] = _poolAddr;
+    poolOfConsensusMapping[_newConsensusAddr] = poolOfConsensusMapping[_oldConsensusAddr];
+    delete poolOfConsensusMapping[_oldConsensusAddr];
   }
 
   /**
