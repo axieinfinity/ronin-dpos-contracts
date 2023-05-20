@@ -193,7 +193,7 @@ abstract contract RewardCalculation is IRewardPool {
     uint256[] memory _shares = new uint256[](_poolAddrs.length);
     address[] memory _conflicted = new address[](_poolAddrs.length);
 
-    for (uint _i = 0; _i < _poolAddrs.length; ) {
+    for (uint _i = 0; _i < _poolAddrs.length; _i++) {
       _poolAddr = _poolAddrs[_i];
       PoolFields storage _pool = _stakingPool[_poolAddr];
       _stakingTotal = getStakingTotal(_poolAddr);
@@ -215,10 +215,6 @@ abstract contract RewardCalculation is IRewardPool {
       _pool.shares.inner = _stakingTotal;
       _shares[_i - _count] = _pool.shares.inner;
       _poolAddrs[_i - _count] = _poolAddr;
-
-      unchecked {
-        ++_i;
-      }
     }
 
     if (_count > 0) {
