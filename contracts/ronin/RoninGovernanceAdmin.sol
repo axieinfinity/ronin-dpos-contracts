@@ -68,15 +68,23 @@ contract RoninGovernanceAdmin is
     _supports = new Ballot.VoteType[](_voterLength);
     _signatures = new Signature[](_voterLength);
     _voters = new address[](_voterLength);
-    for (uint256 _i; _i < _forLength; _i++) {
+    for (uint256 _i; _i < _forLength; ) {
       _supports[_i] = Ballot.VoteType.For;
       _signatures[_i] = vote[_chainId][_round].sig[_vote.forVoteds[_i]];
       _voters[_i] = _vote.forVoteds[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
-    for (uint256 _i; _i < _againstLength; _i++) {
+    for (uint256 _i; _i < _againstLength; ) {
       _supports[_i + _forLength] = Ballot.VoteType.Against;
       _signatures[_i + _forLength] = vote[_chainId][_round].sig[_vote.againstVoteds[_i]];
       _voters[_i + _forLength] = _vote.againstVoteds[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -91,8 +99,12 @@ contract RoninGovernanceAdmin is
     mapping(address => Signature) storage _sigMap = _bridgeVoterSig[_period][_epoch];
     _voters = _bridgeOperatorVote[_period][_epoch].voters;
     _signatures = new Signature[](_voters.length);
-    for (uint _i; _i < _voters.length; _i++) {
+    for (uint _i; _i < _voters.length; ) {
       _signatures[_i] = _sigMap[_voters[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 

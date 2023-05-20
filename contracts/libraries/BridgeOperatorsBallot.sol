@@ -25,9 +25,13 @@ library BridgeOperatorsBallot {
   function verifyBallot(BridgeOperatorSet calldata _ballot) internal pure {
     require(_ballot.operators.length > 0, "BridgeOperatorsBallot: invalid array length");
     address _addr = _ballot.operators[0];
-    for (uint _i = 1; _i < _ballot.operators.length; _i++) {
+    for (uint _i = 1; _i < _ballot.operators.length; ) {
       require(_addr < _ballot.operators[_i], "BridgeOperatorsBallot: invalid order of bridge operators");
       _addr = _ballot.operators[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 

@@ -98,8 +98,12 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   {
     _res = new uint256[](_bridgeOperators.length);
     bool _isBufferCounted = _isBufferCountedForPeriod(_period);
-    for (uint _i = 0; _i < _bridgeOperators.length; _i++) {
+    for (uint _i = 0; _i < _bridgeOperators.length; ) {
       _res[_i] = _totalBallotsOf(_period, _bridgeOperators[_i], _isBufferCounted);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -127,8 +131,12 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
       _bufferRequest.id = _requestId;
 
       address[] storage _voters = _receiptInfo.voters;
-      for (uint _i = 0; _i < _voters.length; _i++) {
+      for (uint _i = 0; _i < _voters.length; ) {
         _increaseBallot(_kind, _requestId, _voters[_i], _currentPeriod);
+
+        unchecked {
+          ++_i;
+        }
       }
 
       delete _receiptInfo.voters;
@@ -224,17 +232,25 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
       _metric.totalBallots += _bufferMetric.data.totalBallots;
 
       // Copy voters info and voters' ballot
-      for (uint _i = 0; _i < _bufferMetric.data.voters.length; _i++) {
+      for (uint _i = 0; _i < _bufferMetric.data.voters.length; ) {
         address _voter = _bufferMetric.data.voters[_i];
         _metric.totalBallotsOf[_voter] += _bufferMetric.data.totalBallotsOf[_voter];
         delete _bufferMetric.data.totalBallotsOf[_voter]; // need to manually delete each element, due to mapping
+
+        unchecked {
+          ++_i;
+        }
       }
 
       // Mark all receipts in the buffer as tracked. Keep total number of receipts and delete receipt details.
-      for (uint _i = 0; _i < _bufferMetric.requests.length; _i++) {
+      for (uint _i = 0; _i < _bufferMetric.requests.length; ) {
         Request storage _bufferRequest = _bufferMetric.requests[_i];
         ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_bufferRequest.kind][_bufferRequest.id];
         _receiptInfo.trackedPeriod = _trackedPeriod;
+
+        unchecked {
+          ++_i;
+        }
       }
 
       delete _bufferMetric.requests;

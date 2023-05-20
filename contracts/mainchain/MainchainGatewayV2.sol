@@ -88,8 +88,12 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     }
 
     // Grant role for withdrawal unlocker
-    for (uint256 _i; _i < _addresses[2].length; _i++) {
+    for (uint256 _i; _i < _addresses[2].length; ) {
       _grantRole(WITHDRAWAL_UNLOCKER_ROLE, _addresses[2][_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -98,12 +102,16 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
    */
   function replaceBridgeOperators(address[] calldata _list) external onlyAdmin {
     address _addr;
-    for (uint256 _i = 0; _i < _list.length; _i++) {
+    for (uint256 _i = 0; _i < _list.length; ) {
       _addr = _list[_i];
       if (_bridgeOperatorAddedBlock[_addr] == 0) {
         _bridgeOperators.push(_addr);
       }
       _bridgeOperatorAddedBlock[_addr] = block.number;
+
+      unchecked {
+        ++_i;
+      }
     }
 
     {
@@ -254,9 +262,13 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
       "MainchainGatewayV2: invalid array length"
     );
 
-    for (uint256 _i; _i < _mainchainTokens.length; _i++) {
+    for (uint256 _i; _i < _mainchainTokens.length; ) {
       _roninToken[_mainchainTokens[_i]].tokenAddr = _roninTokens[_i];
       _roninToken[_mainchainTokens[_i]].erc = _standards[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
 
     emit TokenMapped(_mainchainTokens, _roninTokens, _standards);
@@ -311,7 +323,7 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
       address _lastSigner;
       Signature memory _sig;
       uint256 _weight;
-      for (uint256 _i; _i < _signatures.length; _i++) {
+      for (uint256 _i; _i < _signatures.length; ) {
         _sig = _signatures[_i];
         _signer = ecrecover(_receiptDigest, _sig.v, _sig.r, _sig.s);
         require(_lastSigner < _signer, "MainchainGatewayV2: invalid order");
@@ -321,6 +333,10 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
         if (_weight >= _minimumVoteWeight) {
           _passed = true;
           break;
+        }
+
+        unchecked {
+          ++_i;
         }
       }
       require(_passed, "MainchainGatewayV2: query for insufficient vote weight");

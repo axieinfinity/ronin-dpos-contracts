@@ -202,8 +202,12 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    */
   function _setHighTierThresholds(address[] calldata _tokens, uint256[] calldata _thresholds) internal virtual {
     require(_tokens.length == _thresholds.length, "WithdrawalLimitation: invalid array length");
-    for (uint256 _i; _i < _tokens.length; _i++) {
+    for (uint256 _i; _i < _tokens.length; ) {
       highTierThreshold[_tokens[_i]] = _thresholds[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
     emit HighTierThresholdsUpdated(_tokens, _thresholds);
   }
@@ -219,8 +223,12 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    */
   function _setLockedThresholds(address[] calldata _tokens, uint256[] calldata _thresholds) internal virtual {
     require(_tokens.length == _thresholds.length, "WithdrawalLimitation: invalid array length");
-    for (uint256 _i; _i < _tokens.length; _i++) {
+    for (uint256 _i; _i < _tokens.length; ) {
       lockedThreshold[_tokens[_i]] = _thresholds[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
     emit LockedThresholdsUpdated(_tokens, _thresholds);
   }
@@ -237,9 +245,13 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    */
   function _setUnlockFeePercentages(address[] calldata _tokens, uint256[] calldata _percentages) internal virtual {
     require(_tokens.length == _percentages.length, "WithdrawalLimitation: invalid array length");
-    for (uint256 _i; _i < _tokens.length; _i++) {
+    for (uint256 _i; _i < _tokens.length; ) {
       require(_percentages[_i] <= _MAX_PERCENTAGE, "WithdrawalLimitation: invalid percentage");
       unlockFeePercentages[_tokens[_i]] = _percentages[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
     emit UnlockFeePercentagesUpdated(_tokens, _percentages);
   }
@@ -255,8 +267,12 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    */
   function _setDailyWithdrawalLimits(address[] calldata _tokens, uint256[] calldata _limits) internal virtual {
     require(_tokens.length == _limits.length, "WithdrawalLimitation: invalid array length");
-    for (uint256 _i; _i < _tokens.length; _i++) {
+    for (uint256 _i; _i < _tokens.length; ) {
       dailyWithdrawalLimit[_tokens[_i]] = _limits[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
     emit DailyWithdrawalLimitsUpdated(_tokens, _limits);
   }

@@ -46,8 +46,12 @@ library Proposal {
     bytes32[] memory _calldataHashList = new bytes32[](_proposal.calldatas.length);
     uint256[] memory _gasAmounts = _proposal.gasAmounts;
 
-    for (uint256 _i; _i < _calldataHashList.length; _i++) {
+    for (uint256 _i; _i < _calldataHashList.length; ) {
       _calldataHashList[_i] = keccak256(_proposal.calldatas[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
 
     assembly {
@@ -92,13 +96,17 @@ library Proposal {
     require(executable(_proposal), "Proposal: query for invalid chainId");
     _successCalls = new bool[](_proposal.targets.length);
     _returnDatas = new bytes[](_proposal.targets.length);
-    for (uint256 _i = 0; _i < _proposal.targets.length; ++_i) {
+    for (uint256 _i = 0; _i < _proposal.targets.length; ) {
       require(gasleft() > _proposal.gasAmounts[_i], "Proposal: insufficient gas");
 
       (_successCalls[_i], _returnDatas[_i]) = _proposal.targets[_i].call{
         value: _proposal.values[_i],
         gas: _proposal.gasAmounts[_i]
       }(_proposal.calldatas[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 }
