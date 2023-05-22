@@ -134,8 +134,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       if (_lastRewardAmount > 0) {
         _unsafeSendRON(payable(_pool.admin), _lastRewardAmount, DEFAULT_ADDITION_GAS);
       }
-
-      delete poolOfConsensusMapping[_consensusAddrs[_i]];
     }
 
     emit PoolsDeprecated(_pools);
