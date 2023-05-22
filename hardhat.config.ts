@@ -145,7 +145,7 @@ const config: HardhatUserConfig = {
     alphaSort: true,
     disambiguatePaths: false,
     runOnCompile: true,
-    outputFile: './log/contract-code-sizes.log',
+    outputFile: './logs/contract-code-sizes.log',
   },
 };
 
