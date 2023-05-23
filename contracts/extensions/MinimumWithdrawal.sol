@@ -43,8 +43,12 @@ abstract contract MinimumWithdrawal is HasProxyAdmin {
    */
   function _setMinimumThresholds(address[] calldata _tokens, uint256[] calldata _thresholds) internal virtual {
     require(_tokens.length == _thresholds.length, "MinimumWithdrawal: invalid array length");
-    for (uint256 _i; _i < _tokens.length; _i++) {
+    for (uint256 _i; _i < _tokens.length; ) {
       minimumThreshold[_tokens[_i]] = _thresholds[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
     emit MinimumThresholdsUpdated(_tokens, _thresholds);
   }
