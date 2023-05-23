@@ -55,15 +55,11 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, VoteStatusConsumer {
     bytes32 _hash = BridgeOperatorsBallot.hash(_ballot);
     bytes32 _digest = ECDSA.toTypedDataHash(_domainSeperator, _hash);
 
-    for (uint256 _i = 0; _i < _signatures.length; ) {
+    for (uint256 _i = 0; _i < _signatures.length; _i++) {
       _sig = _signatures[_i];
       _signers[_i] = ECDSA.recover(_digest, _sig.v, _sig.r, _sig.s);
       require(_lastSigner < _signers[_i], "BOsGovernanceRelay: invalid order");
       _lastSigner = _signers[_i];
-
-      unchecked {
-        ++_i;
-      }
     }
 
     IsolatedGovernance.Vote storage _v = _vote[_ballot.period][_ballot.epoch];

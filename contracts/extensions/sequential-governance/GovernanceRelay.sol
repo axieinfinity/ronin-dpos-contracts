@@ -32,7 +32,7 @@ abstract contract GovernanceRelay is CoreGovernance {
       Ballot.VoteType _support;
       Signature calldata _sig;
 
-      for (uint256 _i; _i < _signatures.length; ) {
+      for (uint256 _i; _i < _signatures.length; _i++) {
         _sig = _signatures[_i];
         _support = _supports[_i];
 
@@ -48,10 +48,6 @@ abstract contract GovernanceRelay is CoreGovernance {
 
         require(_lastSigner < _signer, "GovernanceRelay: invalid order");
         _lastSigner = _signer;
-
-        unchecked {
-          ++_i;
-        }
       }
     }
 
