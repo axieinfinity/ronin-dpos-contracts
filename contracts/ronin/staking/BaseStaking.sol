@@ -87,12 +87,8 @@ abstract contract BaseStaking is
    */
   function getManySelfStakings(address[] calldata _pools) external view returns (uint256[] memory _selfStakings) {
     _selfStakings = new uint256[](_pools.length);
-    for (uint _i = 0; _i < _pools.length; ) {
+    for (uint _i = 0; _i < _pools.length; _i++) {
       _selfStakings[_i] = _stakingPool[_pools[_i]].stakingAmount;
-
-      unchecked {
-        ++_i;
-      }
     }
   }
 
@@ -113,12 +109,8 @@ abstract contract BaseStaking is
     returns (uint256[] memory _stakingAmounts)
   {
     _stakingAmounts = new uint256[](_poolList.length);
-    for (uint _i = 0; _i < _poolList.length; ) {
+    for (uint _i = 0; _i < _poolList.length; _i++) {
       _stakingAmounts[_i] = getStakingTotal(_poolList[_i]);
-
-      unchecked {
-        ++_i;
-      }
     }
   }
 
@@ -140,12 +132,8 @@ abstract contract BaseStaking is
   {
     if (_poolAddrs.length != _userList.length) revert ErrInvalidArrays();
     _stakingAmounts = new uint256[](_poolAddrs.length);
-    for (uint _i = 0; _i < _stakingAmounts.length; ) {
+    for (uint _i = 0; _i < _stakingAmounts.length; _i++) {
       _stakingAmounts[_i] = _stakingPool[_poolAddrs[_i]].delegatingAmount[_userList[_i]];
-
-      unchecked {
-        ++_i;
-      }
     }
   }
 

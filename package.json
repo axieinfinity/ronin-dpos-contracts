@@ -6,7 +6,7 @@
   "main": "dist/src/types/index.js",
   "types": "dist/src/types/index.d.ts",
   "scripts": {
-    "compile": "TS_NODE_TRANSPILE_ONLY=1 hardhat compile",
+    "compile": "hardhat compile",
     "test": "hardhat test",
     "clean": "hardhat clean && rimraf dist cache",
     "lint:fix": "lint-staged",
@@ -39,8 +39,8 @@
     "dotenv": "^10.0.0",
     "ethers": "^5.5.2",
     "hardhat": "^2.7.1",
-    "hardhat-contract-sizer": "2.8.0",
     "hardhat-deploy": "0.11.29",
+    "hardhat-contract-sizer": "^2.6.1",
     "hardhat-gas-reporter": "^1.0.8",
     "hardhat-storage-layout": "^0.1.7",
     "husky": "^7.0.4",

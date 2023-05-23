@@ -63,7 +63,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAd
     mapping(address => Signature) storage _sigMap = _bridgeVoterSig[_ballot.period][_ballot.epoch];
     bool _hasValidVotes;
 
-    for (uint256 _i; _i < _signatures.length; ) {
+    for (uint256 _i; _i < _signatures.length; _i++) {
       // Avoids stack too deeps
       {
         Signature calldata _sig = _signatures[_i];
@@ -77,10 +77,6 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAd
         _lastVotedBlock[_signer] = block.number;
         _sigMap[_signer] = _signatures[_i];
         _v.castVote(_signer, _hash);
-      }
-
-      unchecked {
-        ++_i;
       }
     }
 
