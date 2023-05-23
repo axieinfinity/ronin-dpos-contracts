@@ -297,13 +297,21 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     if (_isExpired) {
       emit ProposalExpired(_proposalVote.hash);
 
-      for (uint256 _i; _i < _proposalVote.forVoteds.length; _i++) {
+      for (uint256 _i; _i < _proposalVote.forVoteds.length; ) {
         delete _proposalVote.voted[_proposalVote.forVoteds[_i]];
         delete _proposalVote.sig[_proposalVote.forVoteds[_i]];
+
+        unchecked {
+          ++_i;
+        }
       }
-      for (uint256 _i; _i < _proposalVote.againstVoteds.length; _i++) {
+      for (uint256 _i; _i < _proposalVote.againstVoteds.length; ) {
         delete _proposalVote.voted[_proposalVote.againstVoteds[_i]];
         delete _proposalVote.sig[_proposalVote.againstVoteds[_i]];
+
+        unchecked {
+          ++_i;
+        }
       }
       delete _proposalVote.status;
       delete _proposalVote.hash;

@@ -36,8 +36,12 @@ library GlobalProposal {
     bytes32[] memory _calldataHashList = new bytes32[](_proposal.calldatas.length);
     uint256[] memory _gasAmounts = _proposal.gasAmounts;
 
-    for (uint256 _i; _i < _calldataHashList.length; _i++) {
+    for (uint256 _i; _i < _calldataHashList.length; ) {
       _calldataHashList[_i] = keccak256(_proposal.calldatas[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
 
     assembly {
@@ -77,13 +81,17 @@ library GlobalProposal {
     _detail.calldatas = _proposal.calldatas;
     _detail.gasAmounts = _proposal.gasAmounts;
 
-    for (uint256 _i; _i < _proposal.targetOptions.length; _i++) {
+    for (uint256 _i; _i < _proposal.targetOptions.length; ) {
       if (_proposal.targetOptions[_i] == TargetOption.GatewayContract) {
         _detail.targets[_i] = _gatewayContract;
       } else if (_proposal.targetOptions[_i] == TargetOption.RoninTrustedOrganizationContract) {
         _detail.targets[_i] = _roninTrustedOrganizationContract;
       } else {
         revert("GlobalProposal: unsupported target");
+      }
+
+      unchecked {
+        ++_i;
       }
     }
   }

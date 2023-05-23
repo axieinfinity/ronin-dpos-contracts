@@ -105,8 +105,12 @@ contract RoninGatewayV2 is
       _setMinimumThresholds(_packedAddresses[0], _packedNumbers[1]);
     }
 
-    for (uint256 _i; _i < _withdrawalMigrators.length; _i++) {
+    for (uint256 _i; _i < _withdrawalMigrators.length; ) {
       _grantRole(WITHDRAWAL_MIGRATOR, _withdrawalMigrators[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -169,10 +173,14 @@ contract RoninGatewayV2 is
   {
     require(!withdrawalMigrated, "RoninGatewayV2: withdrawals migrated");
     require(_requesters.length == _requests.length && _requests.length > 0, "RoninGatewayV2: invalid array lengths");
-    for (uint256 _i; _i < _requests.length; _i++) {
+    for (uint256 _i; _i < _requests.length; ) {
       MappedToken memory _token = getMainchainToken(_requests[_i].tokenAddr, 1);
       require(_requests[_i].info.erc == _token.erc, "RoninGatewayV2: invalid token standard");
       _storeAsReceipt(_requests[_i], 1, _requesters[_i], _token.tokenAddr);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -197,8 +205,12 @@ contract RoninGatewayV2 is
     returns (bytes[] memory _signatures)
   {
     _signatures = new bytes[](_validators.length);
-    for (uint256 _i = 0; _i < _validators.length; _i++) {
+    for (uint256 _i = 0; _i < _validators.length; ) {
       _signatures[_i] = _withdrawalSig[_withdrawalId][_validators[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -225,7 +237,7 @@ contract RoninGatewayV2 is
 
     uint256 _withdrawalId;
     _executedReceipts = new bool[](_withdrawalIds.length);
-    for (uint256 _i; _i < _withdrawalIds.length; _i++) {
+    for (uint256 _i; _i < _withdrawalIds.length; ) {
       _withdrawalId = _withdrawalIds[_i];
       _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.MainchainWithdrawal, _withdrawalId, _governor);
       if (mainchainWithdrew(_withdrawalId)) {
@@ -240,6 +252,10 @@ contract RoninGatewayV2 is
           _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.MainchainWithdrawal, _withdrawalId);
           emit MainchainWithdrew(_hash, _withdrawal);
         }
+      }
+
+      unchecked {
+        ++_i;
       }
     }
   }
@@ -259,13 +275,17 @@ contract RoninGatewayV2 is
     _executedReceipts = new bool[](_receipts.length);
     uint256 _minVoteWeight = minimumVoteWeight();
     uint256 _minTrustedVoteWeight = minimumTrustedVoteWeight();
-    for (uint256 _i; _i < _receipts.length; _i++) {
+    for (uint256 _i; _i < _receipts.length; ) {
       _receipt = _receipts[_i];
       _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Deposit, _receipt.id, _sender);
       if (depositVote[_receipt.mainchain.chainId][_receipt.id].status == VoteStatus.Executed) {
         _executedReceipts[_i] = true;
       } else {
         _depositFor(_receipt, _sender, _minVoteWeight, _minTrustedVoteWeight);
+      }
+
+      unchecked {
+        ++_i;
       }
     }
   }
@@ -282,8 +302,12 @@ contract RoninGatewayV2 is
    */
   function bulkRequestWithdrawalFor(Transfer.Request[] calldata _requests, uint256 _chainId) external whenNotPaused {
     require(_requests.length > 0, "RoninGatewayV2: empty array");
-    for (uint256 _i; _i < _requests.length; _i++) {
+    for (uint256 _i; _i < _requests.length; ) {
       _requestWithdrawalFor(_requests[_i], msg.sender, _chainId);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -316,7 +340,7 @@ contract RoninGatewayV2 is
     uint256 _minTrustedVoteWeight = minimumTrustedVoteWeight();
 
     uint256 _id;
-    for (uint256 _i; _i < _withdrawals.length; _i++) {
+    for (uint256 _i; _i < _withdrawals.length; ) {
       _id = _withdrawals[_i];
       _withdrawalSig[_id][_validator] = _signatures[_i];
       _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Withdrawal, _id, _validator);
@@ -332,6 +356,10 @@ contract RoninGatewayV2 is
       if (_status == VoteStatus.Approved) {
         _proposal.status = VoteStatus.Executed;
         _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, _id);
+      }
+
+      unchecked {
+        ++_i;
       }
     }
   }
@@ -402,9 +430,13 @@ contract RoninGatewayV2 is
       "RoninGatewayV2: invalid array length"
     );
 
-    for (uint256 _i; _i < _roninTokens.length; _i++) {
+    for (uint256 _i; _i < _roninTokens.length; ) {
       _mainchainToken[_roninTokens[_i]][_chainIds[_i]].tokenAddr = _mainchainTokens[_i];
       _mainchainToken[_roninTokens[_i]][_chainIds[_i]].erc = _standards[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
 
     emit TokenMapped(_roninTokens, _mainchainTokens, _chainIds, _standards);
@@ -578,12 +610,16 @@ contract RoninGatewayV2 is
     ) = _validatorContract.getValidators();
     uint256[] memory _trustedWeights = _trustedOrgContract.getConsensusWeights(_consensusList);
 
-    for (uint _i; _i < _bridgeOperators.length; _i++) {
+    for (uint _i; _i < _bridgeOperators.length; ) {
       if (_flags[_i].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator) && _v.voteHashOf[_bridgeOperators[_i]] == _hash) {
         _totalWeight++;
         if (_trustedWeights[_i] > 0) {
           _trustedWeight++;
         }
+      }
+
+      unchecked {
+        ++_i;
       }
     }
   }

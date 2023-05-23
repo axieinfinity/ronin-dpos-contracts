@@ -148,8 +148,12 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     returns (bool[] memory _resList)
   {
     _resList = new bool[](_addrList.length);
-    for (uint _i = 0; _i < _addrList.length; _i++) {
+    for (uint _i = 0; _i < _addrList.length; ) {
       _resList[_i] = checkMaintained(_addrList[_i], _block);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -162,8 +166,12 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     uint256 _toBlock
   ) external view override returns (bool[] memory _resList) {
     _resList = new bool[](_addrList.length);
-    for (uint _i = 0; _i < _addrList.length; _i++) {
+    for (uint _i = 0; _i < _addrList.length; ) {
       _resList[_i] = _maintainingInBlockRange(_addrList[_i], _fromBlock, _toBlock);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -172,9 +180,11 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    */
   function totalSchedules() public view override returns (uint256 _count) {
     (address[] memory _validators, , ) = _validatorContract.getValidators();
-    for (uint _i = 0; _i < _validators.length; _i++) {
-      if (checkScheduled(_validators[_i])) {
-        _count++;
+    unchecked {
+      for (uint _i = 0; _i < _validators.length; _i++) {
+        if (checkScheduled(_validators[_i])) {
+          _count++;
+        }
       }
     }
   }

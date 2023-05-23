@@ -43,7 +43,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     );
     uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
 
-    for (uint _i = 0; _i < _validators.length; _i++) {
+    for (uint _i = 0; _i < _validators.length; ) {
       address _validator = _validators[_i];
 
       uint256 _indicator = getUnavailabilityIndicator(_validator, _period);
@@ -56,6 +56,10 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
 
       _creditScore[_validator] = Math.addWithUpperbound(_creditScore[_validator], _actualGain, _maxCreditScore);
       _updatedCreditScores[_i] = _creditScore[_validator];
+
+      unchecked {
+        ++_i;
+      }
     }
 
     emit CreditScoresUpdated(_validators, _updatedCreditScores);
@@ -63,10 +67,14 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
 
   function execResetCreditScores(address[] calldata _validators) external override onlyValidatorContract {
     uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
-    for (uint _i = 0; _i < _validators.length; _i++) {
+    for (uint _i = 0; _i < _validators.length; ) {
       address _validator = _validators[_i];
       delete _creditScore[_validator];
       delete _updatedCreditScores[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
     emit CreditScoresUpdated(_validators, _updatedCreditScores);
   }
@@ -154,8 +162,12 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   {
     _resultList = new uint256[](_validators.length);
 
-    for (uint _i = 0; _i < _resultList.length; _i++) {
+    for (uint _i = 0; _i < _resultList.length; ) {
       _resultList[_i] = _creditScore[_validators[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 

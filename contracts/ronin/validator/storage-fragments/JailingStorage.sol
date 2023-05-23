@@ -84,8 +84,12 @@ abstract contract JailingStorage is IJailingInfo {
    */
   function checkManyJailed(address[] calldata _addrList) external view override returns (bool[] memory _result) {
     _result = new bool[](_addrList.length);
-    for (uint256 _i; _i < _addrList.length; _i++) {
+    for (uint256 _i; _i < _addrList.length; ) {
       _result[_i] = _jailed(_addrList[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 

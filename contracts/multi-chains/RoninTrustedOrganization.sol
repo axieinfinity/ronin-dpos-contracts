@@ -90,8 +90,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function updateTrustedOrganizations(TrustedOrganization[] calldata _list) external override onlyAdmin {
     require(_list.length > 0, "RoninTrustedOrganization: invalid array length");
-    for (uint256 _i; _i < _list.length; _i++) {
+    for (uint256 _i; _i < _list.length; ) {
       _updateTrustedOrganization(_list[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
     emit TrustedOrganizationsUpdated(_list);
   }
@@ -101,8 +105,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function removeTrustedOrganizations(address[] calldata _list) external override onlyAdmin {
     require(_list.length > 0, "RoninTrustedOrganization: invalid array length");
-    for (uint _i = 0; _i < _list.length; _i++) {
+    for (uint _i = 0; _i < _list.length; ) {
       _removeTrustedOrganization(_list[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
     emit TrustedOrganizationsRemoved(_list);
   }
@@ -140,8 +148,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function getConsensusWeights(address[] calldata _list) external view returns (uint256[] memory _res) {
     _res = new uint256[](_list.length);
-    for (uint _i = 0; _i < _res.length; _i++) {
+    for (uint _i = 0; _i < _res.length; ) {
       _res[_i] = _consensusWeight[_list[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -150,8 +162,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function getGovernorWeights(address[] calldata _list) external view returns (uint256[] memory _res) {
     _res = new uint256[](_list.length);
-    for (uint _i = 0; _i < _res.length; _i++) {
+    for (uint _i = 0; _i < _res.length; ) {
       _res[_i] = _governorWeight[_list[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -160,8 +176,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function getBridgeVoterWeights(address[] calldata _list) external view returns (uint256[] memory _res) {
     _res = new uint256[](_list.length);
-    for (uint _i = 0; _i < _res.length; _i++) {
+    for (uint _i = 0; _i < _res.length; ) {
       _res[_i] = _bridgeVoterWeight[_list[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -169,8 +189,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * @inheritdoc IRoninTrustedOrganization
    */
   function sumConsensusWeights(address[] calldata _list) external view returns (uint256 _res) {
-    for (uint _i = 0; _i < _list.length; _i++) {
+    for (uint _i = 0; _i < _list.length; ) {
       _res += _consensusWeight[_list[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -178,8 +202,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * @inheritdoc IRoninTrustedOrganization
    */
   function sumGovernorWeights(address[] calldata _list) external view returns (uint256 _res) {
-    for (uint _i = 0; _i < _list.length; _i++) {
+    for (uint _i = 0; _i < _list.length; ) {
       _res += _governorWeight[_list[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -187,8 +215,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * @inheritdoc IRoninTrustedOrganization
    */
   function sumBridgeVoterWeights(address[] calldata _list) external view returns (uint256 _res) {
-    for (uint _i = 0; _i < _list.length; _i++) {
+    for (uint _i = 0; _i < _list.length; ) {
       _res += _bridgeVoterWeight[_list[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -205,12 +237,16 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   function getAllTrustedOrganizations() external view override returns (TrustedOrganization[] memory _list) {
     _list = new TrustedOrganization[](_consensusList.length);
     address _addr;
-    for (uint256 _i; _i < _list.length; _i++) {
+    for (uint256 _i; _i < _list.length; ) {
       _addr = _consensusList[_i];
       _list[_i].consensusAddr = _addr;
       _list[_i].governor = _governorList[_i];
       _list[_i].bridgeVoter = _bridgeVoterList[_i];
       _list[_i].weight = _consensusWeight[_addr];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -218,9 +254,13 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * @inheritdoc IRoninTrustedOrganization
    */
   function getTrustedOrganization(address _consensusAddr) external view returns (TrustedOrganization memory) {
-    for (uint _i = 0; _i < _consensusList.length; _i++) {
+    for (uint _i = 0; _i < _consensusList.length; ) {
       if (_consensusList[_i] == _consensusAddr) {
         return getTrustedOrganizationAt(_i);
+      }
+
+      unchecked {
+        ++_i;
       }
     }
     revert("RoninTrustedOrganization: query for non-existent consensus address");
@@ -245,8 +285,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * @dev Adds a list of trusted organizations.
    */
   function _addTrustedOrganizations(TrustedOrganization[] calldata _list) internal virtual {
-    for (uint256 _i; _i < _list.length; _i++) {
+    for (uint256 _i; _i < _list.length; ) {
       _addTrustedOrganization(_list[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
     emit TrustedOrganizationsAdded(_list);
   }
@@ -340,7 +384,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
     }
 
     uint256 _count = _consensusList.length;
-    for (uint256 _i = 0; _i < _count; _i++) {
+    for (uint256 _i = 0; _i < _count; ) {
       if (_consensusList[_i] == _v.consensusAddr) {
         _totalWeight -= _weight;
         _totalWeight += _v.weight;
@@ -364,6 +408,10 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
         _governorWeight[_v.governor] = _v.weight;
         _bridgeVoterWeight[_v.bridgeVoter] = _v.weight;
         return;
+      }
+
+      unchecked {
+        ++_i;
       }
     }
   }
@@ -391,10 +439,14 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
 
     uint256 _index;
     uint256 _count = _consensusList.length;
-    for (uint256 _i = 0; _i < _count; _i++) {
+    for (uint256 _i = 0; _i < _count; ) {
       if (_consensusList[_i] == _addr) {
         _index = _i;
         break;
+      }
+
+      unchecked {
+        ++_i;
       }
     }
 
