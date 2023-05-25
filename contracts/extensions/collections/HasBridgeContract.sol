@@ -9,8 +9,12 @@ contract HasBridgeContract is IHasBridgeContract, HasProxyAdmin {
   IBridge internal _bridgeContract;
 
   modifier onlyBridgeContract() {
-    if (bridgeContract() != msg.sender) revert ErrUnauthorized(msg.sig);
+    _onlyBridgeContract();
     _;
+  }
+
+  function _onlyBridgeContract() private view {
+    if (bridgeContract() != msg.sender) revert ErrUnauthorized(msg.sig);
   }
 
   /**

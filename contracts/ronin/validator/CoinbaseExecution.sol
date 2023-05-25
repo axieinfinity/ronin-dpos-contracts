@@ -30,8 +30,12 @@ abstract contract CoinbaseExecution is
   using EnumFlags for EnumFlags.ValidatorFlag;
 
   modifier onlyCoinbase() {
-    if (msg.sender != block.coinbase) revert ErrCallerMustBeCoinbase();
+    _onlyCoinbase();
     _;
+  }
+
+  function _onlyCoinbase() private view {
+    if (msg.sender != block.coinbase) revert ErrCallerMustBeCoinbase();
   }
 
   modifier whenEpochEnding() {

@@ -9,8 +9,12 @@ contract HasValidatorContract is IHasValidatorContract, HasProxyAdmin {
   IRoninValidatorSet internal _validatorContract;
 
   modifier onlyValidatorContract() {
-    if (validatorContract() != msg.sender) revert ErrUnauthorized(msg.sig);
+    _onlyValidatorContract();
     _;
+  }
+
+  function _onlyValidatorContract() private view {
+    if (validatorContract() != msg.sender) revert ErrUnauthorized(msg.sig);
   }
 
   /**
