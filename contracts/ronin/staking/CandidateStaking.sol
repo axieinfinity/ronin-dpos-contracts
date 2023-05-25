@@ -218,6 +218,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       _bridgeOperatorAddr,
       _commissionRate
     );
+
+    _profileContract.execApplyValidatorCandidate(_candidateAdmin, _consensusAddr, _treasuryAddr, _bridgeOperatorAddr);
   }
 
   /**

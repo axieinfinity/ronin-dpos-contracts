@@ -57,9 +57,10 @@ abstract contract CoinbaseExecution is
    * @inheritdoc ICoinbaseExecution
    */
   function submitBlockReward() external payable override onlyCoinbase {
+    address _correspondingPool = _profileContract.getConsensus2Id(msg.sender);
     bool _requestForBlockProducer = isBlockProducer(msg.sender) &&
-      !_jailed(msg.sender) &&
-      !_miningRewardDeprecated(msg.sender, currentPeriod());
+      !_jailed(_correspondingPool) &&
+      !_miningRewardDeprecated(_correspondingPool, currentPeriod());
 
     (, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus) = IStakingVesting(
       getContract(ContractType.STAKING_VESTING)
@@ -70,11 +71,15 @@ abstract contract CoinbaseExecution is
     // Deprecates reward for non-validator or slashed validator
     if (!_requestForBlockProducer) {
       _totalDeprecatedReward += msg.value;
-      emit BlockRewardDeprecated(msg.sender, msg.value, BlockRewardDeprecatedType.UNAVAILABILITY);
+      if (!isBlockProducer(msg.sender)) {
+        emit BlockRewardDeprecated(msg.sender, msg.value, BlockRewardDeprecatedType.NON_VALIDATOR);
+      } else {
+        emit BlockRewardDeprecated(_correspondingPool, msg.value, BlockRewardDeprecatedType.UNAVAILABILITY);
+      }
       return;
     }
 
-    emit BlockRewardSubmitted(msg.sender, msg.value, _blockProducerBonus);
+    emit BlockRewardSubmitted(_correspondingPool, msg.value, _blockProducerBonus);
 
     uint256 _period = currentPeriod();
     uint256 _reward = msg.value + _blockProducerBonus;
@@ -84,17 +89,17 @@ abstract contract CoinbaseExecution is
         .getCreditScoreConfigs();
       _cutOffReward = (_reward * _cutOffPercentage) / _MAX_PERCENTAGE;
       _totalDeprecatedReward += _cutOffReward;
-      emit BlockRewardDeprecated(msg.sender, _cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
+      emit BlockRewardDeprecated(_correspondingPool, _cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
     }
 
     _reward -= _cutOffReward;
     (uint256 _minRate, uint256 _maxRate) = IStaking(getContract(ContractType.STAKING)).getCommissionRateRange();
     uint256 _rate = Math.max(Math.min(_candidateInfo[msg.sender].commissionRate, _maxRate), _minRate);
     uint256 _miningAmount = (_rate * _reward) / _MAX_PERCENTAGE;
-    _miningReward[msg.sender] += _miningAmount;
+    _miningReward[_correspondingPool] += _miningAmount;
 
     uint256 _delegatingAmount = _reward - _miningAmount;
-    _delegatingReward[msg.sender] += _delegatingAmount;
+    _delegatingReward[_correspondingPool] += _delegatingAmount;
   }
 
   /**

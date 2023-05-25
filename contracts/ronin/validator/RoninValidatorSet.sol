@@ -24,12 +24,14 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
    * @dev Initializes the contract storage.
    */
   function initialize(
-    address __slashIndicatorContract,
-    address __stakingContract,
-    address __stakingVestingContract,
-    address __maintenanceContract,
-    address __roninTrustedOrganizationContract,
-    address __bridgeTrackingContract,
+    // __dependentContracts[0]: slashIndicatorContract,
+    // __dependentContracts[1]: stakingContract,
+    // __dependentContracts[2]: stakingVestingContract,
+    // __dependentContracts[3]: maintenanceContract,
+    // __dependentContracts[4]: roninTrustedOrganizationContract,
+    // __dependentContracts[5]: bridgeTrackingContract,
+    // __dependentContracts[6]: profileContract,
+    address[7] calldata __dependentContracts,
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
@@ -69,6 +71,10 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     delete ______deprecatedStakingVesting;
     delete ______deprecatedBridgeTracking;
     delete ______deprecatedTrustedOrg;
+  }
+
+  function initializeV2(address __profileContract) external reinitializer(2) {
+    _setProfileContract(__profileContract);
   }
 
   /**
