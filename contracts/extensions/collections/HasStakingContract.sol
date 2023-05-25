@@ -9,8 +9,12 @@ contract HasStakingContract is IHasStakingContract, HasProxyAdmin {
   IStaking internal _stakingContract;
 
   modifier onlyStakingContract() {
-    if (stakingContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.STAKING);
+    _requireStakingContract();
     _;
+  }
+
+  function _requireStakingContract() private view {
+    if (stakingContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.STAKING);
   }
 
   /**

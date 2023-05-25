@@ -44,10 +44,14 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   mapping(VoteKind => mapping(uint256 => ReceiptTrackingInfo)) internal _receiptTrackingInfo;
 
   modifier skipOnUnstarted() {
+    _skipOnUnstarted();
+    _;
+  }
+
+  function _skipOnUnstarted() private view {
     if (block.number < startedAtBlock) {
       return;
     }
-    _;
   }
 
   constructor() {
