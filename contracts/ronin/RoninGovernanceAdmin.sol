@@ -377,6 +377,8 @@ contract RoninGovernanceAdmin is
     }
 
     _v.castVote(_voter, _hash);
+    emit EmergencyExitPollVoted(_hash, _voter);
+
     address[] memory _voters = _v.filterByHash(_hash);
     VoteStatus _stt = _v.syncVoteStatus(_getMinimumVoteWeight(), _sumGovernorWeights(_voters), 0, 0, _hash);
     if (_stt == VoteStatus.Approved) {
