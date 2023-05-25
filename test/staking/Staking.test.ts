@@ -1,10 +1,10 @@
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { BigNumber, BigNumberish, ContractTransaction } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
 import { ethers, network } from 'hardhat';
 
 import {
+  Profile__factory,
   Staking,
   Staking__factory,
   TransparentUpgradeableProxyV2,
@@ -53,7 +53,7 @@ describe('Staking test', () => {
 
     const stakingVestingContract = await new StakingVesting__factory(deployer).deploy();
     const nonce = await deployer.getTransactionCount();
-    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 2 });
+    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
     validatorContract = await new MockValidatorSet__factory(deployer).deploy(
       stakingContractAddr,
       ethers.constants.AddressZero,
@@ -63,6 +63,14 @@ describe('Staking test', () => {
       minEffectiveDaysOnwards
     );
     await validatorContract.deployed();
+
+    const profileLogicContract = await new Profile__factory(deployer).deploy();
+    const profileContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
+      profileLogicContract.address,
+      proxyAdmin.address,
+      profileLogicContract.interface.encodeFunctionData('initialize', [stakingContractAddr])
+    );
+
     const logicContract = await new Staking__factory(deployer).deploy();
     await logicContract.deployed();
     proxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
@@ -70,6 +78,7 @@ describe('Staking test', () => {
       proxyAdmin.address,
       logicContract.interface.encodeFunctionData('initialize', [
         validatorContract.address,
+        profileContract.address,
         minValidatorStakingAmount,
         maxCommissionRate,
         cooldownSecsToUndelegate,
