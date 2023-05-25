@@ -32,7 +32,7 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
     address _consensusAddr,
     bytes calldata _header1,
     bytes calldata _header2
-  ) external override onlyAdmin restrictDelegate(false) {
+  ) external override restrictDelegate(false) onlyAdmin {
     bytes32 _header1Checksum = keccak256(_header1);
     bytes32 _header2Checksum = keccak256(_header2);
 
