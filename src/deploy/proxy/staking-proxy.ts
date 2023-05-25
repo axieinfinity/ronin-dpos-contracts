@@ -17,6 +17,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const data = new Staking__factory().interface.encodeFunctionData('initialize', [
     generalRoninConf[network.name]!.validatorContract?.address,
+    generalRoninConf[network.name]!.profileContract?.address,
     stakingConfig[network.name]!.minValidatorStakingAmount,
     stakingConfig[network.name]!.maxCommissionRate,
     stakingConfig[network.name]!.cooldownSecsToUndelegate,
@@ -34,6 +35,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['StakingProxy'];
-deploy.dependencies = ['StakingLogic', 'CalculateAddresses', 'SlashIndicatorProxy'];
+deploy.dependencies = ['StakingLogic', 'CalculateAddresses', 'SlashIndicatorProxy', 'ProfileProxy'];
 
 export default deploy;
