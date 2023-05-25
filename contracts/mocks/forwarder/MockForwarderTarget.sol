@@ -4,6 +4,8 @@ pragma solidity ^0.8.9;
 
 import "../../extensions/RONTransferHelper.sol";
 
+import "../../libraries/Errors.sol";
+
 contract MockForwarderTarget is RONTransferHelper {
   address public owner;
   uint256 public data;
@@ -13,7 +15,9 @@ contract MockForwarderTarget is RONTransferHelper {
   error ErrIntentionally();
 
   modifier onlyOwner() {
-    require(msg.sender == owner, "MockForwarderContract: only owner can call method");
+    if (msg.sender != owner) {
+      revert ErrUnauthorized(msg.sig);
+    }
     _;
   }
 

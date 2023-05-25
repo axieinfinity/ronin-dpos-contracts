@@ -3,6 +3,17 @@
 pragma solidity ^0.8.9;
 
 interface IMaintenance {
+  error ErrAlreadyScheduled();
+  error ErrUnexistedSchedule();
+  error ErrEndBlockOutOfRange();
+  error ErrStartBlockOutOfRange();
+  error ErrAlreadyOnMaintenance();
+  error ErrCooldownTimeNotYetEnded();
+  error ErrTotalOfSchedulesExceeded();
+  error ErrInvalidMaintenanceDuration();
+  error ErrInvalidMaintenanceDurationConfig();
+  error ErrInvalidOffsetToStartScheduleConfigs();
+
   struct Schedule {
     uint256 from;
     uint256 to;

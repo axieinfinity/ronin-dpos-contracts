@@ -5,6 +5,7 @@ pragma solidity ^0.8.9;
 import "./IBaseSlash.sol";
 
 interface ISlashUnavailability is IBaseSlash {
+  error ErrCannotSlashAValidatorTwiceOrSlashMoreThanOneValidatorInOneBlock();
   /**
    * @dev Emitted when the configs to slash bridge operator is updated. See the method `getUnavailabilitySlashingConfigs`
    * for param details.

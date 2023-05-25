@@ -5,11 +5,13 @@ import "./HasProxyAdmin.sol";
 import "../../interfaces/collections/IHasRoninGovernanceAdminContract.sol";
 import "../../interfaces/IRoninGovernanceAdmin.sol";
 
+import "../../libraries/Errors.sol";
+
 contract HasRoninGovernanceAdminContract is IHasRoninGovernanceAdminContract, HasProxyAdmin {
   IRoninGovernanceAdmin internal _roninGovernanceAdminContract;
 
   modifier onlyRoninGovernanceAdminContract() {
-    if (roninGovernanceAdminContract() != msg.sender) revert ErrCallerMustBeGovernanceAdminContract();
+    if (roninGovernanceAdminContract() != msg.sender) revert ErrUnauthorized(msg.sig);
     _;
   }
 
@@ -24,7 +26,7 @@ contract HasRoninGovernanceAdminContract is IHasRoninGovernanceAdminContract, Ha
    * @inheritdoc IHasRoninGovernanceAdminContract
    */
   function setRoninGovernanceAdminContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setRoninGovernanceAdminContract(_addr);
   }
 

@@ -5,6 +5,7 @@ pragma solidity ^0.8.9;
 import "./IBaseSlash.sol";
 
 interface ISlashDoubleSign is IBaseSlash {
+  error ErrEvidenceAlreadySubmitted();
   /**
    * @dev Emitted when the configs to slash double sign is updated. See the method `getDoubleSignSlashingConfigs`
    * for param details.

@@ -5,6 +5,9 @@ pragma solidity ^0.8.9;
 import "./IQuorum.sol";
 
 interface IRoninTrustedOrganization is IQuorum {
+  error ErrDuplicated();
+  error ErrQueryForDupplicated();
+
   struct TrustedOrganization {
     // Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
     address consensusAddr;

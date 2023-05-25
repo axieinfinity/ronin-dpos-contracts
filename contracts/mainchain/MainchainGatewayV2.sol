@@ -181,8 +181,12 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
    */
   function unlockWithdrawal(Transfer.Receipt calldata _receipt) external onlyRole(WITHDRAWAL_UNLOCKER_ROLE) {
     bytes32 _receiptHash = _receipt.hash();
-    require(withdrawalHash[_receipt.id] == _receipt.hash(), "MainchainGatewayV2: invalid receipt");
-    require(withdrawalLocked[_receipt.id], "MainchainGatewayV2: query for approved withdrawal");
+    if (withdrawalHash[_receipt.id] != _receipt.hash()) {
+      revert ErrInvalidReceipt();
+    }
+    if (!withdrawalLocked[_receipt.id]) {
+      revert ErrQueryForApprovedWithdrawal();
+    }
     delete withdrawalLocked[_receipt.id];
     emit WithdrawalUnlocked(_receiptHash, _receipt);
 
@@ -210,7 +214,7 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     address[] calldata _roninTokens,
     Token.Standard[] calldata _standards
   ) external virtual onlyAdmin {
-    require(_mainchainTokens.length > 0, "MainchainGatewayV2: query for empty array");
+    if (_mainchainTokens.length == 0) revert ErrEmptyArrayLength();
     _mapTokens(_mainchainTokens, _roninTokens, _standards);
   }
 
@@ -227,7 +231,9 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     // _thresholds[3]: dailyWithdrawalLimit
     uint256[][4] calldata _thresholds
   ) external virtual onlyAdmin {
-    require(_mainchainTokens.length > 0, "MainchainGatewayV2: query for empty array");
+    if (_mainchainTokens.length == 0) {
+      revert ErrEmptyArrayLength();
+    }
     _mapTokens(_mainchainTokens, _roninTokens, _standards);
     _setHighTierThresholds(_mainchainTokens, _thresholds[0]);
     _setLockedThresholds(_mainchainTokens, _thresholds[1]);
@@ -240,7 +246,7 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
    */
   function getRoninToken(address _mainchainToken) public view returns (MappedToken memory _token) {
     _token = _roninToken[_mainchainToken];
-    require(_token.tokenAddr != address(0), "MainchainGatewayV2: unsupported token");
+    if (_token.tokenAddr == address(0)) revert ErrUnsupportedToken();
   }
 
   /**
@@ -257,10 +263,9 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     address[] calldata _roninTokens,
     Token.Standard[] calldata _standards
   ) internal virtual {
-    require(
-      _mainchainTokens.length == _roninTokens.length && _mainchainTokens.length == _standards.length,
-      "MainchainGatewayV2: invalid array length"
-    );
+    if (!(_mainchainTokens.length == _roninTokens.length && _mainchainTokens.length == _standards.length)) {
+      revert ErrLengthMismatch(msg.sig);
+    }
 
     for (uint256 _i; _i < _mainchainTokens.length; ) {
       _roninToken[_mainchainTokens[_i]].tokenAddr = _roninTokens[_i];
@@ -298,18 +303,24 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     address _tokenAddr = _receipt.mainchain.tokenAddr;
 
     _receipt.info.validate();
-    require(_receipt.kind == Transfer.Kind.Withdrawal, "MainchainGatewayV2: invalid receipt kind");
-    require(_receipt.mainchain.chainId == block.chainid, "MainchainGatewayV2: invalid chain id");
+    if (_receipt.kind != Transfer.Kind.Withdrawal) {
+      revert ErrInvalidReceiptKind();
+    }
+    if (_receipt.mainchain.chainId != block.chainid) {
+      revert ErrInvalidChainId(msg.sig);
+    }
+
     MappedToken memory _token = getRoninToken(_receipt.mainchain.tokenAddr);
-    require(
-      _token.erc == _receipt.info.erc && _token.tokenAddr == _receipt.ronin.tokenAddr,
-      "MainchainGatewayV2: invalid receipt"
-    );
-    require(withdrawalHash[_id] == bytes32(0), "MainchainGatewayV2: query for processed withdrawal");
-    require(
-      _receipt.info.erc == Token.Standard.ERC721 || !_reachedWithdrawalLimit(_tokenAddr, _quantity),
-      "MainchainGatewayV2: reached daily withdrawal limit"
-    );
+
+    if (!(_token.erc == _receipt.info.erc && _token.tokenAddr == _receipt.ronin.tokenAddr)) {
+      revert ErrInvalidReceipt();
+    }
+
+    if (withdrawalHash[_id] != 0) revert ErrQueryForProcessedWithdrawal();
+
+    if (!(_receipt.info.erc == Token.Standard.ERC721 || !_reachedWithdrawalLimit(_tokenAddr, _quantity))) {
+      revert ErrReachedDailyWithdrawalLimit();
+    }
 
     bytes32 _receiptHash = _receipt.hash();
     bytes32 _receiptDigest = Transfer.receiptDigest(_domainSeparator, _receiptHash);
@@ -326,7 +337,9 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
       for (uint256 _i; _i < _signatures.length; ) {
         _sig = _signatures[_i];
         _signer = ecrecover(_receiptDigest, _sig.v, _sig.r, _sig.s);
-        require(_lastSigner < _signer, "MainchainGatewayV2: invalid order");
+        if (_lastSigner >= _signer) {
+          revert ErrInvalidOrder(msg.sig);
+        }
         _lastSigner = _signer;
 
         _weight += _getWeight(_signer);
@@ -339,7 +352,9 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
           ++_i;
         }
       }
-      require(_passed, "MainchainGatewayV2: query for insufficient vote weight");
+      if (!_passed) {
+        revert ErrQueryForInsufficientVoteWeight();
+      }
       withdrawalHash[_id] = _receiptHash;
     }
 
@@ -371,14 +386,22 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
 
     _request.info.validate();
     if (_request.tokenAddr == address(0)) {
-      require(_request.info.quantity == msg.value, "MainchainGatewayV2: invalid request");
+      if (_request.info.quantity != msg.value) {
+        revert ErrInvalidRequest();
+      }
       _token = getRoninToken(_weth);
-      require(_token.erc == _request.info.erc, "MainchainGatewayV2: invalid token standard");
+      if (_token.erc != _request.info.erc) {
+        revert ErrInvalidTokenStandard();
+      }
       _request.tokenAddr = _weth;
     } else {
-      require(msg.value == 0, "MainchainGatewayV2: invalid request");
+      if (msg.value != 0) {
+        revert ErrInvalidRequest();
+      }
       _token = getRoninToken(_request.tokenAddr);
-      require(_token.erc == _request.info.erc, "MainchainGatewayV2: invalid token standard");
+      if (_token.erc != _request.info.erc) {
+        revert ErrInvalidTokenStandard();
+      }
       _request.info.transferFrom(_requester, address(this), _request.tokenAddr);
       // Withdraw if token is WETH
       if (_weth == _request.tokenAddr) {

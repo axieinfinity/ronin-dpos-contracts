@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "./CoreGovernance.sol";
 
 abstract contract GovernanceProposal is CoreGovernance {
+  error ErrInvalidProposal();
+
   using Proposal for Proposal.ProposalDetail;
   using GlobalProposal for GlobalProposal.GlobalProposalDetail;
 
@@ -20,7 +22,9 @@ abstract contract GovernanceProposal is CoreGovernance {
     bytes32 _forDigest,
     bytes32 _againstDigest
   ) internal {
-    require(_supports.length > 0 && _supports.length == _signatures.length, "GovernanceProposal: invalid array length");
+    if (!(_supports.length != 0 && _supports.length == _signatures.length)) {
+      revert ErrLengthMismatch(msg.sig);
+    }
     uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
     uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;
 
@@ -36,10 +40,10 @@ abstract contract GovernanceProposal is CoreGovernance {
       } else if (_supports[_i] == Ballot.VoteType.Against) {
         _signer = ECDSA.recover(_againstDigest, _sig.v, _sig.r, _sig.s);
       } else {
-        revert("GovernanceProposal: query for unsupported vote type");
+        revert ErrUnsupportedVoteType(msg.sig);
       }
 
-      require(_lastSigner < _signer, "GovernanceProposal: invalid order");
+      if (_lastSigner >= _signer) revert ErrInvalidOrder(msg.sig);
       _lastSigner = _signer;
 
       uint256 _weight = _getWeight(_signer);
@@ -57,7 +61,7 @@ abstract contract GovernanceProposal is CoreGovernance {
       }
     }
 
-    require(_hasValidVotes, "GovernanceProposal: invalid signatures");
+    if (!_hasValidVotes) revert ErrInvalidSignature(msg.sig);
   }
 
   /**
@@ -91,10 +95,9 @@ abstract contract GovernanceProposal is CoreGovernance {
     bytes32 _domainSeparator
   ) internal {
     bytes32 _proposalHash = _proposal.hash();
-    require(
-      vote[_proposal.chainId][_proposal.nonce].hash == _proposalHash,
-      "GovernanceAdmin: cast vote for invalid proposal"
-    );
+
+    if (vote[_proposal.chainId][_proposal.nonce].hash != _proposalHash) revert ErrInvalidProposal();
+
     _castVotesBySignatures(
       _proposal,
       _supports,
@@ -143,7 +146,9 @@ abstract contract GovernanceProposal is CoreGovernance {
       _gatewayContract
     );
     bytes32 _globalProposalHash = _globalProposal.hash();
-    require(vote[0][_proposal.nonce].hash == _proposal.hash(), "GovernanceAdmin: cast vote for invalid proposal");
+
+    if (vote[0][_proposal.nonce].hash != _proposal.hash()) revert ErrInvalidProposal();
+
     _castVotesBySignatures(
       _proposal,
       _supports,

@@ -3,6 +3,12 @@
 pragma solidity ^0.8.9;
 
 interface ICreditScore {
+  error ErrInvalidCreditScoreConfig();
+  error ErrInvalidCutOffPercentageConfig();
+  error ErrInsufficientCreditScoreToBailOut();
+  error ErrValidatorHasBailedOutPreviously();
+  error ErrCallerMustBeJailedInTheCurrentPeriod();
+
   /// @dev Emitted when the configs to credit score is updated. See the method `setCreditScoreConfigs` for param details.
   event CreditScoreConfigsUpdated(
     uint256 gainCreditScore,

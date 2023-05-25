@@ -7,6 +7,11 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "../interfaces/IWETH.sol";
 
 library Token {
+  error ErrInvalidInfo();
+  error ErrERC20MintingFailed();
+  error ErrERC721MintingFailed();
+  error ErrUnsupportedStandard();
+
   enum Standard {
     ERC20,
     ERC721
@@ -33,11 +38,10 @@ library Token {
    * @dev Validates the token info.
    */
   function validate(Info memory _info) internal pure {
-    require(
-      (_info.erc == Standard.ERC20 && _info.quantity > 0 && _info.id == 0) ||
-        (_info.erc == Standard.ERC721 && _info.quantity == 0),
-      "Token: invalid info"
-    );
+    if (
+      !(_info.erc == Standard.ERC20 && _info.quantity > 0 && _info.id == 0) ||
+      (_info.erc == Standard.ERC721 && _info.quantity == 0)
+    ) revert ErrInvalidInfo();
   }
 
   /**
@@ -165,7 +169,9 @@ library Token {
       if (_balance < _info.quantity) {
         // bytes4(keccak256("mint(address,uint256)"))
         (_success, ) = _token.call(abi.encodeWithSelector(0x40c10f19, address(this), _info.quantity - _balance));
-        require(_success, "Token: ERC20 minting failed");
+        if (!_success) {
+          revert ErrERC20MintingFailed();
+        }
       }
 
       transfer(_info, _to, _token);
@@ -173,10 +179,12 @@ library Token {
       if (!tryTransferERC721(_token, _to, _info.id)) {
         // bytes4(keccak256("mint(address,uint256)"))
         (_success, ) = _token.call(abi.encodeWithSelector(0x40c10f19, _to, _info.id));
-        require(_success, "Token: ERC721 minting failed");
+        if (!_success) {
+          revert ErrERC721MintingFailed();
+        }
       }
     } else {
-      revert("Token: unsupported token standard");
+      revert ErrUnsupportedStandard();
     }
   }
 

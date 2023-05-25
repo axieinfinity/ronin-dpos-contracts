@@ -9,7 +9,7 @@ contract HasBridgeContract is IHasBridgeContract, HasProxyAdmin {
   IBridge internal _bridgeContract;
 
   modifier onlyBridgeContract() {
-    if (bridgeContract() != msg.sender) revert ErrCallerMustBeBridgeContract();
+    if (bridgeContract() != msg.sender) revert ErrUnauthorized(msg.sig);
     _;
   }
 
@@ -24,7 +24,7 @@ contract HasBridgeContract is IHasBridgeContract, HasProxyAdmin {
    * @inheritdoc IHasBridgeContract
    */
   function setBridgeContract(address _addr) external virtual override onlyAdmin {
-    if (_addr.code.length <= 0) revert ErrZeroCodeContract();
+    if (_addr.code.length <= 0) revert ErrZeroCodeContract(msg.sig);
     _setBridgeContract(_addr);
   }
 

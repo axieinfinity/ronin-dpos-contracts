@@ -9,7 +9,7 @@ contract HasStakingVestingContract is IHasStakingVestingContract, HasProxyAdmin 
   IStakingVesting internal _stakingVestingContract;
 
   modifier onlyStakingVestingContract() {
-    if (stakingVestingContract() != msg.sender) revert ErrCallerMustBeStakingVestingContract();
+    if (stakingVestingContract() != msg.sender) revert ErrUnauthorized(msg.sig);
     _;
   }
 
@@ -24,7 +24,7 @@ contract HasStakingVestingContract is IHasStakingVestingContract, HasProxyAdmin 
    * @inheritdoc IHasStakingVestingContract
    */
   function setStakingVestingContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setStakingVestingContract(_addr);
   }
 

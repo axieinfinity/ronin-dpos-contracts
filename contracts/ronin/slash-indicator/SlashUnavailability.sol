@@ -37,10 +37,9 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
   uint256[50] private ______gap;
 
   modifier oncePerBlock() {
-    require(
-      block.number > lastUnavailabilitySlashedBlock,
-      "SlashIndicator: cannot slash a validator twice or slash more than one validator in one block"
-    );
+    if (block.number <= lastUnavailabilitySlashedBlock) {
+      revert ErrCannotSlashAValidatorTwiceOrSlashMoreThanOneValidatorInOneBlock();
+    }
     lastUnavailabilitySlashedBlock = block.number;
     _;
   }
@@ -49,7 +48,9 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
    * @inheritdoc ISlashUnavailability
    */
   function slashUnavailability(address _validatorAddr) external override oncePerBlock {
-    require(msg.sender == block.coinbase, "SlashUnavailability: method caller must be coinbase");
+    if (msg.sender != block.coinbase) {
+      revert ErrUnauthorized(msg.sig);
+    }
     if (!_shouldSlash(_validatorAddr)) {
       // Should return instead of throwing error since this is a part of system transaction.
       return;
@@ -164,7 +165,9 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
     uint256 _slashAmountForTier2Threshold,
     uint256 _jailDurationForTier2Threshold
   ) internal {
-    require(_unavailabilityTier1Threshold <= _unavailabilityTier2Threshold, "SlashUnavailability: invalid threshold");
+    if (_unavailabilityTier1Threshold > _unavailabilityTier2Threshold) {
+      revert ErrInvalidThreshold(msg.sig);
+    }
     _unavailabilityTier1Threshold = _tier1Threshold;
     _unavailabilityTier2Threshold = _tier2Threshold;
     _slashAmountForUnavailabilityTier2Threshold = _slashAmountForTier2Threshold;

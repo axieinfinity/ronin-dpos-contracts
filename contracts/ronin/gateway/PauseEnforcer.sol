@@ -5,6 +5,10 @@ import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "../../interfaces/IPauseTarget.sol";
 
 contract PauseEnforcer is AccessControlEnumerable {
+  error ErrTargetIsOnPaused();
+  error ErrTargetIsNotOnPaused();
+  error ErrNotOnEmergencyPause();
+
   bytes32 public constant SENTRY_ROLE = keccak256("SENTRY_ROLE");
 
   /// @dev The contract that can be paused or unpaused by the SENTRY_ROLE.
@@ -20,17 +24,23 @@ contract PauseEnforcer is AccessControlEnumerable {
   event TargetChanged(IPauseTarget target);
 
   modifier onEmergency() {
-    require(emergency, "PauseEnforcer: not on emergency pause");
+    if (!emergency) {
+      revert ErrNotOnEmergencyPause();
+    }
     _;
   }
 
   modifier targetPaused() {
-    require(target.paused(), "PauseEnforcer: target is on pause");
+    if (!target.paused()) {
+      revert ErrTargetIsOnPaused();
+    }
     _;
   }
 
   modifier targetNotPaused() {
-    require(!target.paused(), "PauseEnforcer: target is not on pause");
+    if (target.paused()) {
+      revert ErrTargetIsNotOnPaused();
+    }
     _;
   }
 

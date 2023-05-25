@@ -3,17 +3,17 @@
 pragma solidity ^0.8.9;
 
 abstract contract RONTransferHelper {
-  /// @dev Error of recipient not accepting RON when transfer RON.
-  error ErrRecipientRevert();
   /// @dev Error of sender has insufficient balance.
-  error ErrInsufficientBalance();
+  error ErrInsufficientBalance(bytes4 msgSig);
+  /// @dev Error of recipient not accepting RON when transfer RON.
+  error ErrRecipientRevert(bytes4 msgSig);
 
   /**
    * @dev See `_sendRON`.
    * Reverts if the recipient does not receive RON.
    */
   function _transferRON(address payable _recipient, uint256 _amount) internal {
-    if (!_sendRON(_recipient, _amount)) revert ErrRecipientRevert();
+    if (!_sendRON(_recipient, _amount)) revert ErrRecipientRevert(msg.sig);
   }
 
   /**
@@ -25,7 +25,7 @@ abstract contract RONTransferHelper {
    *
    */
   function _sendRON(address payable _recipient, uint256 _amount) internal returns (bool _success) {
-    if (address(this).balance < _amount) revert ErrInsufficientBalance();
+    if (address(this).balance < _amount) revert ErrInsufficientBalance(msg.sig);
     return _unsafeSendRON(_recipient, _amount);
   }
 

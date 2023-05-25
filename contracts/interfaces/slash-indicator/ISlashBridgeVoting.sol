@@ -5,6 +5,7 @@ pragma solidity ^0.8.9;
 import "./IBaseSlash.sol";
 
 interface ISlashBridgeVoting is IBaseSlash {
+  error ErrInvalidSlash();
   /**
    * @dev Emitted when the configs to slash bridge voting is updated. See the method `getBridgeVotingSlashingConfigs` for param
    * details.

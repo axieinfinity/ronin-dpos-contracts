@@ -5,6 +5,8 @@ pragma solidity ^0.8.9;
 import "./IBaseSlash.sol";
 
 interface ISlashBridgeOperator is IBaseSlash {
+  error ErrInvalidRatios();
+
   /**
    * @dev Emitted when the configs to slash bridge operator is updated. See the method
    * `getBridgeOperatorSlashingConfigs` for param details.

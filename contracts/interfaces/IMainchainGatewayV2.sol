@@ -8,6 +8,11 @@ import "./consumers/MappedTokenConsumer.sol";
 import "../libraries/Transfer.sol";
 
 interface IMainchainGatewayV2 is SignatureConsumer, MappedTokenConsumer, IBridge {
+  error ErrQueryForApprovedWithdrawal();
+  error ErrReachedDailyWithdrawalLimit();
+  error ErrQueryForProcessedWithdrawal();
+  error ErrQueryForInsufficientVoteWeight();
+
   /// @dev Emitted when the deposit is requested
   event DepositRequested(bytes32 receiptHash, Transfer.Receipt receipt);
   /// @dev Emitted when the assets are withdrawn

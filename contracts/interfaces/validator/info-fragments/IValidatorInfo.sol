@@ -10,9 +10,6 @@ interface IValidatorInfo {
   /// @dev Emitted when the number of reserved slots for prioritized validators is updated.
   event MaxPrioritizedValidatorNumberUpdated(uint256);
 
-  /// @dev Error of number of prioritized greater than number of max validators.
-  error ErrInvalidMaxPrioritizedValidatorNumber();
-
   /**
    * @dev Returns the maximum number of validators in the epoch.
    */

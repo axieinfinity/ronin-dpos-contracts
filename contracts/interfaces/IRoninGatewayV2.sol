@@ -5,6 +5,10 @@ import "../libraries/Transfer.sol";
 import "./consumers/MappedTokenConsumer.sol";
 
 interface IRoninGatewayV2 is MappedTokenConsumer {
+  error ErrWithdrawalsMigrated();
+  error ErrInvalidTrustedThreshold();
+  error ErrWithdrawnOnMainchainAlready();
+
   /// @dev Emitted when the assets are depositted
   event Deposited(bytes32 receiptHash, Transfer.Receipt receipt);
   /// @dev Emitted when the withdrawal is requested

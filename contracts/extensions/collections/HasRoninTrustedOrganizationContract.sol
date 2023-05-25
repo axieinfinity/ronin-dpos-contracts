@@ -9,7 +9,7 @@ contract HasRoninTrustedOrganizationContract is IHasRoninTrustedOrganizationCont
   IRoninTrustedOrganization internal _roninTrustedOrganizationContract;
 
   modifier onlyRoninTrustedOrganizationContract() {
-    if (roninTrustedOrganizationContract() != msg.sender) revert ErrCallerMustBeRoninTrustedOrgContract();
+    if (roninTrustedOrganizationContract() != msg.sender) revert ErrUnauthorized(msg.sig);
     _;
   }
 
@@ -24,7 +24,7 @@ contract HasRoninTrustedOrganizationContract is IHasRoninTrustedOrganizationCont
    * @inheritdoc IHasRoninTrustedOrganizationContract
    */
   function setRoninTrustedOrganizationContract(address _addr) external virtual override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setRoninTrustedOrganizationContract(_addr);
   }
 

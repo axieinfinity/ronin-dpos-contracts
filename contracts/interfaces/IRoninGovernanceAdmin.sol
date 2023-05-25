@@ -4,6 +4,11 @@ pragma solidity ^0.8.0;
 import "../libraries/BridgeOperatorsBallot.sol";
 
 interface IRoninGovernanceAdmin {
+  error ErrInvalidVoteHash();
+  error ErrQueryForEmptyVote();
+  error ErrQueryForExpiredVote();
+  error ErrQueryForNonExistentVote();
+
   /// @dev Emitted when the bridge operators are approved.
   event BridgeOperatorsApproved(uint256 _period, uint256 _epoch, address[] _operators);
   /// @dev Emitted when an emergency exit poll is created.

@@ -4,7 +4,13 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
+import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
+
 contract Forwarder is AccessControlEnumerable {
+  error ErrInvalidForwardValue();
+
+  using ErrorHandler for bool;
+
   /// @dev Only user with moderator role can invoke {functionCall} method to forward the call to the target.
   bytes32 public constant MODERATOR_ROLE = keccak256("MODERATOR_ROLE");
 
@@ -61,7 +67,7 @@ contract Forwarder is AccessControlEnumerable {
     bytes memory _data,
     uint256 _val
   ) external payable validTarget(_target) onlyRole(MODERATOR_ROLE) {
-    require(_val <= address(this).balance, "Forwarder: invalid forwarding value");
+    if (_val > address(this).balance) revert ErrInvalidForwardValue();
     _call(_target, _data, _val);
   }
 
@@ -76,13 +82,6 @@ contract Forwarder is AccessControlEnumerable {
     uint256 _value
   ) internal {
     (bool _success, bytes memory _res) = _target.call{ value: _value }(_data);
-    if (!_success) {
-      uint _size = _res.length;
-      require(_size >= 4, "Forwarder: target reverts silently");
-      assembly {
-        _res := add(_res, 0x20)
-        revert(_res, _size)
-      }
-    }
+    _success.handleRevert(bytes4(_data), _res);
   }
 }

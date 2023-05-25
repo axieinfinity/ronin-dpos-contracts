@@ -349,7 +349,7 @@ describe('Emergency Exit test', () => {
         governanceAdmin
           .connect(trustedOrgs[1].governor)
           .voteEmergencyExit(voteHash, consensusAddr, recipientAfterUnlockedFund, requestedAt, expiredAt)
-      ).revertedWith('RoninGovernanceAdmin: query for expired vote');
+      ).revertedWithCustomError(governanceAdmin, 'ErrQueryForExpiredVote');
     });
 
     it('Should be able to recycle the locked fund and transfer back the amount left', async () => {

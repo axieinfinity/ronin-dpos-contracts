@@ -8,9 +8,6 @@ interface IHasBridgeContract is IHasContract {
   /// @dev Emitted when the bridge contract is updated.
   event BridgeContractUpdated(address);
 
-  /// @dev Error of method caller must be bridge contract.
-  error ErrCallerMustBeBridgeContract();
-
   /**
    * @dev Returns the bridge contract.
    */

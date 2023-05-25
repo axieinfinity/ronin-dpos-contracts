@@ -9,7 +9,7 @@ contract HasBridgeTrackingContract is IHasBridgeTrackingContract, HasProxyAdmin 
   IBridgeTracking internal _bridgeTrackingContract;
 
   modifier onlyBridgeTrackingContract() {
-    if (bridgeTrackingContract() != msg.sender) revert ErrCallerMustBeBridgeTrackingContract();
+    if (bridgeTrackingContract() != msg.sender) revert ErrUnauthorized(msg.sig);
     _;
   }
 
@@ -24,7 +24,7 @@ contract HasBridgeTrackingContract is IHasBridgeTrackingContract, HasProxyAdmin 
    * @inheritdoc IHasBridgeTrackingContract
    */
   function setBridgeTrackingContract(address _addr) external virtual override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setBridgeTrackingContract(_addr);
   }
 

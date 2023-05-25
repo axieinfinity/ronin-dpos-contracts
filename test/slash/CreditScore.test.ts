@@ -351,14 +351,14 @@ describe('Credit score and bail out test', () => {
           slashContract
             .connect(validatorCandidates[0].consensusAddr)
             .bailOut(validatorCandidates[0].consensusAddr.address)
-        ).revertedWith('SlashIndicator: method caller must be a candidate admin');
+        ).revertedWithCustomError(slashContract, 'ErrUnauthorized');
       });
       it('Should not be able to call the bail out function with param of non-candidate consensus address ', async () => {
         await expect(
           slashContract
             .connect(validatorCandidates[0].candidateAdmin)
             .bailOut(validatorCandidates[2].consensusAddr.address)
-        ).revertedWith('SlashIndicator: consensus address must be a validator candidate');
+        ).revertedWithCustomError(slashContract, 'ErrUnauthorized');
       });
     });
 
@@ -485,7 +485,7 @@ describe('Credit score and bail out test', () => {
           slashContract
             .connect(validatorCandidates[0].candidateAdmin)
             .bailOut(validatorCandidates[0].consensusAddr.address)
-        ).revertedWith('SlashIndicator: insufficient credit score to bail out');
+        ).revertedWithCustomError(slashContract, 'ErrInsufficientCreditScoreToBailOut');
       });
 
       it('Should the slashed validator become block producer when jailed time over', async () => {
@@ -649,7 +649,7 @@ describe('Credit score and bail out test', () => {
           slashContract
             .connect(validatorCandidates[0].candidateAdmin)
             .bailOut(validatorCandidates[0].consensusAddr.address)
-        ).revertedWith('SlashIndicator: validator has bailed out previously');
+        ).revertedWithCustomError(slashContract, 'ErrValidatorHasBailedOutPreviously');
       });
     });
 
