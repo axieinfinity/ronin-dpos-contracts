@@ -28,11 +28,11 @@ library LibBitSlot {
   }
 }
 
-abstract contract StorageSlot {
+abstract contract Slot {
   function _slot() internal pure virtual returns (bytes32);
 }
 
-abstract contract DelegateGuard is StorageSlot {
+abstract contract DelegateGuard is Slot {
   error AlreadyInitialized();
   error CallTypeRestricted();
 

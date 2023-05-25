@@ -23,6 +23,10 @@ contract SlashIndicator is
     _disableInitializers();
   }
 
+  function setOriginal() external reinitializer(2) {
+    _setOriginal();
+  }
+
   /**
    * @dev Initializes the contract storage.
    */
@@ -82,6 +86,7 @@ contract SlashIndicator is
       _creditScoreConfigs[2],
       _creditScoreConfigs[3]
     );
+    _setOriginal();
   }
 
   /**

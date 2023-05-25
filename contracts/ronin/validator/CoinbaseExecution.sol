@@ -15,6 +15,7 @@ import "../../precompile-usages/PCUPickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
 import "./CandidateManager.sol";
 import "./EmergencyExit.sol";
+import "../../libraries/DelegateGuard.sol";
 
 abstract contract CoinbaseExecution is
   ICoinbaseExecution,
@@ -25,7 +26,8 @@ abstract contract CoinbaseExecution is
   HasBridgeTrackingContract,
   HasMaintenanceContract,
   HasSlashIndicatorContract,
-  EmergencyExit
+  EmergencyExit,
+  DelegateGuard
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
@@ -404,6 +406,7 @@ abstract contract CoinbaseExecution is
    */
   function _syncValidatorSet(uint256 _newPeriod)
     private
+    restrictDelegate(false)
     returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates)
   {
     _unsastifiedCandidates = _syncCandidateSet(_newPeriod);
