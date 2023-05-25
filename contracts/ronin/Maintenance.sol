@@ -85,7 +85,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   ) external override {
     IRoninValidatorSet _validator = _validatorContract;
 
-    if (!(_validator.isBlockProducer(_consensusAddr) || _validator.isCandidateAdmin(_consensusAddr, msg.sender))) {
+    if (!(_validator.isBlockProducer(_consensusAddr) && _validator.isCandidateAdmin(_consensusAddr, msg.sender))) {
       revert ErrUnauthorized(msg.sig);
     }
 

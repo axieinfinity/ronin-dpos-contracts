@@ -84,7 +84,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
    */
   function bailOut(address _consensusAddr) external override {
     if (
-      !(_validatorContract.isValidatorCandidate(_consensusAddr) ||
+      !(_validatorContract.isValidatorCandidate(_consensusAddr) &&
         _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender))
     ) {
       revert ErrUnauthorized(msg.sig);
