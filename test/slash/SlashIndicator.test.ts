@@ -26,7 +26,7 @@ import {
   TrustedOrganizationAddressSet,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types';
-import { getLastBlockTimestamp } from '../helpers/utils';
+import { getLastBlockTimestamp, getProxyAdmin, getProxyImplementation } from '../helpers/utils';
 import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
 import { getProposalHash, VoteType } from '../../src/script/proposal';
 import { expects as GovernanceAdminExpects } from '../helpers/governance-admin';
@@ -131,21 +131,8 @@ describe('Slash indicator test', () => {
         },
       });
 
-    const implement = ethers.utils.hexStripZeros(
-      await ethers.provider.getStorageAt(
-        slashContractAddress,
-        /// @dev value is equal to keccak256("eip1967.proxy.implementation") - 1
-        '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
-      )
-    );
-
-    const admin = ethers.utils.hexStripZeros(
-      await ethers.provider.getStorageAt(
-        slashContractAddress,
-        /// @dev value is equal to keccak256("eip1967.proxy.admin") - 1
-        '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103'
-      )
-    );
+    const admin = await getProxyAdmin(slashContractAddress);
+    const implement = await getProxyImplementation(slashContractAddress);
 
     proxyDelegate = await new MockProxyDelegate__factory(deployer).deploy(slashContractAddress, admin, implement);
     await proxyDelegate.deployed();

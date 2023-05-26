@@ -1,3 +1,4 @@
+import { strict } from 'assert';
 import { expect } from 'chai';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { Interface, LogDescription } from 'ethers/lib/utils';
@@ -56,3 +57,21 @@ export const accessControlRevertStr = (addr: Address, role: string): string =>
 
 export const compareBigNumbers = (firstBigNumbers: BigNumber[], secondBigNumbers: BigNumber[]) =>
   expect(firstBigNumbers.map((_) => _.toHexString())).deep.equal(secondBigNumbers.map((_) => _.toHexString()));
+
+export const getProxyImplementation = async (proxy: Address): Promise<Address> =>
+  ethers.utils.hexStripZeros(
+    await ethers.provider.getStorageAt(
+      proxy,
+      /// @dev value is equal to keccak256("eip1967.proxy.implementation") - 1
+      '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+    )
+  );
+
+export const getProxyAdmin = async (proxy: Address): Promise<Address> =>
+  ethers.utils.hexStripZeros(
+    await ethers.provider.getStorageAt(
+      proxy,
+      /// @dev value is equal to keccak256("eip1967.proxy.admin") - 1
+      '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+    )
+  );
