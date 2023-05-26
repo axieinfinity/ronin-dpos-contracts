@@ -74,12 +74,11 @@ task('generate-storage-layout')
     try {
       if (fs.existsSync(source)) {
         const fileContent = await fs.readFile(source, 'utf-8');
-        const data = [];
         const tableContent = preprocessFile(fileContent);
         const listItemOfTable = preprocessTable(tableContent);
+        const data = [];
         for (let i = 0; i < listItemOfTable.length; i += 9) {
-          // idx = 5 => idx
-          // idx = 6 => artifacts
+          // remove two collums: idx (index = 5) and artifacts (index =6)
           const row = listItemOfTable.slice(i, i + 8).filter((_, idx) => idx != 5 && idx != 6);
           data.push(row);
         }
