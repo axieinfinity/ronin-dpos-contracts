@@ -20,10 +20,6 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     _fallback();
   }
 
-  function setOriginal() external reinitializer(2) {
-    _setOriginal();
-  }
-
   /**
    * @dev Initializes the contract storage.
    */
@@ -56,7 +52,6 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     _setEmergencyExitLockedAmount(__emergencyExitConfigs[0]);
     _setEmergencyExpiryDuration(__emergencyExitConfigs[1]);
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
-    _setOriginal();
   }
 
   /**

@@ -4,8 +4,6 @@ import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import {
-  MockProxyDelegate,
-  MockProxyDelegate__factory,
   MockRoninValidatorSetOverridePrecompile__factory,
   MockSlashIndicatorExtended,
   MockSlashIndicatorExtended__factory,
@@ -32,7 +30,6 @@ import { getProposalHash, VoteType } from '../../src/script/proposal';
 import { expects as GovernanceAdminExpects } from '../helpers/governance-admin';
 import { Encoder } from '../helpers/encoder';
 
-let proxyDelegate: MockProxyDelegate;
 let slashContract: MockSlashIndicatorExtended;
 let mockSlashLogic: MockSlashIndicatorExtended;
 let stakingContract: Staking;
@@ -130,25 +127,6 @@ describe('Slash indicator test', () => {
           proposalExpiryDuration,
         },
       });
-
-    const implement = ethers.utils.hexStripZeros(
-      await ethers.provider.getStorageAt(
-        slashContractAddress,
-        /// @dev value is equal to keccak256("eip1967.proxy.implementation") - 1
-        '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
-      )
-    );
-
-    const admin = ethers.utils.hexStripZeros(
-      await ethers.provider.getStorageAt(
-        slashContractAddress,
-        /// @dev value is equal to keccak256("eip1967.proxy.admin") - 1
-        '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103'
-      )
-    );
-
-    proxyDelegate = await new MockProxyDelegate__factory(deployer).deploy(slashContractAddress, admin, implement);
-    await proxyDelegate.deployed();
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetOverridePrecompile__factory.connect(validatorContractAddress, deployer);
@@ -458,22 +436,9 @@ describe('Slash indicator test', () => {
       });
     });
 
-    describe.only('Double signing slash', async () => {
+    describe('Double signing slash', async () => {
       let header1: BytesLike;
       let header2: BytesLike;
-
-      it('Should not allow utilizing proxy delegate to proxy', async () => {
-        const slasherIdx = 0;
-        await network.provider.send('hardhat_setCoinbase', [validatorCandidates[slasherIdx].consensusAddr.address]);
-
-        header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
-        header2 = ethers.utils.toUtf8Bytes('sampleHeader2');
-
-        let tx = proxyDelegate
-          .connect(validatorCandidates[slasherIdx].consensusAddr)
-          .slashDoubleSign(validatorCandidates[slasherIdx].consensusAddr.address, header1, header2);
-        await expect(tx).revertedWithCustomError(proxyDelegate, 'ExecutionFailed');
-      });
 
       it('Should not be able to slash themselves (only admin allowed)', async () => {
         const slasherIdx = 0;

@@ -28,7 +28,7 @@ abstract contract GovernanceProposal is CoreGovernance {
     address _signer;
     Signature calldata _sig;
     bool _hasValidVotes;
-    for (uint256 _i; _i < _signatures.length; ) {
+    for (uint256 _i; _i < _signatures.length; _i++) {
       _sig = _signatures[_i];
 
       if (_supports[_i] == Ballot.VoteType.For) {
@@ -50,10 +50,6 @@ abstract contract GovernanceProposal is CoreGovernance {
         ) {
           return;
         }
-      }
-
-      unchecked {
-        ++_i;
       }
     }
 
