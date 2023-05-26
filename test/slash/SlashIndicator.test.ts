@@ -1,4 +1,4 @@
-import { BigNumber, BytesLike, Contract, ContractFactory } from 'ethers';
+import { BigNumber, BytesLike } from 'ethers';
 import { expect } from 'chai';
 import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -147,7 +147,6 @@ describe('Slash indicator test', () => {
       )
     );
 
-    console.log({ implement, admin });
     proxyDelegate = await new MockProxyDelegate__factory(deployer).deploy(slashContractAddress, admin, implement);
     await proxyDelegate.deployed();
 
