@@ -51,7 +51,13 @@ contract MockProxyDelegate {
     assembly {
       target := sload(SLOT)
     }
-    (bool success, bytes memory returnOrRevertData) = target.delegatecall(abi.encodeWithSelector(0x4bb5274a, msg.data));
+    (bool success, bytes memory returnOrRevertData) = target.delegatecall(
+      abi.encodeWithSelector(
+        /// @dev value is equal to bytes4(keccak256(functionDelegate(bytes)))
+        0x4bb5274a,
+        msg.data
+      )
+    );
     success.handleRevert(returnOrRevertData);
   }
 }
