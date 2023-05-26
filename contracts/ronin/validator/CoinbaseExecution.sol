@@ -15,6 +15,7 @@ import "../../precompile-usages/PCUPickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
 import "./CandidateManager.sol";
 import "./EmergencyExit.sol";
+import "../../libraries/DelegateGuard.sol";
 
 abstract contract CoinbaseExecution is
   ICoinbaseExecution,
@@ -25,7 +26,8 @@ abstract contract CoinbaseExecution is
   HasBridgeTrackingContract,
   HasMaintenanceContract,
   HasSlashIndicatorContract,
-  EmergencyExit
+  EmergencyExit,
+  DelegateGuard
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
@@ -92,7 +94,16 @@ abstract contract CoinbaseExecution is
   /**
    * @inheritdoc ICoinbaseExecution
    */
-  function wrapUpEpoch() external payable virtual override onlyCoinbase whenEpochEnding oncePerEpoch {
+  function wrapUpEpoch()
+    external
+    payable
+    virtual
+    override
+    onlyCoinbase
+    whenEpochEnding
+    oncePerEpoch
+    restrictDelegate(false)
+  {
     uint256 _newPeriod = _computePeriod(block.timestamp);
     bool _periodEnding = _isPeriodEnding(_newPeriod);
 

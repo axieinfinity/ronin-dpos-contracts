@@ -52,6 +52,11 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     _setEmergencyExitLockedAmount(__emergencyExitConfigs[0]);
     _setEmergencyExpiryDuration(__emergencyExitConfigs[1]);
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
+    _setOriginal();
+  }
+
+  function initializeV2() external reinitializer(2) {
+    _setOriginal();
   }
 
   /**

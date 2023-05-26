@@ -82,6 +82,11 @@ contract SlashIndicator is
       _creditScoreConfigs[2],
       _creditScoreConfigs[3]
     );
+    _setOriginal();
+  }
+
+  function initializeV2() external reinitializer(2) {
+    _setOriginal();
   }
 
   /**
