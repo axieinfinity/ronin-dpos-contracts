@@ -131,17 +131,24 @@ describe('Slash indicator test', () => {
         },
       });
 
-    const impl = await ethers.provider.getStorageAt(
-      slashContractAddress,
-      '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+    const implement = ethers.utils.hexStripZeros(
+      await ethers.provider.getStorageAt(
+        slashContractAddress,
+        /// @dev value is equal to keccak256("eip1967.proxy.implementation") - 1
+        '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+      )
     );
 
-    console.log(ethers.utils.hexStripZeros(impl));
-    const iface = ['function implement() external view returns (address)'];
-    proxyDelegate = await new MockProxyDelegate__factory(deployer).deploy(
-      slashContractAddress,
-      ethers.utils.hexStripZeros(impl)
+    const admin = ethers.utils.hexStripZeros(
+      await ethers.provider.getStorageAt(
+        slashContractAddress,
+        /// @dev value is equal to keccak256("eip1967.proxy.admin") - 1
+        '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103'
+      )
     );
+
+    console.log({ implement, admin });
+    proxyDelegate = await new MockProxyDelegate__factory(deployer).deploy(slashContractAddress, admin, implement);
     await proxyDelegate.deployed();
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -462,9 +469,6 @@ describe('Slash indicator test', () => {
 
         header1 = ethers.utils.toUtf8Bytes('sampleHeader1');
         header2 = ethers.utils.toUtf8Bytes('sampleHeader2');
-
-        console.log('Attack: ', proxyDelegate.address);
-        console.log('Ori: ', slashContract.address);
 
         let tx = proxyDelegate
           .connect(validatorCandidates[slasherIdx].consensusAddr)
