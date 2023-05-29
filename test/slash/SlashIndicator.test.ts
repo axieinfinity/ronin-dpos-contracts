@@ -80,53 +80,58 @@ describe('Slash indicator test', () => {
     trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
     validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, maxValidatorNumber * 3));
 
-    const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
-      await initTest('SlashIndicator')({
-        slashIndicatorArguments: {
-          unavailabilitySlashing: {
-            unavailabilityTier1Threshold,
-            unavailabilityTier2Threshold,
-            slashAmountForUnavailabilityTier2Threshold,
-            jailDurationForUnavailabilityTier2Threshold,
-          },
-          doubleSignSlashing: {
-            slashDoubleSignAmount,
-          },
-          bridgeOperatorSlashing: {
-            missingVotesRatioTier1,
-            missingVotesRatioTier2,
-            jailDurationForMissingVotesRatioTier2,
-            skipBridgeOperatorSlashingThreshold,
-          },
-          bridgeVotingSlashing: {
-            bridgeVotingThreshold,
-            bridgeVotingSlashAmount,
-          },
+    const {
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninGovernanceAdminAddress,
+      profileAddress,
+    } = await initTest('SlashIndicator')({
+      slashIndicatorArguments: {
+        unavailabilitySlashing: {
+          unavailabilityTier1Threshold,
+          unavailabilityTier2Threshold,
+          slashAmountForUnavailabilityTier2Threshold,
+          jailDurationForUnavailabilityTier2Threshold,
         },
-        stakingArguments: {
-          minValidatorStakingAmount,
+        doubleSignSlashing: {
+          slashDoubleSignAmount,
         },
-        roninValidatorSetArguments: {
-          maxValidatorNumber,
-          numberOfBlocksInEpoch,
-          maxValidatorCandidate,
+        bridgeOperatorSlashing: {
+          missingVotesRatioTier1,
+          missingVotesRatioTier2,
+          jailDurationForMissingVotesRatioTier2,
+          skipBridgeOperatorSlashingThreshold,
         },
-        maintenanceArguments: {
-          minOffsetToStartSchedule,
+        bridgeVotingSlashing: {
+          bridgeVotingThreshold,
+          bridgeVotingSlashAmount,
         },
-        roninTrustedOrganizationArguments: {
-          trustedOrganizations: trustedOrgs.map((v) => ({
-            consensusAddr: v.consensusAddr.address,
-            governor: v.governor.address,
-            bridgeVoter: v.bridgeVoter.address,
-            weight: 100,
-            addedBlock: 0,
-          })),
-        },
-        governanceAdminArguments: {
-          proposalExpiryDuration,
-        },
-      });
+      },
+      stakingArguments: {
+        minValidatorStakingAmount,
+      },
+      roninValidatorSetArguments: {
+        maxValidatorNumber,
+        numberOfBlocksInEpoch,
+        maxValidatorCandidate,
+      },
+      maintenanceArguments: {
+        minOffsetToStartSchedule,
+      },
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: trustedOrgs.map((v) => ({
+          consensusAddr: v.consensusAddr.address,
+          governor: v.governor.address,
+          bridgeVoter: v.bridgeVoter.address,
+          weight: 100,
+          addedBlock: 0,
+        })),
+      },
+      governanceAdminArguments: {
+        proposalExpiryDuration,
+      },
+    });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetOverridePrecompile__factory.connect(validatorContractAddress, deployer);
@@ -146,6 +151,13 @@ describe('Slash indicator test', () => {
     mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashLogic.deployed();
     await governanceAdminInterface.upgrade(slashContractAddress, mockSlashLogic.address);
+    await governanceAdminInterface.functionDelegateCalls(
+      [stakingContract.address, validatorContract.address],
+      [
+        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        validatorContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+      ]
+    );
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {

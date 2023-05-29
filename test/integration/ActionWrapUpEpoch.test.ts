@@ -54,33 +54,38 @@ describe('[Integration] Wrap up epoch', () => {
     trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
     validatorCandidates = createManyValidatorCandidateAddressSets(signers.splice(0, maxValidatorNumber * 3 * 3));
 
-    const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
-      await initTest('ActionWrapUpEpoch')({
-        slashIndicatorArguments: {
-          unavailabilitySlashing: {
-            unavailabilityTier2Threshold,
-            slashAmountForUnavailabilityTier2Threshold,
-          },
-          doubleSignSlashing: {
-            slashDoubleSignAmount,
-          },
+    const {
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninGovernanceAdminAddress,
+      profileAddress,
+    } = await initTest('ActionWrapUpEpoch')({
+      slashIndicatorArguments: {
+        unavailabilitySlashing: {
+          unavailabilityTier2Threshold,
+          slashAmountForUnavailabilityTier2Threshold,
         },
-        stakingArguments: {
-          minValidatorStakingAmount,
+        doubleSignSlashing: {
+          slashDoubleSignAmount,
         },
-        roninTrustedOrganizationArguments: {
-          trustedOrganizations: trustedOrgs.map((v) => ({
-            consensusAddr: v.consensusAddr.address,
-            governor: v.governor.address,
-            bridgeVoter: v.bridgeVoter.address,
-            weight: 100,
-            addedBlock: 0,
-          })),
-        },
-        roninValidatorSetArguments: {
-          maxValidatorNumber,
-        },
-      });
+      },
+      stakingArguments: {
+        minValidatorStakingAmount,
+      },
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: trustedOrgs.map((v) => ({
+          consensusAddr: v.consensusAddr.address,
+          governor: v.governor.address,
+          bridgeVoter: v.bridgeVoter.address,
+          weight: 100,
+          addedBlock: 0,
+        })),
+      },
+      roninValidatorSetArguments: {
+        maxValidatorNumber,
+      },
+    });
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
@@ -95,6 +100,13 @@ describe('[Integration] Wrap up epoch', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await governanceAdminInterface.functionDelegateCalls(
+      [stakingContract.address, validatorContract.address],
+      [
+        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        validatorContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+      ]
+    );
     await validatorContract.initEpoch();
   });
 

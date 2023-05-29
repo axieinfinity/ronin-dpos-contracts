@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber } from 'ethers';
 
@@ -22,6 +22,8 @@ import {
   BridgeTracking,
   MainchainGovernanceAdmin__factory,
   MainchainGovernanceAdmin,
+  Profile,
+  Profile__factory,
 } from '../../src/types';
 import { initTest, InitTestInput } from '../helpers/fixture';
 import { MAX_UINT255, randomAddress } from '../../src/utils';
@@ -37,6 +39,9 @@ let roninTrustedOrganizationContract: RoninTrustedOrganization;
 let roninGovernanceAdminContract: RoninGovernanceAdmin;
 let mainchainGovernanceAdminContract: MainchainGovernanceAdmin;
 let bridgeTrackingContract: BridgeTracking;
+let profileContract: Profile;
+let governanceAdmin: RoninGovernanceAdmin;
+let governanceAdminInterface: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -138,6 +143,7 @@ describe('[Integration] Configuration check', () => {
       roninGovernanceAdminAddress,
       mainchainGovernanceAdminAddress,
       bridgeTrackingAddress,
+      profileAddress,
     } = await initTest('Configuration')(config);
 
     roninGovernanceAdminContract = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
@@ -155,6 +161,21 @@ describe('[Integration] Configuration check', () => {
     stakingVestingContract = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);
     validatorContract = RoninValidatorSet__factory.connect(validatorContractAddress, deployer);
     bridgeTrackingContract = BridgeTracking__factory.connect(bridgeTrackingAddress, deployer);
+    profileContract = Profile__factory.connect(profileAddress, deployer);
+    governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
+    governanceAdminInterface = new GovernanceAdminInterface(
+      governanceAdmin,
+      network.config.chainId!,
+      undefined,
+      ...trustedOrgs.map((_) => _.governor)
+    );
+    await governanceAdminInterface.functionDelegateCalls(
+      [stakingContract.address, validatorContract.address],
+      [
+        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        validatorContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+      ]
+    );
   });
 
   it('Should the RoninGovernanceAdmin contract set configs correctly', async () => {
@@ -273,6 +294,7 @@ describe('[Integration] Configuration check', () => {
     expect(await stakingContract.minValidatorStakingAmount()).to.eq(config.stakingArguments?.minValidatorStakingAmount);
     expect(await stakingContract.cooldownSecsToUndelegate()).to.eq(config.stakingArguments?.cooldownSecsToUndelegate);
     expect(await stakingContract.waitingSecsToRevoke()).to.eq(config.stakingArguments?.waitingSecsToRevoke);
+    expect(await stakingContract.profileContract()).to.eq(profileContract.address);
   });
 
   it('Should the StakingVestingContract contract set configs correctly', async () => {
@@ -323,5 +345,9 @@ describe('[Integration] Configuration check', () => {
     expect(await bridgeTrackingContract.getContract(getRoles('BRIDGE_CONTRACT'))).to.eq(config.bridgeContract);
     expect(await bridgeTrackingContract.getContract(getRoles('VALIDATOR_CONTRACT'))).to.eq(validatorContract.address);
     expect(await bridgeTrackingContract.startedAtBlock()).to.eq(config.startedAtBlock);
+  });
+
+  it('Should the Profile contract set configs correctly', async () => {
+    expect(await profileContract.stakingContract()).to.eq(stakingContract.address);
   });
 });

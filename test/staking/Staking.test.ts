@@ -78,7 +78,6 @@ describe('Staking test', () => {
       proxyAdmin.address,
       logicContract.interface.encodeFunctionData('initialize', [
         validatorContract.address,
-        profileContract.address,
         minValidatorStakingAmount,
         maxCommissionRate,
         cooldownSecsToUndelegate,
@@ -86,6 +85,11 @@ describe('Staking test', () => {
       ])
     );
     await proxyContract.deployed();
+
+    await proxyContract
+      .connect(proxyAdmin)
+      .functionDelegateCall(logicContract.interface.encodeFunctionData('initializeV2', [profileContract.address]));
+
     stakingContract = Staking__factory.connect(proxyContract.address, deployer);
     expect(stakingContractAddr.toLowerCase()).eq(stakingContract.address.toLowerCase());
   });

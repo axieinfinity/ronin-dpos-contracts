@@ -58,38 +58,43 @@ describe('[Integration] Slash validators', () => {
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-    const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
-      await initTest('ActionSlashValidators')({
-        slashIndicatorArguments: {
-          unavailabilitySlashing: {
-            unavailabilityTier1Threshold,
-            unavailabilityTier2Threshold,
-            slashAmountForUnavailabilityTier2Threshold,
-            jailDurationForUnavailabilityTier2Threshold,
+    const {
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninGovernanceAdminAddress,
+      profileAddress,
+    } = await initTest('ActionSlashValidators')({
+      slashIndicatorArguments: {
+        unavailabilitySlashing: {
+          unavailabilityTier1Threshold,
+          unavailabilityTier2Threshold,
+          slashAmountForUnavailabilityTier2Threshold,
+          jailDurationForUnavailabilityTier2Threshold,
+        },
+        doubleSignSlashing: {
+          slashDoubleSignAmount,
+        },
+      },
+      roninValidatorSetArguments: {
+        maxValidatorNumber,
+      },
+      stakingArguments: {
+        minValidatorStakingAmount,
+        waitingSecsToRevoke,
+      },
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: [
+          {
+            consensusAddr: trustedOrgs[0].consensusAddr.address,
+            governor: trustedOrgs[0].governor.address,
+            bridgeVoter: trustedOrgs[0].bridgeVoter.address,
+            weight: 100,
+            addedBlock: 0,
           },
-          doubleSignSlashing: {
-            slashDoubleSignAmount,
-          },
-        },
-        roninValidatorSetArguments: {
-          maxValidatorNumber,
-        },
-        stakingArguments: {
-          minValidatorStakingAmount,
-          waitingSecsToRevoke,
-        },
-        roninTrustedOrganizationArguments: {
-          trustedOrganizations: [
-            {
-              consensusAddr: trustedOrgs[0].consensusAddr.address,
-              governor: trustedOrgs[0].governor.address,
-              bridgeVoter: trustedOrgs[0].bridgeVoter.address,
-              weight: 100,
-              addedBlock: 0,
-            },
-          ],
-        },
-      });
+        ],
+      },
+    });
 
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -105,6 +110,13 @@ describe('[Integration] Slash validators', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await governanceAdminInterface.functionDelegateCalls(
+      [stakingContract.address, validatorContract.address],
+      [
+        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        validatorContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+      ]
+    );
     await validatorContract.initEpoch();
 
     await EpochController.setTimestampToPeriodEnding();

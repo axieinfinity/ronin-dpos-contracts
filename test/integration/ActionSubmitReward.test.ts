@@ -54,33 +54,38 @@ describe('[Integration] Submit Block Reward', () => {
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-    const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
-      await initTest('ActionSubmitReward')({
-        slashIndicatorArguments: {
-          unavailabilitySlashing: {
-            unavailabilityTier2Threshold,
-            slashAmountForUnavailabilityTier2Threshold,
-          },
-          doubleSignSlashing: {
-            slashDoubleSignAmount,
-          },
+    const {
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninGovernanceAdminAddress,
+      profileAddress,
+    } = await initTest('ActionSubmitReward')({
+      slashIndicatorArguments: {
+        unavailabilitySlashing: {
+          unavailabilityTier2Threshold,
+          slashAmountForUnavailabilityTier2Threshold,
         },
-        stakingArguments: {
-          minValidatorStakingAmount,
+        doubleSignSlashing: {
+          slashDoubleSignAmount,
         },
-        stakingVestingArguments: {
-          blockProducerBonusPerBlock,
-        },
-        roninTrustedOrganizationArguments: {
-          trustedOrganizations: trustedOrgs.map((v) => ({
-            consensusAddr: v.consensusAddr.address,
-            governor: v.governor.address,
-            bridgeVoter: v.bridgeVoter.address,
-            weight: 100,
-            addedBlock: 0,
-          })),
-        },
-      });
+      },
+      stakingArguments: {
+        minValidatorStakingAmount,
+      },
+      stakingVestingArguments: {
+        blockProducerBonusPerBlock,
+      },
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: trustedOrgs.map((v) => ({
+          consensusAddr: v.consensusAddr.address,
+          governor: v.governor.address,
+          bridgeVoter: v.bridgeVoter.address,
+          weight: 100,
+          addedBlock: 0,
+        })),
+      },
+    });
 
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -96,6 +101,13 @@ describe('[Integration] Submit Block Reward', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await governanceAdminInterface.functionDelegateCalls(
+      [stakingContract.address, validatorContract.address],
+      [
+        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        validatorContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+      ]
+    );
     await validatorContract.initEpoch();
   });
 

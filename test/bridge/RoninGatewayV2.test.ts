@@ -103,6 +103,7 @@ describe('Ronin Gateway V2 test', () => {
       validatorContractAddress,
       bridgeTrackingAddress,
       roninTrustedOrganizationAddress,
+      profileAddress,
     } = await initTest('RoninGatewayV2')({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
@@ -140,6 +141,13 @@ describe('Ronin Gateway V2 test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
+    await governanceAdminInterface.functionDelegateCalls(
+      [stakingContract.address, roninValidatorSet.address],
+      [
+        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        roninValidatorSet.interface.encodeFunctionData('initializeV2', [profileAddress]),
+      ]
+    );
     await roninValidatorSet.initEpoch();
 
     await TransparentUpgradeableProxyV2__factory.connect(proxy.address, deployer).changeAdmin(governanceAdmin.address);

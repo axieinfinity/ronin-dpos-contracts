@@ -80,6 +80,7 @@ describe('Emergency Exit test', () => {
       stakingContractAddress,
       roninGovernanceAdminAddress,
       stakingVestingContractAddress,
+      profileAddress,
     } = await initTest('EmergencyExit')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
@@ -130,6 +131,14 @@ describe('Emergency Exit test', () => {
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
     await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
+
+    await governanceAdminInterface.functionDelegateCalls(
+      [stakingContract.address, roninValidatorSet.address],
+      [
+        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        roninValidatorSet.interface.encodeFunctionData('initializeV2', [profileAddress]),
+      ]
+    );
 
     const stakedAmount = validatorCandidates.map((_, i) =>
       minValidatorStakingAmount.mul(2).add(validatorCandidates.length - i)

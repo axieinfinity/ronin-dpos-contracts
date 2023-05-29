@@ -99,6 +99,7 @@ describe('Arrange validators', () => {
       validatorContractAddress,
       roninTrustedOrganizationAddress,
       roninGovernanceAdminAddress,
+      profileAddress,
     } = await initTest('ArrangeValidators')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -139,6 +140,11 @@ describe('Arrange validators', () => {
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
     await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
+
+    await governanceAdminInterface.functionDelegateCalls(
+      [validatorContract.address],
+      [validatorContract.interface.encodeFunctionData('initializeV2', [profileAddress])]
+    );
   });
 
   describe('Update priority list', async () => {

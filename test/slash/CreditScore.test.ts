@@ -156,6 +156,7 @@ describe('Credit score and bail out test', () => {
       validatorContractAddress,
       roninGovernanceAdminAddress,
       maintenanceContractAddress,
+      profileAddress,
     } = await initTest('CreditScore')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -214,6 +215,13 @@ describe('Credit score and bail out test', () => {
     mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashLogic.deployed();
     await governanceAdminInterface.upgrade(slashContractAddress, mockSlashLogic.address);
+    await governanceAdminInterface.functionDelegateCalls(
+      [stakingContract.address, validatorContract.address],
+      [
+        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        validatorContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+      ]
+    );
 
     for (let i = 0; i < maxValidatorNumber; i++) {
       await stakingContract

@@ -69,6 +69,7 @@ describe('Maintenance test', () => {
       stakingContractAddress,
       validatorContractAddress,
       roninGovernanceAdminAddress,
+      profileAddress,
     } = await initTest('Maintenance')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -115,6 +116,13 @@ describe('Maintenance test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetOverridePrecompile__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await governanceAdminInterface.functionDelegateCalls(
+      [stakingContract.address, validatorContract.address],
+      [
+        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        validatorContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+      ]
+    );
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {
