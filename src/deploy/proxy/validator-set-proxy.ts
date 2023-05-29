@@ -15,15 +15,12 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const logicContract = await deployments.get('RoninValidatorSetLogic');
 
   const data = new RoninValidatorSet__factory().interface.encodeFunctionData('initialize', [
-    [
-      generalRoninConf[network.name]!.slashIndicatorContract?.address,
-      generalRoninConf[network.name]!.stakingContract?.address,
-      generalRoninConf[network.name]!.stakingVestingContract?.address,
-      generalRoninConf[network.name]!.maintenanceContract?.address,
-      generalRoninConf[network.name]!.roninTrustedOrganizationContract?.address,
-      generalRoninConf[network.name]!.bridgeTrackingContract?.address,
-      generalRoninConf[network.name]!.profileContract?.address,
-    ],
+    generalRoninConf[network.name]!.slashIndicatorContract?.address,
+    generalRoninConf[network.name]!.stakingContract?.address,
+    generalRoninConf[network.name]!.stakingVestingContract?.address,
+    generalRoninConf[network.name]!.maintenanceContract?.address,
+    generalRoninConf[network.name]!.roninTrustedOrganizationContract?.address,
+    generalRoninConf[network.name]!.bridgeTrackingContract?.address,
     roninValidatorSetConf[network.name]!.maxValidatorNumber,
     roninValidatorSetConf[network.name]!.maxValidatorCandidate,
     roninValidatorSetConf[network.name]!.maxPrioritizedValidatorNumber,

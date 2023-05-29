@@ -38,7 +38,6 @@ export interface InitTestOutput {
   stakingVestingContractAddress: Address;
   validatorContractAddress: Address;
   bridgeTrackingAddress: Address;
-  profileAddress: Address;
 }
 
 export interface InitTestInput {
@@ -207,7 +206,6 @@ export const initTest = (id: string) =>
     await deployments.fixture([
       'CalculateAddresses',
       'RoninGovernanceAdmin',
-      'ProfileProxy',
       'RoninValidatorSetProxy',
       'BridgeTrackingProxy',
       'SlashIndicatorProxy',
@@ -222,7 +220,6 @@ export const initTest = (id: string) =>
     const roninGovernanceAdminDeployment = await deployments.get('RoninGovernanceAdmin');
     const mainchainGovernanceAdminDeployment = await deployments.get('MainchainGovernanceAdmin');
     const maintenanceContractDeployment = await deployments.get('MaintenanceProxy');
-    const profileDeployment = await deployments.get('ProfileProxy');
     const roninTrustedOrganizationDeployment = await deployments.get('RoninTrustedOrganizationProxy');
     const mainchainRoninTrustedOrganizationDeployment = await deployments.get('MainchainRoninTrustedOrganizationProxy');
     const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
@@ -236,7 +233,6 @@ export const initTest = (id: string) =>
       roninGovernanceAdminAddress: roninGovernanceAdminDeployment.address,
       mainchainGovernanceAdminAddress: mainchainGovernanceAdminDeployment.address,
       maintenanceContractAddress: maintenanceContractDeployment.address,
-      profileAddress: profileDeployment.address,
       roninTrustedOrganizationAddress: roninTrustedOrganizationDeployment.address,
       mainchainRoninTrustedOrganizationAddress: mainchainRoninTrustedOrganizationDeployment.address,
       slashContractAddress: slashContractDeployment.address,

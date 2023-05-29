@@ -18,7 +18,6 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
       ...generalRoninConf[network.name],
       governanceAdmin: calculateAddress(deployer, nonce++),
       roninTrustedOrganizationContract: calculateAddress(deployer, nonce++),
-      profileContract: calculateAddress(deployer, nonce++),
       maintenanceContract: calculateAddress(deployer, nonce++),
       stakingVestingContract: calculateAddress(deployer, nonce++),
       slashIndicatorContract: calculateAddress(deployer, nonce++),
@@ -53,7 +52,6 @@ deploy.dependencies = [
   'BridgeTrackingLogic',
   'MainchainGatewayV2Logic',
   'RoninGatewayV2Logic',
-  'ProfileLogic',
 ];
 
 export default deploy;
