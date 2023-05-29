@@ -552,7 +552,7 @@ describe('Slash indicator test', () => {
           tx,
           proposalHash,
           [false],
-          ['0xf27b8ec9'] /// ErrEvidenceAlreadySubmitted()
+          [slashContract.interface.getSighash(slashContract.interface.getError('ErrEvidenceAlreadySubmitted'))]
         );
       });
 
