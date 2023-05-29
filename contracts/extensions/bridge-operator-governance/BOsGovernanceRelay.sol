@@ -9,6 +9,9 @@ import "../../libraries/AddressArrayUtils.sol";
 import "../../libraries/IsolatedGovernance.sol";
 
 abstract contract BOsGovernanceRelay is SignatureConsumer, VoteStatusConsumer {
+  /**
+   * @dev Error indicating that the bridge operator set has already been voted.
+   */
   error ErrBridgeOperatorSetIsAlreadyVoted();
 
   /// @dev The last the brige operator set info.
@@ -43,17 +46,14 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, VoteStatusConsumer {
     if (
       _ballot.period < _lastSyncedBridgeOperatorSetInfo.period ||
       _ballot.epoch <= _lastSyncedBridgeOperatorSetInfo.epoch
-    ) {
-      revert ErrQueryForOutdatedBridgeOperatorSet();
-    }
+    ) revert ErrQueryForOutdatedBridgeOperatorSet();
+
     BridgeOperatorsBallot.verifyBallot(_ballot);
 
-    if (AddressArrayUtils.isEqual(_ballot.operators, _lastSyncedBridgeOperatorSetInfo.operators)) {
+    if (AddressArrayUtils.isEqual(_ballot.operators, _lastSyncedBridgeOperatorSetInfo.operators))
       revert ErrBridgeOperatorSetIsAlreadyVoted();
-    }
-    if (_signatures.length == 0) {
-      revert ErrEmptyArray();
-    }
+
+    if (_signatures.length == 0) revert ErrEmptyArray();
 
     Signature calldata _sig;
     address[] memory _signers = new address[](_signatures.length);
@@ -64,9 +64,8 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, VoteStatusConsumer {
     for (uint256 _i = 0; _i < _signatures.length; ) {
       _sig = _signatures[_i];
       _signers[_i] = ECDSA.recover(_digest, _sig.v, _sig.r, _sig.s);
-      if (_lastSigner >= _signers[_i]) {
-        revert ErrInvalidOrder(msg.sig);
-      }
+      if (_lastSigner >= _signers[_i]) revert ErrInvalidOrder(msg.sig);
+
       _lastSigner = _signers[_i];
 
       unchecked {

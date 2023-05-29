@@ -11,8 +11,14 @@ import "../../interfaces/consumers/SignatureConsumer.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
 
 abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, ChainTypeConsumer {
+  /**
+   * @dev Error thrown when attempting to interact with a finalized vote.
+   */
   error ErrVoteIsFinalized();
-  error ErrAlreadyVoted(address voter);
+
+  /**
+   * @dev Error thrown when the current proposal is not completed.
+   */
   error ErrCurrentProposalIsNotCompleted();
 
   using Proposal for Proposal.ProposalDetail;
@@ -121,7 +127,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     uint256[] memory _gasAmounts,
     address _creator
   ) internal virtual returns (Proposal.ProposalDetail memory _proposal) {
-    if (_chainId == 0) revert ErrInvalidChainId(msg.sig);
+    if (_chainId == 0) revert ErrInvalidChainId(msg.sig, 0, block.chainid);
     uint256 _round = _createVotingRound(_chainId);
 
     _proposal = Proposal.ProposalDetail(_round, _chainId, _expiryTimestamp, _targets, _values, _calldatas, _gasAmounts);
@@ -148,7 +154,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     returns (uint256 _round)
   {
     uint256 _chainId = _proposal.chainId;
-    if (_chainId == 0) revert ErrInvalidChainId(msg.sig);
+    if (_chainId == 0) revert ErrInvalidChainId(msg.sig, 0, block.chainid);
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
@@ -249,16 +255,9 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       return true;
     }
 
-    if (round[_proposal.chainId] != _round) {
-      revert ErrInvalidProposalNonce(msg.sig);
-    }
-
-    if (_vote.status != VoteStatus.Pending) {
-      revert ErrVoteIsFinalized();
-    }
-    if (_voted(_vote, _voter)) {
-      revert ErrAlreadyVoted(_voter);
-    }
+    if (round[_proposal.chainId] != _round) revert ErrInvalidProposalNonce(msg.sig);
+    if (_vote.status != VoteStatus.Pending) revert ErrVoteIsFinalized();
+    if (_voted(_vote, _voter)) revert ErrAlreadyVoted(_voter);
 
     _vote.voted[_voter] = true;
     // Stores the signature if it is not empty
@@ -275,9 +274,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     } else if (_support == Ballot.VoteType.Against) {
       _vote.againstVoteds.push(_voter);
       _againstVoteWeight = _vote.againstVoteWeight += _voterWeight;
-    } else {
-      revert ErrUnsupportedVoteType(msg.sig);
-    }
+    } else revert ErrUnsupportedVoteType(msg.sig);
 
     if (_forVoteWeight >= _minimumForVoteWeight) {
       _done = true;

@@ -5,6 +5,7 @@ import "./collections/HasProxyAdmin.sol";
 import "../libraries/Transfer.sol";
 
 abstract contract MinimumWithdrawal is HasProxyAdmin {
+  /// @dev Throwed when the ERC20 withdrawal quantity is less than the minimum threshold.
   error ErrQueryForTooSmallQuantity();
 
   /// @dev Emitted when the minimum thresholds are updated
@@ -59,8 +60,7 @@ abstract contract MinimumWithdrawal is HasProxyAdmin {
    * @dev Checks whether the request is larger than or equal to the minimum threshold.
    */
   function _checkWithdrawal(Transfer.Request calldata _request) internal view {
-    if (_request.info.erc == Token.Standard.ERC20 && _request.info.quantity < minimumThreshold[_request.tokenAddr]) {
+    if (_request.info.erc == Token.Standard.ERC20 && _request.info.quantity < minimumThreshold[_request.tokenAddr])
       revert ErrQueryForTooSmallQuantity();
-    }
   }
 }

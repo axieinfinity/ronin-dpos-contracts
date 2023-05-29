@@ -4,7 +4,14 @@ pragma solidity ^0.8.0;
 import "../libraries/Errors.sol";
 
 library Proposal {
+  /**
+   * @dev Error thrown when there is insufficient gas to execute a function.
+   */
   error ErrInsufficientGas();
+
+  /**
+   * @dev Error thrown when an invalid expiry timestamp is provided.
+   */
   error ErrInvalidExpiryTimestamp();
 
   struct ProposalDetail {
@@ -102,9 +109,8 @@ library Proposal {
     internal
     returns (bool[] memory _successCalls, bytes[] memory _returnDatas)
   {
-    if (!executable(_proposal)) {
-      revert ErrInvalidChainId(msg.sig);
-    }
+    if (!executable(_proposal)) revert ErrInvalidChainId(msg.sig, _proposal.chainId, block.chainid);
+
     _successCalls = new bool[](_proposal.targets.length);
     _returnDatas = new bytes[](_proposal.targets.length);
     for (uint256 _i = 0; _i < _proposal.targets.length; ) {

@@ -8,9 +8,24 @@ import "./consumers/MappedTokenConsumer.sol";
 import "../libraries/Transfer.sol";
 
 interface IMainchainGatewayV2 is SignatureConsumer, MappedTokenConsumer, IBridge {
+  /**
+   * @dev Error indicating that a query was made for an approved withdrawal.
+   */
   error ErrQueryForApprovedWithdrawal();
+
+  /**
+   * @dev Error indicating that the daily withdrawal limit has been reached.
+   */
   error ErrReachedDailyWithdrawalLimit();
+
+  /**
+   * @dev Error indicating that a query was made for a processed withdrawal.
+   */
   error ErrQueryForProcessedWithdrawal();
+
+  /**
+   * @dev Error indicating that a query was made for insufficient vote weight.
+   */
   error ErrQueryForInsufficientVoteWeight();
 
   /// @dev Emitted when the deposit is requested

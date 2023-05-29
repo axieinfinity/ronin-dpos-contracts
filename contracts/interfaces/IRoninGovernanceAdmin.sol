@@ -4,9 +4,24 @@ pragma solidity ^0.8.0;
 import "../libraries/BridgeOperatorsBallot.sol";
 
 interface IRoninGovernanceAdmin {
+  /**
+   * @dev Error thrown when an invalid vote hash is provided.
+   */
   error ErrInvalidVoteHash();
+
+  /**
+   * @dev Error thrown when querying for an empty vote.
+   */
   error ErrQueryForEmptyVote();
+
+  /**
+   * @dev Error thrown when querying for an expired vote.
+   */
   error ErrQueryForExpiredVote();
+
+  /**
+   * @dev Error thrown when querying for a non-existent vote.
+   */
   error ErrQueryForNonExistentVote();
 
   /// @dev Emitted when the bridge operators are approved.

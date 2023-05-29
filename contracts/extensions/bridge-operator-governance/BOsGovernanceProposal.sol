@@ -7,6 +7,9 @@ import "../../interfaces/IRoninGovernanceAdmin.sol";
 import "../../libraries/IsolatedGovernance.sol";
 
 abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAdmin {
+  /**
+   * @dev Error indicating that the order of signers is invalid.
+   */
   error ErrInvalidSignerOrder();
 
   using IsolatedGovernance for IsolatedGovernance.Vote;
@@ -51,9 +54,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAd
   ) internal {
     if (
       _ballot.period < _lastSyncedBridgeOperatorSetInfo.period || _ballot.epoch < _lastSyncedBridgeOperatorSetInfo.epoch
-    ) {
-      revert ErrQueryForOutdatedBridgeOperatorSet();
-    }
+    ) revert ErrQueryForOutdatedBridgeOperatorSet();
 
     BridgeOperatorsBallot.verifyBallot(_ballot);
     if (_signatures.length == 0) revert ErrEmptyArray();
@@ -87,7 +88,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAd
       }
     }
 
-    if (!_hasValidVotes) revert ErrInvalidSignature(msg.sig);
+    if (!_hasValidVotes) revert ErrInvalidSignatures(msg.sig);
     address[] memory _filteredVoters = _v.filterByHash(_hash);
     _v.syncVoteStatus(_minimumVoteWeight, _sumBridgeVoterWeights(_filteredVoters), 0, 0, _hash);
   }

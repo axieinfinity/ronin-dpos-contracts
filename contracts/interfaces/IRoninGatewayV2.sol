@@ -5,8 +5,19 @@ import "../libraries/Transfer.sol";
 import "./consumers/MappedTokenConsumer.sol";
 
 interface IRoninGatewayV2 is MappedTokenConsumer {
+  /**
+   * @dev Error thrown when attempting to withdraw funds that have already been migrated.
+   */
   error ErrWithdrawalsMigrated();
+
+  /**
+   * @dev Error thrown when an invalid trusted threshold is specified.
+   */
   error ErrInvalidTrustedThreshold();
+
+  /**
+   * @dev Error thrown when attempting to withdraw funds that have already been withdrawn on the mainchain.
+   */
   error ErrWithdrawnOnMainchainAlready();
 
   /// @dev Emitted when the assets are depositted

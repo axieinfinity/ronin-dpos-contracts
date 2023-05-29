@@ -3,15 +3,54 @@
 pragma solidity ^0.8.9;
 
 interface IMaintenance {
+  /**
+   * @dev Error thrown when attempting to schedule an already scheduled event.
+   */
   error ErrAlreadyScheduled();
+
+  /**
+   * @dev Error thrown when referring to a non-existent schedule.
+   */
   error ErrUnexistedSchedule();
+
+  /**
+   * @dev Error thrown when the end block of a schedule is out of range.
+   */
   error ErrEndBlockOutOfRange();
+
+  /**
+   * @dev Error thrown when the start block of a schedule is out of range.
+   */
   error ErrStartBlockOutOfRange();
+
+  /**
+   * @dev Error thrown when attempting to initiate maintenance while already in maintenance mode.
+   */
   error ErrAlreadyOnMaintenance();
+
+  /**
+   * @dev Error thrown when attempting an action before the cooldown period has ended.
+   */
   error ErrCooldownTimeNotYetEnded();
+
+  /**
+   * @dev Error thrown when the total number of schedules exceeds the limit.
+   */
   error ErrTotalOfSchedulesExceeded();
+
+  /**
+   * @dev Error thrown when an invalid maintenance duration is specified.
+   */
   error ErrInvalidMaintenanceDuration();
+
+  /**
+   * @dev Error thrown when an invalid maintenance duration configuration is provided.
+   */
   error ErrInvalidMaintenanceDurationConfig();
+
+  /**
+   * @dev Error thrown when an invalid offset is specified to start the schedule configurations.
+   */
   error ErrInvalidOffsetToStartScheduleConfigs();
 
   struct Schedule {

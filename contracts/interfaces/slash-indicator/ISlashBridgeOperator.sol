@@ -5,6 +5,9 @@ pragma solidity ^0.8.9;
 import "./IBaseSlash.sol";
 
 interface ISlashBridgeOperator is IBaseSlash {
+  /**
+   * @dev Error thrown when invalid ratios are provided.
+   */
   error ErrInvalidRatios();
 
   /**

@@ -7,15 +7,31 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "../interfaces/IWETH.sol";
 
 library Token {
+  /**
+   * @dev Error indicating that the provided information is invalid.
+   */
   error ErrInvalidInfo();
+
+  /**
+   * @dev Error indicating that the minting of ERC20 tokens has failed.
+   */
   error ErrERC20MintingFailed();
+
+  /**
+   * @dev Error indicating that the minting of ERC721 tokens has failed.
+   */
   error ErrERC721MintingFailed();
+
+  /**
+   * @dev Error indicating that an unsupported standard is encountered.
+   */
   error ErrUnsupportedStandard();
 
   enum Standard {
     ERC20,
     ERC721
   }
+
   struct Info {
     Standard erc;
     // For ERC20:  the id must be 0 and the quantity is larger than 0.
@@ -65,9 +81,7 @@ library Token {
     } else if (_info.erc == Standard.ERC721) {
       // bytes4(keccak256("transferFrom(address,address,uint256)"))
       (_success, ) = _token.call(abi.encodeWithSelector(0x23b872dd, _from, _to, _info.id));
-    } else {
-      revert("Token: unsupported token standard");
-    }
+    } else revert ErrUnsupportedStandard();
 
     if (!_success) {
       revert(
@@ -124,9 +138,7 @@ library Token {
       _success = tryTransferERC20(_token, _to, _info.quantity);
     } else if (_info.erc == Standard.ERC721) {
       _success = tryTransferERC721(_token, _to, _info.id);
-    } else {
-      revert("Token: unsupported token standard");
-    }
+    } else revert ErrUnsupportedStandard();
 
     if (!_success) {
       revert(
@@ -169,9 +181,7 @@ library Token {
       if (_balance < _info.quantity) {
         // bytes4(keccak256("mint(address,uint256)"))
         (_success, ) = _token.call(abi.encodeWithSelector(0x40c10f19, address(this), _info.quantity - _balance));
-        if (!_success) {
-          revert ErrERC20MintingFailed();
-        }
+        if (!_success) revert ErrERC20MintingFailed();
       }
 
       transfer(_info, _to, _token);
@@ -179,13 +189,9 @@ library Token {
       if (!tryTransferERC721(_token, _to, _info.id)) {
         // bytes4(keccak256("mint(address,uint256)"))
         (_success, ) = _token.call(abi.encodeWithSelector(0x40c10f19, _to, _info.id));
-        if (!_success) {
-          revert ErrERC721MintingFailed();
-        }
+        if (!_success) revert ErrERC721MintingFailed();
       }
-    } else {
-      revert ErrUnsupportedStandard();
-    }
+    } else revert ErrUnsupportedStandard();
   }
 
   /**

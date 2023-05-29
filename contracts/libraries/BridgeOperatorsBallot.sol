@@ -6,6 +6,9 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../libraries/Errors.sol";
 
 library BridgeOperatorsBallot {
+  /**
+   * @dev Error thrown when an invalid order of the bridge operator is detected.
+   */
   error ErrInvalidOrderOfBridgeOperator();
 
   struct BridgeOperatorSet {

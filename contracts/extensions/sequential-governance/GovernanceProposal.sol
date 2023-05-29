@@ -4,7 +4,12 @@ pragma solidity ^0.8.0;
 import "./CoreGovernance.sol";
 
 abstract contract GovernanceProposal is CoreGovernance {
-  error ErrInvalidProposal();
+  /**
+   * @dev Error thrown when an invalid proposal is encountered.
+   * @param actual The actual value of the proposal.
+   * @param expected The expected value of the proposal.
+   */
+  error ErrInvalidProposal(bytes32 actual, bytes32 expected);
 
   using Proposal for Proposal.ProposalDetail;
   using GlobalProposal for GlobalProposal.GlobalProposalDetail;
@@ -22,9 +27,8 @@ abstract contract GovernanceProposal is CoreGovernance {
     bytes32 _forDigest,
     bytes32 _againstDigest
   ) internal {
-    if (!(_supports.length != 0 && _supports.length == _signatures.length)) {
-      revert ErrLengthMismatch(msg.sig);
-    }
+    if (!(_supports.length != 0 && _supports.length == _signatures.length)) revert ErrLengthMismatch(msg.sig);
+
     uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
     uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;
 
@@ -39,9 +43,7 @@ abstract contract GovernanceProposal is CoreGovernance {
         _signer = ECDSA.recover(_forDigest, _sig.v, _sig.r, _sig.s);
       } else if (_supports[_i] == Ballot.VoteType.Against) {
         _signer = ECDSA.recover(_againstDigest, _sig.v, _sig.r, _sig.s);
-      } else {
-        revert ErrUnsupportedVoteType(msg.sig);
-      }
+      } else revert ErrUnsupportedVoteType(msg.sig);
 
       if (_lastSigner >= _signer) revert ErrInvalidOrder(msg.sig);
       _lastSigner = _signer;
@@ -61,7 +63,7 @@ abstract contract GovernanceProposal is CoreGovernance {
       }
     }
 
-    if (!_hasValidVotes) revert ErrInvalidSignature(msg.sig);
+    if (!_hasValidVotes) revert ErrInvalidSignatures(msg.sig);
   }
 
   /**
@@ -96,7 +98,8 @@ abstract contract GovernanceProposal is CoreGovernance {
   ) internal {
     bytes32 _proposalHash = _proposal.hash();
 
-    if (vote[_proposal.chainId][_proposal.nonce].hash != _proposalHash) revert ErrInvalidProposal();
+    if (vote[_proposal.chainId][_proposal.nonce].hash != _proposalHash)
+      revert ErrInvalidProposal(_proposalHash, vote[_proposal.chainId][_proposal.nonce].hash);
 
     _castVotesBySignatures(
       _proposal,
@@ -146,8 +149,9 @@ abstract contract GovernanceProposal is CoreGovernance {
       _gatewayContract
     );
     bytes32 _globalProposalHash = _globalProposal.hash();
-
-    if (vote[0][_proposal.nonce].hash != _proposal.hash()) revert ErrInvalidProposal();
+    bytes32 _proposalHash = _proposal.hash();
+    if (vote[0][_proposal.nonce].hash != _proposalHash)
+      revert ErrInvalidProposal(_proposalHash, vote[0][_proposal.nonce].hash);
 
     _castVotesBySignatures(
       _proposal,

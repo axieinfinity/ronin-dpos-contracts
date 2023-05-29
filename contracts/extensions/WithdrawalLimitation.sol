@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./GatewayV2.sol";
 
 abstract contract WithdrawalLimitation is GatewayV2 {
+  /// @dev Error of invalid percentage.
   error ErrInvalidPercentage();
 
   /// @dev Emitted when the high-tier vote weight threshold is updated
@@ -248,9 +249,8 @@ abstract contract WithdrawalLimitation is GatewayV2 {
   function _setUnlockFeePercentages(address[] calldata _tokens, uint256[] calldata _percentages) internal virtual {
     if (_tokens.length != _percentages.length) revert ErrLengthMismatch(msg.sig);
     for (uint256 _i; _i < _tokens.length; ) {
-      if (_percentages[_i] > _MAX_PERCENTAGE) {
-        revert ErrInvalidPercentage();
-      }
+      if (_percentages[_i] > _MAX_PERCENTAGE) revert ErrInvalidPercentage();
+
       unlockFeePercentages[_tokens[_i]] = _percentages[_i];
 
       unchecked {
