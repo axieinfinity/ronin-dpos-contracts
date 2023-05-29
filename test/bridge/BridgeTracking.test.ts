@@ -61,28 +61,33 @@ describe('Bridge Tracking test', () => {
     ]);
 
     // Deploys DPoS contracts
-    const { roninGovernanceAdminAddress, stakingContractAddress, validatorContractAddress, bridgeTrackingAddress } =
-      await initTest('BridgeTracking')({
-        roninTrustedOrganizationArguments: {
-          trustedOrganizations: trustedOrgs.map((v) => ({
-            consensusAddr: v.consensusAddr.address,
-            governor: v.governor.address,
-            bridgeVoter: v.bridgeVoter.address,
-            weight: 100,
-            addedBlock: 0,
-          })),
-          numerator,
-          denominator,
-        },
-        stakingArguments: {
-          minValidatorStakingAmount,
-        },
-        roninValidatorSetArguments: {
-          maxValidatorNumber,
-          maxPrioritizedValidatorNumber,
-          numberOfBlocksInEpoch,
-        },
-      });
+    const {
+      roninGovernanceAdminAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      bridgeTrackingAddress,
+      profileAddress,
+    } = await initTest('BridgeTracking')({
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: trustedOrgs.map((v) => ({
+          consensusAddr: v.consensusAddr.address,
+          governor: v.governor.address,
+          bridgeVoter: v.bridgeVoter.address,
+          weight: 100,
+          addedBlock: 0,
+        })),
+        numerator,
+        denominator,
+      },
+      stakingArguments: {
+        minValidatorStakingAmount,
+      },
+      roninValidatorSetArguments: {
+        maxValidatorNumber,
+        maxPrioritizedValidatorNumber,
+        numberOfBlocksInEpoch,
+      },
+    });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
@@ -106,6 +111,14 @@ describe('Bridge Tracking test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
+    await governanceAdminInterface.functionDelegateCalls(
+      [stakingContract.address, roninValidatorSet.address],
+      [
+        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        roninValidatorSet.interface.encodeFunctionData('initializeV2', [profileAddress]),
+      ]
+    );
+
     await roninValidatorSet.initEpoch();
 
     // Applies candidates and double check the bridge operators
