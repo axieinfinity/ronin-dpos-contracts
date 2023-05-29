@@ -102,9 +102,7 @@ library Proposal {
     internal
     returns (bool[] memory _successCalls, bytes[] memory _returnDatas)
   {
-    if (!executable(_proposal)) {
-      revert ErrInvalidChainId(msg.sig);
-    }
+    if (!executable(_proposal)) revert ErrInvalidChainId(msg.sig);
     _successCalls = new bool[](_proposal.targets.length);
     _returnDatas = new bytes[](_proposal.targets.length);
     for (uint256 _i = 0; _i < _proposal.targets.length; ) {
