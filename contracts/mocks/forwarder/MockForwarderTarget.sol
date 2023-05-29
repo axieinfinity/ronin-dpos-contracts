@@ -12,11 +12,14 @@ contract MockForwarderTarget is RONTransferHelper {
 
   event TargetWithdrawn(address indexed _origin, address indexed _caller, address indexed _recipient);
 
+  /**
+   * @dev Error thrown intentionally for a specific purpose.
+   */
   error ErrIntentionally();
 
   modifier onlyOwner() {
     if (msg.sender != owner) {
-      revert ErrUnauthorized(msg.sig);
+      revert ErrUnauthorized(msg.sig, Roles.ADMIN);
     }
     _;
   }
