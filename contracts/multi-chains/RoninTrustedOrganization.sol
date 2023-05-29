@@ -89,7 +89,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * @inheritdoc IRoninTrustedOrganization
    */
   function updateTrustedOrganizations(TrustedOrganization[] calldata _list) external override onlyAdmin {
-    if (_list.length == 0) revert ErrEmptyArrayLength();
+    if (_list.length == 0) revert ErrEmptyArray();
     for (uint256 _i; _i < _list.length; ) {
       _updateTrustedOrganization(_list[_i]);
 
@@ -105,7 +105,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function removeTrustedOrganizations(address[] calldata _list) external override onlyAdmin {
     if (_list.length == 0) {
-      revert ErrEmptyArrayLength();
+      revert ErrEmptyArray();
     }
     for (uint _i = 0; _i < _list.length; ) {
       _removeTrustedOrganization(_list[_i]);

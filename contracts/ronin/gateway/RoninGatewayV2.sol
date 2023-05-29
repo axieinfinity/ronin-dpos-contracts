@@ -308,7 +308,7 @@ contract RoninGatewayV2 is
    * @inheritdoc IRoninGatewayV2
    */
   function bulkRequestWithdrawalFor(Transfer.Request[] calldata _requests, uint256 _chainId) external whenNotPaused {
-    if (_requests.length == 0) revert ErrEmptyArrayLength();
+    if (_requests.length == 0) revert ErrEmptyArray();
     for (uint256 _i; _i < _requests.length; ) {
       _requestWithdrawalFor(_requests[_i], msg.sender, _chainId);
 

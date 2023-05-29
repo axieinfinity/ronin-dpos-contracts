@@ -27,7 +27,7 @@ library BridgeOperatorsBallot {
    *
    */
   function verifyBallot(BridgeOperatorSet calldata _ballot) internal pure {
-    if (_ballot.operators.length == 0) revert ErrEmptyArrayLength();
+    if (_ballot.operators.length == 0) revert ErrEmptyArray();
     address _addr = _ballot.operators[0];
     for (uint _i = 1; _i < _ballot.operators.length; ) {
       if (_addr >= _ballot.operators[_i]) revert ErrInvalidOrderOfBridgeOperator();

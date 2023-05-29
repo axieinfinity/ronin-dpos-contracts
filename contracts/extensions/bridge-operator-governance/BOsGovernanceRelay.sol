@@ -52,7 +52,7 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, VoteStatusConsumer {
       revert ErrBridgeOperatorSetIsAlreadyVoted();
     }
     if (_signatures.length == 0) {
-      revert ErrEmptyArrayLength();
+      revert ErrEmptyArray();
     }
 
     Signature calldata _sig;

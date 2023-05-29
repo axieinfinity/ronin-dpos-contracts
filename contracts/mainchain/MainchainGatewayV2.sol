@@ -214,7 +214,7 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     address[] calldata _roninTokens,
     Token.Standard[] calldata _standards
   ) external virtual onlyAdmin {
-    if (_mainchainTokens.length == 0) revert ErrEmptyArrayLength();
+    if (_mainchainTokens.length == 0) revert ErrEmptyArray();
     _mapTokens(_mainchainTokens, _roninTokens, _standards);
   }
 
@@ -232,7 +232,7 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     uint256[][4] calldata _thresholds
   ) external virtual onlyAdmin {
     if (_mainchainTokens.length == 0) {
-      revert ErrEmptyArrayLength();
+      revert ErrEmptyArray();
     }
     _mapTokens(_mainchainTokens, _roninTokens, _standards);
     _setHighTierThresholds(_mainchainTokens, _thresholds[0]);

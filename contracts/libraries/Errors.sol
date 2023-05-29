@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 error ErrInvalidThreshold(bytes4 msgSig);
 error ErrOnlySelfCall(bytes4 msgSig);
 error ErrUnauthorized(bytes4 msgSig);
-error ErrEmptyArrayLength();
+error ErrEmptyArray();
 error ErrLengthMismatch(bytes4 msgSig);
 error ErrProxyCallFailed(bytes4 msgSig, bytes4 extCallSig);
 

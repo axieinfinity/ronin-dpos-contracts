@@ -56,7 +56,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAd
     }
 
     BridgeOperatorsBallot.verifyBallot(_ballot);
-    if (_signatures.length == 0) revert ErrEmptyArrayLength();
+    if (_signatures.length == 0) revert ErrEmptyArray();
 
     address _signer;
     address _lastSigner;
