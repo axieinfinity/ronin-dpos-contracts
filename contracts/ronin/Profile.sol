@@ -64,8 +64,8 @@ contract Profile is IProfile, HasStakingContract, Initializable {
 
     CandidateProfile memory _profile = CandidateProfile(
       _consensus,
-      _admin,
       _consensus,
+      _admin,
       payable(_treasury),
       _bridgeOperator,
       address(0),
