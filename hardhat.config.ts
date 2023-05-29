@@ -123,7 +123,7 @@ const config: HardhatUserConfig = {
     outDir: 'src/types',
   },
   paths: {
-    deploy: ['src/deploy', 'src/upgrades'],
+    deploy: ['src/deploy', 'src/proposals', 'src/upgrade'],
   },
   namedAccounts: {
     deployer: 0,
