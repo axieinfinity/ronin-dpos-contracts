@@ -23,7 +23,6 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
    */
   function initialize(
     address __validatorContract,
-    address __profileContract,
     uint256 __minValidatorStakingAmount,
     uint256 __maxCommissionRate,
     uint256 __cooldownSecsToUndelegate,
@@ -34,7 +33,6 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     _setCommissionRateRange(0, __maxCommissionRate);
     _setCooldownSecsToUndelegate(__cooldownSecsToUndelegate);
     _setWaitingSecsToRevoke(__waitingSecsToRevoke);
-    _setProfileContract(__profileContract);
   }
 
   /**
