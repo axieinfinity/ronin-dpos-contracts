@@ -43,9 +43,7 @@ abstract contract GovernanceRelay is CoreGovernance {
         } else if (_support == Ballot.VoteType.Against) {
           _signer = ECDSA.recover(_againstDigest, _sig.v, _sig.r, _sig.s);
           _againstVoteSigners[_againstVoteCount++] = _signer;
-        } else {
-          revert ErrUnsupportedVoteType(msg.sig);
-        }
+        } else revert ErrUnsupportedVoteType(msg.sig);
 
         if (_lastSigner >= _signer) revert ErrInvalidOrder(msg.sig);
         _lastSigner = _signer;

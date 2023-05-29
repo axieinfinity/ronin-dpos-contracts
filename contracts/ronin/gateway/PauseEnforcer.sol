@@ -5,8 +5,19 @@ import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "../../interfaces/IPauseTarget.sol";
 
 contract PauseEnforcer is AccessControlEnumerable {
+  /**
+   * @dev Error thrown when the target is already on paused state.
+   */
   error ErrTargetIsOnPaused();
+
+  /**
+   * @dev Error thrown when the target is not on paused state.
+   */
   error ErrTargetIsNotOnPaused();
+
+  /**
+   * @dev Error thrown when the contract is not on emergency pause.
+   */
   error ErrNotOnEmergencyPause();
 
   bytes32 public constant SENTRY_ROLE = keccak256("SENTRY_ROLE");
@@ -24,23 +35,20 @@ contract PauseEnforcer is AccessControlEnumerable {
   event TargetChanged(IPauseTarget target);
 
   modifier onEmergency() {
-    if (!emergency) {
-      revert ErrNotOnEmergencyPause();
-    }
+    if (!emergency) revert ErrNotOnEmergencyPause();
+
     _;
   }
 
   modifier targetPaused() {
-    if (!target.paused()) {
-      revert ErrTargetIsOnPaused();
-    }
+    if (!target.paused()) revert ErrTargetIsOnPaused();
+
     _;
   }
 
   modifier targetNotPaused() {
-    if (target.paused()) {
-      revert ErrTargetIsNotOnPaused();
-    }
+    if (target.paused()) revert ErrTargetIsNotOnPaused();
+
     _;
   }
 

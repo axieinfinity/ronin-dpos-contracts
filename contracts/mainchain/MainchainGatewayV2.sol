@@ -231,9 +231,8 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     // _thresholds[3]: dailyWithdrawalLimit
     uint256[][4] calldata _thresholds
   ) external virtual onlyAdmin {
-    if (_mainchainTokens.length == 0) {
-      revert ErrEmptyArray();
-    }
+    if (_mainchainTokens.length == 0) revert ErrEmptyArray();
+
     _mapTokens(_mainchainTokens, _roninTokens, _standards);
     _setHighTierThresholds(_mainchainTokens, _thresholds[0]);
     _setLockedThresholds(_mainchainTokens, _thresholds[1]);
@@ -263,9 +262,8 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     address[] calldata _roninTokens,
     Token.Standard[] calldata _standards
   ) internal virtual {
-    if (!(_mainchainTokens.length == _roninTokens.length && _mainchainTokens.length == _standards.length)) {
+    if (!(_mainchainTokens.length == _roninTokens.length && _mainchainTokens.length == _standards.length))
       revert ErrLengthMismatch(msg.sig);
-    }
 
     for (uint256 _i; _i < _mainchainTokens.length; ) {
       _roninToken[_mainchainTokens[_i]].tokenAddr = _roninTokens[_i];
@@ -303,24 +301,19 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     address _tokenAddr = _receipt.mainchain.tokenAddr;
 
     _receipt.info.validate();
-    if (_receipt.kind != Transfer.Kind.Withdrawal) {
-      revert ErrInvalidReceiptKind();
-    }
-    if (_receipt.mainchain.chainId != block.chainid) {
-      revert ErrInvalidChainId(msg.sig);
-    }
+    if (_receipt.kind != Transfer.Kind.Withdrawal) revert ErrInvalidReceiptKind();
+
+    if (_receipt.mainchain.chainId != block.chainid)
+      revert ErrInvalidChainId(msg.sig, _receipt.mainchain.chainId, block.chainid);
 
     MappedToken memory _token = getRoninToken(_receipt.mainchain.tokenAddr);
 
-    if (!(_token.erc == _receipt.info.erc && _token.tokenAddr == _receipt.ronin.tokenAddr)) {
-      revert ErrInvalidReceipt();
-    }
+    if (!(_token.erc == _receipt.info.erc && _token.tokenAddr == _receipt.ronin.tokenAddr)) revert ErrInvalidReceipt();
 
     if (withdrawalHash[_id] != 0) revert ErrQueryForProcessedWithdrawal();
 
-    if (!(_receipt.info.erc == Token.Standard.ERC721 || !_reachedWithdrawalLimit(_tokenAddr, _quantity))) {
+    if (!(_receipt.info.erc == Token.Standard.ERC721 || !_reachedWithdrawalLimit(_tokenAddr, _quantity)))
       revert ErrReachedDailyWithdrawalLimit();
-    }
 
     bytes32 _receiptHash = _receipt.hash();
     bytes32 _receiptDigest = Transfer.receiptDigest(_domainSeparator, _receiptHash);
@@ -337,9 +330,8 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
       for (uint256 _i; _i < _signatures.length; ) {
         _sig = _signatures[_i];
         _signer = ecrecover(_receiptDigest, _sig.v, _sig.r, _sig.s);
-        if (_lastSigner >= _signer) {
-          revert ErrInvalidOrder(msg.sig);
-        }
+        if (_lastSigner >= _signer) revert ErrInvalidOrder(msg.sig);
+
         _lastSigner = _signer;
 
         _weight += _getWeight(_signer);
@@ -352,9 +344,8 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
           ++_i;
         }
       }
-      if (!_passed) {
-        revert ErrQueryForInsufficientVoteWeight();
-      }
+      if (!_passed) revert ErrQueryForInsufficientVoteWeight();
+
       withdrawalHash[_id] = _receiptHash;
     }
 
@@ -386,22 +377,18 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
 
     _request.info.validate();
     if (_request.tokenAddr == address(0)) {
-      if (_request.info.quantity != msg.value) {
-        revert ErrInvalidRequest();
-      }
+      if (_request.info.quantity != msg.value) revert ErrInvalidRequest();
+
       _token = getRoninToken(_weth);
-      if (_token.erc != _request.info.erc) {
-        revert ErrInvalidTokenStandard();
-      }
+      if (_token.erc != _request.info.erc) revert ErrInvalidTokenStandard();
+
       _request.tokenAddr = _weth;
     } else {
-      if (msg.value != 0) {
-        revert ErrInvalidRequest();
-      }
+      if (msg.value != 0) revert ErrInvalidRequest();
+
       _token = getRoninToken(_request.tokenAddr);
-      if (_token.erc != _request.info.erc) {
-        revert ErrInvalidTokenStandard();
-      }
+      if (_token.erc != _request.info.erc) revert ErrInvalidTokenStandard();
+
       _request.info.transferFrom(_requester, address(this), _request.tokenAddr);
       // Withdraw if token is WETH
       if (_weth == _request.tokenAddr) {
