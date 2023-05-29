@@ -71,11 +71,7 @@ abstract contract CoinbaseExecution is
     // Deprecates reward for non-validator or slashed validator
     if (!_requestForBlockProducer) {
       _totalDeprecatedReward += msg.value;
-      if (!isBlockProducer(msg.sender)) {
-        emit BlockRewardDeprecated(msg.sender, msg.value, BlockRewardDeprecatedType.NON_VALIDATOR);
-      } else {
-        emit BlockRewardDeprecated(_correspondingPool, msg.value, BlockRewardDeprecatedType.UNAVAILABILITY);
-      }
+      emit BlockRewardDeprecated(_correspondingPool, msg.value, BlockRewardDeprecatedType.UNAVAILABILITY);
       return;
     }
 

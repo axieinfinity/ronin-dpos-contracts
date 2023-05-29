@@ -8,8 +8,7 @@ interface ICoinbaseExecution is ISlashingExecution {
   enum BlockRewardDeprecatedType {
     UNKNOWN,
     UNAVAILABILITY,
-    AFTER_BAILOUT,
-    NON_VALIDATOR
+    AFTER_BAILOUT
   }
 
   /// @dev Emitted when the validator set is updated
