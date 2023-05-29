@@ -2,44 +2,9 @@
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../extensions/collections/HasStakingContract.sol";
+import "../interfaces/IProfile.sol";
 
 pragma solidity ^0.8.9;
-
-interface IProfile {
-  struct CandidateProfile {
-    /**
-     * @dev Primary key of the profile, use for backward querying.
-     *
-     * {Staking} Contract: index of pool
-     * {RoninValidatorSet} Contract: index of almost all data related to a validator
-     *
-     */
-    address id;
-    /// @dev Consensus address.
-    address consensus;
-    /// @dev Pool admin address.
-    address admin;
-    /// @dev Treasury address.
-    address payable treasury;
-    /// @dev Address of the bridge operator corresponding to the candidate.
-    address bridgeOperator;
-    /// @dev Address to voting proposal.
-    address governor;
-    /// @dev Address to voting bridge operators.
-    address bridgeVoter;
-  }
-
-  function getId2Profile(address id) external view returns (CandidateProfile memory);
-
-  function getConsensus2Id(address consensus) external view returns (address id);
-
-  function execApplyValidatorCandidate(
-    address admin,
-    address consensus,
-    address treasury,
-    address bridgeOperator
-  ) external;
-}
 
 contract Profile is IProfile, HasStakingContract, Initializable {
   /// @dev Mapping from id address => candidate profile.
@@ -47,8 +12,10 @@ contract Profile is IProfile, HasStakingContract, Initializable {
   /// @dev Mapping from consensus address => id address.
   mapping(address => address) public _consensus2Id;
 
+  /// @dev Event emitted when a profile with `id` is added.
   event ProfileAdded(address indexed id);
 
+  /// @dev Error of already existed profile.
   error ErrExistentProfile();
 
   constructor() {
@@ -91,7 +58,7 @@ contract Profile is IProfile, HasStakingContract, Initializable {
     address _consensus,
     address _treasury,
     address _bridgeOperator
-  ) external {
+  ) external onlyStakingContract {
     // TODO: handle previous added consensus
     CandidateProfile storage sProfile = _id2Profile[_consensus];
 

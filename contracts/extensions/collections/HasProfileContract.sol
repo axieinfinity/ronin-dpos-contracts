@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./HasProxyAdmin.sol";
 import "../../interfaces/collections/IHasProfileContract.sol";
-import "../../ronin/Profile.sol";
+import "../../interfaces/IProfile.sol";
 
 contract HasProfileContract is IHasProfileContract, HasProxyAdmin {
   IProfile internal _profileContract;
