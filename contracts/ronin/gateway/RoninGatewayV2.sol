@@ -75,11 +75,11 @@ contract RoninGatewayV2 is
   }
 
   modifier onlyBridgeOperator() {
-    _onlyBridgeOperator();
+    _requireBridgeOperator();
     _;
   }
 
-  function _onlyBridgeOperator() internal view {
+  function _requireBridgeOperator() internal view {
     if (!_validatorContract.isBridgeOperator(msg.sender)) {
       revert ErrUnauthorized(msg.sig, Roles.BRIDGE_OPERATOR);
     }
