@@ -35,9 +35,8 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
     bytes32 _header1Checksum = keccak256(_header1);
     bytes32 _header2Checksum = keccak256(_header2);
 
-    if (_submittedEvidence[_header1Checksum] || _submittedEvidence[_header2Checksum]) {
+    if (_submittedEvidence[_header1Checksum] || _submittedEvidence[_header2Checksum])
       revert ErrEvidenceAlreadySubmitted();
-    }
 
     if (_pcValidateEvidence(_consensusAddr, _header1, _header2)) {
       uint256 _period = _validatorContract.currentPeriod();

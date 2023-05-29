@@ -222,7 +222,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
    * @dev See `IValidatorInfo-setMaxPrioritizedValidatorNumber`
    */
   function _setMaxPrioritizedValidatorNumber(uint256 _number) internal {
-    if (_number > _maxValidatorNumber) revert ErrInvalidMaxPrioritizedValidatorNumber(msg.sig);
+    if (_number > _maxValidatorNumber) revert ErrInvalidMaxPrioritizedValidatorNumber();
     _maxPrioritizedValidatorNumber = _number;
     emit MaxPrioritizedValidatorNumberUpdated(_number);
   }

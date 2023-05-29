@@ -87,9 +87,8 @@ abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, Ha
     uint256 _jailDurationTier2,
     uint256 _skipSlashingThreshold
   ) internal {
-    if (!(_ratioTier1 <= _ratioTier2 && _ratioTier1 <= _MAX_PERCENTAGE && _ratioTier2 <= _MAX_PERCENTAGE)) {
+    if (_ratioTier1 > _ratioTier2 || _ratioTier1 > _MAX_PERCENTAGE || _ratioTier2 > _MAX_PERCENTAGE)
       revert ErrInvalidRatios();
-    }
 
     _missingVotesRatioTier1 = _ratioTier1;
     _missingVotesRatioTier2 = _ratioTier2;
