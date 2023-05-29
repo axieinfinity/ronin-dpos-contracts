@@ -38,6 +38,7 @@ export interface InitTestOutput {
   stakingVestingContractAddress: Address;
   validatorContractAddress: Address;
   bridgeTrackingAddress: Address;
+  profileAddress: Address;
 }
 
 export interface InitTestInput {
@@ -214,6 +215,7 @@ export const initTest = (id: string) =>
       'StakingVestingProxy',
       'MainchainGovernanceAdmin',
       'MainchainRoninTrustedOrganizationProxy',
+      'ProfileProxy',
       id,
     ]);
 
@@ -227,6 +229,7 @@ export const initTest = (id: string) =>
     const stakingVestingContractDeployment = await deployments.get('StakingVestingProxy');
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
     const bridgeTrackingDeployment = await deployments.get('BridgeTrackingProxy');
+    const profileDeployment = await deployments.get('ProfileProxy');
     await EpochController.setTimestampToPeriodEnding();
 
     return {
@@ -240,5 +243,6 @@ export const initTest = (id: string) =>
       stakingVestingContractAddress: stakingVestingContractDeployment.address,
       validatorContractAddress: validatorContractDeployment.address,
       bridgeTrackingAddress: bridgeTrackingDeployment.address,
+      profileAddress: profileDeployment.address,
     };
   }, id);
