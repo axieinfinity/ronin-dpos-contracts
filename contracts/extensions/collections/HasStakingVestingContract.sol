@@ -9,7 +9,7 @@ contract HasStakingVestingContract is IHasStakingVestingContract, HasProxyAdmin 
   IStakingVesting internal _stakingVestingContract;
 
   modifier onlyStakingVestingContract() {
-    if (stakingVestingContract() != msg.sender) revert ErrUnauthorized(msg.sig);
+    if (stakingVestingContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.STAKING_VESTING);
     _;
   }
 

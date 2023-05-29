@@ -83,28 +83,21 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
    * @inheritdoc ICreditScore
    */
   function bailOut(address _consensusAddr) external override {
-    if (
-      !(_validatorContract.isValidatorCandidate(_consensusAddr) &&
-        _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender))
-    ) {
-      revert ErrUnauthorized(msg.sig);
-    }
+    if (!_validatorContract.isValidatorCandidate(_consensusAddr))
+      revert ErrUnauthorized(msg.sig, Roles.VALIDATOR_CANDIDATE);
+
+    if (!_validatorContract.isCandidateAdmin(_consensusAddr, msg.sender))
+      revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
 
     (bool _isJailed, , uint256 _jailedEpochLeft) = _validatorContract.getJailedTimeLeft(_consensusAddr);
-    if (!_isJailed) {
-      revert ErrCallerMustBeJailedInTheCurrentPeriod();
-    }
+    if (!_isJailed) revert ErrCallerMustBeJailedInTheCurrentPeriod();
 
     uint256 _period = _validatorContract.currentPeriod();
-    if (_checkBailedOutAtPeriod[_consensusAddr][_period]) {
-      revert ErrValidatorHasBailedOutPreviously();
-    }
+    if (_checkBailedOutAtPeriod[_consensusAddr][_period]) revert ErrValidatorHasBailedOutPreviously();
 
     uint256 _score = _creditScore[_consensusAddr];
     uint256 _cost = _jailedEpochLeft * _bailOutCostMultiplier;
-    if (_score < _cost) {
-      revert ErrInsufficientCreditScoreToBailOut();
-    }
+    if (_score < _cost) revert ErrInsufficientCreditScoreToBailOut();
 
     _validatorContract.execBailOut(_consensusAddr, _period);
 
@@ -200,13 +193,9 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     uint256 _bailOutMultiplier,
     uint256 _cutOffPercentage
   ) internal {
-    if (_gainScore > _maxScore) {
-      revert ErrInvalidCreditScoreConfig();
-    }
+    if (_gainScore > _maxScore) revert ErrInvalidCreditScoreConfig();
 
-    if (_cutOffPercentage > _MAX_PERCENTAGE) {
-      revert ErrInvalidCutOffPercentageConfig();
-    }
+    if (_cutOffPercentage > _MAX_PERCENTAGE) revert ErrInvalidCutOffPercentageConfig();
 
     _gainCreditScore = _gainScore;
     _maxCreditScore = _maxScore;

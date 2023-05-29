@@ -9,7 +9,8 @@ contract HasRoninTrustedOrganizationContract is IHasRoninTrustedOrganizationCont
   IRoninTrustedOrganization internal _roninTrustedOrganizationContract;
 
   modifier onlyRoninTrustedOrganizationContract() {
-    if (roninTrustedOrganizationContract() != msg.sender) revert ErrUnauthorized(msg.sig);
+    if (roninTrustedOrganizationContract() != msg.sender)
+      revert ErrUnauthorized(msg.sig, Roles.RONIN_TRUSTED_ORGANIZATION);
     _;
   }
 

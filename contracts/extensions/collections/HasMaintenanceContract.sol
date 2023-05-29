@@ -9,7 +9,7 @@ contract HasMaintenanceContract is IHasMaintenanceContract, HasProxyAdmin {
   IMaintenance internal _maintenanceContract;
 
   modifier onlyMaintenanceContract() {
-    if (maintenanceContract() != msg.sender) revert ErrUnauthorized(msg.sig);
+    if (maintenanceContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.MAINTENANCE);
     _;
   }
 

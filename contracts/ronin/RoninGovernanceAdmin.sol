@@ -24,9 +24,7 @@ contract RoninGovernanceAdmin is
   mapping(bytes32 => IsolatedGovernance.Vote) internal _emergencyExitPoll;
 
   modifier onlyGovernor() {
-    if (_getWeight(msg.sender) == 0) {
-      revert ErrUnauthorized(msg.sig);
-    }
+    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, Roles.GOVERNOR);
     _;
   }
 
@@ -44,9 +42,7 @@ contract RoninGovernanceAdmin is
    * @inheritdoc IHasValidatorContract
    */
   function setValidatorContract(address _addr) external override onlySelfCall {
-    if (_addr.code.length == 0) {
-      revert ErrZeroCodeContract(msg.sig);
-    }
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setValidatorContract(_addr);
   }
 
@@ -307,9 +303,8 @@ contract RoninGovernanceAdmin is
    */
   function deleteExpired(uint256 _chainId, uint256 _round) external {
     ProposalVote storage _vote = vote[_chainId][_round];
-    if (_vote.hash == 0) {
-      revert ErrQueryForEmptyVote();
-    }
+    if (_vote.hash == 0) revert ErrQueryForEmptyVote();
+
     _tryDeleteExpiredVotingRound(_vote);
   }
 
@@ -363,18 +358,12 @@ contract RoninGovernanceAdmin is
   ) external onlyGovernor {
     address _voter = msg.sender;
     bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
-    if (_voteHash != _hash) {
-      revert ErrInvalidVoteHash();
-    }
+    if (_voteHash != _hash) revert ErrInvalidVoteHash();
 
     IsolatedGovernance.Vote storage _v = _emergencyExitPoll[_hash];
-    if (_v.createdAt == 0) {
-      revert ErrQueryForNonExistentVote();
-    }
+    if (_v.createdAt == 0) revert ErrQueryForNonExistentVote();
 
-    if (_v.status == VoteStatus.Expired) {
-      revert ErrQueryForExpiredVote();
-    }
+    if (_v.status == VoteStatus.Expired) revert ErrQueryForExpiredVote();
 
     _v.castVote(_voter, _hash);
     emit EmergencyExitPollVoted(_hash, _voter);
@@ -496,13 +485,11 @@ contract RoninGovernanceAdmin is
     Proposal.ProposalDetail memory _proposal,
     Ballot.VoteType _support
   ) internal {
-    if (_proposal.chainId != block.chainid) {
-      revert ErrInvalidChainId(msg.sig);
-    }
+    if (_proposal.chainId != block.chainid) revert ErrInvalidChainId(msg.sig, _proposal.chainId, block.chainid);
 
-    if (vote[_proposal.chainId][_proposal.nonce].hash != _proposal.hash()) {
-      revert ErrInvalidProposal();
-    }
+    bytes32 proposalHash = _proposal.hash();
+    if (vote[_proposal.chainId][_proposal.nonce].hash != proposalHash)
+      revert ErrInvalidProposal(proposalHash, vote[_proposal.chainId][_proposal.nonce].hash);
 
     uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
     uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;

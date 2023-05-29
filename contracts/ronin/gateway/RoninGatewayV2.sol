@@ -76,7 +76,7 @@ contract RoninGatewayV2 is
 
   modifier onlyBridgeOperator() {
     if (!_validatorContract.isBridgeOperator(msg.sender)) {
-      revert ErrUnauthorized(msg.sig);
+      revert ErrUnauthorized(msg.sig, Roles.BRIDGE_OPERATOR);
     }
     _;
   }
@@ -173,15 +173,13 @@ contract RoninGatewayV2 is
     external
     onlyRole(WITHDRAWAL_MIGRATOR)
   {
-    if (withdrawalMigrated) {
-      revert ErrWithdrawalsMigrated();
-    }
+    if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
+
     if (!(_requesters.length == _requests.length && _requests.length > 0)) revert ErrLengthMismatch(msg.sig);
     for (uint256 _i; _i < _requests.length; ) {
       MappedToken memory _token = getMainchainToken(_requests[_i].tokenAddr, 1);
-      if (_requests[_i].info.erc != _token.erc) {
-        revert ErrInvalidTokenStandard();
-      }
+      if (_requests[_i].info.erc != _token.erc) revert ErrInvalidTokenStandard();
+
       _storeAsReceipt(_requests[_i], 1, _requesters[_i], _token.tokenAddr);
 
       unchecked {
@@ -195,11 +193,10 @@ contract RoninGatewayV2 is
    */
   function markWithdrawalMigrated() external {
     if (!(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(WITHDRAWAL_MIGRATOR, msg.sender))) {
-      revert ErrUnauthorized(msg.sig);
+      revert ErrUnauthorized(msg.sig, Roles.WITHDRAWAL_MIGRATOR);
     }
-    if (withdrawalMigrated) {
-      revert ErrWithdrawalsMigrated();
-    }
+    if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
+
     withdrawalMigrated = true;
   }
 
@@ -322,13 +319,12 @@ contract RoninGatewayV2 is
    * @inheritdoc IRoninGatewayV2
    */
   function requestWithdrawalSignatures(uint256 _withdrawalId) external whenNotPaused {
-    if (mainchainWithdrew(_withdrawalId)) {
-      revert ErrWithdrawnOnMainchainAlready();
-    }
+    if (mainchainWithdrew(_withdrawalId)) revert ErrWithdrawnOnMainchainAlready();
+
     Transfer.Receipt memory _receipt = withdrawal[_withdrawalId];
-    if (_receipt.ronin.chainId != block.chainid) {
-      revert ErrInvalidChainId(msg.sig);
-    }
+    if (_receipt.ronin.chainId != block.chainid)
+      revert ErrInvalidChainId(msg.sig, _receipt.ronin.chainId, block.chainid);
+
     emit WithdrawalSignaturesRequested(_receipt.hash(), _receipt);
   }
 
@@ -417,9 +413,7 @@ contract RoninGatewayV2 is
    */
   function getMainchainToken(address _roninToken, uint256 _chainId) public view returns (MappedToken memory _token) {
     _token = _mainchainToken[_roninToken][_chainId];
-    if (_token.tokenAddr == address(0)) {
-      revert ErrUnsupportedToken();
-    }
+    if (_token.tokenAddr == address(0)) revert ErrUnsupportedToken();
   }
 
   /**
@@ -466,17 +460,15 @@ contract RoninGatewayV2 is
   ) internal {
     uint256 _id = _receipt.id;
     _receipt.info.validate();
-    if (_receipt.kind != Transfer.Kind.Deposit) {
-      revert ErrInvalidReceiptKind();
-    }
-    if (_receipt.ronin.chainId != block.chainid) {
-      revert ErrInvalidChainId(msg.sig);
-    }
+    if (_receipt.kind != Transfer.Kind.Deposit) revert ErrInvalidReceiptKind();
+
+    if (_receipt.ronin.chainId != block.chainid)
+      revert ErrInvalidChainId(msg.sig, _receipt.ronin.chainId, block.chainid);
+
     MappedToken memory _token = getMainchainToken(_receipt.ronin.tokenAddr, _receipt.mainchain.chainId);
 
-    if (!(_token.erc == _receipt.info.erc && _token.tokenAddr == _receipt.mainchain.tokenAddr)) {
+    if (!(_token.erc == _receipt.info.erc && _token.tokenAddr == _receipt.mainchain.tokenAddr))
       revert ErrInvalidReceipt();
-    }
 
     IsolatedGovernance.Vote storage _proposal = depositVote[_receipt.mainchain.chainId][_id];
     bytes32 _receiptHash = _receipt.hash();
@@ -507,9 +499,8 @@ contract RoninGatewayV2 is
     _request.info.validate();
     _checkWithdrawal(_request);
     MappedToken memory _token = getMainchainToken(_request.tokenAddr, _chainId);
-    if (_request.info.erc != _token.erc) {
-      revert ErrInvalidTokenStandard();
-    }
+    if (_request.info.erc != _token.erc) revert ErrInvalidTokenStandard();
+
     _request.info.transferFrom(_requester, address(this), _request.tokenAddr);
     _storeAsReceipt(_request, _chainId, _requester, _token.tokenAddr);
   }
@@ -541,7 +532,7 @@ contract RoninGatewayV2 is
    * @dev Don't send me RON.
    */
   function _fallback() internal virtual {
-    revert("RoninGatewayV2: invalid request");
+    revert ErrInvalidRequest();
   }
 
   /**
@@ -674,9 +665,8 @@ contract RoninGatewayV2 is
     virtual
     returns (uint256 _previousTrustedNum, uint256 _previousTrustedDenom)
   {
-    if (_trustedNumerator > _trustedDenominator) {
-      revert ErrInvalidTrustedThreshold();
-    }
+    if (_trustedNumerator > _trustedDenominator) revert ErrInvalidTrustedThreshold();
+
     _previousTrustedNum = _num;
     _previousTrustedDenom = _denom;
     _trustedNum = _trustedNumerator;

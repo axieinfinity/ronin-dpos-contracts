@@ -85,42 +85,30 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   ) external override {
     IRoninValidatorSet _validator = _validatorContract;
 
-    if (!(_validator.isBlockProducer(_consensusAddr) && _validator.isCandidateAdmin(_consensusAddr, msg.sender))) {
-      revert ErrUnauthorized(msg.sig);
-    }
+    if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Roles.BLOCK_PRODUCER);
 
-    if (checkScheduled(_consensusAddr)) {
-      revert ErrAlreadyScheduled();
-    }
+    if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender))
+      revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
 
-    if (!checkCooldownEnds(_consensusAddr)) {
-      revert ErrCooldownTimeNotYetEnded();
-    }
+    if (checkScheduled(_consensusAddr)) revert ErrAlreadyScheduled();
 
-    if (totalSchedules() >= maxSchedules) {
-      revert ErrTotalOfSchedulesExceeded();
-    }
+    if (!checkCooldownEnds(_consensusAddr)) revert ErrCooldownTimeNotYetEnded();
 
-    if (!_startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule)) {
+    if (totalSchedules() >= maxSchedules) revert ErrTotalOfSchedulesExceeded();
+
+    if (!_startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule))
       revert ErrStartBlockOutOfRange();
-    }
-    if (_startedAtBlock >= _endedAtBlock) {
-      revert ErrStartBlockOutOfRange();
-    }
+
+    if (_startedAtBlock >= _endedAtBlock) revert ErrStartBlockOutOfRange();
 
     uint256 _maintenanceElapsed = _endedAtBlock - _startedAtBlock + 1;
 
-    if (!_maintenanceElapsed.inRange(minMaintenanceDurationInBlock, maxMaintenanceDurationInBlock)) {
+    if (!_maintenanceElapsed.inRange(minMaintenanceDurationInBlock, maxMaintenanceDurationInBlock))
       revert ErrInvalidMaintenanceDuration();
-    }
 
-    if (!_validator.epochEndingAt(_startedAtBlock - 1)) {
-      revert ErrStartBlockOutOfRange();
-    }
+    if (!_validator.epochEndingAt(_startedAtBlock - 1)) revert ErrStartBlockOutOfRange();
 
-    if (!_validator.epochEndingAt(_endedAtBlock)) {
-      revert ErrEndBlockOutOfRange();
-    }
+    if (!_validator.epochEndingAt(_endedAtBlock)) revert ErrEndBlockOutOfRange();
 
     Schedule storage _sSchedule = _schedule[_consensusAddr];
     _sSchedule.from = _startedAtBlock;
@@ -134,17 +122,12 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function cancelSchedule(address _consensusAddr) external override {
-    if (!_validatorContract.isCandidateAdmin(_consensusAddr, msg.sender)) {
-      revert ErrUnauthorized(msg.sig);
-    }
+    if (!_validatorContract.isCandidateAdmin(_consensusAddr, msg.sender))
+      revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
 
-    if (!checkScheduled(_consensusAddr)) {
-      revert ErrUnexistedSchedule();
-    }
+    if (!checkScheduled(_consensusAddr)) revert ErrUnexistedSchedule();
 
-    if (checkMaintained(_consensusAddr, block.number)) {
-      revert ErrAlreadyOnMaintenance();
-    }
+    if (checkMaintained(_consensusAddr, block.number)) revert ErrAlreadyOnMaintenance();
 
     Schedule storage _sSchedule = _schedule[_consensusAddr];
     delete _sSchedule.from;
@@ -261,13 +244,9 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     uint256 _maxSchedules,
     uint256 _cooldownSecsToMaintain
   ) internal {
-    if (_minMaintenanceDurationInBlock >= _maxMaintenanceDurationInBlock) {
-      revert ErrInvalidMaintenanceDurationConfig();
-    }
+    if (_minMaintenanceDurationInBlock >= _maxMaintenanceDurationInBlock) revert ErrInvalidMaintenanceDurationConfig();
 
-    if (_minOffsetToStartSchedule >= _maxOffsetToStartSchedule) {
-      revert ErrInvalidOffsetToStartScheduleConfigs();
-    }
+    if (_minOffsetToStartSchedule >= _maxOffsetToStartSchedule) revert ErrInvalidOffsetToStartScheduleConfigs();
 
     minMaintenanceDurationInBlock = _minMaintenanceDurationInBlock;
     maxMaintenanceDurationInBlock = _maxMaintenanceDurationInBlock;

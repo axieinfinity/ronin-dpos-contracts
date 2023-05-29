@@ -4,14 +4,13 @@ pragma solidity ^0.8.0;
 import "./HasProxyAdmin.sol";
 import "../../interfaces/collections/IHasRoninGovernanceAdminContract.sol";
 import "../../interfaces/IRoninGovernanceAdmin.sol";
-
 import "../../libraries/Errors.sol";
 
 contract HasRoninGovernanceAdminContract is IHasRoninGovernanceAdminContract, HasProxyAdmin {
   IRoninGovernanceAdmin internal _roninGovernanceAdminContract;
 
   modifier onlyRoninGovernanceAdminContract() {
-    if (roninGovernanceAdminContract() != msg.sender) revert ErrUnauthorized(msg.sig);
+    if (roninGovernanceAdminContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.GOVERNANCE_ADMIN);
     _;
   }
 
