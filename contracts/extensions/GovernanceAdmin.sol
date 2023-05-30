@@ -5,7 +5,6 @@ import "../extensions/sequential-governance/CoreGovernance.sol";
 import "../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../extensions/collections/HasBridgeContract.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
-
 import "../libraries/ErrorHandler.sol";
 
 abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract, HasBridgeContract {
