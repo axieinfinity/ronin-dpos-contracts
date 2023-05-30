@@ -9,7 +9,7 @@ contract HasBridgeTrackingContract is IHasBridgeTrackingContract, HasProxyAdmin 
   IBridgeTracking internal _bridgeTrackingContract;
 
   modifier onlyBridgeTrackingContract() {
-    if (bridgeTrackingContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.BRIDGE_TRACKING);
+    if (bridgeTrackingContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.BRIDGE_TRACKING_CONTRACT);
     _;
   }
 
