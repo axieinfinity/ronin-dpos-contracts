@@ -103,7 +103,7 @@ abstract contract CoinbaseExecution is
     uint256 _lastPeriod = currentPeriod();
 
     if (_periodEnding) {
-      _syncBridgeOperatingReward(_lastPeriod, _currentValidators);
+      _syncBridgeOperatingReward(_lastPeriod);
       (
         uint256 _totalDelegatingReward,
         uint256[] memory _delegatingRewards
@@ -130,20 +130,28 @@ abstract contract CoinbaseExecution is
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _syncBridgeOperatingReward(uint256 _lastPeriod, address[] memory _currentValidators) internal {
+  function _syncBridgeOperatingReward(uint256 _lastPeriod) internal {
     uint256 _totalBridgeBallots = _bridgeTrackingContract.totalBallots(_lastPeriod);
     uint256 _totalBridgeVotes = _bridgeTrackingContract.totalVotes(_lastPeriod);
+
+    (
+      address[] memory _currentWorkingBridgeOperators,
+      address[] memory _currentValidatorsOperatingBridge
+    ) = getBridgeOperators();
+
     uint256[] memory _bridgeBallots = _bridgeTrackingContract.getManyTotalBallots(
       _lastPeriod,
-      getBridgeOperatorsOf(_currentValidators)
+      _currentWorkingBridgeOperators
     );
 
     if (
       !_validateBridgeTrackingResponse(_totalBridgeBallots, _totalBridgeVotes, _bridgeBallots) || _totalBridgeVotes == 0
     ) {
       // Shares equally in case the bridge has nothing to vote or bridge tracking response is incorrect
-      for (uint256 _i; _i < _currentValidators.length; _i++) {
-        _bridgeOperatingReward[_currentValidators[_i]] = _totalBridgeReward / _currentValidators.length;
+      for (uint256 _i; _i < _currentValidatorsOperatingBridge.length; _i++) {
+        _bridgeOperatingReward[_currentValidatorsOperatingBridge[_i]] =
+          _totalBridgeReward /
+          _currentValidatorsOperatingBridge.length;
       }
       return;
     }
@@ -157,13 +165,15 @@ abstract contract CoinbaseExecution is
 
     // Slashes the bridge reward if the total of votes exceeds the slashing threshold.
     bool _shouldSlash = _totalBridgeVotes > _skipBridgeOperatorSlashingThreshold;
-    for (uint256 _i; _i < _currentValidators.length; _i++) {
+    for (uint256 _i; _i < _currentValidatorsOperatingBridge.length; _i++) {
       // Shares the bridge operators reward proportionally.
-      _bridgeOperatingReward[_currentValidators[_i]] = (_totalBridgeReward * _bridgeBallots[_i]) / _totalBridgeBallots;
+      _bridgeOperatingReward[_currentValidatorsOperatingBridge[_i]] =
+        (_totalBridgeReward * _bridgeBallots[_i]) /
+        _totalBridgeBallots;
       if (_shouldSlash) {
         _slashBridgeOperatorBasedOnPerformance(
           _lastPeriod,
-          _currentValidators[_i],
+          _currentValidatorsOperatingBridge[_i],
           _MAX_PERCENTAGE - (_bridgeBallots[_i] * _MAX_PERCENTAGE) / _totalBridgeVotes,
           _jailDurationForMissingVotesRatioTier2,
           _missingVotesRatioTier1,
@@ -479,8 +489,9 @@ abstract contract CoinbaseExecution is
       }
     }
 
+    (address[] memory _bridgeOperators, ) = getBridgeOperators();
     emit BlockProducerSetUpdated(_newPeriod, _nextEpoch, getBlockProducers());
-    emit BridgeOperatorSetUpdated(_newPeriod, _nextEpoch, getBridgeOperators());
+    emit BridgeOperatorSetUpdated(_newPeriod, _nextEpoch, _bridgeOperators);
   }
 
   /**

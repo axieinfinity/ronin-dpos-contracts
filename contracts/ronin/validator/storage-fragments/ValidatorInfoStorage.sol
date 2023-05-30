@@ -96,17 +96,26 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
   /**
    * @inheritdoc IValidatorInfo
    */
-  function getBridgeOperators() public view override returns (address[] memory _result) {
-    _result = new address[](validatorCount);
+  function getBridgeOperators()
+    public
+    view
+    override
+    returns (address[] memory _bridgeOperatorList, address[] memory _validatorList)
+  {
+    _bridgeOperatorList = new address[](validatorCount);
+    _validatorList = new address[](validatorCount);
     uint256 _count = 0;
-    for (uint _i; _i < _result.length; _i++) {
+    for (uint _i; _i < _bridgeOperatorList.length; _i++) {
       if (isOperatingBridge(_validators[_i])) {
-        _result[_count++] = _bridgeOperatorOf(_validators[_i]);
+        address __validator = _validators[_i];
+        _bridgeOperatorList[_count++] = _bridgeOperatorOf(__validator);
+        _validatorList[_count] = __validator;
       }
     }
 
     assembly {
-      mstore(_result, _count)
+      mstore(_bridgeOperatorList, _count)
+      mstore(_validatorList, _count)
     }
   }
 
@@ -117,11 +126,11 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
     public
     view
     override
-    returns (address[] memory _result)
+    returns (address[] memory _bridgeOperatorList)
   {
-    _result = new address[](_validatorAddrs.length);
-    for (uint _i; _i < _result.length; _i++) {
-      _result[_i] = _bridgeOperatorOf(_validatorAddrs[_i]);
+    _bridgeOperatorList = new address[](_validatorAddrs.length);
+    for (uint _i; _i < _bridgeOperatorList.length; _i++) {
+      _bridgeOperatorList[_i] = _bridgeOperatorOf(_validatorAddrs[_i]);
     }
   }
 
