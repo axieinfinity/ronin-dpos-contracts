@@ -57,7 +57,7 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
    * @dev Triggers paused state.
    */
   function pause() external {
-    _requiresAuth();
+    _requireAuth();
     _pause();
   }
 
@@ -65,7 +65,7 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
    * @dev Triggers unpaused state.
    */
   function unpause() external {
-    _requiresAuth();
+    _requireAuth();
     _unpause();
   }
 
@@ -102,7 +102,7 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
     return (_num * _totalWeight + _denom - 1) / _denom;
   }
 
-  function _requiresAuth() internal view virtual {
+  function _requireAuth() internal view virtual {
     if (!(msg.sender == _getAdmin() || msg.sender == emergencyPauser))
       revert ErrUnauthorized(msg.sig, Roles.EMERGENCY_PAUSER);
   }
