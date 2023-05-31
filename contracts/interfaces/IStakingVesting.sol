@@ -3,6 +3,11 @@
 pragma solidity ^0.8.9;
 
 interface IStakingVesting {
+  /**
+   * @dev Error thrown when attempting to send a bonus that has already been sent.
+   */
+  error ErrBonusAlreadySent();
+
   /// @dev Emitted when the block bonus for block producer is transferred.
   event BonusTransferred(
     uint256 indexed blockNumber,

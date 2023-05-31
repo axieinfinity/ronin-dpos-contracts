@@ -229,7 +229,7 @@ describe('Slash indicator test', () => {
       it('Should non-coinbase cannot call slash', async () => {
         await expect(
           slashContract.connect(vagabond).slashUnavailability(validatorCandidates[0].consensusAddr.address)
-        ).to.revertedWith('SlashUnavailability: method caller must be coinbase');
+        ).to.revertedWithCustomError(slashContract, 'ErrUnauthorized');
       });
     });
 
@@ -268,8 +268,9 @@ describe('Slash indicator test', () => {
         let tx = slashContract
           .connect(validatorCandidates[slasherIdx].consensusAddr)
           .slashUnavailability(validatorCandidates[slasheeIdx].consensusAddr.address);
-        await expect(tx).to.be.revertedWith(
-          'SlashIndicator: cannot slash a validator twice or slash more than one validator in one block'
+        await expect(tx).to.be.revertedWithCustomError(
+          slashContract,
+          'ErrCannotSlashAValidatorTwiceOrSlashMoreThanOneValidatorInOneBlock'
         );
         await network.provider.send('evm_mine');
         await network.provider.send('evm_setAutomine', [true]);
@@ -289,8 +290,9 @@ describe('Slash indicator test', () => {
         let tx = slashContract
           .connect(validatorCandidates[slasherIdx].consensusAddr)
           .slashUnavailability(validatorCandidates[slasheeIdx2].consensusAddr.address);
-        await expect(tx).to.be.revertedWith(
-          'SlashIndicator: cannot slash a validator twice or slash more than one validator in one block'
+        await expect(tx).to.be.revertedWithCustomError(
+          slashContract,
+          'ErrCannotSlashAValidatorTwiceOrSlashMoreThanOneValidatorInOneBlock'
         );
         await network.provider.send('evm_mine');
         await network.provider.send('evm_setAutomine', [true]);
@@ -451,7 +453,7 @@ describe('Slash indicator test', () => {
           .connect(validatorCandidates[slasherIdx].consensusAddr)
           .slashDoubleSign(validatorCandidates[slasherIdx].consensusAddr.address, header1, header2);
 
-        await expect(tx).revertedWith('HasProxyAdmin: unauthorized sender');
+        await expect(tx).revertedWithCustomError(slashContract, 'ErrUnauthorized');
       });
 
       it('Should non-admin not be able to slash validator with double signing', async () => {
@@ -467,7 +469,7 @@ describe('Slash indicator test', () => {
           .connect(validatorCandidates[slasherIdx].consensusAddr)
           .slashDoubleSign(validatorCandidates[slasheeIdx].consensusAddr.address, header1, header2);
 
-        await expect(tx).revertedWith('HasProxyAdmin: unauthorized sender');
+        await expect(tx).revertedWithCustomError(slashContract, 'ErrUnauthorized');
       });
 
       it('Should be able to slash validator with double signing', async () => {
@@ -550,7 +552,7 @@ describe('Slash indicator test', () => {
           tx,
           proposalHash,
           [false],
-          [Encoder.encodeError('SlashDoubleSign: evidence already submitted')]
+          [slashContract.interface.getSighash(slashContract.interface.getError('ErrEvidenceAlreadySubmitted'))]
         );
       });
 

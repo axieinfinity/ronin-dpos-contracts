@@ -6,7 +6,7 @@
   "main": "dist/src/types/index.js",
   "types": "dist/src/types/index.d.ts",
   "scripts": {
-    "compile": "hardhat compile",
+    "compile": "prettier --write ./contracts -l && TS_NODE_TRANSPILE_ONLY=1 hardhat compile",
     "test": "hardhat test",
     "clean": "hardhat clean && rimraf dist cache",
     "lint:fix": "lint-staged",

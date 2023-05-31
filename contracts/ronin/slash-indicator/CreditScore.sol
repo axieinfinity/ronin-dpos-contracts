@@ -75,24 +75,21 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
    * @inheritdoc ICreditScore
    */
   function bailOut(address _consensusAddr) external override {
-    require(
-      _validatorContract.isValidatorCandidate(_consensusAddr),
-      "SlashIndicator: consensus address must be a validator candidate"
-    );
-    require(
-      _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender),
-      "SlashIndicator: method caller must be a candidate admin"
-    );
+    if (!_validatorContract.isValidatorCandidate(_consensusAddr))
+      revert ErrUnauthorized(msg.sig, Roles.VALIDATOR_CANDIDATE);
+
+    if (!_validatorContract.isCandidateAdmin(_consensusAddr, msg.sender))
+      revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
 
     (bool _isJailed, , uint256 _jailedEpochLeft) = _validatorContract.getJailedTimeLeft(_consensusAddr);
-    require(_isJailed, "SlashIndicator: caller must be jailed in the current period");
+    if (!_isJailed) revert ErrCallerMustBeJailedInTheCurrentPeriod();
 
     uint256 _period = _validatorContract.currentPeriod();
-    require(!_checkBailedOutAtPeriod[_consensusAddr][_period], "SlashIndicator: validator has bailed out previously");
+    if (_checkBailedOutAtPeriod[_consensusAddr][_period]) revert ErrValidatorHasBailedOutPreviously();
 
     uint256 _score = _creditScore[_consensusAddr];
     uint256 _cost = _jailedEpochLeft * _bailOutCostMultiplier;
-    require(_score >= _cost, "SlashIndicator: insufficient credit score to bail out");
+    if (_score < _cost) revert ErrInsufficientCreditScoreToBailOut();
 
     _validatorContract.execBailOut(_consensusAddr, _period);
 
@@ -184,8 +181,9 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     uint256 _bailOutMultiplier,
     uint256 _cutOffPercentage
   ) internal {
-    require(_gainScore <= _maxScore, "CreditScore: invalid credit score config");
-    require(_cutOffPercentage <= _MAX_PERCENTAGE, "CreditScore: invalid cut off percentage config");
+    if (_gainScore > _maxScore) revert ErrInvalidCreditScoreConfig();
+
+    if (_cutOffPercentage > _MAX_PERCENTAGE) revert ErrInvalidCutOffPercentageConfig();
 
     _gainCreditScore = _gainScore;
     _maxCreditScore = _maxScore;

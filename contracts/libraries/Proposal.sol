@@ -1,7 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "../libraries/Errors.sol";
+
 library Proposal {
+  /**
+   * @dev Error thrown when there is insufficient gas to execute a function.
+   */
+  error ErrInsufficientGas();
+
+  /**
+   * @dev Error thrown when an invalid expiry timestamp is provided.
+   */
+  error ErrInvalidExpiryTimestamp();
+
   struct ProposalDetail {
     // Nonce to make sure proposals are executed in order
     uint256 nonce;
@@ -22,14 +34,18 @@ library Proposal {
    * @dev Validates the proposal.
    */
   function validate(ProposalDetail memory _proposal, uint256 _maxExpiryDuration) internal view {
-    require(
-      _proposal.targets.length > 0 &&
+    if (
+      !(_proposal.targets.length > 0 &&
         _proposal.targets.length == _proposal.values.length &&
         _proposal.targets.length == _proposal.calldatas.length &&
-        _proposal.targets.length == _proposal.gasAmounts.length,
-      "Proposal: invalid array length"
-    );
-    require(_proposal.expiryTimestamp <= block.timestamp + _maxExpiryDuration, "Proposal: invalid expiry timestamp");
+        _proposal.targets.length == _proposal.gasAmounts.length)
+    ) {
+      revert ErrLengthMismatch(msg.sig);
+    }
+
+    if (_proposal.expiryTimestamp > block.timestamp + _maxExpiryDuration) {
+      revert ErrInvalidExpiryTimestamp();
+    }
   }
 
   /**
@@ -89,16 +105,21 @@ library Proposal {
     internal
     returns (bool[] memory _successCalls, bytes[] memory _returnDatas)
   {
-    require(executable(_proposal), "Proposal: query for invalid chainId");
+    if (!executable(_proposal)) revert ErrInvalidChainId(msg.sig, _proposal.chainId, block.chainid);
+
     _successCalls = new bool[](_proposal.targets.length);
     _returnDatas = new bytes[](_proposal.targets.length);
-    for (uint256 _i = 0; _i < _proposal.targets.length; ++_i) {
-      require(gasleft() > _proposal.gasAmounts[_i], "Proposal: insufficient gas");
+    for (uint256 _i = 0; _i < _proposal.targets.length; ) {
+      if (gasleft() <= _proposal.gasAmounts[_i]) revert ErrInsufficientGas();
 
       (_successCalls[_i], _returnDatas[_i]) = _proposal.targets[_i].call{
         value: _proposal.values[_i],
         gas: _proposal.gasAmounts[_i]
       }(_proposal.calldatas[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 }

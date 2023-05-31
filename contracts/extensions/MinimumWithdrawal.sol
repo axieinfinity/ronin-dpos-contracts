@@ -5,6 +5,9 @@ import "./collections/HasProxyAdmin.sol";
 import "../libraries/Transfer.sol";
 
 abstract contract MinimumWithdrawal is HasProxyAdmin {
+  /// @dev Throwed when the ERC20 withdrawal quantity is less than the minimum threshold.
+  error ErrQueryForTooSmallQuantity();
+
   /// @dev Emitted when the minimum thresholds are updated
   event MinimumThresholdsUpdated(address[] tokens, uint256[] threshold);
 
@@ -28,7 +31,7 @@ abstract contract MinimumWithdrawal is HasProxyAdmin {
    *
    */
   function setMinimumThresholds(address[] calldata _tokens, uint256[] calldata _thresholds) external virtual onlyAdmin {
-    require(_tokens.length > 0, "MinimumWithdrawal: invalid array length");
+    if (_tokens.length == 0) revert ErrEmptyArray();
     _setMinimumThresholds(_tokens, _thresholds);
   }
 
@@ -42,9 +45,13 @@ abstract contract MinimumWithdrawal is HasProxyAdmin {
    *
    */
   function _setMinimumThresholds(address[] calldata _tokens, uint256[] calldata _thresholds) internal virtual {
-    require(_tokens.length == _thresholds.length, "MinimumWithdrawal: invalid array length");
-    for (uint256 _i; _i < _tokens.length; _i++) {
+    if (_tokens.length != _thresholds.length) revert ErrLengthMismatch(msg.sig);
+    for (uint256 _i; _i < _tokens.length; ) {
       minimumThreshold[_tokens[_i]] = _thresholds[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
     emit MinimumThresholdsUpdated(_tokens, _thresholds);
   }
@@ -53,9 +60,7 @@ abstract contract MinimumWithdrawal is HasProxyAdmin {
    * @dev Checks whether the request is larger than or equal to the minimum threshold.
    */
   function _checkWithdrawal(Transfer.Request calldata _request) internal view {
-    require(
-      _request.info.erc != Token.Standard.ERC20 || _request.info.quantity >= minimumThreshold[_request.tokenAddr],
-      "MinimumWithdrawal: query for too small quantity"
-    );
+    if (_request.info.erc == Token.Standard.ERC20 && _request.info.quantity < minimumThreshold[_request.tokenAddr])
+      revert ErrQueryForTooSmallQuantity();
   }
 }

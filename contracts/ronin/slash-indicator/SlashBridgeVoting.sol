@@ -36,10 +36,8 @@ abstract contract SlashBridgeVoting is
     uint256 _lastVotedBlock = Math.max(_roninGovernanceAdminContract.lastVotedBlock(_org.bridgeVoter), _org.addedBlock);
     uint256 _period = _validatorContract.currentPeriod();
 
-    require(
-      block.number - _lastVotedBlock > _bridgeVotingThreshold && !_bridgeVotingSlashed[_consensusAddr][_period],
-      "SlashBridgeVoting: invalid slash"
-    );
+    if (block.number - _lastVotedBlock <= _bridgeVotingThreshold || _bridgeVotingSlashed[_consensusAddr][_period])
+      revert ErrInvalidSlash();
 
     _bridgeVotingSlashed[_consensusAddr][_period] = true;
     emit Slashed(_consensusAddr, SlashType.BRIDGE_VOTING, _period);

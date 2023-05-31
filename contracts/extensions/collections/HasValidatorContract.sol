@@ -9,7 +9,7 @@ contract HasValidatorContract is IHasValidatorContract, HasProxyAdmin {
   IRoninValidatorSet internal _validatorContract;
 
   modifier onlyValidatorContract() {
-    if (validatorContract() != msg.sender) revert ErrCallerMustBeValidatorContract();
+    if (validatorContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.VALIDATOR_CONTRACT);
     _;
   }
 
@@ -24,7 +24,7 @@ contract HasValidatorContract is IHasValidatorContract, HasProxyAdmin {
    * @inheritdoc IHasValidatorContract
    */
   function setValidatorContract(address _addr) external virtual override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setValidatorContract(_addr);
   }
 

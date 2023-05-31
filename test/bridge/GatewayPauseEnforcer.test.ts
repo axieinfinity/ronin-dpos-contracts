@@ -248,8 +248,9 @@ describe('Ronin Gateway V2 test', () => {
     });
 
     it('Should not be able to emergency pause for a second time', async () => {
-      await expect(pauseEnforcer.connect(enforcerSentry).triggerPause()).revertedWith(
-        'PauseEnforcer: target is not on pause'
+      await expect(pauseEnforcer.connect(enforcerSentry).triggerPause()).revertedWithCustomError(
+        pauseEnforcer,
+        'ErrTargetIsNotOnPaused'
       );
     });
 
@@ -302,17 +303,20 @@ describe('Ronin Gateway V2 test', () => {
     });
 
     it('Should not be able to emergency unpause', async () => {
-      await expect(pauseEnforcer.connect(enforcerSentry).triggerUnpause()).revertedWith(
-        'PauseEnforcer: not on emergency pause'
+      await expect(pauseEnforcer.connect(enforcerSentry).triggerUnpause()).revertedWithCustomError(
+        pauseEnforcer,
+        'ErrNotOnEmergencyPause'
       );
     });
 
     it('Should not be able to override by emergency pause and emergency unpause', async () => {
-      await expect(pauseEnforcer.connect(enforcerSentry).triggerPause()).revertedWith(
-        'PauseEnforcer: target is not on pause'
+      await expect(pauseEnforcer.connect(enforcerSentry).triggerPause()).revertedWithCustomError(
+        pauseEnforcer,
+        'ErrTargetIsNotOnPaused'
       );
-      await expect(pauseEnforcer.connect(enforcerSentry).triggerUnpause()).revertedWith(
-        'PauseEnforcer: not on emergency pause'
+      await expect(pauseEnforcer.connect(enforcerSentry).triggerUnpause()).revertedWithCustomError(
+        pauseEnforcer,
+        'ErrNotOnEmergencyPause'
       );
     });
 

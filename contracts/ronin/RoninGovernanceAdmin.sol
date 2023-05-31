@@ -6,6 +6,7 @@ import "../extensions/sequential-governance/GovernanceProposal.sol";
 import "../extensions/collections/HasValidatorContract.sol";
 import "../extensions/GovernanceAdmin.sol";
 import "../libraries/EmergencyExitBallot.sol";
+import "../libraries/ErrorHandler.sol";
 import "../interfaces/IRoninGovernanceAdmin.sol";
 
 contract RoninGovernanceAdmin is
@@ -15,6 +16,7 @@ contract RoninGovernanceAdmin is
   BOsGovernanceProposal,
   HasValidatorContract
 {
+  using ErrorHandler for bool;
   using Proposal for Proposal.ProposalDetail;
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
@@ -22,7 +24,7 @@ contract RoninGovernanceAdmin is
   mapping(bytes32 => IsolatedGovernance.Vote) internal _emergencyExitPoll;
 
   modifier onlyGovernor() {
-    require(_getWeight(msg.sender) > 0, "RoninGovernanceAdmin: sender is not governor");
+    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, Roles.GOVERNOR);
     _;
   }
 
@@ -40,7 +42,7 @@ contract RoninGovernanceAdmin is
    * @inheritdoc IHasValidatorContract
    */
   function setValidatorContract(address _addr) external override onlySelfCall {
-    require(_addr.code.length > 0, "RoninGovernanceAdmin: set to non-contract");
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setValidatorContract(_addr);
   }
 
@@ -289,7 +291,8 @@ contract RoninGovernanceAdmin is
    */
   function deleteExpired(uint256 _chainId, uint256 _round) external {
     ProposalVote storage _vote = vote[_chainId][_round];
-    require(_vote.hash != bytes32(0), "RoninGovernanceAdmin: query for empty voting");
+    if (_vote.hash == 0) revert ErrQueryForEmptyVote();
+
     _tryDeleteExpiredVotingRound(_vote);
   }
 
@@ -343,11 +346,12 @@ contract RoninGovernanceAdmin is
   ) external onlyGovernor {
     address _voter = msg.sender;
     bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
-    require(_voteHash == _hash, "RoninGovernanceAdmin: invalid vote hash");
+    if (_voteHash != _hash) revert ErrInvalidVoteHash();
 
     IsolatedGovernance.Vote storage _v = _emergencyExitPoll[_hash];
-    require(_v.createdAt > 0, "RoninGovernanceAdmin: query for non-existent vote");
-    require(_v.status != VoteStatus.Expired, "RoninGovernanceAdmin: query for expired vote");
+    if (_v.createdAt == 0) revert ErrQueryForNonExistentVote();
+
+    if (_v.status == VoteStatus.Expired) revert ErrQueryForExpiredVote();
 
     _v.castVote(_voter, _hash);
     emit EmergencyExitPollVoted(_hash, _voter);
@@ -375,7 +379,7 @@ contract RoninGovernanceAdmin is
         abi.encodeWithSelector(_selector, _governor)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
   }
 
@@ -391,7 +395,8 @@ contract RoninGovernanceAdmin is
         abi.encodeWithSelector(_selector, _governors)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
   }
 
@@ -407,7 +412,7 @@ contract RoninGovernanceAdmin is
         abi.encodeWithSelector(_selector, _governor)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
   }
 
@@ -430,7 +435,8 @@ contract RoninGovernanceAdmin is
         abi.encodeWithSelector(_selector, _bridgeVoters)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
   }
 
@@ -442,14 +448,14 @@ contract RoninGovernanceAdmin is
     virtual
   {
     bytes4 _selector = _validatorContract.execReleaseLockedFundForEmergencyExitRequest.selector;
-    (bool _success, ) = validatorContract().call(
+    (bool _success, bytes memory _returndata) = validatorContract().call(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
         abi.encodeWithSelector(_selector, _consensusAddr, _recipientAfterUnlockedFund)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    _success.handleRevert(_selector, _returndata);
   }
 
   /**
@@ -467,11 +473,11 @@ contract RoninGovernanceAdmin is
     Proposal.ProposalDetail memory _proposal,
     Ballot.VoteType _support
   ) internal {
-    require(_proposal.chainId == block.chainid, "RoninGovernanceAdmin: invalid chain id");
-    require(
-      vote[_proposal.chainId][_proposal.nonce].hash == _proposal.hash(),
-      "RoninGovernanceAdmin: cast vote for invalid proposal"
-    );
+    if (_proposal.chainId != block.chainid) revert ErrInvalidChainId(msg.sig, _proposal.chainId, block.chainid);
+
+    bytes32 proposalHash = _proposal.hash();
+    if (vote[_proposal.chainId][_proposal.nonce].hash != proposalHash)
+      revert ErrInvalidProposal(proposalHash, vote[_proposal.chainId][_proposal.nonce].hash);
 
     uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
     uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;

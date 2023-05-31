@@ -6,6 +6,11 @@ import "./IBaseSlash.sol";
 
 interface ISlashBridgeOperator is IBaseSlash {
   /**
+   * @dev Error thrown when invalid ratios are provided.
+   */
+  error ErrInvalidRatios();
+
+  /**
    * @dev Emitted when the configs to slash bridge operator is updated. See the method
    * `getBridgeOperatorSlashingConfigs` for param details.
    */
