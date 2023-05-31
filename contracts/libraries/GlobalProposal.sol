@@ -4,6 +4,11 @@ pragma solidity ^0.8.0;
 import "./Proposal.sol";
 
 library GlobalProposal {
+  /**
+   * @dev Error thrown when attempting to interact with an unsupported target.
+   */
+  error ErrUnsupportedTarget();
+
   enum TargetOption {
     RoninTrustedOrganizationContract,
     GatewayContract
@@ -86,9 +91,7 @@ library GlobalProposal {
         _detail.targets[_i] = _gatewayContract;
       } else if (_proposal.targetOptions[_i] == TargetOption.RoninTrustedOrganizationContract) {
         _detail.targets[_i] = _roninTrustedOrganizationContract;
-      } else {
-        revert("GlobalProposal: unsupported target");
-      }
+      } else revert ErrUnsupportedTarget();
 
       unchecked {
         ++_i;

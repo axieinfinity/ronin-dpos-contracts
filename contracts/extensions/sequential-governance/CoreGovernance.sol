@@ -4,12 +4,23 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../../libraries/Proposal.sol";
 import "../../libraries/GlobalProposal.sol";
+import "../../libraries/Errors.sol";
 import "../../libraries/Ballot.sol";
 import "../../interfaces/consumers/ChainTypeConsumer.sol";
 import "../../interfaces/consumers/SignatureConsumer.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
 
 abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, ChainTypeConsumer {
+  /**
+   * @dev Error thrown when attempting to interact with a finalized vote.
+   */
+  error ErrVoteIsFinalized();
+
+  /**
+   * @dev Error thrown when the current proposal is not completed.
+   */
+  error ErrCurrentProposalIsNotCompleted();
+
   using Proposal for Proposal.ProposalDetail;
   using GlobalProposal for GlobalProposal.GlobalProposalDetail;
 
@@ -80,7 +91,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       bool _isExpired = _tryDeleteExpiredVotingRound(_latestProposalVote);
       // Skip increasing round number if the latest round is expired, allow the vote to be overridden
       if (!_isExpired) {
-        require(_latestProposalVote.status != VoteStatus.Pending, "CoreGovernance: current proposal is not completed");
+        if (_latestProposalVote.status == VoteStatus.Pending) revert ErrCurrentProposalIsNotCompleted();
         _round = ++round[_chainId];
       }
     }
@@ -116,7 +127,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     uint256[] memory _gasAmounts,
     address _creator
   ) internal virtual returns (Proposal.ProposalDetail memory _proposal) {
-    require(_chainId != 0, "CoreGovernance: invalid chain id");
+    if (_chainId == 0) revert ErrInvalidChainId(msg.sig, 0, block.chainid);
     uint256 _round = _createVotingRound(_chainId);
 
     _proposal = Proposal.ProposalDetail(_round, _chainId, _expiryTimestamp, _targets, _values, _calldatas, _gasAmounts);
@@ -143,13 +154,13 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     returns (uint256 _round)
   {
     uint256 _chainId = _proposal.chainId;
-    require(_chainId != 0, "CoreGovernance: invalid chain id");
+    if (_chainId == 0) revert ErrInvalidChainId(msg.sig, 0, block.chainid);
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();
     _round = _createVotingRound(_chainId);
     _saveVotingRound(vote[_chainId][_round], _proposalHash, _proposal.expiryTimestamp);
-    require(_round == _proposal.nonce, "CoreGovernance: invalid proposal nonce");
+    if (_round != _proposal.nonce) revert ErrInvalidProposalNonce(msg.sig);
     emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
   }
 
@@ -210,7 +221,8 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     bytes32 _proposalHash = _proposal.hash();
     uint256 _round = _createVotingRound(0);
     _saveVotingRound(vote[0][_round], _proposalHash, _globalProposal.expiryTimestamp);
-    require(_round == _proposal.nonce, "CoreGovernance: invalid proposal nonce");
+
+    if (_round != _proposal.nonce) revert ErrInvalidProposalNonce(msg.sig);
     emit GlobalProposalCreated(_round, _proposalHash, _proposal, _globalProposal.hash(), _globalProposal, _creator);
   }
 
@@ -243,11 +255,9 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       return true;
     }
 
-    require(round[_proposal.chainId] == _round, "CoreGovernance: query for invalid proposal nonce");
-    require(_vote.status == VoteStatus.Pending, "CoreGovernance: the vote is finalized");
-    if (_voted(_vote, _voter)) {
-      revert(string(abi.encodePacked("CoreGovernance: ", Strings.toHexString(uint160(_voter), 20), " already voted")));
-    }
+    if (round[_proposal.chainId] != _round) revert ErrInvalidProposalNonce(msg.sig);
+    if (_vote.status != VoteStatus.Pending) revert ErrVoteIsFinalized();
+    if (_voted(_vote, _voter)) revert ErrAlreadyVoted(_voter);
 
     _vote.voted[_voter] = true;
     // Stores the signature if it is not empty
@@ -264,9 +274,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     } else if (_support == Ballot.VoteType.Against) {
       _vote.againstVoteds.push(_voter);
       _againstVoteWeight = _vote.againstVoteWeight += _voterWeight;
-    } else {
-      revert("CoreGovernance: unsupported vote type");
-    }
+    } else revert ErrUnsupportedVoteType(msg.sig);
 
     if (_forVoteWeight >= _minimumForVoteWeight) {
       _done = true;

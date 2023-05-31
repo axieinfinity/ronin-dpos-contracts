@@ -6,15 +6,17 @@ import "../extensions/collections/HasRoninTrustedOrganizationContract.sol";
 import "../extensions/collections/HasBridgeContract.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 
+import "../libraries/ErrorHandler.sol";
+
 abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract, HasBridgeContract {
+  using ErrorHandler for bool;
+
   uint256 public roninChainId;
   /// @dev Domain separator
   bytes32 public DOMAIN_SEPARATOR;
 
-  error ErrProxyCallFailed(bytes4 methodSignature);
-
   modifier onlySelfCall() {
-    require(msg.sender == address(this), "GovernanceAdmin: only allowed self-call");
+    _onlySelfCall();
     _;
   }
 
@@ -41,7 +43,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
    * @inheritdoc IHasRoninTrustedOrganizationContract
    */
   function setRoninTrustedOrganizationContract(address _addr) external override onlySelfCall {
-    require(_addr.code.length > 0, "GovernanceAdmin: set to non-contract");
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setRoninTrustedOrganizationContract(_addr);
   }
 
@@ -49,7 +51,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
    * @inheritdoc IHasBridgeContract
    */
   function setBridgeContract(address _addr) external override onlySelfCall {
-    require(_addr.code.length > 0, "GovernanceAdmin: set to non-contract");
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setBridgeContract(_addr);
   }
 
@@ -76,7 +78,8 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
     // bytes4(keccak256("implementation()")) == 0x5c60da1b
     bytes4 _selector = 0x5c60da1b;
     (bool _success, bytes memory _returndata) = _proxy.staticcall(abi.encodeWithSelector(_selector));
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    _success.handleRevert(_selector, _returndata);
+
     return abi.decode(_returndata, (address));
   }
 
@@ -99,7 +102,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
     // bytes4(keccak256("admin()")) == 0xf851a440
     bytes4 _selector = 0xf851a440;
     (bool _success, bytes memory _returndata) = _proxy.staticcall(abi.encodeWithSelector(_selector));
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (address));
   }
 
@@ -113,8 +116,8 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
   function changeProxyAdmin(address _proxy, address _newAdmin) external onlySelfCall {
     // bytes4(keccak256("changeAdmin(address)"))
     bytes4 _selector = 0x8f283970;
-    (bool _success, ) = _proxy.call(abi.encodeWithSelector(_selector, _newAdmin));
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    (bool _success, bytes memory _returndata) = _proxy.call(abi.encodeWithSelector(_selector, _newAdmin));
+    _success.handleRevert(_selector, _returndata);
   }
 
   /**
@@ -129,7 +132,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
         abi.encodeWithSelector(_selector)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
   }
 
@@ -145,7 +148,11 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
         abi.encodeWithSelector(_selector)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
+  }
+
+  function _onlySelfCall() internal view virtual {
+    if (msg.sender != address(this)) revert ErrOnlySelfCall(msg.sig);
   }
 }

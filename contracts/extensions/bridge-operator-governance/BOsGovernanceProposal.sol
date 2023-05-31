@@ -7,6 +7,11 @@ import "../../interfaces/IRoninGovernanceAdmin.sol";
 import "../../libraries/IsolatedGovernance.sol";
 
 abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAdmin {
+  /**
+   * @dev Error indicating that the order of signers is invalid.
+   */
+  error ErrInvalidSignerOrder();
+
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
   /// @dev The last the brige operator set info.
@@ -47,13 +52,12 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAd
     uint256 _minimumVoteWeight,
     bytes32 _domainSeperator
   ) internal {
-    require(
-      _ballot.period >= _lastSyncedBridgeOperatorSetInfo.period &&
-        _ballot.epoch >= _lastSyncedBridgeOperatorSetInfo.epoch,
-      "BOsGovernanceProposal: query for outdated bridge operator set"
-    );
+    if (
+      _ballot.period < _lastSyncedBridgeOperatorSetInfo.period || _ballot.epoch < _lastSyncedBridgeOperatorSetInfo.epoch
+    ) revert ErrQueryForOutdatedBridgeOperatorSet();
+
     BridgeOperatorsBallot.verifyBallot(_ballot);
-    require(_signatures.length > 0, "BOsGovernanceProposal: invalid array length");
+    if (_signatures.length == 0) revert ErrEmptyArray();
 
     address _signer;
     address _lastSigner;
@@ -68,7 +72,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAd
       {
         Signature calldata _sig = _signatures[_i];
         _signer = ECDSA.recover(_digest, _sig.v, _sig.r, _sig.s);
-        require(_lastSigner < _signer, "BOsGovernanceProposal: invalid signer order");
+        if (_lastSigner >= _signer) revert ErrInvalidSignerOrder();
         _lastSigner = _signer;
       }
 
@@ -84,7 +88,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAd
       }
     }
 
-    require(_hasValidVotes, "BOsGovernanceProposal: invalid signatures");
+    if (!_hasValidVotes) revert ErrInvalidSignatures(msg.sig);
     address[] memory _filteredVoters = _v.filterByHash(_hash);
     _v.syncVoteStatus(_minimumVoteWeight, _sumBridgeVoterWeights(_filteredVoters), 0, 0, _hash);
   }

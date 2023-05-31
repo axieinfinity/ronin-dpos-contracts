@@ -8,9 +8,6 @@ interface IHasStakingVestingContract is IHasContract {
   /// @dev Emitted when the staking vesting contract is updated.
   event StakingVestingContractUpdated(address);
 
-  /// @dev Error of method caller must be staking vesting contract.
-  error ErrCallerMustBeStakingVestingContract();
-
   /**
    * @dev Returns the staking vesting contract.
    */

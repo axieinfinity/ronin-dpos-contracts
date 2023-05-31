@@ -68,7 +68,8 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
       uint256 _bridgeOperatorBonus
     )
   {
-    require(block.number > lastBlockSendingBonus, "StakingVesting: bonus for already sent");
+    if (block.number <= lastBlockSendingBonus) revert ErrBonusAlreadySent();
+
     lastBlockSendingBonus = block.number;
 
     _blockProducerBonus = _forBlockProducer ? blockProducerBlockBonus(block.number) : 0;

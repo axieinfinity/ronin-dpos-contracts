@@ -9,7 +9,7 @@ contract HasMaintenanceContract is IHasMaintenanceContract, HasProxyAdmin {
   IMaintenance internal _maintenanceContract;
 
   modifier onlyMaintenanceContract() {
-    if (maintenanceContract() != msg.sender) revert ErrCallerMustBeMaintenanceContract();
+    if (maintenanceContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.MAINTENANCE_CONTRACT);
     _;
   }
 
@@ -24,7 +24,7 @@ contract HasMaintenanceContract is IHasMaintenanceContract, HasProxyAdmin {
    * @inheritdoc IHasMaintenanceContract
    */
   function setMaintenanceContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setMaintenanceContract(_addr);
   }
 

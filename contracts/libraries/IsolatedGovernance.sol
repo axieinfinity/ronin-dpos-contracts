@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../interfaces/consumers/VoteStatusConsumer.sol";
+import "../libraries/Errors.sol";
 
 library IsolatedGovernance {
   struct Vote {
@@ -34,11 +35,7 @@ library IsolatedGovernance {
       _v.status = VoteStatusConsumer.VoteStatus.Expired;
     }
 
-    if (voted(_v, _voter)) {
-      revert(
-        string(abi.encodePacked("IsolatedGovernance: ", Strings.toHexString(uint160(_voter), 20), " already voted"))
-      );
-    }
+    if (voted(_v, _voter)) revert ErrAlreadyVoted(_voter);
 
     _v.voteHashOf[_voter] = _hash;
     _v.voters.push(_voter);

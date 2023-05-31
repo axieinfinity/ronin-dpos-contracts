@@ -4,6 +4,9 @@ pragma solidity ^0.8.0;
 import "./GatewayV2.sol";
 
 abstract contract WithdrawalLimitation is GatewayV2 {
+  /// @dev Error of invalid percentage.
+  error ErrInvalidPercentage();
+
   /// @dev Emitted when the high-tier vote weight threshold is updated
   event HighTierVoteWeightThresholdUpdated(
     uint256 indexed nonce,
@@ -113,7 +116,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
     virtual
     onlyAdmin
   {
-    require(_tokens.length > 0, "WithdrawalLimitation: invalid array length");
+    if (_tokens.length == 0) revert ErrEmptyArray();
     _setHighTierThresholds(_tokens, _thresholds);
   }
 
@@ -128,7 +131,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    *
    */
   function setLockedThresholds(address[] calldata _tokens, uint256[] calldata _thresholds) external virtual onlyAdmin {
-    require(_tokens.length > 0, "WithdrawalLimitation: invalid array length");
+    if (_tokens.length == 0) revert ErrEmptyArray();
     _setLockedThresholds(_tokens, _thresholds);
   }
 
@@ -147,7 +150,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
     virtual
     onlyAdmin
   {
-    require(_tokens.length > 0, "WithdrawalLimitation: invalid array length");
+    if (_tokens.length == 0) revert ErrEmptyArray();
     _setUnlockFeePercentages(_tokens, _percentages);
   }
 
@@ -162,7 +165,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    *
    */
   function setDailyWithdrawalLimits(address[] calldata _tokens, uint256[] calldata _limits) external virtual onlyAdmin {
-    require(_tokens.length > 0, "WithdrawalLimitation: invalid array length");
+    if (_tokens.length == 0) revert ErrEmptyArray();
     _setDailyWithdrawalLimits(_tokens, _limits);
   }
 
@@ -183,7 +186,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
     internal
     returns (uint256 _previousNum, uint256 _previousDenom)
   {
-    require(_numerator <= _denominator, "WithdrawalLimitation: invalid threshold");
+    if (_numerator > _denominator) revert ErrInvalidThreshold(msg.sig);
     _previousNum = _highTierVWNum;
     _previousDenom = _highTierVWDenom;
     _highTierVWNum = _numerator;
@@ -201,7 +204,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    *
    */
   function _setHighTierThresholds(address[] calldata _tokens, uint256[] calldata _thresholds) internal virtual {
-    require(_tokens.length == _thresholds.length, "WithdrawalLimitation: invalid array length");
+    if (_tokens.length == _thresholds.length) revert ErrLengthMismatch(msg.sig);
     for (uint256 _i; _i < _tokens.length; ) {
       highTierThreshold[_tokens[_i]] = _thresholds[_i];
 
@@ -222,7 +225,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    *
    */
   function _setLockedThresholds(address[] calldata _tokens, uint256[] calldata _thresholds) internal virtual {
-    require(_tokens.length == _thresholds.length, "WithdrawalLimitation: invalid array length");
+    if (_tokens.length != _thresholds.length) revert ErrLengthMismatch(msg.sig);
     for (uint256 _i; _i < _tokens.length; ) {
       lockedThreshold[_tokens[_i]] = _thresholds[_i];
 
@@ -244,9 +247,10 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    *
    */
   function _setUnlockFeePercentages(address[] calldata _tokens, uint256[] calldata _percentages) internal virtual {
-    require(_tokens.length == _percentages.length, "WithdrawalLimitation: invalid array length");
+    if (_tokens.length != _percentages.length) revert ErrLengthMismatch(msg.sig);
     for (uint256 _i; _i < _tokens.length; ) {
-      require(_percentages[_i] <= _MAX_PERCENTAGE, "WithdrawalLimitation: invalid percentage");
+      if (_percentages[_i] > _MAX_PERCENTAGE) revert ErrInvalidPercentage();
+
       unlockFeePercentages[_tokens[_i]] = _percentages[_i];
 
       unchecked {
@@ -266,7 +270,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    *
    */
   function _setDailyWithdrawalLimits(address[] calldata _tokens, uint256[] calldata _limits) internal virtual {
-    require(_tokens.length == _limits.length, "WithdrawalLimitation: invalid array length");
+    if (_tokens.length != _limits.length) revert ErrLengthMismatch(msg.sig);
     for (uint256 _i; _i < _tokens.length; ) {
       dailyWithdrawalLimit[_tokens[_i]] = _limits[_i];
 
@@ -335,6 +339,6 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    * @dev Validates whether the high-tier vote weight threshold is larger than the normal threshold.
    */
   function _verifyThresholds() internal view {
-    require(_num * _highTierVWDenom <= _highTierVWNum * _denom, "WithdrawalLimitation: invalid thresholds");
+    if (_num * _highTierVWDenom > _highTierVWNum * _denom) revert ErrInvalidThreshold(msg.sig);
   }
 }

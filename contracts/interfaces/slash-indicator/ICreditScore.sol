@@ -3,6 +3,31 @@
 pragma solidity ^0.8.9;
 
 interface ICreditScore {
+  /**
+   * @dev Error thrown when an invalid credit score configuration is provided.
+   */
+  error ErrInvalidCreditScoreConfig();
+
+  /**
+   * @dev Error thrown when an invalid cut-off percentage configuration is provided.
+   */
+  error ErrInvalidCutOffPercentageConfig();
+
+  /**
+   * @dev Error thrown when the caller's credit score is insufficient to bail out a situation.
+   */
+  error ErrInsufficientCreditScoreToBailOut();
+
+  /**
+   * @dev Error thrown when a validator has previously bailed out.
+   */
+  error ErrValidatorHasBailedOutPreviously();
+
+  /**
+   * @dev Error thrown when the caller must be jailed in the current period.
+   */
+  error ErrCallerMustBeJailedInTheCurrentPeriod();
+
   /// @dev Emitted when the configs to credit score is updated. See the method `setCreditScoreConfigs` for param details.
   event CreditScoreConfigsUpdated(
     uint256 gainCreditScore,

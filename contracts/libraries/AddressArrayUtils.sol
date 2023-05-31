@@ -2,6 +2,12 @@
 
 pragma solidity ^0.8.0;
 
+/**
+ * @dev Error thrown when a duplicated element is detected in an array.
+ * @param msgSig The function signature that invoke the error.
+ */
+error ErrDuplicated(bytes4 msgSig);
+
 library AddressArrayUtils {
   /**
    * @dev Returns whether or not there's a duplicate. Runs in O(n^2).
