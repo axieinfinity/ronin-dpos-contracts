@@ -33,23 +33,39 @@ abstract contract BaseStaking is
   uint256[49] private ______gap;
 
   modifier noEmptyValue() {
-    if (msg.value == 0) revert ErrZeroValue();
+    _onlyEmptyValue();
     _;
+  }
+
+  function _onlyEmptyValue() private view {
+    if (msg.value == 0) revert ErrZeroValue();
   }
 
   modifier notPoolAdmin(PoolDetail storage _pool, address _delegator) {
-    if (_pool.admin == _delegator) revert ErrPoolAdminForbidden();
+    _notPoolAdmin(_pool, _delegator);
     _;
+  }
+
+  function _notPoolAdmin(PoolDetail storage _pool, address _delegator) private view {
+    if (_pool.admin == _delegator) revert ErrPoolAdminForbidden();
   }
 
   modifier onlyPoolAdmin(PoolDetail storage _pool, address _requester) {
-    if (_pool.admin != _requester) revert ErrOnlyPoolAdminAllowed();
+    _onlyPoolAdmin(_pool, _requester);
     _;
   }
 
+  function _onlyPoolAdmin(PoolDetail storage _pool, address _requester) private view {
+    if (_pool.admin != _requester) revert ErrOnlyPoolAdminAllowed();
+  }
+
   modifier poolIsActive(address _poolAddr) {
-    if (!_validatorContract.isValidatorCandidate(_poolAddr)) revert ErrInactivePool(_poolAddr);
+    _poolIsActive(_poolAddr);
     _;
+  }
+
+  function _poolIsActive(address _poolAddr) private view {
+    if (!_validatorContract.isValidatorCandidate(_poolAddr)) revert ErrInactivePool(_poolAddr);
   }
 
   /**

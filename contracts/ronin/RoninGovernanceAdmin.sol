@@ -24,8 +24,12 @@ contract RoninGovernanceAdmin is
   mapping(bytes32 => IsolatedGovernance.Vote) internal _emergencyExitPoll;
 
   modifier onlyGovernor() {
-    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, Roles.GOVERNOR);
+    _requireGorvernor();
     _;
+  }
+
+  function _requireGorvernor() private view {
+    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, Roles.GOVERNOR);
   }
 
   constructor(
