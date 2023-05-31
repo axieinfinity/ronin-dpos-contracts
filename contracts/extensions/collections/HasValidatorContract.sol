@@ -14,7 +14,7 @@ contract HasValidatorContract is IHasValidatorContract, HasProxyAdmin {
   }
 
   function _requireValidatorContract() private view {
-    if (validatorContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.VALIDATOR);
+    if (validatorContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.VALIDATOR_CONTRACT);
   }
 
   /**

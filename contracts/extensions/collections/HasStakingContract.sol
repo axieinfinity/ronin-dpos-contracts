@@ -14,7 +14,7 @@ contract HasStakingContract is IHasStakingContract, HasProxyAdmin {
   }
 
   function _requireStakingContract() private view {
-    if (stakingContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.STAKING);
+    if (stakingContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.STAKING_CONTRACT);
   }
 
   /**
