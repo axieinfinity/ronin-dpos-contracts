@@ -15,7 +15,8 @@
     "build": "hardhat compile && tsc -p tsconfig.build.json",
     "plugin:size-contracts": "hardhat size-contracts",
     "plugin:upload-selectors": "hardhat upload-selectors",
-    "plugin:storage-layout": "hardhat check"
+    "plugin:storage-layout": "hardhat check > layout/storage-layout.txt && yarn plugin:generate-storage-layout --source layout/storage-layout.txt",
+    "plugin:generate-storage-layout": "hardhat generate-storage-layout"
   },
   "lint-staged": {
     "contracts/**/*.sol": "prettier --write",
@@ -33,11 +34,13 @@
     "@typechain/ethers-v5": "^8.0.5",
     "@typechain/hardhat": "^3.0.0",
     "@types/chai": "^4.3.0",
+    "@types/fs-extra": "^11.0.1",
     "@types/mocha": "^9.0.0",
     "@types/node": "^17.0.0",
     "chai": "^4.3.4",
     "dotenv": "^10.0.0",
     "ethers": "^5.5.2",
+    "fs-extra": "^11.1.1",
     "hardhat": "^2.7.1",
     "hardhat-deploy": "0.11.29",
     "hardhat-contract-sizer": "^2.6.1",
@@ -51,6 +54,7 @@
     "solc-0.8": "npm:solc@^0.8.0",
     "solhint": "^3.3.6",
     "solidity-docgen": "0.5.16",
+    "table": "^6.8.1",
     "ts-node": "^10.4.0",
     "typechain": "^6.0.5",
     "typescript": "^4.5.4"
