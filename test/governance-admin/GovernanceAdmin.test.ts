@@ -135,7 +135,9 @@ describe('Governance Admin test', () => {
           governanceAdmin
             .connect(trustedOrgs[0].governor)
             .proposeProposalStructAndCastVotes(proposal, supports, signatures)
-        ).revertedWith('CoreGovernance: invalid proposal nonce');
+        )
+          .revertedWithCustomError(governanceAdmin, 'ErrInvalidProposalNonce')
+          .withArgs(governanceAdmin.interface.getSighash('proposeProposalStructAndCastVotes'));
       });
 
       it('Should be able to relay to mainchain governance admin contract', async () => {
@@ -145,9 +147,9 @@ describe('Governance Admin test', () => {
       });
 
       it('Should not be able to relay again', async () => {
-        await expect(
-          mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures)
-        ).revertedWith('CoreGovernance: invalid proposal nonce');
+        await expect(mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures))
+          .revertedWithCustomError(mainchainGovernanceAdmin, 'ErrInvalidProposalNonce')
+          .withArgs(mainchainGovernanceAdmin.interface.getSighash('relayProposal'));
       });
     });
 
@@ -203,9 +205,9 @@ describe('Governance Admin test', () => {
       });
 
       it('Should not able to relay again', async () => {
-        await expect(mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures)).revertedWith(
-          'BOsGovernanceRelay: query for outdated bridge operator set'
-        );
+        await expect(
+          mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures)
+        ).revertedWithCustomError(mainchainGovernanceAdmin, 'ErrQueryForOutdatedBridgeOperatorSet');
       });
 
       it('Should not be able to relay using invalid period/epoch', async () => {
@@ -216,7 +218,7 @@ describe('Governance Admin test', () => {
               { ...ballot, period: BigNumber.from(ballot.period).add(1), operators: [ethers.constants.AddressZero] },
               signatures
             )
-        ).revertedWith('BOsGovernanceRelay: query for outdated bridge operator set');
+        ).revertedWithCustomError(mainchainGovernanceAdmin, 'ErrQueryForOutdatedBridgeOperatorSet');
       });
 
       it('Should not be able to use the signatures for another period', async () => {
@@ -225,8 +227,9 @@ describe('Governance Admin test', () => {
           epoch: 10_000,
           operators: trustedOrgs.slice(0, 1).map((v) => v.bridgeVoter.address),
         };
-        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWith(
-          'BOsGovernanceProposal: invalid signer order'
+        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWithCustomError(
+          governanceAdmin,
+          'ErrInvalidSignerOrder'
         );
       });
 
@@ -236,8 +239,9 @@ describe('Governance Admin test', () => {
           epoch: 10_000,
           operators: [ethers.constants.AddressZero, ethers.constants.AddressZero],
         };
-        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWith(
-          'BridgeOperatorsBallot: invalid order of bridge operators'
+        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWithCustomError(
+          governanceAdmin,
+          'ErrInvalidOrderOfBridgeOperator'
         );
       });
 
@@ -257,9 +261,9 @@ describe('Governance Admin test', () => {
       });
 
       it('Should not be able to relay with the same operator set', async () => {
-        await expect(mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures)).revertedWith(
-          'BOsGovernanceRelay: bridge operator set is already voted'
-        );
+        await expect(
+          mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures)
+        ).revertedWithCustomError(mainchainGovernanceAdmin, 'ErrBridgeOperatorSetIsAlreadyVoted');
       });
 
       it('Should not be able to vote bridge operators with a smaller epoch/period', async () => {
@@ -268,8 +272,9 @@ describe('Governance Admin test', () => {
           epoch: 100,
           operators: trustedOrgs.map((v) => v.bridgeVoter.address),
         };
-        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWith(
-          'BOsGovernanceProposal: query for outdated bridge operator set'
+        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWithCustomError(
+          governanceAdmin,
+          'ErrQueryForOutdatedBridgeOperatorSet'
         );
       });
 
@@ -283,8 +288,9 @@ describe('Governance Admin test', () => {
             ethers.constants.AddressZero,
           ],
         };
-        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWith(
-          'BridgeOperatorsBallot: invalid order of bridge operators'
+        await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWithCustomError(
+          governanceAdmin,
+          'ErrInvalidOrderOfBridgeOperator'
         );
       });
 
@@ -378,7 +384,7 @@ describe('Governance Admin test', () => {
         governanceAdmin
           .connect(trustedOrgs[0].governor)
           .proposeProposalStructAndCastVotes(proposal, supports, signatures)
-      ).revertedWith('Proposal: invalid expiry timestamp');
+      ).revertedWithCustomError(governanceAdmin, 'ErrInvalidExpiryTimestamp');
     });
 
     it('Should the expired proposal cannot be voted anymore', async () => {
@@ -426,7 +432,7 @@ describe('Governance Admin test', () => {
         governanceAdmin
           .connect(trustedOrgs[0].governor)
           .castProposalBySignatures(proposal, supports.splice(0, 1), signatures.splice(0, 1))
-      ).revertedWith('GovernanceAdmin: cast vote for invalid proposal');
+      ).revertedWithCustomError(governanceAdmin, 'ErrInvalidProposal');
     });
 
     it('Should the new proposal replace the expired proposal -- with implicit round', async () => {
@@ -707,7 +713,7 @@ describe('Governance Admin test', () => {
             { ...proposal, chainId: BigNumber.from(proposal.chainId).add(1) },
             VoteType.Against
           )
-      ).revertedWith('RoninGovernanceAdmin: invalid chain id');
+      ).revertedWithCustomError(governanceAdmin, 'ErrInvalidChainId');
     });
 
     it('Should not be able to cast vote with invalid data', async () => {
@@ -718,7 +724,7 @@ describe('Governance Admin test', () => {
             { ...proposal, values: proposal.values.map((v) => BigNumber.from(v).add(1)) },
             VoteType.Against
           )
-      ).revertedWith('RoninGovernanceAdmin: cast vote for invalid proposal');
+      ).revertedWithCustomError(governanceAdmin, 'ErrInvalidProposal');
     });
 
     it('Should be able to cast valid vote', async () => {
@@ -737,7 +743,9 @@ describe('Governance Admin test', () => {
         governanceAdmin
           .connect(trustedOrgs[0].governor)
           .castProposalBySignatures(proposal, [VoteType.Against], votedSignatures)
-      ).revertedWith(`CoreGovernance: ${trustedOrgs[0].governor.address.toLowerCase()} already voted`);
+      )
+        .revertedWithCustomError(governanceAdmin, 'ErrAlreadyVoted')
+        .withArgs(trustedOrgs[0].governor.address);
     });
 
     it('Should be able to cast vote using signatures', async () => {
@@ -758,7 +766,9 @@ describe('Governance Admin test', () => {
         .true;
       await expect(
         governanceAdmin.connect(trustedOrgs[2].governor).castProposalVoteForCurrentNetwork(proposal, VoteType.For)
-      ).revertedWith(`CoreGovernance: ${trustedOrgs[2].governor.address.toLowerCase()} already voted`);
+      )
+        .revertedWithCustomError(governanceAdmin, 'ErrAlreadyVoted')
+        .withArgs(trustedOrgs[2].governor.address);
     });
 
     it('Should be able to retrieve the signatures', async () => {

@@ -9,7 +9,7 @@ contract HasSlashIndicatorContract is IHasSlashIndicatorContract, HasProxyAdmin 
   ISlashIndicator internal _slashIndicatorContract;
 
   modifier onlySlashIndicatorContract() {
-    if (slashIndicatorContract() != msg.sender) revert ErrCallerMustBeSlashIndicatorContract();
+    if (slashIndicatorContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.SLASH_INDICATOR_CONTRACT);
     _;
   }
 
@@ -24,7 +24,7 @@ contract HasSlashIndicatorContract is IHasSlashIndicatorContract, HasProxyAdmin 
    * @inheritdoc IHasSlashIndicatorContract
    */
   function setSlashIndicatorContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setSlashIndicatorContract(_addr);
   }
 

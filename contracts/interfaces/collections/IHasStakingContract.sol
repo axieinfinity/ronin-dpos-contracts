@@ -8,9 +8,6 @@ interface IHasStakingContract is IHasContract {
   /// @dev Emitted when the staking contract is updated.
   event StakingContractUpdated(address);
 
-  /// @dev Error of method caller must be staking contract.
-  error ErrCallerMustBeStakingContract();
-
   /**
    * @dev Returns the staking contract.
    */

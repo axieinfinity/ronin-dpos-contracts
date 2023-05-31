@@ -9,7 +9,7 @@ contract HasStakingContract is IHasStakingContract, HasProxyAdmin {
   IStaking internal _stakingContract;
 
   modifier onlyStakingContract() {
-    if (stakingContract() != msg.sender) revert ErrCallerMustBeStakingContract();
+    if (stakingContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.STAKING_CONTRACT);
     _;
   }
 
@@ -24,7 +24,7 @@ contract HasStakingContract is IHasStakingContract, HasProxyAdmin {
    * @inheritdoc IHasStakingContract
    */
   function setStakingContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract();
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setStakingContract(_addr);
   }
 

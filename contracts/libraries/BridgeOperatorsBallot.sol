@@ -3,7 +3,14 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import "../libraries/Errors.sol";
+
 library BridgeOperatorsBallot {
+  /**
+   * @dev Error thrown when an invalid order of the bridge operator is detected.
+   */
+  error ErrInvalidOrderOfBridgeOperator();
+
   struct BridgeOperatorSet {
     uint256 period;
     uint256 epoch;
@@ -23,12 +30,11 @@ library BridgeOperatorsBallot {
    *
    */
   function verifyBallot(BridgeOperatorSet calldata _ballot) internal pure {
-    require(_ballot.operators.length > 0, "BridgeOperatorsBallot: invalid array length");
+    if (_ballot.operators.length == 0) revert ErrEmptyArray();
     address _addr = _ballot.operators[0];
     for (uint _i = 1; _i < _ballot.operators.length; ) {
-      require(_addr < _ballot.operators[_i], "BridgeOperatorsBallot: invalid order of bridge operators");
+      if (_addr >= _ballot.operators[_i]) revert ErrInvalidOrderOfBridgeOperator();
       _addr = _ballot.operators[_i];
-
       unchecked {
         ++_i;
       }

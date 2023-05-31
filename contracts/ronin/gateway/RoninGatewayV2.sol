@@ -75,7 +75,9 @@ contract RoninGatewayV2 is
   }
 
   modifier onlyBridgeOperator() {
-    require(_validatorContract.isBridgeOperator(msg.sender), "RoninGatewayV2: unauthorized sender");
+    if (!_validatorContract.isBridgeOperator(msg.sender)) {
+      revert ErrUnauthorized(msg.sig, Roles.BRIDGE_OPERATOR);
+    }
     _;
   }
 
@@ -125,7 +127,7 @@ contract RoninGatewayV2 is
    * @inheritdoc IHasValidatorContract
    */
   function setValidatorContract(address _addr) external override onlyAdmin {
-    require(_addr.code.length > 0, "RoninGatewayV2: set to non-contract");
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setValidatorContract(_addr);
   }
 
@@ -140,7 +142,7 @@ contract RoninGatewayV2 is
    * @inheritdoc IHasBridgeTrackingContract
    */
   function setBridgeTrackingContract(address _addr) external override onlyAdmin {
-    require(_addr.code.length > 0, "RoninGatewayV2: set to non-contract");
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setBridgeTrackingContract(_addr);
   }
 
@@ -155,7 +157,7 @@ contract RoninGatewayV2 is
    * @inheritdoc IHasRoninTrustedOrganizationContract
    */
   function setRoninTrustedOrganizationContract(address _addr) external override onlyAdmin {
-    require(_addr.code.length > 0, "RoninGatewayV2: set to non-contract");
+    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
     _setRoninTrustedOrganizationContract(_addr);
   }
 
@@ -171,11 +173,13 @@ contract RoninGatewayV2 is
     external
     onlyRole(WITHDRAWAL_MIGRATOR)
   {
-    require(!withdrawalMigrated, "RoninGatewayV2: withdrawals migrated");
-    require(_requesters.length == _requests.length && _requests.length > 0, "RoninGatewayV2: invalid array lengths");
+    if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
+    if (!(_requesters.length == _requests.length && _requests.length > 0)) revert ErrLengthMismatch(msg.sig);
+
     for (uint256 _i; _i < _requests.length; ) {
       MappedToken memory _token = getMainchainToken(_requests[_i].tokenAddr, 1);
-      require(_requests[_i].info.erc == _token.erc, "RoninGatewayV2: invalid token standard");
+      if (_requests[_i].info.erc != _token.erc) revert ErrInvalidTokenStandard();
+
       _storeAsReceipt(_requests[_i], 1, _requesters[_i], _token.tokenAddr);
 
       unchecked {
@@ -188,11 +192,11 @@ contract RoninGatewayV2 is
    * @dev Mark the migration as done.
    */
   function markWithdrawalMigrated() external {
-    require(
-      hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(WITHDRAWAL_MIGRATOR, msg.sender),
-      "RoninGatewayV2: unauthorized sender"
-    );
-    require(!withdrawalMigrated, "RoninGatewayV2: withdrawals migrated");
+    if (!(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(WITHDRAWAL_MIGRATOR, msg.sender))) {
+      revert ErrUnauthorized(msg.sig, Roles.WITHDRAWAL_MIGRATOR);
+    }
+    if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
+
     withdrawalMigrated = true;
   }
 
@@ -301,10 +305,9 @@ contract RoninGatewayV2 is
    * @inheritdoc IRoninGatewayV2
    */
   function bulkRequestWithdrawalFor(Transfer.Request[] calldata _requests, uint256 _chainId) external whenNotPaused {
-    require(_requests.length > 0, "RoninGatewayV2: empty array");
+    if (_requests.length == 0) revert ErrEmptyArray();
     for (uint256 _i; _i < _requests.length; ) {
       _requestWithdrawalFor(_requests[_i], msg.sender, _chainId);
-
       unchecked {
         ++_i;
       }
@@ -315,9 +318,12 @@ contract RoninGatewayV2 is
    * @inheritdoc IRoninGatewayV2
    */
   function requestWithdrawalSignatures(uint256 _withdrawalId) external whenNotPaused {
-    require(!mainchainWithdrew(_withdrawalId), "RoninGatewayV2: withdrew on mainchain already");
+    if (mainchainWithdrew(_withdrawalId)) revert ErrWithdrawnOnMainchainAlready();
+
     Transfer.Receipt memory _receipt = withdrawal[_withdrawalId];
-    require(_receipt.ronin.chainId == block.chainid, "RoninGatewayV2: query for invalid withdrawal");
+    if (_receipt.ronin.chainId != block.chainid)
+      revert ErrInvalidChainId(msg.sig, _receipt.ronin.chainId, block.chainid);
+
     emit WithdrawalSignaturesRequested(_receipt.hash(), _receipt);
   }
 
@@ -331,10 +337,9 @@ contract RoninGatewayV2 is
   {
     address _validator = msg.sender;
 
-    require(
-      _withdrawals.length > 0 && _withdrawals.length == _signatures.length,
-      "RoninGatewayV2: invalid array length"
-    );
+    if (!(_withdrawals.length > 0 && _withdrawals.length == _signatures.length)) {
+      revert ErrLengthMismatch(msg.sig);
+    }
 
     uint256 _minVoteWeight = minimumVoteWeight();
     uint256 _minTrustedVoteWeight = minimumTrustedVoteWeight();
@@ -373,7 +378,7 @@ contract RoninGatewayV2 is
     uint256[] calldata _chainIds,
     Token.Standard[] calldata _standards
   ) external onlyAdmin {
-    require(_roninTokens.length > 0, "RoninGatewayV2: invalid array length");
+    if (_roninTokens.length == 0) revert ErrLengthMismatch(msg.sig);
     _mapTokens(_roninTokens, _mainchainTokens, _chainIds, _standards);
   }
 
@@ -407,7 +412,7 @@ contract RoninGatewayV2 is
    */
   function getMainchainToken(address _roninToken, uint256 _chainId) public view returns (MappedToken memory _token) {
     _token = _mainchainToken[_roninToken][_chainId];
-    require(_token.tokenAddr != address(0), "RoninGatewayV2: unsupported token");
+    if (_token.tokenAddr == address(0)) revert ErrUnsupportedToken();
   }
 
   /**
@@ -425,10 +430,8 @@ contract RoninGatewayV2 is
     uint256[] calldata _chainIds,
     Token.Standard[] calldata _standards
   ) internal {
-    require(
-      _roninTokens.length == _mainchainTokens.length && _roninTokens.length == _chainIds.length,
-      "RoninGatewayV2: invalid array length"
-    );
+    if (!(_roninTokens.length == _mainchainTokens.length && _roninTokens.length == _chainIds.length))
+      revert ErrLengthMismatch(msg.sig);
 
     for (uint256 _i; _i < _roninTokens.length; ) {
       _mainchainToken[_roninTokens[_i]][_chainIds[_i]].tokenAddr = _mainchainTokens[_i];
@@ -456,13 +459,15 @@ contract RoninGatewayV2 is
   ) internal {
     uint256 _id = _receipt.id;
     _receipt.info.validate();
-    require(_receipt.kind == Transfer.Kind.Deposit, "RoninGatewayV2: invalid receipt kind");
-    require(_receipt.ronin.chainId == block.chainid, "RoninGatewayV2: invalid chain id");
+    if (_receipt.kind != Transfer.Kind.Deposit) revert ErrInvalidReceiptKind();
+
+    if (_receipt.ronin.chainId != block.chainid)
+      revert ErrInvalidChainId(msg.sig, _receipt.ronin.chainId, block.chainid);
+
     MappedToken memory _token = getMainchainToken(_receipt.ronin.tokenAddr, _receipt.mainchain.chainId);
-    require(
-      _token.erc == _receipt.info.erc && _token.tokenAddr == _receipt.mainchain.tokenAddr,
-      "RoninGatewayV2: invalid receipt"
-    );
+
+    if (!(_token.erc == _receipt.info.erc && _token.tokenAddr == _receipt.mainchain.tokenAddr))
+      revert ErrInvalidReceipt();
 
     IsolatedGovernance.Vote storage _proposal = depositVote[_receipt.mainchain.chainId][_id];
     bytes32 _receiptHash = _receipt.hash();
@@ -493,7 +498,8 @@ contract RoninGatewayV2 is
     _request.info.validate();
     _checkWithdrawal(_request);
     MappedToken memory _token = getMainchainToken(_request.tokenAddr, _chainId);
-    require(_request.info.erc == _token.erc, "RoninGatewayV2: invalid token standard");
+    if (_request.info.erc != _token.erc) revert ErrInvalidTokenStandard();
+
     _request.info.transferFrom(_requester, address(this), _request.tokenAddr);
     _storeAsReceipt(_request, _chainId, _requester, _token.tokenAddr);
   }
@@ -525,7 +531,7 @@ contract RoninGatewayV2 is
    * @dev Don't send me RON.
    */
   function _fallback() internal virtual {
-    revert("RoninGatewayV2: invalid request");
+    revert ErrInvalidRequest();
   }
 
   /**
@@ -658,7 +664,8 @@ contract RoninGatewayV2 is
     virtual
     returns (uint256 _previousTrustedNum, uint256 _previousTrustedDenom)
   {
-    require(_trustedNumerator <= _trustedDenominator, "GatewayV2: invalid trusted threshold");
+    if (_trustedNumerator > _trustedDenominator) revert ErrInvalidTrustedThreshold();
+
     _previousTrustedNum = _num;
     _previousTrustedDenom = _denom;
     _trustedNum = _trustedNumerator;

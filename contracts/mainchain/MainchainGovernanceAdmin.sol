@@ -8,7 +8,11 @@ import "../extensions/TransparentUpgradeableProxyV2.sol";
 import "../extensions/GovernanceAdmin.sol";
 import "../interfaces/IBridge.sol";
 
+import "../libraries/ErrorHandler.sol";
+
 contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, GovernanceAdmin, BOsGovernanceRelay {
+  using ErrorHandler for bool;
+
   bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
   uint256 private constant DEFAULT_EXPIRY_DURATION = 1 << 255;
 
@@ -110,7 +114,7 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
         abi.encodeWithSelector(_selector, _governors)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
   }
 
@@ -126,7 +130,7 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
         abi.encodeWithSelector(_selector, _governors)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
   }
 

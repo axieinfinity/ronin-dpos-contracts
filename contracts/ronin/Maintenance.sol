@@ -85,26 +85,30 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   ) external override {
     IRoninValidatorSet _validator = _validatorContract;
 
-    require(_validator.isBlockProducer(_consensusAddr), "Maintenance: consensus address must be a block producer");
-    require(
-      _validator.isCandidateAdmin(_consensusAddr, msg.sender),
-      "Maintenance: method caller must be a candidate admin"
-    );
-    require(!checkScheduled(_consensusAddr), "Maintenance: already scheduled");
-    require(checkCooldownEnds(_consensusAddr), "Maintainance: cooldown time not end");
-    require(totalSchedules() < maxSchedules, "Maintenance: exceeds total of schedules");
-    require(
-      _startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule),
-      "Maintenance: start block is out of offset"
-    );
-    require(_startedAtBlock < _endedAtBlock, "Maintenance: start block must be less than end block");
+    if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Roles.BLOCK_PRODUCER);
+
+    if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender))
+      revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
+
+    if (checkScheduled(_consensusAddr)) revert ErrAlreadyScheduled();
+
+    if (!checkCooldownEnds(_consensusAddr)) revert ErrCooldownTimeNotYetEnded();
+
+    if (totalSchedules() >= maxSchedules) revert ErrTotalOfSchedulesExceeded();
+
+    if (!_startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule))
+      revert ErrStartBlockOutOfRange();
+
+    if (_startedAtBlock >= _endedAtBlock) revert ErrStartBlockOutOfRange();
+
     uint256 _maintenanceElapsed = _endedAtBlock - _startedAtBlock + 1;
-    require(
-      _maintenanceElapsed.inRange(minMaintenanceDurationInBlock, maxMaintenanceDurationInBlock),
-      "Maintenance: invalid maintenance duration"
-    );
-    require(_validator.epochEndingAt(_startedAtBlock - 1), "Maintenance: start block is not at the start of an epoch");
-    require(_validator.epochEndingAt(_endedAtBlock), "Maintenance: end block is not at the end of an epoch");
+
+    if (!_maintenanceElapsed.inRange(minMaintenanceDurationInBlock, maxMaintenanceDurationInBlock))
+      revert ErrInvalidMaintenanceDuration();
+
+    if (!_validator.epochEndingAt(_startedAtBlock - 1)) revert ErrStartBlockOutOfRange();
+
+    if (!_validator.epochEndingAt(_endedAtBlock)) revert ErrEndBlockOutOfRange();
 
     Schedule storage _sSchedule = _schedule[_consensusAddr];
     _sSchedule.from = _startedAtBlock;
@@ -118,12 +122,13 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function cancelSchedule(address _consensusAddr) external override {
-    require(
-      _validatorContract.isCandidateAdmin(_consensusAddr, msg.sender),
-      "Maintenance: method caller must be the candidate admin"
-    );
-    require(checkScheduled(_consensusAddr), "Maintenance: no schedule exists");
-    require(!checkMaintained(_consensusAddr, block.number), "Maintenance: already on maintenance");
+    if (!_validatorContract.isCandidateAdmin(_consensusAddr, msg.sender))
+      revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
+
+    if (!checkScheduled(_consensusAddr)) revert ErrUnexistedSchedule();
+
+    if (checkMaintained(_consensusAddr, block.number)) revert ErrAlreadyOnMaintenance();
+
     Schedule storage _sSchedule = _schedule[_consensusAddr];
     delete _sSchedule.from;
     delete _sSchedule.to;
@@ -239,14 +244,10 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     uint256 _maxSchedules,
     uint256 _cooldownSecsToMaintain
   ) internal {
-    require(
-      _minMaintenanceDurationInBlock < _maxMaintenanceDurationInBlock,
-      "Maintenance: invalid maintenance duration configs"
-    );
-    require(
-      _minOffsetToStartSchedule < _maxOffsetToStartSchedule,
-      "Maintenance: invalid offset to start schedule configs"
-    );
+    if (_minMaintenanceDurationInBlock >= _maxMaintenanceDurationInBlock) revert ErrInvalidMaintenanceDurationConfig();
+
+    if (_minOffsetToStartSchedule >= _maxOffsetToStartSchedule) revert ErrInvalidOffsetToStartScheduleConfigs();
+
     minMaintenanceDurationInBlock = _minMaintenanceDurationInBlock;
     maxMaintenanceDurationInBlock = _maxMaintenanceDurationInBlock;
     minOffsetToStartSchedule = _minOffsetToStartSchedule;

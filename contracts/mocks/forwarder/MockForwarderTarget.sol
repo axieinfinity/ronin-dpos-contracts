@@ -4,16 +4,23 @@ pragma solidity ^0.8.9;
 
 import "../../extensions/RONTransferHelper.sol";
 
+import "../../libraries/Errors.sol";
+
 contract MockForwarderTarget is RONTransferHelper {
   address public owner;
   uint256 public data;
 
   event TargetWithdrawn(address indexed _origin, address indexed _caller, address indexed _recipient);
 
+  /**
+   * @dev Error thrown intentionally for a specific purpose.
+   */
   error ErrIntentionally();
 
   modifier onlyOwner() {
-    require(msg.sender == owner, "MockForwarderContract: only owner can call method");
+    if (msg.sender != owner) {
+      revert ErrUnauthorized(msg.sig, Roles.ADMIN);
+    }
     _;
   }
 
