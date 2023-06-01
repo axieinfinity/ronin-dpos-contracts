@@ -102,14 +102,15 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
     override
     returns (address[] memory _bridgeOperatorList, address[] memory _validatorList)
   {
-    _bridgeOperatorList = new address[](validatorCount);
-    _validatorList = new address[](validatorCount);
+    uint256 _length = validatorCount;
+    _bridgeOperatorList = new address[](_length);
+    _validatorList = new address[](_length);
     uint256 _count = 0;
-    for (uint _i; _i < _bridgeOperatorList.length; _i++) {
+    for (uint _i; _i < _length; _i++) {
       if (isOperatingBridge(_validators[_i])) {
         address __validator = _validators[_i];
-        _bridgeOperatorList[_count++] = _bridgeOperatorOf(__validator);
-        _validatorList[_count] = __validator;
+        _bridgeOperatorList[_count] = _bridgeOperatorOf(__validator);
+        _validatorList[_count++] = __validator;
       }
     }
 
