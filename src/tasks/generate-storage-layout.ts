@@ -66,8 +66,10 @@ const preprocessTable = (tableContent: string) => {
 };
 
 function removeIdentifierSuffix(type: string) {
-  const identifierRegex = /\d+_(storage|memory|calldata)/g; // 12_memory 1123_storage
-  return type.replace(identifierRegex, '');
+  const suffixIdRegex = /\d+_(storage|memory|calldata|ptr)/g; // id_memory id_storage
+  const contractRegex = /^(t_super|t_contract)\(([A-Za-z0-9_]+)\)\d+/g; // t_contract(contractName)id
+  const enumRegex = /(t_enum)\(([A-Za-z0-9_]+)\)\d+/g; // t_enum(enumName)id
+  return type.replace(suffixIdRegex, '_$1').replace(contractRegex, '$1($2)').replace(enumRegex, '$1($2)');
 }
 
 /// @dev Generate storage layout from `source` file to `destination` file.
