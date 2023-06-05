@@ -65,6 +65,11 @@ const preprocessTable = (tableContent: string) => {
   return listItemOfTable;
 };
 
+function removeIdentifierSuffix(type: string) {
+  const identifierRegex = /\d+_(storage|memory|calldata)/g; // 12_memory 1123_storage
+  return type.replace(identifierRegex, '');
+}
+
 /// @dev Generate storage layout from `source` file to `destination` file.
 task('generate-storage-layout')
   .addParam('source', 'The path to storage layout file extracted from hardhat-storage-layout')
@@ -80,6 +85,10 @@ task('generate-storage-layout')
         for (let i = 0; i < listItemOfTable.length; i += 9) {
           // remove two collums: idx (index = 5) and artifacts (index =6)
           const row = listItemOfTable.slice(i, i + 8).filter((_, idx) => idx != 5 && idx != 6);
+
+          // remove the suffix identifier of data type: <id>_(storage|memory|calldata)
+          const dataType = row[4];
+          row[4] = removeIdentifierSuffix(dataType);
           data.push(row);
         }
         const output = table(data);
