@@ -6,9 +6,6 @@ import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../ronin/validator/CandidateManager.sol";
 
 contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
-  address public stakingVestingContract;
-  address public slashIndicatorContract;
-
   uint256 internal _lastUpdatedPeriod;
   uint256 internal _numberOfBlocksInEpoch;
   /// @dev Mapping from period number => slashed
@@ -22,10 +19,10 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     uint256 __numberOfBlocksInEpoch,
     uint256 __minEffectiveDaysOnwards
   ) {
-    _setStakingContract(__stakingContract);
+    _setContract(Roles.STAKING_CONTRACT, __stakingContract);
+    _setContract(Roles.SLASH_INDICATOR_CONTRACT, _slashIndicatorContract);
+    _setContract(Roles.STAKING_VESTING_CONTRACT, _stakingVestingContract);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
-    slashIndicatorContract = _slashIndicatorContract;
-    stakingVestingContract = _stakingVestingContract;
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
     _minEffectiveDaysOnwards = __minEffectiveDaysOnwards;
   }

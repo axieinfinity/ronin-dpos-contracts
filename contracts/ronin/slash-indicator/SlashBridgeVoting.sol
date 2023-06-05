@@ -3,17 +3,13 @@
 pragma solidity ^0.8.9;
 
 import "../../libraries/Math.sol";
+import "../../interfaces/IRoninGovernanceAdmin.sol";
 import "../../interfaces/slash-indicator/ISlashBridgeVoting.sol";
-import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
-import "../../extensions/collections/HasRoninGovernanceAdminContract.sol";
-import "../../extensions/collections/HasValidatorContract.sol";
+import "../../interfaces/IRoninTrustedOrganization.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
+import "../../extensions/collections/HasContract.sol";
 
-abstract contract SlashBridgeVoting is
-  ISlashBridgeVoting,
-  HasValidatorContract,
-  HasRoninTrustedOrganizationContract,
-  HasRoninGovernanceAdminContract
-{
+abstract contract SlashBridgeVoting is ISlashBridgeVoting, HasContract {
   /// @dev Mapping from validator address => period index => bridge voting slashed
   mapping(address => mapping(uint256 => bool)) internal _bridgeVotingSlashed;
   /// @dev The threshold to slash when a trusted organization does not vote for bridge operators.
@@ -31,9 +27,14 @@ abstract contract SlashBridgeVoting is
    * @inheritdoc ISlashBridgeVoting
    */
   function slashBridgeVoting(address _consensusAddr) external onlyAdmin {
-    IRoninTrustedOrganization.TrustedOrganization memory _org = _roninTrustedOrganizationContract
-      .getTrustedOrganization(_consensusAddr);
-    uint256 _lastVotedBlock = Math.max(_roninGovernanceAdminContract.lastVotedBlock(_org.bridgeVoter), _org.addedBlock);
+    IRoninTrustedOrganization.TrustedOrganization memory _org = IRoninTrustedOrganization(
+      getContract(Roles.RONIN_TRUSTED_ORGANIZATION_CONTRACT)
+    ).getTrustedOrganization(_consensusAddr);
+    uint256 _lastVotedBlock = Math.max(
+      IRoninGovernanceAdmin(getContract(Roles.GOVERNANCE_ADMIN_CONTRACT)).lastVotedBlock(_org.bridgeVoter),
+      _org.addedBlock
+    );
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT));
     uint256 _period = _validatorContract.currentPeriod();
 
     if (block.number - _lastVotedBlock <= _bridgeVotingThreshold || _bridgeVotingSlashed[_consensusAddr][_period])

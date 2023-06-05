@@ -3,11 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "../interfaces/IBridgeTracking.sol";
-import "../extensions/collections/HasBridgeTrackingContract.sol";
+import "../extensions/collections/HasContract.sol";
 
-contract MockGatewayForTracking is HasBridgeTrackingContract {
+contract MockGatewayForTracking is HasContract {
   constructor(address _bridgeTrackingContract) {
-    _setBridgeTrackingContract(_bridgeTrackingContract);
+    _setContract(Roles.BRIDGE_TRACKING_CONTRACT, _bridgeTrackingContract);
   }
 
   function sendBallot(
@@ -15,12 +15,13 @@ contract MockGatewayForTracking is HasBridgeTrackingContract {
     uint256 _id,
     address[] memory _voters
   ) external {
+    IBridgeTracking bridgeTrackingContract = IBridgeTracking(getContract(Roles.BRIDGE_TRACKING_CONTRACT));
     for (uint256 _i; _i < _voters.length; _i++) {
-      _bridgeTrackingContract.recordVote(_kind, _id, _voters[_i]);
+      bridgeTrackingContract.recordVote(_kind, _id, _voters[_i]);
     }
   }
 
   function sendApprovedVote(IBridgeTracking.VoteKind _kind, uint256 _id) external {
-    _bridgeTrackingContract.handleVoteApproved(_kind, _id);
+    IBridgeTracking(getContract(Roles.BRIDGE_TRACKING_CONTRACT)).handleVoteApproved(_kind, _id);
   }
 }

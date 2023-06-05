@@ -56,3 +56,28 @@ export const accessControlRevertStr = (addr: Address, role: string): string =>
 
 export const compareBigNumbers = (firstBigNumbers: BigNumber[], secondBigNumbers: BigNumber[]) =>
   expect(firstBigNumbers.map((_) => _.toHexString())).deep.equal(secondBigNumbers.map((_) => _.toHexString()));
+
+const ROLES = {
+  ADMIN: 0, // 0
+  GOVERNOR: 1, // 1
+  COINBASE: 2, // 2
+  CANDIDATE_ADMIN: 3, // 3
+  EMERGENCY_PAUSER: 4, // 4
+  WITHDRAWAL_MIGRATOR: 5, // 5
+  BRIDGE_CONTRACT: 6, // 6
+  BRIDGE_OPERATOR: 7, // 7
+  BRIDGE_TRACKING_CONTRACT: 8, // 8
+  MAINTENANCE_CONTRACT: 9, // 9
+  GOVERNANCE_ADMIN_CONTRACT: 10, // 10
+  SLASH_INDICATOR_CONTRACT: 11, // 11
+  STAKING_CONTRACT: 12, // 12
+  STAKING_VESTING_CONTRACT: 13, // 13
+  VALIDATOR_CONTRACT: 14, // 14
+  VALIDATOR_CANDIDATE: 15, // 15
+  BLOCK_PRODUCER: 16, // 16
+  RONIN_TRUSTED_ORGANIZATION_CONTRACT: 17, // 17
+} as { [key: string]: number };
+
+export const getRoles = (roleName: string): number => {
+  return ROLES[roleName];
+};

@@ -25,7 +25,7 @@ import {
 } from '../helpers/address-set-types';
 import { initTest } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
-import { mineBatchTxs } from '../helpers/utils';
+import { getRoles, mineBatchTxs } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
@@ -100,7 +100,7 @@ describe('Bridge Tracking test', () => {
 
     await governanceAdminInterface.functionDelegateCalls(
       [bridgeTracking.address],
-      [bridgeTracking.interface.encodeFunctionData('setBridgeContract', [mockGateway.address])]
+      [bridgeTracking.interface.encodeFunctionData('setContract', [getRoles('BRIDGE_CONTRACT'), mockGateway.address])]
     );
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
@@ -137,8 +137,8 @@ describe('Bridge Tracking test', () => {
 
   describe('Config test', async () => {
     it('Should be able to get contract configs correctly', async () => {
-      expect(await bridgeTracking.bridgeContract()).eq(mockGateway.address);
-      expect(await mockGateway.bridgeTrackingContract()).eq(bridgeTracking.address);
+      expect(await bridgeTracking.getContract(getRoles('BRIDGE_CONTRACT'))).eq(mockGateway.address);
+      expect(await mockGateway.getContract(getRoles('BRIDGE_TRACKING_CONTRACT'))).eq(bridgeTracking.address);
       expect(await roninValidatorSet.currentPeriod()).eq(period);
     });
   });

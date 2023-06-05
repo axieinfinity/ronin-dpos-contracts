@@ -99,7 +99,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     returns (uint256[] memory _rewards)
   {
     address _consensusAddr;
-    uint256 _period = _validatorContract.currentPeriod();
+    uint256 _period = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).currentPeriod();
     _rewards = new uint256[](_poolAddrList.length);
 
     for (uint256 _i = 0; _i < _poolAddrList.length; ) {
@@ -159,6 +159,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     if (_amount == 0) revert ErrUndelegateZeroAmount();
     if (_pool.delegatingAmount[_delegator] < _amount) revert ErrInsufficientDelegatingAmount();
 
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT));
     if (
       _validatorContract.isValidatorCandidate(_pool.addr) &&
       _validatorContract.getCandidateInfo(_pool.addr).revokingTimestamp == 0 && // if candidate is not on renunciation

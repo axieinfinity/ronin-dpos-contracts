@@ -26,7 +26,10 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   /**
    * @inheritdoc IEmergencyExit
    */
-  function execEmergencyExit(address _consensusAddr, uint256 _secLeftToRevoke) external onlyStakingContract {
+  function execEmergencyExit(address _consensusAddr, uint256 _secLeftToRevoke)
+    external
+    onlyContractWithRole(Roles.STAKING_CONTRACT)
+  {
     EmergencyExitInfo storage _info = _exitInfo[_consensusAddr];
     if (_info.recyclingAt != 0) revert ErrAlreadyRequestedEmergencyExit();
 
@@ -35,7 +38,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     _emergencyExitJailedTimestamp[_consensusAddr] = _revokingTimestamp;
     _bridgeRewardDeprecatedAtPeriod[_consensusAddr][currentPeriod()] = true;
 
-    uint256 _deductedAmount = _stakingContract.execDeductStakingAmount(_consensusAddr, _emergencyExitLockedAmount);
+    uint256 _deductedAmount = IStaking(msg.sender).execDeductStakingAmount(_consensusAddr, _emergencyExitLockedAmount);
     if (_deductedAmount > 0) {
       uint256 _recyclingAt = block.timestamp + _emergencyExpiryDuration;
       _lockedConsensusList.push(_consensusAddr);

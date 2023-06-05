@@ -2,18 +2,13 @@
 
 pragma solidity ^0.8.9;
 
-import "../../extensions/collections/HasSlashIndicatorContract.sol";
-import "../../extensions/collections/HasStakingContract.sol";
+import "../../extensions/collections/HasContract.sol";
 import "../../interfaces/validator/ISlashingExecution.sol";
+import "../../interfaces/staking/IStaking.sol";
 import "../../libraries/Math.sol";
 import "./storage-fragments/CommonStorage.sol";
 
-abstract contract SlashingExecution is
-  ISlashingExecution,
-  HasSlashIndicatorContract,
-  HasStakingContract,
-  CommonStorage
-{
+abstract contract SlashingExecution is ISlashingExecution, HasContract, CommonStorage {
   /**
    * @inheritdoc ISlashingExecution
    */
@@ -22,7 +17,7 @@ abstract contract SlashingExecution is
     uint256 _newJailedUntil,
     uint256 _slashAmount,
     bool _cannotBailout
-  ) external override onlySlashIndicatorContract {
+  ) external override onlyContractWithRole(Roles.SLASH_INDICATOR_CONTRACT) {
     uint256 _period = currentPeriod();
     _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = true;
 
@@ -34,7 +29,10 @@ abstract contract SlashingExecution is
     _blockProducerJailedBlock[_validatorAddr] = Math.max(_newJailedUntil, _blockProducerJailedBlock[_validatorAddr]);
 
     if (_slashAmount > 0) {
-      uint256 _actualAmount = _stakingContract.execDeductStakingAmount(_validatorAddr, _slashAmount);
+      uint256 _actualAmount = IStaking(getContract(Roles.STAKING_CONTRACT)).execDeductStakingAmount(
+        _validatorAddr,
+        _slashAmount
+      );
       _totalDeprecatedReward += _actualAmount;
     }
 
@@ -55,7 +53,11 @@ abstract contract SlashingExecution is
   /**
    * @inheritdoc ISlashingExecution
    */
-  function execBailOut(address _validatorAddr, uint256 _period) external override onlySlashIndicatorContract {
+  function execBailOut(address _validatorAddr, uint256 _period)
+    external
+    override
+    onlyContractWithRole(Roles.SLASH_INDICATOR_CONTRACT)
+  {
     if (block.number <= _cannotBailoutUntilBlock[_validatorAddr]) revert ErrCannotBailout(_validatorAddr);
 
     // Note: Removing rewards of validator in `bailOut` function is not needed, since the rewards have been

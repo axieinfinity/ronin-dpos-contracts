@@ -4,6 +4,8 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/slash-indicator/ISlashIndicator.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
+import "../../interfaces/IMaintenance.sol";
 import "./SlashDoubleSign.sol";
 import "./SlashBridgeVoting.sol";
 import "./SlashBridgeOperator.sol";
@@ -54,10 +56,11 @@ contract SlashIndicator is
     // _creditScoreConfigs[3]: _cutOffPercentageAfterBailout
     uint256[4] calldata _creditScoreConfigs
   ) external initializer {
-    _setValidatorContract(__validatorContract);
-    _setMaintenanceContract(__maintenanceContract);
-    _setRoninTrustedOrganizationContract(__roninTrustedOrganizationContract);
-    _setRoninGovernanceAdminContract(__roninGovernanceAdminContract);
+    _setContract(Roles.VALIDATOR_CONTRACT, __validatorContract);
+    _setContract(Roles.MAINTENANCE_CONTRACT, __maintenanceContract);
+    _setContract(Roles.GOVERNANCE_ADMIN_CONTRACT, __roninGovernanceAdminContract);
+    _setContract(Roles.RONIN_TRUSTED_ORGANIZATION_CONTRACT, __roninTrustedOrganizationContract);
+
     _setBridgeOperatorSlashingConfigs(
       _bridgeOperatorSlashingConfigs[0],
       _bridgeOperatorSlashingConfigs[1],
@@ -125,7 +128,7 @@ contract SlashIndicator is
   function _shouldSlash(address _addr) internal view override(SlashDoubleSign, SlashUnavailability) returns (bool) {
     return
       (msg.sender != _addr) &&
-      _validatorContract.isBlockProducer(_addr) &&
-      !_maintenanceContract.checkMaintained(_addr, block.number);
+      IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).isBlockProducer(_addr) &&
+      !IMaintenance(getContract(Roles.MAINTENANCE_CONTRACT)).checkMaintained(_addr, block.number);
   }
 }

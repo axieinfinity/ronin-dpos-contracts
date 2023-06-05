@@ -5,10 +5,10 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IMaintenance.sol";
 import "../interfaces/validator/IRoninValidatorSet.sol";
-import "../extensions/collections/HasValidatorContract.sol";
+import "../extensions/collections/HasContract.sol";
 import "../libraries/Math.sol";
 
-contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
+contract Maintenance is IMaintenance, HasContract, Initializable {
   using Math for uint256;
 
   /// @dev Mapping from consensus address => maintenance schedule.
@@ -43,7 +43,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     uint256 _maxSchedules,
     uint256 _cooldownSecsToMaintain
   ) external initializer {
-    _setValidatorContract(__validatorContract);
+    _setContract(Roles.VALIDATOR_CONTRACT, __validatorContract);
     _setMaintenanceConfig(
       _minMaintenanceDurationInBlock,
       _maxMaintenanceDurationInBlock,
@@ -83,7 +83,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     uint256 _startedAtBlock,
     uint256 _endedAtBlock
   ) external override {
-    IRoninValidatorSet _validator = _validatorContract;
+    IRoninValidatorSet _validator = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT));
 
     if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Roles.BLOCK_PRODUCER);
 
@@ -122,7 +122,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function cancelSchedule(address _consensusAddr) external override {
-    if (!_validatorContract.isCandidateAdmin(_consensusAddr, msg.sender))
+    if (!IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).isCandidateAdmin(_consensusAddr, msg.sender))
       revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
 
     if (!checkScheduled(_consensusAddr)) revert ErrUnexistedSchedule();
@@ -184,7 +184,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function totalSchedules() public view override returns (uint256 _count) {
-    (address[] memory _validators, , ) = _validatorContract.getValidators();
+    (address[] memory _validators, , ) = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).getValidators();
     unchecked {
       for (uint _i = 0; _i < _validators.length; _i++) {
         if (checkScheduled(_validators[_i])) {

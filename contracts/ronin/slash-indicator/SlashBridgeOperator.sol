@@ -5,9 +5,9 @@ pragma solidity ^0.8.9;
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../extensions/collections/HasProxyAdmin.sol";
 import "../../interfaces/slash-indicator/ISlashBridgeOperator.sol";
-import "../../extensions/collections/HasValidatorContract.sol";
+import "../../extensions/collections/HasContract.sol";
 
-abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, HasValidatorContract, PercentageConsumer {
+abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasContract, PercentageConsumer {
   /**
    * @dev The bridge operators will be deprecated reward if (s)he missed more than the ratio.
    * Values 0-10,000 map to 0%-100%.
@@ -70,7 +70,7 @@ abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, Ha
     address _consensusAddr,
     uint256 _tier,
     uint256 _period
-  ) external onlyValidatorContract {
+  ) external onlyContractWithRole(Roles.VALIDATOR_CONTRACT) {
     if (_tier == 1) {
       emit Slashed(_consensusAddr, SlashType.BRIDGE_OPERATOR_MISSING_VOTE_TIER_1, _period);
     } else if (_tier == 2) {

@@ -94,13 +94,21 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     uint256 _commissionRate
   ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
     if (_commissionRate > _maxCommissionRate || _commissionRate < _minCommissionRate) revert ErrInvalidCommissionRate();
-    _validatorContract.execRequestUpdateCommissionRate(_consensusAddr, _effectiveDaysOnwards, _commissionRate);
+    IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).execRequestUpdateCommissionRate(
+      _consensusAddr,
+      _effectiveDaysOnwards,
+      _commissionRate
+    );
   }
 
   /**
    * @inheritdoc ICandidateStaking
    */
-  function execDeprecatePools(address[] calldata _pools, uint256 _newPeriod) external override onlyValidatorContract {
+  function execDeprecatePools(address[] calldata _pools, uint256 _newPeriod)
+    external
+    override
+    onlyContractWithRole(Roles.VALIDATOR_CONTRACT)
+  {
     if (_pools.length == 0) {
       return;
     }
@@ -168,7 +176,10 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     poolIsActive(_consensusAddr)
     onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
   {
-    _validatorContract.execRequestRenounceCandidate(_consensusAddr, _waitingSecsToRevoke);
+    IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).execRequestRenounceCandidate(
+      _consensusAddr,
+      _waitingSecsToRevoke
+    );
   }
 
   /**
@@ -180,7 +191,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     poolIsActive(_consensusAddr)
     onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
   {
-    _validatorContract.execEmergencyExit(_consensusAddr, _waitingSecsToRevoke);
+    IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).execEmergencyExit(_consensusAddr, _waitingSecsToRevoke);
   }
 
   /**
@@ -206,7 +217,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     _diffAddrs[2] = _bridgeOperatorAddr;
     if (AddressArrayUtils.hasDuplicate(_diffAddrs)) revert ErrDuplicated(msg.sig);
 
-    _validatorContract.execApplyValidatorCandidate(
+    IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).execApplyValidatorCandidate(
       _candidateAdmin,
       _consensusAddr,
       _treasuryAddr,

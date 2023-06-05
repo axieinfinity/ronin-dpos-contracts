@@ -2,14 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "../extensions/sequential-governance/CoreGovernance.sol";
-import "../extensions/collections/HasRoninTrustedOrganizationContract.sol";
-import "../extensions/collections/HasBridgeContract.sol";
+import "../extensions/collections/HasContract.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 import "../libraries/ErrorHandler.sol";
 
-import "../libraries/ErrorHandler.sol";
-
-abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract, HasBridgeContract {
+abstract contract GovernanceAdmin is CoreGovernance, HasContract {
   using ErrorHandler for bool;
 
   uint256 public roninChainId;
@@ -36,24 +33,17 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
         keccak256(abi.encode("RONIN_GOVERNANCE_ADMIN", _roninChainId)) // salt
       )
     );
-    _setRoninTrustedOrganizationContract(_roninTrustedOrganizationContract);
-    _setBridgeContract(_bridgeContract);
+
+    _setContract(Roles.BRIDGE_CONTRACT, _bridgeContract);
+    _setContract(Roles.RONIN_TRUSTED_ORGANIZATION_CONTRACT, _roninTrustedOrganizationContract);
   }
 
   /**
-   * @inheritdoc IHasRoninTrustedOrganizationContract
+   * @inheritdoc IHasContract
    */
-  function setRoninTrustedOrganizationContract(address _addr) external override onlySelfCall {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
-    _setRoninTrustedOrganizationContract(_addr);
-  }
-
-  /**
-   * @inheritdoc IHasBridgeContract
-   */
-  function setBridgeContract(address _addr) external override onlySelfCall {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
-    _setBridgeContract(_addr);
+  function setContract(Roles role, address addr) external virtual override onlySelfCall {
+    _requireHasCode(addr);
+    _setContract(role, addr);
   }
 
   /**
@@ -126,7 +116,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
    */
   function _getMinimumVoteWeight() internal view virtual override returns (uint256) {
     bytes4 _selector = IQuorum.minimumVoteWeight.selector;
-    (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
+    (bool _success, bytes memory _returndata) = getContract(Roles.RONIN_TRUSTED_ORGANIZATION_CONTRACT).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
@@ -142,7 +132,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
    */
   function _getTotalWeights() internal view virtual override returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.totalWeights.selector;
-    (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
+    (bool _success, bytes memory _returndata) = getContract(Roles.RONIN_TRUSTED_ORGANIZATION_CONTRACT).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,

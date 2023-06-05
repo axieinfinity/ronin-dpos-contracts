@@ -14,9 +14,9 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     _disableInitializers();
   }
 
-  receive() external payable onlyValidatorContract {}
+  receive() external payable onlyContractWithRole(Roles.VALIDATOR_CONTRACT) {}
 
-  fallback() external payable onlyValidatorContract {}
+  fallback() external payable onlyContractWithRole(Roles.VALIDATOR_CONTRACT) {}
 
   /**
    * @dev Initializes the contract storage.
@@ -28,7 +28,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     uint256 __cooldownSecsToUndelegate,
     uint256 __waitingSecsToRevoke
   ) external initializer {
-    _setValidatorContract(__validatorContract);
+    _setContract(Roles.VALIDATOR_CONTRACT, __validatorContract);
     _setMinValidatorStakingAmount(__minValidatorStakingAmount);
     _setCommissionRateRange(0, __maxCommissionRate);
     _setCooldownSecsToUndelegate(__cooldownSecsToUndelegate);
@@ -42,7 +42,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     address[] calldata _consensusAddrs,
     uint256[] calldata _rewards,
     uint256 _period
-  ) external payable override onlyValidatorContract {
+  ) external payable override onlyContractWithRole(Roles.VALIDATOR_CONTRACT) {
     _recordRewards(_consensusAddrs, _rewards, _period);
   }
 
@@ -52,11 +52,11 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   function execDeductStakingAmount(address _consensusAddr, uint256 _amount)
     external
     override
-    onlyValidatorContract
+    onlyContractWithRole(Roles.VALIDATOR_CONTRACT)
     returns (uint256 _actualDeductingAmount)
   {
     _actualDeductingAmount = _deductStakingAmount(_stakingPool[_consensusAddr], _amount);
-    address payable _validatorContractAddr = payable(validatorContract());
+    address payable _validatorContractAddr = payable(msg.sender);
     if (!_unsafeSendRON(_validatorContractAddr, _actualDeductingAmount)) {
       emit StakingAmountDeductFailed(
         _consensusAddr,
@@ -71,7 +71,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
    * @inheritdoc RewardCalculation
    */
   function _currentPeriod() internal view virtual override returns (uint256) {
-    return _validatorContract.currentPeriod();
+    return IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).currentPeriod();
   }
 
   /**

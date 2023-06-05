@@ -2,13 +2,13 @@
 
 pragma solidity ^0.8.9;
 
-import "../../extensions/collections/HasStakingContract.sol";
+import "../../extensions/collections/HasContract.sol";
 import "../../extensions/consumers/GlobalConfigConsumer.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/validator/ICandidateManager.sol";
 import "../../interfaces/staking/IStaking.sol";
 
-abstract contract CandidateManager is ICandidateManager, PercentageConsumer, GlobalConfigConsumer, HasStakingContract {
+abstract contract CandidateManager is ICandidateManager, PercentageConsumer, GlobalConfigConsumer, HasContract {
   /// @dev Maximum number of validator candidate
   uint256 private _maxValidatorCandidate;
 
@@ -70,13 +70,13 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
     address payable _treasuryAddr,
     address _bridgeOperatorAddr,
     uint256 _commissionRate
-  ) external override onlyStakingContract {
+  ) external override onlyContractWithRole(Roles.STAKING_CONTRACT) {
     uint256 _length = _candidates.length;
     if (_length >= maxValidatorCandidate()) revert ErrExceedsMaxNumberOfCandidate();
     if (isValidatorCandidate(_consensusAddr)) revert ErrExistentCandidate();
     if (_commissionRate > _MAX_PERCENTAGE) revert ErrInvalidCommissionRate();
 
-    for (uint _i; _i < _candidates.length; ) {
+    for (uint _i; _i < _length; ) {
       ValidatorCandidate storage existentInfo = _candidateInfo[_candidates[_i]];
       if (_candidateAdmin == existentInfo.admin) revert ErrExistentCandidateAdmin(_candidateAdmin);
       if (_treasuryAddr == existentInfo.treasuryAddr) revert ErrExistentTreasury(_treasuryAddr);
@@ -105,7 +105,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
   function execRequestRenounceCandidate(address _consensusAddr, uint256 _secsLeft)
     external
     override
-    onlyStakingContract
+    onlyContractWithRole(Roles.STAKING_CONTRACT)
   {
     if (_isTrustedOrg(_consensusAddr)) revert ErrTrustedOrgCannotRenounce();
 
@@ -121,7 +121,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
     address _consensusAddr,
     uint256 _effectiveDaysOnwards,
     uint256 _commissionRate
-  ) external override onlyStakingContract {
+  ) external override onlyContractWithRole(Roles.STAKING_CONTRACT) {
     if (_candidateCommissionChangeSchedule[_consensusAddr].effectiveTimestamp != 0) {
       revert ErrAlreadyRequestedUpdatingCommissionRate();
     }
@@ -187,7 +187,7 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
    *
    */
   function _syncCandidateSet(uint256 _nextPeriod) internal returns (address[] memory _unsatisfiedCandidates) {
-    IStaking _staking = _stakingContract;
+    IStaking _staking = IStaking(getContract(Roles.STAKING_CONTRACT));
     uint256 _waitingSecsToRevoke = _staking.waitingSecsToRevoke();
     uint256 _minStakingAmount = _staking.minValidatorStakingAmount();
     uint256[] memory _selfStakings = _staking.getManySelfStakings(_candidates);
