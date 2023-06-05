@@ -46,8 +46,15 @@ library Token {
   /**
    * @dev Returns token info struct hash.
    */
-  function hash(Info memory _info) internal pure returns (bytes32) {
-    return keccak256(abi.encode(INFO_TYPE_HASH, _info.erc, _info.id, _info.quantity));
+  function hash(Info memory _info) internal pure returns (bytes32 digest) {
+    assembly {
+      let freeMemPtr := mload(0x40)
+      mstore(freeMemPtr, INFO_TYPE_HASH)
+      mstore(add(freeMemPtr, 0x20), mload(_info)) // _info.erc
+      mstore(add(freeMemPtr, 0x40), mload(add(_info, 0x20))) // _info.id
+      mstore(add(freeMemPtr, 0x60), mload(add(_info, 0x40))) // _info.quantity
+      digest := keccak256(freeMemPtr, 0x80)
+    }
   }
 
   /**
@@ -224,7 +231,14 @@ library Token {
   /**
    * @dev Returns ownership struct hash.
    */
-  function hash(Owner memory _owner) internal pure returns (bytes32) {
-    return keccak256(abi.encode(OWNER_TYPE_HASH, _owner.addr, _owner.tokenAddr, _owner.chainId));
+  function hash(Owner memory _owner) internal pure returns (bytes32 digest) {
+    assembly {
+      let freeMemPtr := mload(0x40)
+      mstore(freeMemPtr, OWNER_TYPE_HASH)
+      mstore(add(freeMemPtr, 0x20), mload(_owner)) // _owner.addr
+      mstore(add(freeMemPtr, 0x40), mload(add(_owner, 0x20))) // _owner.tokenAddr
+      mstore(add(freeMemPtr, 0x60), mload(add(_owner, 0x40))) // _owner.chainId
+      digest := keccak256(freeMemPtr, 0x80)
+    }
   }
 }
