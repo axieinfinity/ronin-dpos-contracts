@@ -75,7 +75,7 @@ function removeIdentifierSuffix(type: string) {
 /// @dev Generate storage layout from `source` file to `destination` file.
 task('generate-storage-layout')
   .addParam('source', 'The path to storage layout file extracted from hardhat-storage-layout')
-  .addOptionalParam('destination', 'The path to store storage layout after generating', 'layout/storage.txt')
+  .addOptionalParam('destination', 'The path to store storage layout after generating', 'logs/storage_layout.txt')
   .addOptionalParam('override', 'Indicates whether override the destination if it already exits', false, boolean)
   .setAction(async ({ source, destination, override }, _) => {
     try {
