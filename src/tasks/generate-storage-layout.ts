@@ -65,10 +65,17 @@ const preprocessTable = (tableContent: string) => {
   return listItemOfTable;
 };
 
+function removeIdentifierSuffix(type: string) {
+  const suffixIdRegex = /\d+_(storage|memory|calldata|ptr)/g; // id_memory id_storage
+  const contractRegex = /^(t_super|t_contract)\(([A-Za-z0-9_]+)\)\d+/g; // t_contract(contractName)id
+  const enumRegex = /(t_enum)\(([A-Za-z0-9_]+)\)\d+/g; // t_enum(enumName)id
+  return type.replace(suffixIdRegex, '_$1').replace(contractRegex, '$1($2)').replace(enumRegex, '$1($2)');
+}
+
 /// @dev Generate storage layout from `source` file to `destination` file.
 task('generate-storage-layout')
   .addParam('source', 'The path to storage layout file extracted from hardhat-storage-layout')
-  .addOptionalParam('destination', 'The path to store storage layout after generating', 'layout/storage.txt')
+  .addOptionalParam('destination', 'The path to store storage layout after generating', 'logs/storage_layout.txt')
   .addOptionalParam('override', 'Indicates whether override the destination if it already exits', false, boolean)
   .setAction(async ({ source, destination, override }, _) => {
     try {
@@ -80,6 +87,10 @@ task('generate-storage-layout')
         for (let i = 0; i < listItemOfTable.length; i += 9) {
           // remove two collums: idx (index = 5) and artifacts (index =6)
           const row = listItemOfTable.slice(i, i + 8).filter((_, idx) => idx != 5 && idx != 6);
+
+          // remove the suffix identifier of data type: <id>_(storage|memory|calldata)
+          const dataType = row[4];
+          row[4] = removeIdentifierSuffix(dataType);
           data.push(row);
         }
         const output = table(data);
