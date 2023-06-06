@@ -57,28 +57,35 @@ export const accessControlRevertStr = (addr: Address, role: string): string =>
 export const compareBigNumbers = (firstBigNumbers: BigNumber[], secondBigNumbers: BigNumber[]) =>
   expect(firstBigNumbers.map((_) => _.toHexString())).deep.equal(secondBigNumbers.map((_) => _.toHexString()));
 
-const ROLES = {
-  UNKNOWN: 0,
-  ADMIN: 1,
-  GOVERNOR: 2,
-  COINBASE: 3,
-  CANDIDATE_ADMIN: 4,
-  PAUSE_ENFORCER_CONTRACT: 5,
-  WITHDRAWAL_MIGRATOR: 6,
-  BRIDGE_CONTRACT: 7,
-  BRIDGE_OPERATOR: 8,
-  BRIDGE_TRACKING_CONTRACT: 9,
-  MAINTENANCE_CONTRACT: 10,
-  GOVERNANCE_ADMIN_CONTRACT: 11,
-  SLASH_INDICATOR_CONTRACT: 12,
-  STAKING_CONTRACT: 13,
-  STAKING_VESTING_CONTRACT: 14,
-  VALIDATOR_CONTRACT: 15,
-  VALIDATOR_CANDIDATE: 16,
-  BLOCK_PRODUCER: 17,
-  RONIN_TRUSTED_ORGANIZATION_CONTRACT: 18,
-} as { [key: string]: number };
+const ROLES = [
+  /// @notice reserves 1st bit
+  'UNKNOWN_0', // 0
+  'UNKNOWN_1', // 1
+
+  'ADMIN', // 2
+  'PAUSE_ENFORCER_CONTRACT', // 3
+  'COINBASE', // 4
+  'BRIDGE_CONTRACT', // 5
+  'GOVERNOR', // 6
+  'BRIDGE_TRACKING_CONTRACT', // 7
+  'CANDIDATE_ADMIN', // 8
+  'GOVERNANCE_ADMIN_CONTRACT', // 9
+  'WITHDRAWAL_MIGRATOR', // 10
+  'MAINTENANCE_CONTRACT', // 11
+  'BRIDGE_OPERATOR', // 12
+  'SLASH_INDICATOR_CONTRACT', // 13
+  'BLOCK_PRODUCER', // 14
+  'STAKING_VESTING_CONTRACT', // 15
+  'VALIDATOR_CANDIDATE', // 16
+  'VALIDATOR_CONTRACT', // 17
+  // @notice reserve index for EOA
+  'RESERVE_0', // 18
+  'STAKING_CONTRACT', // 19
+  // @notice reserve index for EOA
+  'RESERVE_1', // 20
+  'RONIN_TRUSTED_ORGANIZATION_CONTRACT', // 21
+];
 
 export const getRoles = (roleName: string): number => {
-  return ROLES[roleName];
+  return ROLES.indexOf(roleName);
 };
