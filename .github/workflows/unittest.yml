@@ -4,10 +4,12 @@ on:
     branches:
       - main
       - dev
+      - reduce-contract-size
   pull_request:
     branches:
       - main
       - dev
+      - reduce-contract-size
 
 permissions:
   packages: read
@@ -15,7 +17,7 @@ permissions:
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
-    
+
 jobs:
   nodejs:
     runs-on: ubuntu-latest
