@@ -53,7 +53,7 @@ abstract contract HasContract is HasProxyAdmin, IHasContract {
    * @dev Throws an error if the contract address has no code.
    */
   function _requireHasCode(address addr) internal view {
-    if (addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
+    if (addr.code.length == 0) revert ErrZeroCodeContract(addr);
   }
 
   /**

@@ -7,7 +7,7 @@ import "../../libraries/Roles.sol";
 interface IHasContract {
   error ErrInvalidRoleContract(Roles role);
   /// @dev Error of set to non-contract.
-  error ErrZeroCodeContract(bytes4 msgSig);
+  error ErrZeroCodeContract(address addr);
 
   event ContractUpdated(Roles indexed role, address indexed addr);
 
