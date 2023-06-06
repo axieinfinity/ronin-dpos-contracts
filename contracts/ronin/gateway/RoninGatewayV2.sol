@@ -48,16 +48,16 @@ contract RoninGatewayV2 is
   /// @dev Mapping from token address => chain id => mainchain token address
   mapping(address => mapping(uint256 => MappedToken)) internal _mainchainToken;
 
-  /// @notice deprecated
-  IRoninValidatorSet internal _validatorContract;
-  /// @notice deprecated
-  IBridgeTracking internal _bridgeTrackingContract;
+  /// @custom:deprecated previously `_validatorContract` (non-zero value)
+  address private ____deprecated0;
+  /// @custom:deprecated previously `_bridgeTrackingContract` (non-zero value)
+  address private ____deprecated1;
 
   /// @dev Mapping from withdrawal id => vote for recording withdrawal stats
   mapping(uint256 => IsolatedGovernance.Vote) public withdrawalStatVote;
 
-  /// @notice deprecated
-  IRoninTrustedOrganization internal _trustedOrgContract;
+  /// @custom:deprecated previously `_trustedOrgContract` (non-zero value)
+  address private ____deprecated2;
 
   uint256 internal _trustedNum;
   uint256 internal _trustedDenom;
