@@ -9,8 +9,8 @@ import "../../interfaces/collections/IHasContract.sol";
  * @dev A contract that provides functionality to manage multiple contracts with different roles.
  */
 abstract contract HasContract is HasProxyAdmin, IHasContract {
-  /// @dev value is equal to keccak256("@axie.dpos.collections.HasContract.slot") - 1
-  bytes32 private constant _STORAGE_SLOT = 0x1f9489f72908bed9cdd160d7728492fcf06934ffc4a3035c067f6420abbbadd0;
+  /// @dev value is equal to keccak256("@ronin.dpos.collections.HasContract.slot") - 1
+  bytes32 private constant _STORAGE_SLOT = 0xfad9c0674683fb431b376631a4bfc80edfff393989fa2d275a376234d8cd59ac;
 
   /**
    * @dev Modifier to restrict access to functions only to contracts with a specific role.
