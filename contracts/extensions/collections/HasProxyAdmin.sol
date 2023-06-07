@@ -10,7 +10,7 @@ abstract contract HasProxyAdmin {
   bytes32 internal constant _ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
   modifier onlyAdmin() {
-    _onlyAdmin();
+    _requireAdmin();
     _;
   }
 
@@ -21,7 +21,7 @@ abstract contract HasProxyAdmin {
     return StorageSlot.getAddressSlot(_ADMIN_SLOT).value;
   }
 
-  function _onlyAdmin() internal view {
+  function _requireAdmin() internal view {
     if (msg.sender != _getAdmin()) revert ErrUnauthorized(msg.sig, Roles.ADMIN);
   }
 }
