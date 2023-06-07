@@ -97,7 +97,7 @@ const compilerConfig: SolcUserConfig = {
     metadata: {
       // do not include the metadata hash, since this is machine dependent
       // and we want all generated code to be deterministic
-      // https://docs.soliditylang.org/en/v0.7.6/metadata.html
+      // https://docs.soliditylang.org/en/v0.8.17/metadata.html
       bytecodeHash: 'none',
     },
   },
