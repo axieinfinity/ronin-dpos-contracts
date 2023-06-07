@@ -92,9 +92,6 @@ library GlobalProposal {
       } else if (_proposal.targetOptions[_i] == TargetOption.RoninTrustedOrganizationContract) {
         _detail.targets[_i] = _roninTrustedOrganizationContract;
       } else revert ErrUnsupportedTarget();
-      unchecked {
-        ++_i;
-      }
 
       unchecked {
         ++_i;
