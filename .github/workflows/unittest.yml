@@ -28,7 +28,7 @@ jobs:
       - name: "Setup Node"
         uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 #v3.4.1
         with:
-          node-version: v14.18.1
+          node-version: v16.16.0
 
       - name: Github private package token in npmrc
         run: |
