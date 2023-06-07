@@ -39,53 +39,52 @@ contract Profile is IProfile, HasStakingContract, Initializable {
 
   function getManyConsensus2Id(address[] calldata consensusList) external view returns (address[] memory idList) {
     idList = new address[](consensusList.length);
-    for (uint i; i < consensusList.length; ) {
-      idList[i] = _consensus2Id[consensusList[i]];
-      unchecked {
-        ++i;
+    unchecked {
+      for (uint i; i < consensusList.length; ++i) {
+        idList[i] = _consensus2Id[consensusList[i]];
       }
     }
   }
 
-  function addNewProfile(CandidateProfile memory _profile) external onlyAdmin {
-    CandidateProfile storage sProfile = _id2Profile[_profile.id];
-    if (sProfile.id != address(0)) revert ErrExistentProfile();
-    _addNewProfile(sProfile, _profile);
+  function addNewProfile(CandidateProfile memory profile) external onlyAdmin {
+    CandidateProfile storage _profile = _id2Profile[profile.id];
+    if (_profile.id != address(0)) revert ErrExistentProfile();
+    _addNewProfile(_profile, profile);
   }
 
   function execApplyValidatorCandidate(
-    address _admin,
-    address _consensus,
-    address _treasury,
-    address _bridgeOperator
+    address admin,
+    address consensus,
+    address treasury,
+    address bridgeOperator
   ) external onlyStakingContract {
     // TODO: handle previous added consensus
-    CandidateProfile storage sProfile = _id2Profile[_consensus];
+    CandidateProfile storage _profile = _id2Profile[consensus];
 
-    CandidateProfile memory _profile = CandidateProfile(
-      _consensus,
-      _consensus,
-      _admin,
-      payable(_treasury),
-      _bridgeOperator,
-      address(0),
-      address(0)
-    );
+    CandidateProfile memory mProfile = CandidateProfile({
+      id: consensus,
+      consensus: consensus,
+      admin: admin,
+      treasury: payable(treasury),
+      bridgeOperator: bridgeOperator,
+      governor: address(0),
+      bridgeVoter: address(0)
+    });
 
-    _addNewProfile(sProfile, _profile);
+    _addNewProfile(_profile, mProfile);
   }
 
-  function _addNewProfile(CandidateProfile storage _sProfile, CandidateProfile memory _newProfile) internal {
-    _consensus2Id[_newProfile.consensus] = _newProfile.id;
+  function _addNewProfile(CandidateProfile storage _profile, CandidateProfile memory mNewProfile) internal {
+    _consensus2Id[mNewProfile.consensus] = mNewProfile.id;
 
-    _sProfile.id = _newProfile.id;
-    _sProfile.consensus = _newProfile.consensus;
-    _sProfile.admin = _newProfile.admin;
-    _sProfile.treasury = _newProfile.treasury;
-    _sProfile.bridgeOperator = _newProfile.bridgeOperator;
-    _sProfile.governor = _newProfile.governor;
-    _sProfile.bridgeVoter = _newProfile.bridgeVoter;
+    _profile.id = mNewProfile.id;
+    _profile.consensus = mNewProfile.consensus;
+    _profile.admin = mNewProfile.admin;
+    _profile.treasury = mNewProfile.treasury;
+    _profile.bridgeOperator = mNewProfile.bridgeOperator;
+    _profile.governor = mNewProfile.governor;
+    _profile.bridgeVoter = mNewProfile.bridgeVoter;
 
-    emit ProfileAdded(_newProfile.id);
+    emit ProfileAdded(mNewProfile.id);
   }
 }
