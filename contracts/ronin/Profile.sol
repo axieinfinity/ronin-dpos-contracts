@@ -2,11 +2,12 @@
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../extensions/collections/HasStakingContract.sol";
+import "../extensions/collections/HasValidatorContract.sol";
 import "../interfaces/IProfile.sol";
 
 pragma solidity ^0.8.9;
 
-contract Profile is IProfile, HasStakingContract, Initializable {
+contract Profile is IProfile, HasStakingContract, HasValidatorContract, Initializable {
   /// @dev Mapping from id address => candidate profile.
   mapping(address => CandidateProfile) public _id2Profile;
   /// @dev Mapping from consensus address => id address.
@@ -17,6 +18,9 @@ contract Profile is IProfile, HasStakingContract, Initializable {
 
   /// @dev Error of already existed profile.
   error ErrExistentProfile();
+  /// @dev Event emitted when a address in a profile is changed.
+  /// NOTE: Define a struct for `addressType` instead of using string, consider reusing Error of AddressEnums.
+  event ProfileAddressChanged(address indexed id, string indexed addressType);
 
   constructor() {
     _disableInitializers();
@@ -25,8 +29,9 @@ contract Profile is IProfile, HasStakingContract, Initializable {
   /**
    * @dev Initializes the contract storage.
    */
-  function initialize(address __stakingContract) external initializer {
+  function initialize(address __stakingContract, address __validatorContract) external initializer {
     _setStakingContract(__stakingContract);
+    _setValidatorContract(__validatorContract);
   }
 
   function getId2Profile(address id) external view returns (CandidateProfile memory) {
@@ -47,8 +52,7 @@ contract Profile is IProfile, HasStakingContract, Initializable {
   }
 
   function addNewProfile(CandidateProfile memory profile) external onlyAdmin {
-    CandidateProfile storage _profile = _id2Profile[profile.id];
-    if (_profile.id != address(0)) revert ErrExistentProfile();
+    CandidateProfile storage _profile = _getId2ProfileHelper(profile.id);
     _addNewProfile(_profile, profile);
   }
 
@@ -86,5 +90,26 @@ contract Profile is IProfile, HasStakingContract, Initializable {
     _profile.bridgeVoter = mNewProfile.bridgeVoter;
 
     emit ProfileAdded(mNewProfile.id);
+  }
+
+  function _getId2ProfileHelper(address id) internal view returns (CandidateProfile storage _profile) {
+    _profile = _id2Profile[id];
+    if (_profile.id != address(0)) revert ErrExistentProfile();
+  }
+
+  /**
+   * @dev Updated immediately without waiting time.
+   *
+   * Interactions:
+   * - Update `PoolDetail` in {BaseStaking.sol}.
+   * - Update `_adminOfActivePoolMapping` in {BaseStaking.sol}.
+   *
+   * Emit an {ProfileAddressChanged}.
+   */
+  function requestChangeAdminAddress(address id, address newAdminAddr) external {
+    CandidateProfile storage _profile = _getId2ProfileHelper(id);
+    _profile.admin = newAdminAddr;
+
+    emit ProfileAddressChanged(id, "admin");
   }
 }

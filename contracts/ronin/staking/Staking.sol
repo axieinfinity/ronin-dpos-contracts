@@ -6,10 +6,9 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../libraries/Math.sol";
 import "../../interfaces/staking/IStaking.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
-import "./CandidateStaking.sol";
-import "./DelegatorStaking.sol";
+import "./StakingProfile.sol";
 
-contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable {
+contract Staking is IStaking, StakingProfile, Initializable {
   constructor() {
     _disableInitializers();
   }
