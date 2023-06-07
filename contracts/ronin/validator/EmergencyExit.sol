@@ -141,7 +141,9 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
         continue;
       }
 
-      _i++;
+      unchecked {
+        _i++;
+      }
     }
   }
 

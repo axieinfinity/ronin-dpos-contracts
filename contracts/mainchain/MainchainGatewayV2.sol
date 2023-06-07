@@ -124,7 +124,9 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
           _bridgeOperators.pop();
           continue;
         }
-        _i++;
+        unchecked {
+          _i++;
+        }
       }
     }
 
