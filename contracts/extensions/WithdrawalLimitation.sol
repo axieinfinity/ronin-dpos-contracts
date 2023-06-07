@@ -56,13 +56,10 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    * - The high-tier vote weight threshold must equal to or larger than the normal threshold.
    *
    */
-  function setThreshold(uint256 _numerator, uint256 _denominator)
-    external
-    virtual
-    override
-    onlyAdmin
-    returns (uint256 _previousNum, uint256 _previousDenom)
-  {
+  function setThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) external virtual override onlyAdmin returns (uint256 _previousNum, uint256 _previousDenom) {
     (_previousNum, _previousDenom) = _setThreshold(_numerator, _denominator);
     _verifyThresholds();
   }
@@ -91,12 +88,10 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    * Emits the `HighTierVoteWeightThresholdUpdated` event.
    *
    */
-  function setHighTierVoteWeightThreshold(uint256 _numerator, uint256 _denominator)
-    external
-    virtual
-    onlyAdmin
-    returns (uint256 _previousNum, uint256 _previousDenom)
-  {
+  function setHighTierVoteWeightThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) external virtual onlyAdmin returns (uint256 _previousNum, uint256 _previousDenom) {
     (_previousNum, _previousDenom) = _setHighTierVoteWeightThreshold(_numerator, _denominator);
     _verifyThresholds();
   }
@@ -111,11 +106,10 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    * Emits the `HighTierThresholdsUpdated` event.
    *
    */
-  function setHighTierThresholds(address[] calldata _tokens, uint256[] calldata _thresholds)
-    external
-    virtual
-    onlyAdmin
-  {
+  function setHighTierThresholds(
+    address[] calldata _tokens,
+    uint256[] calldata _thresholds
+  ) external virtual onlyAdmin {
     if (_tokens.length == 0) revert ErrEmptyArray();
     _setHighTierThresholds(_tokens, _thresholds);
   }
@@ -145,11 +139,10 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    * Emits the `UnlockFeePercentagesUpdated` event.
    *
    */
-  function setUnlockFeePercentages(address[] calldata _tokens, uint256[] calldata _percentages)
-    external
-    virtual
-    onlyAdmin
-  {
+  function setUnlockFeePercentages(
+    address[] calldata _tokens,
+    uint256[] calldata _percentages
+  ) external virtual onlyAdmin {
     if (_tokens.length == 0) revert ErrEmptyArray();
     _setUnlockFeePercentages(_tokens, _percentages);
   }
@@ -182,16 +175,18 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    * Emits the `HighTierVoteWeightThresholdUpdated` event.
    *
    */
-  function _setHighTierVoteWeightThreshold(uint256 _numerator, uint256 _denominator)
-    internal
-    returns (uint256 _previousNum, uint256 _previousDenom)
-  {
+  function _setHighTierVoteWeightThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) internal returns (uint256 _previousNum, uint256 _previousDenom) {
     if (_numerator > _denominator) revert ErrInvalidThreshold(msg.sig);
     _previousNum = _highTierVWNum;
     _previousDenom = _highTierVWDenom;
     _highTierVWNum = _numerator;
     _highTierVWDenom = _denominator;
-    emit HighTierVoteWeightThresholdUpdated(nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    unchecked {
+      emit HighTierVoteWeightThresholdUpdated(nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    }
   }
 
   /**

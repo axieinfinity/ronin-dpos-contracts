@@ -92,7 +92,9 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       // Skip increasing round number if the latest round is expired, allow the vote to be overridden
       if (!_isExpired) {
         if (_latestProposalVote.status == VoteStatus.Pending) revert ErrCurrentProposalIsNotCompleted();
-        _round = ++round[_chainId];
+        unchecked {
+          _round = ++round[_chainId];
+        }
       }
     }
   }
@@ -100,11 +102,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   /**
    * @dev Saves new round voting for the proposal `_proposalHash` of chain `_chainId`.
    */
-  function _saveVotingRound(
-    ProposalVote storage _vote,
-    bytes32 _proposalHash,
-    uint256 _expiryTimestamp
-  ) internal {
+  function _saveVotingRound(ProposalVote storage _vote, bytes32 _proposalHash, uint256 _expiryTimestamp) internal {
     _vote.hash = _proposalHash;
     _vote.expiryTimestamp = _expiryTimestamp;
   }
@@ -148,11 +146,10 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
    * Emits the `ProposalCreated` event.
    *
    */
-  function _proposeProposalStruct(Proposal.ProposalDetail memory _proposal, address _creator)
-    internal
-    virtual
-    returns (uint256 _round)
-  {
+  function _proposeProposalStruct(
+    Proposal.ProposalDetail memory _proposal,
+    address _creator
+  ) internal virtual returns (uint256 _round) {
     uint256 _chainId = _proposal.chainId;
     if (_chainId == 0) revert ErrInvalidChainId(msg.sig, 0, block.chainid);
     _proposal.validate(_proposalExpiryDuration);

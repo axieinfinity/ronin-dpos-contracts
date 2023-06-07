@@ -102,11 +102,10 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
   /**
    * @inheritdoc ICandidateManager
    */
-  function execRequestRenounceCandidate(address _consensusAddr, uint256 _secsLeft)
-    external
-    override
-    onlyStakingContract
-  {
+  function execRequestRenounceCandidate(
+    address _consensusAddr,
+    uint256 _secsLeft
+  ) external override onlyStakingContract {
     if (_isTrustedOrg(_consensusAddr)) revert ErrTrustedOrgCannotRenounce();
 
     ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
@@ -225,7 +224,9 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
         bool _topupDeadlineMissed = _info.topupDeadline != 0 && _info.topupDeadline <= block.timestamp;
         if (_revokingActivated || _topupDeadlineMissed) {
           _selfStakings[_i] = _selfStakings[--_length];
-          _unsatisfiedCandidates[_unsatisfiedCount++] = _addr;
+          unchecked {
+            _unsatisfiedCandidates[_unsatisfiedCount++] = _addr;
+          }
           _removeCandidate(_addr);
           continue;
         }

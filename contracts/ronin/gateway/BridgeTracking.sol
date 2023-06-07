@@ -96,12 +96,10 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   /**
    * @inheritdoc IBridgeTracking
    */
-  function getManyTotalBallots(uint256 _period, address[] calldata _bridgeOperators)
-    external
-    view
-    override
-    returns (uint256[] memory _res)
-  {
+  function getManyTotalBallots(
+    uint256 _period,
+    address[] calldata _bridgeOperators
+  ) external view override returns (uint256[] memory _res) {
     _res = new uint256[](_bridgeOperators.length);
     bool _isBufferCounted = _isBufferCountedForPeriod(_period);
     for (uint _i = 0; _i < _bridgeOperators.length; ) {
@@ -174,12 +172,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   /**
    * @dev Increases the ballot for the operator at a period.
    */
-  function _increaseBallot(
-    VoteKind _kind,
-    uint256 _requestId,
-    address _operator,
-    uint256 _currentPeriod
-  ) internal {
+  function _increaseBallot(VoteKind _kind, uint256 _requestId, address _operator, uint256 _currentPeriod) internal {
     ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_kind][_requestId];
     if (_receiptInfo.voted[_operator]) {
       return;
@@ -191,18 +184,20 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
 
     // Do not increase ballot for receipt that is neither in the buffer, nor in the most current tracked period.
     // If the receipt is not tracked in a period, increase metric in buffer.
-    if (_trackedPeriod == 0) {
-      if (_bufferMetric.data.totalBallotsOf[_operator] == 0) {
-        _bufferMetric.data.voters.push(_operator);
+    unchecked {
+      if (_trackedPeriod == 0) {
+        if (_bufferMetric.data.totalBallotsOf[_operator] == 0) {
+          _bufferMetric.data.voters.push(_operator);
+        }
+        _bufferMetric.data.totalBallots++;
+        _bufferMetric.data.totalBallotsOf[_operator]++;
       }
-      _bufferMetric.data.totalBallots++;
-      _bufferMetric.data.totalBallotsOf[_operator]++;
-    }
-    // If the receipt is tracked in the most current tracked period, increase metric in the period.
-    else if (_trackedPeriod == _currentPeriod) {
-      PeriodVotingMetric storage _metric = _periodMetric[_trackedPeriod];
-      _metric.totalBallots++;
-      _metric.totalBallotsOf[_operator]++;
+      // If the receipt is tracked in the most current tracked period, increase metric in the period.
+      else if (_trackedPeriod == _currentPeriod) {
+        PeriodVotingMetric storage _metric = _periodMetric[_trackedPeriod];
+        _metric.totalBallots++;
+        _metric.totalBallotsOf[_operator]++;
+      }
     }
   }
 

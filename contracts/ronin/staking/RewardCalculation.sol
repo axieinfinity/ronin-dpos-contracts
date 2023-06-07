@@ -82,11 +82,7 @@ abstract contract RewardCalculation is IRewardPool {
    * Note: The method should be called whenever the user's staking amount changes.
    *
    */
-  function _syncUserReward(
-    address _poolAddr,
-    address _user,
-    uint256 _newStakingAmount
-  ) internal {
+  function _syncUserReward(address _poolAddr, address _user, uint256 _newStakingAmount) internal {
     uint256 _period = _currentPeriod();
     PoolFields storage _pool = _stakingPool[_poolAddr];
     uint256 _lastShares = _pool.shares.inner;
@@ -148,11 +144,7 @@ abstract contract RewardCalculation is IRewardPool {
    * Note: This method should be called before transferring rewards for the user.
    *
    */
-  function _claimReward(
-    address _poolAddr,
-    address _user,
-    uint256 _lastPeriod
-  ) internal returns (uint256 _amount) {
+  function _claimReward(address _poolAddr, address _user, uint256 _lastPeriod) internal returns (uint256 _amount) {
     uint256 _currentStakingAmount = getStakingAmount(_poolAddr, _user);
     _amount = _getReward(_poolAddr, _user, _lastPeriod, _currentStakingAmount);
     emit RewardClaimed(_poolAddr, _user, _amount);
@@ -175,11 +167,7 @@ abstract contract RewardCalculation is IRewardPool {
    * Note: This method should be called once at the period ending.
    *
    */
-  function _recordRewards(
-    address[] memory _poolAddrs,
-    uint256[] calldata _rewards,
-    uint256 _period
-  ) internal {
+  function _recordRewards(address[] memory _poolAddrs, uint256[] calldata _rewards, uint256 _period) internal {
     if (_poolAddrs.length != _rewards.length) {
       emit PoolsUpdateFailed(_period, _poolAddrs, _rewards);
       return;
@@ -199,7 +187,9 @@ abstract contract RewardCalculation is IRewardPool {
       _stakingTotal = getStakingTotal(_poolAddr);
 
       if (_accumulatedRps[_poolAddr][_period].lastPeriod == _period) {
-        _conflicted[_count++] = _poolAddr;
+        unchecked {
+          _conflicted[_count++] = _poolAddr;
+        }
         continue;
       }
 

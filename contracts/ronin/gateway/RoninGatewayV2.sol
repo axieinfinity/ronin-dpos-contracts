@@ -173,10 +173,10 @@ contract RoninGatewayV2 is
    * - The arrays have the same length and its length larger than 0.
    *
    */
-  function migrateWithdrawals(Transfer.Request[] calldata _requests, address[] calldata _requesters)
-    external
-    onlyRole(WITHDRAWAL_MIGRATOR)
-  {
+  function migrateWithdrawals(
+    Transfer.Request[] calldata _requests,
+    address[] calldata _requesters
+  ) external onlyRole(WITHDRAWAL_MIGRATOR) {
     if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
     if (!(_requesters.length == _requests.length && _requests.length > 0)) revert ErrLengthMismatch(msg.sig);
 
@@ -207,11 +207,10 @@ contract RoninGatewayV2 is
   /**
    * @inheritdoc IRoninGatewayV2
    */
-  function getWithdrawalSignatures(uint256 _withdrawalId, address[] calldata _validators)
-    external
-    view
-    returns (bytes[] memory _signatures)
-  {
+  function getWithdrawalSignatures(
+    uint256 _withdrawalId,
+    address[] calldata _validators
+  ) external view returns (bytes[] memory _signatures) {
     _signatures = new bytes[](_validators.length);
     for (uint256 _i = 0; _i < _validators.length; ) {
       _signatures[_i] = _withdrawalSig[_withdrawalId][_validators[_i]];
@@ -234,11 +233,9 @@ contract RoninGatewayV2 is
   /**
    * @inheritdoc IRoninGatewayV2
    */
-  function tryBulkAcknowledgeMainchainWithdrew(uint256[] calldata _withdrawalIds)
-    external
-    onlyBridgeOperator
-    returns (bool[] memory _executedReceipts)
-  {
+  function tryBulkAcknowledgeMainchainWithdrew(
+    uint256[] calldata _withdrawalIds
+  ) external onlyBridgeOperator returns (bool[] memory _executedReceipts) {
     address _governor = msg.sender;
     uint256 _minVoteWeight = minimumVoteWeight();
     uint256 _minTrustedVoteWeight = minimumTrustedVoteWeight();
@@ -271,12 +268,9 @@ contract RoninGatewayV2 is
   /**
    * @inheritdoc IRoninGatewayV2
    */
-  function tryBulkDepositFor(Transfer.Receipt[] calldata _receipts)
-    external
-    whenNotPaused
-    onlyBridgeOperator
-    returns (bool[] memory _executedReceipts)
-  {
+  function tryBulkDepositFor(
+    Transfer.Receipt[] calldata _receipts
+  ) external whenNotPaused onlyBridgeOperator returns (bool[] memory _executedReceipts) {
     address _sender = msg.sender;
 
     Transfer.Receipt memory _receipt;
@@ -334,11 +328,10 @@ contract RoninGatewayV2 is
   /**
    * @inheritdoc IRoninGatewayV2
    */
-  function bulkSubmitWithdrawalSignatures(uint256[] calldata _withdrawals, bytes[] calldata _signatures)
-    external
-    whenNotPaused
-    onlyBridgeOperator
-  {
+  function bulkSubmitWithdrawalSignatures(
+    uint256[] calldata _withdrawals,
+    bytes[] calldata _signatures
+  ) external whenNotPaused onlyBridgeOperator {
     address _validator = msg.sender;
 
     if (!(_withdrawals.length > 0 && _withdrawals.length == _signatures.length)) {
@@ -389,11 +382,7 @@ contract RoninGatewayV2 is
   /**
    * @inheritdoc IRoninGatewayV2
    */
-  function depositVoted(
-    uint256 _chainId,
-    uint256 _depositId,
-    address _voter
-  ) external view returns (bool) {
+  function depositVoted(uint256 _chainId, uint256 _depositId, address _voter) external view returns (bool) {
     return depositVote[_chainId][_depositId].voted(_voter);
   }
 
@@ -494,11 +483,7 @@ contract RoninGatewayV2 is
    * Emits the `WithdrawalRequested` event.
    *
    */
-  function _requestWithdrawalFor(
-    Transfer.Request calldata _request,
-    address _requester,
-    uint256 _chainId
-  ) internal {
+  function _requestWithdrawalFor(Transfer.Request calldata _request, address _requester, uint256 _chainId) internal {
     _request.info.validate();
     _checkWithdrawal(_request);
     MappedToken memory _token = getMainchainToken(_request.tokenAddr, _chainId);
@@ -608,11 +593,10 @@ contract RoninGatewayV2 is
   /**
    * @dev Returns the vote weight for a specified hash.
    */
-  function _getVoteWeight(IsolatedGovernance.Vote storage _v, bytes32 _hash)
-    internal
-    view
-    returns (uint256 _totalWeight, uint256 _trustedWeight)
-  {
+  function _getVoteWeight(
+    IsolatedGovernance.Vote storage _v,
+    bytes32 _hash
+  ) internal view returns (uint256 _totalWeight, uint256 _trustedWeight) {
     (
       address[] memory _consensusList,
       address[] memory _bridgeOperators,
@@ -620,26 +604,24 @@ contract RoninGatewayV2 is
     ) = _validatorContract.getValidators();
     uint256[] memory _trustedWeights = _trustedOrgContract.getConsensusWeights(_consensusList);
 
-    for (uint _i; _i < _bridgeOperators.length; ) {
-      if (_flags[_i].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator) && _v.voteHashOf[_bridgeOperators[_i]] == _hash) {
-        _totalWeight++;
-        if (_trustedWeights[_i] > 0) {
-          _trustedWeight++;
+    unchecked {
+      for (uint _i; _i < _bridgeOperators.length; ++_i) {
+        if (
+          _flags[_i].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator) && _v.voteHashOf[_bridgeOperators[_i]] == _hash
+        ) {
+          _totalWeight++;
+          if (_trustedWeights[_i] > 0) {
+            _trustedWeight++;
+          }
         }
-      }
-
-      unchecked {
-        ++_i;
       }
     }
   }
 
-  function setTrustedThreshold(uint256 _trustedNumerator, uint256 _trustedDenominator)
-    external
-    virtual
-    onlyAdmin
-    returns (uint256, uint256)
-  {
+  function setTrustedThreshold(
+    uint256 _trustedNumerator,
+    uint256 _trustedDenominator
+  ) external virtual onlyAdmin returns (uint256, uint256) {
     return _setTrustedThreshold(_trustedNumerator, _trustedDenominator);
   }
 
@@ -663,24 +645,25 @@ contract RoninGatewayV2 is
    * Emits the `TrustedThresholdUpdated` event.
    *
    */
-  function _setTrustedThreshold(uint256 _trustedNumerator, uint256 _trustedDenominator)
-    internal
-    virtual
-    returns (uint256 _previousTrustedNum, uint256 _previousTrustedDenom)
-  {
+  function _setTrustedThreshold(
+    uint256 _trustedNumerator,
+    uint256 _trustedDenominator
+  ) internal virtual returns (uint256 _previousTrustedNum, uint256 _previousTrustedDenom) {
     if (_trustedNumerator > _trustedDenominator) revert ErrInvalidTrustedThreshold();
 
     _previousTrustedNum = _num;
     _previousTrustedDenom = _denom;
     _trustedNum = _trustedNumerator;
     _trustedDenom = _trustedDenominator;
-    emit TrustedThresholdUpdated(
-      nonce++,
-      _trustedNumerator,
-      _trustedDenominator,
-      _previousTrustedNum,
-      _previousTrustedDenom
-    );
+    unchecked {
+      emit TrustedThresholdUpdated(
+        nonce++,
+        _trustedNumerator,
+        _trustedDenominator,
+        _previousTrustedNum,
+        _previousTrustedDenom
+      );
+    }
   }
 
   /**
