@@ -143,12 +143,10 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   /**
    * @inheritdoc ICandidateStaking
    */
-  function unstake(address _consensusAddr, uint256 _amount)
-    external
-    override
-    nonReentrant
-    poolIsActive(_consensusAddr)
-  {
+  function unstake(
+    address _consensusAddr,
+    uint256 _amount
+  ) external override nonReentrant poolIsActive(_consensusAddr) {
     if (_amount == 0) revert ErrUnstakeZeroAmount();
     address _requester = msg.sender;
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
@@ -162,24 +160,18 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   /**
    * @inheritdoc ICandidateStaking
    */
-  function requestRenounce(address _consensusAddr)
-    external
-    override
-    poolIsActive(_consensusAddr)
-    onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
-  {
+  function requestRenounce(
+    address _consensusAddr
+  ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
     _validatorContract.execRequestRenounceCandidate(_consensusAddr, _waitingSecsToRevoke);
   }
 
   /**
    * @inheritdoc ICandidateStaking
    */
-  function requestEmergencyExit(address _consensusAddr)
-    external
-    override
-    poolIsActive(_consensusAddr)
-    onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
-  {
+  function requestEmergencyExit(
+    address _consensusAddr
+  ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
     _validatorContract.execEmergencyExit(_consensusAddr, _waitingSecsToRevoke);
   }
 

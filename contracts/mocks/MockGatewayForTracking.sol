@@ -10,11 +10,7 @@ contract MockGatewayForTracking is HasBridgeTrackingContract {
     _setBridgeTrackingContract(_bridgeTrackingContract);
   }
 
-  function sendBallot(
-    IBridgeTracking.VoteKind _kind,
-    uint256 _id,
-    address[] memory _voters
-  ) external {
+  function sendBallot(IBridgeTracking.VoteKind _kind, uint256 _id, address[] memory _voters) external {
     for (uint256 _i; _i < _voters.length; _i++) {
       _bridgeTrackingContract.recordVote(_kind, _id, _voters[_i]);
     }

@@ -16,11 +16,7 @@ contract VaultForwarder is Forwarder, RONTransferHelper {
   /// @dev Emitted when the admin withdraws all RON from the forwarder contract.
   event ForwarderRONWithdrawn(address indexed _recipient, uint256 _value);
 
-  constructor(
-    address[] memory _targets,
-    address _admin,
-    address _mod
-  ) Forwarder(_targets, _admin, _mod) {}
+  constructor(address[] memory _targets, address _admin, address _mod) Forwarder(_targets, _admin, _mod) {}
 
   /**
    * @dev Withdraws all balance from the transfer to the admin.

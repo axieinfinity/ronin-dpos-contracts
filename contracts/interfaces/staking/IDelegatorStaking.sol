@@ -61,19 +61,15 @@ interface IDelegatorStaking is IRewardPool {
    * Emits the `Undelegated` event and the `Delegated` event.
    *
    */
-  function redelegate(
-    address _consensusAddrSrc,
-    address _consensusAddrDst,
-    uint256 _amount
-  ) external;
+  function redelegate(address _consensusAddrSrc, address _consensusAddrDst, uint256 _amount) external;
 
   /**
    * @dev Returns the claimable reward of the user `_user`.
    */
-  function getRewards(address _user, address[] calldata _poolAddrList)
-    external
-    view
-    returns (uint256[] memory _rewards);
+  function getRewards(
+    address _user,
+    address[] calldata _poolAddrList
+  ) external view returns (uint256[] memory _rewards);
 
   /**
    * @dev Claims the reward of method caller.
@@ -93,7 +89,8 @@ interface IDelegatorStaking is IRewardPool {
    * Emits the `RewardClaimed` event and the `Delegated` event.
    *
    */
-  function delegateRewards(address[] calldata _consensusAddrList, address _consensusAddrDst)
-    external
-    returns (uint256 _amount);
+  function delegateRewards(
+    address[] calldata _consensusAddrList,
+    address _consensusAddrDst
+  ) external returns (uint256 _amount);
 }

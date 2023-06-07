@@ -33,11 +33,7 @@ interface ISlashBridgeOperator is IBaseSlash {
    *
    * Emits the event `Slashed`.
    */
-  function execSlashBridgeOperator(
-    address _consensusAddr,
-    uint256 _tier,
-    uint256 _period
-  ) external;
+  function execSlashBridgeOperator(address _consensusAddr, uint256 _tier, uint256 _period) external;
 
   /**
    * @dev Returns the configs related to bridge operator slashing.

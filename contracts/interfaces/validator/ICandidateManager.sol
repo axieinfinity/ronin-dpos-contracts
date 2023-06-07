@@ -147,11 +147,7 @@ interface ICandidateManager {
    * Emits the event `CommissionRateUpdateScheduled`.
    *
    */
-  function execRequestUpdateCommissionRate(
-    address _consensusAddr,
-    uint256 _effectiveTimestamp,
-    uint256 _rate
-  ) external;
+  function execRequestUpdateCommissionRate(address _consensusAddr, uint256 _effectiveTimestamp, uint256 _rate) external;
 
   /**
    * @dev Returns whether the address is a validator (candidate).
