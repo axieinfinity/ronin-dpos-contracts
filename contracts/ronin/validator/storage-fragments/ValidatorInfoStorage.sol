@@ -139,7 +139,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContract {
     address[] memory _validatorAddrs
   ) public view override returns (address[] memory _bridgeOperatorList) {
     _bridgeOperatorList = new address[](_validatorAddrs.length);
-    for (uint _i; _i < _bridgeOperatorList.length; _i++) {
+    for (uint _i; _i < _bridgeOperatorList.length; ) {
       _bridgeOperatorList[_i] = _bridgeOperatorOf(_validatorAddrs[_i]);
       unchecked {
         ++_i;

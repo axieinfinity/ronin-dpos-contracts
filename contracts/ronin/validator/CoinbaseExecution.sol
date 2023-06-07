@@ -174,7 +174,7 @@ abstract contract CoinbaseExecution is
 
     // Slashes the bridge reward if the total of votes exceeds the slashing threshold.
     bool _shouldSlash = _totalBridgeVotes > _skipBridgeOperatorSlashingThreshold;
-    for (uint256 _i; _i < _currentValidatorsOperatingBridge.length; _i++) {
+    for (uint256 _i; _i < _currentValidatorsOperatingBridge.length; ) {
       // Shares the bridge operators reward proportionally.
       _bridgeOperatingReward[_currentValidatorsOperatingBridge[_i]] =
         (_totalBridgeReward * _bridgeBallots[_i]) /
