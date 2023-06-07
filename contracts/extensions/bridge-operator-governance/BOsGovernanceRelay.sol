@@ -65,7 +65,6 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, VoteStatusConsumer {
       _sig = _signatures[_i];
       _signers[_i] = ECDSA.recover(_digest, _sig.v, _sig.r, _sig.s);
       if (_lastSigner >= _signers[_i]) revert ErrInvalidOrder(msg.sig);
-
       _lastSigner = _signers[_i];
 
       unchecked {
