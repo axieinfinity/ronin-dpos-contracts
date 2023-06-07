@@ -178,8 +178,8 @@ contract RoninGatewayV2 is
     onlyRole(WITHDRAWAL_MIGRATOR)
   {
     if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
-
     if (!(_requesters.length == _requests.length && _requests.length > 0)) revert ErrLengthMismatch(msg.sig);
+
     for (uint256 _i; _i < _requests.length; ) {
       MappedToken memory _token = getMainchainToken(_requests[_i].tokenAddr, 1);
       if (_requests[_i].info.erc != _token.erc) revert ErrInvalidTokenStandard();
@@ -312,7 +312,6 @@ contract RoninGatewayV2 is
     if (_requests.length == 0) revert ErrEmptyArray();
     for (uint256 _i; _i < _requests.length; ) {
       _requestWithdrawalFor(_requests[_i], msg.sender, _chainId);
-
       unchecked {
         ++_i;
       }

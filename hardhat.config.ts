@@ -1,5 +1,4 @@
 import '@typechain/hardhat';
-import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import 'hardhat-deploy';
 import 'hardhat-gas-reporter';
@@ -10,7 +9,7 @@ import 'hardhat-storage-layout';
 
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, NetworkUserConfig, SolcUserConfig } from 'hardhat/types';
-
+import './src/tasks/generate-storage-layout';
 dotenv.config();
 
 const DEFAULT_MNEMONIC = 'title spike pink garlic hamster sorry few damage silver mushroom clever window';

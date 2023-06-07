@@ -128,7 +128,9 @@ describe('Bridge Tracking test', () => {
       await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
     period = await roninValidatorSet.currentPeriod();
-    expect(await roninValidatorSet.getBridgeOperators()).deep.equal(candidates.map((v) => v.bridgeOperator.address));
+    expect((await roninValidatorSet.getBridgeOperators())._bridgeOperatorList).deep.equal(
+      candidates.map((v) => v.bridgeOperator.address)
+    );
   });
 
   after(async () => {

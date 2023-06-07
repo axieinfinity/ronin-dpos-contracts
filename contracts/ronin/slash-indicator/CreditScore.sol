@@ -56,7 +56,6 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
 
       _creditScore[_validator] = Math.addWithUpperbound(_creditScore[_validator], _actualGain, _maxCreditScore);
       _updatedCreditScores[_i] = _creditScore[_validator];
-
       unchecked {
         ++_i;
       }

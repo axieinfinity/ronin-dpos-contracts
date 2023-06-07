@@ -36,6 +36,13 @@ The collections of smart contracts that power the Ronin Delegated Proof of Stake
   $ yarn test
   ```
 
+- Extract storage layout
+  ```shell
+  $ yarn plugin:storage-layout [--destination <output-path>] [--override <true|false>]
+  ```
+  - `<output-path>` (optional): The path to store generated storage layout file. If not provided, the default path is `layout/storage.txt`.
+  - `--override` (optional): Indicates whether to override the destination file at `<output-path>` if it already exists. By default, it is set to `false`.
+
 ### Target chain to deploy
 
 This repo contains source code of contracts that will be either deployed on the mainchains, or on Ronin chain.
