@@ -93,6 +93,13 @@ const compilerConfig: SolcUserConfig = {
       enabled: true,
       runs: 200,
     },
+    /// @dev see: https://github.com/Uniswap/v3-core/blob/main/hardhat.config.ts
+    metadata: {
+      // do not include the metadata hash, since this is machine dependent
+      // and we want all generated code to be deterministic
+      // https://docs.soliditylang.org/en/v0.7.6/metadata.html
+      bytecodeHash: 'none',
+    },
   },
 };
 
