@@ -81,7 +81,7 @@ contract RoninGatewayV2 is
 
   function _requireBridgeOperator() internal view {
     if (!_validatorContract.isBridgeOperator(msg.sender)) {
-      revert ErrUnauthorized(msg.sig, Roles.BRIDGE_OPERATOR);
+      revert ErrUnauthorized(msg.sig, Role.BRIDGE_OPERATOR);
     }
   }
 
@@ -197,7 +197,7 @@ contract RoninGatewayV2 is
    */
   function markWithdrawalMigrated() external {
     if (!(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(WITHDRAWAL_MIGRATOR, msg.sender))) {
-      revert ErrUnauthorized(msg.sig, Roles.WITHDRAWAL_MIGRATOR);
+      revert ErrUnauthorized(msg.sig, Role.WITHDRAWAL_MIGRATOR);
     }
     if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
 

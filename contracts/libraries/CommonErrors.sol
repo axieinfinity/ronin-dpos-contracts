@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Roles } from "./Roles.sol";
+import { Role } from "./Role.sol";
 
 /**
  * @dev Error indicating that the provided threshold is invalid for a specific function signature.
@@ -18,9 +18,9 @@ error ErrOnlySelfCall(bytes4 msgSig);
 /**
  * @dev Error indicating that the caller is unauthorized to perform a specific function.
  * @param msgSig The function signature (bytes4) that the caller is unauthorized to perform.
- * @param role The role (Roles enum) required to perform the function.
+ * @param role The role (Role enum) required to perform the function.
  */
-error ErrUnauthorized(bytes4 msgSig, Roles role);
+error ErrUnauthorized(bytes4 msgSig, Role role);
 
 /**
  * @dev Error indicating that an array is empty when it should contain elements.

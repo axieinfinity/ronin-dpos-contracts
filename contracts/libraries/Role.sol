@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-enum Roles {
+enum Role {
   ADMIN, // 0
   GOVERNOR, // 1
   COINBASE, // 2

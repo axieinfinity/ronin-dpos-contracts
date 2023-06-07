@@ -10,7 +10,7 @@ contract HasRoninGovernanceAdminContract is IHasRoninGovernanceAdminContract, Ha
   IRoninGovernanceAdmin internal _roninGovernanceAdminContract;
 
   modifier onlyRoninGovernanceAdminContract() {
-    if (roninGovernanceAdminContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.GOVERNANCE_ADMIN_CONTRACT);
+    if (roninGovernanceAdminContract() != msg.sender) revert ErrUnauthorized(msg.sig, Role.GOVERNANCE_ADMIN_CONTRACT);
     _;
   }
 

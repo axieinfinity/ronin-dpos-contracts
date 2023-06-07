@@ -14,7 +14,7 @@ contract HasBridgeContract is IHasBridgeContract, HasProxyAdmin {
   }
 
   function _requireBridgeContract() private view {
-    if (bridgeContract() != msg.sender) revert ErrUnauthorized(msg.sig, Roles.BRIDGE_CONTRACT);
+    if (bridgeContract() != msg.sender) revert ErrUnauthorized(msg.sig, Role.BRIDGE_CONTRACT);
   }
 
   /**

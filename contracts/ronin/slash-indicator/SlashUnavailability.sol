@@ -48,7 +48,7 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
    * @inheritdoc ISlashUnavailability
    */
   function slashUnavailability(address _validatorAddr) external override oncePerBlock {
-    if (msg.sender != block.coinbase) revert ErrUnauthorized(msg.sig, Roles.COINBASE);
+    if (msg.sender != block.coinbase) revert ErrUnauthorized(msg.sig, Role.COINBASE);
 
     if (!_shouldSlash(_validatorAddr)) {
       // Should return instead of throwing error since this is a part of system transaction.

@@ -21,6 +21,6 @@ abstract contract HasProxyAdmin {
   }
 
   function _requireAdmin() internal view {
-    if (msg.sender != _getAdmin()) revert ErrUnauthorized(msg.sig, Roles.ADMIN);
+    if (msg.sender != _getAdmin()) revert ErrUnauthorized(msg.sig, RoleADMIN);
   }
 }
