@@ -33,7 +33,7 @@ abstract contract HasContract is HasProxyAdmin, IHasContract {
    * @inheritdoc IHasContract
    */
   function getContract(Roles role) public view returns (address contract_) {
-    contract_ = _contracts()[uint8(role)];
+    contract_ = _getContractMap()[uint8(role)];
     if (contract_ == address(0)) revert ErrInvalidRoleContract(role);
   }
 
@@ -43,7 +43,7 @@ abstract contract HasContract is HasProxyAdmin, IHasContract {
    * @param addr The address of the contract to set.
    */
   function _setContract(Roles role, address addr) internal virtual {
-    _contracts()[uint8(role)] = addr;
+    _getContractMap()[uint8(role)] = addr;
     emit ContractUpdated(role, addr);
   }
 
@@ -60,7 +60,7 @@ abstract contract HasContract is HasProxyAdmin, IHasContract {
    * @dev Internal function to access the mapping of contract addresses with roles.
    * @return contracts_ The mapping of contract addresses with roles.
    */
-  function _contracts() internal pure returns (mapping(uint8 => address) storage contracts_) {
+  function _getContractMap() private pure returns (mapping(uint8 => address) storage contracts_) {
     assembly {
       contracts_.slot := _STORAGE_SLOT
     }
