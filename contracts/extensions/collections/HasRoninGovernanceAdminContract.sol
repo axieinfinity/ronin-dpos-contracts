@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "./HasProxyAdmin.sol";
 import "../../interfaces/collections/IHasRoninGovernanceAdminContract.sol";
 import "../../interfaces/IRoninGovernanceAdmin.sol";
-import "../../libraries/Errors.sol";
+import "../../libraries/CommonErrors.sol";
 
 contract HasRoninGovernanceAdminContract is IHasRoninGovernanceAdminContract, HasProxyAdmin {
   IRoninGovernanceAdmin internal _roninGovernanceAdminContract;

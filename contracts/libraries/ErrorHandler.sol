@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { ErrProxyCallFailed } from "./Errors.sol";
+import { ErrProxyCallFailed } from "./CommonErrors.sol";
 
 library ErrorHandler {
   /// @notice handle low level call revert if call failed,

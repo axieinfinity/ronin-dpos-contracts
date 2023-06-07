@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/StorageSlot.sol";
-import "../../libraries/Errors.sol";
+import "../../libraries/CommonErrors.sol";
 
 abstract contract HasProxyAdmin {
   // bytes32(uint256(keccak256("eip1967.proxy.admin")) - 1));
