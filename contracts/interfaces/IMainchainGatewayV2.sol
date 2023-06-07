@@ -84,9 +84,10 @@ interface IMainchainGatewayV2 is SignatureConsumer, MappedTokenConsumer, IBridge
    * Emits the `Withdrew` once the assets are released.
    *
    */
-  function submitWithdrawal(Transfer.Receipt memory _receipt, Signature[] memory _signatures)
-    external
-    returns (bool _locked);
+  function submitWithdrawal(
+    Transfer.Receipt memory _receipt,
+    Signature[] memory _signatures
+  ) external returns (bool _locked);
 
   /**
    * @dev Approves a specific withdrawal.

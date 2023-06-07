@@ -26,11 +26,7 @@ library IsolatedGovernance {
    * - The voter has not voted for the round.
    *
    */
-  function castVote(
-    Vote storage _v,
-    address _voter,
-    bytes32 _hash
-  ) internal {
+  function castVote(Vote storage _v, address _voter, bytes32 _hash) internal {
     if (_v.expiredAt > 0 && _v.expiredAt <= block.timestamp) {
       _v.status = VoteStatusConsumer.VoteStatus.Expired;
     }

@@ -40,33 +40,28 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
   /**
    * @inheritdoc IStakingVesting
    */
-  function blockProducerBlockBonus(
-    uint256 /* _block */
-  ) public view override returns (uint256) {
+  function blockProducerBlockBonus(uint256 /* _block */) public view override returns (uint256) {
     return _blockProducerBonusPerBlock;
   }
 
   /**
    * @inheritdoc IStakingVesting
    */
-  function bridgeOperatorBlockBonus(
-    uint256 /* _block */
-  ) public view override returns (uint256) {
+  function bridgeOperatorBlockBonus(uint256 /* _block */) public view override returns (uint256) {
     return _bridgeOperatorBonusPerBlock;
   }
 
   /**
    * @inheritdoc IStakingVesting
    */
-  function requestBonus(bool _forBlockProducer, bool _forBridgeOperator)
+  function requestBonus(
+    bool _forBlockProducer,
+    bool _forBridgeOperator
+  )
     external
     override
     onlyValidatorContract
-    returns (
-      bool _success,
-      uint256 _blockProducerBonus,
-      uint256 _bridgeOperatorBonus
-    )
+    returns (bool _success, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus)
   {
     if (block.number <= lastBlockSendingBonus) revert ErrBonusAlreadySent();
 

@@ -102,11 +102,10 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
   /**
    * @inheritdoc ICandidateManager
    */
-  function execRequestRenounceCandidate(address _consensusAddr, uint256 _secsLeft)
-    external
-    override
-    onlyStakingContract
-  {
+  function execRequestRenounceCandidate(
+    address _consensusAddr,
+    uint256 _secsLeft
+  ) external override onlyStakingContract {
     if (_isTrustedOrg(_consensusAddr)) revert ErrTrustedOrgCannotRenounce();
 
     ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];

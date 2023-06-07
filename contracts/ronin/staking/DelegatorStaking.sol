@@ -66,12 +66,9 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function claimRewards(address[] calldata _consensusAddrList)
-    external
-    override
-    nonReentrant
-    returns (uint256 _amount)
-  {
+  function claimRewards(
+    address[] calldata _consensusAddrList
+  ) external override nonReentrant returns (uint256 _amount) {
     _amount = _claimRewards(msg.sender, _consensusAddrList);
     _transferRON(payable(msg.sender), _amount);
   }
@@ -79,13 +76,10 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function delegateRewards(address[] calldata _consensusAddrList, address _consensusAddrDst)
-    external
-    override
-    nonReentrant
-    poolIsActive(_consensusAddrDst)
-    returns (uint256 _amount)
-  {
+  function delegateRewards(
+    address[] calldata _consensusAddrList,
+    address _consensusAddrDst
+  ) external override nonReentrant poolIsActive(_consensusAddrDst) returns (uint256 _amount) {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
     return _delegateRewards(msg.sender, _consensusAddrList, _consensusAddrDst);
   }
@@ -93,11 +87,10 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function getRewards(address _user, address[] calldata _poolAddrList)
-    external
-    view
-    returns (uint256[] memory _rewards)
-  {
+  function getRewards(
+    address _user,
+    address[] calldata _poolAddrList
+  ) external view returns (uint256[] memory _rewards) {
     address _consensusAddr;
     uint256 _period = _validatorContract.currentPeriod();
     _rewards = new uint256[](_poolAddrList.length);
