@@ -239,7 +239,9 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
           emit CommissionRateUpdated(_addr, _commisionRate);
         }
 
-        _i++;
+        unchecked {
+          _i++;
+        }
       }
     }
 
