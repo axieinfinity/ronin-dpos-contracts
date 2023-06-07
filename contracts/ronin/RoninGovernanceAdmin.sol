@@ -7,6 +7,7 @@ import "../extensions/collections/HasContract.sol";
 import "../extensions/GovernanceAdmin.sol";
 import "../libraries/EmergencyExitBallot.sol";
 import "../libraries/ErrorHandler.sol";
+import "../libraries/ErrorHandler.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 import "../interfaces/validator/IRoninValidatorSet.sol";
 import "../interfaces/IRoninGovernanceAdmin.sol";
@@ -58,14 +59,13 @@ contract RoninGovernanceAdmin is
    * Note: The signatures can be empty in case the proposal is voted on the current network.
    *
    */
-  function getProposalSignatures(uint256 _chainId, uint256 _round)
+  function getProposalSignatures(
+    uint256 _chainId,
+    uint256 _round
+  )
     external
     view
-    returns (
-      address[] memory _voters,
-      Ballot.VoteType[] memory _supports,
-      Signature[] memory _signatures
-    )
+    returns (address[] memory _voters, Ballot.VoteType[] memory _supports, Signature[] memory _signatures)
   {
     ProposalVote storage _vote = vote[_chainId][_round];
 
@@ -76,53 +76,56 @@ contract RoninGovernanceAdmin is
     _supports = new Ballot.VoteType[](_voterLength);
     _signatures = new Signature[](_voterLength);
     _voters = new address[](_voterLength);
-    for (uint256 _i; _i < _forLength; _i++) {
+    for (uint256 _i; _i < _forLength; ) {
       _supports[_i] = Ballot.VoteType.For;
       _signatures[_i] = vote[_chainId][_round].sig[_vote.forVoteds[_i]];
       _voters[_i] = _vote.forVoteds[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
-    for (uint256 _i; _i < _againstLength; _i++) {
+    for (uint256 _i; _i < _againstLength; ) {
       _supports[_i + _forLength] = Ballot.VoteType.Against;
       _signatures[_i + _forLength] = vote[_chainId][_round].sig[_vote.againstVoteds[_i]];
       _voters[_i + _forLength] = _vote.againstVoteds[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
   /**
    * @dev Returns the voted signatures for bridge operators at a specific period.
    */
-  function getBridgeOperatorVotingSignatures(uint256 _period, uint256 _epoch)
-    external
-    view
-    returns (address[] memory _voters, Signature[] memory _signatures)
-  {
+  function getBridgeOperatorVotingSignatures(
+    uint256 _period,
+    uint256 _epoch
+  ) external view returns (address[] memory _voters, Signature[] memory _signatures) {
     mapping(address => Signature) storage _sigMap = _bridgeVoterSig[_period][_epoch];
     _voters = _bridgeOperatorVote[_period][_epoch].voters;
     _signatures = new Signature[](_voters.length);
-    for (uint _i; _i < _voters.length; _i++) {
+    for (uint _i; _i < _voters.length; ) {
       _signatures[_i] = _sigMap[_voters[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
   /**
    * @dev Returns whether the voter `_voter` casted vote for the proposal.
    */
-  function proposalVoted(
-    uint256 _chainId,
-    uint256 _round,
-    address _voter
-  ) external view returns (bool) {
+  function proposalVoted(uint256 _chainId, uint256 _round, address _voter) external view returns (bool) {
     return _voted(vote[_chainId][_round], _voter);
   }
 
   /**
    * @dev Returns whether the voter `_voter` casted vote for bridge operators at a specific period.
    */
-  function bridgeOperatorsVoted(
-    uint256 _period,
-    uint256 _epoch,
-    address _voter
-  ) external view returns (bool) {
+  function bridgeOperatorsVoted(uint256 _period, uint256 _epoch, address _voter) external view returns (bool) {
     return _bridgeOperatorVote[_period][_epoch].voted(_voter);
   }
 
@@ -203,10 +206,10 @@ contract RoninGovernanceAdmin is
    * - The method caller is governor.
    *
    */
-  function castProposalVoteForCurrentNetwork(Proposal.ProposalDetail calldata _proposal, Ballot.VoteType _support)
-    external
-    onlyGovernor
-  {
+  function castProposalVoteForCurrentNetwork(
+    Proposal.ProposalDetail calldata _proposal,
+    Ballot.VoteType _support
+  ) external onlyGovernor {
     _castProposalVoteForCurrentNetwork(msg.sender, _proposal, _support);
   }
 
@@ -449,10 +452,10 @@ contract RoninGovernanceAdmin is
   /**
    * @dev Trigger function from validator contract to unlock fund for emeregency exit request.
    */
-  function _execReleaseLockedFundForEmergencyExitRequest(address _consensusAddr, address _recipientAfterUnlockedFund)
-    internal
-    virtual
-  {
+  function _execReleaseLockedFundForEmergencyExitRequest(
+    address _consensusAddr,
+    address _recipientAfterUnlockedFund
+  ) internal virtual {
     bytes4 _selector = IEmergencyExit.execReleaseLockedFundForEmergencyExitRequest.selector;
     (bool _success, bytes memory _returndata) = getContract(Roles.VALIDATOR_CONTRACT).call(
       abi.encodeWithSelector(

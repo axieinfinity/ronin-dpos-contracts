@@ -78,11 +78,7 @@ contract Maintenance is IMaintenance, HasContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function schedule(
-    address _consensusAddr,
-    uint256 _startedAtBlock,
-    uint256 _endedAtBlock
-  ) external override {
+  function schedule(address _consensusAddr, uint256 _startedAtBlock, uint256 _endedAtBlock) external override {
     IRoninValidatorSet _validator = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT));
 
     if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Roles.BLOCK_PRODUCER);
@@ -101,6 +97,10 @@ contract Maintenance is IMaintenance, HasContract, Initializable {
 
     if (_startedAtBlock >= _endedAtBlock) revert ErrStartBlockOutOfRange();
 
+    uint256 _maintenanceElapsed = _endedAtBlock - _startedAtBlock + 1;
+    if (!_maintenanceElapsed.inRange(minMaintenanceDurationInBlock, maxMaintenanceDurationInBlock))
+      revert ErrInvalidMaintenanceDuration();
+
     if (!_validator.epochEndingAt(_startedAtBlock - 1)) revert ErrStartBlockOutOfRange();
 
     if (!_validator.epochEndingAt(_endedAtBlock)) revert ErrEndBlockOutOfRange();
@@ -117,12 +117,12 @@ contract Maintenance is IMaintenance, HasContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function cancelSchedule(address _consensusAddr) external override {
-    require(
-      IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).isCandidateAdmin(_consensusAddr, msg.sender),
-      "Maintenance: method caller must be the candidate admin"
-    );
-    require(checkScheduled(_consensusAddr), "Maintenance: no schedule exists");
-    require(!checkMaintained(_consensusAddr, block.number), "Maintenance: already on maintenance");
+    if (!IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).isCandidateAdmin(_consensusAddr, msg.sender))
+      revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
+
+    if (!checkScheduled(_consensusAddr)) revert ErrUnexistedSchedule();
+
+    if (checkMaintained(_consensusAddr, block.number)) revert ErrAlreadyOnMaintenance();
     Schedule storage _sSchedule = _schedule[_consensusAddr];
     delete _sSchedule.from;
     delete _sSchedule.to;
@@ -140,15 +140,17 @@ contract Maintenance is IMaintenance, HasContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function checkManyMaintained(address[] calldata _addrList, uint256 _block)
-    external
-    view
-    override
-    returns (bool[] memory _resList)
-  {
+  function checkManyMaintained(
+    address[] calldata _addrList,
+    uint256 _block
+  ) external view override returns (bool[] memory _resList) {
     _resList = new bool[](_addrList.length);
-    for (uint _i = 0; _i < _addrList.length; _i++) {
+    for (uint _i = 0; _i < _addrList.length; ) {
       _resList[_i] = checkMaintained(_addrList[_i], _block);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -161,8 +163,12 @@ contract Maintenance is IMaintenance, HasContract, Initializable {
     uint256 _toBlock
   ) external view override returns (bool[] memory _resList) {
     _resList = new bool[](_addrList.length);
-    for (uint _i = 0; _i < _addrList.length; _i++) {
+    for (uint _i = 0; _i < _addrList.length; ) {
       _resList[_i] = _maintainingInBlockRange(_addrList[_i], _fromBlock, _toBlock);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 

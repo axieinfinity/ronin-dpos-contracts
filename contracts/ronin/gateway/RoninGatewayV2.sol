@@ -106,8 +106,12 @@ contract RoninGatewayV2 is
       _setMinimumThresholds(_packedAddresses[0], _packedNumbers[1]);
     }
 
-    for (uint256 _i; _i < _withdrawalMigrators.length; _i++) {
+    for (uint256 _i; _i < _withdrawalMigrators.length; ) {
       _grantRole(WITHDRAWAL_MIGRATOR, _withdrawalMigrators[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -119,12 +123,13 @@ contract RoninGatewayV2 is
    * - The arrays have the same length and its length larger than 0.
    *
    */
-  function migrateWithdrawals(Transfer.Request[] calldata _requests, address[] calldata _requesters)
-    external
-    onlyRole(WITHDRAWAL_MIGRATOR)
-  {
+  function migrateWithdrawals(
+    Transfer.Request[] calldata _requests,
+    address[] calldata _requesters
+  ) external onlyRole(WITHDRAWAL_MIGRATOR) {
     if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
     if (!(_requesters.length == _requests.length && _requests.length > 0)) revert ErrLengthMismatch(msg.sig);
+
     for (uint256 _i; _i < _requests.length; ) {
       MappedToken memory _token = getMainchainToken(_requests[_i].tokenAddr, 1);
       if (_requests[_i].info.erc != _token.erc) revert ErrInvalidTokenStandard();
@@ -152,14 +157,17 @@ contract RoninGatewayV2 is
   /**
    * @inheritdoc IRoninGatewayV2
    */
-  function getWithdrawalSignatures(uint256 _withdrawalId, address[] calldata _validators)
-    external
-    view
-    returns (bytes[] memory _signatures)
-  {
+  function getWithdrawalSignatures(
+    uint256 _withdrawalId,
+    address[] calldata _validators
+  ) external view returns (bytes[] memory _signatures) {
     _signatures = new bytes[](_validators.length);
-    for (uint256 _i = 0; _i < _validators.length; _i++) {
+    for (uint256 _i = 0; _i < _validators.length; ) {
       _signatures[_i] = _withdrawalSig[_withdrawalId][_validators[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -179,11 +187,9 @@ contract RoninGatewayV2 is
   /**
    * @inheritdoc IRoninGatewayV2
    */
-  function tryBulkAcknowledgeMainchainWithdrew(uint256[] calldata _withdrawalIds)
-    external
-    onlyBridgeOperator
-    returns (bool[] memory _executedReceipts)
-  {
+  function tryBulkAcknowledgeMainchainWithdrew(
+    uint256[] calldata _withdrawalIds
+  ) external onlyBridgeOperator returns (bool[] memory _executedReceipts) {
     address _governor = msg.sender;
     uint256 _minVoteWeight = minimumVoteWeight();
     uint256 _minTrustedVoteWeight = minimumTrustedVoteWeight();
@@ -207,18 +213,19 @@ contract RoninGatewayV2 is
           emit MainchainWithdrew(_hash, _withdrawal);
         }
       }
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
   /**
    * @inheritdoc IRoninGatewayV2
    */
-  function tryBulkDepositFor(Transfer.Receipt[] calldata _receipts)
-    external
-    whenNotPaused
-    onlyBridgeOperator
-    returns (bool[] memory _executedReceipts)
-  {
+  function tryBulkDepositFor(
+    Transfer.Receipt[] calldata _receipts
+  ) external whenNotPaused onlyBridgeOperator returns (bool[] memory _executedReceipts) {
     address _sender = msg.sender;
 
     Transfer.Receipt memory _receipt;
@@ -233,6 +240,10 @@ contract RoninGatewayV2 is
         _executedReceipts[_i] = true;
       } else {
         _depositFor(_receipt, _sender, _minVoteWeight, _minTrustedVoteWeight);
+      }
+
+      unchecked {
+        ++_i;
       }
     }
   }
@@ -273,11 +284,10 @@ contract RoninGatewayV2 is
   /**
    * @inheritdoc IRoninGatewayV2
    */
-  function bulkSubmitWithdrawalSignatures(uint256[] calldata _withdrawals, bytes[] calldata _signatures)
-    external
-    whenNotPaused
-    onlyBridgeOperator
-  {
+  function bulkSubmitWithdrawalSignatures(
+    uint256[] calldata _withdrawals,
+    bytes[] calldata _signatures
+  ) external whenNotPaused onlyBridgeOperator {
     address _validator = msg.sender;
 
     if (!(_withdrawals.length > 0 && _withdrawals.length == _signatures.length)) {
@@ -306,6 +316,10 @@ contract RoninGatewayV2 is
         _proposal.status = VoteStatus.Executed;
         _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, _id);
       }
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -325,11 +339,7 @@ contract RoninGatewayV2 is
   /**
    * @inheritdoc IRoninGatewayV2
    */
-  function depositVoted(
-    uint256 _chainId,
-    uint256 _depositId,
-    address _voter
-  ) external view returns (bool) {
+  function depositVoted(uint256 _chainId, uint256 _depositId, address _voter) external view returns (bool) {
     return depositVote[_chainId][_depositId].voted(_voter);
   }
 
@@ -373,9 +383,13 @@ contract RoninGatewayV2 is
     if (!(_roninTokens.length == _mainchainTokens.length && _roninTokens.length == _chainIds.length))
       revert ErrLengthMismatch(msg.sig);
 
-    for (uint256 _i; _i < _roninTokens.length; _i++) {
+    for (uint256 _i; _i < _roninTokens.length; ) {
       _mainchainToken[_roninTokens[_i]][_chainIds[_i]].tokenAddr = _mainchainTokens[_i];
       _mainchainToken[_roninTokens[_i]][_chainIds[_i]].erc = _standards[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
 
     emit TokenMapped(_roninTokens, _mainchainTokens, _chainIds, _standards);
@@ -429,11 +443,7 @@ contract RoninGatewayV2 is
    * Emits the `WithdrawalRequested` event.
    *
    */
-  function _requestWithdrawalFor(
-    Transfer.Request calldata _request,
-    address _requester,
-    uint256 _chainId
-  ) internal {
+  function _requestWithdrawalFor(Transfer.Request calldata _request, address _requester, uint256 _chainId) internal {
     _request.info.validate();
     _checkWithdrawal(_request);
     MappedToken memory _token = getMainchainToken(_request.tokenAddr, _chainId);
@@ -511,11 +521,10 @@ contract RoninGatewayV2 is
   /**
    * @dev Returns the vote weight for a specified hash.
    */
-  function _getVoteWeight(IsolatedGovernance.Vote storage _v, bytes32 _hash)
-    internal
-    view
-    returns (uint256 _totalWeight, uint256 _trustedWeight)
-  {
+  function _getVoteWeight(
+    IsolatedGovernance.Vote storage _v,
+    bytes32 _hash
+  ) internal view returns (uint256 _totalWeight, uint256 _trustedWeight) {
     (
       address[] memory _consensusList,
       address[] memory _bridgeOperators,
@@ -524,22 +533,24 @@ contract RoninGatewayV2 is
     uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(Roles.RONIN_TRUSTED_ORGANIZATION_CONTRACT))
       .getConsensusWeights(_consensusList);
 
-    for (uint _i; _i < _bridgeOperators.length; _i++) {
+    for (uint _i; _i < _bridgeOperators.length; ) {
       if (_flags[_i].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator) && _v.voteHashOf[_bridgeOperators[_i]] == _hash) {
         _totalWeight++;
         if (_trustedWeights[_i] > 0) {
           _trustedWeight++;
         }
       }
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
-  function setTrustedThreshold(uint256 _trustedNumerator, uint256 _trustedDenominator)
-    external
-    virtual
-    onlyAdmin
-    returns (uint256, uint256)
-  {
+  function setTrustedThreshold(
+    uint256 _trustedNumerator,
+    uint256 _trustedDenominator
+  ) external virtual onlyAdmin returns (uint256, uint256) {
     return _setTrustedThreshold(_trustedNumerator, _trustedDenominator);
   }
 
@@ -563,11 +574,10 @@ contract RoninGatewayV2 is
    * Emits the `TrustedThresholdUpdated` event.
    *
    */
-  function _setTrustedThreshold(uint256 _trustedNumerator, uint256 _trustedDenominator)
-    internal
-    virtual
-    returns (uint256 _previousTrustedNum, uint256 _previousTrustedDenom)
-  {
+  function _setTrustedThreshold(
+    uint256 _trustedNumerator,
+    uint256 _trustedDenominator
+  ) internal virtual returns (uint256 _previousTrustedNum, uint256 _previousTrustedDenom) {
     if (_trustedNumerator > _trustedDenominator) revert ErrInvalidTrustedThreshold();
 
     _previousTrustedNum = _num;

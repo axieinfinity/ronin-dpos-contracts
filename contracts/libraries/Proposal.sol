@@ -62,8 +62,12 @@ library Proposal {
     bytes32[] memory _calldataHashList = new bytes32[](_proposal.calldatas.length);
     uint256[] memory _gasAmounts = _proposal.gasAmounts;
 
-    for (uint256 _i; _i < _calldataHashList.length; _i++) {
+    for (uint256 _i; _i < _calldataHashList.length; ) {
       _calldataHashList[_i] = keccak256(_proposal.calldatas[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
 
     assembly {
@@ -101,10 +105,9 @@ library Proposal {
   /**
    * @dev Executes the proposal.
    */
-  function execute(ProposalDetail memory _proposal)
-    internal
-    returns (bool[] memory _successCalls, bytes[] memory _returnDatas)
-  {
+  function execute(
+    ProposalDetail memory _proposal
+  ) internal returns (bool[] memory _successCalls, bytes[] memory _returnDatas) {
     if (!executable(_proposal)) revert ErrInvalidChainId(msg.sig, _proposal.chainId, block.chainid);
 
     _successCalls = new bool[](_proposal.targets.length);

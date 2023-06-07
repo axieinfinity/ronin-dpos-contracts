@@ -26,13 +26,13 @@ contract Forwarder is AccessControlEnumerable {
   /**
    * @dev Initializes the forwarder with an initial target address and a contract admin.
    */
-  constructor(
-    address[] memory _targets,
-    address _admin,
-    address _moderator
-  ) payable {
-    for (uint _i = 0; _i < _targets.length; _i++) {
+  constructor(address[] memory _targets, address _admin, address _moderator) payable {
+    for (uint _i = 0; _i < _targets.length; ) {
       _setupRole(TARGET_ROLE, _targets[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
     _setupRole(DEFAULT_ADMIN_ROLE, _admin);
     _setupRole(MODERATOR_ROLE, _moderator);
@@ -75,11 +75,7 @@ contract Forwarder is AccessControlEnumerable {
    *
    * This function does not return to its internal call site, it will return directly to the external caller.
    */
-  function _call(
-    address _target,
-    bytes memory _data,
-    uint256 _value
-  ) internal {
+  function _call(address _target, bytes memory _data, uint256 _value) internal {
     (bool _success, bytes memory _res) = _target.call{ value: _value }(_data);
     _success.handleRevert(bytes4(_data), _res);
   }

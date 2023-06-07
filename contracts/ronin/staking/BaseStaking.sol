@@ -81,15 +81,9 @@ abstract contract BaseStaking is RONTransferHelper, ReentrancyGuard, RewardCalcu
   /**
    * @inheritdoc IBaseStaking
    */
-  function getPoolDetail(address _poolAddr)
-    external
-    view
-    returns (
-      address _admin,
-      uint256 _stakingAmount,
-      uint256 _stakingTotal
-    )
-  {
+  function getPoolDetail(
+    address _poolAddr
+  ) external view returns (address _admin, uint256 _stakingAmount, uint256 _stakingTotal) {
     PoolDetail storage _pool = _stakingPool[_poolAddr];
     return (_pool.admin, _pool.stakingAmount, _pool.stakingTotal);
   }
@@ -99,8 +93,12 @@ abstract contract BaseStaking is RONTransferHelper, ReentrancyGuard, RewardCalcu
    */
   function getManySelfStakings(address[] calldata _pools) external view returns (uint256[] memory _selfStakings) {
     _selfStakings = new uint256[](_pools.length);
-    for (uint _i = 0; _i < _pools.length; _i++) {
+    for (uint _i = 0; _i < _pools.length; ) {
       _selfStakings[_i] = _stakingPool[_pools[_i]].stakingAmount;
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -114,15 +112,16 @@ abstract contract BaseStaking is RONTransferHelper, ReentrancyGuard, RewardCalcu
   /**
    * @inheritdoc IRewardPool
    */
-  function getManyStakingTotals(address[] calldata _poolList)
-    public
-    view
-    override
-    returns (uint256[] memory _stakingAmounts)
-  {
+  function getManyStakingTotals(
+    address[] calldata _poolList
+  ) public view override returns (uint256[] memory _stakingAmounts) {
     _stakingAmounts = new uint256[](_poolList.length);
-    for (uint _i = 0; _i < _poolList.length; _i++) {
+    for (uint _i = 0; _i < _poolList.length; ) {
       _stakingAmounts[_i] = getStakingTotal(_poolList[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -136,16 +135,18 @@ abstract contract BaseStaking is RONTransferHelper, ReentrancyGuard, RewardCalcu
   /**
    * @inheritdoc IRewardPool
    */
-  function getManyStakingAmounts(address[] calldata _poolAddrs, address[] calldata _userList)
-    external
-    view
-    override
-    returns (uint256[] memory _stakingAmounts)
-  {
+  function getManyStakingAmounts(
+    address[] calldata _poolAddrs,
+    address[] calldata _userList
+  ) external view override returns (uint256[] memory _stakingAmounts) {
     if (_poolAddrs.length != _userList.length) revert ErrInvalidArrays();
     _stakingAmounts = new uint256[](_poolAddrs.length);
-    for (uint _i = 0; _i < _stakingAmounts.length; _i++) {
+    for (uint _i = 0; _i < _stakingAmounts.length; ) {
       _stakingAmounts[_i] = _stakingPool[_poolAddrs[_i]].delegatingAmount[_userList[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 

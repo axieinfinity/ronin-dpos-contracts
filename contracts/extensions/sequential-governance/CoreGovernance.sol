@@ -100,11 +100,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   /**
    * @dev Saves new round voting for the proposal `_proposalHash` of chain `_chainId`.
    */
-  function _saveVotingRound(
-    ProposalVote storage _vote,
-    bytes32 _proposalHash,
-    uint256 _expiryTimestamp
-  ) internal {
+  function _saveVotingRound(ProposalVote storage _vote, bytes32 _proposalHash, uint256 _expiryTimestamp) internal {
     _vote.hash = _proposalHash;
     _vote.expiryTimestamp = _expiryTimestamp;
   }
@@ -148,11 +144,10 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
    * Emits the `ProposalCreated` event.
    *
    */
-  function _proposeProposalStruct(Proposal.ProposalDetail memory _proposal, address _creator)
-    internal
-    virtual
-    returns (uint256 _round)
-  {
+  function _proposeProposalStruct(
+    Proposal.ProposalDetail memory _proposal,
+    address _creator
+  ) internal virtual returns (uint256 _round) {
     uint256 _chainId = _proposal.chainId;
     if (_chainId == 0) revert ErrInvalidChainId(msg.sig, 0, block.chainid);
     _proposal.validate(_proposalExpiryDuration);
@@ -305,13 +300,21 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     if (_isExpired) {
       emit ProposalExpired(_proposalVote.hash);
 
-      for (uint256 _i; _i < _proposalVote.forVoteds.length; _i++) {
+      for (uint256 _i; _i < _proposalVote.forVoteds.length; ) {
         delete _proposalVote.voted[_proposalVote.forVoteds[_i]];
         delete _proposalVote.sig[_proposalVote.forVoteds[_i]];
+
+        unchecked {
+          ++_i;
+        }
       }
-      for (uint256 _i; _i < _proposalVote.againstVoteds.length; _i++) {
+      for (uint256 _i; _i < _proposalVote.againstVoteds.length; ) {
         delete _proposalVote.voted[_proposalVote.againstVoteds[_i]];
         delete _proposalVote.sig[_proposalVote.againstVoteds[_i]];
+
+        unchecked {
+          ++_i;
+        }
       }
       delete _proposalVote.status;
       delete _proposalVote.hash;

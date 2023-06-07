@@ -26,10 +26,10 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   /**
    * @inheritdoc IEmergencyExit
    */
-  function execEmergencyExit(address _consensusAddr, uint256 _secLeftToRevoke)
-    external
-    onlyContractWithRole(Roles.STAKING_CONTRACT)
-  {
+  function execEmergencyExit(
+    address _consensusAddr,
+    uint256 _secLeftToRevoke
+  ) external onlyContractWithRole(Roles.STAKING_CONTRACT) {
     EmergencyExitInfo storage _info = _exitInfo[_consensusAddr];
     if (_info.recyclingAt != 0) revert ErrAlreadyRequestedEmergencyExit();
 
@@ -71,10 +71,10 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   /**
    * @inheritdoc IEmergencyExit
    */
-  function execReleaseLockedFundForEmergencyExitRequest(address _consensusAddr, address payable _recipient)
-    external
-    onlyAdmin
-  {
+  function execReleaseLockedFundForEmergencyExitRequest(
+    address _consensusAddr,
+    address payable _recipient
+  ) external onlyAdmin {
     if (_exitInfo[_consensusAddr].recyclingAt == 0) {
       return;
     }
@@ -82,10 +82,14 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     uint256 _length = _lockedConsensusList.length;
     uint256 _index = _length;
 
-    for (uint _i; _i < _length; _i++) {
+    for (uint _i; _i < _length; ) {
       if (_lockedConsensusList[_i] == _consensusAddr) {
         _index = _i;
         break;
+      }
+
+      unchecked {
+        ++_i;
       }
     }
 
@@ -159,13 +163,9 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   /**
    * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
    */
-  function _bridgeOperatorOf(address _consensusAddr)
-    internal
-    view
-    virtual
-    override(CandidateManager, ValidatorInfoStorage)
-    returns (address)
-  {
+  function _bridgeOperatorOf(
+    address _consensusAddr
+  ) internal view virtual override(CandidateManager, ValidatorInfoStorage) returns (address) {
     return CandidateManager._bridgeOperatorOf(_consensusAddr);
   }
 

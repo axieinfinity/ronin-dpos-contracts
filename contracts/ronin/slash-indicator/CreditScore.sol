@@ -33,11 +33,10 @@ abstract contract CreditScore is ICreditScore, HasContract, PercentageConsumer {
   /**
    * @inheritdoc ICreditScore
    */
-  function updateCreditScores(address[] calldata _validators, uint256 _period)
-    external
-    override
-    onlyContractWithRole(Roles.VALIDATOR_CONTRACT)
-  {
+  function updateCreditScores(
+    address[] calldata _validators,
+    uint256 _period
+  ) external override onlyContractWithRole(Roles.VALIDATOR_CONTRACT) {
     IRoninValidatorSet _validatorContract = IRoninValidatorSet(msg.sender);
     uint256 _periodStartAtBlock = _validatorContract.currentPeriodStartAtBlock();
 
@@ -49,7 +48,7 @@ abstract contract CreditScore is ICreditScore, HasContract, PercentageConsumer {
     );
     uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
 
-    for (uint _i = 0; _i < _validators.length; _i++) {
+    for (uint _i = 0; _i < _validators.length; ) {
       address _validator = _validators[_i];
 
       uint256 _indicator = getUnavailabilityIndicator(_validator, _period);
@@ -62,21 +61,26 @@ abstract contract CreditScore is ICreditScore, HasContract, PercentageConsumer {
 
       _creditScore[_validator] = Math.addWithUpperbound(_creditScore[_validator], _actualGain, _maxCreditScore);
       _updatedCreditScores[_i] = _creditScore[_validator];
+      unchecked {
+        ++_i;
+      }
     }
 
     emit CreditScoresUpdated(_validators, _updatedCreditScores);
   }
 
-  function execResetCreditScores(address[] calldata _validators)
-    external
-    override
-    onlyContractWithRole(Roles.VALIDATOR_CONTRACT)
-  {
+  function execResetCreditScores(
+    address[] calldata _validators
+  ) external override onlyContractWithRole(Roles.VALIDATOR_CONTRACT) {
     uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
-    for (uint _i = 0; _i < _validators.length; _i++) {
+    for (uint _i = 0; _i < _validators.length; ) {
       address _validator = _validators[_i];
       delete _creditScore[_validator];
       delete _updatedCreditScores[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
     emit CreditScoresUpdated(_validators, _updatedCreditScores);
   }
@@ -154,16 +158,17 @@ abstract contract CreditScore is ICreditScore, HasContract, PercentageConsumer {
   /**
    * @inheritdoc ICreditScore
    */
-  function getManyCreditScores(address[] calldata _validators)
-    public
-    view
-    override
-    returns (uint256[] memory _resultList)
-  {
+  function getManyCreditScores(
+    address[] calldata _validators
+  ) public view override returns (uint256[] memory _resultList) {
     _resultList = new uint256[](_validators.length);
 
-    for (uint _i = 0; _i < _resultList.length; _i++) {
+    for (uint _i = 0; _i < _resultList.length; ) {
       _resultList[_i] = _creditScore[_validators[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -177,11 +182,7 @@ abstract contract CreditScore is ICreditScore, HasContract, PercentageConsumer {
   /**
    * @dev See `SlashUnavailability`.
    */
-  function _setUnavailabilityIndicator(
-    address _validator,
-    uint256 _period,
-    uint256 _indicator
-  ) internal virtual;
+  function _setUnavailabilityIndicator(address _validator, uint256 _period, uint256 _indicator) internal virtual;
 
   /**
    * @dev See `ICreditScore-setCreditScoreConfigs`.

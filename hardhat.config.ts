@@ -1,5 +1,4 @@
 import '@typechain/hardhat';
-import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import 'hardhat-deploy';
 import 'hardhat-gas-reporter';
@@ -92,7 +91,7 @@ const compilerConfig: SolcUserConfig = {
   settings: {
     optimizer: {
       enabled: true,
-      runs: 10,
+      runs: 200,
     },
   },
 };
@@ -100,6 +99,17 @@ const compilerConfig: SolcUserConfig = {
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [compilerConfig],
+    overrides: {
+      'contracts/ronin/validator/RoninValidatorSet.sol': {
+        version: '0.8.17',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10,
+          },
+        },
+      },
+    },
   },
   typechain: {
     outDir: 'src/types',
@@ -139,6 +149,13 @@ const config: HardhatUserConfig = {
   // },
   mocha: {
     timeout: 100000, // 100s
+  },
+
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    outputFile: './logs/contract-code-sizes.log',
   },
 };
 

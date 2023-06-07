@@ -94,16 +94,18 @@ contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
   /**
    * @inheritdoc IBridgeTracking
    */
-  function getManyTotalBallots(uint256 _period, address[] calldata _bridgeOperators)
-    external
-    view
-    override
-    returns (uint256[] memory _res)
-  {
+  function getManyTotalBallots(
+    uint256 _period,
+    address[] calldata _bridgeOperators
+  ) external view override returns (uint256[] memory _res) {
     _res = new uint256[](_bridgeOperators.length);
     bool _isBufferCounted = _isBufferCountedForPeriod(_period);
-    for (uint _i = 0; _i < _bridgeOperators.length; _i++) {
+    for (uint _i = 0; _i < _bridgeOperators.length; ) {
       _res[_i] = _totalBallotsOf(_period, _bridgeOperators[_i], _isBufferCounted);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -117,12 +119,10 @@ contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
   /**
    * @inheritdoc IBridgeTracking
    */
-  function handleVoteApproved(VoteKind _kind, uint256 _requestId)
-    external
-    override
-    onlyContractWithRole(Roles.BRIDGE_CONTRACT)
-    skipOnUnstarted
-  {
+  function handleVoteApproved(
+    VoteKind _kind,
+    uint256 _requestId
+  ) external override onlyContractWithRole(Roles.BRIDGE_CONTRACT) skipOnUnstarted {
     ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_kind][_requestId];
 
     // Only records for the receipt which not approved
@@ -136,8 +136,12 @@ contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
       _bufferRequest.id = _requestId;
 
       address[] storage _voters = _receiptInfo.voters;
-      for (uint _i = 0; _i < _voters.length; _i++) {
+      for (uint _i = 0; _i < _voters.length; ) {
         _increaseBallot(_kind, _requestId, _voters[_i], _currentPeriod);
+
+        unchecked {
+          ++_i;
+        }
       }
 
       delete _receiptInfo.voters;
@@ -169,12 +173,7 @@ contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
   /**
    * @dev Increases the ballot for the operator at a period.
    */
-  function _increaseBallot(
-    VoteKind _kind,
-    uint256 _requestId,
-    address _operator,
-    uint256 _currentPeriod
-  ) internal {
+  function _increaseBallot(VoteKind _kind, uint256 _requestId, address _operator, uint256 _currentPeriod) internal {
     ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_kind][_requestId];
     if (_receiptInfo.voted[_operator]) {
       return;
@@ -234,17 +233,25 @@ contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
       _metric.totalBallots += _bufferMetric.data.totalBallots;
 
       // Copy voters info and voters' ballot
-      for (uint _i = 0; _i < _bufferMetric.data.voters.length; _i++) {
+      for (uint _i = 0; _i < _bufferMetric.data.voters.length; ) {
         address _voter = _bufferMetric.data.voters[_i];
         _metric.totalBallotsOf[_voter] += _bufferMetric.data.totalBallotsOf[_voter];
         delete _bufferMetric.data.totalBallotsOf[_voter]; // need to manually delete each element, due to mapping
+
+        unchecked {
+          ++_i;
+        }
       }
 
       // Mark all receipts in the buffer as tracked. Keep total number of receipts and delete receipt details.
-      for (uint _i = 0; _i < _bufferMetric.requests.length; _i++) {
+      for (uint _i = 0; _i < _bufferMetric.requests.length; ) {
         Request storage _bufferRequest = _bufferMetric.requests[_i];
         ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_bufferRequest.kind][_bufferRequest.id];
         _receiptInfo.trackedPeriod = _trackedPeriod;
+
+        unchecked {
+          ++_i;
+        }
       }
 
       delete _bufferMetric.requests;
