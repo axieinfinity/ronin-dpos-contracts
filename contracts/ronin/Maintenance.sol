@@ -85,10 +85,10 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   ) external override {
     IRoninValidatorSet _validator = _validatorContract;
 
-    if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Roles.BLOCK_PRODUCER);
+    if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Role.BLOCK_PRODUCER);
 
     if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender))
-      revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
+      revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
 
     if (checkScheduled(_consensusAddr)) revert ErrAlreadyScheduled();
 
@@ -123,7 +123,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    */
   function cancelSchedule(address _consensusAddr) external override {
     if (!_validatorContract.isCandidateAdmin(_consensusAddr, msg.sender))
-      revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
+      revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
 
     if (!checkScheduled(_consensusAddr)) revert ErrUnexistedSchedule();
 

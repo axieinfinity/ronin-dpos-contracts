@@ -7,8 +7,6 @@ import "../extensions/collections/HasBridgeContract.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 import "../libraries/ErrorHandler.sol";
 
-import "../libraries/ErrorHandler.sol";
-
 abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganizationContract, HasBridgeContract {
   using ErrorHandler for bool;
 
@@ -93,7 +91,6 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
     bytes4 _selector = 0x5c60da1b;
     (bool _success, bytes memory _returndata) = _proxy.staticcall(abi.encodeWithSelector(_selector));
     _success.handleRevert(_selector, _returndata);
-
     return abi.decode(_returndata, (address));
   }
 

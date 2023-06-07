@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../libraries/Errors.sol";
+import { ErrInvalidChainId, ErrLengthMismatch } from "../libraries/CommonErrors.sol";
 
 library Proposal {
   /**
@@ -100,10 +100,9 @@ library Proposal {
   /**
    * @dev Executes the proposal.
    */
-  function execute(ProposalDetail memory _proposal)
-    internal
-    returns (bool[] memory _successCalls, bytes[] memory _returnDatas)
-  {
+  function execute(
+    ProposalDetail memory _proposal
+  ) internal returns (bool[] memory _successCalls, bytes[] memory _returnDatas) {
     if (!executable(_proposal)) revert ErrInvalidChainId(msg.sig, _proposal.chainId, block.chainid);
 
     _successCalls = new bool[](_proposal.targets.length);

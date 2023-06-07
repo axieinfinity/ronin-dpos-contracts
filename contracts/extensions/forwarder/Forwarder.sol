@@ -3,16 +3,15 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
-
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 
 contract Forwarder is AccessControlEnumerable {
+  using ErrorHandler for bool;
+
   /**
    * @dev Error thrown when an invalid forward value is provided.
    */
   error ErrInvalidForwardValue();
-
-  using ErrorHandler for bool;
 
   /// @dev Only user with moderator role can invoke {functionCall} method to forward the call to the target.
   bytes32 public constant MODERATOR_ROLE = keccak256("MODERATOR_ROLE");

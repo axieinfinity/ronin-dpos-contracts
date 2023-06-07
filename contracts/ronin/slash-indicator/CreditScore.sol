@@ -83,10 +83,10 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
    */
   function bailOut(address _consensusAddr) external override {
     if (!_validatorContract.isValidatorCandidate(_consensusAddr))
-      revert ErrUnauthorized(msg.sig, Roles.VALIDATOR_CANDIDATE);
+      revert ErrUnauthorized(msg.sig, Role.VALIDATOR_CANDIDATE);
 
     if (!_validatorContract.isCandidateAdmin(_consensusAddr, msg.sender))
-      revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
+      revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
 
     (bool _isJailed, , uint256 _jailedEpochLeft) = _validatorContract.getJailedTimeLeft(_consensusAddr);
     if (!_isJailed) revert ErrCallerMustBeJailedInTheCurrentPeriod();

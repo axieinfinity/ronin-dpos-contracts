@@ -29,7 +29,7 @@ contract RoninGovernanceAdmin is
   }
 
   function _requireGorvernor() private view {
-    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, Roles.GOVERNOR);
+    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, Role.GOVERNOR);
   }
 
   constructor(

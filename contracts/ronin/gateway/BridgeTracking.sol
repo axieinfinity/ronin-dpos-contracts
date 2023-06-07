@@ -50,7 +50,9 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
 
   function _skipOnUnstarted() private view {
     if (block.number < startedAtBlock) {
-      return;
+      assembly {
+        return(0, 0)
+      }
     }
   }
 

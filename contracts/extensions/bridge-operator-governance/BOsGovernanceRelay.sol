@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../../interfaces/consumers/SignatureConsumer.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
-import "../../libraries/Errors.sol";
+import "../../libraries/CommonErrors.sol";
 import "../../libraries/BridgeOperatorsBallot.sol";
 import "../../libraries/AddressArrayUtils.sol";
 import "../../libraries/IsolatedGovernance.sol";
@@ -65,7 +65,6 @@ abstract contract BOsGovernanceRelay is SignatureConsumer, VoteStatusConsumer {
       _sig = _signatures[_i];
       _signers[_i] = ECDSA.recover(_digest, _sig.v, _sig.r, _sig.s);
       if (_lastSigner >= _signers[_i]) revert ErrInvalidOrder(msg.sig);
-
       _lastSigner = _signers[_i];
 
       unchecked {
