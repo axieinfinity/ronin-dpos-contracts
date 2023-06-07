@@ -33,11 +33,11 @@ abstract contract BaseStaking is
   uint256[49] private ______gap;
 
   modifier noEmptyValue() {
-    _onlyEmptyValue();
+    _requireValue();
     _;
   }
 
-  function _onlyEmptyValue() private view {
+  function _requireValue() private view {
     if (msg.value == 0) revert ErrZeroValue();
   }
 
