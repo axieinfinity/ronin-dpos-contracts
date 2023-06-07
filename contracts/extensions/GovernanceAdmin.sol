@@ -17,7 +17,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
   bytes32 public DOMAIN_SEPARATOR;
 
   modifier onlySelfCall() {
-    _onlySelfCall();
+    _requireSelfCall();
     _;
   }
 
@@ -153,7 +153,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
     return abi.decode(_returndata, (uint256));
   }
 
-  function _onlySelfCall() internal view virtual {
+  function _requireSelfCall() internal view virtual {
     if (msg.sender != address(this)) revert ErrOnlySelfCall(msg.sig);
   }
 }
