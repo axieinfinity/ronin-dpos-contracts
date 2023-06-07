@@ -138,24 +138,17 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContract {
   /**
    * @inheritdoc ISlashUnavailability
    */
-  function getUnavailabilityIndicator(address _validator, uint256 _period)
-    public
-    view
-    virtual
-    override
-    returns (uint256)
-  {
+  function getUnavailabilityIndicator(
+    address _validator,
+    uint256 _period
+  ) public view virtual override returns (uint256) {
     return _unavailabilityIndicator[_validator][_period];
   }
 
   /**
    * @dev Sets the unavailability indicator of the `_validator` at `_period`.
    */
-  function _setUnavailabilityIndicator(
-    address _validator,
-    uint256 _period,
-    uint256 _indicator
-  ) internal virtual {
+  function _setUnavailabilityIndicator(address _validator, uint256 _period, uint256 _indicator) internal virtual {
     _unavailabilityIndicator[_validator][_period] = _indicator;
   }
 

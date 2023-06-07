@@ -49,12 +49,10 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   /**
    * @inheritdoc IStaking
    */
-  function execDeductStakingAmount(address _consensusAddr, uint256 _amount)
-    external
-    override
-    onlyContractWithRole(Role.VALIDATOR_CONTRACT)
-    returns (uint256 _actualDeductingAmount)
-  {
+  function execDeductStakingAmount(
+    address _consensusAddr,
+    uint256 _amount
+  ) external override onlyContractWithRole(Role.VALIDATOR_CONTRACT) returns (uint256 _actualDeductingAmount) {
     _actualDeductingAmount = _deductStakingAmount(_stakingPool[_consensusAddr], _amount);
     address payable _validatorContractAddr = payable(msg.sender);
     if (!_unsafeSendRON(_validatorContractAddr, _actualDeductingAmount)) {
@@ -77,11 +75,10 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   /**
    * @inheritdoc CandidateStaking
    */
-  function _deductStakingAmount(PoolDetail storage _pool, uint256 _amount)
-    internal
-    override
-    returns (uint256 _actualDeductingAmount)
-  {
+  function _deductStakingAmount(
+    PoolDetail storage _pool,
+    uint256 _amount
+  ) internal override returns (uint256 _actualDeductingAmount) {
     _actualDeductingAmount = Math.min(_pool.stakingAmount, _amount);
 
     _pool.stakingAmount -= _actualDeductingAmount;

@@ -44,12 +44,10 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
   /**
    * @inheritdoc IQuorum
    */
-  function setThreshold(uint256 _numerator, uint256 _denominator)
-    external
-    virtual
-    onlyAdmin
-    returns (uint256, uint256)
-  {
+  function setThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) external virtual onlyAdmin returns (uint256, uint256) {
     return _setThreshold(_numerator, _denominator);
   }
 
@@ -82,11 +80,10 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
    * Emits the `ThresholdUpdated` event.
    *
    */
-  function _setThreshold(uint256 _numerator, uint256 _denominator)
-    internal
-    virtual
-    returns (uint256 _previousNum, uint256 _previousDenom)
-  {
+  function _setThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) internal virtual returns (uint256 _previousNum, uint256 _previousDenom) {
     if (_numerator > _denominator) revert ErrInvalidThreshold(msg.sig);
     _previousNum = _num;
     _previousDenom = _denom;

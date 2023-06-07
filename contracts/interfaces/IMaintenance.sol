@@ -184,11 +184,7 @@ interface IMaintenance {
    * Emits the event `MaintenanceScheduled`.
    *
    */
-  function schedule(
-    address _consensusAddr,
-    uint256 _startedAtBlock,
-    uint256 _endedAtBlock
-  ) external;
+  function schedule(address _consensusAddr, uint256 _startedAtBlock, uint256 _endedAtBlock) external;
 
   /**
    * @dev Cancel the schedule of maintenance for the `_consensusAddr`.

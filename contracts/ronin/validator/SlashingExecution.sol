@@ -53,11 +53,10 @@ abstract contract SlashingExecution is ISlashingExecution, HasContract, CommonSt
   /**
    * @inheritdoc ISlashingExecution
    */
-  function execBailOut(address _validatorAddr, uint256 _period)
-    external
-    override
-    onlyContractWithRole(Role.SLASH_INDICATOR_CONTRACT)
-  {
+  function execBailOut(
+    address _validatorAddr,
+    uint256 _period
+  ) external override onlyContractWithRole(Role.SLASH_INDICATOR_CONTRACT) {
     if (block.number <= _cannotBailoutUntilBlock[_validatorAddr]) revert ErrCannotBailout(_validatorAddr);
 
     // Note: Removing rewards of validator in `bailOut` function is not needed, since the rewards have been

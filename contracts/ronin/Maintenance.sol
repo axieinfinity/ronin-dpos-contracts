@@ -83,8 +83,7 @@ contract Maintenance is IMaintenance, HasContract, Initializable {
 
     if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Role.BLOCK_PRODUCER);
 
-    if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender))
-      revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
+    if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender)) revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
 
     if (checkScheduled(_consensusAddr)) revert ErrAlreadyScheduled();
 

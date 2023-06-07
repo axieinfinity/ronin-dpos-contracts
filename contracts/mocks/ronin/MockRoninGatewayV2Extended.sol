@@ -18,11 +18,10 @@ contract MockRoninGatewayV2Extended is RoninGatewayV2 {
   /**
    * @dev Returns the vote weight for a mainchain withdrew acknowledgement based on its corressponding hash.
    */
-  function getMainchainWithdrewVoteWeight(uint256 _withdrawalId, bytes32 _hash)
-    external
-    view
-    returns (uint256, uint256)
-  {
+  function getMainchainWithdrewVoteWeight(
+    uint256 _withdrawalId,
+    bytes32 _hash
+  ) external view returns (uint256, uint256) {
     return _getVoteWeight(mainchainWithdrewVote[_withdrawalId], _hash);
   }
 

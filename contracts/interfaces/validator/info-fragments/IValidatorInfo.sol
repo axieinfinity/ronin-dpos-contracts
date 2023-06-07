@@ -70,10 +70,9 @@ interface IValidatorInfo {
   /**
    * @dev Returns the bridge operator list corresponding to validator address list.
    */
-  function getBridgeOperatorsOf(address[] memory _validatorAddrs)
-    external
-    view
-    returns (address[] memory bridgeOperatorList);
+  function getBridgeOperatorsOf(
+    address[] memory _validatorAddrs
+  ) external view returns (address[] memory bridgeOperatorList);
 
   /**
    * @dev Returns whether the address is bridge operator.

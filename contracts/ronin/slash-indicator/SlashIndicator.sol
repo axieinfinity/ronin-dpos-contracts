@@ -101,24 +101,20 @@ contract SlashIndicator is
   /**
    * @dev Helper for CreditScore contract to query indicator of the validator.
    */
-  function getUnavailabilityIndicator(address _validator, uint256 _period)
-    public
-    view
-    override(CreditScore, ISlashUnavailability, SlashUnavailability)
-    returns (uint256)
-  {
+  function getUnavailabilityIndicator(
+    address _validator,
+    uint256 _period
+  ) public view override(CreditScore, ISlashUnavailability, SlashUnavailability) returns (uint256) {
     return SlashUnavailability.getUnavailabilityIndicator(_validator, _period);
   }
 
   /**
    * @inheritdoc ICreditScore
    */
-  function checkBailedOutAtPeriod(address _validator, uint256 _period)
-    public
-    view
-    override(CreditScore, ICreditScore, SlashUnavailability)
-    returns (bool)
-  {
+  function checkBailedOutAtPeriod(
+    address _validator,
+    uint256 _period
+  ) public view override(CreditScore, ICreditScore, SlashUnavailability) returns (bool) {
     return CreditScore.checkBailedOutAtPeriod(_validator, _period);
   }
 

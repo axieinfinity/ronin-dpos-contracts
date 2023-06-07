@@ -49,10 +49,10 @@ interface IRoninGatewayV2 is MappedTokenConsumer {
   /**
    * @dev Returns withdrawal signatures.
    */
-  function getWithdrawalSignatures(uint256 _withdrawalId, address[] calldata _validators)
-    external
-    view
-    returns (bytes[] memory);
+  function getWithdrawalSignatures(
+    uint256 _withdrawalId,
+    address[] calldata _validators
+  ) external view returns (bytes[] memory);
 
   /**
    * @dev Deposits based on the receipt.
@@ -150,11 +150,7 @@ interface IRoninGatewayV2 is MappedTokenConsumer {
   /**
    * @dev Returns whether the deposit is casted by the voter.
    */
-  function depositVoted(
-    uint256 _chainId,
-    uint256 _depositId,
-    address _voter
-  ) external view returns (bool);
+  function depositVoted(uint256 _chainId, uint256 _depositId, address _voter) external view returns (bool);
 
   /**
    * @dev Returns whether the mainchain withdrew is casted by the voter.

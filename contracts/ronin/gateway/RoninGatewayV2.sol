@@ -494,8 +494,7 @@ contract RoninGatewayV2 is
    * @dev Returns the total trusted weight.
    */
   function _getTotalTrustedWeight() internal view virtual returns (uint256) {
-    return
-      IRoninTrustedOrganization(getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT)).countTrustedOrganizations();
+    return IRoninTrustedOrganization(getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT)).countTrustedOrganizations();
   }
 
   /**
