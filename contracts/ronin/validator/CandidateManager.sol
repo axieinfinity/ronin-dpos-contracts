@@ -81,7 +81,6 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
       if (_candidateAdmin == existentInfo.admin) revert ErrExistentCandidateAdmin(_candidateAdmin);
       if (_treasuryAddr == existentInfo.treasuryAddr) revert ErrExistentTreasury(_treasuryAddr);
       if (_bridgeOperatorAddr == existentInfo.bridgeOperatorAddr) revert ErrExistentBridgeOperator(_bridgeOperatorAddr);
-
       unchecked {
         ++_i;
       }
@@ -148,12 +147,8 @@ abstract contract CandidateManager is ICandidateManager, PercentageConsumer, Glo
    */
   function getCandidateInfos() external view override returns (ValidatorCandidate[] memory _list) {
     _list = new ValidatorCandidate[](_candidates.length);
-    for (uint _i; _i < _list.length; ) {
+    for (uint _i; _i < _list.length; _i++) {
       _list[_i] = _candidateInfo[_candidates[_i]];
-
-      unchecked {
-        ++_i;
-      }
     }
   }
 

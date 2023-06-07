@@ -100,7 +100,12 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     return _numberOfBlocksInEpoch;
   }
 
-  function getBridgeOperators() external view override returns (address[] memory) {}
+  function getBridgeOperators()
+    external
+    view
+    override
+    returns (address[] memory _bridges, address[] memory _validators)
+  {}
 
   function getBridgeOperatorsOf(address[] memory _validatorAddrs) external view override returns (address[] memory) {}
 

@@ -10,7 +10,7 @@ import 'hardhat-storage-layout';
 
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, NetworkUserConfig, SolcUserConfig } from 'hardhat/types';
-
+import './src/tasks/generate-storage-layout';
 dotenv.config();
 
 const DEFAULT_MNEMONIC = 'title spike pink garlic hamster sorry few damage silver mushroom clever window';
@@ -92,7 +92,7 @@ const compilerConfig: SolcUserConfig = {
   settings: {
     optimizer: {
       enabled: true,
-      runs: 200,
+      runs: 10,
     },
   },
 };
@@ -100,17 +100,6 @@ const compilerConfig: SolcUserConfig = {
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [compilerConfig],
-    overrides: {
-      'contracts/ronin/validator/RoninValidatorSet.sol': {
-        version: '0.8.17',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 10,
-          },
-        },
-      },
-    },
   },
   typechain: {
     outDir: 'src/types',
@@ -150,13 +139,6 @@ const config: HardhatUserConfig = {
   // },
   mocha: {
     timeout: 100000, // 100s
-  },
-
-  contractSizer: {
-    alphaSort: true,
-    disambiguatePaths: false,
-    runOnCompile: true,
-    outputFile: './logs/contract-code-sizes.log',
   },
 };
 

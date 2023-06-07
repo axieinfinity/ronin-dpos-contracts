@@ -62,12 +62,8 @@ library Proposal {
     bytes32[] memory _calldataHashList = new bytes32[](_proposal.calldatas.length);
     uint256[] memory _gasAmounts = _proposal.gasAmounts;
 
-    for (uint256 _i; _i < _calldataHashList.length; ) {
+    for (uint256 _i; _i < _calldataHashList.length; _i++) {
       _calldataHashList[_i] = keccak256(_proposal.calldatas[_i]);
-
-      unchecked {
-        ++_i;
-      }
     }
 
     assembly {

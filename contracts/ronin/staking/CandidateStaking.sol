@@ -113,7 +113,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       return;
     }
 
-    for (uint _i = 0; _i < _pools.length; ) {
+    for (uint _i = 0; _i < _pools.length; _i++) {
       PoolDetail storage _pool = _stakingPool[_pools[_i]];
       // Deactivate the pool admin in the active mapping.
       delete _adminOfActivePoolMapping[_pool.admin];
@@ -131,10 +131,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       uint256 _lastRewardAmount = _claimReward(_pools[_i], _pool.admin, _newPeriod);
       if (_lastRewardAmount > 0) {
         _unsafeSendRON(payable(_pool.admin), _lastRewardAmount, DEFAULT_ADDITION_GAS);
-      }
-
-      unchecked {
-        ++_i;
       }
     }
 

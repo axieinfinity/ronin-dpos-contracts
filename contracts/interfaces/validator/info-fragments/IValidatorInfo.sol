@@ -58,14 +58,22 @@ interface IValidatorInfo {
   function totalBlockProducers() external view returns (uint256);
 
   /**
-   * @dev Returns the current bridge operator list.
+   * @dev Returns the current on-working bridge operator list.
+   * @param bridgeOperatorList The list of working bridge operators.
+   * @param validatorList The list of corresponding validators.
    */
-  function getBridgeOperators() external view returns (address[] memory);
+  function getBridgeOperators()
+    external
+    view
+    returns (address[] memory bridgeOperatorList, address[] memory validatorList);
 
   /**
    * @dev Returns the bridge operator list corresponding to validator address list.
    */
-  function getBridgeOperatorsOf(address[] memory _validatorAddrs) external view returns (address[] memory);
+  function getBridgeOperatorsOf(address[] memory _validatorAddrs)
+    external
+    view
+    returns (address[] memory bridgeOperatorList);
 
   /**
    * @dev Returns whether the address is bridge operator.

@@ -18,12 +18,10 @@ library AddressArrayUtils {
     if (A.length == 0) {
       return false;
     }
-    unchecked {
-      for (uint256 i = 0; i < A.length - 1; i++) {
-        for (uint256 j = i + 1; j < A.length; j++) {
-          if (A[i] == A[j]) {
-            return true;
-          }
+    for (uint256 i = 0; i < A.length - 1; i++) {
+      for (uint256 j = i + 1; j < A.length; j++) {
+        if (A[i] == A[j]) {
+          return true;
         }
       }
     }

@@ -31,12 +31,8 @@ contract Forwarder is AccessControlEnumerable {
     address _admin,
     address _moderator
   ) payable {
-    for (uint _i = 0; _i < _targets.length; ) {
+    for (uint _i = 0; _i < _targets.length; _i++) {
       _setupRole(TARGET_ROLE, _targets[_i]);
-
-      unchecked {
-        ++_i;
-      }
     }
     _setupRole(DEFAULT_ADMIN_ROLE, _admin);
     _setupRole(MODERATOR_ROLE, _moderator);

@@ -59,12 +59,8 @@ contract PauseEnforcer is AccessControlEnumerable {
   ) {
     _changeTarget(_target);
     _setupRole(DEFAULT_ADMIN_ROLE, _admin);
-    for (uint _i; _i < _sentries.length; ) {
+    for (uint _i; _i < _sentries.length; _i++) {
       _grantRole(SENTRY_ROLE, _sentries[_i]);
-
-      unchecked {
-        ++_i;
-      }
     }
   }
 

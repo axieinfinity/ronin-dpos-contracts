@@ -106,12 +106,8 @@ contract RoninGatewayV2 is
       _setMinimumThresholds(_packedAddresses[0], _packedNumbers[1]);
     }
 
-    for (uint256 _i; _i < _withdrawalMigrators.length; ) {
+    for (uint256 _i; _i < _withdrawalMigrators.length; _i++) {
       _grantRole(WITHDRAWAL_MIGRATOR, _withdrawalMigrators[_i]);
-
-      unchecked {
-        ++_i;
-      }
     }
   }
 
@@ -128,7 +124,6 @@ contract RoninGatewayV2 is
     onlyRole(WITHDRAWAL_MIGRATOR)
   {
     if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
-
     if (!(_requesters.length == _requests.length && _requests.length > 0)) revert ErrLengthMismatch(msg.sig);
     for (uint256 _i; _i < _requests.length; ) {
       MappedToken memory _token = getMainchainToken(_requests[_i].tokenAddr, 1);
@@ -163,12 +158,8 @@ contract RoninGatewayV2 is
     returns (bytes[] memory _signatures)
   {
     _signatures = new bytes[](_validators.length);
-    for (uint256 _i = 0; _i < _validators.length; ) {
+    for (uint256 _i = 0; _i < _validators.length; _i++) {
       _signatures[_i] = _withdrawalSig[_withdrawalId][_validators[_i]];
-
-      unchecked {
-        ++_i;
-      }
     }
   }
 
@@ -216,10 +207,6 @@ contract RoninGatewayV2 is
           emit MainchainWithdrew(_hash, _withdrawal);
         }
       }
-
-      unchecked {
-        ++_i;
-      }
     }
   }
 
@@ -247,10 +234,6 @@ contract RoninGatewayV2 is
       } else {
         _depositFor(_receipt, _sender, _minVoteWeight, _minTrustedVoteWeight);
       }
-
-      unchecked {
-        ++_i;
-      }
     }
   }
 
@@ -268,7 +251,6 @@ contract RoninGatewayV2 is
     if (_requests.length == 0) revert ErrEmptyArray();
     for (uint256 _i; _i < _requests.length; ) {
       _requestWithdrawalFor(_requests[_i], msg.sender, _chainId);
-
       unchecked {
         ++_i;
       }
@@ -323,10 +305,6 @@ contract RoninGatewayV2 is
       if (_status == VoteStatus.Approved) {
         _proposal.status = VoteStatus.Executed;
         _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, _id);
-      }
-
-      unchecked {
-        ++_i;
       }
     }
   }
@@ -395,13 +373,9 @@ contract RoninGatewayV2 is
     if (!(_roninTokens.length == _mainchainTokens.length && _roninTokens.length == _chainIds.length))
       revert ErrLengthMismatch(msg.sig);
 
-    for (uint256 _i; _i < _roninTokens.length; ) {
+    for (uint256 _i; _i < _roninTokens.length; _i++) {
       _mainchainToken[_roninTokens[_i]][_chainIds[_i]].tokenAddr = _mainchainTokens[_i];
       _mainchainToken[_roninTokens[_i]][_chainIds[_i]].erc = _standards[_i];
-
-      unchecked {
-        ++_i;
-      }
     }
 
     emit TokenMapped(_roninTokens, _mainchainTokens, _chainIds, _standards);
@@ -550,16 +524,12 @@ contract RoninGatewayV2 is
     uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(Roles.RONIN_TRUSTED_ORGANIZATION_CONTRACT))
       .getConsensusWeights(_consensusList);
 
-    for (uint _i; _i < _bridgeOperators.length; ) {
+    for (uint _i; _i < _bridgeOperators.length; _i++) {
       if (_flags[_i].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator) && _v.voteHashOf[_bridgeOperators[_i]] == _hash) {
         _totalWeight++;
         if (_trustedWeights[_i] > 0) {
           _trustedWeight++;
         }
-      }
-
-      unchecked {
-        ++_i;
       }
     }
   }

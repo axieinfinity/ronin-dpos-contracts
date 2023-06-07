@@ -58,10 +58,7 @@ abstract contract CoinbaseExecution is
 
     (, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus) = IStakingVesting(
       getContract(Roles.STAKING_VESTING_CONTRACT)
-    ).requestBonus({
-        _forBlockProducer: _requestForBlockProducer,
-        _forBridgeOperator: true
-      });
+    ).requestBonus({ _forBlockProducer: _requestForBlockProducer, _forBridgeOperator: true });
 
     _totalBridgeReward += _bridgeOperatorBonus;
 
@@ -109,7 +106,7 @@ abstract contract CoinbaseExecution is
     uint256 _lastPeriod = currentPeriod();
 
     if (_periodEnding) {
-      _syncBridgeOperatingReward(_lastPeriod, _currentValidators);
+      _syncBridgeOperatingReward(_lastPeriod);
       (
         uint256 _totalDelegatingReward,
         uint256[] memory _delegatingRewards
@@ -137,25 +134,29 @@ abstract contract CoinbaseExecution is
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _syncBridgeOperatingReward(uint256 _lastPeriod, address[] memory _currentValidators) internal {
+  function _syncBridgeOperatingReward(uint256 _lastPeriod) internal {
     IBridgeTracking _bridgeTrackingContract = IBridgeTracking(getContract(Roles.BRIDGE_TRACKING_CONTRACT));
     uint256 _totalBridgeBallots = _bridgeTrackingContract.totalBallots(_lastPeriod);
     uint256 _totalBridgeVotes = _bridgeTrackingContract.totalVotes(_lastPeriod);
+
+    (
+      address[] memory _currentWorkingBridgeOperators,
+      address[] memory _currentValidatorsOperatingBridge
+    ) = getBridgeOperators();
+
     uint256[] memory _bridgeBallots = _bridgeTrackingContract.getManyTotalBallots(
       _lastPeriod,
-      getBridgeOperatorsOf(_currentValidators)
+      _currentWorkingBridgeOperators
     );
 
     if (
       !_validateBridgeTrackingResponse(_totalBridgeBallots, _totalBridgeVotes, _bridgeBallots) || _totalBridgeVotes == 0
     ) {
       // Shares equally in case the bridge has nothing to vote or bridge tracking response is incorrect
-      for (uint256 _i; _i < _currentValidators.length; ) {
-        _bridgeOperatingReward[_currentValidators[_i]] = _totalBridgeReward / _currentValidators.length;
-
-        unchecked {
-          ++_i;
-        }
+      for (uint256 _i; _i < _currentValidatorsOperatingBridge.length; _i++) {
+        _bridgeOperatingReward[_currentValidatorsOperatingBridge[_i]] =
+          _totalBridgeReward /
+          _currentValidatorsOperatingBridge.length;
       }
       return;
     }
@@ -169,22 +170,20 @@ abstract contract CoinbaseExecution is
 
     // Slashes the bridge reward if the total of votes exceeds the slashing threshold.
     bool _shouldSlash = _totalBridgeVotes > _skipBridgeOperatorSlashingThreshold;
-    for (uint256 _i; _i < _currentValidators.length; ) {
+    for (uint256 _i; _i < _currentValidatorsOperatingBridge.length; _i++) {
       // Shares the bridge operators reward proportionally.
-      _bridgeOperatingReward[_currentValidators[_i]] = (_totalBridgeReward * _bridgeBallots[_i]) / _totalBridgeBallots;
+      _bridgeOperatingReward[_currentValidatorsOperatingBridge[_i]] =
+        (_totalBridgeReward * _bridgeBallots[_i]) /
+        _totalBridgeBallots;
       if (_shouldSlash) {
         _slashBridgeOperatorBasedOnPerformance(
           _lastPeriod,
-          _currentValidators[_i],
+          _currentValidatorsOperatingBridge[_i],
           _MAX_PERCENTAGE - (_bridgeBallots[_i] * _MAX_PERCENTAGE) / _totalBridgeVotes,
           _jailDurationForMissingVotesRatioTier2,
           _missingVotesRatioTier1,
           _missingVotesRatioTier2
         );
-      }
-
-      unchecked {
-        ++_i;
       }
     }
   }
@@ -199,16 +198,12 @@ abstract contract CoinbaseExecution is
   ) private returns (bool _valid) {
     _valid = true;
     uint256 _sumBallots;
-    for (uint _i; _i < _bridgeBallots.length; ) {
+    for (uint _i; _i < _bridgeBallots.length; _i++) {
       if (_bridgeBallots[_i] > _totalBridgeVotes) {
         _valid = false;
         break;
       }
       _sumBallots += _bridgeBallots[_i];
-
-      unchecked {
-        ++_i;
-      }
     }
     _valid = _valid && (_sumBallots <= _totalBridgeBallots);
     if (!_valid) {
@@ -263,7 +258,7 @@ abstract contract CoinbaseExecution is
     address _consensusAddr;
     address payable _treasury;
     _delegatingRewards = new uint256[](_currentValidators.length);
-    for (uint _i; _i < _currentValidators.length; ) {
+    for (uint _i; _i < _currentValidators.length; _i++) {
       _consensusAddr = _currentValidators[_i];
       _treasury = _candidateInfo[_consensusAddr].treasuryAddr;
 
@@ -284,10 +279,6 @@ abstract contract CoinbaseExecution is
       delete _delegatingReward[_consensusAddr];
       delete _miningReward[_consensusAddr];
       delete _bridgeOperatingReward[_consensusAddr];
-
-      unchecked {
-        ++_i;
-      }
     }
     delete _totalBridgeReward;
   }
@@ -444,33 +435,21 @@ abstract contract CoinbaseExecution is
     uint256 _newPeriod
   ) private {
     // Remove exceeding validators in the current set
-    for (uint256 _i = _newValidatorCount; _i < validatorCount; ) {
+    for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
       delete _validatorMap[_validators[_i]];
       delete _validators[_i];
-
-      unchecked {
-        ++_i;
-      }
     }
 
     // Remove flag for all validator in the current set
-    for (uint _i; _i < _newValidatorCount; ) {
+    for (uint _i; _i < _newValidatorCount; _i++) {
       delete _validatorMap[_validators[_i]];
-
-      unchecked {
-        ++_i;
-      }
     }
 
     // Update new validator set and set flag correspondingly.
-    for (uint256 _i; _i < _newValidatorCount; ) {
+    for (uint256 _i; _i < _newValidatorCount; _i++) {
       address _newValidator = _newValidators[_i];
       _validatorMap[_newValidator] = EnumFlags.ValidatorFlag.Both;
       _validators[_i] = _newValidator;
-
-      unchecked {
-        ++_i;
-      }
     }
 
     validatorCount = _newValidatorCount;
@@ -497,7 +476,7 @@ abstract contract CoinbaseExecution is
       block.number + 1
     );
 
-    for (uint _i; _i < _currentValidators.length; ) {
+    for (uint _i; _i < _currentValidators.length; _i++) {
       address _validator = _currentValidators[_i];
       bool _emergencyExitRequested = block.timestamp <= _emergencyExitJailedTimestamp[_validator];
       bool _isProducerBefore = isBlockProducer(_validator);
@@ -518,14 +497,11 @@ abstract contract CoinbaseExecution is
       } else if (_isBridgeOperatorBefore && !_isBridgeOperatorAfter) {
         _validatorMap[_validator] = _validatorMap[_validator].removeFlag(EnumFlags.ValidatorFlag.BridgeOperator);
       }
-
-      unchecked {
-        ++_i;
-      }
     }
 
+    (address[] memory _bridgeOperators, ) = getBridgeOperators();
     emit BlockProducerSetUpdated(_newPeriod, _nextEpoch, getBlockProducers());
-    emit BridgeOperatorSetUpdated(_newPeriod, _nextEpoch, getBridgeOperators());
+    emit BridgeOperatorSetUpdated(_newPeriod, _nextEpoch, _bridgeOperators);
   }
 
   /**

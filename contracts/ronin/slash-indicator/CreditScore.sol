@@ -49,7 +49,7 @@ abstract contract CreditScore is ICreditScore, HasContract, PercentageConsumer {
     );
     uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
 
-    for (uint _i = 0; _i < _validators.length; ) {
+    for (uint _i = 0; _i < _validators.length; _i++) {
       address _validator = _validators[_i];
 
       uint256 _indicator = getUnavailabilityIndicator(_validator, _period);
@@ -62,10 +62,6 @@ abstract contract CreditScore is ICreditScore, HasContract, PercentageConsumer {
 
       _creditScore[_validator] = Math.addWithUpperbound(_creditScore[_validator], _actualGain, _maxCreditScore);
       _updatedCreditScores[_i] = _creditScore[_validator];
-
-      unchecked {
-        ++_i;
-      }
     }
 
     emit CreditScoresUpdated(_validators, _updatedCreditScores);
@@ -77,14 +73,10 @@ abstract contract CreditScore is ICreditScore, HasContract, PercentageConsumer {
     onlyContractWithRole(Roles.VALIDATOR_CONTRACT)
   {
     uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
-    for (uint _i = 0; _i < _validators.length; ) {
+    for (uint _i = 0; _i < _validators.length; _i++) {
       address _validator = _validators[_i];
       delete _creditScore[_validator];
       delete _updatedCreditScores[_i];
-
-      unchecked {
-        ++_i;
-      }
     }
     emit CreditScoresUpdated(_validators, _updatedCreditScores);
   }
@@ -170,12 +162,8 @@ abstract contract CreditScore is ICreditScore, HasContract, PercentageConsumer {
   {
     _resultList = new uint256[](_validators.length);
 
-    for (uint _i = 0; _i < _resultList.length; ) {
+    for (uint _i = 0; _i < _resultList.length; _i++) {
       _resultList[_i] = _creditScore[_validators[_i]];
-
-      unchecked {
-        ++_i;
-      }
     }
   }
 

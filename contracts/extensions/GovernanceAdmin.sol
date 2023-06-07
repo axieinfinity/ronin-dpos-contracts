@@ -8,7 +8,6 @@ import "../libraries/ErrorHandler.sol";
 
 abstract contract GovernanceAdmin is CoreGovernance, HasContract {
   using ErrorHandler for bool;
-
   uint256 public roninChainId;
   /// @dev Domain separator
   bytes32 public DOMAIN_SEPARATOR;
