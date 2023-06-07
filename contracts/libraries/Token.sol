@@ -74,12 +74,7 @@ library Token {
    * - The `_from` address must approve for the contract using this library.
    *
    */
-  function transferFrom(
-    Info memory _info,
-    address _from,
-    address _to,
-    address _token
-  ) internal {
+  function transferFrom(Info memory _info, address _from, address _to, address _token) internal {
     bool _success;
     bytes memory _data;
     if (_info.erc == Standard.ERC20) {
@@ -111,22 +106,14 @@ library Token {
   /**
    * @dev Transfers ERC721 token and returns the result.
    */
-  function tryTransferERC721(
-    address _token,
-    address _to,
-    uint256 _id
-  ) internal returns (bool _success) {
+  function tryTransferERC721(address _token, address _to, uint256 _id) internal returns (bool _success) {
     (_success, ) = _token.call(abi.encodeWithSelector(IERC721.transferFrom.selector, address(this), _to, _id));
   }
 
   /**
    * @dev Transfers ERC20 token and returns the result.
    */
-  function tryTransferERC20(
-    address _token,
-    address _to,
-    uint256 _quantity
-  ) internal returns (bool _success) {
+  function tryTransferERC20(address _token, address _to, uint256 _quantity) internal returns (bool _success) {
     bytes memory _data;
     (_success, _data) = _token.call(abi.encodeWithSelector(IERC20.transfer.selector, _to, _quantity));
     _success = _success && (_data.length == 0 || abi.decode(_data, (bool)));
@@ -135,11 +122,7 @@ library Token {
   /**
    * @dev Transfer assets from current address to `_to` address.
    */
-  function transfer(
-    Info memory _info,
-    address _to,
-    address _token
-  ) internal {
+  function transfer(Info memory _info, address _to, address _token) internal {
     bool _success;
     if (_info.erc == Standard.ERC20) {
       _success = tryTransferERC20(_token, _to, _info.quantity);

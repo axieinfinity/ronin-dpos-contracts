@@ -150,12 +150,9 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   /**
    * @inheritdoc ICreditScore
    */
-  function getManyCreditScores(address[] calldata _validators)
-    public
-    view
-    override
-    returns (uint256[] memory _resultList)
-  {
+  function getManyCreditScores(
+    address[] calldata _validators
+  ) public view override returns (uint256[] memory _resultList) {
     _resultList = new uint256[](_validators.length);
 
     for (uint _i = 0; _i < _resultList.length; ) {
@@ -177,11 +174,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   /**
    * @dev See `SlashUnavailability`.
    */
-  function _setUnavailabilityIndicator(
-    address _validator,
-    uint256 _period,
-    uint256 _indicator
-  ) internal virtual;
+  function _setUnavailabilityIndicator(address _validator, uint256 _period, uint256 _indicator) internal virtual;
 
   /**
    * @dev See `ICreditScore-setCreditScoreConfigs`.

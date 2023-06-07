@@ -416,10 +416,9 @@ abstract contract CoinbaseExecution is
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _syncValidatorSet(uint256 _newPeriod)
-    private
-    returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates)
-  {
+  function _syncValidatorSet(
+    uint256 _newPeriod
+  ) private returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates) {
     _unsastifiedCandidates = _syncCandidateSet(_newPeriod);
     uint256[] memory _weights = _stakingContract.getManyStakingTotals(_candidates);
     uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getConsensusWeights(_candidates);
@@ -491,11 +490,7 @@ abstract contract CoinbaseExecution is
    * Emits the `BridgeOperatorSetUpdated` event.
    *
    */
-  function _revampRoles(
-    uint256 _newPeriod,
-    uint256 _nextEpoch,
-    address[] memory _currentValidators
-  ) private {
+  function _revampRoles(uint256 _newPeriod, uint256 _nextEpoch, address[] memory _currentValidators) private {
     bool[] memory _maintainedList = _maintenanceContract.checkManyMaintained(_currentValidators, block.number + 1);
 
     for (uint _i; _i < _currentValidators.length; ) {

@@ -45,18 +45,14 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function checkMiningRewardDeprecated(address) external view override returns (bool) {}
 
-  function checkBridgeRewardDeprecatedAtLatestPeriod(address _consensusAddr)
-    external
-    view
-    override
-    returns (bool _result)
-  {}
+  function checkBridgeRewardDeprecatedAtLatestPeriod(
+    address _consensusAddr
+  ) external view override returns (bool _result) {}
 
-  function checkBridgeRewardDeprecatedAtPeriod(address _consensusAddr, uint256 _period)
-    external
-    view
-    returns (bool _result)
-  {}
+  function checkBridgeRewardDeprecatedAtPeriod(
+    address _consensusAddr,
+    uint256 _period
+  ) external view returns (bool _result) {}
 
   function epochOf(uint256 _block) external view override returns (uint256) {}
 
@@ -64,11 +60,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     external
     view
     override
-    returns (
-      address[] memory,
-      address[] memory,
-      EnumFlags.ValidatorFlag[] memory
-    )
+    returns (address[] memory, address[] memory, EnumFlags.ValidatorFlag[] memory)
   {}
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
@@ -138,31 +130,16 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function checkJailed(address) external view override returns (bool) {}
 
-  function getJailedTimeLeft(address)
-    external
-    view
-    override
-    returns (
-      bool,
-      uint256,
-      uint256
-    )
-  {}
+  function getJailedTimeLeft(address) external view override returns (bool, uint256, uint256) {}
 
   function currentPeriodStartAtBlock() external view override returns (uint256) {}
 
   function checkJailedAtBlock(address _addr, uint256 _blockNum) external view override returns (bool) {}
 
-  function getJailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
-    external
-    view
-    override
-    returns (
-      bool isJailed_,
-      uint256 blockLeft_,
-      uint256 epochLeft_
-    )
-  {}
+  function getJailedTimeLeftAtBlock(
+    address _addr,
+    uint256 _blockNum
+  ) external view override returns (bool isJailed_, uint256 blockLeft_, uint256 epochLeft_) {}
 
   function totalDeprecatedReward() external view override returns (uint256) {}
 
@@ -170,10 +147,10 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     return super._bridgeOperatorOf(_consensusAddr);
   }
 
-  function execReleaseLockedFundForEmergencyExitRequest(address _consensusAddr, address payable _recipient)
-    external
-    override
-  {}
+  function execReleaseLockedFundForEmergencyExitRequest(
+    address _consensusAddr,
+    address payable _recipient
+  ) external override {}
 
   function emergencyExitLockedAmount() external override returns (uint256) {}
 

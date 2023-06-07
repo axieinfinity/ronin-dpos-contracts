@@ -78,17 +78,12 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function schedule(
-    address _consensusAddr,
-    uint256 _startedAtBlock,
-    uint256 _endedAtBlock
-  ) external override {
+  function schedule(address _consensusAddr, uint256 _startedAtBlock, uint256 _endedAtBlock) external override {
     IRoninValidatorSet _validator = _validatorContract;
 
     if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Role.BLOCK_PRODUCER);
 
-    if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender))
-      revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
+    if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender)) revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
 
     if (checkScheduled(_consensusAddr)) revert ErrAlreadyScheduled();
 
@@ -146,12 +141,10 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
   /**
    * @inheritdoc IMaintenance
    */
-  function checkManyMaintained(address[] calldata _addrList, uint256 _block)
-    external
-    view
-    override
-    returns (bool[] memory _resList)
-  {
+  function checkManyMaintained(
+    address[] calldata _addrList,
+    uint256 _block
+  ) external view override returns (bool[] memory _resList) {
     _resList = new bool[](_addrList.length);
     for (uint _i = 0; _i < _addrList.length; ) {
       _resList[_i] = checkMaintained(_addrList[_i], _block);
