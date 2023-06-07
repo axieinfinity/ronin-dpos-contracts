@@ -16,7 +16,7 @@ abstract contract HasContract is HasProxyAdmin, IHasContract {
    * @dev Modifier to restrict access to functions only to contracts with a specific role.
    * @param role The role that the calling contract must have.
    */
-  modifier onlyContractWithRole(Roles role) virtual {
+  modifier onlyContractWithRole(Role role) virtual {
     _requireRoleContract(role);
     _;
   }
@@ -24,7 +24,7 @@ abstract contract HasContract is HasProxyAdmin, IHasContract {
   /**
    * @inheritdoc IHasContract
    */
-  function setContract(Roles role, address addr) external virtual onlyAdmin {
+  function setContract(Role role, address addr) external virtual onlyAdmin {
     _requireHasCode(addr);
     _setContract(role, addr);
   }
@@ -32,7 +32,7 @@ abstract contract HasContract is HasProxyAdmin, IHasContract {
   /**
    * @inheritdoc IHasContract
    */
-  function getContract(Roles role) public view returns (address contract_) {
+  function getContract(Role role) public view returns (address contract_) {
     contract_ = _getContractMap()[uint8(role)];
     if (contract_ == address(0)) revert ErrInvalidRoleContract(role);
   }
@@ -42,7 +42,7 @@ abstract contract HasContract is HasProxyAdmin, IHasContract {
    * @param role The role of the contract to set.
    * @param addr The address of the contract to set.
    */
-  function _setContract(Roles role, address addr) internal virtual {
+  function _setContract(Role role, address addr) internal virtual {
     _getContractMap()[uint8(role)] = addr;
     emit ContractUpdated(role, addr);
   }
@@ -71,7 +71,7 @@ abstract contract HasContract is HasProxyAdmin, IHasContract {
    * @param role The role that the calling contract must have.
    * @dev Throws an error if the calling contract does not have the specified role.
    */
-  function _requireRoleContract(Roles role) private view {
+  function _requireRoleContract(Role role) private view {
     if (msg.sender != getContract(role)) revert ErrUnauthorized(msg.sig, role);
   }
 }

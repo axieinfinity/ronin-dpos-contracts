@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../libraries/Errors.sol";
+import { ErrInvalidChainId, ErrLengthMismatch } from "../libraries/CommonErrors.sol";
 
 library Proposal {
   /**

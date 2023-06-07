@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../../extensions/RONTransferHelper.sol";
 
-import "../../libraries/Errors.sol";
+import "../../libraries/CommonErrors.sol";
 
 contract MockForwarderTarget is RONTransferHelper {
   address public owner;
@@ -19,7 +19,7 @@ contract MockForwarderTarget is RONTransferHelper {
 
   modifier onlyOwner() {
     if (msg.sender != owner) {
-      revert ErrUnauthorized(msg.sig, Roles.ADMIN);
+      revert ErrUnauthorized(msg.sig, Role.ADMIN);
     }
     _;
   }

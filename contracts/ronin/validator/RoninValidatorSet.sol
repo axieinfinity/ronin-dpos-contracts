@@ -39,12 +39,12 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     // __emergencyExitConfigs[1]: emergencyExpiryDuration
     uint256[2] calldata __emergencyExitConfigs
   ) external initializer {
-    _setContract(Roles.SLASH_INDICATOR_CONTRACT, __slashIndicatorContract);
-    _setContract(Roles.STAKING_CONTRACT, __stakingContract);
-    _setContract(Roles.STAKING_VESTING_CONTRACT, __stakingVestingContract);
-    _setContract(Roles.MAINTENANCE_CONTRACT, __maintenanceContract);
-    _setContract(Roles.BRIDGE_TRACKING_CONTRACT, __bridgeTrackingContract);
-    _setContract(Roles.RONIN_TRUSTED_ORGANIZATION_CONTRACT, __roninTrustedOrganizationContract);
+    _setContract(Role.SLASH_INDICATOR_CONTRACT, __slashIndicatorContract);
+    _setContract(Role.STAKING_CONTRACT, __stakingContract);
+    _setContract(Role.STAKING_VESTING_CONTRACT, __stakingVestingContract);
+    _setContract(Role.MAINTENANCE_CONTRACT, __maintenanceContract);
+    _setContract(Role.BRIDGE_TRACKING_CONTRACT, __bridgeTrackingContract);
+    _setContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT, __roninTrustedOrganizationContract);
 
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
@@ -60,7 +60,7 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
    * deducting amount on slashing).
    */
   function _fallback() internal view {
-    if (msg.sender != getContract(Roles.STAKING_VESTING_CONTRACT) && msg.sender != getContract(Roles.STAKING_CONTRACT))
+    if (msg.sender != getContract(Role.STAKING_VESTING_CONTRACT) && msg.sender != getContract(Role.STAKING_CONTRACT))
       revert ErrUnauthorizedReceiveRON();
   }
 

@@ -104,7 +104,7 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
 
   function _requireAuth() internal view virtual {
     if (!(msg.sender == _getAdmin() || msg.sender == emergencyPauser))
-      revert ErrUnauthorized(msg.sig, Roles.PAUSE_ENFORCER_CONTRACT);
+      revert ErrUnauthorized(msg.sig, Role.PAUSE_ENFORCER_CONTRACT);
   }
 
   /**

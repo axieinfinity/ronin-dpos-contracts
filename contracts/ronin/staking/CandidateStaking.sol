@@ -94,7 +94,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     uint256 _commissionRate
   ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
     if (_commissionRate > _maxCommissionRate || _commissionRate < _minCommissionRate) revert ErrInvalidCommissionRate();
-    IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).execRequestUpdateCommissionRate(
+    IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).execRequestUpdateCommissionRate(
       _consensusAddr,
       _effectiveDaysOnwards,
       _commissionRate
@@ -107,7 +107,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   function execDeprecatePools(
     address[] calldata _pools,
     uint256 _newPeriod
-  ) external override onlyContractWithRole(Roles.VALIDATOR_CONTRACT) {
+  ) external override onlyContractWithRole(Role.VALIDATOR_CONTRACT) {
     if (_pools.length == 0) {
       return;
     }
@@ -170,7 +170,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   function requestRenounce(
     address _consensusAddr
   ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
-    IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).execRequestRenounceCandidate(
+    IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).execRequestRenounceCandidate(
       _consensusAddr,
       _waitingSecsToRevoke
     );
@@ -182,7 +182,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   function requestEmergencyExit(
     address _consensusAddr
   ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
-    IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).execEmergencyExit(_consensusAddr, _waitingSecsToRevoke);
+    IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).execEmergencyExit(_consensusAddr, _waitingSecsToRevoke);
   }
 
   /**
@@ -208,7 +208,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     _diffAddrs[2] = _bridgeOperatorAddr;
     if (AddressArrayUtils.hasDuplicate(_diffAddrs)) revert ErrDuplicated(msg.sig);
 
-    IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).execApplyValidatorCandidate(
+    IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).execApplyValidatorCandidate(
       _candidateAdmin,
       _consensusAddr,
       _treasuryAddr,

@@ -28,13 +28,13 @@ abstract contract SlashBridgeVoting is ISlashBridgeVoting, HasContract {
    */
   function slashBridgeVoting(address _consensusAddr) external onlyAdmin {
     IRoninTrustedOrganization.TrustedOrganization memory _org = IRoninTrustedOrganization(
-      getContract(Roles.RONIN_TRUSTED_ORGANIZATION_CONTRACT)
+      getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT)
     ).getTrustedOrganization(_consensusAddr);
     uint256 _lastVotedBlock = Math.max(
-      IRoninGovernanceAdmin(getContract(Roles.GOVERNANCE_ADMIN_CONTRACT)).lastVotedBlock(_org.bridgeVoter),
+      IRoninGovernanceAdmin(getContract(Role.GOVERNANCE_ADMIN_CONTRACT)).lastVotedBlock(_org.bridgeVoter),
       _org.addedBlock
     );
-    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT));
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
     uint256 _period = _validatorContract.currentPeriod();
 
     if (block.number - _lastVotedBlock <= _bridgeVotingThreshold || _bridgeVotingSlashed[_consensusAddr][_period])

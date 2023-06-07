@@ -49,14 +49,14 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContract {
    * @inheritdoc ISlashUnavailability
    */
   function slashUnavailability(address _validatorAddr) external override oncePerBlock {
-    if (msg.sender != block.coinbase) revert ErrUnauthorized(msg.sig, Roles.COINBASE);
+    if (msg.sender != block.coinbase) revert ErrUnauthorized(msg.sig, Role.COINBASE);
 
     if (!_shouldSlash(_validatorAddr)) {
       // Should return instead of throwing error since this is a part of system transaction.
       return;
     }
 
-    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT));
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
 
     uint256 _period = _validatorContract.currentPeriod();
     uint256 _count = ++_unavailabilityIndicator[_validatorAddr][_period];
@@ -132,7 +132,7 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContract {
    */
   function currentUnavailabilityIndicator(address _validator) external view override returns (uint256) {
     return
-      getUnavailabilityIndicator(_validator, IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).currentPeriod());
+      getUnavailabilityIndicator(_validator, IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).currentPeriod());
   }
 
   /**

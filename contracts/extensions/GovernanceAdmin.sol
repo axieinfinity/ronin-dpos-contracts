@@ -33,14 +33,14 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContract {
       )
     );
 
-    _setContract(Roles.BRIDGE_CONTRACT, _bridgeContract);
-    _setContract(Roles.RONIN_TRUSTED_ORGANIZATION_CONTRACT, _roninTrustedOrganizationContract);
+    _setContract(Role.BRIDGE_CONTRACT, _bridgeContract);
+    _setContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT, _roninTrustedOrganizationContract);
   }
 
   /**
    * @inheritdoc IHasContract
    */
-  function setContract(Roles role, address addr) external virtual override onlySelfCall {
+  function setContract(Role role, address addr) external virtual override onlySelfCall {
     _requireHasCode(addr);
     _setContract(role, addr);
   }
@@ -69,7 +69,6 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContract {
     bytes4 _selector = 0x5c60da1b;
     (bool _success, bytes memory _returndata) = _proxy.staticcall(abi.encodeWithSelector(_selector));
     _success.handleRevert(_selector, _returndata);
-
     return abi.decode(_returndata, (address));
   }
 
@@ -115,7 +114,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContract {
    */
   function _getMinimumVoteWeight() internal view virtual override returns (uint256) {
     bytes4 _selector = IQuorum.minimumVoteWeight.selector;
-    (bool _success, bytes memory _returndata) = getContract(Roles.RONIN_TRUSTED_ORGANIZATION_CONTRACT).staticcall(
+    (bool _success, bytes memory _returndata) = getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
@@ -131,7 +130,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContract {
    */
   function _getTotalWeights() internal view virtual override returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.totalWeights.selector;
-    (bool _success, bytes memory _returndata) = getContract(Roles.RONIN_TRUSTED_ORGANIZATION_CONTRACT).staticcall(
+    (bool _success, bytes memory _returndata) = getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,

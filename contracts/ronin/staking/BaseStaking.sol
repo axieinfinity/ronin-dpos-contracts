@@ -28,11 +28,11 @@ abstract contract BaseStaking is RONTransferHelper, ReentrancyGuard, RewardCalcu
   uint256[49] private ______gap;
 
   modifier noEmptyValue() {
-    _onlyEmptyValue();
+    _requireValue();
     _;
   }
 
-  function _onlyEmptyValue() private view {
+  function _requireValue() private view {
     if (msg.value == 0) revert ErrZeroValue();
   }
 
@@ -46,11 +46,11 @@ abstract contract BaseStaking is RONTransferHelper, ReentrancyGuard, RewardCalcu
   }
 
   modifier onlyPoolAdmin(PoolDetail storage _pool, address _requester) {
-    _onlyPoolAdmin(_pool, _requester);
+    _requirePoolAdmin(_pool, _requester);
     _;
   }
 
-  function _onlyPoolAdmin(PoolDetail storage _pool, address _requester) private view {
+  function _requirePoolAdmin(PoolDetail storage _pool, address _requester) private view {
     if (_pool.admin != _requester) revert ErrOnlyPoolAdminAllowed();
   }
 
@@ -60,7 +60,7 @@ abstract contract BaseStaking is RONTransferHelper, ReentrancyGuard, RewardCalcu
   }
 
   function _poolIsActive(address _poolAddr) private view {
-    if (!IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).isValidatorCandidate(_poolAddr))
+    if (!IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).isValidatorCandidate(_poolAddr))
       revert ErrInactivePool(_poolAddr);
   }
 

@@ -43,7 +43,7 @@ contract Maintenance is IMaintenance, HasContract, Initializable {
     uint256 _maxSchedules,
     uint256 _cooldownSecsToMaintain
   ) external initializer {
-    _setContract(Roles.VALIDATOR_CONTRACT, __validatorContract);
+    _setContract(Role.VALIDATOR_CONTRACT, __validatorContract);
     _setMaintenanceConfig(
       _minMaintenanceDurationInBlock,
       _maxMaintenanceDurationInBlock,
@@ -79,12 +79,12 @@ contract Maintenance is IMaintenance, HasContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function schedule(address _consensusAddr, uint256 _startedAtBlock, uint256 _endedAtBlock) external override {
-    IRoninValidatorSet _validator = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT));
+    IRoninValidatorSet _validator = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
 
-    if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Roles.BLOCK_PRODUCER);
+    if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Role.BLOCK_PRODUCER);
 
     if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender))
-      revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
+      revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
 
     if (checkScheduled(_consensusAddr)) revert ErrAlreadyScheduled();
 
@@ -117,8 +117,8 @@ contract Maintenance is IMaintenance, HasContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function cancelSchedule(address _consensusAddr) external override {
-    if (!IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).isCandidateAdmin(_consensusAddr, msg.sender))
-      revert ErrUnauthorized(msg.sig, Roles.CANDIDATE_ADMIN);
+    if (!IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).isCandidateAdmin(_consensusAddr, msg.sender))
+      revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
 
     if (!checkScheduled(_consensusAddr)) revert ErrUnexistedSchedule();
 
@@ -176,7 +176,7 @@ contract Maintenance is IMaintenance, HasContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function totalSchedules() public view override returns (uint256 _count) {
-    (address[] memory _validators, , ) = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).getValidators();
+    (address[] memory _validators, , ) = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).getValidators();
     unchecked {
       for (uint _i = 0; _i < _validators.length; _i++) {
         if (checkScheduled(_validators[_i])) {

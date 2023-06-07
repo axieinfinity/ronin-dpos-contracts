@@ -19,9 +19,9 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     uint256 __numberOfBlocksInEpoch,
     uint256 __minEffectiveDaysOnwards
   ) {
-    _setContract(Roles.STAKING_CONTRACT, __stakingContract);
-    _setContract(Roles.SLASH_INDICATOR_CONTRACT, _slashIndicatorContract);
-    _setContract(Roles.STAKING_VESTING_CONTRACT, _stakingVestingContract);
+    _setContract(Role.STAKING_CONTRACT, __stakingContract);
+    _setContract(Role.SLASH_INDICATOR_CONTRACT, _slashIndicatorContract);
+    _setContract(Role.STAKING_VESTING_CONTRACT, _stakingVestingContract);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
     _minEffectiveDaysOnwards = __minEffectiveDaysOnwards;

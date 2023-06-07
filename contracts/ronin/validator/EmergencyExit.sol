@@ -29,7 +29,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   function execEmergencyExit(
     address _consensusAddr,
     uint256 _secLeftToRevoke
-  ) external onlyContractWithRole(Roles.STAKING_CONTRACT) {
+  ) external onlyContractWithRole(Role.STAKING_CONTRACT) {
     EmergencyExitInfo storage _info = _exitInfo[_consensusAddr];
     if (_info.recyclingAt != 0) revert ErrAlreadyRequestedEmergencyExit();
 

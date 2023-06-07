@@ -17,7 +17,7 @@ abstract contract SlashingExecution is ISlashingExecution, HasContract, CommonSt
     uint256 _newJailedUntil,
     uint256 _slashAmount,
     bool _cannotBailout
-  ) external override onlyContractWithRole(Roles.SLASH_INDICATOR_CONTRACT) {
+  ) external override onlyContractWithRole(Role.SLASH_INDICATOR_CONTRACT) {
     uint256 _period = currentPeriod();
     _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = true;
 
@@ -29,7 +29,7 @@ abstract contract SlashingExecution is ISlashingExecution, HasContract, CommonSt
     _blockProducerJailedBlock[_validatorAddr] = Math.max(_newJailedUntil, _blockProducerJailedBlock[_validatorAddr]);
 
     if (_slashAmount > 0) {
-      uint256 _actualAmount = IStaking(getContract(Roles.STAKING_CONTRACT)).execDeductStakingAmount(
+      uint256 _actualAmount = IStaking(getContract(Role.STAKING_CONTRACT)).execDeductStakingAmount(
         _validatorAddr,
         _slashAmount
       );
@@ -56,7 +56,7 @@ abstract contract SlashingExecution is ISlashingExecution, HasContract, CommonSt
   function execBailOut(address _validatorAddr, uint256 _period)
     external
     override
-    onlyContractWithRole(Roles.SLASH_INDICATOR_CONTRACT)
+    onlyContractWithRole(Role.SLASH_INDICATOR_CONTRACT)
   {
     if (block.number <= _cannotBailoutUntilBlock[_validatorAddr]) revert ErrCannotBailout(_validatorAddr);
 

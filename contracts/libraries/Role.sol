@@ -6,7 +6,7 @@ pragma solidity ^0.8.0;
  * @notice 1st bit is reserved
  * @notice EOA is even (*0), contract is odd (*1)
  */
-enum Roles {
+enum Role {
   UNKNOWN_0, // 0
   UNKNOWN_1, // 1
   ADMIN, // 2

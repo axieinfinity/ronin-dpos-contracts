@@ -7,12 +7,11 @@ import "../../interfaces/IRoninGovernanceAdmin.sol";
 import "../../libraries/IsolatedGovernance.sol";
 
 abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAdmin {
+  using IsolatedGovernance for IsolatedGovernance.Vote;
   /**
    * @dev Error indicating that the order of signers is invalid.
    */
   error ErrInvalidSignerOrder();
-
-  using IsolatedGovernance for IsolatedGovernance.Vote;
 
   /// @dev The last the brige operator set info.
   BridgeOperatorsBallot.BridgeOperatorSet internal _lastSyncedBridgeOperatorSetInfo;

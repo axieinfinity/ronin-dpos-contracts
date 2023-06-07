@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../../libraries/Proposal.sol";
 import "../../libraries/GlobalProposal.sol";
-import "../../libraries/Errors.sol";
+import "../../libraries/CommonErrors.sol";
 import "../../libraries/Ballot.sol";
 import "../../interfaces/consumers/ChainTypeConsumer.sol";
 import "../../interfaces/consumers/SignatureConsumer.sol";

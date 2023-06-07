@@ -50,7 +50,9 @@ contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
 
   function _skipOnUnstarted() private view {
     if (block.number < startedAtBlock) {
-      return;
+      assembly {
+        return(0, 0)
+      }
     }
   }
 
@@ -66,8 +68,8 @@ contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
     address _validatorContract,
     uint256 _startedAtBlock
   ) external initializer {
-    _setContract(Roles.BRIDGE_CONTRACT, _bridgeContract);
-    _setContract(Roles.VALIDATOR_CONTRACT, _validatorContract);
+    _setContract(Role.BRIDGE_CONTRACT, _bridgeContract);
+    _setContract(Role.VALIDATOR_CONTRACT, _validatorContract);
     startedAtBlock = _startedAtBlock;
   }
 
@@ -122,13 +124,13 @@ contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
   function handleVoteApproved(
     VoteKind _kind,
     uint256 _requestId
-  ) external override onlyContractWithRole(Roles.BRIDGE_CONTRACT) skipOnUnstarted {
+  ) external override onlyContractWithRole(Role.BRIDGE_CONTRACT) skipOnUnstarted {
     ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_kind][_requestId];
 
     // Only records for the receipt which not approved
     if (_receiptInfo.approvedPeriod == 0) {
       _trySyncBuffer();
-      uint256 _currentPeriod = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).currentPeriod();
+      uint256 _currentPeriod = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).currentPeriod();
       _receiptInfo.approvedPeriod = _currentPeriod;
 
       Request storage _bufferRequest = _bufferMetric.requests.push();
@@ -155,8 +157,8 @@ contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
     VoteKind _kind,
     uint256 _requestId,
     address _operator
-  ) external override onlyContractWithRole(Roles.BRIDGE_CONTRACT) skipOnUnstarted {
-    uint256 _period = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT)).currentPeriod();
+  ) external override onlyContractWithRole(Role.BRIDGE_CONTRACT) skipOnUnstarted {
+    uint256 _period = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).currentPeriod();
     _trySyncBuffer();
     ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_kind][_requestId];
 
@@ -221,7 +223,7 @@ contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
    * - The epoch after the buffer epoch is wrapped up.
    */
   function _trySyncBuffer() internal {
-    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT));
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
     uint256 _currentEpoch = _validatorContract.epochOf(block.number);
     if (_bufferMetric.lastEpoch < _currentEpoch) {
       (, uint256 _trackedPeriod) = _validatorContract.tryGetPeriodOfEpoch(_bufferMetric.lastEpoch + 1);
@@ -263,7 +265,7 @@ contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
    * @dev Returns whether the buffer stats must be counted or not.
    */
   function _isBufferCountedForPeriod(uint256 _queriedPeriod) internal view returns (bool) {
-    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Roles.VALIDATOR_CONTRACT));
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
     uint256 _currentEpoch = _validatorContract.epochOf(block.number);
     (bool _filled, uint256 _periodOfNextTemporaryEpoch) = _validatorContract.tryGetPeriodOfEpoch(
       _bufferMetric.lastEpoch + 1

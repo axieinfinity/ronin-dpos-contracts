@@ -2,8 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/StorageSlot.sol";
-
-import "../../libraries/Errors.sol";
+import "../../libraries/CommonErrors.sol";
 
 abstract contract HasProxyAdmin {
   // bytes32(uint256(keccak256("eip1967.proxy.admin")) - 1));
@@ -22,6 +21,6 @@ abstract contract HasProxyAdmin {
   }
 
   function _requireAdmin() internal view {
-    if (msg.sender != _getAdmin()) revert ErrUnauthorized(msg.sig, Roles.ADMIN);
+    if (msg.sender != _getAdmin()) revert ErrUnauthorized(msg.sig, Role.ADMIN);
   }
 }

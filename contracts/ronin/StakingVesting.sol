@@ -27,7 +27,7 @@ contract StakingVesting is IStakingVesting, HasContract, RONTransferHelper, Init
     uint256 __blockProducerBonusPerBlock,
     uint256 __bridgeOperatorBonusPerBlock
   ) external payable initializer {
-    _setContract(Roles.VALIDATOR_CONTRACT, __validatorContract);
+    _setContract(Role.VALIDATOR_CONTRACT, __validatorContract);
     _setBlockProducerBonusPerBlock(__blockProducerBonusPerBlock);
     _setBridgeOperatorBonusPerBlock(__bridgeOperatorBonusPerBlock);
   }
@@ -61,7 +61,7 @@ contract StakingVesting is IStakingVesting, HasContract, RONTransferHelper, Init
   function requestBonus(bool _forBlockProducer, bool _forBridgeOperator)
     external
     override
-    onlyContractWithRole(Roles.VALIDATOR_CONTRACT)
+    onlyContractWithRole(Role.VALIDATOR_CONTRACT)
     returns (
       bool _success,
       uint256 _blockProducerBonus,
