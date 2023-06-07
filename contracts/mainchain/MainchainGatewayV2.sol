@@ -124,7 +124,9 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
           _bridgeOperators.pop();
           continue;
         }
-        _i++;
+        unchecked {
+          _i++;
+        }
       }
     }
 
@@ -167,12 +169,10 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
   /**
    * @inheritdoc IMainchainGatewayV2
    */
-  function submitWithdrawal(Transfer.Receipt calldata _receipt, Signature[] calldata _signatures)
-    external
-    virtual
-    whenNotPaused
-    returns (bool _locked)
-  {
+  function submitWithdrawal(
+    Transfer.Receipt calldata _receipt,
+    Signature[] calldata _signatures
+  ) external virtual whenNotPaused returns (bool _locked) {
     return _submitWithdrawal(_receipt, _signatures);
   }
 
@@ -291,11 +291,10 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
    * Emits the `Withdrew` once the assets are released.
    *
    */
-  function _submitWithdrawal(Transfer.Receipt calldata _receipt, Signature[] memory _signatures)
-    internal
-    virtual
-    returns (bool _locked)
-  {
+  function _submitWithdrawal(
+    Transfer.Receipt calldata _receipt,
+    Signature[] memory _signatures
+  ) internal virtual returns (bool _locked) {
     uint256 _id = _receipt.id;
     uint256 _quantity = _receipt.info.quantity;
     address _tokenAddr = _receipt.mainchain.tokenAddr;
