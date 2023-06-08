@@ -68,7 +68,7 @@ describe('Staking test', () => {
     const profileContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       profileLogicContract.address,
       proxyAdmin.address,
-      profileLogicContract.interface.encodeFunctionData('initialize', [stakingContractAddr])
+      profileLogicContract.interface.encodeFunctionData('initialize', [stakingContractAddr, validatorContract.address])
     );
 
     const logicContract = await new Staking__factory(deployer).deploy();
