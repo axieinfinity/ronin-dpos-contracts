@@ -80,18 +80,20 @@ library Transfer {
   /**
    * @dev Returns token info struct hash.
    */
-  function hash(Receipt memory _receipt) internal pure returns (bytes32) {
-    return
-      keccak256(
-        abi.encode(
-          TYPE_HASH,
-          _receipt.id,
-          _receipt.kind,
-          Token.hash(_receipt.mainchain),
-          Token.hash(_receipt.ronin),
-          Token.hash(_receipt.info)
-        )
-      );
+  function hash(Receipt memory _receipt) internal pure returns (bytes32 digest) {
+    bytes32 hashedReceiptMainchain = Token.hash(_receipt.mainchain);
+    bytes32 hashedReceiptRonin = Token.hash(_receipt.ronin);
+    bytes32 hashedReceiptInfo = Token.hash(_receipt.info);
+    assembly {
+      let freeMemPtr := mload(0x40)
+      mstore(freeMemPtr, TYPE_HASH)
+      mstore(add(freeMemPtr, 0x20), mload(_receipt)) // _receipt.id
+      mstore(add(freeMemPtr, 0x40), mload(add(_receipt, 0x20))) // _receipt.kind
+      mstore(add(freeMemPtr, 0x60), hashedReceiptMainchain)
+      mstore(add(freeMemPtr, 0x80), hashedReceiptRonin)
+      mstore(add(freeMemPtr, 0xa0), hashedReceiptInfo)
+      digest := keccak256(freeMemPtr, 0xc0)
+    }
   }
 
   /**

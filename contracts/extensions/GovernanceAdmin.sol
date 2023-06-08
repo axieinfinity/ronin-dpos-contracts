@@ -25,15 +25,28 @@ abstract contract GovernanceAdmin is CoreGovernance, HasRoninTrustedOrganization
     address _bridgeContract,
     uint256 _proposalExpiryDuration
   ) CoreGovernance(_proposalExpiryDuration) {
-    roninChainId = _roninChainId;
-    DOMAIN_SEPARATOR = keccak256(
-      abi.encode(
-        keccak256("EIP712Domain(string name,string version,bytes32 salt)"),
-        keccak256("GovernanceAdmin"), // name hash
-        keccak256("2"), // version hash
-        keccak256(abi.encode("RONIN_GOVERNANCE_ADMIN", _roninChainId)) // salt
-      )
-    );
+    assembly {
+      /// roninChainId = _roninChainId
+      sstore(roninChainId.slot, _roninChainId)
+      let freeMemPtr := mload(0x40)
+      /// @dev value is equal abi.encode("RONIN_GOVERNANCE_ADMIN", _roninChainId).length
+      mstore(freeMemPtr, 0x40)
+      mstore(add(freeMemPtr, 0x20), _roninChainId)
+      /// @dev value is equal "RONIN_GOVERNANCE_ADMIN".length
+      mstore(add(freeMemPtr, 0x40), 0x16)
+      /// @dev value is equal bytes("RONIN_GOVERNANCE_ADMIN")
+      mstore(add(freeMemPtr, 0x60), 0x524f4e494e5f474f5645524e414e43455f41444d494e00000000000000000000)
+      let salt := keccak256(freeMemPtr, 0x80)
+      /// @dev value is equal keccak256("EIP712Domain(string name,string version,bytes32 salt)")
+      mstore(freeMemPtr, 0x599a80fcaa47b95e2323ab4d34d34e0cc9feda4b843edafcc30c7bdf60ea15bf)
+      /// @dev value is equal keccak256("GovernanceAdmin")
+      mstore(add(freeMemPtr, 0x20), 0x7e7935007966eb860f4a2ee3dcc9fd53fb3205ce2aa86b0126d4893d4d4c14b9)
+      /// @dev value is equal keccak256("2")
+      mstore(add(freeMemPtr, 0x40), 0xad7c5bef027816a800da1736444fb58a807ef4c9603b7848673f7e3a68eb14a5)
+      mstore(add(freeMemPtr, 0x60), salt)
+      sstore(DOMAIN_SEPARATOR.slot, keccak256(freeMemPtr, 0x80))
+    }
+
     _setRoninTrustedOrganizationContract(_roninTrustedOrganizationContract);
     _setBridgeContract(_bridgeContract);
   }

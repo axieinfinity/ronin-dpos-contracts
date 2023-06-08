@@ -103,6 +103,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function removeTrustedOrganizations(address[] calldata _list) external override onlyAdmin {
     if (_list.length == 0) revert ErrEmptyArray();
+
     for (uint _i = 0; _i < _list.length; ) {
       _removeTrustedOrganization(_list[_i]);
 

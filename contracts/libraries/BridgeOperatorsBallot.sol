@@ -43,14 +43,18 @@ library BridgeOperatorsBallot {
   /**
    * @dev Returns hash of the ballot.
    */
-  function hash(BridgeOperatorSet calldata _ballot) internal pure returns (bytes32) {
+  function hash(BridgeOperatorSet memory self) internal pure returns (bytes32 digest) {
     bytes32 _operatorsHash;
-    address[] memory _operators = _ballot.operators;
+    address[] memory _operators = self.operators;
 
     assembly {
       _operatorsHash := keccak256(add(_operators, 32), mul(mload(_operators), 32))
+      let freeMemPtr := mload(0x40)
+      mstore(freeMemPtr, BRIDGE_OPERATORS_BALLOT_TYPEHASH)
+      mstore(add(freeMemPtr, 0x20), mload(self)) // _ballot.period
+      mstore(add(freeMemPtr, 0x40), mload(add(self, 0x20))) // _ballot.epoch
+      mstore(add(freeMemPtr, 0x60), _operatorsHash)
+      digest := keccak256(freeMemPtr, 0x80)
     }
-
-    return keccak256(abi.encode(BRIDGE_OPERATORS_BALLOT_TYPEHASH, _ballot.period, _ballot.epoch, _operatorsHash));
   }
 }

@@ -245,6 +245,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
     if (_tokens.length != _percentages.length) revert ErrLengthMismatch(msg.sig);
     for (uint256 _i; _i < _tokens.length; ) {
       if (_percentages[_i] > _MAX_PERCENTAGE) revert ErrInvalidPercentage();
+
       unlockFeePercentages[_tokens[_i]] = _percentages[_i];
 
       unchecked {

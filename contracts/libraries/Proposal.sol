@@ -51,12 +51,7 @@ library Proposal {
   /**
    * @dev Returns struct hash of the proposal.
    */
-  function hash(ProposalDetail memory _proposal) internal pure returns (bytes32) {
-    bytes32 _targetsHash;
-    bytes32 _valuesHash;
-    bytes32 _calldatasHash;
-    bytes32 _gasAmountsHash;
-
+  function hash(ProposalDetail memory _proposal) internal pure returns (bytes32 digest) {
     uint256[] memory _values = _proposal.values;
     address[] memory _targets = _proposal.targets;
     bytes32[] memory _calldataHashList = new bytes32[](_proposal.calldatas.length);
@@ -71,25 +66,25 @@ library Proposal {
     }
 
     assembly {
-      _targetsHash := keccak256(add(_targets, 32), mul(mload(_targets), 32))
-      _valuesHash := keccak256(add(_values, 32), mul(mload(_values), 32))
-      _calldatasHash := keccak256(add(_calldataHashList, 32), mul(mload(_calldataHashList), 32))
-      _gasAmountsHash := keccak256(add(_gasAmounts, 32), mul(mload(_gasAmounts), 32))
+      let freeMemPtr := mload(0x40)
+      mstore(freeMemPtr, TYPE_HASH)
+      mstore(add(freeMemPtr, 0x20), mload(_proposal)) // _proposal.nonce
+      mstore(add(freeMemPtr, 0x40), mload(add(_proposal, 0x20))) // _proposal.chainId
+      mstore(add(freeMemPtr, 0x60), mload(add(_proposal, 0x40))) // expiry timestamp
+      // targetsHash
+      let arrayHashed := keccak256(add(_targets, 32), mul(mload(_targets), 32))
+      mstore(add(freeMemPtr, 0x80), arrayHashed)
+      // _valuesHash
+      arrayHashed := keccak256(add(_values, 32), mul(mload(_values), 32))
+      mstore(add(freeMemPtr, 0xa0), arrayHashed)
+      // _calldatasHash
+      arrayHashed := keccak256(add(_calldataHashList, 32), mul(mload(_calldataHashList), 32))
+      mstore(add(freeMemPtr, 0xc0), arrayHashed)
+      // _gasAmountsHash
+      arrayHashed := keccak256(add(_gasAmounts, 32), mul(mload(_gasAmounts), 32))
+      mstore(add(freeMemPtr, 0xe0), arrayHashed)
+      digest := keccak256(freeMemPtr, 0x100)
     }
-
-    return
-      keccak256(
-        abi.encode(
-          TYPE_HASH,
-          _proposal.nonce,
-          _proposal.chainId,
-          _proposal.expiryTimestamp,
-          _targetsHash,
-          _valuesHash,
-          _calldatasHash,
-          _gasAmountsHash
-        )
-      );
   }
 
   /**
@@ -114,6 +109,7 @@ library Proposal {
     _returnDatas = new bytes[](_proposal.targets.length);
     for (uint256 _i = 0; _i < _proposal.targets.length; ) {
       if (gasleft() <= _proposal.gasAmounts[_i]) revert ErrInsufficientGas();
+
       (_successCalls[_i], _returnDatas[_i]) = _proposal.targets[_i].call{
         value: _proposal.values[_i],
         gas: _proposal.gasAmounts[_i]

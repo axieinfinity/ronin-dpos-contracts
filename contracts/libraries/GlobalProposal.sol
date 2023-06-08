@@ -30,12 +30,7 @@ library GlobalProposal {
   /**
    * @dev Returns struct hash of the proposal.
    */
-  function hash(GlobalProposalDetail memory _proposal) internal pure returns (bytes32) {
-    bytes32 _targetsHash;
-    bytes32 _valuesHash;
-    bytes32 _calldatasHash;
-    bytes32 _gasAmountsHash;
-
+  function hash(GlobalProposalDetail memory _proposal) internal pure returns (bytes32 digest) {
     uint256[] memory _values = _proposal.values;
     TargetOption[] memory _targets = _proposal.targetOptions;
     bytes32[] memory _calldataHashList = new bytes32[](_proposal.calldatas.length);
@@ -50,24 +45,24 @@ library GlobalProposal {
     }
 
     assembly {
-      _targetsHash := keccak256(add(_targets, 32), mul(mload(_targets), 32))
-      _valuesHash := keccak256(add(_values, 32), mul(mload(_values), 32))
-      _calldatasHash := keccak256(add(_calldataHashList, 32), mul(mload(_calldataHashList), 32))
-      _gasAmountsHash := keccak256(add(_gasAmounts, 32), mul(mload(_gasAmounts), 32))
+      let freeMemPtr := mload(0x40)
+      mstore(freeMemPtr, TYPE_HASH)
+      mstore(add(freeMemPtr, 0x20), mload(_proposal))
+      mstore(add(freeMemPtr, 0x40), mload(add(_proposal, 0x20)))
+      // targetsHash
+      let arrayHashed := keccak256(add(_targets, 32), mul(mload(_targets), 32))
+      mstore(add(freeMemPtr, 0x60), arrayHashed)
+      // _valuesHash
+      arrayHashed := keccak256(add(_values, 32), mul(mload(_values), 32))
+      mstore(add(freeMemPtr, 0x80), arrayHashed)
+      // _calldatasHash
+      arrayHashed := keccak256(add(_calldataHashList, 32), mul(mload(_calldataHashList), 32))
+      mstore(add(freeMemPtr, 0xa0), arrayHashed)
+      // _gasAmountsHash
+      arrayHashed := keccak256(add(_gasAmounts, 32), mul(mload(_gasAmounts), 32))
+      mstore(add(freeMemPtr, 0xc0), arrayHashed)
+      digest := keccak256(freeMemPtr, 0xe0)
     }
-
-    return
-      keccak256(
-        abi.encode(
-          TYPE_HASH,
-          _proposal.nonce,
-          _proposal.expiryTimestamp,
-          _targetsHash,
-          _valuesHash,
-          _calldatasHash,
-          _gasAmountsHash
-        )
-      );
   }
 
   /**
