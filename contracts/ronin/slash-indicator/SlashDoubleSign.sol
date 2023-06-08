@@ -3,10 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "../../interfaces/slash-indicator/ISlashDoubleSign.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../precompile-usages/PCUValidateDoubleSign.sol";
-import "../../extensions/collections/HasValidatorContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 
-abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCUValidateDoubleSign {
+abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, PCUValidateDoubleSign {
   /// @dev The amount of RON to slash double sign.
   uint256 internal _slashDoubleSignAmount;
   /// @dev The block number that the punished validator will be jailed until, due to double signing.
@@ -39,6 +40,7 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
       revert ErrEvidenceAlreadySubmitted();
 
     if (_pcValidateEvidence(_consensusAddr, _header1, _header2)) {
+      IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
       uint256 _period = _validatorContract.currentPeriod();
       _submittedEvidence[_header1Checksum] = true;
       _submittedEvidence[_header2Checksum] = true;

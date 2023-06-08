@@ -2,13 +2,14 @@
 
 pragma solidity ^0.8.9;
 
+import "../../interfaces/IMaintenance.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/slash-indicator/ICreditScore.sol";
-import "../../extensions/collections/HasMaintenanceContract.sol";
-import "../../extensions/collections/HasValidatorContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../libraries/Math.sol";
 
-abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintenanceContract, PercentageConsumer {
+abstract contract CreditScore is ICreditScore, HasContracts, PercentageConsumer {
   /// @dev Mapping from validator address => period index => whether bailed out before
   mapping(address => mapping(uint256 => bool)) internal _checkBailedOutAtPeriod;
   /// @dev Mapping from validator address => credit score
@@ -32,11 +33,15 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
   /**
    * @inheritdoc ICreditScore
    */
-  function updateCreditScores(address[] calldata _validators, uint256 _period) external override onlyValidatorContract {
+  function updateCreditScores(
+    address[] calldata _validators,
+    uint256 _period
+  ) external override onlyContractWithRole(Role.VALIDATOR_CONTRACT) {
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(msg.sender);
     uint256 _periodStartAtBlock = _validatorContract.currentPeriodStartAtBlock();
 
     bool[] memory _jaileds = _validatorContract.checkManyJailed(_validators);
-    bool[] memory _maintaineds = _maintenanceContract.checkManyMaintainedInBlockRange(
+    bool[] memory _maintaineds = IMaintenance(getContract(Role.MAINTENANCE_CONTRACT)).checkManyMaintainedInBlockRange(
       _validators,
       _periodStartAtBlock,
       block.number
@@ -64,7 +69,9 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
     emit CreditScoresUpdated(_validators, _updatedCreditScores);
   }
 
-  function execResetCreditScores(address[] calldata _validators) external override onlyValidatorContract {
+  function execResetCreditScores(
+    address[] calldata _validators
+  ) external override onlyContractWithRole(Role.VALIDATOR_CONTRACT) {
     uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
     for (uint _i = 0; _i < _validators.length; ) {
       address _validator = _validators[_i];
@@ -82,6 +89,7 @@ abstract contract CreditScore is ICreditScore, HasValidatorContract, HasMaintena
    * @inheritdoc ICreditScore
    */
   function bailOut(address _consensusAddr) external override {
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
     if (!_validatorContract.isValidatorCandidate(_consensusAddr))
       revert ErrUnauthorized(msg.sig, Role.VALIDATOR_CANDIDATE);
 

@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../extensions/GatewayV2.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/MinimumWithdrawal.sol";
 import "../../interfaces/IERC20Mintable.sol";
 import "../../interfaces/IERC721Mintable.sol";
@@ -12,9 +13,6 @@ import "../../interfaces/IRoninGatewayV2.sol";
 import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
-import "../../interfaces/collections/IHasValidatorContract.sol";
-import "../../interfaces/collections/IHasBridgeTrackingContract.sol";
-import "../../interfaces/collections/IHasRoninTrustedOrganizationContract.sol";
 import "../../libraries/IsolatedGovernance.sol";
 
 contract RoninGatewayV2 is
@@ -24,9 +22,7 @@ contract RoninGatewayV2 is
   AccessControlEnumerable,
   VoteStatusConsumer,
   IRoninGatewayV2,
-  IHasValidatorContract,
-  IHasBridgeTrackingContract,
-  IHasRoninTrustedOrganizationContract
+  HasContracts
 {
   using Token for Token.Info;
   using Transfer for Transfer.Request;
@@ -52,16 +48,16 @@ contract RoninGatewayV2 is
   /// @dev Mapping from token address => chain id => mainchain token address
   mapping(address => mapping(uint256 => MappedToken)) internal _mainchainToken;
 
-  /// @dev The ronin validator contract
-  IRoninValidatorSet internal _validatorContract;
-  /// @dev The bridge tracking contract
-  IBridgeTracking internal _bridgeTrackingContract;
+  /// @custom:deprecated previously `_validatorContract` (non-zero value)
+  address private ____deprecated0;
+  /// @custom:deprecated previously `_bridgeTrackingContract` (non-zero value)
+  address private ____deprecated1;
 
   /// @dev Mapping from withdrawal id => vote for recording withdrawal stats
   mapping(uint256 => IsolatedGovernance.Vote) public withdrawalStatVote;
 
-  /// @dev The trusted organization contract
-  IRoninTrustedOrganization internal _trustedOrgContract;
+  /// @custom:deprecated previously `_trustedOrgContract` (non-zero value)
+  address private ____deprecated2;
 
   uint256 internal _trustedNum;
   uint256 internal _trustedDenom;
@@ -80,9 +76,8 @@ contract RoninGatewayV2 is
   }
 
   function _requireBridgeOperator() internal view {
-    if (!_validatorContract.isBridgeOperator(msg.sender)) {
+    if (!IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).isBridgeOperator(msg.sender))
       revert ErrUnauthorized(msg.sig, Role.BRIDGE_OPERATOR);
-    }
   }
 
   /**
@@ -118,51 +113,6 @@ contract RoninGatewayV2 is
         ++_i;
       }
     }
-  }
-
-  /**
-   * @inheritdoc IHasValidatorContract
-   */
-  function validatorContract() external view returns (address) {
-    return address(_validatorContract);
-  }
-
-  /**
-   * @inheritdoc IHasValidatorContract
-   */
-  function setValidatorContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
-    _setValidatorContract(_addr);
-  }
-
-  /**
-   * @inheritdoc IHasBridgeTrackingContract
-   */
-  function bridgeTrackingContract() external view override returns (address) {
-    return address(_bridgeTrackingContract);
-  }
-
-  /**
-   * @inheritdoc IHasBridgeTrackingContract
-   */
-  function setBridgeTrackingContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
-    _setBridgeTrackingContract(_addr);
-  }
-
-  /**
-   * @inheritdoc IHasRoninTrustedOrganizationContract
-   */
-  function roninTrustedOrganizationContract() external view override returns (address) {
-    return address(_trustedOrgContract);
-  }
-
-  /**
-   * @inheritdoc IHasRoninTrustedOrganizationContract
-   */
-  function setRoninTrustedOrganizationContract(address _addr) external override onlyAdmin {
-    if (_addr.code.length == 0) revert ErrZeroCodeContract(msg.sig);
-    _setRoninTrustedOrganizationContract(_addr);
   }
 
   /**
@@ -227,7 +177,11 @@ contract RoninGatewayV2 is
   function depositFor(Transfer.Receipt calldata _receipt) external whenNotPaused onlyBridgeOperator {
     address _sender = msg.sender;
     _depositFor(_receipt, _sender, minimumVoteWeight(), minimumTrustedVoteWeight());
-    _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Deposit, _receipt.id, _sender);
+    IBridgeTracking(getContract(Role.BRIDGE_TRACKING_CONTRACT)).recordVote(
+      IBridgeTracking.VoteKind.Deposit,
+      _receipt.id,
+      _sender
+    );
   }
 
   /**
@@ -242,6 +196,7 @@ contract RoninGatewayV2 is
 
     uint256 _withdrawalId;
     _executedReceipts = new bool[](_withdrawalIds.length);
+    IBridgeTracking _bridgeTrackingContract = IBridgeTracking(getContract(Role.BRIDGE_TRACKING_CONTRACT));
     for (uint256 _i; _i < _withdrawalIds.length; ) {
       _withdrawalId = _withdrawalIds[_i];
       _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.MainchainWithdrawal, _withdrawalId, _governor);
@@ -277,6 +232,7 @@ contract RoninGatewayV2 is
     _executedReceipts = new bool[](_receipts.length);
     uint256 _minVoteWeight = minimumVoteWeight();
     uint256 _minTrustedVoteWeight = minimumTrustedVoteWeight();
+    IBridgeTracking _bridgeTrackingContract = IBridgeTracking(getContract(Role.BRIDGE_TRACKING_CONTRACT));
     for (uint256 _i; _i < _receipts.length; ) {
       _receipt = _receipts[_i];
       _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Deposit, _receipt.id, _sender);
@@ -342,6 +298,7 @@ contract RoninGatewayV2 is
     uint256 _minTrustedVoteWeight = minimumTrustedVoteWeight();
 
     uint256 _id;
+    IBridgeTracking _bridgeTrackingContract = IBridgeTracking(getContract(Role.BRIDGE_TRACKING_CONTRACT));
     for (uint256 _i; _i < _withdrawals.length; ) {
       _id = _withdrawals[_i];
       _withdrawalSig[_id][_validator] = _signatures[_i];
@@ -469,7 +426,10 @@ contract RoninGatewayV2 is
     if (_status == VoteStatus.Approved) {
       _proposal.status = VoteStatus.Executed;
       _receipt.info.handleAssetTransfer(payable(_receipt.ronin.addr), _receipt.ronin.tokenAddr, IWETH(address(0)));
-      _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Deposit, _receipt.id);
+      IBridgeTracking(getContract(Role.BRIDGE_TRACKING_CONTRACT)).handleVoteApproved(
+        IBridgeTracking.VoteKind.Deposit,
+        _receipt.id
+      );
       emit Deposited(_receiptHash, _receipt);
     }
   }
@@ -527,47 +487,14 @@ contract RoninGatewayV2 is
    * @inheritdoc GatewayV2
    */
   function _getTotalWeight() internal view virtual override returns (uint256) {
-    return _validatorContract.totalBridgeOperators();
+    return IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).totalBridgeOperators();
   }
 
   /**
    * @dev Returns the total trusted weight.
    */
   function _getTotalTrustedWeight() internal view virtual returns (uint256) {
-    return _trustedOrgContract.countTrustedOrganizations();
-  }
-
-  /**
-   * @dev Sets the validator contract.
-   *
-   * Emits the event `ValidatorContractUpdated`.
-   *
-   */
-  function _setValidatorContract(address _addr) internal {
-    _validatorContract = IRoninValidatorSet(_addr);
-    emit ValidatorContractUpdated(_addr);
-  }
-
-  /**
-   * @dev Sets the bridge tracking contract.
-   *
-   * Emits the event `BridgeTrackingContractUpdated`.
-   *
-   */
-  function _setBridgeTrackingContract(address _addr) internal {
-    _bridgeTrackingContract = IBridgeTracking(_addr);
-    emit BridgeTrackingContractUpdated(_addr);
-  }
-
-  /**
-   * @dev Sets the ronin trusted organization contract.
-   *
-   * Emits the event `RoninTrustedOrganizationContractUpdated`.
-   *
-   */
-  function _setRoninTrustedOrganizationContract(address _addr) internal {
-    _trustedOrgContract = IRoninTrustedOrganization(_addr);
-    emit RoninTrustedOrganizationContractUpdated(_addr);
+    return IRoninTrustedOrganization(getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT)).countTrustedOrganizations();
   }
 
   /**
@@ -601,8 +528,9 @@ contract RoninGatewayV2 is
       address[] memory _consensusList,
       address[] memory _bridgeOperators,
       EnumFlags.ValidatorFlag[] memory _flags
-    ) = _validatorContract.getValidators();
-    uint256[] memory _trustedWeights = _trustedOrgContract.getConsensusWeights(_consensusList);
+    ) = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).getValidators();
+    uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT))
+      .getConsensusWeights(_consensusList);
 
     unchecked {
       for (uint _i; _i < _bridgeOperators.length; ++_i) {

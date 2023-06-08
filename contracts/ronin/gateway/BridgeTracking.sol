@@ -3,11 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../../extensions/collections/HasBridgeContract.sol";
-import "../../extensions/collections/HasValidatorContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../interfaces/IBridgeTracking.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
 
-contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializable, IBridgeTracking {
+contract BridgeTracking is HasContracts, Initializable, IBridgeTracking {
   struct PeriodVotingMetric {
     /// @dev Total requests that are tracked in the period. This value is 0 until the {_bufferMetric.requests[]} gets added into a period metric.
     uint256 totalRequests;
@@ -68,8 +68,8 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
     address _validatorContract,
     uint256 _startedAtBlock
   ) external initializer {
-    _setBridgeContract(_bridgeContract);
-    _setValidatorContract(_validatorContract);
+    _setContract(Role.BRIDGE_CONTRACT, _bridgeContract);
+    _setContract(Role.VALIDATOR_CONTRACT, _validatorContract);
     startedAtBlock = _startedAtBlock;
   }
 
@@ -121,13 +121,16 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
   /**
    * @inheritdoc IBridgeTracking
    */
-  function handleVoteApproved(VoteKind _kind, uint256 _requestId) external override onlyBridgeContract skipOnUnstarted {
+  function handleVoteApproved(
+    VoteKind _kind,
+    uint256 _requestId
+  ) external override onlyContractWithRole(Role.BRIDGE_CONTRACT) skipOnUnstarted {
     ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_kind][_requestId];
 
     // Only records for the receipt which not approved
     if (_receiptInfo.approvedPeriod == 0) {
       _trySyncBuffer();
-      uint256 _currentPeriod = _validatorContract.currentPeriod();
+      uint256 _currentPeriod = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).currentPeriod();
       _receiptInfo.approvedPeriod = _currentPeriod;
 
       Request storage _bufferRequest = _bufferMetric.requests.push();
@@ -154,8 +157,8 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
     VoteKind _kind,
     uint256 _requestId,
     address _operator
-  ) external override onlyBridgeContract skipOnUnstarted {
-    uint256 _period = _validatorContract.currentPeriod();
+  ) external override onlyContractWithRole(Role.BRIDGE_CONTRACT) skipOnUnstarted {
+    uint256 _period = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).currentPeriod();
     _trySyncBuffer();
     ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_kind][_requestId];
 
@@ -222,6 +225,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
    * - The epoch after the buffer epoch is wrapped up.
    */
   function _trySyncBuffer() internal {
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
     uint256 _currentEpoch = _validatorContract.epochOf(block.number);
     if (_bufferMetric.lastEpoch < _currentEpoch) {
       (, uint256 _trackedPeriod) = _validatorContract.tryGetPeriodOfEpoch(_bufferMetric.lastEpoch + 1);
@@ -263,6 +267,7 @@ contract BridgeTracking is HasBridgeContract, HasValidatorContract, Initializabl
    * @dev Returns whether the buffer stats must be counted or not.
    */
   function _isBufferCountedForPeriod(uint256 _queriedPeriod) internal view returns (bool) {
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
     uint256 _currentEpoch = _validatorContract.epochOf(block.number);
     (bool _filled, uint256 _periodOfNextTemporaryEpoch) = _validatorContract.tryGetPeriodOfEpoch(
       _bufferMetric.lastEpoch + 1

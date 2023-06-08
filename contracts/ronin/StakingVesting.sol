@@ -4,10 +4,10 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IStakingVesting.sol";
-import "../extensions/collections/HasValidatorContract.sol";
+import "../extensions/collections/HasContracts.sol";
 import "../extensions/RONTransferHelper.sol";
 
-contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHelper, Initializable {
+contract StakingVesting is IStakingVesting, HasContracts, RONTransferHelper, Initializable {
   /// @dev The block bonus for the block producer whenever a new block is mined.
   uint256 internal _blockProducerBonusPerBlock;
   /// @dev The block bonus for the bridge operator whenever a new block is mined.
@@ -27,7 +27,7 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
     uint256 __blockProducerBonusPerBlock,
     uint256 __bridgeOperatorBonusPerBlock
   ) external payable initializer {
-    _setValidatorContract(__validatorContract);
+    _setContract(Role.VALIDATOR_CONTRACT, __validatorContract);
     _setBlockProducerBonusPerBlock(__blockProducerBonusPerBlock);
     _setBridgeOperatorBonusPerBlock(__bridgeOperatorBonusPerBlock);
   }
@@ -60,7 +60,7 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
   )
     external
     override
-    onlyValidatorContract
+    onlyContractWithRole(Role.VALIDATOR_CONTRACT)
     returns (bool _success, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus)
   {
     if (block.number <= lastBlockSendingBonus) revert ErrBonusAlreadySent();
@@ -73,7 +73,7 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
     uint256 _totalAmount = _blockProducerBonus + _bridgeOperatorBonus;
 
     if (_totalAmount > 0) {
-      address payable _validatorContractAddr = payable(validatorContract());
+      address payable _validatorContractAddr = payable(msg.sender);
 
       _success = _unsafeSendRON(_validatorContractAddr, _totalAmount);
 

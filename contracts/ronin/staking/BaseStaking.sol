@@ -4,18 +4,13 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../../extensions/RONTransferHelper.sol";
-import "../../extensions/collections/HasValidatorContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../interfaces/staking/IBaseStaking.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../libraries/Math.sol";
 import "./RewardCalculation.sol";
 
-abstract contract BaseStaking is
-  RONTransferHelper,
-  ReentrancyGuard,
-  RewardCalculation,
-  HasValidatorContract,
-  IBaseStaking
-{
+abstract contract BaseStaking is RONTransferHelper, ReentrancyGuard, RewardCalculation, HasContracts, IBaseStaking {
   /// @dev Mapping from pool address => staking pool detail
   mapping(address => PoolDetail) internal _stakingPool;
 
@@ -65,7 +60,8 @@ abstract contract BaseStaking is
   }
 
   function _poolIsActive(address _poolAddr) private view {
-    if (!_validatorContract.isValidatorCandidate(_poolAddr)) revert ErrInactivePool(_poolAddr);
+    if (!IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).isValidatorCandidate(_poolAddr))
+      revert ErrInactivePool(_poolAddr);
   }
 
   /**

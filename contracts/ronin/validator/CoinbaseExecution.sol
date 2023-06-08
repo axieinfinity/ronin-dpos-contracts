@@ -2,11 +2,13 @@
 
 pragma solidity ^0.8.9;
 
-import "../../extensions/collections/HasBridgeTrackingContract.sol";
-import "../../extensions/collections/HasMaintenanceContract.sol";
-import "../../extensions/collections/HasSlashIndicatorContract.sol";
-import "../../extensions/collections/HasStakingVestingContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/RONTransferHelper.sol";
+import "../../interfaces/IStakingVesting.sol";
+import "../../interfaces/IMaintenance.sol";
+import "../../interfaces/IBridgeTracking.sol";
+import "../../interfaces/IRoninTrustedOrganization.sol";
+import "../../interfaces/slash-indicator/ISlashIndicator.sol";
 import "../../interfaces/validator/ICoinbaseExecution.sol";
 import "../../libraries/EnumFlags.sol";
 import "../../libraries/Math.sol";
@@ -21,10 +23,7 @@ abstract contract CoinbaseExecution is
   RONTransferHelper,
   PCUSortValidators,
   PCUPickValidatorSet,
-  HasStakingVestingContract,
-  HasBridgeTrackingContract,
-  HasMaintenanceContract,
-  HasSlashIndicatorContract,
+  HasContracts,
   EmergencyExit
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
@@ -57,10 +56,9 @@ abstract contract CoinbaseExecution is
       !_jailed(msg.sender) &&
       !_miningRewardDeprecated(msg.sender, currentPeriod());
 
-    (, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus) = _stakingVestingContract.requestBonus(
-      _requestForBlockProducer,
-      true // _requestForBridgeOperator
-    );
+    (, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus) = IStakingVesting(
+      getContract(Role.STAKING_VESTING_CONTRACT)
+    ).requestBonus({ _forBlockProducer: _requestForBlockProducer, _forBridgeOperator: true });
 
     _totalBridgeReward += _bridgeOperatorBonus;
 
@@ -77,14 +75,15 @@ abstract contract CoinbaseExecution is
     uint256 _reward = msg.value + _blockProducerBonus;
     uint256 _cutOffReward;
     if (_miningRewardBailoutCutOffAtPeriod[msg.sender][_period]) {
-      (, , , uint256 _cutOffPercentage) = _slashIndicatorContract.getCreditScoreConfigs();
+      (, , , uint256 _cutOffPercentage) = ISlashIndicator(getContract(Role.SLASH_INDICATOR_CONTRACT))
+        .getCreditScoreConfigs();
       _cutOffReward = (_reward * _cutOffPercentage) / _MAX_PERCENTAGE;
       _totalDeprecatedReward += _cutOffReward;
       emit BlockRewardDeprecated(msg.sender, _cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
     }
 
     _reward -= _cutOffReward;
-    (uint256 _minRate, uint256 _maxRate) = _stakingContract.getCommissionRateRange();
+    (uint256 _minRate, uint256 _maxRate) = IStaking(getContract(Role.STAKING_CONTRACT)).getCommissionRateRange();
     uint256 _rate = Math.max(Math.min(_candidateInfo[msg.sender].commissionRate, _maxRate), _minRate);
     uint256 _miningAmount = (_rate * _reward) / _MAX_PERCENTAGE;
     _miningReward[msg.sender] += _miningAmount;
@@ -115,6 +114,7 @@ abstract contract CoinbaseExecution is
       _settleAndTransferDelegatingRewards(_lastPeriod, _currentValidators, _totalDelegatingReward, _delegatingRewards);
       _tryRecycleLockedFundsFromEmergencyExits();
       _recycleDeprecatedRewards();
+      ISlashIndicator _slashIndicatorContract = ISlashIndicator(getContract(Role.SLASH_INDICATOR_CONTRACT));
       _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
       (_currentValidators, _revokedCandidates) = _syncValidatorSet(_newPeriod);
       if (_revokedCandidates.length > 0) {
@@ -135,6 +135,7 @@ abstract contract CoinbaseExecution is
    *
    */
   function _syncBridgeOperatingReward(uint256 _lastPeriod) internal {
+    IBridgeTracking _bridgeTrackingContract = IBridgeTracking(getContract(Role.BRIDGE_TRACKING_CONTRACT));
     uint256 _totalBridgeBallots = _bridgeTrackingContract.totalBallots(_lastPeriod);
     uint256 _totalBridgeVotes = _bridgeTrackingContract.totalVotes(_lastPeriod);
 
@@ -169,7 +170,7 @@ abstract contract CoinbaseExecution is
       uint256 _missingVotesRatioTier2,
       uint256 _jailDurationForMissingVotesRatioTier2,
       uint256 _skipBridgeOperatorSlashingThreshold
-    ) = _slashIndicatorContract.getBridgeOperatorSlashingConfigs();
+    ) = ISlashIndicator(getContract(Role.SLASH_INDICATOR_CONTRACT)).getBridgeOperatorSlashingConfigs();
 
     // Slashes the bridge reward if the total of votes exceeds the slashing threshold.
     bool _shouldSlash = _totalBridgeVotes > _skipBridgeOperatorSlashingThreshold;
@@ -235,6 +236,7 @@ abstract contract CoinbaseExecution is
     uint256 _ratioTier1,
     uint256 _ratioTier2
   ) internal {
+    ISlashIndicator _slashIndicatorContract = ISlashIndicator(getContract(Role.SLASH_INDICATOR_CONTRACT));
     if (_missedRatio >= _ratioTier2) {
       _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
       _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
@@ -365,7 +367,7 @@ abstract contract CoinbaseExecution is
     uint256 _totalDelegatingReward,
     uint256[] memory _delegatingRewards
   ) private {
-    IStaking _staking = _stakingContract;
+    IStaking _staking = IStaking(getContract(Role.STAKING_CONTRACT));
     if (_totalDelegatingReward > 0) {
       if (_unsafeSendRON(payable(address(_staking)), _totalDelegatingReward)) {
         _staking.execRecordRewards(_currentValidators, _delegatingRewards, _period);
@@ -392,7 +394,7 @@ abstract contract CoinbaseExecution is
     uint256 _withdrawAmount = _totalDeprecatedReward;
 
     if (_withdrawAmount != 0) {
-      address _withdrawTarget = stakingVestingContract();
+      address _withdrawTarget = getContract(Role.STAKING_VESTING_CONTRACT);
 
       delete _totalDeprecatedReward;
 
@@ -420,8 +422,9 @@ abstract contract CoinbaseExecution is
     uint256 _newPeriod
   ) private returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates) {
     _unsastifiedCandidates = _syncCandidateSet(_newPeriod);
-    uint256[] memory _weights = _stakingContract.getManyStakingTotals(_candidates);
-    uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getConsensusWeights(_candidates);
+    uint256[] memory _weights = IStaking(getContract(Role.STAKING_CONTRACT)).getManyStakingTotals(_candidates);
+    uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT))
+      .getConsensusWeights(_candidates);
     uint256 _newValidatorCount;
     (_newValidators, _newValidatorCount) = _pcPickValidatorSet(
       _candidates,
@@ -491,7 +494,10 @@ abstract contract CoinbaseExecution is
    *
    */
   function _revampRoles(uint256 _newPeriod, uint256 _nextEpoch, address[] memory _currentValidators) private {
-    bool[] memory _maintainedList = _maintenanceContract.checkManyMaintained(_currentValidators, block.number + 1);
+    bool[] memory _maintainedList = IMaintenance(getContract(Role.MAINTENANCE_CONTRACT)).checkManyMaintained(
+      _currentValidators,
+      block.number + 1
+    );
 
     for (uint _i; _i < _currentValidators.length; ) {
       address _validator = _currentValidators[_i];
@@ -529,6 +535,9 @@ abstract contract CoinbaseExecution is
    * @dev Override `CandidateManager-_isTrustedOrg`.
    */
   function _isTrustedOrg(address _consensusAddr) internal view override returns (bool) {
-    return _roninTrustedOrganizationContract.getConsensusWeight(_consensusAddr) > 0;
+    return
+      IRoninTrustedOrganization(getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT)).getConsensusWeight(
+        _consensusAddr
+      ) > 0;
   }
 }

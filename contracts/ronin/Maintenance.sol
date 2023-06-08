@@ -5,10 +5,10 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IMaintenance.sol";
 import "../interfaces/validator/IRoninValidatorSet.sol";
-import "../extensions/collections/HasValidatorContract.sol";
+import "../extensions/collections/HasContracts.sol";
 import "../libraries/Math.sol";
 
-contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
+contract Maintenance is IMaintenance, HasContracts, Initializable {
   using Math for uint256;
 
   /// @dev Mapping from consensus address => maintenance schedule.
@@ -43,7 +43,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     uint256 _maxSchedules,
     uint256 _cooldownSecsToMaintain
   ) external initializer {
-    _setValidatorContract(__validatorContract);
+    _setContract(Role.VALIDATOR_CONTRACT, __validatorContract);
     _setMaintenanceConfig(
       _minMaintenanceDurationInBlock,
       _maxMaintenanceDurationInBlock,
@@ -79,7 +79,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function schedule(address _consensusAddr, uint256 _startedAtBlock, uint256 _endedAtBlock) external override {
-    IRoninValidatorSet _validator = _validatorContract;
+    IRoninValidatorSet _validator = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
 
     if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Role.BLOCK_PRODUCER);
 
@@ -97,7 +97,6 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
     if (_startedAtBlock >= _endedAtBlock) revert ErrStartBlockOutOfRange();
 
     uint256 _maintenanceElapsed = _endedAtBlock - _startedAtBlock + 1;
-
     if (!_maintenanceElapsed.inRange(minMaintenanceDurationInBlock, maxMaintenanceDurationInBlock))
       revert ErrInvalidMaintenanceDuration();
 
@@ -117,13 +116,12 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function cancelSchedule(address _consensusAddr) external override {
-    if (!_validatorContract.isCandidateAdmin(_consensusAddr, msg.sender))
+    if (!IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).isCandidateAdmin(_consensusAddr, msg.sender))
       revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
 
     if (!checkScheduled(_consensusAddr)) revert ErrUnexistedSchedule();
 
     if (checkMaintained(_consensusAddr, block.number)) revert ErrAlreadyOnMaintenance();
-
     Schedule storage _sSchedule = _schedule[_consensusAddr];
     delete _sSchedule.from;
     delete _sSchedule.to;
@@ -177,7 +175,7 @@ contract Maintenance is IMaintenance, HasValidatorContract, Initializable {
    * @inheritdoc IMaintenance
    */
   function totalSchedules() public view override returns (uint256 _count) {
-    (address[] memory _validators, , ) = _validatorContract.getValidators();
+    (address[] memory _validators, , ) = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).getValidators();
     unchecked {
       for (uint _i = 0; _i < _validators.length; _i++) {
         if (checkScheduled(_validators[_i])) {

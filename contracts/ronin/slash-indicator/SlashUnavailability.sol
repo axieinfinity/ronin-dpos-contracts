@@ -3,10 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "./CreditScore.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/slash-indicator/ISlashUnavailability.sol";
-import "../../extensions/collections/HasValidatorContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 
-abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContract {
+abstract contract SlashUnavailability is ISlashUnavailability, HasContracts {
   /// @dev The last block that a validator is slashed for unavailability.
   uint256 public lastUnavailabilitySlashedBlock;
   /// @dev Mapping from validator address => period index => unavailability indicator.
@@ -54,6 +55,8 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
       // Should return instead of throwing error since this is a part of system transaction.
       return;
     }
+
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
 
     uint256 _period = _validatorContract.currentPeriod();
     uint256 _count;
@@ -131,7 +134,8 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
    * @inheritdoc ISlashUnavailability
    */
   function currentUnavailabilityIndicator(address _validator) external view override returns (uint256) {
-    return getUnavailabilityIndicator(_validator, _validatorContract.currentPeriod());
+    return
+      getUnavailabilityIndicator(_validator, IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).currentPeriod());
   }
 
   /**
