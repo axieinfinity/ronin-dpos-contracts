@@ -5,10 +5,10 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IMaintenance.sol";
 import "../interfaces/validator/IRoninValidatorSet.sol";
-import "../extensions/collections/HasContract.sol";
+import "../extensions/collections/HasContracts.sol";
 import "../libraries/Math.sol";
 
-contract Maintenance is IMaintenance, HasContract, Initializable {
+contract Maintenance is IMaintenance, HasContracts, Initializable {
   using Math for uint256;
 
   /// @dev Mapping from consensus address => maintenance schedule.

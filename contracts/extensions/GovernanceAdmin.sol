@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "../extensions/sequential-governance/CoreGovernance.sol";
-import "../extensions/collections/HasContract.sol";
+import "../extensions/collections/HasContracts.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 import "../libraries/ErrorHandler.sol";
 
-abstract contract GovernanceAdmin is CoreGovernance, HasContract {
+abstract contract GovernanceAdmin is CoreGovernance, HasContracts {
   using ErrorHandler for bool;
   uint256 public roninChainId;
   /// @dev Domain separator
@@ -50,7 +50,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContract {
   }
 
   /**
-   * @inheritdoc IHasContract
+   * @inheritdoc IHasContracts
    */
   function setContract(Role role, address addr) external virtual override onlySelfCall {
     _requireHasCode(addr);

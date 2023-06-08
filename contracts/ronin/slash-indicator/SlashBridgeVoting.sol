@@ -7,9 +7,9 @@ import "../../interfaces/IRoninGovernanceAdmin.sol";
 import "../../interfaces/slash-indicator/ISlashBridgeVoting.sol";
 import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
-import "../../extensions/collections/HasContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 
-abstract contract SlashBridgeVoting is ISlashBridgeVoting, HasContract {
+abstract contract SlashBridgeVoting is ISlashBridgeVoting, HasContracts {
   /// @dev Mapping from validator address => period index => bridge voting slashed
   mapping(address => mapping(uint256 => bool)) internal _bridgeVotingSlashed;
   /// @dev The threshold to slash when a trusted organization does not vote for bridge operators.

@@ -5,11 +5,11 @@ pragma solidity ^0.8.9;
 import "../../interfaces/IMaintenance.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/slash-indicator/ICreditScore.sol";
-import "../../extensions/collections/HasContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../libraries/Math.sol";
 
-abstract contract CreditScore is ICreditScore, HasContract, PercentageConsumer {
+abstract contract CreditScore is ICreditScore, HasContracts, PercentageConsumer {
   /// @dev Mapping from validator address => period index => whether bailed out before
   mapping(address => mapping(uint256 => bool)) internal _checkBailedOutAtPeriod;
   /// @dev Mapping from validator address => credit score

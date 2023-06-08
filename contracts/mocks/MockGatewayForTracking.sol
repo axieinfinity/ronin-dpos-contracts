@@ -3,9 +3,9 @@
 pragma solidity ^0.8.9;
 
 import "../interfaces/IBridgeTracking.sol";
-import "../extensions/collections/HasContract.sol";
+import "../extensions/collections/HasContracts.sol";
 
-contract MockGatewayForTracking is HasContract {
+contract MockGatewayForTracking is HasContracts {
   constructor(address _bridgeTrackingContract) {
     _setContract(Role.BRIDGE_TRACKING_CONTRACT, _bridgeTrackingContract);
   }

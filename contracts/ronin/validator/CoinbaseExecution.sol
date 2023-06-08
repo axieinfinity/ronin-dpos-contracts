@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../../extensions/collections/HasContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/RONTransferHelper.sol";
 import "../../interfaces/IStakingVesting.sol";
 import "../../interfaces/IMaintenance.sol";
@@ -23,7 +23,7 @@ abstract contract CoinbaseExecution is
   RONTransferHelper,
   PCUSortValidators,
   PCUPickValidatorSet,
-  HasContract,
+  HasContracts,
   EmergencyExit
 {
   using EnumFlags for EnumFlags.ValidatorFlag;

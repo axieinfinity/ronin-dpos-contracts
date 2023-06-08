@@ -4,10 +4,10 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IStakingVesting.sol";
-import "../extensions/collections/HasContract.sol";
+import "../extensions/collections/HasContracts.sol";
 import "../extensions/RONTransferHelper.sol";
 
-contract StakingVesting is IStakingVesting, HasContract, RONTransferHelper, Initializable {
+contract StakingVesting is IStakingVesting, HasContracts, RONTransferHelper, Initializable {
   /// @dev The block bonus for the block producer whenever a new block is mined.
   uint256 internal _blockProducerBonusPerBlock;
   /// @dev The block bonus for the bridge operator whenever a new block is mined.

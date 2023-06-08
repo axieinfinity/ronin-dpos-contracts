@@ -5,9 +5,9 @@ pragma solidity ^0.8.9;
 import "./CreditScore.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/slash-indicator/ISlashUnavailability.sol";
-import "../../extensions/collections/HasContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 
-abstract contract SlashUnavailability is ISlashUnavailability, HasContract {
+abstract contract SlashUnavailability is ISlashUnavailability, HasContracts {
   /// @dev The last block that a validator is slashed for unavailability.
   uint256 public lastUnavailabilitySlashedBlock;
   /// @dev Mapping from validator address => period index => unavailability indicator.

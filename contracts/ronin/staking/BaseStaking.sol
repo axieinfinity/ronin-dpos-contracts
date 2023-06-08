@@ -4,13 +4,13 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../../extensions/RONTransferHelper.sol";
-import "../../extensions/collections/HasContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../interfaces/staking/IBaseStaking.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../libraries/Math.sol";
 import "./RewardCalculation.sol";
 
-abstract contract BaseStaking is RONTransferHelper, ReentrancyGuard, RewardCalculation, HasContract, IBaseStaking {
+abstract contract BaseStaking is RONTransferHelper, ReentrancyGuard, RewardCalculation, HasContracts, IBaseStaking {
   /// @dev Mapping from pool address => staking pool detail
   mapping(address => PoolDetail) internal _stakingPool;
 

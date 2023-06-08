@@ -5,9 +5,9 @@ pragma solidity ^0.8.9;
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../extensions/collections/HasProxyAdmin.sol";
 import "../../interfaces/slash-indicator/ISlashBridgeOperator.sol";
-import "../../extensions/collections/HasContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 
-abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasContract, PercentageConsumer {
+abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasContracts, PercentageConsumer {
   /**
    * @dev The bridge operators will be deprecated reward if (s)he missed more than the ratio.
    * Values 0-10,000 map to 0%-100%.

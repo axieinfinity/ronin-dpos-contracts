@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../extensions/GatewayV2.sol";
-import "../../extensions/collections/HasContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/MinimumWithdrawal.sol";
 import "../../interfaces/IERC20Mintable.sol";
 import "../../interfaces/IERC721Mintable.sol";
@@ -22,7 +22,7 @@ contract RoninGatewayV2 is
   AccessControlEnumerable,
   VoteStatusConsumer,
   IRoninGatewayV2,
-  HasContract
+  HasContracts
 {
   using Token for Token.Info;
   using Transfer for Transfer.Request;

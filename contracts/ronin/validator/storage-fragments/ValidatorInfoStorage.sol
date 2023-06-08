@@ -3,10 +3,10 @@
 pragma solidity ^0.8.9;
 
 import "../../../libraries/EnumFlags.sol";
-import "../../../extensions/collections/HasContract.sol";
+import "../../../extensions/collections/HasContracts.sol";
 import "../../../interfaces/validator/info-fragments/IValidatorInfo.sol";
 
-abstract contract ValidatorInfoStorage is IValidatorInfo, HasContract {
+abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
   /// @dev The maximum number of validator.

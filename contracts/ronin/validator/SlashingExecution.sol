@@ -2,13 +2,13 @@
 
 pragma solidity ^0.8.9;
 
-import "../../extensions/collections/HasContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../interfaces/validator/ISlashingExecution.sol";
 import "../../interfaces/staking/IStaking.sol";
 import "../../libraries/Math.sol";
 import "./storage-fragments/CommonStorage.sol";
 
-abstract contract SlashingExecution is ISlashingExecution, HasContract, CommonStorage {
+abstract contract SlashingExecution is ISlashingExecution, HasContracts, CommonStorage {
   /**
    * @inheritdoc ISlashingExecution
    */

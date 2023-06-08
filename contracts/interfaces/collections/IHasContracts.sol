@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../../libraries/Role.sol";
 
-interface IHasContract {
+interface IHasContracts {
   error ErrInvalidRoleContract(Role role);
   /// @dev Error of set to non-contract.
   error ErrZeroCodeContract(address addr);

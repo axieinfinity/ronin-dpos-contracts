@@ -3,11 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../../extensions/collections/HasContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../interfaces/IBridgeTracking.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 
-contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
+contract BridgeTracking is HasContracts, Initializable, IBridgeTracking {
   struct PeriodVotingMetric {
     /// @dev Total requests that are tracked in the period. This value is 0 until the {_bufferMetric.requests[]} gets added into a period metric.
     uint256 totalRequests;

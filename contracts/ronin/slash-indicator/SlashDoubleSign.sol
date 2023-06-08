@@ -5,9 +5,9 @@ pragma solidity ^0.8.9;
 import "../../interfaces/slash-indicator/ISlashDoubleSign.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../precompile-usages/PCUValidateDoubleSign.sol";
-import "../../extensions/collections/HasContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 
-abstract contract SlashDoubleSign is ISlashDoubleSign, HasContract, PCUValidateDoubleSign {
+abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, PCUValidateDoubleSign {
   /// @dev The amount of RON to slash double sign.
   uint256 internal _slashDoubleSignAmount;
   /// @dev The block number that the punished validator will be jailed until, due to double signing.

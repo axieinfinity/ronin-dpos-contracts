@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../extensions/bridge-operator-governance/BOsGovernanceProposal.sol";
 import "../extensions/sequential-governance/GovernanceProposal.sol";
-import "../extensions/collections/HasContract.sol";
+import "../extensions/collections/HasContracts.sol";
 import "../extensions/GovernanceAdmin.sol";
 import "../libraries/EmergencyExitBallot.sol";
 import "../libraries/ErrorHandler.sol";
@@ -13,7 +13,7 @@ import "../interfaces/validator/IRoninValidatorSet.sol";
 import "../interfaces/IRoninGovernanceAdmin.sol";
 
 contract RoninGovernanceAdmin is
-  HasContract,
+  HasContracts,
   IRoninGovernanceAdmin,
   GovernanceAdmin,
   GovernanceProposal,
@@ -46,9 +46,9 @@ contract RoninGovernanceAdmin is
   }
 
   /**
-   * @inheritdoc IHasContract
+   * @inheritdoc IHasContracts
    */
-  function setContract(Role role, address addr) external override(HasContract, GovernanceAdmin) onlySelfCall {
+  function setContract(Role role, address addr) external override(HasContracts, GovernanceAdmin) onlySelfCall {
     _requireHasCode(addr);
     _setContract(role, addr);
   }

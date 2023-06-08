@@ -2,13 +2,13 @@
 
 pragma solidity ^0.8.9;
 
-import "../../extensions/collections/HasContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/consumers/GlobalConfigConsumer.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/validator/ICandidateManager.sol";
 import "../../interfaces/staking/IStaking.sol";
 
-abstract contract CandidateManager is ICandidateManager, PercentageConsumer, GlobalConfigConsumer, HasContract {
+abstract contract CandidateManager is ICandidateManager, PercentageConsumer, GlobalConfigConsumer, HasContracts {
   /// @dev Maximum number of validator candidate
   uint256 private _maxValidatorCandidate;
 
