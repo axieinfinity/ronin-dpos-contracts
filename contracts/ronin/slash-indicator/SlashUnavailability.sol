@@ -59,7 +59,10 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContract {
     IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
 
     uint256 _period = _validatorContract.currentPeriod();
-    uint256 _count = ++_unavailabilityIndicator[_validatorAddr][_period];
+    uint256 _count;
+    unchecked {
+      _count = ++_unavailabilityIndicator[_validatorAddr][_period];
+    }
     uint256 _newJailedUntilBlock = Math.addIfNonZero(block.number, _jailDurationForUnavailabilityTier2Threshold);
 
     if (_count == _unavailabilityTier2Threshold) {

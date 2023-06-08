@@ -184,7 +184,9 @@ abstract contract WithdrawalLimitation is GatewayV2 {
     _previousDenom = _highTierVWDenom;
     _highTierVWNum = _numerator;
     _highTierVWDenom = _denominator;
-    emit HighTierVoteWeightThresholdUpdated(nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    unchecked {
+      emit HighTierVoteWeightThresholdUpdated(nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    }
   }
 
   /**

@@ -430,7 +430,9 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
     _previousDenom = _denom;
     _num = _numerator;
     _denom = _denominator;
-    emit ThresholdUpdated(_nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    unchecked {
+      emit ThresholdUpdated(_nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    }
   }
 
   /**

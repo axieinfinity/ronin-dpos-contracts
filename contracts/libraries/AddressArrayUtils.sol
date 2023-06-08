@@ -33,15 +33,11 @@ library AddressArrayUtils {
   /**
    * @dev Returns whether two arrays of addresses are equal or not.
    */
-  function isEqual(address[] memory _this, address[] memory _other) internal pure returns (bool) {
-    bytes32 _thisHash;
-    bytes32 _otherHash;
-
+  function isEqual(address[] memory _this, address[] memory _other) internal pure returns (bool yes) {
     assembly {
-      _thisHash := keccak256(add(_this, 32), mul(mload(_this), 32))
-      _otherHash := keccak256(add(_other, 32), mul(mload(_other), 32))
+      let _thisHash := keccak256(add(_this, 32), mul(mload(_this), 32))
+      let _otherHash := keccak256(add(_other, 32), mul(mload(_other), 32))
+      yes := eq(_thisHash, _otherHash)
     }
-
-    return _thisHash == _otherHash;
   }
 }

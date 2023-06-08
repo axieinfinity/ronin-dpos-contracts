@@ -187,18 +187,20 @@ contract BridgeTracking is HasContract, Initializable, IBridgeTracking {
 
     // Do not increase ballot for receipt that is neither in the buffer, nor in the most current tracked period.
     // If the receipt is not tracked in a period, increase metric in buffer.
-    if (_trackedPeriod == 0) {
-      if (_bufferMetric.data.totalBallotsOf[_operator] == 0) {
-        _bufferMetric.data.voters.push(_operator);
+    unchecked {
+      if (_trackedPeriod == 0) {
+        if (_bufferMetric.data.totalBallotsOf[_operator] == 0) {
+          _bufferMetric.data.voters.push(_operator);
+        }
+        _bufferMetric.data.totalBallots++;
+        _bufferMetric.data.totalBallotsOf[_operator]++;
       }
-      _bufferMetric.data.totalBallots++;
-      _bufferMetric.data.totalBallotsOf[_operator]++;
-    }
-    // If the receipt is tracked in the most current tracked period, increase metric in the period.
-    else if (_trackedPeriod == _currentPeriod) {
-      PeriodVotingMetric storage _metric = _periodMetric[_trackedPeriod];
-      _metric.totalBallots++;
-      _metric.totalBallotsOf[_operator]++;
+      // If the receipt is tracked in the most current tracked period, increase metric in the period.
+      else if (_trackedPeriod == _currentPeriod) {
+        PeriodVotingMetric storage _metric = _periodMetric[_trackedPeriod];
+        _metric.totalBallots++;
+        _metric.totalBallotsOf[_operator]++;
+      }
     }
   }
 

@@ -89,7 +89,9 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
     _previousDenom = _denom;
     _num = _numerator;
     _denom = _denominator;
-    emit ThresholdUpdated(nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    unchecked {
+      emit ThresholdUpdated(nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    }
   }
 
   /**
