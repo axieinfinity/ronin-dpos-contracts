@@ -17,6 +17,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const data = new Profile__factory().interface.encodeFunctionData('initialize', [
     generalRoninConf[network.name]!.stakingContract?.address,
+    generalRoninConf[network.name]!.validatorContract?.address,
   ]);
 
   const deployment = await deploy('ProfileProxy', {

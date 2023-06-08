@@ -108,8 +108,13 @@ contract Profile is IProfile, HasStakingContract, HasValidatorContract, Initiali
    */
   function requestChangeAdminAddress(address id, address newAdminAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
+    _stakingContract.execChangeAdminAddress(id, newAdminAddr);
     _profile.admin = newAdminAddr;
 
     emit ProfileAddressChanged(id, "admin");
+  }
+
+  function requestChangeBridgeOperator(address id, address newBridgeAddr) external {
+    CandidateProfile storage _profile = _getId2ProfileHelper(id);
   }
 }
