@@ -92,7 +92,9 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       // Skip increasing round number if the latest round is expired, allow the vote to be overridden
       if (!_isExpired) {
         if (_latestProposalVote.status == VoteStatus.Pending) revert ErrCurrentProposalIsNotCompleted();
-        _round = ++round[_chainId];
+        unchecked {
+          _round = ++round[_chainId];
+        }
       }
     }
   }

@@ -187,7 +187,9 @@ abstract contract RewardCalculation is IRewardPool {
       _stakingTotal = getStakingTotal(_poolAddr);
 
       if (_accumulatedRps[_poolAddr][_period].lastPeriod == _period) {
-        _conflicted[_count++] = _poolAddr;
+        unchecked {
+          _conflicted[_count++] = _poolAddr;
+        }
         continue;
       }
 

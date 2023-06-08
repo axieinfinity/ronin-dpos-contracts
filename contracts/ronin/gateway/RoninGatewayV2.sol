@@ -604,16 +604,16 @@ contract RoninGatewayV2 is
     ) = _validatorContract.getValidators();
     uint256[] memory _trustedWeights = _trustedOrgContract.getConsensusWeights(_consensusList);
 
-    for (uint _i; _i < _bridgeOperators.length; ) {
-      if (_flags[_i].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator) && _v.voteHashOf[_bridgeOperators[_i]] == _hash) {
-        _totalWeight++;
-        if (_trustedWeights[_i] > 0) {
-          _trustedWeight++;
+    unchecked {
+      for (uint _i; _i < _bridgeOperators.length; ++_i) {
+        if (
+          _flags[_i].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator) && _v.voteHashOf[_bridgeOperators[_i]] == _hash
+        ) {
+          _totalWeight++;
+          if (_trustedWeights[_i] > 0) {
+            _trustedWeight++;
+          }
         }
-      }
-
-      unchecked {
-        ++_i;
       }
     }
   }
@@ -655,13 +655,15 @@ contract RoninGatewayV2 is
     _previousTrustedDenom = _denom;
     _trustedNum = _trustedNumerator;
     _trustedDenom = _trustedDenominator;
-    emit TrustedThresholdUpdated(
-      nonce++,
-      _trustedNumerator,
-      _trustedDenominator,
-      _previousTrustedNum,
-      _previousTrustedDenom
-    );
+    unchecked {
+      emit TrustedThresholdUpdated(
+        nonce++,
+        _trustedNumerator,
+        _trustedDenominator,
+        _previousTrustedNum,
+        _previousTrustedDenom
+      );
+    }
   }
 
   /**
