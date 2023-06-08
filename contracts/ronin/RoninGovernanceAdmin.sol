@@ -7,7 +7,7 @@ import "../extensions/collections/HasContracts.sol";
 import "../extensions/GovernanceAdmin.sol";
 import "../libraries/EmergencyExitBallot.sol";
 import "../libraries/ErrorHandler.sol";
-import "../libraries/ErrorHandler.sol";
+import { HasValidatorDeprecated } from "../libraries/DeprecatedSlots.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 import "../interfaces/validator/IRoninValidatorSet.sol";
 import "../interfaces/IRoninGovernanceAdmin.sol";
@@ -17,7 +17,8 @@ contract RoninGovernanceAdmin is
   IRoninGovernanceAdmin,
   GovernanceAdmin,
   GovernanceProposal,
-  BOsGovernanceProposal
+  BOsGovernanceProposal,
+  HasValidatorDeprecated
 {
   using ErrorHandler for bool;
   using Proposal for Proposal.ProposalDetail;

@@ -7,8 +7,15 @@ import "../../extensions/consumers/GlobalConfigConsumer.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/validator/ICandidateManager.sol";
 import "../../interfaces/staking/IStaking.sol";
+import { HasStakingDeprecated } from "../../libraries/DeprecatedSlots.sol";
 
-abstract contract CandidateManager is ICandidateManager, PercentageConsumer, GlobalConfigConsumer, HasContracts {
+abstract contract CandidateManager is
+  ICandidateManager,
+  PercentageConsumer,
+  GlobalConfigConsumer,
+  HasContracts,
+  HasStakingDeprecated
+{
   /// @dev Maximum number of validator candidate
   uint256 private _maxValidatorCandidate;
 

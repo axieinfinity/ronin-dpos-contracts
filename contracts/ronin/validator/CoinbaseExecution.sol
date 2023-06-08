@@ -12,6 +12,7 @@ import "../../interfaces/slash-indicator/ISlashIndicator.sol";
 import "../../interfaces/validator/ICoinbaseExecution.sol";
 import "../../libraries/EnumFlags.sol";
 import "../../libraries/Math.sol";
+import { HasStakingVestingDeprecated, HasBridgeTrackingDeprecated, HasMaintenanceDeprecated, HasSlashIndicatorDeprecated } from "../../libraries/DeprecatedSlots.sol";
 import "../../precompile-usages/PCUSortValidators.sol";
 import "../../precompile-usages/PCUPickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
@@ -24,6 +25,10 @@ abstract contract CoinbaseExecution is
   PCUSortValidators,
   PCUPickValidatorSet,
   HasContracts,
+  HasStakingVestingDeprecated,
+  HasBridgeTrackingDeprecated,
+  HasMaintenanceDeprecated,
+  HasSlashIndicatorDeprecated,
   EmergencyExit
 {
   using EnumFlags for EnumFlags.ValidatorFlag;

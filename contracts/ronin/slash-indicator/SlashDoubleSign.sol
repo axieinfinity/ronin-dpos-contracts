@@ -6,8 +6,9 @@ import "../../interfaces/slash-indicator/ISlashDoubleSign.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../precompile-usages/PCUValidateDoubleSign.sol";
 import "../../extensions/collections/HasContracts.sol";
+import { HasValidatorDeprecated } from "../../libraries/DeprecatedSlots.sol";
 
-abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, PCUValidateDoubleSign {
+abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidatorDeprecated, PCUValidateDoubleSign {
   /// @dev The amount of RON to slash double sign.
   uint256 internal _slashDoubleSignAmount;
   /// @dev The block number that the punished validator will be jailed until, due to double signing.

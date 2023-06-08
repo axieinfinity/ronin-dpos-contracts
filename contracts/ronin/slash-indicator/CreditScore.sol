@@ -8,8 +8,15 @@ import "../../interfaces/slash-indicator/ICreditScore.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../libraries/Math.sol";
+import { HasValidatorDeprecated, HasMaintenanceDeprecated } from "../../libraries/DeprecatedSlots.sol";
 
-abstract contract CreditScore is ICreditScore, HasContracts, PercentageConsumer {
+abstract contract CreditScore is
+  ICreditScore,
+  HasContracts,
+  HasValidatorDeprecated,
+  HasMaintenanceDeprecated,
+  PercentageConsumer
+{
   /// @dev Mapping from validator address => period index => whether bailed out before
   mapping(address => mapping(uint256 => bool)) internal _checkBailedOutAtPeriod;
   /// @dev Mapping from validator address => credit score

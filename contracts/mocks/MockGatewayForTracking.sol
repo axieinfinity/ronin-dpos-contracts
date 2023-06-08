@@ -4,8 +4,9 @@ pragma solidity ^0.8.9;
 
 import "../interfaces/IBridgeTracking.sol";
 import "../extensions/collections/HasContracts.sol";
+import { HasBridgeTrackingDeprecated } from "../libraries/DeprecatedSlots.sol";
 
-contract MockGatewayForTracking is HasContracts {
+contract MockGatewayForTracking is HasContracts, HasBridgeTrackingDeprecated {
   constructor(address _bridgeTrackingContract) {
     _setContract(Role.BRIDGE_TRACKING_CONTRACT, _bridgeTrackingContract);
   }

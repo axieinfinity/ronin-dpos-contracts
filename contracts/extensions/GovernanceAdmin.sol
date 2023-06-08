@@ -5,9 +5,11 @@ import "../extensions/sequential-governance/CoreGovernance.sol";
 import "../extensions/collections/HasContracts.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 import "../libraries/ErrorHandler.sol";
+import { HasGovernanceAdminDeprecated, HasBridgeDeprecated } from "../libraries/DeprecatedSlots.sol";
 
-abstract contract GovernanceAdmin is CoreGovernance, HasContracts {
+abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernanceAdminDeprecated, HasBridgeDeprecated {
   using ErrorHandler for bool;
+
   uint256 public roninChainId;
   /// @dev Domain separator
   bytes32 public DOMAIN_SEPARATOR;

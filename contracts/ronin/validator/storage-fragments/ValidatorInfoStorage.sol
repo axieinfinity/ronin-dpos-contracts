@@ -3,10 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "../../../libraries/EnumFlags.sol";
+import { HasTrustedOrgDeprecated } from "../../../libraries/DeprecatedSlots.sol";
 import "../../../extensions/collections/HasContracts.sol";
 import "../../../interfaces/validator/info-fragments/IValidatorInfo.sol";
 
-abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts {
+abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrustedOrgDeprecated {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
   /// @dev The maximum number of validator.

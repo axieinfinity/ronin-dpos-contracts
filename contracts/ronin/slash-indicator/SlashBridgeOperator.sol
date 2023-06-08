@@ -6,8 +6,15 @@ import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../extensions/collections/HasProxyAdmin.sol";
 import "../../interfaces/slash-indicator/ISlashBridgeOperator.sol";
 import "../../extensions/collections/HasContracts.sol";
+import { HasValidatorDeprecated } from "../../libraries/DeprecatedSlots.sol";
 
-abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasContracts, PercentageConsumer {
+abstract contract SlashBridgeOperator is
+  ISlashBridgeOperator,
+  HasProxyAdmin,
+  HasContracts,
+  HasValidatorDeprecated,
+  PercentageConsumer
+{
   /**
    * @dev The bridge operators will be deprecated reward if (s)he missed more than the ratio.
    * Values 0-10,000 map to 0%-100%.

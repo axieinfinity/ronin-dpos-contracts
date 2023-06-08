@@ -4,8 +4,14 @@ pragma solidity ^0.8.9;
 
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../ronin/validator/CandidateManager.sol";
+import { HasStakingVestingDeprecated, HasSlashIndicatorDeprecated } from "../../libraries/DeprecatedSlots.sol";
 
-contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
+contract MockValidatorSet is
+  IRoninValidatorSet,
+  CandidateManager,
+  HasStakingVestingDeprecated,
+  HasSlashIndicatorDeprecated
+{
   uint256 internal _lastUpdatedPeriod;
   uint256 internal _numberOfBlocksInEpoch;
   /// @dev Mapping from period number => slashed
