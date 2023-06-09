@@ -6,4 +6,4 @@ set -ex
 yarn lint-staged
 yarn compile
 yarn plugin:storage-layout --override true
-git add logs/storage_layout.txt
+git add logs/storage_layout.log
