@@ -72,11 +72,11 @@ function removeIdentifierSuffix(type: string) {
   return type.replace(suffixIdRegex, '_$1').replace(contractRegex, '$1($2)').replace(enumRegex, '$1($2)');
 }
 
-/// @dev Generate storage layout from `source` file to `destination` file.
-task('generate-storage-layout')
+/// @dev Generate storage layout table from `source` file to `destination` file.
+task('generate-storage-layout-table')
   .addParam('source', 'The path to storage layout file extracted from hardhat-storage-layout')
-  .addOptionalParam('destination', 'The path to store storage layout after generating', 'logs/storage_layout.txt')
-  .addOptionalParam('override', 'Indicates whether override the destination if it already exits', false, boolean)
+  .addOptionalParam('destination', 'The path to store storage layout after generating', 'logs/storage_layout_table.log')
+  .addOptionalParam('override', 'Indicates whether override the destination if it already exits', true, boolean)
   .setAction(async ({ source, destination, override }, _) => {
     try {
       if (fs.existsSync(source)) {
@@ -101,10 +101,67 @@ task('generate-storage-layout')
             `Cannot generate storage layout because file ${destination} already exists. Use the "override" flag to overwrite.`
           );
         }
-        await fs.unlink(source);
         console.log(`Successful generate storage layout at ${destination}`);
       } else {
         throw Error(`File storage layout at ${source} not exits`);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+/// @dev Generate storage layout inline from `source` file to `destination` file.
+task('generate-storage-layout-inline')
+  .addParam('source', 'The path to storage layout file extracted from hardhat-storage-layout')
+  .addOptionalParam('destination', 'The path to store storage layout after generating', 'logs/storage_layout.log')
+  .addOptionalParam('override', 'Indicates whether override the destination if it already exits', true, boolean)
+  .setAction(async ({ source, destination, override }, _) => {
+    try {
+      if (fs.existsSync(source)) {
+        if (!fs.existsSync(destination) || override) {
+          const logger = fs.createWriteStream(destination, { flags: 'a' });
+          const fileContent = await fs.readFile(source, 'utf-8');
+          const tableContent = preprocessFile(fileContent);
+          const listItemOfTable = preprocessTable(tableContent);
+          let headers: string[] = [];
+          for (let i = 0; i < listItemOfTable.length; i += 9) {
+            // remove two collums: idx (index = 5) and artifacts (index =6)
+            const row = listItemOfTable.slice(i, i + 8).filter((_, idx) => idx != 5 && idx != 6);
+
+            // remove the suffix identifier of data type: <id>_(storage|memory|calldata)
+            const dataType = row[4];
+            row[4] = removeIdentifierSuffix(dataType);
+            if (i == 0) {
+              headers = row;
+            } else {
+              logger.write(
+                `${row[0]}:${row[1]} (${headers[2]}: ${row[2]}) (${headers[2]}: ${row[3]}) (${headers[4]}: ${row[4]}) (${headers[5]}: ${row[5]})\n`
+              );
+            }
+          }
+        } else {
+          throw Error(
+            `Cannot generate storage layout because file ${destination} already exists. Use the "override" flag to overwrite.`
+          );
+        }
+        console.log(`Successful generate storage layout at ${destination}`);
+      } else {
+        throw Error(`File storage layout at ${source} not exits`);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+task('remove-temp-storage-layout')
+  .addParam('path', 'The path to temporary storage layout file')
+  .setAction(async ({ path }, _) => {
+    try {
+      if (fs.existsSync(path)) {
+        await fs.unlink(path);
+        console.log(`Successful delete temporary storage file`);
+      } else {
+        throw Error(`File storage layout at ${path} not exits`);
       }
     } catch (err) {
       console.error(err);
