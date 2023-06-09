@@ -27,13 +27,15 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernance
   ) CoreGovernance(_proposalExpiryDuration) {
     roninChainId = _roninChainId;
 
-    // DOMAIN_SEPARATOR = keccak256(
-    //  abi.encode(
-    //    keccak256("EIP712Domain(string name,string version,bytes32 salt)"),
-    //    keccak256("GovernanceAdmin"), // name hash
-    //    keccak256("2"), // version hash
-    //    keccak256(abi.encode("RONIN_GOVERNANCE_ADMIN", _roninChainId)) // salt
-    //  )
+    /*
+     * DOMAIN_SEPARATOR = keccak256(
+     *  abi.encode(
+     *    keccak256("EIP712Domain(string name,string version,bytes32 salt)"),
+     *    keccak256("GovernanceAdmin"), // name hash
+     *    keccak256("2"), // version hash
+     *    keccak256(abi.encode("RONIN_GOVERNANCE_ADMIN", _roninChainId)) // salt
+     *  )
+     */
     assembly {
       let ptr := mload(0x40)
 

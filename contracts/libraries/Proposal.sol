@@ -65,7 +65,7 @@ library Proposal {
       }
     }
 
-    /**
+    /*
      * return
      *   keccak256(
      *     abi.encode(
@@ -78,7 +78,7 @@ library Proposal {
      *       _gasAmountsHash
      *     )
      *   );
-     **/
+     */
     assembly {
       let ptr := mload(0x40)
       mstore(ptr, TYPE_HASH)

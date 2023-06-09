@@ -44,7 +44,7 @@ library GlobalProposal {
       }
     }
 
-    /**
+    /*
      * return
      *   keccak256(
      *     abi.encode(
@@ -57,7 +57,7 @@ library GlobalProposal {
      *       _gasAmountsHash
      *     )
      *   );
-     **/
+     */
     assembly {
       let ptr := mload(0x40)
       mstore(ptr, TYPE_HASH)

@@ -17,7 +17,7 @@ library EmergencyExitBallot {
     uint256 _requestedAt,
     uint256 _expiredAt
   ) internal pure returns (bytes32 digest) {
-    /**
+    /*
      * return
      *   keccak256(
      *     abi.encode(
@@ -28,7 +28,7 @@ library EmergencyExitBallot {
      *       _expiredAt
      *     )
      *   );
-     **/
+     */
     assembly {
       let ptr := mload(0x40)
       mstore(ptr, EMERGENCY_EXIT_BALLOT_TYPEHASH)

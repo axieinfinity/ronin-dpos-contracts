@@ -34,7 +34,7 @@ library AddressArrayUtils {
    * @dev Returns whether two arrays of addresses are equal or not.
    */
   function isEqual(address[] memory _this, address[] memory _other) internal pure returns (bool yes_) {
-    /// Hashing two arrays and compare their hash
+    // Hashing two arrays and compare their hash
     assembly {
       let _thisHash := keccak256(add(_this, 32), mul(mload(_this), 32))
       let _otherHash := keccak256(add(_other, 32), mul(mload(_other), 32))

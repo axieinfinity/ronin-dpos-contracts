@@ -48,7 +48,7 @@ library BridgeOperatorsBallot {
     bytes32 operatorsHash;
     address[] memory operators = self.operators;
 
-    /// return keccak256(abi.encode(BRIDGE_OPERATORS_BALLOT_TYPEHASH, _ballot.period, _ballot.epoch, _operatorsHash));
+    // return keccak256(abi.encode(BRIDGE_OPERATORS_BALLOT_TYPEHASH, _ballot.period, _ballot.epoch, _operatorsHash));
     assembly {
       operatorsHash := keccak256(add(operators, 32), mul(mload(operators), 32))
       let ptr := mload(0x40)
