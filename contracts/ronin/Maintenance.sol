@@ -237,7 +237,6 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     uint256 _cooldownSecsToMaintain
   ) internal {
     if (_minMaintenanceDurationInBlock >= _maxMaintenanceDurationInBlock) revert ErrInvalidMaintenanceDurationConfig();
-
     if (_minOffsetToStartSchedule >= _maxOffsetToStartSchedule) revert ErrInvalidOffsetToStartScheduleConfigs();
 
     minMaintenanceDurationInBlock = _minMaintenanceDurationInBlock;
