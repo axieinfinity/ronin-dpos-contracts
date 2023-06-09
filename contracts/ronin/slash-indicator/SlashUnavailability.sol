@@ -6,7 +6,7 @@ import "./CreditScore.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/slash-indicator/ISlashUnavailability.sol";
 import "../../extensions/collections/HasContracts.sol";
-import { HasValidatorDeprecated } from "../../libraries/DeprecatedSlots.sol";
+import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
 abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, HasValidatorDeprecated {
   /// @dev The last block that a validator is slashed for unavailability.

@@ -7,7 +7,7 @@ import "../interfaces/IMaintenance.sol";
 import "../interfaces/validator/IRoninValidatorSet.sol";
 import "../extensions/collections/HasContracts.sol";
 import "../libraries/Math.sol";
-import { HasValidatorDeprecated } from "../libraries/DeprecatedSlots.sol";
+import { HasValidatorDeprecated } from "../utils/DeprecatedSlots.sol";
 
 contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Initializable {
   using Math for uint256;

@@ -8,7 +8,7 @@ import "../../extensions/collections/HasContracts.sol";
 import "../../interfaces/staking/IBaseStaking.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../libraries/Math.sol";
-import { HasValidatorDeprecated } from "../../libraries/DeprecatedSlots.sol";
+import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 import "./RewardCalculation.sol";
 
 abstract contract BaseStaking is

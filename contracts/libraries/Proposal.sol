@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { ErrInvalidChainId, ErrLengthMismatch } from "../libraries/CommonErrors.sol";
+import { ErrInvalidChainId, ErrLengthMismatch } from "../utils/CommonErrors.sol";
 
 library Proposal {
   /**
@@ -65,20 +65,19 @@ library Proposal {
       }
     }
 
-    /*
-     * return
-     *   keccak256(
-     *     abi.encode(
-     *       TYPE_HASH,
-     *       _proposal.nonce,
-     *       _proposal.chainId,
-     *       _targetsHash,
-     *       _valuesHash,
-     *       _calldatasHash,
-     *       _gasAmountsHash
-     *     )
-     *   );
-     */
+    // return
+    //   keccak256(
+    //     abi.encode(
+    //       TYPE_HASH,
+    //       _proposal.nonce,
+    //       _proposal.chainId,
+    //       _targetsHash,
+    //       _valuesHash,
+    //       _calldatasHash,
+    //       _gasAmountsHash
+    //     )
+    //   );
+    // /
     assembly {
       let ptr := mload(0x40)
       mstore(ptr, TYPE_HASH)

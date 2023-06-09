@@ -7,7 +7,7 @@ import "../../extensions/consumers/GlobalConfigConsumer.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/validator/ICandidateManager.sol";
 import "../../interfaces/staking/IStaking.sol";
-import { HasStakingDeprecated } from "../../libraries/DeprecatedSlots.sol";
+import { HasStakingDeprecated } from "../../utils/DeprecatedSlots.sol";
 
 abstract contract CandidateManager is
   ICandidateManager,

@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../ronin/validator/CandidateManager.sol";
-import { HasStakingVestingDeprecated, HasSlashIndicatorDeprecated } from "../../libraries/DeprecatedSlots.sol";
+import { HasStakingVestingDeprecated, HasSlashIndicatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
 contract MockValidatorSet is
   IRoninValidatorSet,

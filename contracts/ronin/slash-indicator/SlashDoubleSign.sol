@@ -6,7 +6,7 @@ import "../../interfaces/slash-indicator/ISlashDoubleSign.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../precompile-usages/PCUValidateDoubleSign.sol";
 import "../../extensions/collections/HasContracts.sol";
-import { HasValidatorDeprecated } from "../../libraries/DeprecatedSlots.sol";
+import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
 abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidatorDeprecated, PCUValidateDoubleSign {
   /// @dev The amount of RON to slash double sign.

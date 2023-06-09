@@ -8,7 +8,7 @@ import "../../interfaces/slash-indicator/ICreditScore.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../libraries/Math.sol";
-import { HasValidatorDeprecated, HasMaintenanceDeprecated } from "../../libraries/DeprecatedSlots.sol";
+import { HasValidatorDeprecated, HasMaintenanceDeprecated } from "../../utils/DeprecatedSlots.sol";
 
 abstract contract CreditScore is
   ICreditScore,

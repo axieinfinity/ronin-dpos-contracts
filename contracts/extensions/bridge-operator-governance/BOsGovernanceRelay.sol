@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../../interfaces/consumers/SignatureConsumer.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
-import "../../libraries/CommonErrors.sol";
+import "../../utils/CommonErrors.sol";
 import "../../libraries/BridgeOperatorsBallot.sol";
 import "../../libraries/AddressArrayUtils.sol";
 import "../../libraries/IsolatedGovernance.sol";

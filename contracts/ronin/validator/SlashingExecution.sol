@@ -6,7 +6,7 @@ import "../../extensions/collections/HasContracts.sol";
 import "../../interfaces/validator/ISlashingExecution.sol";
 import "../../interfaces/staking/IStaking.sol";
 import "../../libraries/Math.sol";
-import { HasSlashIndicatorDeprecated, HasStakingDeprecated } from "../../libraries/DeprecatedSlots.sol";
+import { HasSlashIndicatorDeprecated, HasStakingDeprecated } from "../../utils/DeprecatedSlots.sol";
 import "./storage-fragments/CommonStorage.sol";
 
 abstract contract SlashingExecution is

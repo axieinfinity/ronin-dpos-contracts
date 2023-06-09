@@ -6,7 +6,7 @@ import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../extensions/collections/HasProxyAdmin.sol";
 import "../../interfaces/slash-indicator/ISlashBridgeOperator.sol";
 import "../../extensions/collections/HasContracts.sol";
-import { HasValidatorDeprecated } from "../../libraries/DeprecatedSlots.sol";
+import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
 abstract contract SlashBridgeOperator is
   ISlashBridgeOperator,

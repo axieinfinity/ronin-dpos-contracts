@@ -7,7 +7,7 @@ import "../extensions/sequential-governance/GovernanceRelay.sol";
 import "../extensions/TransparentUpgradeableProxyV2.sol";
 import "../extensions/GovernanceAdmin.sol";
 import "../interfaces/IBridge.sol";
-import "../libraries/ErrorHandler.sol";
+import { ErrorHandler } from "../libraries/ErrorHandler.sol";
 
 contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, GovernanceAdmin, BOsGovernanceRelay {
   using ErrorHandler for bool;

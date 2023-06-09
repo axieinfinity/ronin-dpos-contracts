@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../../libraries/Role.sol";
+import "../../utils/Role.sol";
 
 interface IHasContracts {
   /// @dev Error of invalid role.

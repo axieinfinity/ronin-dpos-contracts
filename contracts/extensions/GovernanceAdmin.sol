@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 import "../extensions/sequential-governance/CoreGovernance.sol";
 import "../extensions/collections/HasContracts.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
-import "../libraries/ErrorHandler.sol";
-import { HasGovernanceAdminDeprecated, HasBridgeDeprecated } from "../libraries/DeprecatedSlots.sol";
+import { ErrorHandler } from "../libraries/ErrorHandler.sol";
+import { HasGovernanceAdminDeprecated, HasBridgeDeprecated } from "../utils/DeprecatedSlots.sol";
 
 abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernanceAdminDeprecated, HasBridgeDeprecated {
   using ErrorHandler for bool;

@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../../extensions/RONTransferHelper.sol";
 
-import "../../libraries/CommonErrors.sol";
+import "../../utils/CommonErrors.sol";
 
 contract MockForwarderTarget is RONTransferHelper {
   address public owner;

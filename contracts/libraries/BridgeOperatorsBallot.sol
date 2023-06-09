@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "../libraries/CommonErrors.sol";
+import "../utils/CommonErrors.sol";
 
 library BridgeOperatorsBallot {
   /**

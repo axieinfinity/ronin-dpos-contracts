@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../interfaces/IBridgeTracking.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
-import { HasBridgeDeprecated, HasValidatorDeprecated } from "../../libraries/DeprecatedSlots.sol";
+import { HasBridgeDeprecated, HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
 contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContracts, Initializable, IBridgeTracking {
   struct PeriodVotingMetric {

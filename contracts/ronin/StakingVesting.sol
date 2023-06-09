@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IStakingVesting.sol";
 import "../extensions/collections/HasContracts.sol";
 import "../extensions/RONTransferHelper.sol";
-import { HasValidatorDeprecated } from "../libraries/DeprecatedSlots.sol";
+import { HasValidatorDeprecated } from "../utils/DeprecatedSlots.sol";
 
 contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts, RONTransferHelper, Initializable {
   /// @dev The block bonus for the block producer whenever a new block is mined.
