@@ -56,7 +56,7 @@ contract RoninGatewayV2 is
   /// @dev Mapping from withdrawal id => vote for recording withdrawal stats
   mapping(uint256 => IsolatedGovernance.Vote) public withdrawalStatVote;
 
-  /// @custom:deprecated previously `_trustedOrgContract` (non-zero value)
+  /// @custom:deprecated Previously `_trustedOrgContract` (non-zero value)
   address private ____deprecated2;
 
   uint256 internal _trustedNum;
