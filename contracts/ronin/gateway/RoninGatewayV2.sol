@@ -48,9 +48,9 @@ contract RoninGatewayV2 is
   /// @dev Mapping from token address => chain id => mainchain token address
   mapping(address => mapping(uint256 => MappedToken)) internal _mainchainToken;
 
-  /// @custom:deprecated previously `_validatorContract` (non-zero value)
+  /// @custom:deprecated Previously `_validatorContract` (non-zero value)
   address private ____deprecated0;
-  /// @custom:deprecated previously `_bridgeTrackingContract` (non-zero value)
+  /// @custom:deprecated Previously `_bridgeTrackingContract` (non-zero value)
   address private ____deprecated1;
 
   /// @dev Mapping from withdrawal id => vote for recording withdrawal stats
