@@ -10,45 +10,45 @@ pragma solidity ^0.8.0;
  */
 contract HasSlashIndicatorDeprecated {
   /// @custom:deprecated Previously `_slashIndicatorContract` (non-zero value)
-  address private ______deprecatedSI;
+  address private ______deprecatedSlashIndicator;
 }
 
 contract HasStakingVestingDeprecated {
   /// @custom:deprecated Previously `_stakingVestingContract` (non-zero value)
-  address private ______deprecatedSV;
+  address private ______deprecatedStakingVesting;
 }
 
 contract HasBridgeDeprecated {
   /// @custom:deprecated Previously `_bridgeContract` (non-zero value)
-  address private ______deprecatedB;
+  address private ______deprecatedBridge;
 }
 
 contract HasValidatorDeprecated {
   /// @custom:deprecated Previously `_validatorContract` (non-zero value)
-  address private ______deprecatedV;
+  address private ______deprecatedValidator;
 }
 
 contract HasStakingDeprecated {
   /// @custom:deprecated Previously `_stakingContract` (non-zero value)
-  address private ______deprecatedS;
+  address private ______deprecatedStakingContract;
 }
 
 contract HasMaintenanceDeprecated {
   /// @custom:deprecated Previously `_maintenanceContract` (non-zero value)
-  address private ______deprecatedM;
+  address private ______deprecatedMaintenance;
 }
 
 contract HasTrustedOrgDeprecated {
   /// @custom:deprecated Previously `_trustedOrgContract` (non-zero value)
-  address private ______deprecatedRTO;
+  address private ______deprecatedTrustedOrg;
 }
 
 contract HasGovernanceAdminDeprecated {
   /// @custom:deprecated Previously `_governanceAdminContract` (non-zero value)
-  address private ______deprecatedRGA;
+  address private ______deprecatedGovernanceAdmin;
 }
 
 contract HasBridgeTrackingDeprecated {
   /// @custom:deprecated Previously `_bridgeTrackingContract` (non-zero value)
-  address private ______deprecatedBT;
+  address private ______deprecatedBridgeTracking;
 }
