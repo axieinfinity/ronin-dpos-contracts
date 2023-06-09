@@ -111,11 +111,12 @@ const generateStorageLayoutInline = async ({
   try {
     if (fs.existsSync(source)) {
       if (!fs.existsSync(destination) || override) {
-        const logger = fs.createWriteStream(destination, { flags: 'a' });
+        const logger = fs.createWriteStream(destination, { flags: 'w' });
         const fileContent = await fs.readFile(source, 'utf-8');
         const tableContent = preprocessFile(fileContent);
         const listItemOfTable = preprocessTable(tableContent);
         let headers: string[] = [];
+        const data: string[] = [];
         for (let i = 0; i < listItemOfTable.length; i += 9) {
           // remove two collums: idx (index = 5) and artifacts (index =6)
           const row = listItemOfTable.slice(i, i + 8).filter((_, idx) => idx != 5 && idx != 6);
@@ -126,11 +127,12 @@ const generateStorageLayoutInline = async ({
           if (i == 0) {
             headers = row;
           } else {
-            logger.write(
-              `${row[0]}:${row[1]} (${headers[2]}: ${row[2]}) (${headers[2]}: ${row[3]}) (${headers[4]}: ${row[4]}) (${headers[5]}: ${row[5]})\n`
+            data.push(
+              `${row[0]}:${row[1]} (${headers[2]}: ${row[2]}) (${headers[3]}: ${row[3]}) (${headers[4]}: ${row[4]}) (${headers[5]}: ${row[5]})`
             );
           }
         }
+        logger.write(data.join('\n'));
       } else {
         throw Error(
           `Cannot generate storage layout because file ${destination} already exists. Use the "override" flag to overwrite.`
