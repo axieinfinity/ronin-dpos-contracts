@@ -77,7 +77,7 @@ abstract contract CandidateManager is
     address payable _treasuryAddr,
     address _bridgeOperatorAddr,
     uint256 _commissionRate
-  ) external override onlyContractWithRole(Role.STAKING_CONTRACT) {
+  ) external override onlyContract(ContractType.STAKING) {
     uint256 _length = _candidates.length;
     if (_length >= maxValidatorCandidate()) revert ErrExceedsMaxNumberOfCandidate();
     if (isValidatorCandidate(_consensusAddr)) revert ErrExistentCandidate();
@@ -112,7 +112,7 @@ abstract contract CandidateManager is
   function execRequestRenounceCandidate(
     address _consensusAddr,
     uint256 _secsLeft
-  ) external override onlyContractWithRole(Role.STAKING_CONTRACT) {
+  ) external override onlyContract(ContractType.STAKING) {
     if (_isTrustedOrg(_consensusAddr)) revert ErrTrustedOrgCannotRenounce();
 
     ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
@@ -127,7 +127,7 @@ abstract contract CandidateManager is
     address _consensusAddr,
     uint256 _effectiveDaysOnwards,
     uint256 _commissionRate
-  ) external override onlyContractWithRole(Role.STAKING_CONTRACT) {
+  ) external override onlyContract(ContractType.STAKING) {
     if (_candidateCommissionChangeSchedule[_consensusAddr].effectiveTimestamp != 0) {
       revert ErrAlreadyRequestedUpdatingCommissionRate();
     }
@@ -193,7 +193,7 @@ abstract contract CandidateManager is
    *
    */
   function _syncCandidateSet(uint256 _nextPeriod) internal returns (address[] memory _unsatisfiedCandidates) {
-    IStaking _staking = IStaking(getContract(Role.STAKING_CONTRACT));
+    IStaking _staking = IStaking(getContract(ContractType.STAKING));
     uint256 _waitingSecsToRevoke = _staking.waitingSecsToRevoke();
     uint256 _minStakingAmount = _staking.minValidatorStakingAmount();
     uint256[] memory _selfStakings = _staking.getManySelfStakings(_candidates);

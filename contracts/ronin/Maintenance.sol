@@ -8,6 +8,7 @@ import "../interfaces/validator/IRoninValidatorSet.sol";
 import "../extensions/collections/HasContracts.sol";
 import "../libraries/Math.sol";
 import { HasValidatorDeprecated } from "../utils/DeprecatedSlots.sol";
+import { ErrUnauthorized, RoleAccess } from "../utils/CommonErrors.sol";
 
 contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Initializable {
   using Math for uint256;
@@ -44,7 +45,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     uint256 _maxSchedules,
     uint256 _cooldownSecsToMaintain
   ) external initializer {
-    _setContract(Role.VALIDATOR_CONTRACT, __validatorContract);
+    _setContract(ContractType.VALIDATOR, __validatorContract);
     _setMaintenanceConfig(
       _minMaintenanceDurationInBlock,
       _maxMaintenanceDurationInBlock,
@@ -80,10 +81,11 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    * @inheritdoc IMaintenance
    */
   function schedule(address _consensusAddr, uint256 _startedAtBlock, uint256 _endedAtBlock) external override {
-    IRoninValidatorSet _validator = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
+    IRoninValidatorSet _validator = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
 
-    if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Role.BLOCK_PRODUCER);
-    if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender)) revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
+    if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, RoleAccess.BLOCK_PRODUCER);
+    if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender))
+      revert ErrUnauthorized(msg.sig, RoleAccess.CANDIDATE_ADMIN);
     if (checkScheduled(_consensusAddr)) revert ErrAlreadyScheduled();
     if (!checkCooldownEnds(_consensusAddr)) revert ErrCooldownTimeNotYetEnded();
     if (totalSchedules() >= maxSchedules) revert ErrTotalOfSchedulesExceeded();
@@ -112,8 +114,8 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    * @inheritdoc IMaintenance
    */
   function cancelSchedule(address _consensusAddr) external override {
-    if (!IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).isCandidateAdmin(_consensusAddr, msg.sender)) {
-      revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
+    if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isCandidateAdmin(_consensusAddr, msg.sender)) {
+      revert ErrUnauthorized(msg.sig, RoleAccess.CANDIDATE_ADMIN);
     }
     if (!checkScheduled(_consensusAddr)) revert ErrUnexistedSchedule();
     if (checkMaintained(_consensusAddr, block.number)) revert ErrAlreadyOnMaintenance();
@@ -171,7 +173,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    * @inheritdoc IMaintenance
    */
   function totalSchedules() public view override returns (uint256 _count) {
-    (address[] memory _validators, , ) = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).getValidators();
+    (address[] memory _validators, , ) = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
     unchecked {
       for (uint _i = 0; _i < _validators.length; _i++) {
         if (checkScheduled(_validators[_i])) {

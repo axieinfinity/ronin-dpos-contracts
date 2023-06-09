@@ -9,6 +9,7 @@ import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../libraries/Math.sol";
 import { HasValidatorDeprecated, HasMaintenanceDeprecated } from "../../utils/DeprecatedSlots.sol";
+import { ErrUnauthorized, RoleAccess } from "../../utils/CommonErrors.sol";
 
 abstract contract CreditScore is
   ICreditScore,
@@ -43,12 +44,12 @@ abstract contract CreditScore is
   function updateCreditScores(
     address[] calldata _validators,
     uint256 _period
-  ) external override onlyContractWithRole(Role.VALIDATOR_CONTRACT) {
+  ) external override onlyContract(ContractType.VALIDATOR) {
     IRoninValidatorSet _validatorContract = IRoninValidatorSet(msg.sender);
     uint256 _periodStartAtBlock = _validatorContract.currentPeriodStartAtBlock();
 
     bool[] memory _jaileds = _validatorContract.checkManyJailed(_validators);
-    bool[] memory _maintaineds = IMaintenance(getContract(Role.MAINTENANCE_CONTRACT)).checkManyMaintainedInBlockRange(
+    bool[] memory _maintaineds = IMaintenance(getContract(ContractType.MAINTENANCE)).checkManyMaintainedInBlockRange(
       _validators,
       _periodStartAtBlock,
       block.number
@@ -78,7 +79,7 @@ abstract contract CreditScore is
 
   function execResetCreditScores(
     address[] calldata _validators
-  ) external override onlyContractWithRole(Role.VALIDATOR_CONTRACT) {
+  ) external override onlyContract(ContractType.VALIDATOR) {
     uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
     for (uint _i = 0; _i < _validators.length; ) {
       address _validator = _validators[_i];
@@ -96,12 +97,12 @@ abstract contract CreditScore is
    * @inheritdoc ICreditScore
    */
   function bailOut(address _consensusAddr) external override {
-    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     if (!_validatorContract.isValidatorCandidate(_consensusAddr))
-      revert ErrUnauthorized(msg.sig, Role.VALIDATOR_CANDIDATE);
+      revert ErrUnauthorized(msg.sig, RoleAccess.VALIDATOR_CANDIDATE);
 
     if (!_validatorContract.isCandidateAdmin(_consensusAddr, msg.sender))
-      revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
+      revert ErrUnauthorized(msg.sig, RoleAccess.CANDIDATE_ADMIN);
 
     (bool _isJailed, , uint256 _jailedEpochLeft) = _validatorContract.getJailedTimeLeft(_consensusAddr);
     if (!_isJailed) revert ErrCallerMustBeJailedInTheCurrentPeriod();

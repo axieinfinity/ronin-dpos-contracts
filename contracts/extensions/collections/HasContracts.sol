@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./HasProxyAdmin.sol";
+import { HasProxyAdmin } from "./HasProxyAdmin.sol";
 import "../../interfaces/collections/IHasContracts.sol";
+import { ErrUnexpectedInternalCall } from "../../utils/CommonErrors.sol";
 
 /**
  * @title HasContracts
@@ -14,37 +15,37 @@ abstract contract HasContracts is HasProxyAdmin, IHasContracts {
 
   /**
    * @dev Modifier to restrict access to functions only to contracts with a specific role.
-   * @param role The role that the calling contract must have.
+   * @param contractType The contract type that allowed to call
    */
-  modifier onlyContractWithRole(Role role) virtual {
-    _requireRoleContract(role);
+  modifier onlyContract(ContractType contractType) virtual {
+    _requireContract(contractType);
     _;
   }
 
   /**
    * @inheritdoc IHasContracts
    */
-  function setContract(Role role, address addr) external virtual onlyAdmin {
+  function setContract(ContractType contractType, address addr) external virtual onlyAdmin {
     _requireHasCode(addr);
-    _setContract(role, addr);
+    _setContract(contractType, addr);
   }
 
   /**
    * @inheritdoc IHasContracts
    */
-  function getContract(Role role) public view returns (address contract_) {
-    contract_ = _getContractMap()[uint8(role)];
-    if (contract_ == address(0)) revert ErrInvalidRoleContract(role);
+  function getContract(ContractType contractType) public view returns (address contract_) {
+    contract_ = _getContractMap()[uint8(contractType)];
+    if (contract_ == address(0)) revert ErrContractTypeNotFound(contractType);
   }
 
   /**
    * @dev Internal function to set the address of a contract with a specific role.
-   * @param role The role of the contract to set.
+   * @param contractType The contract type of the contract to set.
    * @param addr The address of the contract to set.
    */
-  function _setContract(Role role, address addr) internal virtual {
-    _getContractMap()[uint8(role)] = addr;
-    emit ContractUpdated(role, addr);
+  function _setContract(ContractType contractType, address addr) internal virtual {
+    _getContractMap()[uint8(contractType)] = addr;
+    emit ContractUpdated(contractType, addr);
   }
 
   /**
@@ -68,10 +69,12 @@ abstract contract HasContracts is HasProxyAdmin, IHasContracts {
 
   /**
    * @dev Internal function to check if the calling contract has a specific role.
-   * @param role The role that the calling contract must have.
+   * @param contractType The contract type that the calling contract must have.
    * @dev Throws an error if the calling contract does not have the specified role.
    */
-  function _requireRoleContract(Role role) private view {
-    if (msg.sender != getContract(role)) revert ErrUnauthorized(msg.sig, role);
+  function _requireContract(ContractType contractType) private view {
+    address expectedCaller = getContract(contractType);
+    if (msg.sender != expectedCaller)
+      revert ErrUnexpectedInternalCall(msg.sig, contractType, expectedCaller, msg.sender);
   }
 }

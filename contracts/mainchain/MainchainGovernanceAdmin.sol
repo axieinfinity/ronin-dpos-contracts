@@ -78,8 +78,8 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
       _supports,
       _signatures,
       DOMAIN_SEPARATOR,
-      getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT),
-      getContract(Role.BRIDGE_CONTRACT),
+      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION),
+      getContract(ContractType.BRIDGE),
       msg.sender
     );
   }
@@ -96,7 +96,7 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
     Signature[] calldata _signatures
   ) external onlyRole(RELAYER_ROLE) {
     _relayVotesBySignatures(_ballot, _signatures, _getMinimumVoteWeight(), DOMAIN_SEPARATOR);
-    TransparentUpgradeableProxyV2(payable(getContract(Role.BRIDGE_CONTRACT))).functionDelegateCall(
+    TransparentUpgradeableProxyV2(payable(getContract(ContractType.BRIDGE))).functionDelegateCall(
       abi.encodeWithSelector(IBridge.replaceBridgeOperators.selector, _ballot.operators)
     );
   }
@@ -106,7 +106,7 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
    */
   function _sumWeights(address[] memory _governors) internal view virtual override returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.sumGovernorWeights.selector;
-    (bool _success, bytes memory _returndata) = getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT).staticcall(
+    (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
@@ -122,7 +122,7 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
    */
   function _sumBridgeVoterWeights(address[] memory _governors) internal view virtual override returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.sumBridgeVoterWeights.selector;
-    (bool _success, bytes memory _returndata) = getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT).staticcall(
+    (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,

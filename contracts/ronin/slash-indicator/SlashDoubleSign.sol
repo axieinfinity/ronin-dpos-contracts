@@ -42,7 +42,7 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidato
     }
 
     if (_pcValidateEvidence(_consensusAddr, _header1, _header2)) {
-      IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
+      IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
       uint256 _period = _validatorContract.currentPeriod();
       _submittedEvidence[_header1Checksum] = true;
       _submittedEvidence[_header2Checksum] = true;

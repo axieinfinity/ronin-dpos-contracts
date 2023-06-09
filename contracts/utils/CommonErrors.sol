@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Role } from "./Role.sol";
+import { ContractType } from "./ContractType.sol";
+import { RoleAccess } from "./RoleAccess.sol";
 
 /**
  * @dev Error indicating that the provided threshold is invalid for a specific function signature.
@@ -18,9 +19,23 @@ error ErrOnlySelfCall(bytes4 msgSig);
 /**
  * @dev Error indicating that the caller is unauthorized to perform a specific function.
  * @param msgSig The function signature (bytes4) that the caller is unauthorized to perform.
- * @param role The role (Role enum) required to perform the function.
+ * @param expectedRole The role required to perform the function.
  */
-error ErrUnauthorized(bytes4 msgSig, Role role);
+error ErrUnauthorized(bytes4 msgSig, RoleAccess expectedRole);
+
+/**
+ * @dev Error indicating that the caller is unauthorized to perform a specific function.
+ * @param msgSig The function signature (bytes4).
+ * @param expectedContractType The contract type required to perform the function.
+ * @param expectedCaller The expected address that required to perform the function.
+ * @param actual The actual address that called to the function.
+ */
+error ErrUnexpectedInternalCall(
+  bytes4 msgSig,
+  ContractType expectedContractType,
+  address expectedCaller,
+  address actual
+);
 
 /**
  * @dev Error indicating that an array is empty when it should contain elements.

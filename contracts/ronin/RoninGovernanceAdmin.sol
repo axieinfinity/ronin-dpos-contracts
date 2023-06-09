@@ -39,19 +39,22 @@ contract RoninGovernanceAdmin is
     address _validatorContract,
     uint256 _proposalExpiryDuration
   ) GovernanceAdmin(_roninChainId, _roninTrustedOrganizationContract, _bridgeContract, _proposalExpiryDuration) {
-    _setContract(Role.VALIDATOR_CONTRACT, _validatorContract);
+    _setContract(ContractType.VALIDATOR, _validatorContract);
   }
 
   function _requireGorvernor() private view {
-    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, Role.GOVERNOR);
+    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
   }
 
   /**
    * @inheritdoc IHasContracts
    */
-  function setContract(Role role, address addr) external override(HasContracts, GovernanceAdmin) onlySelfCall {
+  function setContract(
+    ContractType contractType,
+    address addr
+  ) external override(HasContracts, GovernanceAdmin) onlySelfCall {
     _requireHasCode(addr);
-    _setContract(role, addr);
+    _setContract(contractType, addr);
   }
 
   /**
@@ -245,8 +248,8 @@ contract RoninGovernanceAdmin is
       _values,
       _calldatas,
       _gasAmounts,
-      getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT),
-      getContract(Role.BRIDGE_CONTRACT),
+      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION),
+      getContract(ContractType.BRIDGE),
       msg.sender
     );
   }
@@ -268,8 +271,8 @@ contract RoninGovernanceAdmin is
       _supports,
       _signatures,
       DOMAIN_SEPARATOR,
-      getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT),
-      getContract(Role.BRIDGE_CONTRACT),
+      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION),
+      getContract(ContractType.BRIDGE),
       msg.sender
     );
   }
@@ -287,8 +290,8 @@ contract RoninGovernanceAdmin is
       _supports,
       _signatures,
       DOMAIN_SEPARATOR,
-      getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT),
-      getContract(Role.BRIDGE_CONTRACT)
+      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION),
+      getContract(ContractType.BRIDGE)
     );
   }
 
@@ -330,7 +333,7 @@ contract RoninGovernanceAdmin is
     address _recipientAfterUnlockedFund,
     uint256 _requestedAt,
     uint256 _expiredAt
-  ) external onlyContractWithRole(Role.VALIDATOR_CONTRACT) {
+  ) external onlyContract(ContractType.VALIDATOR) {
     bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
     IsolatedGovernance.Vote storage _v = _emergencyExitPoll[_hash];
     _v.createdAt = block.timestamp;
@@ -381,7 +384,7 @@ contract RoninGovernanceAdmin is
    */
   function _getWeight(address _governor) internal view virtual override returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.getGovernorWeight.selector;
-    (bool _success, bytes memory _returndata) = getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT).staticcall(
+    (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
@@ -397,7 +400,7 @@ contract RoninGovernanceAdmin is
    */
   function _sumGovernorWeights(address[] memory _governors) internal view virtual returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.sumGovernorWeights.selector;
-    (bool _success, bytes memory _returndata) = getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT).staticcall(
+    (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
@@ -414,7 +417,7 @@ contract RoninGovernanceAdmin is
    */
   function _getBridgeVoterWeight(address _governor) internal view virtual returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.getBridgeVoterWeight.selector;
-    (bool _success, bytes memory _returndata) = getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT).staticcall(
+    (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
@@ -437,7 +440,7 @@ contract RoninGovernanceAdmin is
    */
   function _sumBridgeVoterWeights(address[] memory _bridgeVoters) internal view virtual override returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.sumBridgeVoterWeights.selector;
-    (bool _success, bytes memory _returndata) = getContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT).staticcall(
+    (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
@@ -457,7 +460,7 @@ contract RoninGovernanceAdmin is
     address _recipientAfterUnlockedFund
   ) internal virtual {
     bytes4 _selector = IEmergencyExit.execReleaseLockedFundForEmergencyExitRequest.selector;
-    (bool _success, bytes memory _returndata) = getContract(Role.VALIDATOR_CONTRACT).call(
+    (bool _success, bytes memory _returndata) = getContract(ContractType.VALIDATOR).call(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,

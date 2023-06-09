@@ -28,7 +28,7 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
     uint256 __blockProducerBonusPerBlock,
     uint256 __bridgeOperatorBonusPerBlock
   ) external payable initializer {
-    _setContract(Role.VALIDATOR_CONTRACT, __validatorContract);
+    _setContract(ContractType.VALIDATOR, __validatorContract);
     _setBlockProducerBonusPerBlock(__blockProducerBonusPerBlock);
     _setBridgeOperatorBonusPerBlock(__bridgeOperatorBonusPerBlock);
   }
@@ -61,7 +61,7 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
   )
     external
     override
-    onlyContractWithRole(Role.VALIDATOR_CONTRACT)
+    onlyContract(ContractType.VALIDATOR)
     returns (bool _success, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus)
   {
     if (block.number <= lastBlockSendingBonus) revert ErrBonusAlreadySent();

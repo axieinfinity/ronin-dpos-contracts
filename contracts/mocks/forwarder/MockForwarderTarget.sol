@@ -18,7 +18,7 @@ contract MockForwarderTarget is RONTransferHelper {
   error ErrIntentionally();
 
   modifier onlyOwner() {
-    if (msg.sender != owner) revert ErrUnauthorized(msg.sig, Role.ADMIN);
+    if (msg.sender != owner) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
     _;
   }
 

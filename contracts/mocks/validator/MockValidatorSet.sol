@@ -25,9 +25,9 @@ contract MockValidatorSet is
     uint256 __numberOfBlocksInEpoch,
     uint256 __minEffectiveDaysOnwards
   ) {
-    _setContract(Role.STAKING_CONTRACT, __stakingContract);
-    _setContract(Role.SLASH_INDICATOR_CONTRACT, _slashIndicatorContract);
-    _setContract(Role.STAKING_VESTING_CONTRACT, _stakingVestingContract);
+    _setContract(ContractType.STAKING, __stakingContract);
+    _setContract(ContractType.SLASH_INDICATOR, _slashIndicatorContract);
+    _setContract(ContractType.STAKING_VESTING, _stakingVestingContract);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
     _minEffectiveDaysOnwards = __minEffectiveDaysOnwards;

@@ -68,7 +68,7 @@ abstract contract BaseStaking is
   }
 
   function _poolIsActive(address _poolAddr) private view {
-    if (!IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).isValidatorCandidate(_poolAddr))
+    if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isValidatorCandidate(_poolAddr))
       revert ErrInactivePool(_poolAddr);
   }
 

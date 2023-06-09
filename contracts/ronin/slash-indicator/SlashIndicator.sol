@@ -56,10 +56,10 @@ contract SlashIndicator is
     // _creditScoreConfigs[3]: _cutOffPercentageAfterBailout
     uint256[4] calldata _creditScoreConfigs
   ) external initializer {
-    _setContract(Role.VALIDATOR_CONTRACT, __validatorContract);
-    _setContract(Role.MAINTENANCE_CONTRACT, __maintenanceContract);
-    _setContract(Role.GOVERNANCE_ADMIN_CONTRACT, __roninGovernanceAdminContract);
-    _setContract(Role.RONIN_TRUSTED_ORGANIZATION_CONTRACT, __roninTrustedOrganizationContract);
+    _setContract(ContractType.VALIDATOR, __validatorContract);
+    _setContract(ContractType.MAINTENANCE, __maintenanceContract);
+    _setContract(ContractType.GOVERNANCE_ADMIN, __roninGovernanceAdminContract);
+    _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, __roninTrustedOrganizationContract);
 
     _setBridgeOperatorSlashingConfigs(
       _bridgeOperatorSlashingConfigs[0],
@@ -124,7 +124,7 @@ contract SlashIndicator is
   function _shouldSlash(address _addr) internal view override(SlashDoubleSign, SlashUnavailability) returns (bool) {
     return
       (msg.sender != _addr) &&
-      IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).isBlockProducer(_addr) &&
-      !IMaintenance(getContract(Role.MAINTENANCE_CONTRACT)).checkMaintained(_addr, block.number);
+      IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isBlockProducer(_addr) &&
+      !IMaintenance(getContract(ContractType.MAINTENANCE)).checkMaintained(_addr, block.number);
   }
 }

@@ -77,7 +77,7 @@ abstract contract SlashBridgeOperator is
     address _consensusAddr,
     uint256 _tier,
     uint256 _period
-  ) external onlyContractWithRole(Role.VALIDATOR_CONTRACT) {
+  ) external onlyContract(ContractType.VALIDATOR) {
     if (_tier == 1) {
       emit Slashed(_consensusAddr, SlashType.BRIDGE_OPERATOR_MISSING_VOTE_TIER_1, _period);
     } else if (_tier == 2) {

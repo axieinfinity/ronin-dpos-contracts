@@ -7,6 +7,7 @@ import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/slash-indicator/ISlashUnavailability.sol";
 import "../../extensions/collections/HasContracts.sol";
 import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
+import { ErrInvalidThreshold } from "../../utils/CommonErrors.sol";
 
 abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, HasValidatorDeprecated {
   /// @dev The last block that a validator is slashed for unavailability.
@@ -51,14 +52,14 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
    * @inheritdoc ISlashUnavailability
    */
   function slashUnavailability(address _validatorAddr) external override oncePerBlock {
-    if (msg.sender != block.coinbase) revert ErrUnauthorized(msg.sig, Role.COINBASE);
+    if (msg.sender != block.coinbase) revert ErrUnauthorized(msg.sig, RoleAccess.COINBASE);
 
     if (!_shouldSlash(_validatorAddr)) {
       // Should return instead of throwing error since this is a part of system transaction.
       return;
     }
 
-    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     uint256 _period = _validatorContract.currentPeriod();
     uint256 _count;
     unchecked {
@@ -136,7 +137,7 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
    */
   function currentUnavailabilityIndicator(address _validator) external view override returns (uint256) {
     return
-      getUnavailabilityIndicator(_validator, IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).currentPeriod());
+      getUnavailabilityIndicator(_validator, IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod());
   }
 
   /**
