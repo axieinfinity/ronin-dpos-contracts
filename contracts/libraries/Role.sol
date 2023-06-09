@@ -2,9 +2,8 @@
 pragma solidity ^0.8.0;
 
 /**
- * @dev Sort role by contract or eoa in parity order.
- * @notice 1st bit is reserved
- * @notice EOA is even (*0), contract is odd (*1)
+ * @notice Sort role by contract or EOA in parity order.
+ * @dev The 1st (the right bit) most is reserved. EOA addresses are even (`*0`), contract addresses are odd (`*1`)
  */
 enum Role {
   UNKNOWN_0, // 0
