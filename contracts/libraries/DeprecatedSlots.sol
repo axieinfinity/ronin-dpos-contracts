@@ -9,14 +9,17 @@ pragma solidity ^0.8.0;
  * @notice The reason for these contracts is for preserving the slots for already deployed contracts.
  */
 contract HasSlashIndicatorDeprecated {
+  /// @dev deprecated slot for SlashIndicatorContract
   address private ____deprecatedSI;
 }
 
 contract HasStakingVestingDeprecated {
+  /// @dev deprecated slot for StakingVestingContract
   address private ____deprecatedSV;
 }
 
 contract HasBridgeDeprecated {
+  /// @dev deprecated slot for BridgeContract
   address private ____deprecatedB;
 }
 
@@ -25,21 +28,26 @@ contract HasValidatorDeprecated {
 }
 
 contract HasStakingDeprecated {
+  /// @dev deprecated slot for StakingContract
   address private ____deprecatedS;
 }
 
 contract HasMaintenanceDeprecated {
+  /// @dev deprecated slot for MaintenanceContract
   address private ____deprecatedM;
 }
 
 contract HasTrustedOrgDeprecated {
+  /// @dev deprecated slot for RoninTrustedOrganizationContract
   address private ____deprecatedRTO;
 }
 
 contract HasGovernanceAdminDeprecated {
+  /// @dev deprecated slot for RoninGorvernanceAdminContract
   address private ____deprecatedRGA;
 }
 
 contract HasBridgeTrackingDeprecated {
+  /// @dev deprecated slot for BridgeTrackingContract
   address private ____deprecatedBT;
 }
