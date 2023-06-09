@@ -15,9 +15,8 @@
     "build": "hardhat compile && tsc -p tsconfig.build.json",
     "plugin:size-contracts": "hardhat size-contracts",
     "plugin:upload-selectors": "hardhat upload-selectors",
-    "plugin:storage-layout": "hardhat check > logs/storage.txt && yarn plugin:storage-layout-inline --source logs/storage.txt && yarn plugin:storage-layout-table --source logs/storage.txt && hardhat remove-temp-storage-layout --path logs/storage.txt",
-    "plugin:storage-layout-table": "hardhat generate-storage-layout-table",
-    "plugin:storage-layout-inline": "hardhat generate-storage-layout-inline"
+    "plugin:storage-layout": "hardhat check > logs/storage.txt && hardhat generate-storage-layout --source logs/storage.txt",
+    "plugin:storage-layout-table": "hardhat check > logs/storage.txt && hardhat generate-storage-layout-table --source logs/storage.txt"
   },
   "lint-staged": {
     "contracts/**/*.sol": "prettier --write",
