@@ -83,26 +83,21 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     IRoninValidatorSet _validator = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
 
     if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, Role.BLOCK_PRODUCER);
-
     if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender)) revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
-
     if (checkScheduled(_consensusAddr)) revert ErrAlreadyScheduled();
-
     if (!checkCooldownEnds(_consensusAddr)) revert ErrCooldownTimeNotYetEnded();
-
     if (totalSchedules() >= maxSchedules) revert ErrTotalOfSchedulesExceeded();
-
-    if (!_startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule))
+    if (!_startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule)) {
       revert ErrStartBlockOutOfRange();
-
+    }
     if (_startedAtBlock >= _endedAtBlock) revert ErrStartBlockOutOfRange();
 
     uint256 _maintenanceElapsed = _endedAtBlock - _startedAtBlock + 1;
-    if (!_maintenanceElapsed.inRange(minMaintenanceDurationInBlock, maxMaintenanceDurationInBlock))
+
+    if (!_maintenanceElapsed.inRange(minMaintenanceDurationInBlock, maxMaintenanceDurationInBlock)) {
       revert ErrInvalidMaintenanceDuration();
-
+    }
     if (!_validator.epochEndingAt(_startedAtBlock - 1)) revert ErrStartBlockOutOfRange();
-
     if (!_validator.epochEndingAt(_endedAtBlock)) revert ErrEndBlockOutOfRange();
 
     Schedule storage _sSchedule = _schedule[_consensusAddr];
@@ -117,12 +112,12 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    * @inheritdoc IMaintenance
    */
   function cancelSchedule(address _consensusAddr) external override {
-    if (!IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).isCandidateAdmin(_consensusAddr, msg.sender))
+    if (!IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).isCandidateAdmin(_consensusAddr, msg.sender)) {
       revert ErrUnauthorized(msg.sig, Role.CANDIDATE_ADMIN);
-
+    }
     if (!checkScheduled(_consensusAddr)) revert ErrUnexistedSchedule();
-
     if (checkMaintained(_consensusAddr, block.number)) revert ErrAlreadyOnMaintenance();
+
     Schedule storage _sSchedule = _schedule[_consensusAddr];
     delete _sSchedule.from;
     delete _sSchedule.to;
