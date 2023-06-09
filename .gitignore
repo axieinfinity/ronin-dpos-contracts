@@ -13,3 +13,4 @@ refs/
 remix-compiler.config.js
 foundry
 .npmrc
+logs/storage_layout_table.log
