@@ -17,6 +17,18 @@ library EmergencyExitBallot {
     uint256 _requestedAt,
     uint256 _expiredAt
   ) internal pure returns (bytes32 digest) {
+    /** @dev
+     * return
+     *   keccak256(
+     *     abi.encode(
+     *       EMERGENCY_EXIT_BALLOT_TYPEHASH,
+     *       _consensusAddress,
+     *       _recipientAfterUnlockedFund,
+     *       _requestedAt,
+     *       _expiredAt
+     *     )
+     *   );
+     **/
     assembly {
       let freeMemPtr := mload(0x40)
       mstore(freeMemPtr, EMERGENCY_EXIT_BALLOT_TYPEHASH)

@@ -65,6 +65,20 @@ library Proposal {
       }
     }
 
+    /** @dev
+     * return
+     *   keccak256(
+     *     abi.encode(
+     *       TYPE_HASH,
+     *       _proposal.nonce,
+     *       _proposal.chainId,
+     *       _targetsHash,
+     *       _valuesHash,
+     *       _calldatasHash,
+     *       _gasAmountsHash
+     *     )
+     *   );
+     **/
     assembly {
       let freeMemPtr := mload(0x40)
       mstore(freeMemPtr, TYPE_HASH)

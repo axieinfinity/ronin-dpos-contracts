@@ -428,6 +428,17 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
    * @dev Update domain seperator.
    */
   function _updateDomainSeparator() internal {
+    /** @dev
+     * _domainSeparator = keccak256(
+     *   abi.encode(
+     *     keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+     *     keccak256("MainchainGatewayV2"),
+     *     keccak256("2"),
+     *     block.chainid,
+     *     address(this)
+     *   )
+     * );
+     */
     assembly {
       let freeMemPtr := mload(0x40)
       /// @dev value is equal keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")

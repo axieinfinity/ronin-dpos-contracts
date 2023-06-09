@@ -15,6 +15,7 @@ library Ballot {
   bytes32 private constant BALLOT_TYPEHASH = 0xd900570327c4c0df8dd6bdd522b7da7e39145dd049d2fd4602276adcd511e3c2;
 
   function hash(bytes32 _proposalHash, VoteType _support) internal pure returns (bytes32 digest) {
+    /// @dev return keccak256(abi.encode(BALLOT_TYPEHASH, _proposalHash, _support));
     assembly {
       let freeMemPtr := mload(0x40)
       mstore(freeMemPtr, BALLOT_TYPEHASH)

@@ -84,6 +84,20 @@ library Transfer {
     bytes32 hashedReceiptMainchain = Token.hash(_receipt.mainchain);
     bytes32 hashedReceiptRonin = Token.hash(_receipt.ronin);
     bytes32 hashedReceiptInfo = Token.hash(_receipt.info);
+
+    /** @dev
+     * return
+     *   keccak256(
+     *     abi.encode(
+     *       TYPE_HASH,
+     *       _receipt.id,
+     *       _receipt.kind,
+     *       Token.hash(_receipt.mainchain),
+     *       Token.hash(_receipt.ronin),
+     *       Token.hash(_receipt.info)
+     *     )
+     *   );
+     **/
     assembly {
       let freeMemPtr := mload(0x40)
       mstore(freeMemPtr, TYPE_HASH)
