@@ -10,44 +10,44 @@ pragma solidity ^0.8.0;
  */
 contract HasSlashIndicatorDeprecated {
   /// @dev deprecated slot for SlashIndicatorContract
-  address private ____deprecatedSI;
+  address private ______deprecatedSI;
 }
 
 contract HasStakingVestingDeprecated {
   /// @dev deprecated slot for StakingVestingContract
-  address private ____deprecatedSV;
+  address private ______deprecatedSV;
 }
 
 contract HasBridgeDeprecated {
   /// @dev deprecated slot for BridgeContract
-  address private ____deprecatedB;
+  address private ______deprecatedB;
 }
 
 contract HasValidatorDeprecated {
-  address private ____deprecatedV;
+  address private ______deprecatedV;
 }
 
 contract HasStakingDeprecated {
   /// @dev deprecated slot for StakingContract
-  address private ____deprecatedS;
+  address private ______deprecatedS;
 }
 
 contract HasMaintenanceDeprecated {
   /// @dev deprecated slot for MaintenanceContract
-  address private ____deprecatedM;
+  address private ______deprecatedM;
 }
 
 contract HasTrustedOrgDeprecated {
   /// @dev deprecated slot for RoninTrustedOrganizationContract
-  address private ____deprecatedRTO;
+  address private ______deprecatedRTO;
 }
 
 contract HasGovernanceAdminDeprecated {
   /// @dev deprecated slot for RoninGorvernanceAdminContract
-  address private ____deprecatedRGA;
+  address private ______deprecatedRGA;
 }
 
 contract HasBridgeTrackingDeprecated {
   /// @dev deprecated slot for BridgeTrackingContract
-  address private ____deprecatedBT;
+  address private ______deprecatedBT;
 }
