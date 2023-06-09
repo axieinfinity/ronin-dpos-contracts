@@ -7,7 +7,7 @@ library GlobalProposal {
   /**
    * @dev Error thrown when attempting to interact with an unsupported target.
    */
-  error ErrUnsupportedTarget();
+  error ErrUnsupportedTarget(bytes32 proposalHash, uint256 targetNumber);
 
   enum TargetOption {
     RoninTrustedOrganizationContract,
@@ -98,7 +98,7 @@ library GlobalProposal {
         _detail.targets[_i] = _gatewayContract;
       } else if (_proposal.targetOptions[_i] == TargetOption.RoninTrustedOrganizationContract) {
         _detail.targets[_i] = _roninTrustedOrganizationContract;
-      } else revert ErrUnsupportedTarget();
+      } else revert ErrUnsupportedTarget(hash(_proposal), _i);
 
       unchecked {
         ++_i;
