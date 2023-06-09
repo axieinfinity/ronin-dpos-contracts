@@ -6,7 +6,7 @@ pragma solidity ^0.8.0;
  * @dev These abstract contracts are deprecated and should not be used in new implementations.
  * They provide functionality related to various aspects of a smart contract but have been marked
  * as deprecated to indicate that they are no longer actively maintained or recommended for use.
- * @notice The reason for these contracts is for preserving the slots for already deployed contracts.
+ * The purpose of these contracts is to preserve the slots for already deployed contracts.
  */
 contract HasSlashIndicatorDeprecated {
   /// @dev deprecated slot for SlashIndicatorContract
