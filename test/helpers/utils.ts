@@ -57,7 +57,7 @@ export const accessControlRevertStr = (addr: Address, role: string): string =>
 export const compareBigNumbers = (firstBigNumbers: BigNumber[], secondBigNumbers: BigNumber[]) =>
   expect(firstBigNumbers.map((_) => _.toHexString())).deep.equal(secondBigNumbers.map((_) => _.toHexString()));
 
-const ROLES = [
+const CONTRACT_TYPES = [
   'UNKNOWN',
   'PAUSE_ENFORCER_CONTRACT',
   'BRIDGE_CONTRACT',
@@ -72,5 +72,5 @@ const ROLES = [
 ];
 
 export const getRoles = (roleName: string): number => {
-  return ROLES.indexOf(roleName);
+  return CONTRACT_TYPES.indexOf(roleName);
 };
