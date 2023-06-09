@@ -201,7 +201,6 @@ abstract contract CreditScore is
     uint256 _cutOffPercentage
   ) internal {
     if (_gainScore > _maxScore) revert ErrInvalidCreditScoreConfig();
-
     if (_cutOffPercentage > _MAX_PERCENTAGE) revert ErrInvalidCutOffPercentageConfig();
 
     _gainCreditScore = _gainScore;
