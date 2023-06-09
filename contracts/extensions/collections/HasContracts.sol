@@ -74,7 +74,8 @@ abstract contract HasContracts is HasProxyAdmin, IHasContracts {
    */
   function _requireContract(ContractType contractType) private view {
     address expectedCaller = getContract(contractType);
-    if (msg.sender != expectedCaller)
+    if (msg.sender != expectedCaller) {
       revert ErrUnexpectedInternalCall(msg.sig, contractType, expectedCaller, msg.sender);
+    }
   }
 }
