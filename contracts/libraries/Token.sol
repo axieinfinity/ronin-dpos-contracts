@@ -7,24 +7,16 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "../interfaces/IWETH.sol";
 
 library Token {
-  /**
-   * @dev Error indicating that the provided information is invalid.
-   */
+  /// @dev Error indicating that the provided information is invalid.
   error ErrInvalidInfo();
 
-  /**
-   * @dev Error indicating that the minting of ERC20 tokens has failed.
-   */
+  /// @dev Error indicating that the minting of ERC20 tokens has failed.
   error ErrERC20MintingFailed();
 
-  /**
-   * @dev Error indicating that the minting of ERC721 tokens has failed.
-   */
+  /// @dev Error indicating that the minting of ERC721 tokens has failed.
   error ErrERC721MintingFailed();
 
-  /**
-   * @dev Error indicating that an unsupported standard is encountered.
-   */
+  /// @dev Error indicating that an unsupported standard is encountered.
   error ErrUnsupportedStandard();
 
   enum Standard {
