@@ -38,10 +38,6 @@ abstract contract CoinbaseExecution is
     _;
   }
 
-  function _requireCoinbase() private view {
-    if (msg.sender != block.coinbase) revert ErrCallerMustBeCoinbase();
-  }
-
   modifier whenEpochEnding() {
     if (!epochEndingAt(block.number)) revert ErrAtEndOfEpochOnly();
     _;
@@ -51,6 +47,10 @@ abstract contract CoinbaseExecution is
     if (epochOf(_lastUpdatedBlock) >= epochOf(block.number)) revert ErrAlreadyWrappedEpoch();
     _lastUpdatedBlock = block.number;
     _;
+  }
+
+  function _requireCoinbase() private view {
+    if (msg.sender != block.coinbase) revert ErrCallerMustBeCoinbase();
   }
 
   /**

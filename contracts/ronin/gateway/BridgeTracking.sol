@@ -49,6 +49,9 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
     _;
   }
 
+  /**
+   * @dev Returns the whole transaction in case the current block is less than start block.
+   */
   function _skipOnUnstarted() private view {
     if (block.number < startedAtBlock) {
       assembly {

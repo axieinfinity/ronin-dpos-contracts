@@ -32,10 +32,6 @@ contract RoninGovernanceAdmin is
     _;
   }
 
-  function _requireGorvernor() private view {
-    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, Role.GOVERNOR);
-  }
-
   constructor(
     uint256 _roninChainId,
     address _roninTrustedOrganizationContract,
@@ -44,6 +40,10 @@ contract RoninGovernanceAdmin is
     uint256 _proposalExpiryDuration
   ) GovernanceAdmin(_roninChainId, _roninTrustedOrganizationContract, _bridgeContract, _proposalExpiryDuration) {
     _setContract(Role.VALIDATOR_CONTRACT, _validatorContract);
+  }
+
+  function _requireGorvernor() private view {
+    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, Role.GOVERNOR);
   }
 
   /**
@@ -360,7 +360,6 @@ contract RoninGovernanceAdmin is
 
     IsolatedGovernance.Vote storage _v = _emergencyExitPoll[_hash];
     if (_v.createdAt == 0) revert ErrQueryForNonExistentVote();
-
     if (_v.status == VoteStatus.Expired) revert ErrQueryForExpiredVote();
 
     _v.castVote(_voter, _hash);

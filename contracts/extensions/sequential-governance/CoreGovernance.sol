@@ -11,6 +11,9 @@ import "../../interfaces/consumers/SignatureConsumer.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
 
 abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, ChainTypeConsumer {
+  using Proposal for Proposal.ProposalDetail;
+  using GlobalProposal for GlobalProposal.GlobalProposalDetail;
+
   /**
    * @dev Error thrown when attempting to interact with a finalized vote.
    */
@@ -20,9 +23,6 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
    * @dev Error thrown when the current proposal is not completed.
    */
   error ErrCurrentProposalIsNotCompleted();
-
-  using Proposal for Proposal.ProposalDetail;
-  using GlobalProposal for GlobalProposal.GlobalProposalDetail;
 
   struct ProposalVote {
     VoteStatus status;

@@ -60,8 +60,9 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
    * deducting amount on slashing).
    */
   function _fallback() internal view {
-    if (msg.sender != getContract(Role.STAKING_VESTING_CONTRACT) && msg.sender != getContract(Role.STAKING_CONTRACT))
+    if (msg.sender != getContract(Role.STAKING_VESTING_CONTRACT) && msg.sender != getContract(Role.STAKING_CONTRACT)) {
       revert ErrUnauthorizedReceiveRON();
+    }
   }
 
   /**

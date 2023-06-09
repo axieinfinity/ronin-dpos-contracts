@@ -450,6 +450,6 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
     _addresses[1] = _v.governor;
     _addresses[2] = _v.bridgeVoter;
 
-    if (AddressArrayUtils.hasDuplicate(_addresses)) revert ErrDuplicated(msg.sig);
+    if (AddressArrayUtils.hasDuplicate(_addresses)) revert AddressArrayUtils.ErrDuplicated(msg.sig);
   }
 }

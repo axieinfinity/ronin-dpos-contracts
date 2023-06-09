@@ -30,13 +30,13 @@ library EmergencyExitBallot {
      *   );
      **/
     assembly {
-      let freeMemPtr := mload(0x40)
-      mstore(freeMemPtr, EMERGENCY_EXIT_BALLOT_TYPEHASH)
-      mstore(add(freeMemPtr, 0x20), _consensusAddress)
-      mstore(add(freeMemPtr, 0x40), _recipientAfterUnlockedFund)
-      mstore(add(freeMemPtr, 0x60), _requestedAt)
-      mstore(add(freeMemPtr, 0x80), _expiredAt)
-      digest := keccak256(freeMemPtr, 0xa0)
+      let ptr := mload(0x40)
+      mstore(ptr, EMERGENCY_EXIT_BALLOT_TYPEHASH)
+      mstore(add(ptr, 0x20), _consensusAddress)
+      mstore(add(ptr, 0x40), _recipientAfterUnlockedFund)
+      mstore(add(ptr, 0x60), _requestedAt)
+      mstore(add(ptr, 0x80), _expiredAt)
+      digest := keccak256(ptr, 0xa0)
     }
   }
 }

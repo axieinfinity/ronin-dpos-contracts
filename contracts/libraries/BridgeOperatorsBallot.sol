@@ -30,6 +30,7 @@ library BridgeOperatorsBallot {
    */
   function verifyBallot(BridgeOperatorSet calldata _ballot) internal pure {
     if (_ballot.operators.length == 0) revert ErrEmptyArray();
+
     address _addr = _ballot.operators[0];
     for (uint _i = 1; _i < _ballot.operators.length; ) {
       if (_addr >= _ballot.operators[_i]) revert ErrInvalidOrderOfBridgeOperator();
@@ -43,19 +44,19 @@ library BridgeOperatorsBallot {
   /**
    * @dev Returns hash of the ballot.
    */
-  function hash(BridgeOperatorSet memory self) internal pure returns (bytes32 digest) {
-    bytes32 _operatorsHash;
-    address[] memory _operators = self.operators;
+  function hash(BridgeOperatorSet memory self) internal pure returns (bytes32 digest_) {
+    bytes32 operatorsHash;
+    address[] memory operators = self.operators;
 
     /// @dev return keccak256(abi.encode(BRIDGE_OPERATORS_BALLOT_TYPEHASH, _ballot.period, _ballot.epoch, _operatorsHash));
     assembly {
-      _operatorsHash := keccak256(add(_operators, 32), mul(mload(_operators), 32))
-      let freeMemPtr := mload(0x40)
-      mstore(freeMemPtr, BRIDGE_OPERATORS_BALLOT_TYPEHASH)
-      mstore(add(freeMemPtr, 0x20), mload(self)) // _ballot.period
-      mstore(add(freeMemPtr, 0x40), mload(add(self, 0x20))) // _ballot.epoch
-      mstore(add(freeMemPtr, 0x60), _operatorsHash)
-      digest := keccak256(freeMemPtr, 0x80)
+      operatorsHash := keccak256(add(operators, 32), mul(mload(operators), 32))
+      let ptr := mload(0x40)
+      mstore(ptr, BRIDGE_OPERATORS_BALLOT_TYPEHASH)
+      mstore(add(ptr, 0x20), mload(self)) // _ballot.period
+      mstore(add(ptr, 0x40), mload(add(self, 0x20))) // _ballot.epoch
+      mstore(add(ptr, 0x60), operatorsHash)
+      digest_ := keccak256(ptr, 0x80)
     }
   }
 }

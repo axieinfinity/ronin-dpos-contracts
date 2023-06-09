@@ -46,6 +46,7 @@ abstract contract MinimumWithdrawal is HasProxyAdmin {
    */
   function _setMinimumThresholds(address[] calldata _tokens, uint256[] calldata _thresholds) internal virtual {
     if (_tokens.length != _thresholds.length) revert ErrLengthMismatch(msg.sig);
+
     for (uint256 _i; _i < _tokens.length; ) {
       minimumThreshold[_tokens[_i]] = _thresholds[_i];
 
@@ -60,7 +61,8 @@ abstract contract MinimumWithdrawal is HasProxyAdmin {
    * @dev Checks whether the request is larger than or equal to the minimum threshold.
    */
   function _checkWithdrawal(Transfer.Request calldata _request) internal view {
-    if (_request.info.erc == Token.Standard.ERC20 && _request.info.quantity < minimumThreshold[_request.tokenAddr])
+    if (_request.info.erc == Token.Standard.ERC20 && _request.info.quantity < minimumThreshold[_request.tokenAddr]) {
       revert ErrQueryForTooSmallQuantity();
+    }
   }
 }

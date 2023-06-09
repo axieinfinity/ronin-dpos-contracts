@@ -17,11 +17,11 @@ library Ballot {
   function hash(bytes32 _proposalHash, VoteType _support) internal pure returns (bytes32 digest) {
     /// @dev return keccak256(abi.encode(BALLOT_TYPEHASH, _proposalHash, _support));
     assembly {
-      let freeMemPtr := mload(0x40)
-      mstore(freeMemPtr, BALLOT_TYPEHASH)
-      mstore(add(freeMemPtr, 0x20), _proposalHash)
-      mstore(add(freeMemPtr, 0x40), _support)
-      digest := keccak256(freeMemPtr, 0x60)
+      let ptr := mload(0x40)
+      mstore(ptr, BALLOT_TYPEHASH)
+      mstore(add(ptr, 0x20), _proposalHash)
+      mstore(add(ptr, 0x40), _support)
+      digest := keccak256(ptr, 0x60)
     }
   }
 }

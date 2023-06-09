@@ -40,12 +40,12 @@ library Token {
    */
   function hash(Info memory _info) internal pure returns (bytes32 digest) {
     assembly {
-      let freeMemPtr := mload(0x40)
-      mstore(freeMemPtr, INFO_TYPE_HASH)
-      mstore(add(freeMemPtr, 0x20), mload(_info)) // _info.erc
-      mstore(add(freeMemPtr, 0x40), mload(add(_info, 0x20))) // _info.id
-      mstore(add(freeMemPtr, 0x60), mload(add(_info, 0x40))) // _info.quantity
-      digest := keccak256(freeMemPtr, 0x80)
+      let ptr := mload(0x40)
+      mstore(ptr, INFO_TYPE_HASH)
+      mstore(add(ptr, 0x20), mload(_info)) // _info.erc
+      mstore(add(ptr, 0x40), mload(add(_info, 0x20))) // _info.id
+      mstore(add(ptr, 0x60), mload(add(_info, 0x40))) // _info.quantity
+      digest := keccak256(ptr, 0x80)
     }
   }
 
@@ -208,12 +208,12 @@ library Token {
    */
   function hash(Owner memory _owner) internal pure returns (bytes32 digest) {
     assembly {
-      let freeMemPtr := mload(0x40)
-      mstore(freeMemPtr, OWNER_TYPE_HASH)
-      mstore(add(freeMemPtr, 0x20), mload(_owner)) // _owner.addr
-      mstore(add(freeMemPtr, 0x40), mload(add(_owner, 0x20))) // _owner.tokenAddr
-      mstore(add(freeMemPtr, 0x60), mload(add(_owner, 0x40))) // _owner.chainId
-      digest := keccak256(freeMemPtr, 0x80)
+      let ptr := mload(0x40)
+      mstore(ptr, OWNER_TYPE_HASH)
+      mstore(add(ptr, 0x20), mload(_owner)) // _owner.addr
+      mstore(add(ptr, 0x40), mload(add(_owner, 0x20))) // _owner.tokenAddr
+      mstore(add(ptr, 0x60), mload(add(_owner, 0x40))) // _owner.chainId
+      digest := keccak256(ptr, 0x80)
     }
   }
 }

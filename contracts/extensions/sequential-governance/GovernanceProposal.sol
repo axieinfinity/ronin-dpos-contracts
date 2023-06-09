@@ -4,15 +4,15 @@ pragma solidity ^0.8.0;
 import "./CoreGovernance.sol";
 
 abstract contract GovernanceProposal is CoreGovernance {
+  using Proposal for Proposal.ProposalDetail;
+  using GlobalProposal for GlobalProposal.GlobalProposalDetail;
+
   /**
    * @dev Error thrown when an invalid proposal is encountered.
    * @param actual The actual value of the proposal.
    * @param expected The expected value of the proposal.
    */
   error ErrInvalidProposal(bytes32 actual, bytes32 expected);
-
-  using Proposal for Proposal.ProposalDetail;
-  using GlobalProposal for GlobalProposal.GlobalProposalDetail;
 
   /**
    * @dev Casts votes by signatures.
@@ -98,8 +98,9 @@ abstract contract GovernanceProposal is CoreGovernance {
   ) internal {
     bytes32 _proposalHash = _proposal.hash();
 
-    if (vote[_proposal.chainId][_proposal.nonce].hash != _proposalHash)
+    if (vote[_proposal.chainId][_proposal.nonce].hash != _proposalHash) {
       revert ErrInvalidProposal(_proposalHash, vote[_proposal.chainId][_proposal.nonce].hash);
+    }
 
     _castVotesBySignatures(
       _proposal,
@@ -148,11 +149,11 @@ abstract contract GovernanceProposal is CoreGovernance {
       _roninTrustedOrganizationContract,
       _gatewayContract
     );
-    bytes32 _globalProposalHash = _globalProposal.hash();
     bytes32 _proposalHash = _proposal.hash();
     if (vote[0][_proposal.nonce].hash != _proposalHash)
       revert ErrInvalidProposal(_proposalHash, vote[0][_proposal.nonce].hash);
 
+    bytes32 _globalProposalHash = _globalProposal.hash();
     _castVotesBySignatures(
       _proposal,
       _supports,

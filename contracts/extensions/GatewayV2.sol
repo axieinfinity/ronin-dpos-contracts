@@ -101,9 +101,18 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
     return (_num * _totalWeight + _denom - 1) / _denom;
   }
 
-  function _requireAuth() internal view virtual {
-    if (!(msg.sender == _getAdmin() || msg.sender == emergencyPauser))
+  /**
+   * @dev Internal method to check method caller.
+   *
+   * Requirements:
+   *
+   * - The method caller must be admin or pauser.
+   *
+   */
+  function _requireAuth() private view {
+    if (!(msg.sender == _getAdmin() || msg.sender == emergencyPauser)) {
       revert ErrUnauthorized(msg.sig, Role.PAUSE_ENFORCER_CONTRACT);
+    }
   }
 
   /**

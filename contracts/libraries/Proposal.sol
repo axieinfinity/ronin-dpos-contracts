@@ -51,7 +51,7 @@ library Proposal {
   /**
    * @dev Returns struct hash of the proposal.
    */
-  function hash(ProposalDetail memory _proposal) internal pure returns (bytes32 digest) {
+  function hash(ProposalDetail memory _proposal) internal pure returns (bytes32 digest_) {
     uint256[] memory _values = _proposal.values;
     address[] memory _targets = _proposal.targets;
     bytes32[] memory _calldataHashList = new bytes32[](_proposal.calldatas.length);
@@ -80,24 +80,22 @@ library Proposal {
      *   );
      **/
     assembly {
-      let freeMemPtr := mload(0x40)
-      mstore(freeMemPtr, TYPE_HASH)
-      mstore(add(freeMemPtr, 0x20), mload(_proposal)) // _proposal.nonce
-      mstore(add(freeMemPtr, 0x40), mload(add(_proposal, 0x20))) // _proposal.chainId
-      mstore(add(freeMemPtr, 0x60), mload(add(_proposal, 0x40))) // expiry timestamp
-      // targetsHash
-      let arrayHashed := keccak256(add(_targets, 32), mul(mload(_targets), 32))
-      mstore(add(freeMemPtr, 0x80), arrayHashed)
-      // _valuesHash
-      arrayHashed := keccak256(add(_values, 32), mul(mload(_values), 32))
-      mstore(add(freeMemPtr, 0xa0), arrayHashed)
-      // _calldatasHash
-      arrayHashed := keccak256(add(_calldataHashList, 32), mul(mload(_calldataHashList), 32))
-      mstore(add(freeMemPtr, 0xc0), arrayHashed)
-      // _gasAmountsHash
-      arrayHashed := keccak256(add(_gasAmounts, 32), mul(mload(_gasAmounts), 32))
-      mstore(add(freeMemPtr, 0xe0), arrayHashed)
-      digest := keccak256(freeMemPtr, 0x100)
+      let ptr := mload(0x40)
+      mstore(ptr, TYPE_HASH)
+      mstore(add(ptr, 0x20), mload(_proposal)) // _proposal.nonce
+      mstore(add(ptr, 0x40), mload(add(_proposal, 0x20))) // _proposal.chainId
+      mstore(add(ptr, 0x60), mload(add(_proposal, 0x40))) // expiry timestamp
+
+      let arrayHashed
+      arrayHashed := keccak256(add(_targets, 32), mul(mload(_targets), 32)) // targetsHash
+      mstore(add(ptr, 0x80), arrayHashed)
+      arrayHashed := keccak256(add(_values, 32), mul(mload(_values), 32)) // _valuesHash
+      mstore(add(ptr, 0xa0), arrayHashed)
+      arrayHashed := keccak256(add(_calldataHashList, 32), mul(mload(_calldataHashList), 32)) // _calldatasHash
+      mstore(add(ptr, 0xc0), arrayHashed)
+      arrayHashed := keccak256(add(_gasAmounts, 32), mul(mload(_gasAmounts), 32)) // _gasAmountsHash
+      mstore(add(ptr, 0xe0), arrayHashed)
+      digest_ := keccak256(ptr, 0x100)
     }
   }
 

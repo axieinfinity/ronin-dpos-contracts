@@ -75,6 +75,9 @@ contract RoninGatewayV2 is
     _;
   }
 
+  /**
+   * @dev Reverts if the method caller is not bridge operator.
+   */
   function _requireBridgeOperator() internal view {
     if (!IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT)).isBridgeOperator(msg.sender))
       revert ErrUnauthorized(msg.sig, Role.BRIDGE_OPERATOR);
@@ -260,6 +263,7 @@ contract RoninGatewayV2 is
    */
   function bulkRequestWithdrawalFor(Transfer.Request[] calldata _requests, uint256 _chainId) external whenNotPaused {
     if (_requests.length == 0) revert ErrEmptyArray();
+
     for (uint256 _i; _i < _requests.length; ) {
       _requestWithdrawalFor(_requests[_i], msg.sender, _chainId);
       unchecked {
@@ -275,8 +279,9 @@ contract RoninGatewayV2 is
     if (mainchainWithdrew(_withdrawalId)) revert ErrWithdrawnOnMainchainAlready();
 
     Transfer.Receipt memory _receipt = withdrawal[_withdrawalId];
-    if (_receipt.ronin.chainId != block.chainid)
+    if (_receipt.ronin.chainId != block.chainid) {
       revert ErrInvalidChainId(msg.sig, _receipt.ronin.chainId, block.chainid);
+    }
 
     emit WithdrawalSignaturesRequested(_receipt.hash(), _receipt);
   }

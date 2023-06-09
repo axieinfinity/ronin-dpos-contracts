@@ -180,10 +180,12 @@ abstract contract WithdrawalLimitation is GatewayV2 {
     uint256 _denominator
   ) internal returns (uint256 _previousNum, uint256 _previousDenom) {
     if (_numerator > _denominator) revert ErrInvalidThreshold(msg.sig);
+
     _previousNum = _highTierVWNum;
     _previousDenom = _highTierVWDenom;
     _highTierVWNum = _numerator;
     _highTierVWDenom = _denominator;
+
     unchecked {
       emit HighTierVoteWeightThresholdUpdated(nonce++, _numerator, _denominator, _previousNum, _previousDenom);
     }
@@ -200,6 +202,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    */
   function _setHighTierThresholds(address[] calldata _tokens, uint256[] calldata _thresholds) internal virtual {
     if (_tokens.length == _thresholds.length) revert ErrLengthMismatch(msg.sig);
+
     for (uint256 _i; _i < _tokens.length; ) {
       highTierThreshold[_tokens[_i]] = _thresholds[_i];
 
@@ -221,6 +224,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    */
   function _setLockedThresholds(address[] calldata _tokens, uint256[] calldata _thresholds) internal virtual {
     if (_tokens.length != _thresholds.length) revert ErrLengthMismatch(msg.sig);
+
     for (uint256 _i; _i < _tokens.length; ) {
       lockedThreshold[_tokens[_i]] = _thresholds[_i];
 
@@ -243,6 +247,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    */
   function _setUnlockFeePercentages(address[] calldata _tokens, uint256[] calldata _percentages) internal virtual {
     if (_tokens.length != _percentages.length) revert ErrLengthMismatch(msg.sig);
+
     for (uint256 _i; _i < _tokens.length; ) {
       if (_percentages[_i] > _MAX_PERCENTAGE) revert ErrInvalidPercentage();
 
@@ -266,6 +271,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
    */
   function _setDailyWithdrawalLimits(address[] calldata _tokens, uint256[] calldata _limits) internal virtual {
     if (_tokens.length != _limits.length) revert ErrLengthMismatch(msg.sig);
+
     for (uint256 _i; _i < _tokens.length; ) {
       dailyWithdrawalLimit[_tokens[_i]] = _limits[_i];
 

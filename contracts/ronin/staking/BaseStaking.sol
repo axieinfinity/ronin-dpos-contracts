@@ -40,17 +40,9 @@ abstract contract BaseStaking is
     _;
   }
 
-  function _requireValue() private view {
-    if (msg.value == 0) revert ErrZeroValue();
-  }
-
   modifier notPoolAdmin(PoolDetail storage _pool, address _delegator) {
     _notPoolAdmin(_pool, _delegator);
     _;
-  }
-
-  function _notPoolAdmin(PoolDetail storage _pool, address _delegator) private view {
-    if (_pool.admin == _delegator) revert ErrPoolAdminForbidden();
   }
 
   modifier onlyPoolAdmin(PoolDetail storage _pool, address _requester) {
@@ -58,13 +50,21 @@ abstract contract BaseStaking is
     _;
   }
 
+  modifier poolIsActive(address _poolAddr) {
+    _poolIsActive(_poolAddr);
+    _;
+  }
+
+  function _requireValue() private view {
+    if (msg.value == 0) revert ErrZeroValue();
+  }
+
   function _requirePoolAdmin(PoolDetail storage _pool, address _requester) private view {
     if (_pool.admin != _requester) revert ErrOnlyPoolAdminAllowed();
   }
 
-  modifier poolIsActive(address _poolAddr) {
-    _poolIsActive(_poolAddr);
-    _;
+  function _notPoolAdmin(PoolDetail storage _pool, address _delegator) private view {
+    if (_pool.admin == _delegator) revert ErrPoolAdminForbidden();
   }
 
   function _poolIsActive(address _poolAddr) private view {

@@ -2,13 +2,13 @@
 
 pragma solidity ^0.8.0;
 
-/**
- * @dev Error thrown when a duplicated element is detected in an array.
- * @param msgSig The function signature that invoke the error.
- */
-error ErrDuplicated(bytes4 msgSig);
-
 library AddressArrayUtils {
+  /**
+   * @dev Error thrown when a duplicated element is detected in an array.
+   * @param msgSig The function signature that invoke the error.
+   */
+  error ErrDuplicated(bytes4 msgSig);
+
   /**
    * @dev Returns whether or not there's a duplicate. Runs in O(n^2).
    * @param A Array to search
@@ -33,11 +33,11 @@ library AddressArrayUtils {
   /**
    * @dev Returns whether two arrays of addresses are equal or not.
    */
-  function isEqual(address[] memory _this, address[] memory _other) internal pure returns (bool yes) {
+  function isEqual(address[] memory _this, address[] memory _other) internal pure returns (bool yes_) {
     assembly {
       let _thisHash := keccak256(add(_this, 32), mul(mload(_this), 32))
       let _otherHash := keccak256(add(_other, 32), mul(mload(_other), 32))
-      yes := eq(_thisHash, _otherHash)
+      yes_ := eq(_thisHash, _otherHash)
     }
   }
 }

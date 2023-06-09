@@ -232,7 +232,6 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     uint256[][4] calldata _thresholds
   ) external virtual onlyAdmin {
     if (_mainchainTokens.length == 0) revert ErrEmptyArray();
-
     _mapTokens(_mainchainTokens, _roninTokens, _standards);
     _setHighTierThresholds(_mainchainTokens, _thresholds[0]);
     _setLockedThresholds(_mainchainTokens, _thresholds[1]);
@@ -343,8 +342,8 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
           ++_i;
         }
       }
-      if (!_passed) revert ErrQueryForInsufficientVoteWeight();
 
+      if (!_passed) revert ErrQueryForInsufficientVoteWeight();
       withdrawalHash[_id] = _receiptHash;
     }
 
@@ -440,16 +439,16 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
      * );
      */
     assembly {
-      let freeMemPtr := mload(0x40)
-      /// @dev value is equal keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
-      mstore(freeMemPtr, 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f)
-      /// @dev value is equal keccak256("MainchainGatewayV2")
-      mstore(add(freeMemPtr, 0x20), 0x159f52c1e3a2b6a6aad3950adf713516211484e0516dad685ea662a094b7c43b)
-      /// @dev value is equal keccak256("2")
-      mstore(add(freeMemPtr, 0x40), 0xad7c5bef027816a800da1736444fb58a807ef4c9603b7848673f7e3a68eb14a5)
-      mstore(add(freeMemPtr, 0x60), chainid())
-      mstore(add(freeMemPtr, 0x80), address())
-      sstore(_domainSeparator.slot, keccak256(freeMemPtr, 0xa0))
+      let ptr := mload(0x40)
+      // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+      mstore(ptr, 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f)
+      // keccak256("MainchainGatewayV2")
+      mstore(add(ptr, 0x20), 0x159f52c1e3a2b6a6aad3950adf713516211484e0516dad685ea662a094b7c43b)
+      // keccak256("2")
+      mstore(add(ptr, 0x40), 0xad7c5bef027816a800da1736444fb58a807ef4c9603b7848673f7e3a68eb14a5)
+      mstore(add(ptr, 0x60), chainid())
+      mstore(add(ptr, 0x80), address())
+      sstore(_domainSeparator.slot, keccak256(ptr, 0xa0))
     }
   }
 

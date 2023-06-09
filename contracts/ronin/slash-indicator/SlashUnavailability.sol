@@ -39,8 +39,9 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
   uint256[50] private ______gap;
 
   modifier oncePerBlock() {
-    if (block.number <= lastUnavailabilitySlashedBlock)
+    if (block.number <= lastUnavailabilitySlashedBlock) {
       revert ErrCannotSlashAValidatorTwiceOrSlashMoreThanOneValidatorInOneBlock();
+    }
 
     lastUnavailabilitySlashedBlock = block.number;
     _;
@@ -58,7 +59,6 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
     }
 
     IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(Role.VALIDATOR_CONTRACT));
-
     uint256 _period = _validatorContract.currentPeriod();
     uint256 _count;
     unchecked {

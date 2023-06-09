@@ -5,10 +5,12 @@ pragma solidity ^0.8.9;
 import "../../libraries/Role.sol";
 
 interface IHasContracts {
+  /// @dev Error of invalid role.
   error ErrInvalidRoleContract(Role role);
   /// @dev Error of set to non-contract.
   error ErrZeroCodeContract(address addr);
 
+  /// @dev Emitted when a contract is updated.
   event ContractUpdated(Role indexed role, address indexed addr);
 
   /**

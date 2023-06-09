@@ -99,14 +99,14 @@ library Transfer {
      *   );
      **/
     assembly {
-      let freeMemPtr := mload(0x40)
-      mstore(freeMemPtr, TYPE_HASH)
-      mstore(add(freeMemPtr, 0x20), mload(_receipt)) // _receipt.id
-      mstore(add(freeMemPtr, 0x40), mload(add(_receipt, 0x20))) // _receipt.kind
-      mstore(add(freeMemPtr, 0x60), hashedReceiptMainchain)
-      mstore(add(freeMemPtr, 0x80), hashedReceiptRonin)
-      mstore(add(freeMemPtr, 0xa0), hashedReceiptInfo)
-      digest := keccak256(freeMemPtr, 0xc0)
+      let ptr := mload(0x40)
+      mstore(ptr, TYPE_HASH)
+      mstore(add(ptr, 0x20), mload(_receipt)) // _receipt.id
+      mstore(add(ptr, 0x40), mload(add(_receipt, 0x20))) // _receipt.kind
+      mstore(add(ptr, 0x60), hashedReceiptMainchain)
+      mstore(add(ptr, 0x80), hashedReceiptRonin)
+      mstore(add(ptr, 0xa0), hashedReceiptInfo)
+      digest := keccak256(ptr, 0xc0)
     }
   }
 
