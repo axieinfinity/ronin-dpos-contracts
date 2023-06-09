@@ -241,8 +241,9 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     uint256 _amount
   ) internal onlyPoolAdmin(_pool, _requester) {
     if (_amount > _pool.stakingAmount) revert ErrInsufficientStakingAmount();
-    if (_pool.lastDelegatingTimestamp[_requester] + _cooldownSecsToUndelegate > block.timestamp)
+    if (_pool.lastDelegatingTimestamp[_requester] + _cooldownSecsToUndelegate > block.timestamp) {
       revert ErrUnstakeTooEarly();
+    }
 
     _pool.stakingAmount -= _amount;
     _changeDelegatingAmount(_pool, _requester, _pool.stakingAmount, _pool.stakingTotal - _amount);
