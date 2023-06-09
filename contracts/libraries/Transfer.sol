@@ -85,7 +85,7 @@ library Transfer {
     bytes32 hashedReceiptRonin = Token.hash(_receipt.ronin);
     bytes32 hashedReceiptInfo = Token.hash(_receipt.info);
 
-    /** @dev
+    /**
      * return
      *   keccak256(
      *     abi.encode(

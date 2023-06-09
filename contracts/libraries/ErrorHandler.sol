@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import { ErrProxyCallFailed } from "./CommonErrors.sol";
 
 library ErrorHandler {
-  // @notice handle low level call revert if call failed,
+  /// @notice handle low level call revert if call failed,
   /// If extcall return empty bytes, reverts with custom error.
   /// @param status Status of external call
   /// @param callSig function signature of the calldata

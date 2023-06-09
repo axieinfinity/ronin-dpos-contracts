@@ -65,7 +65,7 @@ library Proposal {
       }
     }
 
-    /** @dev
+    /**
      * return
      *   keccak256(
      *     abi.encode(

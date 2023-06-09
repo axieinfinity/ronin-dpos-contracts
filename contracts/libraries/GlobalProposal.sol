@@ -44,7 +44,7 @@ library GlobalProposal {
       }
     }
 
-    /** @dev
+    /**
      * return
      *   keccak256(
      *     abi.encode(

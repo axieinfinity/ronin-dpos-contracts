@@ -17,7 +17,7 @@ library EmergencyExitBallot {
     uint256 _requestedAt,
     uint256 _expiredAt
   ) internal pure returns (bytes32 digest) {
-    /** @dev
+    /**
      * return
      *   keccak256(
      *     abi.encode(
