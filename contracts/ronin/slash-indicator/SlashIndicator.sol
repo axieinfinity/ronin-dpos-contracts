@@ -82,11 +82,11 @@ contract SlashIndicator is
       _creditScoreConfigs[2],
       _creditScoreConfigs[3]
     );
-    _setOriginal();
+    _initOriginAddress();
   }
 
   function initializeV2() external reinitializer(2) {
-    _setOriginal();
+    _initOriginAddress();
   }
 
   /**
@@ -132,5 +132,14 @@ contract SlashIndicator is
       (msg.sender != _addr) &&
       _validatorContract.isBlockProducer(_addr) &&
       !_maintenanceContract.checkMaintained(_addr, block.number);
+  }
+
+  /**
+   * @dev Returns the guard slot for the contract.
+   * @return The guard slot value.
+   */
+  function _guardSlot() internal pure override returns (bytes32) {
+    /// @dev value is equal to keccak256("@ronin.dpos.slash-indicator.SlashIndicator.guard.slot") - 1
+    return 0x155bb4ed7f6246483709b1cbe37e46dd176a81efb7ed6f314e99eb0dd07a7fa7;
   }
 }
