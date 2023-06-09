@@ -114,7 +114,50 @@ contract Profile is IProfile, HasStakingContract, HasValidatorContract, Initiali
     emit ProfileAddressChanged(id, "admin");
   }
 
+  /**
+   * @dev Updated immediately without waiting time. (???)
+   *
+   * Interactions:
+   * - Update in Bridge contract for Validator address mapping.
+   * - Update in BridgeTracking for tracking their votes.
+   * - Update in Validator contract for BridgeOperator address mapping.
+   * - Update in Validator contract for bridge's reward. (???)
+   *
+   * Emit an {ProfileAddressChanged}.
+   */
   function requestChangeBridgeOperator(address id, address newBridgeAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
+
+    _profile.bridgeOperator = newBridgeAddr;
+
+    emit ProfileAddressChanged(id, "bridge");
+  }
+
+  /**
+   * @dev Updated immediately without waiting time. (???)
+   *
+   * Interactions:
+   * - Update in Staking contract for Consensus address mapping:
+   *   + Keep the same previous pool address
+   *   +
+   * - Update in Validator contract for:
+   *   + Consensus Address mapping
+   *   + Bridge Address mapping
+   *   + Jail mapping
+   *   + Pending reward mapping
+   *   + Schedule mapping
+   * - Update in Proposal contract for:
+   *   + Refund of emergency exit mapping
+   *   + ...
+   *
+   * Emit an {ProfileAddressChanged}.
+   *
+   */
+  function requestChangeConsensusAddr(address id, address newConsensusAddr) external {
+    CandidateProfile storage _profile = _getId2ProfileHelper(id);
+
+    _profile.consensus = newConsensusAddr;
+
+    emit ProfileAddressChanged(id, "consensus");
   }
 }
