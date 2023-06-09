@@ -7,7 +7,7 @@ library Proposal {
   /**
    * @dev Error thrown when there is insufficient gas to execute a function.
    */
-  error ErrInsufficientGas();
+  error ErrInsufficientGas(bytes32 proposalHash);
 
   /**
    * @dev Error thrown when an invalid expiry timestamp is provided.
@@ -119,7 +119,7 @@ library Proposal {
     _successCalls = new bool[](_proposal.targets.length);
     _returnDatas = new bytes[](_proposal.targets.length);
     for (uint256 _i = 0; _i < _proposal.targets.length; ) {
-      if (gasleft() <= _proposal.gasAmounts[_i]) revert ErrInsufficientGas();
+      if (gasleft() <= _proposal.gasAmounts[_i]) revert ErrInsufficientGas(hash(_proposal));
 
       (_successCalls[_i], _returnDatas[_i]) = _proposal.targets[_i].call{
         value: _proposal.values[_i],
