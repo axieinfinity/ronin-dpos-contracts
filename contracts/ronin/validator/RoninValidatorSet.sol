@@ -53,6 +53,11 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     _setEmergencyExitLockedAmount(__emergencyExitConfigs[0]);
     _setEmergencyExpiryDuration(__emergencyExitConfigs[1]);
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
+    _initOriginAddress();
+  }
+
+  function initializeV2() external reinitializer(2) {
+    _initOriginAddress();
   }
 
   /**
@@ -72,5 +77,10 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     address _consensusAddr
   ) internal view override(EmergencyExit, ValidatorInfoStorage) returns (address) {
     return super._bridgeOperatorOf(_consensusAddr);
+  }
+
+  function _guardSlot() internal pure override returns (bytes32) {
+    /// @dev value is equal to keccak256("@ronin.dpos.validator.RoninValidator.guard.slot") - 1
+    return 0x597ac532456d03c8d4b2b6e1822ad69ce16d14b57d469414341a60a75681a805;
   }
 }

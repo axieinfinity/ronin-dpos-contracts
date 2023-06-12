@@ -7,8 +7,9 @@ import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../precompile-usages/PCUValidateDoubleSign.sol";
 import "../../extensions/collections/HasContracts.sol";
 import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
+import { DelegateGuard } from "../../libraries/Guards.sol";
 
-abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidatorDeprecated, PCUValidateDoubleSign {
+abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidatorDeprecated, PCUValidateDoubleSign, DelegateGuard {
   /// @dev The amount of RON to slash double sign.
   uint256 internal _slashDoubleSignAmount;
   /// @dev The block number that the punished validator will be jailed until, due to double signing.
@@ -33,7 +34,7 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidato
     address _consensusAddr,
     bytes calldata _header1,
     bytes calldata _header2
-  ) external override onlyAdmin {
+  ) external override nonDelegate onlyAdmin {
     bytes32 _header1Checksum = keccak256(_header1);
     bytes32 _header2Checksum = keccak256(_header2);
 
