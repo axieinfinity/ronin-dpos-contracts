@@ -301,8 +301,9 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     _receipt.info.validate();
     if (_receipt.kind != Transfer.Kind.Withdrawal) revert ErrInvalidReceiptKind();
 
-    if (_receipt.mainchain.chainId != block.chainid)
+    if (_receipt.mainchain.chainId != block.chainid) {
       revert ErrInvalidChainId(msg.sig, _receipt.mainchain.chainId, block.chainid);
+    }
 
     MappedToken memory _token = getRoninToken(_receipt.mainchain.tokenAddr);
 
