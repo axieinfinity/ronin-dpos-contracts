@@ -140,6 +140,13 @@ const config: HardhatUserConfig = {
   mocha: {
     timeout: 100000, // 100s
   },
+
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    outputFile: './logs/contract_code_sizes.log',
+  },
 };
 
 export default config;
