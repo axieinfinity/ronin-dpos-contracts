@@ -39,6 +39,7 @@ library Token {
    * @dev Returns token info struct hash.
    */
   function hash(Info memory _info) internal pure returns (bytes32 digest) {
+    // keccak256(abi.encode(INFO_TYPE_HASH, _info.erc, _info.id, _info.quantity))
     assembly {
       let ptr := mload(0x40)
       mstore(ptr, INFO_TYPE_HASH)
