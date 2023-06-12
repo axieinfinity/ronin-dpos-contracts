@@ -20,11 +20,19 @@ library Token {
   error ErrUnsupportedStandard();
 
   /**
-   * @dev Error indicating that the transferring of token has failed.
-   * @param tokenInfo Info of the transferring token including ERC standard, id or quantity.
-   * @param from Owner of the transferring token value.
-   * @param to Receiver of the transferring token value.
-   * @param token Address of the transferring token.
+   * @dev Error indicating that the `transfer` has failed.
+   * @param tokenInfo Info of the token including ERC standard, id or quantity.
+   * @param to Receiver of the token value.
+   * @param token Address of the token.
+   */
+  error ErrTokenCouldNotTransfer(Info tokenInfo, address to, address token);
+
+  /**
+   * @dev Error indicating that the `transferFrom` has failed.
+   * @param tokenInfo Info of the token including ERC standard, id or quantity.
+   * @param from Owner of the token value.
+   * @param to Receiver of the token value.
+   * @param token Address of the token.
    */
   error ErrTokenCouldNotTransferFrom(Info tokenInfo, address from, address to, address token);
 
@@ -117,7 +125,7 @@ library Token {
       _success = tryTransferERC721(_token, _to, _info.id);
     } else revert ErrUnsupportedStandard();
 
-    if (!_success) revert ErrTokenCouldNotTransferFrom(_info, address(this), _to, _token);
+    if (!_success) revert ErrTokenCouldNotTransfer(_info, _to, _token);
   }
 
   /**
