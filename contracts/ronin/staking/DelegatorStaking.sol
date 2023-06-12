@@ -120,7 +120,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     PoolDetail storage _pool,
     address _delegator,
     uint256 _amount
-  ) internal notPoolAdmin(_pool, _delegator) {
+  ) internal anyExceptPoolAdmin(_pool, _delegator) {
     _changeDelegatingAmount(
       _pool,
       _delegator,
@@ -148,7 +148,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     PoolDetail storage _pool,
     address _delegator,
     uint256 _amount
-  ) private notPoolAdmin(_pool, _delegator) {
+  ) private anyExceptPoolAdmin(_pool, _delegator) {
     if (_amount == 0) revert ErrUndelegateZeroAmount();
     if (_pool.delegatingAmount[_delegator] < _amount) revert ErrInsufficientDelegatingAmount();
 

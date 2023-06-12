@@ -40,8 +40,8 @@ abstract contract BaseStaking is
     _;
   }
 
-  modifier notPoolAdmin(PoolDetail storage _pool, address _delegator) {
-    _notPoolAdmin(_pool, _delegator);
+  modifier anyExceptPoolAdmin(PoolDetail storage _pool, address _delegator) {
+    _anyExceptPoolAdmin(_pool, _delegator);
     _;
   }
 
@@ -63,7 +63,7 @@ abstract contract BaseStaking is
     if (_pool.admin != _requester) revert ErrOnlyPoolAdminAllowed();
   }
 
-  function _notPoolAdmin(PoolDetail storage _pool, address _delegator) private view {
+  function _anyExceptPoolAdmin(PoolDetail storage _pool, address _delegator) private view {
     if (_pool.admin == _delegator) revert ErrPoolAdminForbidden();
   }
 
