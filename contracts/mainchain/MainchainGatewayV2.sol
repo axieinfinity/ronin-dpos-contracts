@@ -311,8 +311,9 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
 
     if (withdrawalHash[_id] != 0) revert ErrQueryForProcessedWithdrawal();
 
-    if (!(_receipt.info.erc == Token.Standard.ERC721 || !_reachedWithdrawalLimit(_tokenAddr, _quantity)))
+    if (!(_receipt.info.erc == Token.Standard.ERC721 || !_reachedWithdrawalLimit(_tokenAddr, _quantity))) {
       revert ErrReachedDailyWithdrawalLimit();
+    }
 
     bytes32 _receiptHash = _receipt.hash();
     bytes32 _receiptDigest = Transfer.receiptDigest(_domainSeparator, _receiptHash);
