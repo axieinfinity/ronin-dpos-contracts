@@ -73,9 +73,8 @@ abstract contract HasContracts is HasProxyAdmin, IHasContracts {
    * @dev Throws an error if the calling contract does not have the specified role.
    */
   function _requireContract(ContractType contractType) private view {
-    address expectedCaller = getContract(contractType);
-    if (msg.sender != expectedCaller) {
-      revert ErrUnexpectedInternalCall(msg.sig, contractType, expectedCaller, msg.sender);
+    if (msg.sender != getContract(contractType)) {
+      revert ErrUnexpectedInternalCall(msg.sig, contractType, msg.sender);
     }
   }
 }
