@@ -5,8 +5,9 @@ pragma solidity ^0.8.9;
 import "../../interfaces/slash-indicator/ISlashDoubleSign.sol";
 import "../../precompile-usages/PCUValidateDoubleSign.sol";
 import "../../extensions/collections/HasValidatorContract.sol";
+import { DelegateGuard } from "../../libraries/Guards.sol";
 
-abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCUValidateDoubleSign {
+abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCUValidateDoubleSign, DelegateGuard {
   /// @dev The amount of RON to slash double sign.
   uint256 internal _slashDoubleSignAmount;
   /// @dev The block number that the punished validator will be jailed until, due to double signing.
@@ -31,7 +32,7 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
     address _consensusAddr,
     bytes calldata _header1,
     bytes calldata _header2
-  ) external override onlyAdmin {
+  ) external override nonDelegate onlyAdmin {
     bytes32 _header1Checksum = keccak256(_header1);
     bytes32 _header2Checksum = keccak256(_header2);
 
