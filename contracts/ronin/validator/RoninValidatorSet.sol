@@ -58,12 +58,20 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
 
   function initializeV2() external reinitializer(2) {
     _initOriginAddress();
+
     _setContract(ContractType.STAKING, ______deprecatedStakingContract);
     _setContract(ContractType.MAINTENANCE, ______deprecatedMaintenance);
     _setContract(ContractType.SLASH_INDICATOR, ______deprecatedSlashIndicator);
     _setContract(ContractType.STAKING_VESTING, ______deprecatedStakingVesting);
     _setContract(ContractType.BRIDGE_TRACKING, ______deprecatedBridgeTracking);
     _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, ______deprecatedTrustedOrg);
+
+    delete ______deprecatedStakingContract;
+    delete ______deprecatedMaintenance;
+    delete ______deprecatedSlashIndicator;
+    delete ______deprecatedStakingVesting;
+    delete ______deprecatedBridgeTracking;
+    delete ______deprecatedTrustedOrg;
   }
 
   /**

@@ -80,6 +80,9 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   function initializeV2() external reinitializer(2) {
     _setContract(ContractType.BRIDGE, ______deprecatedBridge);
     _setContract(ContractType.VALIDATOR, ______deprecatedValidator);
+
+    delete ______deprecatedBridge;
+    delete ______deprecatedValidator;
   }
 
   /**

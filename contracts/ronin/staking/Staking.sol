@@ -37,6 +37,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
 
   function initializeV2() external reinitializer(2) {
     _setContract(ContractType.VALIDATOR, ______deprecatedValidator);
+    delete ______deprecatedValidator;
   }
 
   /**

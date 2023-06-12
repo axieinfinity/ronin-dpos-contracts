@@ -35,6 +35,7 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
 
   function initializeV2() external reinitializer(2) {
     _setContract(ContractType.VALIDATOR, ______deprecatedValidator);
+    delete ______deprecatedValidator;
   }
 
   /**
