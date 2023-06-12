@@ -8,3 +8,4 @@ yarn clean
 yarn compile
 yarn plugin:storage-layout --override true
 git add logs/storage_layout.log
+git add logs/contract_code_sizes.log
