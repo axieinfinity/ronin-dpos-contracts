@@ -33,6 +33,10 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
     _setBridgeOperatorBonusPerBlock(__bridgeOperatorBonusPerBlock);
   }
 
+  function initializeV2() external reinitializer(2) {
+    _setContract(ContractType.VALIDATOR, ______deprecatedValidator);
+  }
+
   /**
    * @inheritdoc IStakingVesting
    */

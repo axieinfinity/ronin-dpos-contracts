@@ -56,6 +56,10 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     );
   }
 
+  function initializeV2() external reinitializer(2) {
+    _setContract(ContractType.VALIDATOR, ______deprecatedValidator);
+  }
+
   /**
    * @inheritdoc IMaintenance
    */

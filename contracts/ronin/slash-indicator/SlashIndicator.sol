@@ -88,8 +88,12 @@ contract SlashIndicator is
     _initOriginAddress();
   }
 
-  function initializeV2() external reinitializer(2) {
+  function initializeV2(address roninGovernanceAdminContract) external reinitializer(2) {
     _initOriginAddress();
+    _setContract(ContractType.VALIDATOR, ______deprecatedValidator);
+    _setContract(ContractType.MAINTENANCE, ______deprecatedMaintenance);
+    _setContract(ContractType.GOVERNANCE_ADMIN, roninGovernanceAdminContract);
+    _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, ______deprecatedTrustedOrg);
   }
 
   /**

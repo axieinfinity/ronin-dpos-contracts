@@ -35,6 +35,10 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     _setWaitingSecsToRevoke(__waitingSecsToRevoke);
   }
 
+  function initializeV2() external reinitializer(2) {
+    _setContract(ContractType.VALIDATOR, ______deprecatedValidator);
+  }
+
   /**
    * @inheritdoc IStaking
    */
