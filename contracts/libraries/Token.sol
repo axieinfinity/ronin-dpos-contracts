@@ -19,6 +19,15 @@ library Token {
   /// @dev Error indicating that an unsupported standard is encountered.
   error ErrUnsupportedStandard();
 
+  /**
+   * @dev Error indicating that the transferring of token has failed.
+   * @param tokenInfo Info of the transferring token including ERC standard, id or quantity.
+   * @param from Owner of the transferring token value.
+   * @param to Receiver of the transferring token value.
+   * @param token Address of the transferring token.
+   */
+  error ErrTokenCouldNotTransferFrom(Info tokenInfo, address from, address to, address token);
+
   enum Standard {
     ERC20,
     ERC721
@@ -55,8 +64,8 @@ library Token {
    */
   function validate(Info memory _info) internal pure {
     if (
-      !(_info.erc == Standard.ERC20 && _info.quantity > 0 && _info.id == 0) ||
-      (_info.erc == Standard.ERC721 && _info.quantity == 0)
+      !((_info.erc == Standard.ERC20 && _info.quantity > 0 && _info.id == 0) ||
+        (_info.erc == Standard.ERC721 && _info.quantity == 0))
     ) revert ErrInvalidInfo();
   }
 
@@ -78,22 +87,7 @@ library Token {
       (_success, ) = _token.call(abi.encodeWithSelector(0x23b872dd, _from, _to, _info.id));
     } else revert ErrUnsupportedStandard();
 
-    if (!_success) {
-      revert(
-        string(
-          abi.encodePacked(
-            "Token: could not transfer ",
-            toString(_info),
-            " from ",
-            Strings.toHexString(uint160(_from), 20),
-            " to ",
-            Strings.toHexString(uint160(_to), 20),
-            " token ",
-            Strings.toHexString(uint160(_token), 20)
-          )
-        )
-      );
-    }
+    if (!_success) revert ErrTokenCouldNotTransferFrom(_info, _from, _to, _token);
   }
 
   /**
@@ -123,20 +117,7 @@ library Token {
       _success = tryTransferERC721(_token, _to, _info.id);
     } else revert ErrUnsupportedStandard();
 
-    if (!_success) {
-      revert(
-        string(
-          abi.encodePacked(
-            "Token: could not transfer ",
-            toString(_info),
-            " to ",
-            Strings.toHexString(uint160(_to), 20),
-            " token ",
-            Strings.toHexString(uint160(_token), 20)
-          )
-        )
-      );
-    }
+    if (!_success) revert ErrTokenCouldNotTransferFrom(_info, address(this), _to, _token);
   }
 
   /**
@@ -175,24 +156,6 @@ library Token {
         if (!_success) revert ErrERC721MintingFailed();
       }
     } else revert ErrUnsupportedStandard();
-  }
-
-  /**
-   * @dev Returns readable string.
-   */
-  function toString(Info memory _info) internal pure returns (string memory) {
-    return
-      string(
-        abi.encodePacked(
-          "TokenInfo(",
-          Strings.toHexString(uint160(_info.erc), 1),
-          ",",
-          Strings.toHexString(_info.id),
-          ",",
-          Strings.toHexString(_info.quantity),
-          ")"
-        )
-      );
   }
 
   struct Owner {
