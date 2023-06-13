@@ -2,10 +2,12 @@
 
 pragma solidity ^0.8.9;
 
+import { TPoolId } from "../../libraries/udvts/Types.sol";
+
 interface IBaseStaking {
   struct PoolDetail {
     // Address of the pool i.e. consensus address of the validator
-    address id;
+    TPoolId id;
     // Pool admin address
     address admin;
     // Self-staking amount
@@ -51,12 +53,12 @@ interface IBaseStaking {
   /**
    * @dev Returns the staking pool detail.
    */
-  function getPoolDetail(address) external view returns (address admin, uint256 stakingAmount, uint256 stakingTotal);
+  function getPoolDetail(TPoolId) external view returns (address admin, uint256 stakingAmount, uint256 stakingTotal);
 
   /**
    * @dev Returns the self-staking amounts of the pools.
    */
-  function getManySelfStakings(address[] calldata) external view returns (uint256[] memory);
+  function getManySelfStakings(TPoolId[] calldata) external view returns (uint256[] memory);
 
   /**
    * @dev Returns The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.

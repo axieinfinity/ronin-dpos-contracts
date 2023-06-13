@@ -8,6 +8,7 @@ import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/validator/ICandidateManager.sol";
 import "../../interfaces/staking/IStaking.sol";
 import { HasStakingDeprecated } from "../../utils/DeprecatedSlots.sol";
+import "../../libraries/udvts/LibTPoolId.sol";
 
 abstract contract CandidateManager is
   ICandidateManager,
@@ -16,15 +17,17 @@ abstract contract CandidateManager is
   HasContracts,
   HasStakingDeprecated
 {
+  using LibTPoolId for TPoolId;
+
   /// @dev Maximum number of validator candidate
   uint256 private _maxValidatorCandidate;
 
   /// @dev The validator candidate array
-  address[] internal _candidates;
+  TPoolId[] internal _candidates;
   /// @dev Mapping from candidate consensus address => bitwise negation of validator index in `_candidates`
   mapping(address => uint256) internal _candidateIndex;
   /// @dev Mapping from candidate consensus address => their info
-  mapping(address => ValidatorCandidate) internal _candidateInfo;
+  mapping(TPoolId => ValidatorCandidate) internal _candidateInfo;
 
   /**
    * @dev The minimum offset in day from current date to the effective date of a new commission schedule.
