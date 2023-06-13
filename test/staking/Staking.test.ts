@@ -348,7 +348,7 @@ describe('Staking test', () => {
 
       await expect(() => validatorContract.wrapUpEpoch()).changeEtherBalance(poolAddrSet.poolAdmin, stakingAmount);
       let _poolDetail = await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address);
-      expect(_poolDetail._stakingAmount).eq(0);
+      expect(_poolDetail.stakingAmount).eq(0);
     });
 
     it('Should the exited pool admin and consensus address rejoin as a candidate', async () => {

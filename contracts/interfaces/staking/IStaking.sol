@@ -22,9 +22,9 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
    *
    */
   function execRecordRewards(
-    address[] calldata _consensusAddrs,
-    uint256[] calldata _rewards,
-    uint256 _period
+    address[] calldata consensusAddrs,
+    uint256[] calldata rewards,
+    uint256 period
   ) external payable;
 
   /**
@@ -37,7 +37,7 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
    *
    */
   function execDeductStakingAmount(
-    address _consensusAddr,
-    uint256 _amount
-  ) external returns (uint256 _actualDeductingAmount);
+    address consensusAddr,
+    uint256 amount
+  ) external returns (uint256 actualDeductingAmount);
 }

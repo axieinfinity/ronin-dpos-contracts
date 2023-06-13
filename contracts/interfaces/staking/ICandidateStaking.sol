@@ -57,7 +57,7 @@ interface ICandidateStaking is IRewardPool {
   /**
    * @dev Returns the commission rate range that the candidate can set.
    */
-  function getCommissionRateRange() external view returns (uint256 _minRange, uint256 _maxRange);
+  function getCommissionRateRange() external view returns (uint256 minRange, uint256 maxRange);
 
   /**
    * @dev Sets the minimum threshold for being a validator candidate.
@@ -79,7 +79,7 @@ interface ICandidateStaking is IRewardPool {
    * Emits the `CommissionRateRangeUpdated` event.
    *
    */
-  function setCommissionRateRange(uint256 _minRate, uint256 _maxRate) external;
+  function setCommissionRateRange(uint256 minRate, uint256 maxRate) external;
 
   /**
    * @dev Proposes a candidate to become a validator.
@@ -91,16 +91,16 @@ interface ICandidateStaking is IRewardPool {
    *
    * Emits the event `PoolApproved`.
    *
-   * @param _candidateAdmin the candidate admin will be stored in the validator contract, used for calling function that affects
+   * @param candidateAdmin the candidate admin will be stored in the validator contract, used for calling function that affects
    * to its candidate, e.g. scheduling maintenance.
    *
    */
   function applyValidatorCandidate(
-    address _candidateAdmin,
-    address _consensusAddr,
-    address payable _treasuryAddr,
-    address _bridgeOperatorAddr,
-    uint256 _commissionRate
+    address candidateAdmin,
+    address consensusAddr,
+    address payable treasuryAddr,
+    address bridgeOperatorAddr,
+    uint256 commissionRate
   ) external payable;
 
   /**
@@ -116,7 +116,7 @@ interface ICandidateStaking is IRewardPool {
    * Emits the event `StakingAmountTransferFailed` if the contract cannot transfer RON back to the pool admin.
    *
    */
-  function execDeprecatePools(address[] calldata _pools, uint256 _period) external;
+  function execDeprecatePools(address[] calldata pools, uint256 period) external;
 
   /**
    * @dev Self-delegates to the validator candidate `_consensusAddr`.
@@ -129,7 +129,7 @@ interface ICandidateStaking is IRewardPool {
    * Emits the event `Staked`.
    *
    */
-  function stake(address _consensusAddr) external payable;
+  function stake(address consensusAddr) external payable;
 
   /**
    * @dev Unstakes from the validator candidate `_consensusAddr` for `_amount`.
@@ -141,7 +141,7 @@ interface ICandidateStaking is IRewardPool {
    * Emits the event `Unstaked`.
    *
    */
-  function unstake(address _consensusAddr, uint256 _amount) external;
+  function unstake(address consensusAddr, uint256 amount) external;
 
   /**
    * @dev Pool admin requests update validator commission rate. The request will be forwarded to the candidate manager
@@ -157,9 +157,9 @@ interface ICandidateStaking is IRewardPool {
    *
    */
   function requestUpdateCommissionRate(
-    address _consensusAddr,
-    uint256 _effectiveDaysOnwards,
-    uint256 _commissionRate
+    address consensusAddr,
+    uint256 effectiveDaysOnwards,
+    uint256 commissionRate
   ) external;
 
   /**
@@ -170,7 +170,7 @@ interface ICandidateStaking is IRewardPool {
    * - The method caller is the pool admin.
    *
    */
-  function requestRenounce(address _consensusAddr) external;
+  function requestRenounce(address consensusAddr) external;
 
   /**
    * @dev Renounces being a validator candidate and takes back the delegating/staking amount.
@@ -180,5 +180,5 @@ interface ICandidateStaking is IRewardPool {
    * - The method caller is the pool admin.
    *
    */
-  function requestEmergencyExit(address _consensusAddr) external;
+  function requestEmergencyExit(address consensusAddr) external;
 }

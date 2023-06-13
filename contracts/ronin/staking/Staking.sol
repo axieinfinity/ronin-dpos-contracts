@@ -53,29 +53,24 @@ contract Staking is IStaking, StakingProfile, Initializable {
    * @inheritdoc IStaking
    */
   function execRecordRewards(
-    address[] calldata _consensusAddrs,
-    uint256[] calldata _rewards,
-    uint256 _period
+    address[] calldata poolAddrs,
+    uint256[] calldata rewards,
+    uint256 period
   ) external payable override onlyContract(ContractType.VALIDATOR) {
-    _recordRewards(_consensusAddrs, _rewards, _period);
+    _recordRewards(poolAddrs, rewards, period);
   }
 
   /**
    * @inheritdoc IStaking
    */
   function execDeductStakingAmount(
-    address _consensusAddr,
-    uint256 _amount
-  ) external override onlyContract(ContractType.VALIDATOR) returns (uint256 _actualDeductingAmount) {
-    _actualDeductingAmount = _deductStakingAmount(_stakingPool[_consensusAddr], _amount);
-    address payable _validatorContractAddr = payable(msg.sender);
-    if (!_unsafeSendRON(_validatorContractAddr, _actualDeductingAmount)) {
-      emit StakingAmountDeductFailed(
-        _consensusAddr,
-        _validatorContractAddr,
-        _actualDeductingAmount,
-        address(this).balance
-      );
+    address poolAddr,
+    uint256 amount
+  ) external override onlyContract(ContractType.VALIDATOR) returns (uint256 actualDeductingAmount_) {
+    actualDeductingAmount_ = _deductStakingAmount(_poolDetail[poolAddr], amount);
+    address payable validatorContractAddr = payable(msg.sender);
+    if (!_unsafeSendRON(validatorContractAddr, actualDeductingAmount_)) {
+      emit StakingAmountDeductFailed(poolAddr, validatorContractAddr, actualDeductingAmount_, address(this).balance);
     }
   }
 
@@ -91,17 +86,17 @@ contract Staking is IStaking, StakingProfile, Initializable {
    */
   function _deductStakingAmount(
     PoolDetail storage _pool,
-    uint256 _amount
-  ) internal override returns (uint256 _actualDeductingAmount) {
-    _actualDeductingAmount = Math.min(_pool.stakingAmount, _amount);
+    uint256 amount
+  ) internal override returns (uint256 actualDeductingAmount_) {
+    actualDeductingAmount_ = Math.min(_pool.stakingAmount, amount);
 
-    _pool.stakingAmount -= _actualDeductingAmount;
+    _pool.stakingAmount -= actualDeductingAmount_;
     _changeDelegatingAmount(
       _pool,
       _pool.admin,
       _pool.stakingAmount,
-      Math.subNonNegative(_pool.stakingTotal, _actualDeductingAmount)
+      Math.subNonNegative(_pool.stakingTotal, actualDeductingAmount_)
     );
-    emit Unstaked(_pool.addr, _actualDeductingAmount);
+    emit Unstaked(_pool.id, actualDeductingAmount_);
   }
 }

@@ -20,7 +20,7 @@ abstract contract BaseStaking is
   HasValidatorDeprecated
 {
   /// @dev Mapping from pool address => staking pool detail
-  mapping(address => PoolDetail) internal _stakingPool;
+  mapping(address => PoolDetail) internal _poolDetail;
 
   /// @dev The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.
   uint256 internal _cooldownSecsToUndelegate;
@@ -40,18 +40,18 @@ abstract contract BaseStaking is
     _;
   }
 
-  modifier anyExceptPoolAdmin(PoolDetail storage _pool, address _delegator) {
-    _anyExceptPoolAdmin(_pool, _delegator);
+  modifier anyExceptPoolAdmin(PoolDetail storage _pool, address delegator) {
+    _anyExceptPoolAdmin(_pool, delegator);
     _;
   }
 
-  modifier onlyPoolAdmin(PoolDetail storage _pool, address _requester) {
-    _requirePoolAdmin(_pool, _requester);
+  modifier onlyPoolAdmin(PoolDetail storage _pool, address requester) {
+    _requirePoolAdmin(_pool, requester);
     _;
   }
 
-  modifier poolIsActive(address _poolAddr) {
-    _poolIsActive(_poolAddr);
+  modifier poolIsActive(address poolId) {
+    _poolIsActive(poolId);
     _;
   }
 
@@ -59,53 +59,53 @@ abstract contract BaseStaking is
     if (msg.value == 0) revert ErrZeroValue();
   }
 
-  function _requirePoolAdmin(PoolDetail storage _pool, address _requester) private view {
-    if (_pool.admin != _requester) revert ErrOnlyPoolAdminAllowed();
+  function _requirePoolAdmin(PoolDetail storage _pool, address requester) private view {
+    if (_pool.admin != requester) revert ErrOnlyPoolAdminAllowed();
   }
 
-  function _anyExceptPoolAdmin(PoolDetail storage _pool, address _delegator) private view {
-    if (_pool.admin == _delegator) revert ErrPoolAdminForbidden();
+  function _anyExceptPoolAdmin(PoolDetail storage _pool, address delegator) private view {
+    if (_pool.admin == delegator) revert ErrPoolAdminForbidden();
   }
 
-  function _poolIsActive(address _poolAddr) private view {
-    if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isValidatorCandidate(_poolAddr))
-      revert ErrInactivePool(_poolAddr);
-  }
-
-  /**
-   * @inheritdoc IBaseStaking
-   */
-  function isAdminOfActivePool(address _poolAdminAddr) public view override returns (bool) {
-    return _adminOfActivePoolMapping[_poolAdminAddr] != address(0);
+  function _poolIsActive(address poolId) private view {
+    if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isValidatorCandidate(poolId))
+      revert ErrInactivePool(poolId);
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
-  function getPoolAddressOf(address _poolAdminAddr) external view override returns (address) {
-    return _adminOfActivePoolMapping[_poolAdminAddr];
+  function isAdminOfActivePool(address poolAdminAddr) public view override returns (bool) {
+    return _adminOfActivePoolMapping[poolAdminAddr] != address(0);
+  }
+
+  /**
+   * @inheritdoc IBaseStaking
+   */
+  function getPoolAddressOf(address poolAdminAddr) external view override returns (address) {
+    return _adminOfActivePoolMapping[poolAdminAddr];
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
   function getPoolDetail(
-    address _poolAddr
-  ) external view returns (address _admin, uint256 _stakingAmount, uint256 _stakingTotal) {
-    PoolDetail storage _pool = _stakingPool[_poolAddr];
+    address poolId
+  ) external view returns (address admin, uint256 stakingAmount, uint256 stakingTotal) {
+    PoolDetail storage _pool = _poolDetail[poolId];
     return (_pool.admin, _pool.stakingAmount, _pool.stakingTotal);
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
-  function getManySelfStakings(address[] calldata _pools) external view returns (uint256[] memory _selfStakings) {
-    _selfStakings = new uint256[](_pools.length);
-    for (uint _i = 0; _i < _pools.length; ) {
-      _selfStakings[_i] = _stakingPool[_pools[_i]].stakingAmount;
+  function getManySelfStakings(address[] calldata poolIds) external view returns (uint256[] memory selfStakings_) {
+    selfStakings_ = new uint256[](poolIds.length);
+    for (uint i = 0; i < poolIds.length; ) {
+      selfStakings_[i] = _poolDetail[poolIds[i]].stakingAmount;
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }
@@ -113,8 +113,8 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IRewardPool
    */
-  function getStakingTotal(address _poolAddr) public view override returns (uint256) {
-    return _stakingPool[_poolAddr].stakingTotal;
+  function getStakingTotal(address poolId) public view override returns (uint256) {
+    return _poolDetail[poolId].stakingTotal;
   }
 
   /**
@@ -122,13 +122,13 @@ abstract contract BaseStaking is
    */
   function getManyStakingTotals(
     address[] calldata _poolList
-  ) public view override returns (uint256[] memory _stakingAmounts) {
-    _stakingAmounts = new uint256[](_poolList.length);
-    for (uint _i = 0; _i < _poolList.length; ) {
-      _stakingAmounts[_i] = getStakingTotal(_poolList[_i]);
+  ) public view override returns (uint256[] memory stakingAmounts_) {
+    stakingAmounts_ = new uint256[](_poolList.length);
+    for (uint i = 0; i < _poolList.length; ) {
+      stakingAmounts_[i] = getStakingTotal(_poolList[i]);
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }
@@ -136,24 +136,24 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IRewardPool
    */
-  function getStakingAmount(address _poolAddr, address _user) public view override returns (uint256) {
-    return _stakingPool[_poolAddr].delegatingAmount[_user];
+  function getStakingAmount(address poolId, address user) public view override returns (uint256) {
+    return _poolDetail[poolId].delegatingAmount[user];
   }
 
   /**
    * @inheritdoc IRewardPool
    */
   function getManyStakingAmounts(
-    address[] calldata _poolAddrs,
-    address[] calldata _userList
-  ) external view override returns (uint256[] memory _stakingAmounts) {
-    if (_poolAddrs.length != _userList.length) revert ErrInvalidArrays();
-    _stakingAmounts = new uint256[](_poolAddrs.length);
-    for (uint _i = 0; _i < _stakingAmounts.length; ) {
-      _stakingAmounts[_i] = _stakingPool[_poolAddrs[_i]].delegatingAmount[_userList[_i]];
+    address[] calldata poolIds,
+    address[] calldata userList
+  ) external view override returns (uint256[] memory stakingAmounts) {
+    if (poolIds.length != userList.length) revert ErrInvalidArrays();
+    stakingAmounts = new uint256[](poolIds.length);
+    for (uint i = 0; i < stakingAmounts.length; ) {
+      stakingAmounts[i] = _poolDetail[poolIds[i]].delegatingAmount[userList[i]];
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }
@@ -175,15 +175,15 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IBaseStaking
    */
-  function setCooldownSecsToUndelegate(uint256 _cooldownSecs) external override onlyAdmin {
-    _setCooldownSecsToUndelegate(_cooldownSecs);
+  function setCooldownSecsToUndelegate(uint256 cooldownSecs) external override onlyAdmin {
+    _setCooldownSecsToUndelegate(cooldownSecs);
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
-  function setWaitingSecsToRevoke(uint256 _secs) external override onlyAdmin {
-    _setWaitingSecsToRevoke(_secs);
+  function setWaitingSecsToRevoke(uint256 secs) external override onlyAdmin {
+    _setWaitingSecsToRevoke(secs);
   }
 
   /**
@@ -192,9 +192,9 @@ abstract contract BaseStaking is
    * Emits the event `CooldownSecsToUndelegateUpdated`.
    *
    */
-  function _setCooldownSecsToUndelegate(uint256 _cooldownSecs) internal {
-    _cooldownSecsToUndelegate = _cooldownSecs;
-    emit CooldownSecsToUndelegateUpdated(_cooldownSecs);
+  function _setCooldownSecsToUndelegate(uint256 cooldownSecs) internal {
+    _cooldownSecsToUndelegate = cooldownSecs;
+    emit CooldownSecsToUndelegateUpdated(cooldownSecs);
   }
 
   /**
@@ -203,9 +203,9 @@ abstract contract BaseStaking is
    * Emits the event `WaitingSecsToRevokeUpdated`.
    *
    */
-  function _setWaitingSecsToRevoke(uint256 _secs) internal {
-    _waitingSecsToRevoke = _secs;
-    emit WaitingSecsToRevokeUpdated(_secs);
+  function _setWaitingSecsToRevoke(uint256 secs) internal {
+    _waitingSecsToRevoke = secs;
+    emit WaitingSecsToRevokeUpdated(secs);
   }
 
   /**
@@ -213,12 +213,12 @@ abstract contract BaseStaking is
    */
   function _changeDelegatingAmount(
     PoolDetail storage _pool,
-    address _delegator,
-    uint256 _newDelegatingAmount,
-    uint256 _newStakingTotal
+    address delegator,
+    uint256 newDelegatingAmount,
+    uint256 newStakingTotal
   ) internal {
-    _syncUserReward(_pool.addr, _delegator, _newDelegatingAmount);
-    _pool.stakingTotal = _newStakingTotal;
-    _pool.delegatingAmount[_delegator] = _newDelegatingAmount;
+    _syncUserReward(_pool.id, delegator, newDelegatingAmount);
+    _pool.stakingTotal = newStakingTotal;
+    _pool.delegatingAmount[delegator] = newDelegatingAmount;
   }
 }

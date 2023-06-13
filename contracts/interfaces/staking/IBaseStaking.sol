@@ -5,7 +5,7 @@ pragma solidity ^0.8.9;
 interface IBaseStaking {
   struct PoolDetail {
     // Address of the pool i.e. consensus address of the validator
-    address addr;
+    address id;
     // Pool admin address
     address admin;
     // Self-staking amount
@@ -41,17 +41,17 @@ interface IBaseStaking {
   /**
    * @dev Returns whether the `_poolAdminAddr` is currently active.
    */
-  function isAdminOfActivePool(address _poolAdminAddr) external view returns (bool);
+  function isAdminOfActivePool(address poolAdminAddr) external view returns (bool);
 
   /**
    * @dev Returns the consensus address corresponding to the pool admin.
    */
-  function getPoolAddressOf(address _poolAdminAddr) external view returns (address);
+  function getPoolAddressOf(address poolAdminAddr) external view returns (address);
 
   /**
    * @dev Returns the staking pool detail.
    */
-  function getPoolDetail(address) external view returns (address _admin, uint256 _stakingAmount, uint256 _stakingTotal);
+  function getPoolDetail(address) external view returns (address admin, uint256 stakingAmount, uint256 stakingTotal);
 
   /**
    * @dev Returns the self-staking amounts of the pools.
@@ -77,7 +77,7 @@ interface IBaseStaking {
    * Emits the event `CooldownSecsToUndelegateUpdated`.
    *
    */
-  function setCooldownSecsToUndelegate(uint256 _cooldownSecs) external;
+  function setCooldownSecsToUndelegate(uint256 cooldownSecs) external;
 
   /**
    * @dev Sets the number of seconds that a candidate must wait to be revoked.
@@ -88,5 +88,5 @@ interface IBaseStaking {
    * Emits the event `WaitingSecsToRevokeUpdated`.
    *
    */
-  function setWaitingSecsToRevoke(uint256 _secs) external;
+  function setWaitingSecsToRevoke(uint256 secs) external;
 }
