@@ -7,11 +7,9 @@ import "../../extensions/RONTransferHelper.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../interfaces/staking/IBaseStaking.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
-import "../../interfaces/IProfile.sol";
 import "../../libraries/Math.sol";
 import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 import "./RewardCalculation.sol";
-import { TPoolId } from "../../libraries/udvts/Types.sol";
 
 abstract contract BaseStaking is
   RONTransferHelper,
@@ -52,8 +50,8 @@ abstract contract BaseStaking is
     _;
   }
 
-  modifier poolOfConsensusIsActive(address consensusAddr) {
-    _poolOfConsensusIsActive(consensusAddr);
+  modifier poolIsActive(address poolId) {
+    _poolIsActive(poolId);
     _;
   }
 
@@ -69,9 +67,9 @@ abstract contract BaseStaking is
     if (_pool.admin == delegator) revert ErrPoolAdminForbidden();
   }
 
-  function _poolOfConsensusIsActive(address consensusAddr) private view {
-    if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isValidatorCandidate(consensusAddr))
-      revert ErrInactivePool(consensusAddr);
+  function _poolIsActive(address poolId) private view {
+    if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isValidatorCandidate(poolId))
+      revert ErrInactivePool(poolId);
   }
 
   /**
@@ -92,7 +90,7 @@ abstract contract BaseStaking is
    * @inheritdoc IBaseStaking
    */
   function getPoolDetail(
-    TPoolId poolId
+    address poolId
   ) external view returns (address admin, uint256 stakingAmount, uint256 stakingTotal) {
     PoolDetail storage _pool = _poolDetail[poolId];
     return (_pool.admin, _pool.stakingAmount, _pool.stakingTotal);
@@ -101,7 +99,7 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IBaseStaking
    */
-  function getManySelfStakings(TPoolId[] calldata poolIds) external view returns (uint256[] memory selfStakings_) {
+  function getManySelfStakings(address[] calldata poolIds) external view returns (uint256[] memory selfStakings_) {
     selfStakings_ = new uint256[](poolIds.length);
     for (uint i = 0; i < poolIds.length; ) {
       selfStakings_[i] = _poolDetail[poolIds[i]].stakingAmount;
@@ -115,8 +113,7 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IRewardPool
    */
-  function getStakingTotal(TPoolId consensusAddr) public view override returns (uint256) {
-    address poolId = _unwrapC2P(consensusAddr);
+  function getStakingTotal(address poolId) public view override returns (uint256) {
     return _poolDetail[poolId].stakingTotal;
   }
 
@@ -124,11 +121,11 @@ abstract contract BaseStaking is
    * @inheritdoc IRewardPool
    */
   function getManyStakingTotals(
-    TPoolId[] calldata consensusAddrs
+    address[] calldata _poolList
   ) public view override returns (uint256[] memory stakingAmounts_) {
-    stakingAmounts_ = new uint256[](consensusAddrs.length);
-    for (uint i = 0; i < consensusAddrs.length; ) {
-      stakingAmounts_[i] = getStakingTotal(consensusAddrs[i]);
+    stakingAmounts_ = new uint256[](_poolList.length);
+    for (uint i = 0; i < _poolList.length; ) {
+      stakingAmounts_[i] = getStakingTotal(_poolList[i]);
 
       unchecked {
         ++i;
@@ -139,7 +136,7 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IRewardPool
    */
-  function getStakingAmount(TPoolId poolId, address user) public view override returns (uint256) {
+  function getStakingAmount(address poolId, address user) public view override returns (uint256) {
     return _poolDetail[poolId].delegatingAmount[user];
   }
 
@@ -147,7 +144,7 @@ abstract contract BaseStaking is
    * @inheritdoc IRewardPool
    */
   function getManyStakingAmounts(
-    TPoolId[] calldata poolIds,
+    address[] calldata poolIds,
     address[] calldata userList
   ) external view override returns (uint256[] memory stakingAmounts) {
     if (poolIds.length != userList.length) revert ErrInvalidArrays();
@@ -159,16 +156,6 @@ abstract contract BaseStaking is
         ++i;
       }
     }
-  }
-
-  function _unwrapC2P(address consensusAddr) internal view returns (address) {
-    return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
-    // return _profileContract.getConsensus2Id(consensusAddr);
-  }
-
-  function _unwrapManyC2P(address[] memory consensusAddrs) internal view returns (address[] memory) {
-    return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
-    // return _profileContract.getManyConsensus2Id(consensusAddrs);
   }
 
   /**
@@ -233,9 +220,5 @@ abstract contract BaseStaking is
     _syncUserReward(_pool.id, delegator, newDelegatingAmount);
     _pool.stakingTotal = newStakingTotal;
     _pool.delegatingAmount[delegator] = newDelegatingAmount;
-  }
-
-  function _profileContract() internal view returns (IProfile) {
-    return IProfile(getContract(ContractType.PROFILE));
   }
 }

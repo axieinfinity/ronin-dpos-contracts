@@ -430,15 +430,7 @@ abstract contract CoinbaseExecution is
     uint256 _newPeriod
   ) private returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates) {
     _unsastifiedCandidates = _syncCandidateSet(_newPeriod);
-    TPoolId[] memory __candidateConsensus = new TPoolId[](_candidates.length);
-    for (uint i; i < __candidateConsensus.length; ) {
-      __candidateConsensus[i] = TPoolId.wrap(_candidates[i]);
-      unchecked {
-        i++;
-      }
-    }
-
-    uint256[] memory _weights = IStaking(getContract(ContractType.STAKING)).getManyStakingTotals(__candidateConsensus);
+    uint256[] memory _weights = IStaking(getContract(ContractType.STAKING)).getManyStakingTotals(_candidates);
     uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
       .getConsensusWeights(_candidates);
     uint256 _newValidatorCount;

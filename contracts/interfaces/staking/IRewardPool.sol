@@ -3,7 +3,6 @@
 pragma solidity ^0.8.9;
 
 import "../../interfaces/consumers/PeriodWrapperConsumer.sol";
-import { TPoolId } from "../../libraries/udvts/Types.sol";
 
 interface IRewardPool is PeriodWrapperConsumer {
   struct UserRewardFields {
@@ -44,28 +43,28 @@ interface IRewardPool is PeriodWrapperConsumer {
   /**
    * @dev Returns the reward amount that user claimable.
    */
-  function getReward(TPoolId poolAddr, address user) external view returns (uint256);
+  function getReward(address poolAddr, address user) external view returns (uint256);
 
   /**
    * @dev Returns the staking amount of an user.
    */
-  function getStakingAmount(TPoolId poolAddr, address user) external view returns (uint256);
+  function getStakingAmount(address poolAddr, address user) external view returns (uint256);
 
   /**
    * @dev Returns the staking amounts of the users.
    */
   function getManyStakingAmounts(
-    TPoolId[] calldata poolAddrs,
+    address[] calldata poolAddrs,
     address[] calldata userList
   ) external view returns (uint256[] memory);
 
   /**
    * @dev Returns the total staking amount of all users for a pool.
    */
-  function getStakingTotal(TPoolId poolAddr) external view returns (uint256);
+  function getStakingTotal(address poolAddr) external view returns (uint256);
 
   /**
    * @dev Returns the total staking amounts of all users for the pools `_poolAddrs`.
    */
-  function getManyStakingTotals(TPoolId[] calldata poolAddrs) external view returns (uint256[] memory);
+  function getManyStakingTotals(address[] calldata poolAddrs) external view returns (uint256[] memory);
 }

@@ -77,16 +77,16 @@ contract MockStaking is RewardCalculation, GlobalConfigConsumer {
     _amount = _claimReward(poolAddr, _user, getPeriod());
   }
 
-  function getStakingAmount(TPoolId, address _user) public view override returns (uint256) {
+  function getStakingAmount(address, address _user) public view override returns (uint256) {
     return _stakingAmount[_user];
   }
 
   function getManyStakingAmounts(
-    TPoolId[] calldata _poolAddrs,
+    address[] calldata _poolAddrs,
     address[] calldata _userList
   ) external view override returns (uint256[] memory) {}
 
-  function getStakingTotal(TPoolId _addr) public view virtual override returns (uint256) {
+  function getStakingTotal(address _addr) public view virtual override returns (uint256) {
     return _addr == poolAddr ? _stakingTotal : 0;
   }
 
@@ -94,5 +94,5 @@ contract MockStaking is RewardCalculation, GlobalConfigConsumer {
     return lastUpdatedPeriod;
   }
 
-  function getManyStakingTotals(TPoolId[] calldata _poolAddr) external view override returns (uint256[] memory) {}
+  function getManyStakingTotals(address[] calldata _poolAddr) external view override returns (uint256[] memory) {}
 }
