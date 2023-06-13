@@ -3,10 +3,12 @@ on:
   push:
     branches:
       - main
+      - testnet
       - dev
   pull_request:
     branches:
       - main
+      - testnet
       - dev
 
 permissions:
