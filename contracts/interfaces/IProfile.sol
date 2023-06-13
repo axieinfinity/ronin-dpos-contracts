@@ -32,6 +32,9 @@ interface IProfile {
   /// @dev Getter to backward query from `consensus` address to `id` address.
   function getConsensus2Id(address consensus) external view returns (address id);
 
+  /// @dev Getter to backward batch query from `consensus` address to `id` address.
+  function getManyConsensus2Id(address[] memory consensus) external view returns (address[] memory);
+
   /**
    * @dev Cross-contract function to add/update new profile of a validator candidate when they
    * applying for candidate role.

@@ -4,6 +4,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../extensions/collections/HasContracts.sol";
 import "../interfaces/IProfile.sol";
 import "../interfaces/staking/IStaking.sol";
+import "../utils/RoleAccess.sol";
 
 pragma solidity ^0.8.9;
 
@@ -19,8 +20,7 @@ contract Profile is IProfile, HasContracts, Initializable {
   /// @dev Error of already existed profile.
   error ErrExistentProfile();
   /// @dev Event emitted when a address in a profile is changed.
-  /// NOTE: Define a struct for `addressType` instead of using string, consider reusing Error of AddressEnums.
-  event ProfileAddressChanged(address indexed id, string indexed addressType);
+  event ProfileAddressChanged(address indexed id, RoleAccess indexed addressType);
 
   constructor() {
     _disableInitializers();
@@ -113,7 +113,7 @@ contract Profile is IProfile, HasContracts, Initializable {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
     _profile.admin = newAdminAddr;
 
-    emit ProfileAddressChanged(id, "admin");
+    emit ProfileAddressChanged(id, RoleAccess.ADMIN);
   }
 
   /**
@@ -132,7 +132,7 @@ contract Profile is IProfile, HasContracts, Initializable {
 
     _profile.bridgeOperator = newBridgeAddr;
 
-    emit ProfileAddressChanged(id, "bridge");
+    emit ProfileAddressChanged(id, RoleAccess.BRIDGE_OPERATOR);
   }
 
   /**
@@ -160,6 +160,6 @@ contract Profile is IProfile, HasContracts, Initializable {
 
     _profile.consensus = newConsensusAddr;
 
-    emit ProfileAddressChanged(id, "consensus");
+    emit ProfileAddressChanged(id, RoleAccess.CONSENSUS);
   }
 }

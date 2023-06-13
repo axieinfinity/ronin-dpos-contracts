@@ -10,5 +10,6 @@ enum RoleAccess {
   /* 5 */ WITHDRAWAL_MIGRATOR,
   /* 6 */ BRIDGE_OPERATOR,
   /* 7 */ BLOCK_PRODUCER,
-  /* 8 */ VALIDATOR_CANDIDATE
+  /* 8 */ VALIDATOR_CANDIDATE,
+  /* 9 */ CONSENSUS
 }
