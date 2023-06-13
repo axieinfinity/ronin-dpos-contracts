@@ -57,22 +57,23 @@ export const accessControlRevertStr = (addr: Address, role: string): string =>
 export const compareBigNumbers = (firstBigNumbers: BigNumber[], secondBigNumbers: BigNumber[]) =>
   expect(firstBigNumbers.map((_) => _.toHexString())).deep.equal(secondBigNumbers.map((_) => _.toHexString()));
 
-const CONTRACT_TYPES = [
-  'UNKNOWN',
-  'PAUSE_ENFORCER_CONTRACT',
-  'BRIDGE_CONTRACT',
-  'BRIDGE_TRACKING_CONTRACT',
-  'GOVERNANCE_ADMIN_CONTRACT',
-  'MAINTENANCE_CONTRACT',
-  'SLASH_INDICATOR_CONTRACT',
-  'STAKING_VESTING_CONTRACT',
-  'VALIDATOR_CONTRACT',
-  'STAKING_CONTRACT',
-  'RONIN_TRUSTED_ORGANIZATION_CONTRACT',
+const CONTRACT_TYPE = [
+  /*  0 */ 'UNKNOWN',
+  /*  1 */ 'PAUSE_ENFORCER_CONTRACT',
+  /*  2 */ 'BRIDGE_CONTRACT',
+  /*  3 */ 'BRIDGE_TRACKING_CONTRACT',
+  /*  4 */ 'GOVERNANCE_ADMIN_CONTRACT',
+  /*  5 */ 'MAINTENANCE_CONTRACT',
+  /*  6 */ 'SLASH_INDICATOR_CONTRACT',
+  /*  7 */ 'STAKING_VESTING_CONTRACT',
+  /*  8 */ 'VALIDATOR_CONTRACT',
+  /*  9 */ 'STAKING_CONTRACT',
+  /* 10 */ 'RONIN_TRUSTED_ORGANIZATION_CONTRACT',
+  /* 11 */ 'PROFILE_CONTRACT',
 ];
 
-export const getRoles = (roleName: string): number => {
-  return CONTRACT_TYPES.indexOf(roleName);
+export const getRole = (roleName: string): number => {
+  return CONTRACT_TYPE.indexOf(roleName);
 };
 
 export const getProxyImplementation = async (proxy: string): Promise<string> =>

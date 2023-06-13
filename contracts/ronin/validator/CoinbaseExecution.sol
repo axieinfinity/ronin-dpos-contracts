@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/RONTransferHelper.sol";
+import "../../interfaces/IProfile.sol";
 import "../../interfaces/IStakingVesting.sol";
 import "../../interfaces/IMaintenance.sol";
 import "../../interfaces/IBridgeTracking.sol";
@@ -57,7 +58,8 @@ abstract contract CoinbaseExecution is
    * @inheritdoc ICoinbaseExecution
    */
   function submitBlockReward() external payable override onlyCoinbase {
-    address _correspondingPool = _profileContract.getConsensus2Id(msg.sender);
+    IProfile profileContract = IProfile(getContract(ContractType.PROFILE));
+    address _correspondingPool = profileContract.getConsensus2Id(msg.sender);
     bool _requestForBlockProducer = isBlockProducer(msg.sender) &&
       !_jailed(_correspondingPool) &&
       !_miningRewardDeprecated(_correspondingPool, currentPeriod());

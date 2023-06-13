@@ -6,6 +6,7 @@ import "../../extensions/consumers/GlobalConfigConsumer.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../libraries/AddressArrayUtils.sol";
 import "../../interfaces/staking/ICandidateStaking.sol";
+import "../../interfaces/IProfile.sol";
 import "./BaseStaking.sol";
 
 abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConfigConsumer, PercentageConsumer {
@@ -219,7 +220,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       _commissionRate
     );
 
-    _profileContract.execApplyValidatorCandidate(_candidateAdmin, _consensusAddr, _treasuryAddr, _bridgeOperatorAddr);
+    IProfile profileContract = IProfile(getContract(ContractType.PROFILE));
+    profileContract.execApplyValidatorCandidate(_candidateAdmin, _consensusAddr, _treasuryAddr, _bridgeOperatorAddr);
   }
 
   /**

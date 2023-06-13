@@ -25,7 +25,7 @@ import {
 } from '../helpers/address-set-types';
 import { initTest } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
-import { getRoles, mineBatchTxs } from '../helpers/utils';
+import { getRole, mineBatchTxs } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
@@ -105,7 +105,7 @@ describe('Bridge Tracking test', () => {
 
     await governanceAdminInterface.functionDelegateCalls(
       [bridgeTracking.address],
-      [bridgeTracking.interface.encodeFunctionData('setContract', [getRoles('BRIDGE_CONTRACT'), mockGateway.address])]
+      [bridgeTracking.interface.encodeFunctionData('setContract', [getRole('BRIDGE_CONTRACT'), mockGateway.address])]
     );
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
@@ -114,8 +114,8 @@ describe('Bridge Tracking test', () => {
     await governanceAdminInterface.functionDelegateCalls(
       [stakingContract.address, roninValidatorSet.address],
       [
-        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
-        roninValidatorSet.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        roninValidatorSet.interface.encodeFunctionData('initializeV3', [profileAddress]),
       ]
     );
 
@@ -152,8 +152,8 @@ describe('Bridge Tracking test', () => {
 
   describe('Config test', async () => {
     it('Should be able to get contract configs correctly', async () => {
-      expect(await bridgeTracking.getContract(getRoles('BRIDGE_CONTRACT'))).eq(mockGateway.address);
-      expect(await mockGateway.getContract(getRoles('BRIDGE_TRACKING_CONTRACT'))).eq(bridgeTracking.address);
+      expect(await bridgeTracking.getContract(getRole('BRIDGE_CONTRACT'))).eq(mockGateway.address);
+      expect(await mockGateway.getContract(getRole('BRIDGE_TRACKING_CONTRACT'))).eq(bridgeTracking.address);
       expect(await roninValidatorSet.currentPeriod()).eq(period);
     });
   });

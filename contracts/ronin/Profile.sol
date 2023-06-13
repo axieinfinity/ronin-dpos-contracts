@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../extensions/collections/HasStakingContract.sol";
-import "../extensions/collections/HasValidatorContract.sol";
+import "../extensions/collections/HasContracts.sol";
 import "../interfaces/IProfile.sol";
+import "../interfaces/staking/IStaking.sol";
 
 pragma solidity ^0.8.9;
 
-contract Profile is IProfile, HasStakingContract, HasValidatorContract, Initializable {
+contract Profile is IProfile, HasContracts, Initializable {
   /// @dev Mapping from id address => candidate profile.
   mapping(address => CandidateProfile) public _id2Profile;
   /// @dev Mapping from consensus address => id address.
@@ -30,8 +30,8 @@ contract Profile is IProfile, HasStakingContract, HasValidatorContract, Initiali
    * @dev Initializes the contract storage.
    */
   function initialize(address __stakingContract, address __validatorContract) external initializer {
-    _setStakingContract(__stakingContract);
-    _setValidatorContract(__validatorContract);
+    _setContract(ContractType.STAKING, __stakingContract);
+    _setContract(ContractType.VALIDATOR, __validatorContract);
   }
 
   function getId2Profile(address id) external view returns (CandidateProfile memory) {
@@ -61,7 +61,7 @@ contract Profile is IProfile, HasStakingContract, HasValidatorContract, Initiali
     address consensus,
     address treasury,
     address bridgeOperator
-  ) external onlyStakingContract {
+  ) external onlyContract(ContractType.STAKING) {
     // TODO: handle previous added consensus
     CandidateProfile storage _profile = _id2Profile[consensus];
 
@@ -107,8 +107,10 @@ contract Profile is IProfile, HasStakingContract, HasValidatorContract, Initiali
    * Emit an {ProfileAddressChanged}.
    */
   function requestChangeAdminAddress(address id, address newAdminAddr) external {
+    IStaking stakingContract = IStaking(getContract(ContractType.STAKING));
+    stakingContract.execChangeAdminAddress(id, newAdminAddr);
+
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
-    _stakingContract.execChangeAdminAddress(id, newAdminAddr);
     _profile.admin = newAdminAddr;
 
     emit ProfileAddressChanged(id, "admin");

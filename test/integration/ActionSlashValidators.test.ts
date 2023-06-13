@@ -113,8 +113,8 @@ describe('[Integration] Slash validators', () => {
     await governanceAdminInterface.functionDelegateCalls(
       [stakingContract.address, validatorContract.address],
       [
-        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
-        validatorContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        validatorContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
       ]
     );
     await validatorContract.initEpoch();

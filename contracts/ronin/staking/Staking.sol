@@ -37,13 +37,16 @@ contract Staking is IStaking, StakingProfile, Initializable {
   /**
    * @dev Initializes the contract storage V2.
    */
-  function initializeV2(address __profileContract) external reinitializer(2) {
-    _setProfileContract(__profileContract);
-  }
-
   function initializeV2() external reinitializer(2) {
     _setContract(ContractType.VALIDATOR, ______deprecatedValidator);
     delete ______deprecatedValidator;
+  }
+
+  /**
+   * @dev Initializes the contract storage V3.
+   */
+  function initializeV3(address __profileContract) external reinitializer(3) {
+    _setContract(ContractType.PROFILE, __profileContract);
   }
 
   /**

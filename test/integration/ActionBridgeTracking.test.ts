@@ -29,7 +29,7 @@ import {
 } from '../helpers/address-set-types';
 import { initTest } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
-import { getRoles, mineBatchTxs } from '../helpers/utils';
+import { getRole, mineBatchTxs } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
@@ -140,8 +140,8 @@ describe('[Integration] Bridge Tracking test', () => {
     await governanceAdminInterface.functionDelegateCalls(
       [stakingContract.address, roninValidatorSet.address],
       [
-        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
-        roninValidatorSet.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        roninValidatorSet.interface.encodeFunctionData('initializeV3', [profileAddress]),
       ]
     );
     await roninValidatorSet.initEpoch();
@@ -151,15 +151,15 @@ describe('[Integration] Bridge Tracking test', () => {
       Array.from(Array(3).keys()).map(() => bridgeContract.address),
       [
         bridgeContract.interface.encodeFunctionData('setContract', [
-          getRoles('BRIDGE_TRACKING_CONTRACT'),
+          getRole('BRIDGE_TRACKING_CONTRACT'),
           bridgeTracking.address,
         ]),
         bridgeContract.interface.encodeFunctionData('setContract', [
-          getRoles('VALIDATOR_CONTRACT'),
+          getRole('VALIDATOR_CONTRACT'),
           roninValidatorSet.address,
         ]),
         bridgeContract.interface.encodeFunctionData('setContract', [
-          getRoles('RONIN_TRUSTED_ORGANIZATION_CONTRACT'),
+          getRole('RONIN_TRUSTED_ORGANIZATION_CONTRACT'),
           roninTrustedOrganizationAddress,
         ]),
       ]
@@ -195,9 +195,9 @@ describe('[Integration] Bridge Tracking test', () => {
   });
 
   it('Should be able to get contract configs correctly', async () => {
-    expect(await bridgeTracking.getContract(getRoles('BRIDGE_CONTRACT'))).eq(bridgeContract.address);
-    expect(await bridgeContract.getContract(getRoles('BRIDGE_TRACKING_CONTRACT'))).eq(bridgeTracking.address);
-    expect(await bridgeContract.getContract(getRoles('VALIDATOR_CONTRACT'))).eq(roninValidatorSet.address);
+    expect(await bridgeTracking.getContract(getRole('BRIDGE_CONTRACT'))).eq(bridgeContract.address);
+    expect(await bridgeContract.getContract(getRole('BRIDGE_TRACKING_CONTRACT'))).eq(bridgeTracking.address);
+    expect(await bridgeContract.getContract(getRole('VALIDATOR_CONTRACT'))).eq(roninValidatorSet.address);
     expect(await bridgeContract.getMainchainToken(token.address, mainchainId)).deep.equal([0, token.address]);
     expect(await roninValidatorSet.currentPeriod()).eq(period);
   });

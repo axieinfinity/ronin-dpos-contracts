@@ -135,8 +135,8 @@ describe('Emergency Exit test', () => {
     await governanceAdminInterface.functionDelegateCalls(
       [stakingContract.address, roninValidatorSet.address],
       [
-        stakingContract.interface.encodeFunctionData('initializeV2', [profileAddress]),
-        roninValidatorSet.interface.encodeFunctionData('initializeV2', [profileAddress]),
+        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        roninValidatorSet.interface.encodeFunctionData('initializeV3', [profileAddress]),
       ]
     );
 

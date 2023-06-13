@@ -143,7 +143,7 @@ describe('Arrange validators', () => {
 
     await governanceAdminInterface.functionDelegateCalls(
       [validatorContract.address],
-      [validatorContract.interface.encodeFunctionData('initializeV2', [profileAddress])]
+      [validatorContract.interface.encodeFunctionData('initializeV3', [profileAddress])]
     );
   });
 

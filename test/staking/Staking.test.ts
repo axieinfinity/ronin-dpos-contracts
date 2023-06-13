@@ -88,7 +88,7 @@ describe('Staking test', () => {
 
     await proxyContract
       .connect(proxyAdmin)
-      .functionDelegateCall(logicContract.interface.encodeFunctionData('initializeV2', [profileContract.address]));
+      .functionDelegateCall(logicContract.interface.encodeFunctionData('initializeV3', [profileContract.address]));
 
     stakingContract = Staking__factory.connect(proxyContract.address, deployer);
     expect(stakingContractAddr.toLowerCase()).eq(stakingContract.address.toLowerCase());
