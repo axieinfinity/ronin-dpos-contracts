@@ -3,11 +3,13 @@ on:
   push:
     branches:
       - main
+      - testnet
       - dev
       - reduce-contract-size
   pull_request:
     branches:
       - main
+      - testnet
       - dev
       - reduce-contract-size
 
