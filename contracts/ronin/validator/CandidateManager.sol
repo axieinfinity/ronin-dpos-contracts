@@ -97,6 +97,12 @@ abstract contract CandidateManager is
     _candidateIndex[_consensusAddr] = ~_length;
     _candidates.push(_consensusAddr);
 
+    // TConsensus[] storage a;
+
+    // assembly {
+    //   a.slot := _candidates.slot
+    // }
+
     ValidatorCandidate storage _info = _candidateInfo[_consensusAddr];
     _info.admin = _candidateAdmin;
     _info.consensusAddr = _consensusAddr;

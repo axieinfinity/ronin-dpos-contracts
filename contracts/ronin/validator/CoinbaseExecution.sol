@@ -19,6 +19,7 @@ import "../../precompile-usages/PCUPickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
 import "./CandidateManager.sol";
 import "./EmergencyExit.sol";
+import { TPoolId } from "../../libraries/udvts/Types.sol";
 
 abstract contract CoinbaseExecution is
   ICoinbaseExecution,
@@ -59,7 +60,7 @@ abstract contract CoinbaseExecution is
    */
   function submitBlockReward() external payable override onlyCoinbase {
     IProfile profileContract = IProfile(getContract(ContractType.PROFILE));
-    address _correspondingPool = profileContract.getConsensus2Id(msg.sender);
+    address _correspondingPool = TPoolId.unwrap(profileContract.getConsensus2Id(msg.sender));
     bool _requestForBlockProducer = isBlockProducer(msg.sender) &&
       !_jailed(_correspondingPool) &&
       !_miningRewardDeprecated(_correspondingPool, currentPeriod());

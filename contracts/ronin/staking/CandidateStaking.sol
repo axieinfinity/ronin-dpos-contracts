@@ -77,12 +77,13 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       amount
     );
 
-    PoolDetail storage _pool = _poolDetail[consensusAddr];
+    TPoolId poolId = TPoolId.wrap(consensusAddr);
+    PoolDetail storage _pool = _poolDetail[poolId];
     _pool.admin = poolAdmin;
-    _pool.id = consensusAddr;
-    _adminOfActivePoolMapping[poolAdmin] = consensusAddr;
+    _pool.id = poolId;
+    _adminOfActivePoolMapping[poolAdmin] = poolId;
 
-    _stake(_poolDetail[consensusAddr], poolAdmin, amount);
+    _stake(_poolDetail[poolId], poolAdmin, amount);
     emit PoolApproved(consensusAddr, poolAdmin);
   }
 
@@ -93,7 +94,12 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     address consensusAddr,
     uint256 effectiveDaysOnwards,
     uint256 commissionRate
-  ) external override poolOfConsensusIsActive(consensusAddr) onlyPoolAdmin(_poolDetail[consensusAddr], msg.sender) {
+  )
+    external
+    override
+    poolOfConsensusIsActive(consensusAddr)
+    onlyPoolAdmin(_poolDetail[_convertC2P(consensusAddr)], msg.sender)
+  {
     if (commissionRate > _maxCommissionRate || commissionRate < _minCommissionRate) revert ErrInvalidCommissionRate();
     IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execRequestUpdateCommissionRate(
       consensusAddr,
@@ -114,9 +120,13 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     }
 
     for (uint i = 0; i < poolIds.length; ) {
-      PoolDetail storage _pool = _poolDetail[poolIds[i]];
+      TPoolId poolId = TPoolId.wrap(poolIds[i]);
+      PoolDetail storage _pool = _poolDetail[poolId];
       // Deactivate the pool admin in the active mapping.
-      delete _adminOfActivePoolMapping[_pool.admin];
+
+      // Cannot using `delete` on UDVT.
+      // delete _adminOfActivePoolMapping[_pool.admin].unwrap();
+      _adminOfActivePoolMapping[_pool.admin] = TPoolId.wrap(address(0));
 
       // Deduct and transfer the self staking amount to the pool admin.
       uint256 deductingAmount = _pool.stakingAmount;
@@ -128,7 +138,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       }
 
       // Settle the unclaimed reward and transfer to the pool admin.
-      uint256 lastRewardAmount = _claimReward(poolIds[i], _pool.admin, newPeriod);
+      uint256 lastRewardAmount = _claimReward(poolId, _pool.admin, newPeriod);
       if (lastRewardAmount > 0) {
         _unsafeSendRON(payable(_pool.admin), lastRewardAmount, DEFAULT_ADDITION_GAS);
       }
@@ -145,7 +155,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
    * @inheritdoc ICandidateStaking
    */
   function stake(address consensusAddr) external payable override noEmptyValue poolOfConsensusIsActive(consensusAddr) {
-    _stake(_poolDetail[consensusAddr], msg.sender, msg.value);
+    TPoolId poolId = _convertC2P(consensusAddr);
+    _stake(_poolDetail[poolId], msg.sender, msg.value);
   }
 
   /**
@@ -157,7 +168,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   ) external override nonReentrant poolOfConsensusIsActive(consensusAddr) {
     if (amount == 0) revert ErrUnstakeZeroAmount();
     address requester = msg.sender;
-    PoolDetail storage _pool = _poolDetail[consensusAddr];
+    TPoolId poolId = _convertC2P(consensusAddr);
+    PoolDetail storage _pool = _poolDetail[poolId];
     uint256 remainAmount = _pool.stakingAmount - amount;
     if (remainAmount < _minValidatorStakingAmount) revert ErrStakingAmountLeft();
 
@@ -170,7 +182,12 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
    */
   function requestRenounce(
     address consensusAddr
-  ) external override poolOfConsensusIsActive(consensusAddr) onlyPoolAdmin(_poolDetail[consensusAddr], msg.sender) {
+  )
+    external
+    override
+    poolOfConsensusIsActive(consensusAddr)
+    onlyPoolAdmin(_poolDetail[_convertC2P(consensusAddr)], msg.sender)
+  {
     IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execRequestRenounceCandidate(
       consensusAddr,
       _waitingSecsToRevoke
@@ -182,7 +199,12 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
    */
   function requestEmergencyExit(
     address consensusAddr
-  ) external override poolOfConsensusIsActive(consensusAddr) onlyPoolAdmin(_poolDetail[consensusAddr], msg.sender) {
+  )
+    external
+    override
+    poolOfConsensusIsActive(consensusAddr)
+    onlyPoolAdmin(_poolDetail[_convertC2P(consensusAddr)], msg.sender)
+  {
     IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execEmergencyExit(consensusAddr, _waitingSecsToRevoke);
   }
 

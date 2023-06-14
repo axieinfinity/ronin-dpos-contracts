@@ -6,9 +6,9 @@ import "./IRewardPool.sol";
 
 interface IDelegatorStaking is IRewardPool {
   /// @dev Emitted when the delegator staked for a validator candidate.
-  event Delegated(address indexed delegator, address indexed consensuAddr, uint256 amount);
+  event Delegated(address indexed delegator, TPoolId indexed poolId, uint256 amount);
   /// @dev Emitted when the delegator unstaked from a validator candidate.
-  event Undelegated(address indexed delegator, address indexed consensuAddr, uint256 amount);
+  event Undelegated(address indexed delegator, TPoolId indexed consensusAddr, uint256 amount);
 
   /// @dev Error of undelegating zero amount.
   error ErrUndelegateZeroAmount();

@@ -88,7 +88,7 @@ const ethereum: NetworkUserConfig = {
 };
 
 const compilerConfig: SolcUserConfig = {
-  version: '0.8.17',
+  version: '0.8.19',
   settings: {
     optimizer: {
       enabled: true,
@@ -109,7 +109,7 @@ const config: HardhatUserConfig = {
     compilers: [compilerConfig],
     overrides: {
       'contracts/ronin/validator/RoninValidatorSet.sol': {
-        version: '0.8.17',
+        version: '0.8.19',
         settings: {
           optimizer: {
             enabled: true,

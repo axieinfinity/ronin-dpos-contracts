@@ -10,17 +10,17 @@ pragma solidity ^0.8.9;
 
 contract Profile is IProfile, HasContracts, Initializable {
   /// @dev Mapping from id address => candidate profile.
-  mapping(address => CandidateProfile) public _id2Profile;
+  mapping(TPoolId => CandidateProfile) public _id2Profile;
   /// @dev Mapping from consensus address => id address.
-  mapping(address => address) public _consensus2Id;
+  mapping(address => TPoolId) public _consensus2Id;
 
   /// @dev Event emitted when a profile with `id` is added.
-  event ProfileAdded(address indexed id);
+  event ProfileAdded(TPoolId indexed id);
 
   /// @dev Error of already existed profile.
   error ErrExistentProfile();
   /// @dev Event emitted when a address in a profile is changed.
-  event ProfileAddressChanged(address indexed id, RoleAccess indexed addressType);
+  event ProfileAddressChanged(TPoolId indexed id, RoleAccess indexed addressType);
 
   constructor() {
     _disableInitializers();
@@ -34,16 +34,16 @@ contract Profile is IProfile, HasContracts, Initializable {
     _setContract(ContractType.VALIDATOR, __validatorContract);
   }
 
-  function getId2Profile(address id) external view returns (CandidateProfile memory) {
+  function getId2Profile(TPoolId id) external view returns (CandidateProfile memory) {
     return _id2Profile[id];
   }
 
-  function getConsensus2Id(address consensus) external view returns (address id) {
+  function getConsensus2Id(address consensus) external view returns (TPoolId id) {
     return _consensus2Id[consensus];
   }
 
-  function getManyConsensus2Id(address[] calldata consensusList) external view returns (address[] memory idList) {
-    idList = new address[](consensusList.length);
+  function getManyConsensus2Id(address[] calldata consensusList) external view returns (TPoolId[] memory idList) {
+    idList = new TPoolId[](consensusList.length);
     unchecked {
       for (uint i; i < consensusList.length; ++i) {
         idList[i] = _consensus2Id[consensusList[i]];
@@ -63,10 +63,11 @@ contract Profile is IProfile, HasContracts, Initializable {
     address bridgeOperator
   ) external onlyContract(ContractType.STAKING) {
     // TODO: handle previous added consensus
-    CandidateProfile storage _profile = _id2Profile[consensus];
+    TPoolId id = TPoolId.wrap(consensus);
+    CandidateProfile storage _profile = _id2Profile[id];
 
     CandidateProfile memory mProfile = CandidateProfile({
-      id: consensus,
+      id: id,
       consensus: consensus,
       admin: admin,
       treasury: payable(treasury),
@@ -92,9 +93,9 @@ contract Profile is IProfile, HasContracts, Initializable {
     emit ProfileAdded(mNewProfile.id);
   }
 
-  function _getId2ProfileHelper(address id) internal view returns (CandidateProfile storage _profile) {
+  function _getId2ProfileHelper(TPoolId id) internal view returns (CandidateProfile storage _profile) {
     _profile = _id2Profile[id];
-    if (_profile.id != address(0)) revert ErrExistentProfile();
+    if (TPoolId.unwrap(_profile.id) != address(0)) revert ErrExistentProfile();
   }
 
   /**
@@ -106,7 +107,7 @@ contract Profile is IProfile, HasContracts, Initializable {
    *
    * Emit an {ProfileAddressChanged}.
    */
-  function requestChangeAdminAddress(address id, address newAdminAddr) external {
+  function requestChangeAdminAddress(TPoolId id, address newAdminAddr) external {
     IStaking stakingContract = IStaking(getContract(ContractType.STAKING));
     stakingContract.execChangeAdminAddress(id, newAdminAddr);
 
@@ -127,7 +128,7 @@ contract Profile is IProfile, HasContracts, Initializable {
    *
    * Emit an {ProfileAddressChanged}.
    */
-  function requestChangeBridgeOperator(address id, address newBridgeAddr) external {
+  function requestChangeBridgeOperator(TPoolId id, address newBridgeAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
 
     _profile.bridgeOperator = newBridgeAddr;
@@ -155,7 +156,7 @@ contract Profile is IProfile, HasContracts, Initializable {
    * Emit an {ProfileAddressChanged}.
    *
    */
-  function requestChangeConsensusAddr(address id, address newConsensusAddr) external {
+  function requestChangeConsensusAddr(TPoolId id, address newConsensusAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
 
     _profile.consensus = newConsensusAddr;

@@ -2,10 +2,12 @@
 
 pragma solidity ^0.8.9;
 
+import { TPoolId } from "../../libraries/udvts/Types.sol";
+
 interface IBaseStaking {
   struct PoolDetail {
-    // Address of the pool i.e. consensus address of the validator
-    address id;
+    // Address of the pool, initially is the consensus address of the validator
+    TPoolId id;
     // Pool admin address
     address admin;
     // Self-staking amount
@@ -46,7 +48,7 @@ interface IBaseStaking {
   /**
    * @dev Returns the consensus address corresponding to the pool admin.
    */
-  function getPoolAddressOf(address poolAdminAddr) external view returns (address);
+  function getPoolAddressOf(address poolAdminAddr) external view returns (TPoolId);
 
   /**
    * @dev Returns the staking pool detail.

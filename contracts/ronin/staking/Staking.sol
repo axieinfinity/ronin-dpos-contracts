@@ -53,24 +53,25 @@ contract Staking is IStaking, StakingProfile, Initializable {
    * @inheritdoc IStaking
    */
   function execRecordRewards(
-    address[] calldata poolAddrs,
+    address[] calldata consensusAddrs,
     uint256[] calldata rewards,
     uint256 period
   ) external payable override onlyContract(ContractType.VALIDATOR) {
-    _recordRewards(poolAddrs, rewards, period);
+    _recordRewards(_convertManyC2P(consensusAddrs), rewards, period);
   }
 
   /**
    * @inheritdoc IStaking
    */
   function execDeductStakingAmount(
-    address poolAddr,
+    address consensusAddr,
     uint256 amount
   ) external override onlyContract(ContractType.VALIDATOR) returns (uint256 actualDeductingAmount_) {
-    actualDeductingAmount_ = _deductStakingAmount(_poolDetail[poolAddr], amount);
+    TPoolId poolId = _convertC2P(consensusAddr);
+    actualDeductingAmount_ = _deductStakingAmount(_poolDetail[poolId], amount);
     address payable validatorContractAddr = payable(msg.sender);
     if (!_unsafeSendRON(validatorContractAddr, actualDeductingAmount_)) {
-      emit StakingAmountDeductFailed(poolAddr, validatorContractAddr, actualDeductingAmount_, address(this).balance);
+      emit StakingAmountDeductFailed(poolId, validatorContractAddr, actualDeductingAmount_, address(this).balance);
     }
   }
 

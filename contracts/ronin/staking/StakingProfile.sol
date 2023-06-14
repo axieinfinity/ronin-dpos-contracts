@@ -13,12 +13,12 @@ abstract contract StakingProfile is CandidateStaking, DelegatorStaking, IStaking
    * - Only Profile contract can call this method.
    */
   function execChangeAdminAddress(
-    address poolAddr,
+    TPoolId poolAddr,
     address newAdminAddr
   ) external override onlyContract(ContractType.PROFILE) {
     PoolDetail storage _pool = _poolDetail[poolAddr];
 
-    delete _adminOfActivePoolMapping[_pool.admin];
+    _adminOfActivePoolMapping[_pool.admin] = TPoolId.wrap(address(0));
     _pool.admin = newAdminAddr;
     _adminOfActivePoolMapping[newAdminAddr] = poolAddr;
   }

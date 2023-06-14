@@ -11,9 +11,9 @@ interface ICandidateStaking is IRewardPool {
   event CommissionRateRangeUpdated(uint256 minRate, uint256 maxRate);
 
   /// @dev Emitted when the pool admin staked for themself.
-  event Staked(address indexed consensuAddr, uint256 amount);
+  event Staked(TPoolId indexed poolId, uint256 amount);
   /// @dev Emitted when the pool admin unstaked the amount of RON from themself.
-  event Unstaked(address indexed consensuAddr, uint256 amount);
+  event Unstaked(TPoolId indexed poolId, uint256 amount);
 
   /// @dev Emitted when the validator pool is approved.
   event PoolApproved(address indexed validator, address indexed admin);
@@ -21,14 +21,14 @@ interface ICandidateStaking is IRewardPool {
   event PoolsDeprecated(address[] validator);
   /// @dev Emitted when the staking amount transfer failed.
   event StakingAmountTransferFailed(
-    address indexed validator,
+    TPoolId indexed poolId,
     address indexed admin,
     uint256 amount,
     uint256 contractBalance
   );
   /// @dev Emitted when the staking amount deducted failed, e.g. when the validator gets slashed.
   event StakingAmountDeductFailed(
-    address indexed validator,
+    TPoolId indexed poolId,
     address indexed recipient,
     uint256 amount,
     uint256 contractBalance

@@ -15,9 +15,9 @@ contract MockStaking is RewardCalculation, GlobalConfigConsumer {
 
   uint256 public lastUpdatedPeriod;
   uint256 public pendingReward;
-  address public poolAddr;
+  TPoolId public poolAddr;
 
-  constructor(address _poolAddr) {
+  constructor(TPoolId _poolAddr) {
     poolAddr = _poolAddr;
   }
 
@@ -27,11 +27,11 @@ contract MockStaking is RewardCalculation, GlobalConfigConsumer {
   }
 
   function endPeriod() external {
-    address[] memory _addrs = new address[](1);
+    address[] memory _consensusAddrs = new address[](1);
     uint256[] memory _rewards = new uint256[](1);
-    _addrs[0] = poolAddr;
+    _consensusAddrs[0] = TPoolId.unwrap(poolAddr);
     _rewards[0] = pendingReward;
-    this.execRecordRewards(_addrs, _rewards);
+    this.execRecordRewards(_consensusAddrs, _rewards);
 
     pendingReward = 0;
     lastUpdatedPeriod++;
@@ -65,8 +65,17 @@ contract MockStaking is RewardCalculation, GlobalConfigConsumer {
     pendingReward -= _amount;
   }
 
-  function execRecordRewards(address[] calldata _addrList, uint256[] calldata _rewards) external {
-    _recordRewards(_addrList, _rewards, _currentPeriod());
+  function execRecordRewards(address[] calldata _consensusAddrs, uint256[] calldata _rewards) external {
+    TPoolId[] memory _poolIds = new TPoolId[](_consensusAddrs.length);
+    for (uint256 i; i < _consensusAddrs.length; ) {
+      _poolIds[i] = TPoolId.wrap(_consensusAddrs[i]);
+
+      unchecked {
+        ++i;
+      }
+    }
+
+    _recordRewards(_poolIds, _rewards, _currentPeriod());
   }
 
   function getPeriod() public view returns (uint256) {
@@ -78,7 +87,7 @@ contract MockStaking is RewardCalculation, GlobalConfigConsumer {
   }
 
   function getStakingAmount(address, address _user) public view override returns (uint256) {
-    return _stakingAmount[_user];
+    return _getStakingAmount(TPoolId.wrap(address(0)), _user);
   }
 
   function getManyStakingAmounts(
@@ -86,8 +95,16 @@ contract MockStaking is RewardCalculation, GlobalConfigConsumer {
     address[] calldata _userList
   ) external view override returns (uint256[] memory) {}
 
-  function getStakingTotal(address _addr) public view virtual override returns (uint256) {
-    return _addr == poolAddr ? _stakingTotal : 0;
+  function _getStakingAmount(TPoolId, address _user) internal view override returns (uint256) {
+    return _stakingAmount[_user];
+  }
+
+  function getStakingTotal(address addr) external view virtual override returns (uint256) {
+    return _getStakingTotal(TPoolId.wrap(addr));
+  }
+
+  function _getStakingTotal(TPoolId poolId) internal view virtual override returns (uint256) {
+    return poolId == poolAddr ? _stakingTotal : 0;
   }
 
   function _currentPeriod() internal view override returns (uint256 _period) {

@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.9;
 
+import { TPoolId } from "../libraries/udvts/Types.sol";
+
 interface IProfile {
   struct CandidateProfile {
     /**
@@ -11,7 +13,7 @@ interface IProfile {
      * {RoninValidatorSet} Contract: index of almost all data related to a validator
      *
      */
-    address id;
+    TPoolId id;
     /// @dev Consensus address.
     address consensus;
     /// @dev Pool admin address.
@@ -27,13 +29,13 @@ interface IProfile {
   }
 
   /// @dev Getter to query full `profile` from `id` address.
-  function getId2Profile(address id) external view returns (CandidateProfile memory profile);
+  function getId2Profile(TPoolId id) external view returns (CandidateProfile memory profile);
 
   /// @dev Getter to backward query from `consensus` address to `id` address.
-  function getConsensus2Id(address consensus) external view returns (address id);
+  function getConsensus2Id(address consensus) external view returns (TPoolId id);
 
   /// @dev Getter to backward batch query from `consensus` address to `id` address.
-  function getManyConsensus2Id(address[] memory consensus) external view returns (address[] memory);
+  function getManyConsensus2Id(address[] memory consensus) external view returns (TPoolId[] memory);
 
   /**
    * @dev Cross-contract function to add/update new profile of a validator candidate when they
