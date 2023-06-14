@@ -1,4 +1,3 @@
-import { strict } from 'assert';
 import { expect } from 'chai';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { Interface, LogDescription } from 'ethers/lib/utils';
