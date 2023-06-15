@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../../interfaces/consumers/PeriodWrapperConsumer.sol";
 
-import { TPoolId } from "../../libraries/udvts/Types.sol";
+import { TPoolId } from "../../udvts/Types.sol";
 
 interface IRewardPool is PeriodWrapperConsumer {
   struct UserRewardFields {

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import { TPoolId } from "../../libraries/udvts/Types.sol";
+import { TPoolId } from "../../udvts/Types.sol";
 
 interface IStakingProfile {
   /**

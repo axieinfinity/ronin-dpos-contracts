@@ -11,7 +11,7 @@ import "../../interfaces/IProfile.sol";
 import "../../libraries/Math.sol";
 import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 import "./RewardCalculation.sol";
-import { TPoolId } from "../../libraries/udvts/Types.sol";
+import { TPoolId } from "../../udvts/Types.sol";
 
 abstract contract BaseStaking is
   RONTransferHelper,

@@ -2,7 +2,8 @@
 
 pragma solidity ^0.8.9;
 
-import { TPoolId } from "../libraries/udvts/Types.sol";
+import { TPoolId } from "../udvts/Types.sol";
+import "../utils/RoleAccess.sol";
 
 interface IProfile {
   struct CandidateProfile {
@@ -27,6 +28,14 @@ interface IProfile {
     /// @dev Address to voting bridge operators.
     address bridgeVoter;
   }
+
+  /// @dev Event emitted when a profile with `id` is added.
+  event ProfileAdded(TPoolId indexed id);
+  /// @dev Event emitted when a address in a profile is changed.
+  event ProfileAddressChanged(TPoolId indexed id, RoleAccess indexed addressType);
+
+  /// @dev Error of already existed profile.
+  error ErrExistentProfile();
 
   /// @dev Getter to query full `profile` from `id` address.
   function getId2Profile(TPoolId id) external view returns (CandidateProfile memory profile);

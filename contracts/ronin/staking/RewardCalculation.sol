@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../../interfaces/staking/IRewardPool.sol";
 import "../../libraries/Math.sol";
-import { TPoolId } from "../../libraries/udvts/Types.sol";
+import { TPoolId } from "../../udvts/Types.sol";
 
 /**
  * @title RewardCalculation contract

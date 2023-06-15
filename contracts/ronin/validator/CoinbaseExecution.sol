@@ -19,7 +19,7 @@ import "../../precompile-usages/PCUPickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
 import "./CandidateManager.sol";
 import "./EmergencyExit.sol";
-import { TPoolId } from "../../libraries/udvts/Types.sol";
+import { TPoolId } from "../../udvts/Types.sol";
 
 abstract contract CoinbaseExecution is
   ICoinbaseExecution,
