@@ -77,15 +77,15 @@ abstract contract BaseStaking is
   /**
    * @inheritdoc IBaseStaking
    */
-  function isAdminOfActivePool(address poolAdminAddr) public view override returns (bool) {
-    return TPoolId.unwrap(_adminOfActivePoolMapping[poolAdminAddr]) != address(0);
+  function isAdminOfActivePool(address admin) public view override returns (bool) {
+    return TPoolId.unwrap(_adminOfActivePoolMapping[admin]) != address(0);
   }
 
   /**
    * @inheritdoc IBaseStaking
    */
-  function getPoolAddressOf(address poolAdminAddr) external view override returns (TPoolId) {
-    return _adminOfActivePoolMapping[poolAdminAddr];
+  function getPoolAddressOf(address admin) external view override returns (TPoolId) {
+    return _adminOfActivePoolMapping[admin];
   }
 
   /**

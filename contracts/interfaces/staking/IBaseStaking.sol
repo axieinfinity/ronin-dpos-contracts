@@ -41,24 +41,26 @@ interface IBaseStaking {
   error ErrInvalidArrays();
 
   /**
-   * @dev Returns whether the `_poolAdminAddr` is currently active.
+   * @dev Returns whether the `admin` is currently active.
    */
-  function isAdminOfActivePool(address poolAdminAddr) external view returns (bool);
+  function isAdminOfActivePool(address admin) external view returns (bool);
 
   /**
    * @dev Returns the consensus address corresponding to the pool admin.
    */
-  function getPoolAddressOf(address poolAdminAddr) external view returns (TPoolId);
+  function getPoolAddressOf(address admin) external view returns (TPoolId);
 
   /**
-   * @dev Returns the staking pool detail.
+   * @dev Returns the staking pool details.
    */
-  function getPoolDetail(address) external view returns (address admin, uint256 stakingAmount, uint256 stakingTotal);
+  function getPoolDetail(
+    address consensusAddr
+  ) external view returns (address admin, uint256 stakingAmount, uint256 stakingTotal);
 
   /**
    * @dev Returns the self-staking amounts of the pools.
    */
-  function getManySelfStakings(address[] calldata) external view returns (uint256[] memory);
+  function getManySelfStakings(address[] calldata consensusAddrs) external view returns (uint256[] memory);
 
   /**
    * @dev Returns The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.
