@@ -3,10 +3,12 @@
 pragma solidity ^0.8.9;
 
 import "../../interfaces/slash-indicator/ISlashDoubleSign.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../precompile-usages/PCUValidateDoubleSign.sol";
-import "../../extensions/collections/HasValidatorContract.sol";
+import "../../extensions/collections/HasContracts.sol";
+import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
-abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCUValidateDoubleSign {
+abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidatorDeprecated, PCUValidateDoubleSign {
   /// @dev The amount of RON to slash double sign.
   uint256 internal _slashDoubleSignAmount;
   /// @dev The block number that the punished validator will be jailed until, due to double signing.
@@ -35,12 +37,12 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasValidatorContract, PCU
     bytes32 _header1Checksum = keccak256(_header1);
     bytes32 _header2Checksum = keccak256(_header2);
 
-    require(
-      !_submittedEvidence[_header1Checksum] && !_submittedEvidence[_header2Checksum],
-      "SlashDoubleSign: evidence already submitted"
-    );
+    if (_submittedEvidence[_header1Checksum] || _submittedEvidence[_header2Checksum]) {
+      revert ErrEvidenceAlreadySubmitted();
+    }
 
     if (_pcValidateEvidence(_consensusAddr, _header1, _header2)) {
+      IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
       uint256 _period = _validatorContract.currentPeriod();
       _submittedEvidence[_header1Checksum] = true;
       _submittedEvidence[_header2Checksum] = true;

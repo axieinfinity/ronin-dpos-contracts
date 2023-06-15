@@ -38,9 +38,13 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     address payable _delegator = payable(msg.sender);
     uint256 _total;
 
-    for (uint _i = 0; _i < _consensusAddrs.length; _i++) {
+    for (uint _i = 0; _i < _consensusAddrs.length; ) {
       _total += _amounts[_i];
       _undelegate(_stakingPool[_consensusAddrs[_i]], _delegator, _amounts[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
 
     if (!_sendRON(_delegator, _total)) revert ErrCannotTransferRON();
@@ -62,12 +66,9 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function claimRewards(address[] calldata _consensusAddrList)
-    external
-    override
-    nonReentrant
-    returns (uint256 _amount)
-  {
+  function claimRewards(
+    address[] calldata _consensusAddrList
+  ) external override nonReentrant returns (uint256 _amount) {
     _amount = _claimRewards(msg.sender, _consensusAddrList);
     _transferRON(payable(msg.sender), _amount);
   }
@@ -75,13 +76,10 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function delegateRewards(address[] calldata _consensusAddrList, address _consensusAddrDst)
-    external
-    override
-    nonReentrant
-    poolIsActive(_consensusAddrDst)
-    returns (uint256 _amount)
-  {
+  function delegateRewards(
+    address[] calldata _consensusAddrList,
+    address _consensusAddrDst
+  ) external override nonReentrant poolIsActive(_consensusAddrDst) returns (uint256 _amount) {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
     return _delegateRewards(msg.sender, _consensusAddrList, _consensusAddrDst);
   }
@@ -89,18 +87,21 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function getRewards(address _user, address[] calldata _poolAddrList)
-    external
-    view
-    returns (uint256[] memory _rewards)
-  {
+  function getRewards(
+    address _user,
+    address[] calldata _poolAddrList
+  ) external view returns (uint256[] memory _rewards) {
     address _consensusAddr;
-    uint256 _period = _validatorContract.currentPeriod();
+    uint256 _period = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
     _rewards = new uint256[](_poolAddrList.length);
 
-    for (uint256 _i = 0; _i < _poolAddrList.length; _i++) {
+    for (uint256 _i = 0; _i < _poolAddrList.length; ) {
       _consensusAddr = _poolAddrList[_i];
       _rewards[_i] = _getReward(_consensusAddr, _user, _period, getStakingAmount(_consensusAddr, _user));
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -119,7 +120,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     PoolDetail storage _pool,
     address _delegator,
     uint256 _amount
-  ) internal notPoolAdmin(_pool, _delegator) {
+  ) internal anyExceptPoolAdmin(_pool, _delegator) {
     _changeDelegatingAmount(
       _pool,
       _delegator,
@@ -147,10 +148,11 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     PoolDetail storage _pool,
     address _delegator,
     uint256 _amount
-  ) private notPoolAdmin(_pool, _delegator) {
+  ) private anyExceptPoolAdmin(_pool, _delegator) {
     if (_amount == 0) revert ErrUndelegateZeroAmount();
     if (_pool.delegatingAmount[_delegator] < _amount) revert ErrInsufficientDelegatingAmount();
 
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     if (
       _validatorContract.isValidatorCandidate(_pool.addr) &&
       _validatorContract.getCandidateInfo(_pool.addr).revokingTimestamp == 0 && // if candidate is not on renunciation
@@ -172,8 +174,12 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    */
   function _claimRewards(address _user, address[] memory _poolAddrList) internal returns (uint256 _amount) {
     uint256 _period = _currentPeriod();
-    for (uint256 _i = 0; _i < _poolAddrList.length; _i++) {
+    for (uint256 _i = 0; _i < _poolAddrList.length; ) {
       _amount += _claimReward(_poolAddrList[_i], _user, _period);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 

@@ -8,6 +8,13 @@ abstract contract GovernanceProposal is CoreGovernance {
   using GlobalProposal for GlobalProposal.GlobalProposalDetail;
 
   /**
+   * @dev Error thrown when an invalid proposal is encountered.
+   * @param actual The actual value of the proposal.
+   * @param expected The expected value of the proposal.
+   */
+  error ErrInvalidProposal(bytes32 actual, bytes32 expected);
+
+  /**
    * @dev Casts votes by signatures.
    *
    * Note: This method does not verify the proposal hash with the vote hash. Please consider checking it before.
@@ -20,7 +27,8 @@ abstract contract GovernanceProposal is CoreGovernance {
     bytes32 _forDigest,
     bytes32 _againstDigest
   ) internal {
-    require(_supports.length > 0 && _supports.length == _signatures.length, "GovernanceProposal: invalid array length");
+    if (!(_supports.length != 0 && _supports.length == _signatures.length)) revert ErrLengthMismatch(msg.sig);
+
     uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
     uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;
 
@@ -28,18 +36,16 @@ abstract contract GovernanceProposal is CoreGovernance {
     address _signer;
     Signature calldata _sig;
     bool _hasValidVotes;
-    for (uint256 _i; _i < _signatures.length; _i++) {
+    for (uint256 _i; _i < _signatures.length; ) {
       _sig = _signatures[_i];
 
       if (_supports[_i] == Ballot.VoteType.For) {
         _signer = ECDSA.recover(_forDigest, _sig.v, _sig.r, _sig.s);
       } else if (_supports[_i] == Ballot.VoteType.Against) {
         _signer = ECDSA.recover(_againstDigest, _sig.v, _sig.r, _sig.s);
-      } else {
-        revert("GovernanceProposal: query for unsupported vote type");
-      }
+      } else revert ErrUnsupportedVoteType(msg.sig);
 
-      require(_lastSigner < _signer, "GovernanceProposal: invalid order");
+      if (_lastSigner >= _signer) revert ErrInvalidOrder(msg.sig);
       _lastSigner = _signer;
 
       uint256 _weight = _getWeight(_signer);
@@ -51,9 +57,13 @@ abstract contract GovernanceProposal is CoreGovernance {
           return;
         }
       }
+
+      unchecked {
+        ++_i;
+      }
     }
 
-    require(_hasValidVotes, "GovernanceProposal: invalid signatures");
+    if (!_hasValidVotes) revert ErrInvalidSignatures(msg.sig);
   }
 
   /**
@@ -87,10 +97,11 @@ abstract contract GovernanceProposal is CoreGovernance {
     bytes32 _domainSeparator
   ) internal {
     bytes32 _proposalHash = _proposal.hash();
-    require(
-      vote[_proposal.chainId][_proposal.nonce].hash == _proposalHash,
-      "GovernanceAdmin: cast vote for invalid proposal"
-    );
+
+    if (vote[_proposal.chainId][_proposal.nonce].hash != _proposalHash) {
+      revert ErrInvalidProposal(_proposalHash, vote[_proposal.chainId][_proposal.nonce].hash);
+    }
+
     _castVotesBySignatures(
       _proposal,
       _supports,
@@ -138,8 +149,11 @@ abstract contract GovernanceProposal is CoreGovernance {
       _roninTrustedOrganizationContract,
       _gatewayContract
     );
+    bytes32 _proposalHash = _proposal.hash();
+    if (vote[0][_proposal.nonce].hash != _proposalHash)
+      revert ErrInvalidProposal(_proposalHash, vote[0][_proposal.nonce].hash);
+
     bytes32 _globalProposalHash = _globalProposal.hash();
-    require(vote[0][_proposal.nonce].hash == _proposal.hash(), "GovernanceAdmin: cast vote for invalid proposal");
     _castVotesBySignatures(
       _proposal,
       _supports,

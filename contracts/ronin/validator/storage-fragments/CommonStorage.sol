@@ -41,12 +41,9 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   /**
    * @inheritdoc ICommonInfo
    */
-  function getEmergencyExitInfo(address _consensusAddr)
-    external
-    view
-    override
-    returns (EmergencyExitInfo memory _info)
-  {
+  function getEmergencyExitInfo(
+    address _consensusAddr
+  ) external view override returns (EmergencyExitInfo memory _info) {
     _info = _exitInfo[_consensusAddr];
     if (_info.recyclingAt == 0) revert NonExistentRecyclingInfo();
   }
@@ -61,13 +58,9 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   /**
    * @inheritdoc ITimingInfo
    */
-  function epochOf(uint256 _block)
-    public
-    view
-    virtual
-    override(ITimingInfo, JailingStorage, TimingStorage)
-    returns (uint256)
-  {
+  function epochOf(
+    uint256 _block
+  ) public view virtual override(ITimingInfo, JailingStorage, TimingStorage) returns (uint256) {
     return TimingStorage.epochOf(_block);
   }
 

@@ -101,7 +101,9 @@ describe('Staking test', () => {
           1,
           /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
         );
-      await expect(tx).revertedWithCustomError(stakingContract, 'ErrThreeOperationAddrsNotDistinct');
+      await expect(tx)
+        .revertedWithCustomError(stakingContract, 'ErrDuplicated')
+        .withArgs(stakingContract.interface.getSighash('applyValidatorCandidate'));
     });
 
     it('Should be able to propose validator with sufficient amount', async () => {

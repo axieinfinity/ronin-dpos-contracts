@@ -4,11 +4,14 @@ pragma solidity ^0.8.9;
 
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../ronin/validator/CandidateManager.sol";
+import { HasStakingVestingDeprecated, HasSlashIndicatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
-contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
-  address public stakingVestingContract;
-  address public slashIndicatorContract;
-
+contract MockValidatorSet is
+  IRoninValidatorSet,
+  CandidateManager,
+  HasStakingVestingDeprecated,
+  HasSlashIndicatorDeprecated
+{
   uint256 internal _lastUpdatedPeriod;
   uint256 internal _numberOfBlocksInEpoch;
   /// @dev Mapping from period number => slashed
@@ -22,10 +25,10 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     uint256 __numberOfBlocksInEpoch,
     uint256 __minEffectiveDaysOnwards
   ) {
-    _setStakingContract(__stakingContract);
+    _setContract(ContractType.STAKING, __stakingContract);
+    _setContract(ContractType.SLASH_INDICATOR, _slashIndicatorContract);
+    _setContract(ContractType.STAKING_VESTING, _stakingVestingContract);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
-    slashIndicatorContract = _slashIndicatorContract;
-    stakingVestingContract = _stakingVestingContract;
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
     _minEffectiveDaysOnwards = __minEffectiveDaysOnwards;
   }
@@ -45,18 +48,14 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function checkMiningRewardDeprecated(address) external view override returns (bool) {}
 
-  function checkBridgeRewardDeprecatedAtLatestPeriod(address _consensusAddr)
-    external
-    view
-    override
-    returns (bool _result)
-  {}
+  function checkBridgeRewardDeprecatedAtLatestPeriod(
+    address _consensusAddr
+  ) external view override returns (bool _result) {}
 
-  function checkBridgeRewardDeprecatedAtPeriod(address _consensusAddr, uint256 _period)
-    external
-    view
-    returns (bool _result)
-  {}
+  function checkBridgeRewardDeprecatedAtPeriod(
+    address _consensusAddr,
+    uint256 _period
+  ) external view returns (bool _result) {}
 
   function epochOf(uint256 _block) external view override returns (uint256) {}
 
@@ -64,11 +63,7 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     external
     view
     override
-    returns (
-      address[] memory,
-      address[] memory,
-      EnumFlags.ValidatorFlag[] memory
-    )
+    returns (address[] memory, address[] memory, EnumFlags.ValidatorFlag[] memory)
   {}
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
@@ -138,31 +133,16 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
 
   function checkJailed(address) external view override returns (bool) {}
 
-  function getJailedTimeLeft(address)
-    external
-    view
-    override
-    returns (
-      bool,
-      uint256,
-      uint256
-    )
-  {}
+  function getJailedTimeLeft(address) external view override returns (bool, uint256, uint256) {}
 
   function currentPeriodStartAtBlock() external view override returns (uint256) {}
 
   function checkJailedAtBlock(address _addr, uint256 _blockNum) external view override returns (bool) {}
 
-  function getJailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
-    external
-    view
-    override
-    returns (
-      bool isJailed_,
-      uint256 blockLeft_,
-      uint256 epochLeft_
-    )
-  {}
+  function getJailedTimeLeftAtBlock(
+    address _addr,
+    uint256 _blockNum
+  ) external view override returns (bool isJailed_, uint256 blockLeft_, uint256 epochLeft_) {}
 
   function totalDeprecatedReward() external view override returns (uint256) {}
 
@@ -170,10 +150,10 @@ contract MockValidatorSet is IRoninValidatorSet, CandidateManager {
     return super._bridgeOperatorOf(_consensusAddr);
   }
 
-  function execReleaseLockedFundForEmergencyExitRequest(address _consensusAddr, address payable _recipient)
-    external
-    override
-  {}
+  function execReleaseLockedFundForEmergencyExitRequest(
+    address _consensusAddr,
+    address payable _recipient
+  ) external override {}
 
   function emergencyExitLockedAmount() external override returns (uint256) {}
 

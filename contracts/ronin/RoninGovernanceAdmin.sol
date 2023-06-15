@@ -3,18 +3,24 @@ pragma solidity ^0.8.0;
 
 import "../extensions/bridge-operator-governance/BOsGovernanceProposal.sol";
 import "../extensions/sequential-governance/GovernanceProposal.sol";
-import "../extensions/collections/HasValidatorContract.sol";
+import "../extensions/collections/HasContracts.sol";
 import "../extensions/GovernanceAdmin.sol";
 import "../libraries/EmergencyExitBallot.sol";
+import { ErrorHandler } from "../libraries/ErrorHandler.sol";
+import { HasValidatorDeprecated } from "../utils/DeprecatedSlots.sol";
+import "../interfaces/IRoninTrustedOrganization.sol";
+import "../interfaces/validator/IRoninValidatorSet.sol";
 import "../interfaces/IRoninGovernanceAdmin.sol";
 
 contract RoninGovernanceAdmin is
+  HasContracts,
   IRoninGovernanceAdmin,
   GovernanceAdmin,
   GovernanceProposal,
   BOsGovernanceProposal,
-  HasValidatorContract
+  HasValidatorDeprecated
 {
+  using ErrorHandler for bool;
   using Proposal for Proposal.ProposalDetail;
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
@@ -22,7 +28,7 @@ contract RoninGovernanceAdmin is
   mapping(bytes32 => IsolatedGovernance.Vote) internal _emergencyExitPoll;
 
   modifier onlyGovernor() {
-    require(_getWeight(msg.sender) > 0, "RoninGovernanceAdmin: sender is not governor");
+    _requireGorvernor();
     _;
   }
 
@@ -33,15 +39,22 @@ contract RoninGovernanceAdmin is
     address _validatorContract,
     uint256 _proposalExpiryDuration
   ) GovernanceAdmin(_roninChainId, _roninTrustedOrganizationContract, _bridgeContract, _proposalExpiryDuration) {
-    _setValidatorContract(_validatorContract);
+    _setContract(ContractType.VALIDATOR, _validatorContract);
+  }
+
+  function _requireGorvernor() private view {
+    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
   }
 
   /**
-   * @inheritdoc IHasValidatorContract
+   * @inheritdoc IHasContracts
    */
-  function setValidatorContract(address _addr) external override onlySelfCall {
-    require(_addr.code.length > 0, "RoninGovernanceAdmin: set to non-contract");
-    _setValidatorContract(_addr);
+  function setContract(
+    ContractType contractType,
+    address addr
+  ) external override(HasContracts, GovernanceAdmin) onlySelfCall {
+    _requireHasCode(addr);
+    _setContract(contractType, addr);
   }
 
   /**
@@ -50,14 +63,13 @@ contract RoninGovernanceAdmin is
    * Note: The signatures can be empty in case the proposal is voted on the current network.
    *
    */
-  function getProposalSignatures(uint256 _chainId, uint256 _round)
+  function getProposalSignatures(
+    uint256 _chainId,
+    uint256 _round
+  )
     external
     view
-    returns (
-      address[] memory _voters,
-      Ballot.VoteType[] memory _supports,
-      Signature[] memory _signatures
-    )
+    returns (address[] memory _voters, Ballot.VoteType[] memory _supports, Signature[] memory _signatures)
   {
     ProposalVote storage _vote = vote[_chainId][_round];
 
@@ -68,53 +80,56 @@ contract RoninGovernanceAdmin is
     _supports = new Ballot.VoteType[](_voterLength);
     _signatures = new Signature[](_voterLength);
     _voters = new address[](_voterLength);
-    for (uint256 _i; _i < _forLength; _i++) {
+    for (uint256 _i; _i < _forLength; ) {
       _supports[_i] = Ballot.VoteType.For;
       _signatures[_i] = vote[_chainId][_round].sig[_vote.forVoteds[_i]];
       _voters[_i] = _vote.forVoteds[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
-    for (uint256 _i; _i < _againstLength; _i++) {
+    for (uint256 _i; _i < _againstLength; ) {
       _supports[_i + _forLength] = Ballot.VoteType.Against;
       _signatures[_i + _forLength] = vote[_chainId][_round].sig[_vote.againstVoteds[_i]];
       _voters[_i + _forLength] = _vote.againstVoteds[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
   /**
    * @dev Returns the voted signatures for bridge operators at a specific period.
    */
-  function getBridgeOperatorVotingSignatures(uint256 _period, uint256 _epoch)
-    external
-    view
-    returns (address[] memory _voters, Signature[] memory _signatures)
-  {
+  function getBridgeOperatorVotingSignatures(
+    uint256 _period,
+    uint256 _epoch
+  ) external view returns (address[] memory _voters, Signature[] memory _signatures) {
     mapping(address => Signature) storage _sigMap = _bridgeVoterSig[_period][_epoch];
     _voters = _bridgeOperatorVote[_period][_epoch].voters;
     _signatures = new Signature[](_voters.length);
-    for (uint _i; _i < _voters.length; _i++) {
+    for (uint _i; _i < _voters.length; ) {
       _signatures[_i] = _sigMap[_voters[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
   /**
    * @dev Returns whether the voter `_voter` casted vote for the proposal.
    */
-  function proposalVoted(
-    uint256 _chainId,
-    uint256 _round,
-    address _voter
-  ) external view returns (bool) {
+  function proposalVoted(uint256 _chainId, uint256 _round, address _voter) external view returns (bool) {
     return _voted(vote[_chainId][_round], _voter);
   }
 
   /**
    * @dev Returns whether the voter `_voter` casted vote for bridge operators at a specific period.
    */
-  function bridgeOperatorsVoted(
-    uint256 _period,
-    uint256 _epoch,
-    address _voter
-  ) external view returns (bool) {
+  function bridgeOperatorsVoted(uint256 _period, uint256 _epoch, address _voter) external view returns (bool) {
     return _bridgeOperatorVote[_period][_epoch].voted(_voter);
   }
 
@@ -195,10 +210,10 @@ contract RoninGovernanceAdmin is
    * - The method caller is governor.
    *
    */
-  function castProposalVoteForCurrentNetwork(Proposal.ProposalDetail calldata _proposal, Ballot.VoteType _support)
-    external
-    onlyGovernor
-  {
+  function castProposalVoteForCurrentNetwork(
+    Proposal.ProposalDetail calldata _proposal,
+    Ballot.VoteType _support
+  ) external onlyGovernor {
     _castProposalVoteForCurrentNetwork(msg.sender, _proposal, _support);
   }
 
@@ -233,8 +248,8 @@ contract RoninGovernanceAdmin is
       _values,
       _calldatas,
       _gasAmounts,
-      roninTrustedOrganizationContract(),
-      bridgeContract(),
+      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION),
+      getContract(ContractType.BRIDGE),
       msg.sender
     );
   }
@@ -256,8 +271,8 @@ contract RoninGovernanceAdmin is
       _supports,
       _signatures,
       DOMAIN_SEPARATOR,
-      roninTrustedOrganizationContract(),
-      bridgeContract(),
+      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION),
+      getContract(ContractType.BRIDGE),
       msg.sender
     );
   }
@@ -275,8 +290,8 @@ contract RoninGovernanceAdmin is
       _supports,
       _signatures,
       DOMAIN_SEPARATOR,
-      roninTrustedOrganizationContract(),
-      bridgeContract()
+      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION),
+      getContract(ContractType.BRIDGE)
     );
   }
 
@@ -289,7 +304,8 @@ contract RoninGovernanceAdmin is
    */
   function deleteExpired(uint256 _chainId, uint256 _round) external {
     ProposalVote storage _vote = vote[_chainId][_round];
-    require(_vote.hash != bytes32(0), "RoninGovernanceAdmin: query for empty voting");
+    if (_vote.hash == 0) revert ErrQueryForEmptyVote();
+
     _tryDeleteExpiredVotingRound(_vote);
   }
 
@@ -317,7 +333,7 @@ contract RoninGovernanceAdmin is
     address _recipientAfterUnlockedFund,
     uint256 _requestedAt,
     uint256 _expiredAt
-  ) external onlyValidatorContract {
+  ) external onlyContract(ContractType.VALIDATOR) {
     bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
     IsolatedGovernance.Vote storage _v = _emergencyExitPoll[_hash];
     _v.createdAt = block.timestamp;
@@ -343,11 +359,11 @@ contract RoninGovernanceAdmin is
   ) external onlyGovernor {
     address _voter = msg.sender;
     bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
-    require(_voteHash == _hash, "RoninGovernanceAdmin: invalid vote hash");
+    if (_voteHash != _hash) revert ErrInvalidVoteHash();
 
     IsolatedGovernance.Vote storage _v = _emergencyExitPoll[_hash];
-    require(_v.createdAt > 0, "RoninGovernanceAdmin: query for non-existent vote");
-    require(_v.status != VoteStatus.Expired, "RoninGovernanceAdmin: query for expired vote");
+    if (_v.createdAt == 0) revert ErrQueryForNonExistentVote();
+    if (_v.status == VoteStatus.Expired) revert ErrQueryForExpiredVote();
 
     _v.castVote(_voter, _hash);
     emit EmergencyExitPollVoted(_hash, _voter);
@@ -368,14 +384,14 @@ contract RoninGovernanceAdmin is
    */
   function _getWeight(address _governor) internal view virtual override returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.getGovernorWeight.selector;
-    (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
+    (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
         abi.encodeWithSelector(_selector, _governor)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
   }
 
@@ -384,14 +400,15 @@ contract RoninGovernanceAdmin is
    */
   function _sumGovernorWeights(address[] memory _governors) internal view virtual returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.sumGovernorWeights.selector;
-    (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
+    (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
         abi.encodeWithSelector(_selector, _governors)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
   }
 
@@ -400,14 +417,14 @@ contract RoninGovernanceAdmin is
    */
   function _getBridgeVoterWeight(address _governor) internal view virtual returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.getBridgeVoterWeight.selector;
-    (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
+    (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
         abi.encodeWithSelector(_selector, _governor)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
   }
 
@@ -423,33 +440,34 @@ contract RoninGovernanceAdmin is
    */
   function _sumBridgeVoterWeights(address[] memory _bridgeVoters) internal view virtual override returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.sumBridgeVoterWeights.selector;
-    (bool _success, bytes memory _returndata) = roninTrustedOrganizationContract().staticcall(
+    (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
         abi.encodeWithSelector(_selector, _bridgeVoters)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+
+    _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
   }
 
   /**
    * @dev Trigger function from validator contract to unlock fund for emeregency exit request.
    */
-  function _execReleaseLockedFundForEmergencyExitRequest(address _consensusAddr, address _recipientAfterUnlockedFund)
-    internal
-    virtual
-  {
-    bytes4 _selector = _validatorContract.execReleaseLockedFundForEmergencyExitRequest.selector;
-    (bool _success, ) = validatorContract().call(
+  function _execReleaseLockedFundForEmergencyExitRequest(
+    address _consensusAddr,
+    address _recipientAfterUnlockedFund
+  ) internal virtual {
+    bytes4 _selector = IEmergencyExit.execReleaseLockedFundForEmergencyExitRequest.selector;
+    (bool _success, bytes memory _returndata) = getContract(ContractType.VALIDATOR).call(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
         abi.encodeWithSelector(_selector, _consensusAddr, _recipientAfterUnlockedFund)
       )
     );
-    if (!_success) revert ErrProxyCallFailed(_selector);
+    _success.handleRevert(_selector, _returndata);
   }
 
   /**
@@ -467,11 +485,11 @@ contract RoninGovernanceAdmin is
     Proposal.ProposalDetail memory _proposal,
     Ballot.VoteType _support
   ) internal {
-    require(_proposal.chainId == block.chainid, "RoninGovernanceAdmin: invalid chain id");
-    require(
-      vote[_proposal.chainId][_proposal.nonce].hash == _proposal.hash(),
-      "RoninGovernanceAdmin: cast vote for invalid proposal"
-    );
+    if (_proposal.chainId != block.chainid) revert ErrInvalidChainId(msg.sig, _proposal.chainId, block.chainid);
+
+    bytes32 proposalHash = _proposal.hash();
+    if (vote[_proposal.chainId][_proposal.nonce].hash != proposalHash)
+      revert ErrInvalidProposal(proposalHash, vote[_proposal.chainId][_proposal.nonce].hash);
 
     uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
     uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;

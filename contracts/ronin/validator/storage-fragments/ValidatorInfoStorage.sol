@@ -3,10 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "../../../libraries/EnumFlags.sol";
-import "../../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
+import { HasTrustedOrgDeprecated } from "../../../utils/DeprecatedSlots.sol";
+import "../../../extensions/collections/HasContracts.sol";
 import "../../../interfaces/validator/info-fragments/IValidatorInfo.sol";
 
-abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganizationContract {
+abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrustedOrgDeprecated {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
   /// @dev The maximum number of validator.
@@ -43,11 +44,15 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
     _validatorList = new address[](validatorCount);
     _bridgeOperators = new address[](validatorCount);
     _flags = new EnumFlags.ValidatorFlag[](validatorCount);
-    for (uint _i; _i < _validatorList.length; _i++) {
+    for (uint _i; _i < _validatorList.length; ) {
       address _validator = _validators[_i];
       _validatorList[_i] = _validator;
       _bridgeOperators[_i] = _bridgeOperatorOf(_validator);
       _flags[_i] = _validatorMap[_validator];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -64,9 +69,13 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
   function getBlockProducers() public view override returns (address[] memory _result) {
     _result = new address[](validatorCount);
     uint256 _count = 0;
-    for (uint _i; _i < _result.length; _i++) {
+    for (uint _i; _i < _result.length; ) {
       if (isBlockProducer(_validators[_i])) {
         _result[_count++] = _validators[_i];
+      }
+
+      unchecked {
+        ++_i;
       }
     }
 
@@ -86,9 +95,11 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
    * @inheritdoc IValidatorInfo
    */
   function totalBlockProducers() external view returns (uint256 _total) {
-    for (uint _i; _i < validatorCount; _i++) {
-      if (isBlockProducer(_validators[_i])) {
-        _total++;
+    unchecked {
+      for (uint _i; _i < validatorCount; _i++) {
+        if (isBlockProducer(_validators[_i])) {
+          _total++;
+        }
       }
     }
   }
@@ -106,11 +117,13 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
     _bridgeOperatorList = new address[](_length);
     _validatorList = new address[](_length);
     uint256 _count = 0;
-    for (uint _i; _i < _length; _i++) {
-      if (isOperatingBridge(_validators[_i])) {
-        address __validator = _validators[_i];
-        _bridgeOperatorList[_count] = _bridgeOperatorOf(__validator);
-        _validatorList[_count++] = __validator;
+    unchecked {
+      for (uint _i; _i < _length; ++_i) {
+        if (isOperatingBridge(_validators[_i])) {
+          address __validator = _validators[_i];
+          _bridgeOperatorList[_count] = _bridgeOperatorOf(__validator);
+          _validatorList[_count++] = __validator;
+        }
       }
     }
 
@@ -123,15 +136,15 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
   /**
    * @inheritdoc IValidatorInfo
    */
-  function getBridgeOperatorsOf(address[] memory _validatorAddrs)
-    public
-    view
-    override
-    returns (address[] memory _bridgeOperatorList)
-  {
+  function getBridgeOperatorsOf(
+    address[] memory _validatorAddrs
+  ) public view override returns (address[] memory _bridgeOperatorList) {
     _bridgeOperatorList = new address[](_validatorAddrs.length);
-    for (uint _i; _i < _bridgeOperatorList.length; _i++) {
+    for (uint _i; _i < _bridgeOperatorList.length; ) {
       _bridgeOperatorList[_i] = _bridgeOperatorOf(_validatorAddrs[_i]);
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -139,10 +152,14 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
    * @inheritdoc IValidatorInfo
    */
   function isBridgeOperator(address _bridgeOperatorAddr) external view override returns (bool _isOperator) {
-    for (uint _i; _i < validatorCount; _i++) {
+    for (uint _i; _i < validatorCount; ) {
       if (_bridgeOperatorOf(_validators[_i]) == _bridgeOperatorAddr && isOperatingBridge(_validators[_i])) {
         _isOperator = true;
         break;
+      }
+
+      unchecked {
+        ++_i;
       }
     }
   }
@@ -172,9 +189,11 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasRoninTrustedOrganiz
    * @inheritdoc IValidatorInfo
    */
   function totalBridgeOperators() public view returns (uint256 _total) {
-    for (uint _i; _i < validatorCount; _i++) {
-      if (isOperatingBridge(_validators[_i])) {
-        _total++;
+    unchecked {
+      for (uint _i; _i < validatorCount; _i++) {
+        if (isOperatingBridge(_validators[_i])) {
+          _total++;
+        }
       }
     }
   }

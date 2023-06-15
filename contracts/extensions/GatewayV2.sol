@@ -44,12 +44,10 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
   /**
    * @inheritdoc IQuorum
    */
-  function setThreshold(uint256 _numerator, uint256 _denominator)
-    external
-    virtual
-    onlyAdmin
-    returns (uint256, uint256)
-  {
+  function setThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) external virtual onlyAdmin returns (uint256, uint256) {
     return _setThreshold(_numerator, _denominator);
   }
 
@@ -57,7 +55,7 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
    * @dev Triggers paused state.
    */
   function pause() external {
-    require(msg.sender == _getAdmin() || msg.sender == emergencyPauser, "GatewayV2: not authorized pauser");
+    _requireAuth();
     _pause();
   }
 
@@ -65,7 +63,7 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
    * @dev Triggers unpaused state.
    */
   function unpause() external {
-    require(msg.sender == _getAdmin() || msg.sender == emergencyPauser, "GatewayV2: not authorized pauser");
+    _requireAuth();
     _unpause();
   }
 
@@ -82,17 +80,18 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
    * Emits the `ThresholdUpdated` event.
    *
    */
-  function _setThreshold(uint256 _numerator, uint256 _denominator)
-    internal
-    virtual
-    returns (uint256 _previousNum, uint256 _previousDenom)
-  {
-    require(_numerator <= _denominator, "GatewayV2: invalid threshold");
+  function _setThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) internal virtual returns (uint256 _previousNum, uint256 _previousDenom) {
+    if (_numerator > _denominator) revert ErrInvalidThreshold(msg.sig);
     _previousNum = _num;
     _previousDenom = _denom;
     _num = _numerator;
     _denom = _denominator;
-    emit ThresholdUpdated(nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    unchecked {
+      emit ThresholdUpdated(nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    }
   }
 
   /**
@@ -100,6 +99,20 @@ abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
    */
   function _minimumVoteWeight(uint256 _totalWeight) internal view virtual returns (uint256) {
     return (_num * _totalWeight + _denom - 1) / _denom;
+  }
+
+  /**
+   * @dev Internal method to check method caller.
+   *
+   * Requirements:
+   *
+   * - The method caller must be admin or pauser.
+   *
+   */
+  function _requireAuth() private view {
+    if (!(msg.sender == _getAdmin() || msg.sender == emergencyPauser)) {
+      revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
+    }
   }
 
   /**

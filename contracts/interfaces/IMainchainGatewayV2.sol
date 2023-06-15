@@ -8,6 +8,26 @@ import "./consumers/MappedTokenConsumer.sol";
 import "../libraries/Transfer.sol";
 
 interface IMainchainGatewayV2 is SignatureConsumer, MappedTokenConsumer, IBridge {
+  /**
+   * @dev Error indicating that a query was made for an approved withdrawal.
+   */
+  error ErrQueryForApprovedWithdrawal();
+
+  /**
+   * @dev Error indicating that the daily withdrawal limit has been reached.
+   */
+  error ErrReachedDailyWithdrawalLimit();
+
+  /**
+   * @dev Error indicating that a query was made for a processed withdrawal.
+   */
+  error ErrQueryForProcessedWithdrawal();
+
+  /**
+   * @dev Error indicating that a query was made for insufficient vote weight.
+   */
+  error ErrQueryForInsufficientVoteWeight();
+
   /// @dev Emitted when the deposit is requested
   event DepositRequested(bytes32 receiptHash, Transfer.Receipt receipt);
   /// @dev Emitted when the assets are withdrawn
@@ -64,9 +84,10 @@ interface IMainchainGatewayV2 is SignatureConsumer, MappedTokenConsumer, IBridge
    * Emits the `Withdrew` once the assets are released.
    *
    */
-  function submitWithdrawal(Transfer.Receipt memory _receipt, Signature[] memory _signatures)
-    external
-    returns (bool _locked);
+  function submitWithdrawal(
+    Transfer.Receipt memory _receipt,
+    Signature[] memory _signatures
+  ) external returns (bool _locked);
 
   /**
    * @dev Approves a specific withdrawal.

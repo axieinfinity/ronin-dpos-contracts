@@ -13,7 +13,7 @@ import {
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
 } from '../../src/types';
-import { mineBatchTxs } from '../helpers/utils';
+import { getRoles, mineBatchTxs } from '../helpers/utils';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import { EpochController } from '../helpers/ronin-validator-set';
@@ -102,19 +102,19 @@ describe('[Integration] Submit Block Reward', () => {
   describe('Configuration check', async () => {
     describe('ValidatorSetContract configuration', async () => {
       it('Should the ValidatorSetContract config the StakingContract correctly', async () => {
-        let _stakingContract = await validatorContract.stakingContract();
+        let _stakingContract = await validatorContract.getContract(getRoles('STAKING_CONTRACT'));
         expect(_stakingContract).to.eq(stakingContract.address);
       });
 
       it('Should the ValidatorSetContract config the Slashing correctly', async () => {
-        let _slashingContract = await validatorContract.slashIndicatorContract();
+        let _slashingContract = await validatorContract.getContract(getRoles('SLASH_INDICATOR_CONTRACT'));
         expect(_slashingContract).to.eq(slashContract.address);
       });
     });
 
     describe('StakingContract configuration', async () => {
       it('Should the StakingContract config the ValidatorSetContract correctly', async () => {
-        let _validatorSetContract = await stakingContract.validatorContract();
+        let _validatorSetContract = await stakingContract.getContract(getRoles('VALIDATOR_CONTRACT'));
         expect(_validatorSetContract).to.eq(validatorContract.address);
       });
     });

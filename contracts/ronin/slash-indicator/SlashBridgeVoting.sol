@@ -3,16 +3,19 @@
 pragma solidity ^0.8.9;
 
 import "../../libraries/Math.sol";
+import { HasValidatorDeprecated, HasTrustedOrgDeprecated, HasGovernanceAdminDeprecated } from "../../utils/DeprecatedSlots.sol";
+import "../../interfaces/IRoninGovernanceAdmin.sol";
 import "../../interfaces/slash-indicator/ISlashBridgeVoting.sol";
-import "../../extensions/collections/HasRoninTrustedOrganizationContract.sol";
-import "../../extensions/collections/HasRoninGovernanceAdminContract.sol";
-import "../../extensions/collections/HasValidatorContract.sol";
+import "../../interfaces/IRoninTrustedOrganization.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
+import "../../extensions/collections/HasContracts.sol";
 
 abstract contract SlashBridgeVoting is
   ISlashBridgeVoting,
-  HasValidatorContract,
-  HasRoninTrustedOrganizationContract,
-  HasRoninGovernanceAdminContract
+  HasContracts,
+  HasValidatorDeprecated,
+  HasTrustedOrgDeprecated,
+  HasGovernanceAdminDeprecated
 {
   /// @dev Mapping from validator address => period index => bridge voting slashed
   mapping(address => mapping(uint256 => bool)) internal _bridgeVotingSlashed;
@@ -31,15 +34,18 @@ abstract contract SlashBridgeVoting is
    * @inheritdoc ISlashBridgeVoting
    */
   function slashBridgeVoting(address _consensusAddr) external onlyAdmin {
-    IRoninTrustedOrganization.TrustedOrganization memory _org = _roninTrustedOrganizationContract
-      .getTrustedOrganization(_consensusAddr);
-    uint256 _lastVotedBlock = Math.max(_roninGovernanceAdminContract.lastVotedBlock(_org.bridgeVoter), _org.addedBlock);
+    IRoninTrustedOrganization.TrustedOrganization memory _org = IRoninTrustedOrganization(
+      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)
+    ).getTrustedOrganization(_consensusAddr);
+    uint256 _lastVotedBlock = Math.max(
+      IRoninGovernanceAdmin(getContract(ContractType.GOVERNANCE_ADMIN)).lastVotedBlock(_org.bridgeVoter),
+      _org.addedBlock
+    );
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     uint256 _period = _validatorContract.currentPeriod();
 
-    require(
-      block.number - _lastVotedBlock > _bridgeVotingThreshold && !_bridgeVotingSlashed[_consensusAddr][_period],
-      "SlashBridgeVoting: invalid slash"
-    );
+    if (block.number - _lastVotedBlock <= _bridgeVotingThreshold || _bridgeVotingSlashed[_consensusAddr][_period])
+      revert ErrInvalidSlash();
 
     _bridgeVotingSlashed[_consensusAddr][_period] = true;
     emit Slashed(_consensusAddr, SlashType.BRIDGE_VOTING, _period);

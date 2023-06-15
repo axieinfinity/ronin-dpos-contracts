@@ -5,9 +5,16 @@ pragma solidity ^0.8.9;
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../extensions/collections/HasProxyAdmin.sol";
 import "../../interfaces/slash-indicator/ISlashBridgeOperator.sol";
-import "../../extensions/collections/HasValidatorContract.sol";
+import "../../extensions/collections/HasContracts.sol";
+import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
-abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, HasValidatorContract, PercentageConsumer {
+abstract contract SlashBridgeOperator is
+  ISlashBridgeOperator,
+  HasProxyAdmin,
+  HasContracts,
+  HasValidatorDeprecated,
+  PercentageConsumer
+{
   /**
    * @dev The bridge operators will be deprecated reward if (s)he missed more than the ratio.
    * Values 0-10,000 map to 0%-100%.
@@ -70,7 +77,7 @@ abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, Ha
     address _consensusAddr,
     uint256 _tier,
     uint256 _period
-  ) external onlyValidatorContract {
+  ) external onlyContract(ContractType.VALIDATOR) {
     if (_tier == 1) {
       emit Slashed(_consensusAddr, SlashType.BRIDGE_OPERATOR_MISSING_VOTE_TIER_1, _period);
     } else if (_tier == 2) {
@@ -87,10 +94,10 @@ abstract contract SlashBridgeOperator is ISlashBridgeOperator, HasProxyAdmin, Ha
     uint256 _jailDurationTier2,
     uint256 _skipSlashingThreshold
   ) internal {
-    require(
-      _ratioTier1 <= _ratioTier2 && _ratioTier1 <= _MAX_PERCENTAGE && _ratioTier2 <= _MAX_PERCENTAGE,
-      "SlashIndicator: invalid ratios"
-    );
+    if (_ratioTier1 > _ratioTier2 || _ratioTier1 > _MAX_PERCENTAGE || _ratioTier2 > _MAX_PERCENTAGE) {
+      revert ErrInvalidRatios();
+    }
+
     _missingVotesRatioTier1 = _ratioTier1;
     _missingVotesRatioTier2 = _ratioTier2;
     _jailDurationForMissingVotesRatioTier2 = _jailDurationTier2;

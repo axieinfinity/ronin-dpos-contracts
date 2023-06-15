@@ -8,6 +8,10 @@ import "../../libraries/IsolatedGovernance.sol";
 
 abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAdmin {
   using IsolatedGovernance for IsolatedGovernance.Vote;
+  /**
+   * @dev Error indicating that the order of signers is invalid.
+   */
+  error ErrInvalidSignerOrder();
 
   /// @dev The last the brige operator set info.
   BridgeOperatorsBallot.BridgeOperatorSet internal _lastSyncedBridgeOperatorSetInfo;
@@ -47,13 +51,12 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAd
     uint256 _minimumVoteWeight,
     bytes32 _domainSeperator
   ) internal {
-    require(
-      _ballot.period >= _lastSyncedBridgeOperatorSetInfo.period &&
-        _ballot.epoch >= _lastSyncedBridgeOperatorSetInfo.epoch,
-      "BOsGovernanceProposal: query for outdated bridge operator set"
-    );
+    if (
+      _ballot.period < _lastSyncedBridgeOperatorSetInfo.period || _ballot.epoch < _lastSyncedBridgeOperatorSetInfo.epoch
+    ) revert ErrQueryForOutdatedBridgeOperatorSet();
+
     BridgeOperatorsBallot.verifyBallot(_ballot);
-    require(_signatures.length > 0, "BOsGovernanceProposal: invalid array length");
+    if (_signatures.length == 0) revert ErrEmptyArray();
 
     address _signer;
     address _lastSigner;
@@ -63,12 +66,12 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAd
     mapping(address => Signature) storage _sigMap = _bridgeVoterSig[_ballot.period][_ballot.epoch];
     bool _hasValidVotes;
 
-    for (uint256 _i; _i < _signatures.length; _i++) {
+    for (uint256 _i; _i < _signatures.length; ) {
       // Avoids stack too deeps
       {
         Signature calldata _sig = _signatures[_i];
         _signer = ECDSA.recover(_digest, _sig.v, _sig.r, _sig.s);
-        require(_lastSigner < _signer, "BOsGovernanceProposal: invalid signer order");
+        if (_lastSigner >= _signer) revert ErrInvalidSignerOrder();
         _lastSigner = _signer;
       }
 
@@ -78,9 +81,13 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAd
         _sigMap[_signer] = _signatures[_i];
         _v.castVote(_signer, _hash);
       }
+
+      unchecked {
+        ++_i;
+      }
     }
 
-    require(_hasValidVotes, "BOsGovernanceProposal: invalid signatures");
+    if (!_hasValidVotes) revert ErrInvalidSignatures(msg.sig);
     address[] memory _filteredVoters = _v.filterByHash(_hash);
     _v.syncVoteStatus(_minimumVoteWeight, _sumBridgeVoterWeights(_filteredVoters), 0, 0, _hash);
   }

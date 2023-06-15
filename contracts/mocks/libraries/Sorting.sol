@@ -22,11 +22,7 @@ library Sorting {
     return _quickSort(data, int(0), int(data.length - 1));
   }
 
-  function _quickSort(
-    uint[] memory arr,
-    int left,
-    int right
-  ) private pure returns (uint[] memory) {
+  function _quickSort(uint[] memory arr, int left, int right) private pure returns (uint[] memory) {
     int i = left;
     int j = right;
     if (i == j) return arr;
@@ -73,11 +69,7 @@ library Sorting {
     return _quickSortNodes(nodes, int(0), int(nodes.length - 1));
   }
 
-  function _quickSortNodes(
-    Node[] memory nodes,
-    int left,
-    int right
-  ) private pure returns (Node[] memory) {
+  function _quickSortNodes(Node[] memory nodes, int left, int right) private pure returns (Node[] memory) {
     int i = left;
     int j = right;
     if (i == j) return nodes;
@@ -146,11 +138,7 @@ library Sorting {
     return _quickSortNode3s(nodes, int(0), int(nodes.length - 1));
   }
 
-  function _quickSortNode3s(
-    Node3[] memory nodes,
-    int left,
-    int right
-  ) private pure returns (Node3[] memory) {
+  function _quickSortNode3s(Node3[] memory nodes, int left, int right) private pure returns (Node3[] memory) {
     int i = left;
     int j = right;
     if (i == j) return nodes;

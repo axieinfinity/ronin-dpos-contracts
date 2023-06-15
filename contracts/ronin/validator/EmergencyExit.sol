@@ -26,7 +26,10 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   /**
    * @inheritdoc IEmergencyExit
    */
-  function execEmergencyExit(address _consensusAddr, uint256 _secLeftToRevoke) external onlyStakingContract {
+  function execEmergencyExit(
+    address _consensusAddr,
+    uint256 _secLeftToRevoke
+  ) external onlyContract(ContractType.STAKING) {
     EmergencyExitInfo storage _info = _exitInfo[_consensusAddr];
     if (_info.recyclingAt != 0) revert ErrAlreadyRequestedEmergencyExit();
 
@@ -35,7 +38,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     _emergencyExitJailedTimestamp[_consensusAddr] = _revokingTimestamp;
     _bridgeRewardDeprecatedAtPeriod[_consensusAddr][currentPeriod()] = true;
 
-    uint256 _deductedAmount = _stakingContract.execDeductStakingAmount(_consensusAddr, _emergencyExitLockedAmount);
+    uint256 _deductedAmount = IStaking(msg.sender).execDeductStakingAmount(_consensusAddr, _emergencyExitLockedAmount);
     if (_deductedAmount > 0) {
       uint256 _recyclingAt = block.timestamp + _emergencyExpiryDuration;
       _lockedConsensusList.push(_consensusAddr);
@@ -68,10 +71,10 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   /**
    * @inheritdoc IEmergencyExit
    */
-  function execReleaseLockedFundForEmergencyExitRequest(address _consensusAddr, address payable _recipient)
-    external
-    onlyAdmin
-  {
+  function execReleaseLockedFundForEmergencyExitRequest(
+    address _consensusAddr,
+    address payable _recipient
+  ) external onlyAdmin {
     if (_exitInfo[_consensusAddr].recyclingAt == 0) {
       return;
     }
@@ -79,10 +82,14 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     uint256 _length = _lockedConsensusList.length;
     uint256 _index = _length;
 
-    for (uint _i; _i < _length; _i++) {
+    for (uint _i; _i < _length; ) {
       if (_lockedConsensusList[_i] == _consensusAddr) {
         _index = _i;
         break;
+      }
+
+      unchecked {
+        ++_i;
       }
     }
 
@@ -134,7 +141,9 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
         continue;
       }
 
-      _i++;
+      unchecked {
+        _i++;
+      }
     }
   }
 
@@ -156,13 +165,9 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   /**
    * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
    */
-  function _bridgeOperatorOf(address _consensusAddr)
-    internal
-    view
-    virtual
-    override(CandidateManager, ValidatorInfoStorage)
-    returns (address)
-  {
+  function _bridgeOperatorOf(
+    address _consensusAddr
+  ) internal view virtual override(CandidateManager, ValidatorInfoStorage) returns (address) {
     return CandidateManager._bridgeOperatorOf(_consensusAddr);
   }
 

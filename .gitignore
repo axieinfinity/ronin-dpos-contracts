@@ -13,4 +13,6 @@ refs/
 remix-compiler.config.js
 foundry
 .npmrc
+.yarn
+.yarnrc.yml
 logs/storage_layout_table.log
