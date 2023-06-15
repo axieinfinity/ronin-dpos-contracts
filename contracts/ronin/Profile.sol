@@ -121,25 +121,6 @@ contract Profile is IProfile, HasContracts, Initializable {
    * @dev Updated immediately without waiting time. (???)
    *
    * Interactions:
-   * - Update in Bridge contract for Validator address mapping.
-   * - Update in BridgeTracking for tracking their votes.
-   * - Update in Validator contract for BridgeOperator address mapping.
-   * - Update in Validator contract for bridge's reward. (???)
-   *
-   * Emit an {ProfileAddressChanged}.
-   */
-  function requestChangeBridgeOperator(TPoolId id, address newBridgeAddr) external {
-    CandidateProfile storage _profile = _getId2ProfileHelper(id);
-
-    _profile.bridgeOperator = newBridgeAddr;
-
-    emit ProfileAddressChanged(id, RoleAccess.BRIDGE_OPERATOR);
-  }
-
-  /**
-   * @dev Updated immediately without waiting time. (???)
-   *
-   * Interactions:
    * - Update in Staking contract for Consensus address mapping:
    *   + Keep the same previous pool address
    *   +
