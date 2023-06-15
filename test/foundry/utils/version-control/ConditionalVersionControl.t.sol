@@ -5,6 +5,7 @@ import { Vm, Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
 import { TransparentUpgradeableProxyV2, ERC1967Upgrade } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 import { ILogic, MockLogicV1, MockLogicV2 } from "@ronin/contracts/mocks/utils/version-control/MockLogic.sol";
+import { MockActor } from "@ronin/contracts/mocks/utils/version-control/MockActor.sol";
 import { MockConditionalVersionControl, ConditionalVersionControl } from "@ronin/contracts/mocks/utils/version-control/MockConditionalVersionControl.sol";
 
 contract ConditionalVersionControlTest is Test {
@@ -30,6 +31,7 @@ contract ConditionalVersionControlTest is Test {
   address payable versionController;
   address admin;
   address alice;
+  MockActor bobContract;
 
   /**
    * @dev Emitted when the implementation is upgraded.
@@ -47,6 +49,7 @@ contract ConditionalVersionControlTest is Test {
 
     proxyStorage = payable(address(new TransparentUpgradeableProxyV2(logicV1, admin, "")));
     versionController = payable(address(new MockConditionalVersionControl(proxyStorage, logicV1, logicV2)));
+    bobContract = new MockActor(proxyStorage);
   }
 
   function testManualUpgradeToVersionControl() public {
@@ -149,14 +152,42 @@ contract ConditionalVersionControlTest is Test {
     MockConditionalVersionControl(proxyStorage).upgrade();
   }
 
-  // function testFailUnauthorizedContractForceSwitchToLogicV2() public {
-  //   vm.prank(alice, alice);
-  //   MockConditionalVersionControl(proxyStorage).upgrade();
-  // }
+  function testFailUnauthorizedContractForceSwitchToLogicV2() public {
+    testManualUpgradeToVersionControl();
+    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalVersionControl.upgrade.selector));
+    vm.prank(alice, alice);
+    MockConditionalVersionControl(payable(address(bobContract))).upgrade();
+  }
 
   function testFailAdminForceSwitchToLogicV2() public {
     testManualUpgradeToVersionControl();
     vm.prank(admin, admin);
     MockConditionalVersionControl(proxyStorage).upgrade();
+  }
+
+  function testFailEOACallToVersionControl() public {
+    vm.expectRevert(abi.encodePacked(ErrDelegateFromUnknownOrigin.selector, versionController));
+    vm.prank(alice, alice);
+    ILogic(versionController).set();
+  }
+
+  function testFailContractCallToVersionControl() public {
+    bobContract = new MockActor(versionController);
+    vm.prank(alice, alice);
+    vm.expectRevert(abi.encodePacked(ErrDelegateFromUnknownOrigin.selector, versionController));
+    ILogic(address(bobContract)).set();
+  }
+
+  function testFailEOAStaticCallToVersionControl() public {
+    vm.expectRevert(abi.encodePacked(ErrDelegateFromUnknownOrigin.selector, versionController));
+    vm.prank(alice, alice);
+    ILogic(versionController).get();
+  }
+
+  function testFailContractStaticCallCallToVersionControl() public {
+    bobContract = new MockActor(versionController);
+    vm.prank(alice, alice);
+    vm.expectRevert(abi.encodePacked(ErrDelegateFromUnknownOrigin.selector, versionController));
+    ILogic(address(bobContract)).get();
   }
 }
