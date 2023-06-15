@@ -7,7 +7,7 @@
   "types": "dist/src/types/index.d.ts",
   "scripts": {
     "compile": "forge build && TS_NODE_TRANSPILE_ONLY=1 hardhat compile",
-    "test": "hardhat test",
+    "test": "forge test && hardhat test",
     "clean": "hardhat clean && rimraf dist cache",
     "lint:fix": "lint-staged",
     "docgen": "solidity-docgen -t templates/docs -H templates/docs/helper.js -i contracts -e contracts/mocks -o docs --solc-module solc-0.8",
