@@ -16,3 +16,5 @@ foundry
 .yarn
 .yarnrc.yml
 logs/storage_layout_table.log
+cache_foundry
+out
