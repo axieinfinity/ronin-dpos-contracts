@@ -7,9 +7,9 @@ import { IProfile } from "../../interfaces/IProfile.sol";
 
 abstract contract ProfileStorage is IProfile {
   /// @dev Mapping from id address => candidate profile.
-  mapping(address => CandidateProfile) public _id2Profile;
+  mapping(address => CandidateProfile) internal _id2Profile;
   /// @dev Mapping from consensus address => id address.
-  mapping(TConsensus => address) public _consensus2Id;
+  mapping(TConsensus => address) internal _consensus2Id;
 
   function _addNewProfile(CandidateProfile storage _profile, CandidateProfile memory mNewProfile) internal {
     _consensus2Id[mNewProfile.consensus] = mNewProfile.id;

@@ -123,6 +123,11 @@ interface IMaintenance {
   function totalSchedules() external view returns (uint256 _count);
 
   /**
+   * @dev Returns the cooldown to maintain in seconds.
+   */
+  function cooldownSecsToMaintain() external view returns (uint256);
+
+  /**
    * @dev Sets the duration restriction, start time restriction, and max allowed for maintenance.
    *
    * Requirements:
