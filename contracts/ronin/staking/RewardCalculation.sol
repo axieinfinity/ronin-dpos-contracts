@@ -12,11 +12,11 @@ import { TPoolId } from "../../udvts/Types.sol";
  */
 abstract contract RewardCalculation is IRewardPool {
   /// @dev Mapping from pool address => period number => accumulated rewards per share (one unit staking)
-  mapping(TPoolId => mapping(uint256 => PeriodWrapper)) private _accumulatedRps;
+  mapping(address => mapping(uint256 => PeriodWrapper)) private _accumulatedRps;
   /// @dev Mapping from the pool address => user address => the reward info of the user
-  mapping(TPoolId => mapping(address => UserRewardFields)) private _userReward;
+  mapping(address => mapping(address => UserRewardFields)) private _userReward;
   /// @dev Mapping from the pool address => reward pool fields
-  mapping(TPoolId => PoolFields) private _stakingPool;
+  mapping(address => PoolFields) private _stakingPool;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
@@ -27,26 +27,26 @@ abstract contract RewardCalculation is IRewardPool {
   /**
    * @inheritdoc IRewardPool
    */
-  function getReward(address consensusAddr, address user) external view returns (uint256) {
-    TPoolId poolId = TPoolId.wrap(consensusAddr);
+  function getReward(TConsensus consensusAddr, address user) external view returns (uint256) {
+    address poolId = TConsensus.unwrap(consensusAddr);
     return _getReward(poolId, user, _currentPeriod(), _getStakingAmount(poolId, user));
   }
 
   /**
    * @dev See {IRewardPool-getStakingAmount}
    */
-  function _getStakingAmount(TPoolId poolId, address user) internal view virtual returns (uint256);
+  function _getStakingAmount(address poolId, address user) internal view virtual returns (uint256);
 
   /**
    * @dev See {IRewardPool-getStakingTotal}
    */
-  function _getStakingTotal(TPoolId poolId) internal view virtual returns (uint256);
+  function _getStakingTotal(address poolId) internal view virtual returns (uint256);
 
   /**
    * @dev Returns the reward amount that user claimable.
    */
   function _getReward(
-    TPoolId poolId,
+    address poolId,
     address user,
     uint256 latestPeriod,
     uint256 latestStakingAmount
@@ -84,7 +84,7 @@ abstract contract RewardCalculation is IRewardPool {
    * Note: The method should be called whenever the user's staking amount changes.
    *
    */
-  function _syncUserReward(TPoolId poolId, address user, uint256 newStakingAmount) internal {
+  function _syncUserReward(address poolId, address user, uint256 newStakingAmount) internal {
     uint256 period = _currentPeriod();
     PoolFields storage _pool = _stakingPool[poolId];
     uint256 lastShares = _pool.shares.inner;
@@ -146,7 +146,7 @@ abstract contract RewardCalculation is IRewardPool {
    * Note: This method should be called before transferring rewards for the user.
    *
    */
-  function _claimReward(TPoolId poolId, address user, uint256 lastPeriod) internal returns (uint256 amount) {
+  function _claimReward(address poolId, address user, uint256 lastPeriod) internal returns (uint256 amount) {
     uint256 currentStakingAmount = _getStakingAmount(poolId, user);
     amount = _getReward(poolId, user, lastPeriod, currentStakingAmount);
     emit RewardClaimed(poolId, user, amount);
@@ -169,7 +169,7 @@ abstract contract RewardCalculation is IRewardPool {
    * Note: This method should be called once at the period ending.
    *
    */
-  function _recordRewards(TPoolId[] memory poolIds, uint256[] calldata rewards, uint256 period) internal {
+  function _recordRewards(address[] memory poolIds, uint256[] calldata rewards, uint256 period) internal {
     if (poolIds.length != rewards.length) {
       emit PoolsUpdateFailed(period, poolIds, rewards);
       return;
@@ -177,11 +177,11 @@ abstract contract RewardCalculation is IRewardPool {
 
     uint256 rps;
     uint256 count;
-    TPoolId poolId;
+    address poolId;
     uint256 stakingTotal;
     uint256[] memory aRps = new uint256[](poolIds.length);
     uint256[] memory shares = new uint256[](poolIds.length);
-    TPoolId[] memory conflicted = new TPoolId[](poolIds.length);
+    address[] memory conflicted = new address[](poolIds.length);
 
     for (uint i = 0; i < poolIds.length; i++) {
       poolId = poolIds[i];

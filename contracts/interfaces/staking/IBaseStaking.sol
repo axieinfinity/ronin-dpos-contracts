@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.9;
 
-import { TPoolId } from "../../udvts/Types.sol";
+import { TPoolId, TConsensus } from "../../udvts/Types.sol";
 
 interface IBaseStaking {
   struct PoolDetail {
     // Address of the pool, initially is the consensus address of the validator
-    TPoolId id;
+    address id;
     // Pool admin address
     address admin;
     // Self-staking amount
@@ -36,7 +36,7 @@ interface IBaseStaking {
   /// @dev Error of admin of any active pool cannot delegate.
   error ErrAdminOfAnyActivePoolForbidden(address admin);
   /// @dev Error of querying inactive pool.
-  error ErrInactivePool(address poolAddr);
+  error ErrInactivePool(TConsensus consensusAddr, address poolAddr);
   /// @dev Error of length of input arrays are not of the same.
   error ErrInvalidArrays();
 
@@ -48,19 +48,28 @@ interface IBaseStaking {
   /**
    * @dev Returns the consensus address corresponding to the pool admin.
    */
-  function getPoolAddressOf(address admin) external view returns (TPoolId);
+  function getPoolAddressOf(address admin) external view returns (address);
 
   /**
    * @dev Returns the staking pool details.
    */
   function getPoolDetail(
-    address consensusAddr
+    TConsensus consensusAddr
+  ) external view returns (address admin, uint256 stakingAmount, uint256 stakingTotal);
+
+  function getPoolDetailById(
+    address poolId
   ) external view returns (address admin, uint256 stakingAmount, uint256 stakingTotal);
 
   /**
    * @dev Returns the self-staking amounts of the pools.
    */
-  function getManySelfStakings(address[] calldata consensusAddrs) external view returns (uint256[] memory);
+  function getManySelfStakings(TConsensus[] calldata consensusAddrs) external view returns (uint256[] memory);
+
+  /**
+   * @dev Returns the self-staking amounts of the pools.
+   */
+  function getManySelfStakingsById(address[] calldata poolIds) external view returns (uint256[] memory);
 
   /**
    * @dev Returns The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.

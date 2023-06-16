@@ -6,9 +6,9 @@ import "./IRewardPool.sol";
 
 interface IDelegatorStaking is IRewardPool {
   /// @dev Emitted when the delegator staked for a validator candidate.
-  event Delegated(address indexed delegator, TPoolId indexed poolId, uint256 amount);
+  event Delegated(address indexed delegator, address indexed poolId, uint256 amount);
   /// @dev Emitted when the delegator unstaked from a validator candidate.
-  event Undelegated(address indexed delegator, TPoolId indexed consensusAddr, uint256 amount);
+  event Undelegated(address indexed delegator, address indexed poolId, uint256 amount);
 
   /// @dev Error of undelegating zero amount.
   error ErrUndelegateZeroAmount();
@@ -27,7 +27,7 @@ interface IDelegatorStaking is IRewardPool {
    * Emits the `Delegated` event.
    *
    */
-  function delegate(address consensusAddr) external payable;
+  function delegate(TConsensus consensusAddr) external payable;
 
   /**
    * @dev Unstakes from a validator candidate `_consensusAddr` for `_amount`.
@@ -38,7 +38,7 @@ interface IDelegatorStaking is IRewardPool {
    * Emits the `Undelegated` event.
    *
    */
-  function undelegate(address consensusAddr, uint256 amount) external;
+  function undelegate(TConsensus consensusAddr, uint256 amount) external;
 
   /**
    * @dev Bulk unstakes from a list of candidates.
@@ -49,7 +49,7 @@ interface IDelegatorStaking is IRewardPool {
    * Emits the events `Undelegated`.
    *
    */
-  function bulkUndelegate(address[] calldata consensusAddrs, uint256[] calldata amounts) external;
+  function bulkUndelegate(TConsensus[] calldata consensusAddrs, uint256[] calldata amounts) external;
 
   /**
    * @dev Unstakes an amount of RON from the `_consensusAddrSrc` and stake for `_consensusAddrDst`.
@@ -61,12 +61,15 @@ interface IDelegatorStaking is IRewardPool {
    * Emits the `Undelegated` event and the `Delegated` event.
    *
    */
-  function redelegate(address consensusAddrSrc, address consensusAddrDst, uint256 amount) external;
+  function redelegate(TConsensus consensusAddrSrc, TConsensus consensusAddrDst, uint256 amount) external;
 
   /**
    * @dev Returns the claimable reward of the user `_user`.
    */
-  function getRewards(address user, address[] calldata poolAddrList) external view returns (uint256[] memory _rewards);
+  function getRewards(
+    address user,
+    TConsensus[] calldata consensusAddrList
+  ) external view returns (uint256[] memory _rewards);
 
   /**
    * @dev Claims the reward of method caller.
@@ -74,7 +77,7 @@ interface IDelegatorStaking is IRewardPool {
    * Emits the `RewardClaimed` event.
    *
    */
-  function claimRewards(address[] calldata consensusAddrList) external returns (uint256 amount);
+  function claimRewards(TConsensus[] calldata consensusAddrList) external returns (uint256 amount);
 
   /**
    * @dev Claims the rewards and delegates them to the consensus address.
@@ -87,7 +90,7 @@ interface IDelegatorStaking is IRewardPool {
    *
    */
   function delegateRewards(
-    address[] calldata consensusAddrList,
-    address consensusAddrDst
+    TConsensus[] calldata consensusAddrList,
+    TConsensus consensusAddrDst
   ) external returns (uint256 amount);
 }

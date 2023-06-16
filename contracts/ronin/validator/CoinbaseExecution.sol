@@ -429,7 +429,7 @@ abstract contract CoinbaseExecution is
     uint256 _newPeriod
   ) private returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates) {
     _unsastifiedCandidates = _syncCandidateSet(_newPeriod);
-    uint256[] memory _weights = IStaking(getContract(ContractType.STAKING)).getManyStakingTotals(_candidates);
+    uint256[] memory _weights = IStaking(getContract(ContractType.STAKING)).getManyStakingTotalsById(_candidates);
     uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
       .getConsensusWeights(_candidates);
     uint256 _newValidatorCount;

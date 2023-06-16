@@ -2,9 +2,15 @@
 pragma solidity ^0.8.19;
 
 type TPoolId is address;
+type TConsensus is address;
 
-using { eq as == } for TPoolId global;
+using { TPoolIdEq as == } for TPoolId global;
+using { TConsensusEq as == } for TConsensus global;
 
-function eq(TPoolId a, TPoolId b) pure returns (bool) {
+function TPoolIdEq(TPoolId a, TPoolId b) pure returns (bool) {
   return TPoolId.unwrap(a) == TPoolId.unwrap(b);
+}
+
+function TConsensusEq(TConsensus a, TConsensus b) pure returns (bool) {
+  return TConsensus.unwrap(a) == TConsensus.unwrap(b);
 }

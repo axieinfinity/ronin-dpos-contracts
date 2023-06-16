@@ -9,17 +9,16 @@ pragma solidity ^0.8.9;
 abstract contract ProfileOutflow is HasContracts, ProfileStorage {
   function execApplyValidatorCandidate(
     address admin,
-    address consensus,
+    address id,
     address treasury,
     address bridgeOperator
   ) external override onlyContract(ContractType.STAKING) {
     // TODO: handle previous added consensus
-    TPoolId id = TPoolId.wrap(consensus);
     CandidateProfile storage _profile = _id2Profile[id];
 
     CandidateProfile memory mProfile = CandidateProfile({
       id: id,
-      consensus: consensus,
+      consensus: TConsensus.wrap(id),
       admin: admin,
       treasury: payable(treasury),
       bridgeOperator: bridgeOperator,

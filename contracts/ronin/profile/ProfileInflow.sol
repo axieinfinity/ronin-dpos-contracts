@@ -18,7 +18,7 @@ abstract contract ProfileInflow is HasContracts, ProfileStorage {
    *
    * Emit an {ProfileAddressChanged}.
    */
-  function requestChangeAdminAddress(TPoolId id, address newAdminAddr) external {
+  function requestChangeAdminAddress(address id, address newAdminAddr) external {
     IStaking stakingContract = IStaking(getContract(ContractType.STAKING));
     stakingContract.execChangeAdminAddress(id, newAdminAddr);
 
@@ -48,7 +48,7 @@ abstract contract ProfileInflow is HasContracts, ProfileStorage {
    * Emit an {ProfileAddressChanged}.
    *
    */
-  function requestChangeConsensusAddr(TPoolId id, address newConsensusAddr) external {
+  function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
 
     _profile.consensus = newConsensusAddr;

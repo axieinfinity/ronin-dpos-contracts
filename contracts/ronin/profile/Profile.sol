@@ -24,22 +24,22 @@ contract Profile is IProfile, ProfileStorage, ProfileInflow, ProfileOutflow, Ini
   /**
    * @dev See {IProfile}
    */
-  function getId2Profile(TPoolId id) external view returns (CandidateProfile memory) {
+  function getId2Profile(address id) external view returns (CandidateProfile memory) {
     return _id2Profile[id];
   }
 
   /**
    * @dev See {IProfile}
    */
-  function getConsensus2Id(address consensus) external view returns (TPoolId id) {
+  function getConsensus2Id(TConsensus consensus) external view returns (address id) {
     return _consensus2Id[consensus];
   }
 
   /**
    * @dev See {IProfile}
    */
-  function getManyConsensus2Id(address[] calldata consensusList) external view returns (TPoolId[] memory idList) {
-    idList = new TPoolId[](consensusList.length);
+  function getManyConsensus2Id(TConsensus[] calldata consensusList) external view returns (address[] memory idList) {
+    idList = new address[](consensusList.length);
     unchecked {
       for (uint i; i < consensusList.length; ++i) {
         idList[i] = _consensus2Id[consensusList[i]];

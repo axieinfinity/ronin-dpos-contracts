@@ -15,7 +15,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function delegate(address consensusAddr) external payable noEmptyValue poolOfConsensusIsActive(consensusAddr) {
+  function delegate(TConsensus consensusAddr) external payable noEmptyValue poolOfConsensusIsActive(consensusAddr) {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
     _delegate(_poolDetail[_convertC2P(consensusAddr)], msg.sender, msg.value);
   }
@@ -23,7 +23,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function undelegate(address consensusAddr, uint256 amount) external nonReentrant {
+  function undelegate(TConsensus consensusAddr, uint256 amount) external nonReentrant {
     address payable delegator = payable(msg.sender);
     _undelegate(consensusAddr, _poolDetail[_convertC2P(consensusAddr)], delegator, amount);
     if (!_sendRON(delegator, amount)) revert ErrCannotTransferRON();
@@ -32,13 +32,13 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function bulkUndelegate(address[] calldata consensusAddrs, uint256[] calldata amounts) external nonReentrant {
+  function bulkUndelegate(TConsensus[] calldata consensusAddrs, uint256[] calldata amounts) external nonReentrant {
     if (consensusAddrs.length == 0 || consensusAddrs.length != amounts.length) revert ErrInvalidArrays();
 
     address payable delegator = payable(msg.sender);
     uint256 total;
 
-    TPoolId[] memory poolIds = _convertManyC2P(consensusAddrs);
+    address[] memory poolIds = _convertManyC2P(consensusAddrs);
     for (uint i = 0; i < poolIds.length; ) {
       total += amounts[i];
       _undelegate(consensusAddrs[i], _poolDetail[poolIds[i]], delegator, amounts[i]);
@@ -55,8 +55,8 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    * @inheritdoc IDelegatorStaking
    */
   function redelegate(
-    address consensusAddrSrc,
-    address consensusAddrDst,
+    TConsensus consensusAddrSrc,
+    TConsensus consensusAddrDst,
     uint256 amount
   ) external nonReentrant poolOfConsensusIsActive(consensusAddrDst) {
     address delegator = msg.sender;
@@ -67,7 +67,9 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   /**
    * @inheritdoc IDelegatorStaking
    */
-  function claimRewards(address[] calldata consensusAddrList) external override nonReentrant returns (uint256 amount) {
+  function claimRewards(
+    TConsensus[] calldata consensusAddrList
+  ) external override nonReentrant returns (uint256 amount) {
     amount = _claimRewards(msg.sender, _convertManyC2P(consensusAddrList));
     _transferRON(payable(msg.sender), amount);
   }
@@ -76,12 +78,12 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    * @inheritdoc IDelegatorStaking
    */
   function delegateRewards(
-    address[] calldata consensusAddrList,
-    address consensusAddrDst
+    TConsensus[] calldata consensusAddrList,
+    TConsensus consensusAddrDst
   ) external override nonReentrant poolOfConsensusIsActive(consensusAddrDst) returns (uint256 amount) {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
-    TPoolId[] memory poolIds = _convertManyC2P(consensusAddrList);
-    TPoolId poolIdDst = _convertC2P(consensusAddrDst);
+    address[] memory poolIds = _convertManyC2P(consensusAddrList);
+    address poolIdDst = _convertC2P(consensusAddrDst);
     return _delegateRewards(msg.sender, poolIds, poolIdDst);
   }
 
@@ -90,14 +92,14 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    */
   function getRewards(
     address user,
-    address[] calldata consensusAddrs
+    TConsensus[] calldata consensusAddrs
   ) external view returns (uint256[] memory rewards_) {
     uint256 period = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
     rewards_ = new uint256[](consensusAddrs.length);
 
-    TPoolId[] memory poolIds = _convertManyC2P(consensusAddrs);
+    address[] memory poolIds = _convertManyC2P(consensusAddrs);
     for (uint256 i = 0; i < consensusAddrs.length; ) {
-      TPoolId poolId = poolIds[i];
+      address poolId = poolIds[i];
       rewards_[i] = _getReward(poolId, user, period, _getStakingAmount(poolId, user));
 
       unchecked {
@@ -141,7 +143,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    *
    */
   function _undelegate(
-    address consensusAddr,
+    TConsensus consensusAddr,
     PoolDetail storage _pool,
     address delegator,
     uint256 amount
@@ -151,8 +153,8 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
 
     IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     if (
-      validatorContract.isValidatorCandidate(consensusAddr) &&
-      validatorContract.getCandidateInfo(consensusAddr).revokingTimestamp == 0 && // if candidate is not on renunciation
+      validatorContract.isValidatorCandidate(TConsensus.unwrap(consensusAddr)) &&
+      validatorContract.getCandidateInfo(TConsensus.unwrap(consensusAddr)).revokingTimestamp == 0 && // if candidate is not on renunciation
       _pool.lastDelegatingTimestamp[delegator] + _cooldownSecsToUndelegate >= block.timestamp // delegator is still in cooldown
     ) revert ErrUndelegateTooEarly();
 
@@ -164,7 +166,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    * @dev Claims rewards from the pools `_poolAddrList`.
    * Note: This function does not transfer reward to user.
    */
-  function _claimRewards(address user, TPoolId[] memory poolIds) internal returns (uint256 amount) {
+  function _claimRewards(address user, address[] memory poolIds) internal returns (uint256 amount) {
     uint256 period = _currentPeriod();
     for (uint256 i = 0; i < poolIds.length; ) {
       amount += _claimReward(poolIds[i], user, period);
@@ -180,8 +182,8 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
    */
   function _delegateRewards(
     address user,
-    TPoolId[] memory poolIds,
-    TPoolId poolIdDst
+    address[] memory poolIds,
+    address poolIdDst
   ) internal returns (uint256 amount) {
     amount = _claimRewards(user, poolIds);
     _delegate(_poolDetail[poolIdDst], user, amount);

@@ -9,5 +9,5 @@ interface IStakingProfile {
    * @dev Requirements:
    * - Only Profile contract can call this method.
    */
-  function execChangeAdminAddress(TPoolId poolAddr, address newAdminAddr) external;
+  function execChangeAdminAddress(address poolAddr, address newAdminAddr) external;
 }

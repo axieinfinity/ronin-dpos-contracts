@@ -142,6 +142,17 @@ abstract contract CandidateManager is
     emit CommissionRateUpdateScheduled(_consensusAddr, _effectiveTimestamp, _commissionRate);
   }
 
+  function execChangeConsensusAddress(
+    address oldConsensusAddr,
+    address newConsensusAddr
+  ) external onlyContract(ContractType.PROFILE) {
+    // Sync Consensus Address mapping
+    // Sync Bridge Address mapping
+    // Sync Jail mapping
+    // Sync Pending reward mapping
+    // Sync Schedule mapping
+  }
+
   /**
    * @inheritdoc ICandidateManager
    */
@@ -196,7 +207,7 @@ abstract contract CandidateManager is
     IStaking _staking = IStaking(getContract(ContractType.STAKING));
     uint256 _waitingSecsToRevoke = _staking.waitingSecsToRevoke();
     uint256 _minStakingAmount = _staking.minValidatorStakingAmount();
-    uint256[] memory _selfStakings = _staking.getManySelfStakings(_candidates);
+    uint256[] memory _selfStakings = _staking.getManySelfStakingsById(_candidates);
 
     uint256 _length = _candidates.length;
     uint256 _unsatisfiedCount;
