@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { ErrorHandler, ConditionalVersionControl } from "./ConditionalVersionControl.sol";
+import { ConditionalVersionControl } from "./ConditionalVersionControl.sol";
 import { ITimingInfo } from "../../interfaces/validator/info-fragments/ITimingInfo.sol";
 
 contract RoninValidatorSetUpgrader is ConditionalVersionControl {
-  using ErrorHandler for bool;
-
   uint256 private immutable _currentPeriod;
 
   constructor(
@@ -19,11 +17,6 @@ contract RoninValidatorSetUpgrader is ConditionalVersionControl {
   }
 
   function _isConditionMet() internal view override returns (bool) {
-    (bool success, bytes memory returnOrRevertData) = address(this).staticcall(
-      abi.encodeCall(ITimingInfo.currentPeriod, ())
-    );
-    success.handleRevert(msg.sig, returnOrRevertData);
-    uint256 currentPeriod = abi.decode(returnOrRevertData, (uint256));
-    return currentPeriod > _currentPeriod;
+    return ITimingInfo(address(this)).currentPeriod() > _currentPeriod;
   }
 }
