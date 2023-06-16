@@ -14,10 +14,10 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
   uint256 internal _maxValidatorNumber;
 
   /// @dev The total of validators
-  uint256 public validatorCount;
-  /// @dev Mapping from validator index => validator address
+  uint256 internal _validatorCount;
+  /// @dev Mapping from validator index => validator id address
   mapping(uint256 => address) internal _validators;
-  /// @dev Mapping from address => flag indicating the validator ability: producing block, operating bridge
+  /// @dev Mapping from validator id => flag indicating the validator ability: producing block, operating bridge
   mapping(address => EnumFlags.ValidatorFlag) internal _validatorMap;
   /// @dev The number of slot that is reserved for prioritized validators
   uint256 internal _maxPrioritizedValidatorNumber;
@@ -27,6 +27,10 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
    * variables without shifting down storage in the inheritance chain.
    */
   uint256[50] private ______gap;
+
+  function validatorCount() external view returns (uint256) {
+    return _validatorCount;
+  }
 
   /**
    * @inheritdoc IValidatorInfo
@@ -41,9 +45,9 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
       EnumFlags.ValidatorFlag[] memory _flags
     )
   {
-    _validatorList = new address[](validatorCount);
-    _bridgeOperators = new address[](validatorCount);
-    _flags = new EnumFlags.ValidatorFlag[](validatorCount);
+    _validatorList = new address[](_validatorCount);
+    _bridgeOperators = new address[](_validatorCount);
+    _flags = new EnumFlags.ValidatorFlag[](_validatorCount);
     for (uint _i; _i < _validatorList.length; ) {
       address _validator = _validators[_i];
       _validatorList[_i] = _validator;
@@ -59,15 +63,15 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
   /**
    * @inheritdoc IValidatorInfo
    */
-  function isValidator(address _addr) public view override returns (bool) {
-    return !_validatorMap[_addr].isNone();
+  function isValidator(address consensusAddr) external view override returns (bool) {
+    return !_validatorMap[consensusAddr].isNone();
   }
 
   /**
    * @inheritdoc IValidatorInfo
    */
   function getBlockProducers() public view override returns (address[] memory _result) {
-    _result = new address[](validatorCount);
+    _result = new address[](_validatorCount);
     uint256 _count = 0;
     for (uint _i; _i < _result.length; ) {
       if (isBlockProducer(_validators[_i])) {
@@ -87,8 +91,8 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
   /**
    * @inheritdoc IValidatorInfo
    */
-  function isBlockProducer(address _addr) public view override returns (bool) {
-    return _validatorMap[_addr].hasFlag(EnumFlags.ValidatorFlag.BlockProducer);
+  function isBlockProducer(address consensusAddr) public view override returns (bool) {
+    return _validatorMap[consensusAddr].hasFlag(EnumFlags.ValidatorFlag.BlockProducer);
   }
 
   /**
@@ -96,7 +100,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
    */
   function totalBlockProducers() external view returns (uint256 _total) {
     unchecked {
-      for (uint _i; _i < validatorCount; _i++) {
+      for (uint _i; _i < _validatorCount; _i++) {
         if (isBlockProducer(_validators[_i])) {
           _total++;
         }
@@ -113,7 +117,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
     override
     returns (address[] memory _bridgeOperatorList, address[] memory _validatorList)
   {
-    uint256 _length = validatorCount;
+    uint256 _length = _validatorCount;
     _bridgeOperatorList = new address[](_length);
     _validatorList = new address[](_length);
     uint256 _count = 0;
@@ -152,7 +156,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
    * @inheritdoc IValidatorInfo
    */
   function isBridgeOperator(address _bridgeOperatorAddr) external view override returns (bool _isOperator) {
-    for (uint _i; _i < validatorCount; ) {
+    for (uint _i; _i < _validatorCount; ) {
       if (_bridgeOperatorOf(_validators[_i]) == _bridgeOperatorAddr && isOperatingBridge(_validators[_i])) {
         _isOperator = true;
         break;
@@ -190,7 +194,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
    */
   function totalBridgeOperators() public view returns (uint256 _total) {
     unchecked {
-      for (uint _i; _i < validatorCount; _i++) {
+      for (uint _i; _i < _validatorCount; _i++) {
         if (isOperatingBridge(_validators[_i])) {
           _total++;
         }

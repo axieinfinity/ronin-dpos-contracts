@@ -457,7 +457,7 @@ abstract contract CoinbaseExecution is
     uint256 _newPeriod
   ) private {
     // Remove exceeding validators in the current set
-    for (uint256 _i = _newValidatorCount; _i < validatorCount; ) {
+    for (uint256 _i = _newValidatorCount; _i < _validatorCount; ) {
       delete _validatorMap[_validators[_i]];
       delete _validators[_i];
 
@@ -486,7 +486,7 @@ abstract contract CoinbaseExecution is
       }
     }
 
-    validatorCount = _newValidatorCount;
+    _validatorCount = _newValidatorCount;
     emit ValidatorSetUpdated(_newPeriod, _newValidators);
   }
 

@@ -19,11 +19,11 @@ abstract contract CandidateManager is
   /// @dev Maximum number of validator candidate
   uint256 private _maxValidatorCandidate;
 
-  /// @dev The validator candidate array
+  /// @dev The array of candidate ids
   address[] internal _candidates;
-  /// @dev Mapping from candidate consensus address => bitwise negation of validator index in `_candidates`
+  /// @dev Mapping from candidate id => bitwise negation of validator index in `_candidates`
   mapping(address => uint256) internal _candidateIndex;
-  /// @dev Mapping from candidate consensus address => their info
+  /// @dev Mapping from candidate id => their info
   mapping(address => ValidatorCandidate) internal _candidateInfo;
 
   /**

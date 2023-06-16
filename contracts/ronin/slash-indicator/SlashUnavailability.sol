@@ -11,7 +11,7 @@ import { ErrInvalidThreshold } from "../../utils/CommonErrors.sol";
 
 abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, HasValidatorDeprecated {
   /// @dev The last block that a validator is slashed for unavailability.
-  uint256 public lastUnavailabilitySlashedBlock;
+  uint256 internal _lastUnavailabilitySlashedBlock;
   /// @dev Mapping from validator address => period index => unavailability indicator.
   mapping(address => mapping(uint256 => uint256)) internal _unavailabilityIndicator;
 
@@ -40,12 +40,16 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
   uint256[50] private ______gap;
 
   modifier oncePerBlock() {
-    if (block.number <= lastUnavailabilitySlashedBlock) {
+    if (block.number <= _lastUnavailabilitySlashedBlock) {
       revert ErrCannotSlashAValidatorTwiceOrSlashMoreThanOneValidatorInOneBlock();
     }
 
-    lastUnavailabilitySlashedBlock = block.number;
+    _lastUnavailabilitySlashedBlock = block.number;
     _;
+  }
+
+  function lastUnavailabilitySlashedBlock() external view returns (uint256) {
+    return _lastUnavailabilitySlashedBlock;
   }
 
   /**
