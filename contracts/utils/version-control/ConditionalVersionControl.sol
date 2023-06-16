@@ -72,19 +72,10 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
    * @dev Fallback function that forwards the call to the current or new contract implementation based on a condition.
    */
   fallback() external payable virtual onlyDelegateFromProxyStorage {
-    address version = _isConditionMet() ? _newVersion : _currentVersion;
-
-    (bool success, bytes memory returnOrRevertData) = version.delegatecall(msg.data);
-    success.handleRevert(msg.sig, returnOrRevertData);
-
-    if (_isConditionMet()) {
-      // restrict gas consumption in case of reverting due to state changes when staticcall
-      // expect address(this) == _proxyStorage
-      address(this).call{ gas: 50_000 }(abi.encodeCall(this.upgrade, ()));
-    }
-
+    bytes memory returnData = _dispatchCall(_chooseVersion());
+    _triggerMigration();
     assembly {
-      return(add(returnOrRevertData, 0x20), mload(returnOrRevertData))
+      return(add(returnData, 0x20), mload(returnData))
     }
   }
 
@@ -94,6 +85,26 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
 
   function upgrade() public onlyDelegateFromProxyStorage onlySelfCall {
     _upgradeTo(_newVersion);
+  }
+
+  function _chooseVersion() internal view virtual returns (address) {
+    return _isConditionMet() ? _newVersion : _currentVersion;
+  }
+
+  function _dispatchCall(address version) internal virtual returns (bytes memory returnData) {
+    (bool success, bytes memory returnOrRevertData) = version.delegatecall(msg.data);
+    success.handleRevert(msg.sig, returnOrRevertData);
+    assembly {
+      returnData := returnOrRevertData
+    }
+  }
+
+  function _triggerMigration() internal virtual {
+    if (_isConditionMet()) {
+      // restrict gas consumption in case of reverting due to state changes when staticcall
+      // expect address(this) == _proxyStorage
+      address(this).call{ gas: _gasStipenedNoGrief() }(abi.encodeCall(this.upgrade, ()));
+    }
   }
 
   /**
@@ -129,5 +140,12 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
    */
   function _requireSelfCall() internal view virtual {
     if (msg.sender != _proxyStorage) revert ErrOnlySelfCall(msg.sig);
+  }
+
+  function _gasStipenedNoGrief() internal pure virtual returns (uint256) {
+    /// @dev Suggested gas stipend for contract to perform a few
+    /// storage reads and writes, but low enough to prevent griefing.
+    /// Multiply by a small constant (e.g. 2), if needed.
+    return 50_000;
   }
 }
