@@ -547,7 +547,7 @@ describe('[Integration] Slash validators', () => {
             });
             await expect(topUpTx)
               .revertedWithCustomError(stakingContract, 'ErrInactivePool')
-              .withArgs(slashee.consensusAddr.address);
+              .withArgs(slashee.consensusAddr.address, slashee.consensusAddr.address);
           }
         });
 

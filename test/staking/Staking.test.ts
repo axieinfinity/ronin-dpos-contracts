@@ -411,7 +411,7 @@ describe('Staking test', () => {
     it('Should not be able to delegate to a deprecated pool', async () => {
       await expect(stakingContract.delegate(poolAddrSet.consensusAddr.address, { value: 1 }))
         .revertedWithCustomError(stakingContract, 'ErrInactivePool')
-        .withArgs(poolAddrSet.consensusAddr.address);
+        .withArgs(poolAddrSet.consensusAddr.address, poolAddrSet.consensusAddr.address);
     });
 
     it('Should not be able to delegate with empty value', async () => {
