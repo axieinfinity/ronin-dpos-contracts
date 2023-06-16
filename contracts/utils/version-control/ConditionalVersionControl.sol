@@ -78,6 +78,8 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
     success.handleRevert(msg.sig, returnOrRevertData);
 
     if (_isConditionMet()) {
+      // restrict gas consumption in case of reverting due to state changes when staticcall
+      // expect address(this) == _proxyStorage
       address(this).call{ gas: 50_000 }(abi.encodeCall(this.upgrade, ()));
     }
 
