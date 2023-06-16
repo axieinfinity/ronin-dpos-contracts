@@ -83,7 +83,7 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
     revert();
   }
 
-  function upgrade() public onlyDelegateFromProxyStorage onlySelfCall {
+  function upgrade() external onlyDelegateFromProxyStorage onlySelfCall {
     _upgradeTo(_newVersion);
   }
 
@@ -101,9 +101,7 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
 
   function _triggerMigration() internal virtual {
     if (_isConditionMet()) {
-      // restrict gas consumption in case of reverting due to state changes when staticcall
-      // expect address(this) == _proxyStorage
-      address(this).call{ gas: _gasStipenedNoGrief() }(abi.encodeCall(this.upgrade, ()));
+      try this.upgrade{ gas: _gasStipenedNoGrief() }() {} catch {}
     }
   }
 

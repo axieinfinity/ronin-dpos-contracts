@@ -5,7 +5,7 @@ import { ConditionalVersionControl } from "./ConditionalVersionControl.sol";
 import { ITimingInfo } from "../../interfaces/validator/info-fragments/ITimingInfo.sol";
 import { ICoinbaseExecution } from "../../interfaces/validator/ICoinbaseExecution.sol";
 
-contract RoninValidatorSetUpgrader is ConditionalVersionControl {
+contract RoninValidatorSetTimedMigrator is ConditionalVersionControl {
   /// @dev value is equal to keccak256("@ronin.dpos.utils.version-control.RVTimedMigrator.isPeriodEnding.slot")
   bytes32 private constant _SLOT = 0x56663dc009889135c9a870af5d0c2e5271b9595765451175f9f0a515d04a31ff;
 
@@ -14,9 +14,7 @@ contract RoninValidatorSetUpgrader is ConditionalVersionControl {
       uint256 currentPeriod = _getCurrentPeriod();
       _;
       if (currentPeriod != _getCurrentPeriod()) {
-        // restrict gas consumption in case of reverting due to state changes when staticcall
-        // expect address(this) == _proxyStorage
-        address(this).call{ gas: _gasStipenedNoGrief() }(abi.encodeCall(this.markPeriodAsEnded, ()));
+        this.markPeriodAsEnded();
       }
     } else {
       _;
@@ -29,7 +27,7 @@ contract RoninValidatorSetUpgrader is ConditionalVersionControl {
     address newVersion
   ) ConditionalVersionControl(proxyStorage, currentVersion, newVersion) {}
 
-  function markPeriodAsEnded() public onlyDelegateFromProxyStorage onlySelfCall {
+  function markPeriodAsEnded() external onlyDelegateFromProxyStorage onlySelfCall {
     assembly {
       sstore(_SLOT, 1)
     }
