@@ -75,6 +75,11 @@ contract ConditionalVersionControlTest is Test {
     new MockConditionalVersionControl(proxyStorage, logicV1, logicV1);
   }
 
+  function testFailDupplicateInput2() public {
+    vm.expectRevert(abi.encodePacked(ErrDuplicated.selector, bytes4(0)));
+    new MockConditionalVersionControl(logicV1, proxyStorage, logicV1);
+  }
+
   function testFailNonContractInput0() public {
     vm.expectRevert(abi.encodePacked(ErrZeroCodeContract.selector, alice));
     new MockConditionalVersionControl(alice, logicV1, logicV2);

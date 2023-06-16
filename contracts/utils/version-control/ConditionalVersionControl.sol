@@ -78,7 +78,7 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
     success.handleRevert(msg.sig, returnOrRevertData);
 
     if (_isConditionMet()) {
-      address(this).call(abi.encodeCall(this.upgrade, ()));
+      address(this).call{ gas: 50_000 }(abi.encodeCall(this.upgrade, ()));
     }
 
     assembly {
