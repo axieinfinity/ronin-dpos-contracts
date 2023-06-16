@@ -29,6 +29,10 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
     _;
   }
 
+  modifier whenConditionsAreMet() virtual {
+    _;
+  }
+
   /**
    * @dev Modifier that only allows delegate calls from admin proxy storage.
    */
@@ -73,7 +77,6 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
    */
   fallback() external payable virtual onlyDelegateFromProxyStorage {
     bytes memory returnData = _dispatchCall(_chooseVersion());
-    _triggerMigration();
     assembly {
       return(add(returnData, 0x20), mload(returnData))
     }
@@ -87,29 +90,15 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
     _upgradeTo(_newVersion);
   }
 
-  function _chooseVersion() internal view virtual returns (address) {
-    return _isConditionMet() ? _newVersion : _currentVersion;
-  }
+  function _chooseVersion() internal view virtual returns (address);
 
-  function _dispatchCall(address version) internal virtual returns (bytes memory returnData) {
+  function _dispatchCall(address version) internal virtual whenConditionsAreMet returns (bytes memory returnData) {
     (bool success, bytes memory returnOrRevertData) = version.delegatecall(msg.data);
     success.handleRevert(msg.sig, returnOrRevertData);
     assembly {
       returnData := returnOrRevertData
     }
   }
-
-  function _triggerMigration() internal virtual {
-    if (_isConditionMet()) {
-      try this.selfMigrate{ gas: _gasStipenedNoGrief() }() {} catch {}
-    }
-  }
-
-  /**
-   * @dev Internal function to check if the condition for switching implementations is met.
-   * @return A boolean indicating if the condition is met.
-   */
-  function _isConditionMet() internal view virtual returns (bool);
 
   /**
    * @dev Internal function to check if a contract address has code.

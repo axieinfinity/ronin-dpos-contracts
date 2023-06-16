@@ -6,15 +6,12 @@ import { ITimingInfo } from "../../interfaces/validator/info-fragments/ITimingIn
 import { ICoinbaseExecution } from "../../interfaces/validator/ICoinbaseExecution.sol";
 
 contract RoninValidatorSetTimedMigrator is ConditionalVersionControl {
-  /// @dev value is equal to keccak256("@ronin.dpos.utils.version-control.RVTimedMigrator.isPeriodEnding.slot")
-  bytes32 private constant _SLOT = 0x56663dc009889135c9a870af5d0c2e5271b9595765451175f9f0a515d04a31ff;
-
-  modifier whenWrapUpEpoch() {
+  modifier whenConditionsAreMet() override {
     if (msg.sig == ICoinbaseExecution.wrapUpEpoch.selector) {
       uint256 currentPeriod = _getCurrentPeriod();
       _;
       if (currentPeriod != _getCurrentPeriod()) {
-        _markPeriodAsEnded();
+        try this.selfMigrate{ gas: _gasStipenedNoGrief() }() {} catch {}
       }
     } else {
       _;
@@ -27,27 +24,11 @@ contract RoninValidatorSetTimedMigrator is ConditionalVersionControl {
     address newVersion
   ) ConditionalVersionControl(proxyStorage, currentVersion, newVersion) {}
 
-  function _markPeriodAsEnded() private {
-    assembly {
-      sstore(_SLOT, 1)
-    }
-  }
-
-  function _dispatchCall(address version) internal override whenWrapUpEpoch returns (bytes memory) {
-    return super._dispatchCall(version);
+  function _chooseVersion() internal view override returns (address) {
+    return _currentVersion;
   }
 
   function _getCurrentPeriod() private view returns (uint256) {
     return ITimingInfo(address(this)).currentPeriod();
-  }
-
-  function _isConditionMet() internal view override returns (bool) {
-    return _isPeriodAlreadyEnded();
-  }
-
-  function _isPeriodAlreadyEnded() private view returns (bool ended) {
-    assembly {
-      ended := iszero(iszero(sload(_SLOT)))
-    }
   }
 }
