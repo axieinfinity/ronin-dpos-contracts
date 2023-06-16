@@ -153,21 +153,21 @@ contract ConditionalVersionControlTest is Test {
   function testFailUnauthorizedEOAForceSwitchToLogicV2() public {
     testManualUpgradeToVersionControl();
     vm.prank(alice, alice);
-    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalVersionControl.upgrade.selector));
-    MockConditionalVersionControl(proxyStorage).upgrade();
+    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalVersionControl.selfMigrate.selector));
+    MockConditionalVersionControl(proxyStorage).selfMigrate();
   }
 
   function testFailUnauthorizedContractForceSwitchToLogicV2() public {
     testManualUpgradeToVersionControl();
-    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalVersionControl.upgrade.selector));
+    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalVersionControl.selfMigrate.selector));
     vm.prank(alice, alice);
-    MockConditionalVersionControl(payable(address(bobContract))).upgrade();
+    MockConditionalVersionControl(payable(address(bobContract))).selfMigrate();
   }
 
   function testFailAdminForceSwitchToLogicV2() public {
     testManualUpgradeToVersionControl();
     vm.prank(admin, admin);
-    MockConditionalVersionControl(proxyStorage).upgrade();
+    MockConditionalVersionControl(proxyStorage).selfMigrate();
   }
 
   function testFailEOACallToVersionControl() public {

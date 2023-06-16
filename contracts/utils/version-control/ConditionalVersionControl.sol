@@ -83,7 +83,7 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
     revert();
   }
 
-  function upgrade() external onlyDelegateFromProxyStorage onlySelfCall {
+  function selfMigrate() external onlyDelegateFromProxyStorage onlySelfCall {
     _upgradeTo(_newVersion);
   }
 
@@ -101,7 +101,7 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
 
   function _triggerMigration() internal virtual {
     if (_isConditionMet()) {
-      try this.upgrade{ gas: _gasStipenedNoGrief() }() {} catch {}
+      try this.selfMigrate{ gas: _gasStipenedNoGrief() }() {} catch {}
     }
   }
 

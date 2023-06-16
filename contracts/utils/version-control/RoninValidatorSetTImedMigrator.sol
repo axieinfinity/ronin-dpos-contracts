@@ -14,7 +14,7 @@ contract RoninValidatorSetTimedMigrator is ConditionalVersionControl {
       uint256 currentPeriod = _getCurrentPeriod();
       _;
       if (currentPeriod != _getCurrentPeriod()) {
-        this.markPeriodAsEnded();
+        _markPeriodAsEnded();
       }
     } else {
       _;
@@ -27,7 +27,7 @@ contract RoninValidatorSetTimedMigrator is ConditionalVersionControl {
     address newVersion
   ) ConditionalVersionControl(proxyStorage, currentVersion, newVersion) {}
 
-  function markPeriodAsEnded() external onlyDelegateFromProxyStorage onlySelfCall {
+  function _markPeriodAsEnded() private {
     assembly {
       sstore(_SLOT, 1)
     }
