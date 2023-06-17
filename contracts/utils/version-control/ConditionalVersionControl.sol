@@ -29,9 +29,7 @@ abstract contract ConditionalVersionControl is ERC1967Upgrade {
     _;
   }
 
-  modifier whenConditionsAreMet() virtual {
-    _;
-  }
+  modifier whenConditionsAreMet() virtual;
 
   /**
    * @dev Modifier that only allows delegate calls from admin proxy storage.
