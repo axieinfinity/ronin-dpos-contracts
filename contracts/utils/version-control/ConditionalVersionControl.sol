@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { ERC1967Upgrade } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
+import { IConditionalVersionControl } from "../../interfaces/utils/IConditionalVersionControl.sol";
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ErrOnlySelfCall } from "../CommonErrors.sol";
@@ -10,7 +11,7 @@ import { ErrOnlySelfCall } from "../CommonErrors.sol";
  * @title ConditionalVersionControl
  * @dev A contract that allows conditional version control of contract implementations.
  */
-abstract contract ConditionalVersionControl is ERC1967Upgrade {
+abstract contract ConditionalVersionControl is IConditionalVersionControl, ERC1967Upgrade {
   using ErrorHandler for bool;
   using AddressArrayUtils for address[];
 
