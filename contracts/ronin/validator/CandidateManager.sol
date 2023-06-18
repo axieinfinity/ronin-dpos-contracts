@@ -7,6 +7,7 @@ import "../../extensions/consumers/GlobalConfigConsumer.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../interfaces/validator/ICandidateManager.sol";
 import "../../interfaces/staking/IStaking.sol";
+import "../../interfaces/IProfile.sol";
 import { HasStakingDeprecated } from "../../utils/DeprecatedSlots.sol";
 
 abstract contract CandidateManager is
@@ -80,7 +81,7 @@ abstract contract CandidateManager is
   ) external override onlyContract(ContractType.STAKING) {
     uint256 _length = _candidates.length;
     if (_length >= maxValidatorCandidate()) revert ErrExceedsMaxNumberOfCandidate();
-    if (isValidatorCandidate(_consensusAddr)) revert ErrExistentCandidate();
+    if (_isValidatorCandidateById(_consensusAddr)) revert ErrExistentCandidate();
     if (_commissionRate > _MAX_PERCENTAGE) revert ErrInvalidCommissionRate();
 
     for (uint _i; _i < _candidates.length; ) {
@@ -156,8 +157,12 @@ abstract contract CandidateManager is
   /**
    * @inheritdoc ICandidateManager
    */
-  function isValidatorCandidate(address _addr) public view override returns (bool) {
-    return _candidateIndex[_addr] != 0;
+  function isValidatorCandidate(TConsensus consensus) external view override returns (bool) {
+    return _isValidatorCandidateById(_convertC2P(consensus));
+  }
+
+  function _isValidatorCandidateById(address candidateId) internal view returns (bool) {
+    return _candidateIndex[candidateId] != 0;
   }
 
   /**
@@ -177,9 +182,10 @@ abstract contract CandidateManager is
   /**
    * @inheritdoc ICandidateManager
    */
-  function getCandidateInfo(address _candidate) external view override returns (ValidatorCandidate memory) {
-    if (!isValidatorCandidate(_candidate)) revert ErrNonExistentCandidate();
-    return _candidateInfo[_candidate];
+  function getCandidateInfo(TConsensus consensus) external view override returns (ValidatorCandidate memory) {
+    address validatorId = _convertC2P(consensus);
+    if (!_isValidatorCandidateById(validatorId)) revert ErrNonExistentCandidate();
+    return _candidateInfo[validatorId];
   }
 
   /**
@@ -277,14 +283,18 @@ abstract contract CandidateManager is
   /**
    * @inheritdoc ICandidateManager
    */
-  function isCandidateAdmin(address _candidate, address _admin) external view override returns (bool) {
-    return _candidateInfo[_candidate].admin == _admin;
+  function isCandidateAdmin(TConsensus consensusAddr, address admin) external view override returns (bool) {
+    return _isCandidateAdminById(_convertC2P(consensusAddr), admin);
+  }
+
+  function _isCandidateAdminById(address candidateId, address admin) internal view returns (bool) {
+    return _candidateInfo[candidateId].admin == admin;
   }
 
   /**
-   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
+   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOfCandidateId`.
    */
-  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address) {
+  function _bridgeOperatorOfCandidateId(address _consensusAddr) internal view virtual returns (address) {
     return _candidateInfo[_consensusAddr].bridgeOperatorAddr;
   }
 
@@ -337,7 +347,7 @@ abstract contract CandidateManager is
    * @dev Sets timestamp to revoke a candidate.
    */
   function _setRevokingTimestamp(ValidatorCandidate storage _candidate, uint256 _timestamp) internal {
-    if (!isValidatorCandidate(_candidate.consensusAddr)) revert ErrNonExistentCandidate();
+    if (!_isValidatorCandidateById(_candidate.consensusAddr)) revert ErrNonExistentCandidate();
     _candidate.revokingTimestamp = _timestamp;
     emit CandidateRevokingTimestampUpdated(_candidate.consensusAddr, _timestamp);
   }
@@ -351,4 +361,12 @@ abstract contract CandidateManager is
    * @dev Returns whether the consensus address is a trusted org or not.
    */
   function _isTrustedOrg(address _consensusAddr) internal virtual returns (bool);
+
+  function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address) {
+    return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
+  }
+
+  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory) {
+    return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
+  }
 }

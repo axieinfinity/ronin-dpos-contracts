@@ -163,12 +163,24 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   }
 
   /**
-   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
+   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOfCandidateId`.
    */
-  function _bridgeOperatorOf(
+  function _bridgeOperatorOfCandidateId(
     address _consensusAddr
   ) internal view virtual override(CandidateManager, ValidatorInfoStorage) returns (address) {
-    return CandidateManager._bridgeOperatorOf(_consensusAddr);
+    return CandidateManager._bridgeOperatorOfCandidateId(_consensusAddr);
+  }
+
+  function _convertC2P(
+    TConsensus consensusAddr
+  ) internal view virtual override(CandidateManager, CommonStorage) returns (address) {
+    return CandidateManager._convertC2P(consensusAddr);
+  }
+
+  function _convertManyC2P(
+    TConsensus[] memory consensusAddrs
+  ) internal view virtual override(CandidateManager, CommonStorage) returns (address[] memory) {
+    return CandidateManager._convertManyC2P(consensusAddrs);
   }
 
   /**

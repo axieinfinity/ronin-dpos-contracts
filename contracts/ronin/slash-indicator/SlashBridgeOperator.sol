@@ -62,26 +62,26 @@ abstract contract SlashBridgeOperator is
    * @inheritdoc ISlashBridgeOperator
    */
   function setBridgeOperatorSlashingConfigs(
-    uint256 _ratioTier1,
-    uint256 _ratioTier2,
-    uint256 _jailDurationTier2,
-    uint256 _skipSlashingThreshold
+    uint256 ratioTier1,
+    uint256 ratioTier2,
+    uint256 jailDurationTier2,
+    uint256 skipSlashingThreshold
   ) external override onlyAdmin {
-    _setBridgeOperatorSlashingConfigs(_ratioTier1, _ratioTier2, _jailDurationTier2, _skipSlashingThreshold);
+    _setBridgeOperatorSlashingConfigs(ratioTier1, ratioTier2, jailDurationTier2, skipSlashingThreshold);
   }
 
   /**
    * @inheritdoc ISlashBridgeOperator
    */
   function execSlashBridgeOperator(
-    address _consensusAddr,
-    uint256 _tier,
-    uint256 _period
+    address validatorId,
+    uint256 tier,
+    uint256 period
   ) external onlyContract(ContractType.VALIDATOR) {
-    if (_tier == 1) {
-      emit Slashed(_consensusAddr, SlashType.BRIDGE_OPERATOR_MISSING_VOTE_TIER_1, _period);
-    } else if (_tier == 2) {
-      emit Slashed(_consensusAddr, SlashType.BRIDGE_OPERATOR_MISSING_VOTE_TIER_2, _period);
+    if (tier == 1) {
+      emit Slashed(validatorId, SlashType.BRIDGE_OPERATOR_MISSING_VOTE_TIER_1, period);
+    } else if (tier == 2) {
+      emit Slashed(validatorId, SlashType.BRIDGE_OPERATOR_MISSING_VOTE_TIER_2, period);
     }
   }
 
@@ -89,19 +89,19 @@ abstract contract SlashBridgeOperator is
    * @dev See `ISlashBridgeOperator-setBridgeOperatorSlashingConfigs`.
    */
   function _setBridgeOperatorSlashingConfigs(
-    uint256 _ratioTier1,
-    uint256 _ratioTier2,
-    uint256 _jailDurationTier2,
-    uint256 _skipSlashingThreshold
+    uint256 ratioTier1,
+    uint256 ratioTier2,
+    uint256 jailDurationTier2,
+    uint256 skipSlashingThreshold
   ) internal {
-    if (_ratioTier1 > _ratioTier2 || _ratioTier1 > _MAX_PERCENTAGE || _ratioTier2 > _MAX_PERCENTAGE) {
+    if (ratioTier1 > ratioTier2 || ratioTier1 > _MAX_PERCENTAGE || ratioTier2 > _MAX_PERCENTAGE) {
       revert ErrInvalidRatios();
     }
 
-    _missingVotesRatioTier1 = _ratioTier1;
-    _missingVotesRatioTier2 = _ratioTier2;
-    _jailDurationForMissingVotesRatioTier2 = _jailDurationTier2;
-    _skipBridgeOperatorSlashingThreshold = _skipSlashingThreshold;
-    emit BridgeOperatorSlashingConfigsUpdated(_ratioTier1, _ratioTier2, _jailDurationTier2, _skipSlashingThreshold);
+    _missingVotesRatioTier1 = ratioTier1;
+    _missingVotesRatioTier2 = ratioTier2;
+    _jailDurationForMissingVotesRatioTier2 = jailDurationTier2;
+    _skipBridgeOperatorSlashingThreshold = skipSlashingThreshold;
+    emit BridgeOperatorSlashingConfigsUpdated(ratioTier1, ratioTier2, jailDurationTier2, skipSlashingThreshold);
   }
 }

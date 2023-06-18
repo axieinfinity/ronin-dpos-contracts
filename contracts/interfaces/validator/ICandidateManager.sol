@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.9;
 
+import { TConsensus } from "../../udvts/Types.sol";
+
 interface ICandidateManager {
   struct ValidatorCandidate {
     // Admin of the candidate
@@ -152,7 +154,7 @@ interface ICandidateManager {
   /**
    * @dev Returns whether the address is a validator (candidate).
    */
-  function isValidatorCandidate(address _addr) external view returns (bool);
+  function isValidatorCandidate(TConsensus consensus) external view returns (bool);
 
   /**
    * @dev Returns the validator candidate.
@@ -167,12 +169,12 @@ interface ICandidateManager {
   /**
    * @dev Returns the info of a candidate.
    */
-  function getCandidateInfo(address _candidate) external view returns (ValidatorCandidate memory);
+  function getCandidateInfo(TConsensus candidate) external view returns (ValidatorCandidate memory);
 
   /**
    * @dev Returns whether the address is the candidate admin.
    */
-  function isCandidateAdmin(address _candidate, address _admin) external view returns (bool);
+  function isCandidateAdmin(TConsensus candidateConsensus, address admin) external view returns (bool);
 
   /**
    * @dev Returns the schedule of changing commission rate of a candidate address.

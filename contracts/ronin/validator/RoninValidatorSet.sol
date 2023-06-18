@@ -86,11 +86,23 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
   }
 
   /**
-   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
+   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOfCandidateId`.
    */
-  function _bridgeOperatorOf(
+  function _bridgeOperatorOfCandidateId(
     address _consensusAddr
   ) internal view override(EmergencyExit, ValidatorInfoStorage) returns (address) {
-    return super._bridgeOperatorOf(_consensusAddr);
+    return super._bridgeOperatorOfCandidateId(_consensusAddr);
+  }
+
+  function _convertC2P(
+    TConsensus consensusAddr
+  ) internal view override(EmergencyExit, CommonStorage) returns (address) {
+    return super._convertC2P(consensusAddr);
+  }
+
+  function _convertManyC2P(
+    TConsensus[] memory consensusAddrs
+  ) internal view override(EmergencyExit, CommonStorage) returns (address[] memory) {
+    return super._convertManyC2P(consensusAddrs);
   }
 }

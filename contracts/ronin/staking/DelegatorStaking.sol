@@ -153,8 +153,8 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
 
     IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     if (
-      validatorContract.isValidatorCandidate(TConsensus.unwrap(consensusAddr)) &&
-      validatorContract.getCandidateInfo(TConsensus.unwrap(consensusAddr)).revokingTimestamp == 0 && // if candidate is not on renunciation
+      validatorContract.isValidatorCandidate(consensusAddr) &&
+      validatorContract.getCandidateInfo(consensusAddr).revokingTimestamp == 0 && // if candidate is not on renunciation
       _pool.lastDelegatingTimestamp[delegator] + _cooldownSecsToUndelegate >= block.timestamp // delegator is still in cooldown
     ) revert ErrUndelegateTooEarly();
 

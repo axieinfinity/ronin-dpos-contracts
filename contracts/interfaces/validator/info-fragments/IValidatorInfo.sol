@@ -3,6 +3,7 @@
 pragma solidity ^0.8.9;
 
 import "../../../libraries/EnumFlags.sol";
+import { TConsensus } from "../../../udvts/Types.sol";
 
 interface IValidatorInfo {
   /**
@@ -32,9 +33,10 @@ interface IValidatorInfo {
     external
     view
     returns (
-      address[] memory _validatorList,
-      address[] memory _bridgeOperators,
-      EnumFlags.ValidatorFlag[] memory _flags
+      address[] memory consensusList,
+      address[] memory bridgeOperatorList,
+      EnumFlags.ValidatorFlag[] memory flagList,
+      address[] memory candidateIdList
     );
 
   /**
@@ -50,7 +52,7 @@ interface IValidatorInfo {
   /**
    * @dev Returns whether the address is block producer or not.
    */
-  function isBlockProducer(address _addr) external view returns (bool);
+  function isBlockProducer(TConsensus consensusAddr) external view returns (bool);
 
   /**
    * @dev Returns total numbers of the block producers.
@@ -71,7 +73,7 @@ interface IValidatorInfo {
    * @dev Returns the bridge operator list corresponding to validator address list.
    */
   function getBridgeOperatorsOf(
-    address[] memory _validatorAddrs
+    TConsensus[] memory consensusAddrs
   ) external view returns (address[] memory bridgeOperatorList);
 
   /**
@@ -82,7 +84,7 @@ interface IValidatorInfo {
   /**
    * @dev Returns whether the consensus address is operating the bridge or not.
    */
-  function isOperatingBridge(address _consensusAddr) external view returns (bool);
+  function isOperatingBridge(TConsensus _consensusAddr) external view returns (bool);
 
   /**
    * @dev Returns total numbers of the bridge operators.

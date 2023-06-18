@@ -42,18 +42,20 @@ contract MockValidatorSet is
 
   function getLastUpdatedBlock() external view override returns (uint256) {}
 
-  function checkManyJailed(address[] calldata) external view override returns (bool[] memory) {}
+  function checkManyJailed(TConsensus[] calldata) external view override returns (bool[] memory) {}
 
-  function checkMiningRewardDeprecatedAtPeriod(address, uint256 _period) external view override returns (bool) {}
+  function checkManyJailedById(address[] calldata candidateIds) external view returns (bool[] memory) {}
 
-  function checkMiningRewardDeprecated(address) external view override returns (bool) {}
+  function checkMiningRewardDeprecated(TConsensus) external view override returns (bool) {}
+
+  function checkMiningRewardDeprecatedAtPeriod(TConsensus, uint256 period) external view override returns (bool) {}
 
   function checkBridgeRewardDeprecatedAtLatestPeriod(
-    address _consensusAddr
+    TConsensus _consensusAddr
   ) external view override returns (bool _result) {}
 
   function checkBridgeRewardDeprecatedAtPeriod(
-    address _consensusAddr,
+    TConsensus _consensusAddr,
     uint256 _period
   ) external view returns (bool _result) {}
 
@@ -63,7 +65,12 @@ contract MockValidatorSet is
     external
     view
     override
-    returns (address[] memory, address[] memory, EnumFlags.ValidatorFlag[] memory)
+    returns (
+      address[] memory consensusList,
+      address[] memory bridgeOperatorList,
+      EnumFlags.ValidatorFlag[] memory flagList,
+      address[] memory candidateIdList
+    )
   {}
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
@@ -105,7 +112,9 @@ contract MockValidatorSet is
     returns (address[] memory _bridges, address[] memory _validators)
   {}
 
-  function getBridgeOperatorsOf(address[] memory _validatorAddrs) external view override returns (address[] memory) {}
+  function getBridgeOperatorsOf(
+    TConsensus[] memory _validatorAddrs
+  ) external view override returns (address[] memory) {}
 
   function isBridgeOperator(address) external pure override returns (bool) {
     return true;
@@ -115,7 +124,7 @@ contract MockValidatorSet is
 
   function getBlockProducers() external view override returns (address[] memory) {}
 
-  function isBlockProducer(address) external pure override returns (bool) {
+  function isBlockProducer(TConsensus) external pure override returns (bool) {
     return true;
   }
 
@@ -131,27 +140,35 @@ contract MockValidatorSet is
     return block.timestamp / 86400;
   }
 
-  function checkJailed(address) external view override returns (bool) {}
+  function checkJailed(TConsensus) external view override returns (bool) {}
 
-  function getJailedTimeLeft(address) external view override returns (bool, uint256, uint256) {}
+  function getJailedTimeLeft(TConsensus) external view override returns (bool, uint256, uint256) {}
 
   function currentPeriodStartAtBlock() external view override returns (uint256) {}
 
-  function checkJailedAtBlock(address _addr, uint256 _blockNum) external view override returns (bool) {}
+  function checkJailedAtBlock(TConsensus _addr, uint256 _blockNum) external view override returns (bool) {}
 
   function getJailedTimeLeftAtBlock(
-    address _addr,
+    TConsensus _addr,
     uint256 _blockNum
   ) external view override returns (bool isJailed_, uint256 blockLeft_, uint256 epochLeft_) {}
 
   function totalDeprecatedReward() external view override returns (uint256) {}
 
-  function _bridgeOperatorOf(address _consensusAddr) internal view override returns (address) {
-    return super._bridgeOperatorOf(_consensusAddr);
+  function _bridgeOperatorOfCandidateId(address _candidateId) internal view override returns (address) {
+    return super._bridgeOperatorOfCandidateId(_candidateId);
+  }
+
+  function _convertC2P(TConsensus consensusAddr) internal view override returns (address) {
+    return super._convertC2P(consensusAddr);
+  }
+
+  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view override returns (address[] memory) {
+    return super._convertManyC2P(consensusAddrs);
   }
 
   function execReleaseLockedFundForEmergencyExitRequest(
-    address _consensusAddr,
+    address _candidateId,
     address payable _recipient
   ) external override {}
 
@@ -167,7 +184,7 @@ contract MockValidatorSet is
 
   function execEmergencyExit(address, uint256) external {}
 
-  function isOperatingBridge(address) external view returns (bool) {}
+  function isOperatingBridge(TConsensus) external view returns (bool) {}
 
   function _emergencyExitLockedFundReleased(address _consensusAddr) internal virtual override returns (bool) {}
 

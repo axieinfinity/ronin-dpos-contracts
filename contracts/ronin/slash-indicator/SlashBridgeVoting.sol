@@ -79,4 +79,6 @@ abstract contract SlashBridgeVoting is
     _bridgeVotingSlashAmount = _slashAmount;
     emit BridgeVotingSlashingConfigsUpdated(_threshold, _slashAmount);
   }
+
+  function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address);
 }

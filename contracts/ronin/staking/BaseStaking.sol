@@ -70,8 +70,7 @@ abstract contract BaseStaking is
   }
 
   function _poolOfConsensusIsActive(TConsensus consensusAddr) private view {
-    // TODO: to wrap in callee
-    if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isValidatorCandidate(TConsensus.unwrap(consensusAddr)))
+    if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isValidatorCandidate(consensusAddr))
       revert ErrInactivePool(consensusAddr, _convertC2P(consensusAddr));
   }
 
@@ -238,7 +237,6 @@ abstract contract BaseStaking is
 
   function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view returns (address[] memory) {
     return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
-    // return _profileContract.getManyConsensus2Id(consensusAddrs);
   }
 
   /**

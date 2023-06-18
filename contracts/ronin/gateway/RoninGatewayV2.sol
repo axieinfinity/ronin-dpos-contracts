@@ -532,7 +532,8 @@ contract RoninGatewayV2 is
     (
       address[] memory _consensusList,
       address[] memory _bridgeOperators,
-      EnumFlags.ValidatorFlag[] memory _flags
+      EnumFlags.ValidatorFlag[] memory _flags, // validatorIds TODO fix here
+
     ) = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
     uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
       .getConsensusWeights(_consensusList);

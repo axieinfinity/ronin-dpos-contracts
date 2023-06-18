@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.9;
 
+import { TConsensus } from "../udvts/Types.sol";
+
 interface IMaintenance {
   /**
    * @dev Error thrown when attempting to schedule an already scheduled event.
@@ -61,9 +63,9 @@ interface IMaintenance {
   }
 
   /// @dev Emitted when a maintenance is scheduled.
-  event MaintenanceScheduled(address indexed consensusAddr, Schedule);
+  event MaintenanceScheduled(TConsensus indexed consensusAddr, Schedule);
   /// @dev Emitted when a schedule of maintenance is cancelled.
-  event MaintenanceScheduleCancelled(address indexed consensusAddr);
+  event MaintenanceScheduleCancelled(TConsensus indexed consensusAddr);
   /// @dev Emitted when the maintenance config is updated.
   event MaintenanceConfigUpdated(
     uint256 minMaintenanceDurationInBlock,
@@ -75,52 +77,71 @@ interface IMaintenance {
   );
 
   /**
-   * @dev Returns whether the validator `_consensusAddr` maintained at the block number `_block`.
+   * @dev Returns whether the validator `consensusAddr` maintained at the block number `_block`.
    */
-  function checkMaintained(address _consensusAddr, uint256 _block) external view returns (bool);
+  function checkMaintained(TConsensus consensusAddr, uint256 _block) external view returns (bool);
 
   /**
-   * @dev Returns whether the validator `_consensusAddr` maintained in the inclusive range [`_fromBlock`, `_toBlock`] of blocks.
+   * @dev Returns whether the validator whose id `validatorId` maintained at the block number `_block`.
+   */
+  function checkMaintainedById(address validatorId, uint256 _block) external view returns (bool);
+
+  /**
+   * @dev Returns whether the validator `consensusAddr` maintained in the inclusive range [`_fromBlock`, `_toBlock`] of blocks.
    */
   function checkMaintainedInBlockRange(
-    address _consensusAddr,
+    TConsensus consensusAddr,
     uint256 _fromBlock,
     uint256 _toBlock
   ) external view returns (bool);
 
   /**
-   * @dev Returns the bool array indicating the validators maintained at block number `_block` or not.
+   * @dev Returns the bool array indicating the validators maintained at block number `k` or not.
    */
-  function checkManyMaintained(address[] calldata _addrList, uint256 _block) external view returns (bool[] memory);
+  function checkManyMaintained(
+    TConsensus[] calldata consensusAddrList,
+    uint256 atBlock
+  ) external view returns (bool[] memory);
+
+  function checkManyMaintainedById(
+    address[] calldata candidateIdList,
+    uint256 atBlock
+  ) external view returns (bool[] memory);
 
   /**
    * @dev Returns a bool array indicating the validators maintained in the inclusive range [`_fromBlock`, `_toBlock`] of blocks or not.
    */
   function checkManyMaintainedInBlockRange(
-    address[] calldata _addrList,
+    TConsensus[] calldata _consensusAddrList,
     uint256 _fromBlock,
     uint256 _toBlock
   ) external view returns (bool[] memory);
 
-  /**
-   * @dev Returns whether the validator `_consensusAddr` has scheduled.
-   */
-  function checkScheduled(address _consensusAddr) external view returns (bool);
+  function checkManyMaintainedInBlockRangeById(
+    address[] calldata idList,
+    uint256 fromBlock,
+    uint256 toBlock
+  ) external view returns (bool[] memory);
 
   /**
-   * @dev Returns whether the validator `_consensusAddr`
+   * @dev Returns whether the validator `consensusAddr` has scheduled.
    */
-  function checkCooldownEnds(address _consensusAddr) external view returns (bool);
+  function checkScheduled(TConsensus consensusAddr) external view returns (bool);
 
   /**
-   * @dev Returns the detailed schedule of the validator `_consensusAddr`.
+   * @dev Returns whether the validator `consensusAddr` has finished cooldown.
    */
-  function getSchedule(address _consensusAddr) external view returns (Schedule memory);
+  function checkCooldownEnds(TConsensus consensusAddr) external view returns (bool);
+
+  /**
+   * @dev Returns the detailed schedule of the validator `consensusAddr`.
+   */
+  function getSchedule(TConsensus consensusAddr) external view returns (Schedule memory);
 
   /**
    * @dev Returns the total of current schedules.
    */
-  function totalSchedules() external view returns (uint256 _count);
+  function totalSchedules() external view returns (uint256 count);
 
   /**
    * @dev Returns the cooldown to maintain in seconds.
@@ -139,12 +160,12 @@ interface IMaintenance {
    *
    */
   function setMaintenanceConfig(
-    uint256 _minMaintenanceDurationInBlock,
-    uint256 _maxMaintenanceDurationInBlock,
-    uint256 _minOffsetToStartSchedule,
-    uint256 _maxOffsetToStartSchedule,
-    uint256 _maxSchedules,
-    uint256 _cooldownSecsToMaintain
+    uint256 minMaintenanceDurationInBlock_,
+    uint256 maxMaintenanceDurationInBlock_,
+    uint256 minOffsetToStartSchedule_,
+    uint256 maxOffsetToStartSchedule_,
+    uint256 maxSchedules_,
+    uint256 cooldownSecsToMaintain_
   ) external;
 
   /**
@@ -173,12 +194,12 @@ interface IMaintenance {
   function maxSchedules() external view returns (uint256);
 
   /**
-   * @dev Schedules for maintenance from `_startedAtBlock` to `_startedAtBlock`.
+   * @dev Schedules for maintenance from `startedAtBlock` to `endedAtBlock`.
    *
    * Requirements:
-   * - The candidate `_consensusAddr` is the block producer.
-   * - The method caller is candidate admin of the candidate `_consensusAddr`.
-   * - The candidate `_consensusAddr` has no schedule yet or the previous is done.
+   * - The candidate `consensusAddr` is the block producer.
+   * - The method caller is candidate admin of the candidate `consensusAddr`.
+   * - The candidate `consensusAddr` has no schedule yet or the previous is done.
    * - The total number of schedules is not larger than `maxSchedules()`.
    * - The start block must be at least `minOffsetToStartSchedule()` and at most `maxOffsetToStartSchedule()` blocks from the current block.
    * - The end block is larger than the start block.
@@ -189,17 +210,17 @@ interface IMaintenance {
    * Emits the event `MaintenanceScheduled`.
    *
    */
-  function schedule(address _consensusAddr, uint256 _startedAtBlock, uint256 _endedAtBlock) external;
+  function schedule(TConsensus consensusAddr, uint256 startedAtBlock, uint256 endedAtBlock) external;
 
   /**
-   * @dev Cancel the schedule of maintenance for the `_consensusAddr`.
+   * @dev Cancel the schedule of maintenance for the `consensusAddr`.
    *
    * Requirements:
-   * - The candidate `_consensusAddr` is the block producer.
-   * - The method caller is candidate admin of the candidate `_consensusAddr`.
-   * - A schedule for the `_consensusAddr` must be existent and not executed yet.
+   * - The candidate `consensusAddr` is the block producer.
+   * - The method caller is candidate admin of the candidate `consensusAddr`.
+   * - A schedule for the `consensusAddr` must be existent and not executed yet.
    *
    * Emits the event `MaintenanceScheduleCancelled`.
    */
-  function cancelSchedule(address _consensusAddr) external;
+  function cancelSchedule(TConsensus consensusAddr) external;
 }

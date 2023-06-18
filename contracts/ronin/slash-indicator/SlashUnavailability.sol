@@ -55,10 +55,11 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
   /**
    * @inheritdoc ISlashUnavailability
    */
-  function slashUnavailability(address _validatorAddr) external override oncePerBlock {
+  function slashUnavailability(TConsensus consensusAddr) external override oncePerBlock {
     if (msg.sender != block.coinbase) revert ErrUnauthorized(msg.sig, RoleAccess.COINBASE);
 
-    if (!_shouldSlash(_validatorAddr)) {
+    address validatorId = _convertC2P(consensusAddr);
+    if (!_shouldSlash(consensusAddr, validatorId)) {
       // Should return instead of throwing error since this is a part of system transaction.
       return;
     }
@@ -67,28 +68,28 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
     uint256 _period = _validatorContract.currentPeriod();
     uint256 _count;
     unchecked {
-      _count = ++_unavailabilityIndicator[_validatorAddr][_period];
+      _count = ++_unavailabilityIndicator[validatorId][_period];
     }
     uint256 _newJailedUntilBlock = Math.addIfNonZero(block.number, _jailDurationForUnavailabilityTier2Threshold);
 
     if (_count == _unavailabilityTier2Threshold) {
-      emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_2, _period);
+      emit Slashed(validatorId, SlashType.UNAVAILABILITY_TIER_2, _period);
       _validatorContract.execSlash(
-        _validatorAddr,
+        validatorId,
         _newJailedUntilBlock,
         _slashAmountForUnavailabilityTier2Threshold,
         false
       );
     } else if (_count == _unavailabilityTier1Threshold) {
-      bool _tier1SecondTime = checkBailedOutAtPeriod(_validatorAddr, _period);
+      bool _tier1SecondTime = _checkBailedOutAtPeriodById(validatorId, _period);
       if (!_tier1SecondTime) {
-        emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_1, _period);
-        _validatorContract.execSlash(_validatorAddr, 0, 0, false);
+        emit Slashed(validatorId, SlashType.UNAVAILABILITY_TIER_1, _period);
+        _validatorContract.execSlash(validatorId, 0, 0, false);
       } else {
         /// Handles tier-3
-        emit Slashed(_validatorAddr, SlashType.UNAVAILABILITY_TIER_3, _period);
+        emit Slashed(validatorId, SlashType.UNAVAILABILITY_TIER_3, _period);
         _validatorContract.execSlash(
-          _validatorAddr,
+          validatorId,
           _newJailedUntilBlock,
           _slashAmountForUnavailabilityTier2Threshold,
           true
@@ -139,19 +140,29 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
   /**
    * @inheritdoc ISlashUnavailability
    */
-  function currentUnavailabilityIndicator(address _validator) external view override returns (uint256) {
+  function currentUnavailabilityIndicator(TConsensus consensus) external view override returns (uint256) {
     return
-      getUnavailabilityIndicator(_validator, IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod());
+      _getUnavailabilityIndicatorById(
+        _convertC2P(consensus),
+        IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod()
+      );
   }
 
   /**
    * @inheritdoc ISlashUnavailability
    */
   function getUnavailabilityIndicator(
-    address _validator,
-    uint256 _period
-  ) public view virtual override returns (uint256) {
-    return _unavailabilityIndicator[_validator][_period];
+    TConsensus consensus,
+    uint256 period
+  ) external view virtual override returns (uint256) {
+    return _getUnavailabilityIndicatorById(_convertC2P(consensus), period);
+  }
+
+  function _getUnavailabilityIndicatorById(
+    address validatorId,
+    uint256 period
+  ) internal view virtual returns (uint256) {
+    return _unavailabilityIndicator[validatorId][period];
   }
 
   /**
@@ -187,10 +198,12 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
   /**
    * @dev Returns whether the account `_addr` should be slashed or not.
    */
-  function _shouldSlash(address _addr) internal view virtual returns (bool);
+  function _shouldSlash(TConsensus consensus, address validatorId) internal view virtual returns (bool);
 
   /**
-   * @dev See `ICreditScore-checkBailedOutAtPeriod`
+   * @dev See `ICreditScore-checkBailedOutAtPeriodById`
    */
-  function checkBailedOutAtPeriod(address _validator, uint256 _period) public view virtual returns (bool);
+  function _checkBailedOutAtPeriodById(address validatorId, uint256 period) internal view virtual returns (bool);
+
+  function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address);
 }

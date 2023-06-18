@@ -29,53 +29,70 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @inheritdoc IJailingInfo
    */
-  function checkJailed(address _addr) external view override returns (bool) {
-    return checkJailedAtBlock(_addr, block.number);
+  function checkJailed(TConsensus consensus) external view override returns (bool) {
+    address candidateId = _convertC2P(consensus);
+    return _jailedAtBlock(candidateId, block.number);
+  }
+
+  /**
+   * @inheritdoc IJailingInfo
+   */
+  function checkJailedAtBlock(TConsensus addr, uint256 blockNum) external view override returns (bool) {
+    address candidateId = _convertC2P(addr);
+    return _jailedAtBlock(candidateId, blockNum);
   }
 
   /**
    * @inheritdoc IJailingInfo
    */
   function getJailedTimeLeft(
-    address _addr
+    TConsensus consensus
   ) external view override returns (bool isJailed_, uint256 blockLeft_, uint256 epochLeft_) {
-    return getJailedTimeLeftAtBlock(_addr, block.number);
-  }
-
-  /**
-   * @inheritdoc IJailingInfo
-   */
-  function checkJailedAtBlock(address _addr, uint256 _blockNum) public view override returns (bool) {
-    return _jailedAtBlock(_addr, _blockNum);
+    return _getJailedTimeLeftAtBlockById(_convertC2P(consensus), block.number);
   }
 
   /**
    * @inheritdoc IJailingInfo
    */
   function getJailedTimeLeftAtBlock(
-    address _addr,
+    TConsensus consensus,
     uint256 _blockNum
-  ) public view override returns (bool isJailed_, uint256 blockLeft_, uint256 epochLeft_) {
-    uint256 _jailedBlock = _blockProducerJailedBlock[_addr];
-    if (_jailedBlock < _blockNum) {
+  ) external view override returns (bool isJailed_, uint256 blockLeft_, uint256 epochLeft_) {
+    return _getJailedTimeLeftAtBlockById(_convertC2P(consensus), _blockNum);
+  }
+
+  function _getJailedTimeLeftAtBlockById(
+    address candidateId,
+    uint256 blockNum
+  ) internal view returns (bool isJailed_, uint256 blockLeft_, uint256 epochLeft_) {
+    uint256 jailedBlock = _blockProducerJailedBlock[candidateId];
+    if (jailedBlock < blockNum) {
       return (false, 0, 0);
     }
 
     isJailed_ = true;
-    blockLeft_ = _jailedBlock - _blockNum + 1;
-    epochLeft_ = epochOf(_jailedBlock) - epochOf(_blockNum) + 1;
+    blockLeft_ = jailedBlock - blockNum + 1;
+    epochLeft_ = epochOf(jailedBlock) - epochOf(blockNum) + 1;
   }
 
   /**
    * @inheritdoc IJailingInfo
    */
-  function checkManyJailed(address[] calldata _addrList) external view override returns (bool[] memory _result) {
-    _result = new bool[](_addrList.length);
-    for (uint256 _i; _i < _addrList.length; ) {
-      _result[_i] = _jailed(_addrList[_i]);
+  function checkManyJailed(TConsensus[] calldata consensusList) external view override returns (bool[] memory) {
+    return _checkManyJailedById(_convertManyC2P(consensusList));
+  }
+
+  function checkManyJailedById(address[] calldata candidateIds) external view override returns (bool[] memory) {
+    return _checkManyJailedById(candidateIds);
+  }
+
+  function _checkManyJailedById(address[] memory candidateIds) internal view returns (bool[] memory result) {
+    result = new bool[](candidateIds.length);
+    for (uint256 i; i < candidateIds.length; ) {
+      result[i] = _jailed(candidateIds[i]);
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }
@@ -83,19 +100,19 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @inheritdoc IJailingInfo
    */
-  function checkMiningRewardDeprecated(address _blockProducer) external view override returns (bool _result) {
-    uint256 _period = currentPeriod();
-    return _miningRewardDeprecated(_blockProducer, _period);
+  function checkMiningRewardDeprecated(TConsensus consensus) external view override returns (bool) {
+    uint256 period = currentPeriod();
+    return _miningRewardDeprecatedById(_convertC2P(consensus), period);
   }
 
   /**
    * @inheritdoc IJailingInfo
    */
   function checkMiningRewardDeprecatedAtPeriod(
-    address _blockProducer,
-    uint256 _period
-  ) external view override returns (bool _result) {
-    return _miningRewardDeprecated(_blockProducer, _period);
+    TConsensus consensus,
+    uint256 period
+  ) external view override returns (bool) {
+    return _miningRewardDeprecatedById(_convertC2P(consensus), period);
   }
 
   /**
@@ -104,21 +121,19 @@ abstract contract JailingStorage is IJailingInfo {
    * @dev Because the information of deprecating bridge reward of a period is only determined at the end of that period, this
    * method will return the deprecating info of the latest period. A method for querying that info of current period is no need.
    */
-  function checkBridgeRewardDeprecatedAtLatestPeriod(
-    address _consensusAddr
-  ) external view override returns (bool _result) {
-    uint256 _period = currentPeriod() - 1;
-    return _bridgeRewardDeprecated(_consensusAddr, _period);
+  function checkBridgeRewardDeprecatedAtLatestPeriod(TConsensus consensus) external view override returns (bool) {
+    uint256 period = currentPeriod() - 1;
+    return _bridgeRewardDeprecated(_convertC2P(consensus), period);
   }
 
   /**
    * @inheritdoc IJailingInfo
    */
   function checkBridgeRewardDeprecatedAtPeriod(
-    address _consensusAddr,
-    uint256 _period
-  ) external view override returns (bool _result) {
-    return _bridgeRewardDeprecated(_consensusAddr, _period);
+    TConsensus consensus,
+    uint256 period
+  ) external view override returns (bool) {
+    return _bridgeRewardDeprecated(_convertC2P(consensus), period);
   }
 
   /**
@@ -148,7 +163,7 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @dev Returns whether the block producer has no pending reward in that period.
    */
-  function _miningRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
+  function _miningRewardDeprecatedById(address _validatorAddr, uint256 _period) internal view returns (bool) {
     return _miningRewardDeprecatedAtPeriod[_validatorAddr][_period];
   }
 
@@ -158,4 +173,8 @@ abstract contract JailingStorage is IJailingInfo {
   function _bridgeRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
     return _bridgeRewardDeprecatedAtPeriod[_validatorAddr][_period];
   }
+
+  function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address);
+
+  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
 }

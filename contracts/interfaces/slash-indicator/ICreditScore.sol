@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.9;
+import { TConsensus } from "../../udvts/Types.sol";
 
 interface ICreditScore {
   /**
@@ -38,7 +39,7 @@ interface ICreditScore {
   /// @dev Emitted the credit score of validators is updated.
   event CreditScoresUpdated(address[] validators, uint256[] creditScores);
   /// @dev Emitted when a validator bailed out of jail.
-  event BailedOut(address indexed validator, uint256 period, uint256 usedCreditScore);
+  event BailedOut(TConsensus indexed consensus, uint256 period, uint256 usedCreditScore);
 
   /**
    * @dev Updates the credit score for the validators.
@@ -50,7 +51,7 @@ interface ICreditScore {
    * Emits the event `CreditScoresUpdated`.
    *
    */
-  function updateCreditScores(address[] calldata _validators, uint256 _period) external;
+  function execUpdateCreditScores(address[] calldata validatorIds, uint256 period) external;
 
   /**
    * @dev Resets the credit score for the revoked validators.
@@ -62,7 +63,7 @@ interface ICreditScore {
    * Emits the event `CreditScoresUpdated`.
    *
    */
-  function execResetCreditScores(address[] calldata _validators) external;
+  function execResetCreditScores(address[] calldata validatorIds) external;
 
   /**
    * @dev A slashed validator use this method to get out of jail.
@@ -74,7 +75,7 @@ interface ICreditScore {
    * Emits the event `BailedOut`.
    *
    */
-  function bailOut(address _consensusAddr) external;
+  function bailOut(TConsensus consensusAddr) external;
 
   /**
    * @dev Sets the configs to credit score.
@@ -119,15 +120,17 @@ interface ICreditScore {
   /**
    * @dev Returns the current credit score of the validator.
    */
-  function getCreditScore(address _validator) external view returns (uint256);
+  function getCreditScore(TConsensus consensus) external view returns (uint256);
 
   /**
    * @dev Returns the current credit score of a list of validators.
    */
-  function getManyCreditScores(address[] calldata _validators) external view returns (uint256[] memory _resultList);
+  function getManyCreditScores(
+    TConsensus[] calldata consensusAddrs
+  ) external view returns (uint256[] memory _resultList);
 
   /**
-   * @dev Returns the whether the `_validator` has been bailed out at the `_period`.
+   * @dev Returns the whether the `consensus` has been bailed out at the `period`.
    */
-  function checkBailedOutAtPeriod(address _validator, uint256 _period) external view returns (bool);
+  function checkBailedOutAtPeriod(TConsensus consensus, uint256 period) external view returns (bool);
 }

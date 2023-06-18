@@ -6,6 +6,8 @@ import "../../../libraries/EnumFlags.sol";
 import { HasTrustedOrgDeprecated } from "../../../utils/DeprecatedSlots.sol";
 import "../../../extensions/collections/HasContracts.sol";
 import "../../../interfaces/validator/info-fragments/IValidatorInfo.sol";
+import "../../../interfaces/IProfile.sol";
+import { TConsensus } from "../../../udvts/Types.sol";
 
 abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrustedOrgDeprecated {
   using EnumFlags for EnumFlags.ValidatorFlag;
@@ -16,7 +18,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
   /// @dev The total of validators
   uint256 internal _validatorCount;
   /// @dev Mapping from validator index => validator id address
-  mapping(uint256 => address) internal _validators;
+  mapping(uint256 => address) internal _validatorIds;
   /// @dev Mapping from validator id => flag indicating the validator ability: producing block, operating bridge
   mapping(address => EnumFlags.ValidatorFlag) internal _validatorMap;
   /// @dev The number of slot that is reserved for prioritized validators
@@ -40,19 +42,22 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
     view
     override
     returns (
-      address[] memory _validatorList,
-      address[] memory _bridgeOperators,
-      EnumFlags.ValidatorFlag[] memory _flags
+      address[] memory validatorList_,
+      address[] memory bridgeOperators_,
+      EnumFlags.ValidatorFlag[] memory flags_,
+      address[] memory candidateIdList_
     )
   {
-    _validatorList = new address[](_validatorCount);
-    _bridgeOperators = new address[](_validatorCount);
-    _flags = new EnumFlags.ValidatorFlag[](_validatorCount);
-    for (uint _i; _i < _validatorList.length; ) {
-      address _validator = _validators[_i];
-      _validatorList[_i] = _validator;
-      _bridgeOperators[_i] = _bridgeOperatorOf(_validator);
-      _flags[_i] = _validatorMap[_validator];
+    validatorList_ = new address[](_validatorCount);
+    bridgeOperators_ = new address[](_validatorCount);
+    flags_ = new EnumFlags.ValidatorFlag[](_validatorCount);
+    candidateIdList_ = new address[](_validatorCount);
+    for (uint _i; _i < validatorList_.length; ) {
+      address validatorId = _validatorIds[_i];
+      validatorList_[_i] = validatorId;
+      bridgeOperators_[_i] = _bridgeOperatorOfCandidateId(validatorId);
+      flags_[_i] = _validatorMap[validatorId];
+      candidateIdList_[_i] = validatorId;
 
       unchecked {
         ++_i;
@@ -70,39 +75,44 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
   /**
    * @inheritdoc IValidatorInfo
    */
-  function getBlockProducers() public view override returns (address[] memory _result) {
-    _result = new address[](_validatorCount);
-    uint256 _count = 0;
-    for (uint _i; _i < _result.length; ) {
-      if (isBlockProducer(_validators[_i])) {
-        _result[_count++] = _validators[_i];
+  function getBlockProducers() public view override returns (address[] memory result) {
+    result = new address[](_validatorCount);
+    uint256 count = 0;
+    for (uint i; i < result.length; ) {
+      address validatorId = _validatorIds[i];
+      if (_isBlockProducerById(validatorId)) {
+        result[count++] = validatorId;
       }
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
 
     assembly {
-      mstore(_result, _count)
+      mstore(result, count)
     }
   }
 
   /**
    * @inheritdoc IValidatorInfo
    */
-  function isBlockProducer(address consensusAddr) public view override returns (bool) {
-    return _validatorMap[consensusAddr].hasFlag(EnumFlags.ValidatorFlag.BlockProducer);
+  function isBlockProducer(TConsensus consensusAddr) public view override returns (bool) {
+    return _isBlockProducerById(_convertC2P(consensusAddr));
+  }
+
+  function _isBlockProducerById(address id) internal view returns (bool) {
+    return _validatorMap[id].hasFlag(EnumFlags.ValidatorFlag.BlockProducer);
   }
 
   /**
    * @inheritdoc IValidatorInfo
    */
-  function totalBlockProducers() external view returns (uint256 _total) {
+  function totalBlockProducers() external view returns (uint256 total) {
     unchecked {
       for (uint _i; _i < _validatorCount; _i++) {
-        if (isBlockProducer(_validators[_i])) {
-          _total++;
+        if (_isBlockProducerById(_validatorIds[_i])) {
+          total++;
         }
       }
     }
@@ -115,25 +125,25 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
     public
     view
     override
-    returns (address[] memory _bridgeOperatorList, address[] memory _validatorList)
+    returns (address[] memory _bridgeOperatorList, address[] memory validatorList_)
   {
     uint256 _length = _validatorCount;
     _bridgeOperatorList = new address[](_length);
-    _validatorList = new address[](_length);
+    validatorList_ = new address[](_length);
     uint256 _count = 0;
     unchecked {
       for (uint _i; _i < _length; ++_i) {
-        if (isOperatingBridge(_validators[_i])) {
-          address __validator = _validators[_i];
-          _bridgeOperatorList[_count] = _bridgeOperatorOf(__validator);
-          _validatorList[_count++] = __validator;
+        if (_isOperatingBridgeById(_validatorIds[_i])) {
+          address __validator = _validatorIds[_i];
+          _bridgeOperatorList[_count] = _bridgeOperatorOfCandidateId(__validator);
+          validatorList_[_count++] = __validator;
         }
       }
     }
 
     assembly {
       mstore(_bridgeOperatorList, _count)
-      mstore(_validatorList, _count)
+      mstore(validatorList_, _count)
     }
   }
 
@@ -141,13 +151,14 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
    * @inheritdoc IValidatorInfo
    */
   function getBridgeOperatorsOf(
-    address[] memory _validatorAddrs
-  ) public view override returns (address[] memory _bridgeOperatorList) {
-    _bridgeOperatorList = new address[](_validatorAddrs.length);
-    for (uint _i; _i < _bridgeOperatorList.length; ) {
-      _bridgeOperatorList[_i] = _bridgeOperatorOf(_validatorAddrs[_i]);
+    TConsensus[] memory consensusAddrs
+  ) public view override returns (address[] memory bridgeOperatorList) {
+    bridgeOperatorList = new address[](consensusAddrs.length);
+    address[] memory validatorIds = _convertManyC2P(consensusAddrs);
+    for (uint i; i < bridgeOperatorList.length; ) {
+      bridgeOperatorList[i] = _bridgeOperatorOfCandidateId(validatorIds[i]);
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }
@@ -155,15 +166,17 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
   /**
    * @inheritdoc IValidatorInfo
    */
-  function isBridgeOperator(address _bridgeOperatorAddr) external view override returns (bool _isOperator) {
-    for (uint _i; _i < _validatorCount; ) {
-      if (_bridgeOperatorOf(_validators[_i]) == _bridgeOperatorAddr && isOperatingBridge(_validators[_i])) {
-        _isOperator = true;
+  function isBridgeOperator(address bridgeOperatorAddr) external view override returns (bool isOperator) {
+    for (uint i; i < _validatorCount; ) {
+      if (
+        _bridgeOperatorOfCandidateId(_validatorIds[i]) == bridgeOperatorAddr && _isOperatingBridgeById(_validatorIds[i])
+      ) {
+        isOperator = true;
         break;
       }
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }
@@ -171,8 +184,12 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
   /**
    * @inheritdoc IValidatorInfo
    */
-  function isOperatingBridge(address _consensusAddr) public view override returns (bool) {
-    return _validatorMap[_consensusAddr].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator);
+  function isOperatingBridge(TConsensus consensus) external view override returns (bool) {
+    return _isOperatingBridgeById(_convertC2P(consensus));
+  }
+
+  function _isOperatingBridgeById(address validatorId) internal view returns (bool) {
+    return _validatorMap[validatorId].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator);
   }
 
   /**
@@ -195,7 +212,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
   function totalBridgeOperators() public view returns (uint256 _total) {
     unchecked {
       for (uint _i; _i < _validatorCount; _i++) {
-        if (isOperatingBridge(_validators[_i])) {
+        if (_isOperatingBridgeById(_validatorIds[_i])) {
           _total++;
         }
       }
@@ -219,7 +236,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
   /**
    * @dev Returns the bridge operator of a consensus address.
    */
-  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address);
+  function _bridgeOperatorOfCandidateId(address _consensusAddr) internal view virtual returns (address);
 
   /**
    * @dev See `IValidatorInfo-setMaxValidatorNumber`
@@ -237,4 +254,8 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
     _maxPrioritizedValidatorNumber = _number;
     emit MaxPrioritizedValidatorNumberUpdated(_number);
   }
+
+  function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address);
+
+  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
 }
