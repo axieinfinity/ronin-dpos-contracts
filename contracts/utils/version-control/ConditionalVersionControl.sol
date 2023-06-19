@@ -128,10 +128,13 @@ abstract contract ConditionalVersionControl is IConditionalVersionControl, ERC19
     if (msg.sender != _proxyStorage) revert ErrOnlySelfCall(msg.sig);
   }
 
+  /**
+   * @dev Suggested gas stipend for contract to call selfMigrate function.
+   */
   function _gasStipenedNoGrief() internal pure virtual returns (uint256) {
-    /// @dev Suggested gas stipend for contract to perform a few
-    /// storage reads and writes, but low enough to prevent griefing.
-    /// Multiply by a small constant (e.g. 2), if needed.
+    // Gas stipend for contract to perform a few
+    // storage reads and writes, but low enough to prevent griefing.
+    // Multiply by a small constant (e.g. 2), if needed.
     return 50_000;
   }
 }
