@@ -28,7 +28,7 @@ contract RoninValidatorSetTimedMigrator is ConditionalVersionControl {
   }
 
   /**
-   * @dev Constructs the RoninValidatorSetTimedMigrator contract.
+   * @dev Constructs the {RoninValidatorSetTimedMigrator} contract.
    * @param proxyStorage The address of the proxy storage contract.
    * @param currentVersion The address of the current contract implementation.
    * @param newVersion The address of the new contract implementation.
