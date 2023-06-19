@@ -18,16 +18,18 @@ contract MockValidatorSet is
   mapping(uint256 => bool) internal _periodSlashed;
 
   constructor(
-    address __stakingContract,
+    address _stakingContract,
     address _slashIndicatorContract,
     address _stakingVestingContract,
+    address _profileContract,
     uint256 __maxValidatorCandidate,
     uint256 __numberOfBlocksInEpoch,
     uint256 __minEffectiveDaysOnwards
   ) {
-    _setContract(ContractType.STAKING, __stakingContract);
+    _setContract(ContractType.STAKING, _stakingContract);
     _setContract(ContractType.SLASH_INDICATOR, _slashIndicatorContract);
     _setContract(ContractType.STAKING_VESTING, _stakingVestingContract);
+    _setContract(ContractType.PROFILE, _profileContract);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
     _minEffectiveDaysOnwards = __minEffectiveDaysOnwards;

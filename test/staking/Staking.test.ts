@@ -14,7 +14,7 @@ import { MockValidatorSet__factory } from '../../src/types/factories/MockValidat
 import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
 import { createManyValidatorCandidateAddressSets, ValidatorCandidateAddressSet } from '../helpers/address-set-types';
-import { getLastBlockTimestamp } from '../helpers/utils';
+import { getLastBlockTimestamp, getRole } from '../helpers/utils';
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -27,7 +27,7 @@ let otherPoolAddrSet: ValidatorCandidateAddressSet;
 let anotherActivePoolSet: ValidatorCandidateAddressSet;
 let sparePoolAddrSet: ValidatorCandidateAddressSet;
 
-let proxyContract: TransparentUpgradeableProxyV2;
+let stakingProxyContract: TransparentUpgradeableProxyV2;
 let validatorContract: MockValidatorSet;
 let stakingContract: Staking;
 let signers: SignerWithAddress[];
@@ -53,27 +53,30 @@ describe('Staking test', () => {
 
     const stakingVestingContract = await new StakingVesting__factory(deployer).deploy();
     const nonce = await deployer.getTransactionCount();
+    const validatorContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 2 });
     const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
+
+    const profileLogicContract = await new Profile__factory(deployer).deploy();
+    const profileContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
+      profileLogicContract.address,
+      proxyAdmin.address,
+      profileLogicContract.interface.encodeFunctionData('initialize', [stakingContractAddr, validatorContractAddr])
+    );
+
     validatorContract = await new MockValidatorSet__factory(deployer).deploy(
       stakingContractAddr,
       ethers.constants.AddressZero,
       stakingVestingContract.address,
+      profileContract.address,
       maxValidatorCandidate,
       numberOfBlocksInEpoch,
       minEffectiveDaysOnwards
     );
     await validatorContract.deployed();
 
-    const profileLogicContract = await new Profile__factory(deployer).deploy();
-    const profileContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
-      profileLogicContract.address,
-      proxyAdmin.address,
-      profileLogicContract.interface.encodeFunctionData('initialize', [stakingContractAddr, validatorContract.address])
-    );
-
     const logicContract = await new Staking__factory(deployer).deploy();
     await logicContract.deployed();
-    proxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
+    stakingProxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       logicContract.address,
       proxyAdmin.address,
       logicContract.interface.encodeFunctionData('initialize', [
@@ -84,14 +87,21 @@ describe('Staking test', () => {
         waitingSecsToRevoke,
       ])
     );
-    await proxyContract.deployed();
+    await stakingProxyContract.deployed();
 
-    await proxyContract
+    await stakingProxyContract
       .connect(proxyAdmin)
       .functionDelegateCall(logicContract.interface.encodeFunctionData('initializeV3', [profileContract.address]));
 
-    stakingContract = Staking__factory.connect(proxyContract.address, deployer);
-    expect(stakingContractAddr.toLowerCase()).eq(stakingContract.address.toLowerCase());
+    stakingContract = Staking__factory.connect(stakingProxyContract.address, deployer);
+    expect(validatorContractAddr.toLowerCase()).eq(
+      validatorContract.address.toLowerCase(),
+      'wrong validator contract address'
+    );
+    expect(stakingContractAddr.toLowerCase()).eq(
+      stakingContract.address.toLowerCase(),
+      'wrong staking contract address'
+    );
   });
 
   describe('Validator candidate test', () => {
@@ -264,7 +274,7 @@ describe('Staking test', () => {
         minCommissionRate,
         maxCommissionRate,
       ]);
-      await proxyContract.connect(proxyAdmin).functionDelegateCall(data);
+      await stakingProxyContract.connect(proxyAdmin).functionDelegateCall(data);
 
       await expect(
         stakingContract
@@ -279,7 +289,7 @@ describe('Staking test', () => {
         defaultMinCommissionRate,
         maxCommissionRate,
       ]);
-      await proxyContract.connect(proxyAdmin).functionDelegateCall(data);
+      await stakingProxyContract.connect(proxyAdmin).functionDelegateCall(data);
     });
 
     it('Should the pool admin not be able to request updating the commission rate exceeding max rate', async () => {
