@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { ConditionalVersionControl } from "../../../utils/version-control/ConditionalVersionControl.sol";
+import { ConditionalVersionControl } from "../../../extensions/version-control/ConditionalVersionControl.sol";
 
 contract MockConditionalVersionControl is ConditionalVersionControl {
   modifier whenConditionsAreMet() override {
@@ -12,13 +12,13 @@ contract MockConditionalVersionControl is ConditionalVersionControl {
   }
 
   constructor(
-    address proxyStorage,
-    address currentVersion,
-    address newVersion
-  ) ConditionalVersionControl(proxyStorage, currentVersion, newVersion) {}
+    address proxyStorage_,
+    address currentVersion_,
+    address newVersion_
+  ) ConditionalVersionControl(proxyStorage_, currentVersion_, newVersion_) {}
 
-  function _chooseVersion() internal view override returns (address) {
-    return _isConditionMet() ? _newVersion : _currentVersion;
+  function _getVersion() internal view override returns (address) {
+    return _isConditionMet() ? newVersion : currentVersion;
   }
 
   function _isConditionMet() internal view returns (bool) {

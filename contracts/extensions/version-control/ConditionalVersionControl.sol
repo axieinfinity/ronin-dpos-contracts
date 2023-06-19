@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 import { ERC1967Upgrade } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
-import { IConditionalVersionControl } from "../../interfaces/utils/IConditionalVersionControl.sol";
+import { IConditionalVersionControl } from "../../interfaces/version-control/IConditionalVersionControl.sol";
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
-import { ErrOnlySelfCall } from "../CommonErrors.sol";
+import { ErrOnlySelfCall } from "../../utils/CommonErrors.sol";
 
 /**
  * @title ConditionalVersionControl
@@ -15,25 +15,25 @@ abstract contract ConditionalVersionControl is IConditionalVersionControl, ERC19
   using ErrorHandler for bool;
   using AddressArrayUtils for address[];
 
-  error ErrInvalidArguments(address proxyStorage, address currentVersion, address newVersion);
-  /// @dev Error of set to non-contract.
-  error ErrZeroCodeContract(address addr);
-  /// @dev Error when contract which delegate to this contract is not compatible with ERC1967
-  error ErrDelegateFromUnknownOrigin(address addr);
+  address public immutable proxyStorage;
+  address public immutable newVersion;
+  address public immutable currentVersion;
 
-  address internal immutable _proxyStorage;
-  address internal immutable _newVersion;
-  address internal immutable _currentVersion;
-
+  /**
+   * @dev Modifier that only allows self calls.
+   */
   modifier onlySelfCall() {
     _requireSelfCall();
     _;
   }
 
+  /**
+   * @dev Modifier that executes the function when conditions are met.
+   */
   modifier whenConditionsAreMet() virtual;
 
   /**
-   * @dev Modifier that only allows delegate calls from admin proxy storage.
+   * @dev Modifier that only allows delegate calls from the admin proxy storage.
    */
   modifier onlyDelegateFromProxyStorage() virtual {
     _requireDelegateFromProxyStorage();
@@ -51,31 +51,31 @@ abstract contract ConditionalVersionControl is IConditionalVersionControl, ERC19
 
   /**
    * @dev Constructs the ConditionalVersionControl contract.
-   * @param proxyStorage The address of the proxy that is allowed to delegate to this contract.
-   * @param currentVersion The address of the current contract implementation.
-   * @param newVersion The address of the new contract implementation.
+   * @param proxyStorage_ The address of the proxy that is allowed to delegate to this contract.
+   * @param currentVersion_ The address of the current contract implementation.
+   * @param newVersion_ The address of the new contract implementation.
    */
   constructor(
-    address proxyStorage,
-    address currentVersion,
-    address newVersion
-  ) onlyContract(proxyStorage) onlyContract(currentVersion) onlyContract(newVersion) {
+    address proxyStorage_,
+    address currentVersion_,
+    address newVersion_
+  ) onlyContract(proxyStorage_) onlyContract(currentVersion_) onlyContract(newVersion_) {
     address[] memory addrs = new address[](3);
-    addrs[0] = proxyStorage;
-    addrs[1] = currentVersion;
-    addrs[2] = newVersion;
+    addrs[0] = proxyStorage_;
+    addrs[1] = currentVersion_;
+    addrs[2] = newVersion_;
     if (addrs.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
 
-    _proxyStorage = proxyStorage;
-    _newVersion = newVersion;
-    _currentVersion = currentVersion;
+    proxyStorage = proxyStorage_;
+    newVersion = newVersion_;
+    currentVersion = currentVersion_;
   }
 
   /**
    * @dev Fallback function that forwards the call to the current or new contract implementation based on a condition.
    */
   fallback() external payable virtual onlyDelegateFromProxyStorage {
-    bytes memory returnData = _dispatchCall(_chooseVersion());
+    bytes memory returnData = _dispatchCall(_getVersion());
     assembly {
       return(add(returnData, 0x20), mload(returnData))
     }
@@ -85,12 +85,24 @@ abstract contract ConditionalVersionControl is IConditionalVersionControl, ERC19
     revert();
   }
 
+  /**
+   * @dev Executes the selfMigrate function, upgrading to the new contract implementation.
+   */
   function selfMigrate() external onlyDelegateFromProxyStorage onlySelfCall {
-    _upgradeTo(_newVersion);
+    _upgradeTo(newVersion);
   }
 
-  function _chooseVersion() internal view virtual returns (address);
+  /**
+   * @dev Internal function to get the current version of the contract implementation.
+   * @return The address of the current version.
+   */
+  function _getVersion() internal view virtual returns (address);
 
+  /**
+   * @dev Internal function to dispatch the call to the specified version.
+   * @param version The address of the version to call.
+   * @return returnData The return data of the call.
+   */
   function _dispatchCall(address version) internal virtual whenConditionsAreMet returns (bytes memory returnData) {
     (bool success, bytes memory returnOrRevertData) = version.delegatecall(msg.data);
     success.handleRevert(msg.sig, returnOrRevertData);
@@ -113,7 +125,7 @@ abstract contract ConditionalVersionControl is IConditionalVersionControl, ERC19
    * @dev Throws an error if the current implementation of the proxy storage is not this contract.
    */
   function _requireDelegateFromProxyStorage() private view {
-    if (address(this) != _proxyStorage) revert ErrDelegateFromUnknownOrigin(address(this));
+    if (address(this) != proxyStorage) revert ErrDelegateFromUnknownOrigin(address(this));
   }
 
   /**
@@ -125,7 +137,7 @@ abstract contract ConditionalVersionControl is IConditionalVersionControl, ERC19
    *
    */
   function _requireSelfCall() internal view virtual {
-    if (msg.sender != _proxyStorage) revert ErrOnlySelfCall(msg.sig);
+    if (msg.sender != proxyStorage) revert ErrOnlySelfCall(msg.sig);
   }
 
   /**

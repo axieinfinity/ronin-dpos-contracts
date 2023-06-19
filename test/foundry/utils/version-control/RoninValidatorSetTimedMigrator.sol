@@ -4,10 +4,10 @@ pragma solidity ^0.8.0;
 import { Vm, Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
 import { TransparentUpgradeableProxyV2, ERC1967Upgrade } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
-import { IConditionalVersionControl } from "@ronin/contracts/interfaces/utils/IConditionalVersionControl.sol";
+import { IConditionalVersionControl } from "@ronin/contracts/interfaces/version-control/IConditionalVersionControl.sol";
 import { ILogicValidatorSet, MockLogicValidatorSetV1, MockLogicValidatorSetV2 } from "@ronin/contracts/mocks/utils/version-control/MockLogicValidatorSet.sol";
 import { MockActor } from "@ronin/contracts/mocks/utils/version-control/MockActor.sol";
-import { RoninValidatorSetTimedMigrator } from "@ronin/contracts/utils/version-control/RoninValidatorSetTimedMigrator.sol";
+import { RoninValidatorSetTimedMigrator } from "@ronin/contracts/ronin/validator/migrations/RoninValidatorSetTimedMigrator.sol";
 
 contract RoninValidatorSetTimedMigratorTest is Test {
   /**

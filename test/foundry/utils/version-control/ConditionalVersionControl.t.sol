@@ -5,11 +5,13 @@ import { Vm, Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
 import { TransparentUpgradeableProxyV2, ERC1967Upgrade } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 import { ILogic, MockLogicV1, MockLogicV2 } from "@ronin/contracts/mocks/utils/version-control/MockLogic.sol";
+import { IConditionalVersionControl } from "@ronin/contracts/interfaces/version-control/IConditionalVersionControl.sol";
+import { AddressArrayUtils } from "@ronin/contracts/libraries/AddressArrayUtils.sol";
+import { ErrOnlySelfCall } from "@ronin/contracts/utils/CommonErrors.sol";
 import { MockActor } from "@ronin/contracts/mocks/utils/version-control/MockActor.sol";
 import { MockConditionalVersionControl, ConditionalVersionControl } from "@ronin/contracts/mocks/utils/version-control/MockConditionalVersionControl.sol";
 
 contract ConditionalVersionControlTest is Test {
-
   address logicV1;
   address logicV2;
 
@@ -52,47 +54,47 @@ contract ConditionalVersionControlTest is Test {
   }
 
   function testFailDupplicateInput0() public {
-    vm.expectRevert(abi.encodePacked(ErrDuplicated.selector, bytes4(0)));
+    vm.expectRevert(abi.encodePacked(AddressArrayUtils.ErrDuplicated.selector, bytes4(0)));
     new MockConditionalVersionControl(proxyStorage, proxyStorage, proxyStorage);
   }
 
   function testFailDupplicateInput1() public {
-    vm.expectRevert(abi.encodePacked(ErrDuplicated.selector, bytes4(0)));
+    vm.expectRevert(abi.encodePacked(AddressArrayUtils.ErrDuplicated.selector, bytes4(0)));
     new MockConditionalVersionControl(proxyStorage, logicV1, logicV1);
   }
 
   function testFailDupplicateInput2() public {
-    vm.expectRevert(abi.encodePacked(ErrDuplicated.selector, bytes4(0)));
+    vm.expectRevert(abi.encodePacked(AddressArrayUtils.ErrDuplicated.selector, bytes4(0)));
     new MockConditionalVersionControl(logicV1, proxyStorage, logicV1);
   }
 
   function testFailNonContractInput0() public {
-    vm.expectRevert(abi.encodePacked(ErrZeroCodeContract.selector, alice));
+    vm.expectRevert(abi.encodePacked(IConditionalVersionControl.ErrZeroCodeContract.selector, alice));
     new MockConditionalVersionControl(alice, logicV1, logicV2);
   }
 
   function testFailNonContractInput1() public {
-    vm.expectRevert(abi.encodePacked(ErrZeroCodeContract.selector, alice));
+    vm.expectRevert(abi.encodePacked(IConditionalVersionControl.ErrZeroCodeContract.selector, alice));
     new MockConditionalVersionControl(proxyStorage, alice, logicV2);
   }
 
   function testFailNonContractInput2() public {
-    vm.expectRevert(abi.encodePacked(ErrZeroCodeContract.selector, alice));
+    vm.expectRevert(abi.encodePacked(IConditionalVersionControl.ErrZeroCodeContract.selector, alice));
     new MockConditionalVersionControl(proxyStorage, logicV1, alice);
   }
 
   function testFailNullInput0() public {
-    vm.expectRevert(abi.encodePacked(ErrZeroCodeContract.selector, address(0)));
+    vm.expectRevert(abi.encodePacked(IConditionalVersionControl.ErrZeroCodeContract.selector, address(0)));
     new MockConditionalVersionControl(address(0), logicV1, logicV2);
   }
 
   function testFailNullInput1() public {
-    vm.expectRevert(abi.encodePacked(ErrZeroCodeContract.selector, address(0)));
+    vm.expectRevert(abi.encodePacked(IConditionalVersionControl.ErrZeroCodeContract.selector, address(0)));
     new MockConditionalVersionControl(proxyStorage, address(0), logicV2);
   }
 
   function testFailNullInput2() public {
-    vm.expectRevert(abi.encodePacked(ErrZeroCodeContract.selector, address(0)));
+    vm.expectRevert(abi.encodePacked(IConditionalVersionControl.ErrZeroCodeContract.selector, address(0)));
     new MockConditionalVersionControl(proxyStorage, logicV1, address(0));
   }
 
@@ -139,13 +141,23 @@ contract ConditionalVersionControlTest is Test {
   function testFailUnauthorizedEOAForceSwitchToLogicV2() public {
     testManualUpgradeToVersionControl();
     vm.prank(alice, alice);
-    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalVersionControl.selfMigrate.selector));
+    vm.expectRevert(
+      abi.encodePacked(
+        ErrOnlySelfCall.selector,
+        ConditionalVersionControl.selfMigrate.selector
+      )
+    );
     MockConditionalVersionControl(proxyStorage).selfMigrate();
   }
 
   function testFailUnauthorizedContractForceSwitchToLogicV2() public {
     testManualUpgradeToVersionControl();
-    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalVersionControl.selfMigrate.selector));
+    vm.expectRevert(
+      abi.encodePacked(
+        ErrOnlySelfCall.selector,
+        ConditionalVersionControl.selfMigrate.selector
+      )
+    );
     vm.prank(alice, alice);
     MockConditionalVersionControl(payable(address(bobContract))).selfMigrate();
   }
@@ -157,7 +169,9 @@ contract ConditionalVersionControlTest is Test {
   }
 
   function testFailEOACallToVersionControl() public {
-    vm.expectRevert(abi.encodePacked(ErrDelegateFromUnknownOrigin.selector, versionController));
+    vm.expectRevert(
+      abi.encodePacked(IConditionalVersionControl.ErrDelegateFromUnknownOrigin.selector, versionController)
+    );
     vm.prank(alice, alice);
     ILogic(versionController).set();
   }
@@ -165,12 +179,16 @@ contract ConditionalVersionControlTest is Test {
   function testFailContractCallToVersionControl() public {
     bobContract = new MockActor(versionController);
     vm.prank(alice, alice);
-    vm.expectRevert(abi.encodePacked(ErrDelegateFromUnknownOrigin.selector, versionController));
+    vm.expectRevert(
+      abi.encodePacked(IConditionalVersionControl.ErrDelegateFromUnknownOrigin.selector, versionController)
+    );
     ILogic(address(bobContract)).set();
   }
 
   function testFailEOAStaticCallToVersionControl() public {
-    vm.expectRevert(abi.encodePacked(ErrDelegateFromUnknownOrigin.selector, versionController));
+    vm.expectRevert(
+      abi.encodePacked(IConditionalVersionControl.ErrDelegateFromUnknownOrigin.selector, versionController)
+    );
     vm.prank(alice, alice);
     ILogic(versionController).get();
   }
@@ -178,7 +196,9 @@ contract ConditionalVersionControlTest is Test {
   function testFailContractStaticCallCallToVersionControl() public {
     bobContract = new MockActor(versionController);
     vm.prank(alice, alice);
-    vm.expectRevert(abi.encodePacked(ErrDelegateFromUnknownOrigin.selector, versionController));
+    vm.expectRevert(
+      abi.encodePacked(IConditionalVersionControl.ErrDelegateFromUnknownOrigin.selector, versionController)
+    );
     ILogic(address(bobContract)).get();
   }
 }
