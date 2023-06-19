@@ -28,9 +28,6 @@ tab_width = 2
 [profile.ci]
 verbosity = 4
 
-# [profile.via-ir]
-# via_ir = true
-
 [profile.default.fuzz]
 runs = 256
 
