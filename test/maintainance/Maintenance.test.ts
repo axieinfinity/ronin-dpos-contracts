@@ -117,10 +117,12 @@ describe('Maintenance test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
     await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, validatorContract.address],
+      [stakingContract.address, validatorContract.address, maintenanceContract.address, slashContract.address],
       [
         stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
         validatorContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        maintenanceContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        slashContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
       ]
     );
 

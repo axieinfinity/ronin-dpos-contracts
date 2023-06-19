@@ -152,10 +152,11 @@ describe('Slash indicator test', () => {
     await mockSlashLogic.deployed();
     await governanceAdminInterface.upgrade(slashContractAddress, mockSlashLogic.address);
     await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, validatorContract.address],
+      [stakingContract.address, validatorContract.address, slashContract.address],
       [
         stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
         validatorContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        slashContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
       ]
     );
 

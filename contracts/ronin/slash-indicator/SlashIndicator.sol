@@ -100,6 +100,10 @@ contract SlashIndicator is
     delete ______deprecatedGovernanceAdmin;
   }
 
+  function initializeV3(address profileContract_) external reinitializer(3) {
+    _setContract(ContractType.PROFILE, profileContract_);
+  }
+
   /**
    * @dev Helper for CreditScore contract to reset the indicator of the validator after bailing out.
    */

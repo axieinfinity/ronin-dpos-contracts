@@ -62,6 +62,10 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     delete ______deprecatedValidator;
   }
 
+  function initializeV3(address profileContract_) external reinitializer(3) {
+    _setContract(ContractType.PROFILE, profileContract_);
+  }
+
   /**
    * @inheritdoc IMaintenance
    */

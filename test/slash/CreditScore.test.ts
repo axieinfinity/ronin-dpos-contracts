@@ -216,10 +216,12 @@ describe('Credit score and bail out test', () => {
     await mockSlashLogic.deployed();
     await governanceAdminInterface.upgrade(slashContractAddress, mockSlashLogic.address);
     await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, validatorContract.address],
+      [stakingContract.address, validatorContract.address, maintenanceContract.address, slashContract.address],
       [
         stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
         validatorContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        maintenanceContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        slashContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
       ]
     );
 
