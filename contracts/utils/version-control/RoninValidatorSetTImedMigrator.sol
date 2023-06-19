@@ -12,8 +12,8 @@ import { ICoinbaseExecution } from "../../interfaces/validator/ICoinbaseExecutio
 contract RoninValidatorSetTimedMigrator is ConditionalVersionControl {
   /**
    * @dev Modifier that executes the function when conditions are met.
-   * @dev If the function is wrapUpEpoch from ICoinbaseExecution, it checks the current period before and after execution.
-   * If they differ, it triggers the selfMigrate function.
+   * @dev If the function is {wrapUpEpoch} from {ICoinbaseExecution}, it checks the current period before and after execution.
+   * If they differ, it triggers the {selfMigrate} function.
    */
   modifier whenConditionsAreMet() override {
     if (msg.sig == ICoinbaseExecution.wrapUpEpoch.selector) {
