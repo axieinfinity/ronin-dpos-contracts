@@ -9,20 +9,6 @@ import { MockActor } from "@ronin/contracts/mocks/utils/version-control/MockActo
 import { MockConditionalVersionControl, ConditionalVersionControl } from "@ronin/contracts/mocks/utils/version-control/MockConditionalVersionControl.sol";
 
 contract ConditionalVersionControlTest is Test {
-  /**
-   * @dev Error thrown when a duplicated element is detected in an array.
-   * @param msgSig The function signature that invoke the error.
-   */
-  error ErrDuplicated(bytes4 msgSig);
-  /// @dev Error of set to non-contract.
-  error ErrZeroCodeContract(address addr);
-  /// @dev Error when contract which delegate to this contract is not compatible with ERC1967
-  error ErrDelegateFromUnknownOrigin(address addr);
-  /**
-   * @dev Error indicating that a function can only be called by the contract itself.
-   * @param msgSig The function signature (bytes4) that can only be called by the contract itself.
-   */
-  error ErrOnlySelfCall(bytes4 msgSig);
 
   address logicV1;
   address logicV2;
