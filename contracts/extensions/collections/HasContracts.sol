@@ -3,13 +3,14 @@ pragma solidity ^0.8.0;
 
 import { HasProxyAdmin } from "./HasProxyAdmin.sol";
 import "../../interfaces/collections/IHasContracts.sol";
+import { IdentityGuard } from "../../utils/guard/IdentityGuard.sol";
 import { ErrUnexpectedInternalCall } from "../../utils/CommonErrors.sol";
 
 /**
  * @title HasContracts
  * @dev A contract that provides functionality to manage multiple contracts with different roles.
  */
-abstract contract HasContracts is HasProxyAdmin, IHasContracts {
+abstract contract HasContracts is HasProxyAdmin, IdentityGuard, IHasContracts {
   /// @dev value is equal to keccak256("@ronin.dpos.collections.HasContracts.slot") - 1
   bytes32 private constant _STORAGE_SLOT = 0xdea3103d22025c269050bea94c0c84688877f12fa22b7e6d2d5d78a9a49aa1cb;
 
@@ -46,15 +47,6 @@ abstract contract HasContracts is HasProxyAdmin, IHasContracts {
   function _setContract(ContractType contractType, address addr) internal virtual {
     _getContractMap()[uint8(contractType)] = addr;
     emit ContractUpdated(contractType, addr);
-  }
-
-  /**
-   * @dev Internal function to check if a contract address has code.
-   * @param addr The address of the contract to check.
-   * @dev Throws an error if the contract address has no code.
-   */
-  function _requireHasCode(address addr) internal view {
-    if (addr.code.length == 0) revert ErrZeroCodeContract(addr);
   }
 
   /**
