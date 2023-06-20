@@ -150,10 +150,11 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
     await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
 
     await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, roninValidatorSet.address],
+      [stakingContract.address, roninValidatorSet.address, slashIndicator.address],
       [
         stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
         roninValidatorSet.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        slashIndicator.interface.encodeFunctionData('initializeV3', [profileAddress]),
       ]
     );
   });
