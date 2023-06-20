@@ -132,13 +132,44 @@ describe('[Integration] Slash validators', () => {
     let expectingValidatorSet: Address[] = [];
     let expectingBlockProducerSet: Address[] = [];
     let period: BigNumberish;
+    let slasheeIdx: number;
+    let slashee: ValidatorCandidateAddressSet;
+    let slasheeInitStakingAmount: BigNumber;
+    let wrapUpEpochTx: ContractTransaction;
 
     before(async () => {
       period = await validatorContract.currentPeriod();
-      await validatorContract.addValidators([1, 2, 3].map((i) => validatorCandidates[i].consensusAddr.address));
+      slasheeIdx = 1;
+      slashee = validatorCandidates[slasheeIdx];
+      slasheeInitStakingAmount = minValidatorStakingAmount
+        .add(slashAmountForUnavailabilityTier2Threshold.mul(10))
+        .add(100);
+      await stakingContract
+        .connect(slashee.poolAdmin)
+        .applyValidatorCandidate(
+          slashee.candidateAdmin.address,
+          slashee.consensusAddr.address,
+          slashee.treasuryAddr.address,
+          slashee.bridgeOperator.address,
+          2_00,
+          {
+            value: slasheeInitStakingAmount,
+          }
+        );
+
+      await EpochController.setTimestampToPeriodEnding();
+      await mineBatchTxs(async () => {
+        await validatorContract.connect(coinbase).endEpoch();
+        wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+      });
+
+      period = await validatorContract.currentPeriod();
+      expectingValidatorSet.push(slashee.consensusAddr.address);
+      expectingBlockProducerSet.push(slashee.consensusAddr.address);
+      await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
     });
 
-    describe('Slash misdemeanor validator', async () => {
+    describe('Slash tier-1 validator', async () => {
       it('Should the ValidatorSet contract emit event', async () => {
         let slasheeIdx = 1;
         let slashee = validatorCandidates[slasheeIdx].consensusAddr;
@@ -231,6 +262,7 @@ describe('[Integration] Slash validators', () => {
         // ]);
 
         expect(await validatorContract.getJailUntils(expectingValidatorSet)).deep.equal([
+          BigNumber.from(0),
           BigNumber.from(blockNumber).add(jailDurationForUnavailabilityTier2Threshold),
         ]);
       });
