@@ -36,11 +36,11 @@ abstract contract ProfileInflow is HasContracts, ProfileStorage {
    *   + [x] Keep the same previous pool address. // CHECKED, NO NEED ANY CHANGES
    *   +
    * - Update in Validator contract for:
-   *   + Consensus Address mapping
-   *   + Bridge Address mapping
-   *   + Jail mapping
-   *   + Pending reward mapping
-   *   + Schedule mapping
+   *   + [x] Consensus Address mapping
+   *   + [x] Bridge Address mapping
+   *   + [x] Jail mapping
+   *   + [x] Pending reward mapping
+   *   + [x] Schedule mapping
    * - Update in Proposal contract for:
    *   + Refund of emergency exit mapping
    *   + ...
