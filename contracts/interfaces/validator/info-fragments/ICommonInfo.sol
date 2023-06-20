@@ -4,9 +4,9 @@ pragma solidity ^0.8.9;
 
 import "./IJailingInfo.sol";
 import "./ITimingInfo.sol";
-import "./IValidatorInfo.sol";
+import "./IValidatorInfoV2.sol";
 
-interface ICommonInfo is ITimingInfo, IJailingInfo, IValidatorInfo {
+interface ICommonInfo is ITimingInfo, IJailingInfo, IValidatorInfoV2 {
   struct EmergencyExitInfo {
     uint256 lockedAmount;
     // The timestamp that this locked amount will be recycled to staking vesting contract

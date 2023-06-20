@@ -11,7 +11,7 @@ interface ICandidateManager {
     // Address that receives mining reward of the validator
     address payable treasuryAddr;
     // Address of the bridge operator corresponding to the candidate
-    address bridgeOperatorAddr;
+    address ______deprecatedbridgeOperatorAddr;
     // The percentage of reward that validators can be received, the rest goes to the delegators.
     // Values in range [0; 100_00] stands for 0-100%
     uint256 commissionRate;
@@ -33,12 +33,7 @@ interface ICandidateManager {
   /// @dev Emitted when the min offset to the effective date of commission rate change is updated.
   event MinEffectiveDaysOnwardsUpdated(uint256 numOfDays);
   /// @dev Emitted when the validator candidate is granted.
-  event CandidateGranted(
-    address indexed consensusAddr,
-    address indexed treasuryAddr,
-    address indexed admin,
-    address bridgeOperator
-  );
+  event CandidateGranted(address indexed consensusAddr, address indexed treasuryAddr, address indexed admin);
   /// @dev Emitted when the revoking timestamp of a candidate is updated.
   event CandidateRevokingTimestampUpdated(address indexed consensusAddr, uint256 revokingTimestamp);
   /// @dev Emitted when the topup deadline of a candidate is updated.
@@ -61,8 +56,6 @@ interface ICandidateManager {
   error ErrExistentCandidateAdmin(address _candidateAdminAddr);
   /// @dev Error of treasury already exists.
   error ErrExistentTreasury(address _treasuryAddr);
-  /// @dev Error of bridge operator already exists.
-  error ErrExistentBridgeOperator(address _bridgeOperatorAddr);
   /// @dev Error of invalid commission rate.
   error ErrInvalidCommissionRate();
   /// @dev Error of invalid effective days onwards.
@@ -121,7 +114,6 @@ interface ICandidateManager {
     address _admin,
     address _consensusAddr,
     address payable _treasuryAddr,
-    address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external;
 

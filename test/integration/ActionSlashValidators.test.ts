@@ -558,8 +558,7 @@ describe('[Integration] Slash validators', () => {
               applyCandidateTx!,
               slashee.consensusAddr.address,
               slashee.treasuryAddr.address,
-              slashee.candidateAdmin.address,
-              slashee.bridgeOperator.address
+              slashee.candidateAdmin.address
             );
           }
         });

@@ -282,25 +282,6 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx).revertedWithCustomError(stakingContract, 'ErrThreeInteractionAddrsNotEqual');
     });
 
-    it('Should not be able to apply for candidate role with existed bridge operator address', async () => {
-      let tx = stakingContract
-        .connect(validatorCandidates[5].poolAdmin)
-        .applyValidatorCandidate(
-          validatorCandidates[5].candidateAdmin.address,
-          validatorCandidates[5].consensusAddr.address,
-          validatorCandidates[5].treasuryAddr.address,
-          validatorCandidates[0].bridgeOperator.address,
-          2_00,
-          {
-            value: minValidatorStakingAmount,
-          }
-        );
-
-      await expect(tx)
-        .revertedWithCustomError(roninValidatorSet, 'ErrExistentBridgeOperator')
-        .withArgs(validatorCandidates[0].bridgeOperator.address);
-    });
-
     it('Should not be able to apply for candidate role with commission rate higher than allowed', async () => {
       let tx = stakingContract
         .connect(validatorCandidates[5].poolAdmin)

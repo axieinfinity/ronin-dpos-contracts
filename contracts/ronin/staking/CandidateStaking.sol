@@ -215,7 +215,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       _candidateAdmin,
       _consensusAddr,
       _treasuryAddr,
-      _bridgeOperatorAddr,
       _commissionRate
     );
   }
