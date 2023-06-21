@@ -155,9 +155,8 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
    * @dev Suggested gas stipend for contract to call {selfMigrate} function.
    */
   function _gasStipenedNoGrief() internal pure virtual returns (uint256) {
-    // Gas stipend for contract to perform a few
-    // storage reads and writes, but low enough to prevent griefing.
-    // Griefing means comsuming gas exhaustively when function call are reverted.
+    // Gas stipend for contract to perform a few read and write operations on storage, but
+    // low enough to prevent comsuming gas exhaustively when function call are reverted.
     // Multiply by a small constant (e.g. 2), if needed.
     return 50_000;
   }
