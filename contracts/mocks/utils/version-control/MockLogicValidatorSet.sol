@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-
 interface ILogicValidatorSet {
   function wrapUpEpoch() external payable;
 
@@ -10,7 +9,7 @@ interface ILogicValidatorSet {
   function currentPeriod() external view returns (uint256);
 }
 
-abstract contract MockLogicValidatorSetCore is ILogicValidatorSet, GlobalConfigConsumer {
+abstract contract MockLogicValidatorSetCore is ILogicValidatorSet {
   uint256 private _lastUpdatedPeriod;
 
   function wrapUpEpoch() external payable {

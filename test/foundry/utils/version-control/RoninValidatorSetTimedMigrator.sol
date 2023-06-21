@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import { Vm, Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
 import { TransparentUpgradeableProxyV2, ERC1967Upgrade } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
-import { IConditionalVersionControl } from "@ronin/contracts/interfaces/version-control/IConditionalVersionControl.sol";
+import { IConditionalImplementControl } from "@ronin/contracts/interfaces/version-control/IConditionalImplementControl.sol";
 import { ILogicValidatorSet, MockLogicValidatorSetV1, MockLogicValidatorSetV2 } from "@ronin/contracts/mocks/utils/version-control/MockLogicValidatorSet.sol";
 import { MockActor } from "@ronin/contracts/mocks/utils/version-control/MockActor.sol";
 import { RoninValidatorSetTimedMigrator } from "@ronin/contracts/ronin/validator/migrations/RoninValidatorSetTimedMigrator.sol";
@@ -137,13 +137,13 @@ contract RoninValidatorSetTimedMigratorTest is Test {
   function testFailUnauthorizedEOAForceSwitchToLogicV2() public {
     testManualUpgradeToVersionControl();
     vm.prank(alice, alice);
-    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, IConditionalVersionControl.selfMigrate.selector));
+    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, IConditionalImplementControl.selfMigrate.selector));
     RoninValidatorSetTimedMigrator(proxyStorage).selfMigrate();
   }
 
   function testFailUnauthorizedContractForceSwitchToLogicV2() public {
     testManualUpgradeToVersionControl();
-    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, IConditionalVersionControl.selfMigrate.selector));
+    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, IConditionalImplementControl.selfMigrate.selector));
     vm.prank(alice, alice);
     RoninValidatorSetTimedMigrator(payable(address(bobContract))).selfMigrate();
   }
