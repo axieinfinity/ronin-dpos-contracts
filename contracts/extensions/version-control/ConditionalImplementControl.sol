@@ -133,7 +133,7 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
 
   /**
    * @dev Internal function to check if the caller is delegating from proxy storage.
-   * @dev Throws an error if the current implementation of the proxy storage is not this contract.
+   * Throws an error if the current implementation of the proxy storage is not this contract.
    */
   function _requireDelegateFromProxyStorage() private view {
     if (address(this) != PROXY_STORAGE) revert ErrDelegateFromUnknownOrigin(address(this));
