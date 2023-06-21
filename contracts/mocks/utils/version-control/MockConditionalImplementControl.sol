@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import { ConditionalImplementControl } from "../../../extensions/version-control/ConditionalImplementControl.sol";
 
 contract MockConditionalImplementControl is ConditionalImplementControl {
+  uint256 public immutable UPGRADED_AT_BLOCK;
+
   constructor(
     address proxyStorage_,
     address currentVersion_,
