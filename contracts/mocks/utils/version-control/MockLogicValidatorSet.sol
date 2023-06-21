@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { GlobalConfigConsumer } from "../../../extensions/consumers/GlobalConfigConsumer.sol";
 
 interface ILogicValidatorSet {
   function wrapUpEpoch() external payable;
