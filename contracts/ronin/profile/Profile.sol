@@ -52,6 +52,7 @@ contract Profile is IProfile, ProfileStorage, ProfileInflow, ProfileOutflow, Ini
    */
   function addNewProfile(CandidateProfile memory profile) external onlyAdmin {
     CandidateProfile storage _profile = _getId2ProfileHelper(profile.id);
+    if (_profile.id != address(0)) revert ErrExistentProfile();
     _addNewProfile(_profile, profile);
   }
 }

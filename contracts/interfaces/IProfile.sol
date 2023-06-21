@@ -36,6 +36,8 @@ interface IProfile {
 
   /// @dev Error of already existed profile.
   error ErrExistentProfile();
+  /// @dev Error of non existed profile.
+  error ErrNonExistentProfile();
 
   /// @dev Getter to query full `profile` from `id` address.
   function getId2Profile(address id) external view returns (CandidateProfile memory profile);

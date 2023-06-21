@@ -27,6 +27,6 @@ abstract contract ProfileStorage is IProfile {
 
   function _getId2ProfileHelper(address id) internal view returns (CandidateProfile storage _profile) {
     _profile = _id2Profile[id];
-    if (_profile.id != address(0)) revert ErrExistentProfile();
+    if (_profile.id == address(0)) revert ErrNonExistentProfile();
   }
 }
