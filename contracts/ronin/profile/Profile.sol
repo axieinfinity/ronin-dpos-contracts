@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "../../interfaces/staking/IStaking.sol";
 import "../../interfaces/IProfile.sol";
-import "./ProfileInflow.sol";
-import "./ProfileOutflow.sol";
+import "./ProfileXComponents.sol";
 import "./ProfileStorage.sol";
 
 pragma solidity ^0.8.9;
 
-contract Profile is IProfile, ProfileStorage, ProfileInflow, ProfileOutflow, Initializable {
+contract Profile is IProfile, ProfileStorage, ProfileXComponents, Initializable {
   constructor() {
     _disableInitializers();
   }
@@ -54,5 +54,52 @@ contract Profile is IProfile, ProfileStorage, ProfileInflow, ProfileOutflow, Ini
     CandidateProfile storage _profile = _getId2ProfileHelper(profile.id);
     if (_profile.id != address(0)) revert ErrExistentProfile();
     _addNewProfile(_profile, profile);
+  }
+
+  /**
+   * @dev Updated immediately without waiting time.
+   *
+   * Interactions: // TODO: remove following part when cleaning up code
+   * - Update `PoolDetail` in {BaseStaking.sol}.
+   * - Update `_adminOfActivePoolMapping` in {BaseStaking.sol}.
+   *
+   * Emit an {ProfileAddressChanged}.
+   */
+  function requestChangeAdminAddress(address id, address newAdminAddr) external {
+    IStaking stakingContract = IStaking(getContract(ContractType.STAKING));
+    stakingContract.execChangeAdminAddress(id, newAdminAddr);
+
+    CandidateProfile storage _profile = _getId2ProfileHelper(id);
+    _profile.admin = newAdminAddr;
+
+    emit ProfileAddressChanged(id, RoleAccess.ADMIN);
+  }
+
+  /**
+   * @dev Updated immediately without waiting time. (???)
+   *
+   * Interactions: // TODO: remove following part when cleaning up code
+   * - Update in Staking contract for Consensus address mapping:
+   *   + [x] Keep the same previous pool address. // CHECKED, NO NEED ANY CHANGES
+   *   +
+   * - Update in Validator contract for:
+   *   + [x] Consensus Address mapping
+   *   + [x] Bridge Address mapping
+   *   + [x] Jail mapping
+   *   + [x] Pending reward mapping
+   *   + [x] Schedule mapping
+   * - Update in Proposal contract for:
+   *   + Refund of emergency exit mapping
+   *   + ...
+   *
+   * Emit an {ProfileAddressChanged}.
+   *
+   */
+  function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external {
+    CandidateProfile storage _profile = _getId2ProfileHelper(id);
+
+    _profile.consensus = newConsensusAddr;
+
+    emit ProfileAddressChanged(id, RoleAccess.CONSENSUS);
   }
 }

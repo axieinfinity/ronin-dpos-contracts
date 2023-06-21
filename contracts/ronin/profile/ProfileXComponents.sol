@@ -6,7 +6,7 @@ import { ContractType } from "../../utils/ContractType.sol";
 
 pragma solidity ^0.8.9;
 
-abstract contract ProfileOutflow is HasContracts, ProfileStorage {
+abstract contract ProfileXComponents is HasContracts, ProfileStorage {
   function execApplyValidatorCandidate(
     address admin,
     address id,
