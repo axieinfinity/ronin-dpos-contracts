@@ -4,12 +4,6 @@ pragma solidity ^0.8.0;
 import { ConditionalImplementControl } from "../../../extensions/version-control/ConditionalImplementControl.sol";
 
 contract MockConditionalImplementControl is ConditionalImplementControl {
-  modifier whenConditionsAreMet() override {
-    _;
-    if (_isConditionMet()) {
-      try this.selfMigrate{ gas: _gasStipenedNoGrief() }() {} catch {}
-    }
-  }
 
   constructor(
     address proxyStorage_,
