@@ -14,7 +14,7 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
   /// @dev The block bonus for the bridge operator whenever a new block is mined.
   uint256 internal _bridgeOperatorBonusPerBlock;
   /// @dev The last block number that the staking vesting sent.
-  uint256 public lastBlockSendingBonus;
+  uint256 internal _lastBlockSendingBonus;
 
   constructor() {
     _disableInitializers();
@@ -24,13 +24,13 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
    * @dev Initializes the contract storage.
    */
   function initialize(
-    address __validatorContract,
-    uint256 __blockProducerBonusPerBlock,
-    uint256 __bridgeOperatorBonusPerBlock
+    address validatorContract,
+    uint256 blockProducerBonusPerBlock,
+    uint256 bridgeOperatorBonusPerBlock
   ) external payable initializer {
-    _setContract(ContractType.VALIDATOR, __validatorContract);
-    _setBlockProducerBonusPerBlock(__blockProducerBonusPerBlock);
-    _setBridgeOperatorBonusPerBlock(__bridgeOperatorBonusPerBlock);
+    _setContract(ContractType.VALIDATOR, validatorContract);
+    _setBlockProducerBonusPerBlock(blockProducerBonusPerBlock);
+    _setBridgeOperatorBonusPerBlock(bridgeOperatorBonusPerBlock);
   }
 
   function initializeV2() external reinitializer(2) {
@@ -60,56 +60,63 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
   /**
    * @inheritdoc IStakingVesting
    */
+  function lastBlockSendingBonus() external view returns (uint256) {
+    return _lastBlockSendingBonus;
+  }
+
+  /**
+   * @inheritdoc IStakingVesting
+   */
   function requestBonus(
-    bool _forBlockProducer,
-    bool _forBridgeOperator
+    bool forBlockProducer,
+    bool forBridgeOperator
   )
     external
     override
     onlyContract(ContractType.VALIDATOR)
-    returns (bool _success, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus)
+    returns (bool success, uint256 blockProducerBonus, uint256 bridgeOperatorBonus)
   {
-    if (block.number <= lastBlockSendingBonus) revert ErrBonusAlreadySent();
+    if (block.number <= _lastBlockSendingBonus) revert ErrBonusAlreadySent();
 
-    lastBlockSendingBonus = block.number;
+    _lastBlockSendingBonus = block.number;
 
-    _blockProducerBonus = _forBlockProducer ? blockProducerBlockBonus(block.number) : 0;
-    _bridgeOperatorBonus = _forBridgeOperator ? bridgeOperatorBlockBonus(block.number) : 0;
+    blockProducerBonus = forBlockProducer ? blockProducerBlockBonus(block.number) : 0;
+    bridgeOperatorBonus = forBridgeOperator ? bridgeOperatorBlockBonus(block.number) : 0;
 
-    uint256 _totalAmount = _blockProducerBonus + _bridgeOperatorBonus;
+    uint256 _totalAmount = blockProducerBonus + bridgeOperatorBonus;
 
     if (_totalAmount > 0) {
-      address payable _validatorContractAddr = payable(msg.sender);
+      address payable validatorContractAddr = payable(msg.sender);
 
-      _success = _unsafeSendRON(_validatorContractAddr, _totalAmount);
+      success = _unsafeSendRON(validatorContractAddr, _totalAmount);
 
-      if (!_success) {
+      if (!success) {
         emit BonusTransferFailed(
           block.number,
-          _validatorContractAddr,
-          _blockProducerBonus,
-          _bridgeOperatorBonus,
+          validatorContractAddr,
+          blockProducerBonus,
+          bridgeOperatorBonus,
           address(this).balance
         );
-        return (_success, 0, 0);
+        return (success, 0, 0);
       }
 
-      emit BonusTransferred(block.number, _validatorContractAddr, _blockProducerBonus, _bridgeOperatorBonus);
+      emit BonusTransferred(block.number, validatorContractAddr, blockProducerBonus, bridgeOperatorBonus);
     }
   }
 
   /**
    * @inheritdoc IStakingVesting
    */
-  function setBlockProducerBonusPerBlock(uint256 _amount) external override onlyAdmin {
-    _setBlockProducerBonusPerBlock(_amount);
+  function setBlockProducerBonusPerBlock(uint256 amount) external override onlyAdmin {
+    _setBlockProducerBonusPerBlock(amount);
   }
 
   /**
    * @inheritdoc IStakingVesting
    */
-  function setBridgeOperatorBonusPerBlock(uint256 _amount) external override onlyAdmin {
-    _setBridgeOperatorBonusPerBlock(_amount);
+  function setBridgeOperatorBonusPerBlock(uint256 amount) external override onlyAdmin {
+    _setBridgeOperatorBonusPerBlock(amount);
   }
 
   /**
@@ -118,9 +125,9 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
    * Emits the event `BlockProducerBonusPerBlockUpdated`.
    *
    */
-  function _setBlockProducerBonusPerBlock(uint256 _amount) internal {
-    _blockProducerBonusPerBlock = _amount;
-    emit BlockProducerBonusPerBlockUpdated(_amount);
+  function _setBlockProducerBonusPerBlock(uint256 amount) internal {
+    _blockProducerBonusPerBlock = amount;
+    emit BlockProducerBonusPerBlockUpdated(amount);
   }
 
   /**
@@ -129,8 +136,8 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
    * Emits the event `BridgeOperatorBonusPerBlockUpdated`.
    *
    */
-  function _setBridgeOperatorBonusPerBlock(uint256 _amount) internal {
-    _bridgeOperatorBonusPerBlock = _amount;
-    emit BridgeOperatorBonusPerBlockUpdated(_amount);
+  function _setBridgeOperatorBonusPerBlock(uint256 amount) internal {
+    _bridgeOperatorBonusPerBlock = amount;
+    emit BridgeOperatorBonusPerBlockUpdated(amount);
   }
 }

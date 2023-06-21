@@ -119,7 +119,7 @@ interface ICandidateStaking is IRewardPool {
   function execDeprecatePools(address[] calldata pools, uint256 period) external;
 
   /**
-   * @dev Self-delegates to the validator candidate `_consensusAddr`.
+   * @dev Self-delegates to the validator candidate `consensusAddr`.
    *
    * Requirements:
    * - The consensus address is a validator candidate.
@@ -132,7 +132,7 @@ interface ICandidateStaking is IRewardPool {
   function stake(TConsensus consensusAddr) external payable;
 
   /**
-   * @dev Unstakes from the validator candidate `_consensusAddr` for `_amount`.
+   * @dev Unstakes from the validator candidate `consensusAddr` for `amount`.
    *
    * Requirements:
    * - The consensus address is a validator candidate.

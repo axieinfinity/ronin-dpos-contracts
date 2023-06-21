@@ -29,14 +29,14 @@ interface IStakingVesting {
   event BridgeOperatorBonusPerBlockUpdated(uint256);
 
   /**
-   * @dev Returns the bonus amount for the block producer at `_block`.
+   * @dev Returns the bonus amount for the block producer at `blockNum`.
    */
-  function blockProducerBlockBonus(uint256 _block) external view returns (uint256);
+  function blockProducerBlockBonus(uint256 blockNum) external view returns (uint256);
 
   /**
-   * @dev Returns the bonus amount for the bridge validator at `_block`.
+   * @dev Returns the bonus amount for the bridge validator at `blockNum`.
    */
-  function bridgeOperatorBlockBonus(uint256 _block) external view returns (uint256);
+  function bridgeOperatorBlockBonus(uint256 blockNum) external view returns (uint256);
 
   /**
    * @dev Receives RON from any address.
@@ -61,18 +61,18 @@ interface IStakingVesting {
    * - The method does not revert when the contract balance is insufficient to send bonus. This assure the submit reward method
    * will not be reverted, and the underlying nodes does not hang.
    *
-   * @param _forBlockProducer Indicates whether requesting the bonus for the block procucer, in case of being in jail or relevance.
-   * @param _forBridgeOperator Indicates whether requesting the bonus for the bridge operator.
+   * @param forBlockProducer Indicates whether requesting the bonus for the block procucer, in case of being in jail or relevance.
+   * @param forBridgeOperator Indicates whether requesting the bonus for the bridge operator.
    *
-   * @return _success Whether the transfer is successfully. This returns false mostly because this contract is out of balance.
-   * @return _blockProducerBonus The amount of bonus actually sent for the block producer, returns 0 when the transfer is failed.
-   * @return _bridgeOperatorBonus The amount of bonus actually sent for the bridge operator, returns 0 when the transfer is failed.
+   * @return success Whether the transfer is successfully. This returns false mostly because this contract is out of balance.
+   * @return blockProducerBonus The amount of bonus actually sent for the block producer, returns 0 when the transfer is failed.
+   * @return bridgeOperatorBonus The amount of bonus actually sent for the bridge operator, returns 0 when the transfer is failed.
    *
    */
   function requestBonus(
-    bool _forBlockProducer,
-    bool _forBridgeOperator
-  ) external returns (bool _success, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus);
+    bool forBlockProducer,
+    bool forBridgeOperator
+  ) external returns (bool success, uint256 blockProducerBonus, uint256 bridgeOperatorBonus);
 
   /**
    * @dev Sets the bonus amount per block for block producer.
@@ -83,7 +83,7 @@ interface IStakingVesting {
    * - The method caller is admin.
    *
    */
-  function setBlockProducerBonusPerBlock(uint256 _amount) external;
+  function setBlockProducerBonusPerBlock(uint256 amount) external;
 
   /**
    * @dev Sets the bonus amount per block for bridge operator.
@@ -94,5 +94,5 @@ interface IStakingVesting {
    * - The method caller is admin.
    *
    */
-  function setBridgeOperatorBonusPerBlock(uint256 _amount) external;
+  function setBridgeOperatorBonusPerBlock(uint256 amount) external;
 }

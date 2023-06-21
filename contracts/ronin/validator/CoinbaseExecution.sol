@@ -67,7 +67,7 @@ abstract contract CoinbaseExecution is
 
     (, uint256 blockProducerBonus, uint256 bridgeOperatorBonus) = IStakingVesting(
       getContract(ContractType.STAKING_VESTING)
-    ).requestBonus({ _forBlockProducer: requestForBlockProducer, _forBridgeOperator: true });
+    ).requestBonus({ forBlockProducer: requestForBlockProducer, forBridgeOperator: true });
 
     _totalBridgeReward += bridgeOperatorBonus;
 
