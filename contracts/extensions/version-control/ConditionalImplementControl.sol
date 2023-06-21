@@ -111,11 +111,11 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
 
   /**
    * @dev Internal function to dispatch the call to the specified version.
-   * @param version The address of the version to call.
+   * @param impl The address of the version to call.
    * @return returnData The return data of the call.
    */
-  function _dispatchCall(address version) internal virtual whenConditionsAreMet returns (bytes memory returnData) {
-    (bool success, bytes memory returnOrRevertData) = version.delegatecall(msg.data);
+  function _dispatchCall(address impl) internal virtual whenConditionsAreMet returns (bytes memory returnData) {
+    (bool success, bytes memory returnOrRevertData) = impl.delegatecall(msg.data);
     success.handleRevert(msg.sig, returnOrRevertData);
     assembly {
       returnData := returnOrRevertData
