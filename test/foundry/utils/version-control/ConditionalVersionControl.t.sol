@@ -22,6 +22,7 @@ contract ConditionalImplementControlTest is Test {
    * @dev Emitted when the implementation is upgraded.
    */
   event Upgraded(address indexed implementation);
+  event Received(uint256 version);
 
   uint256 internal _upgradedAtBlock;
   address internal _oldImpl;
@@ -125,6 +126,29 @@ contract ConditionalImplementControlTest is Test {
     ILogic(_proxy).set();
     assertEq(ILogic(_proxy).get(), ILogic(_newImpl).magicNumber());
     assertEq(ILogic(_proxy).name(), ILogic(_newImpl).name());
+  }
+
+  function testSendNativeLogicV1AfterUpgradeToVersionControl() public {
+    manualUpgradeTo(_switcher);
+    vm.expectEmit(true, false, false, false);
+    emit Received(1);
+    vm.deal(_alice, 10 ether);
+    vm.prank(_alice, _alice);
+    (bool ok, ) = _proxy.call{ value: 1 ether }("");
+    assertEq(ok, true);
+    assertEq(1 ether, _proxy.balance);
+  }
+
+  function testSendNativeLogicV2AfterUpgradeToVersionControl() public {
+    manualUpgradeTo(_switcher);
+    vm.roll(101);
+    vm.expectEmit(true, false, false, false);
+    emit Received(2);
+    vm.deal(_alice, 10 ether);
+    vm.prank(_alice, _alice);
+    (bool ok, ) = _proxy.call{ value: 1 ether }("");
+    assertEq(ok, true);
+    assertEq(1 ether, _proxy.balance);
   }
 
   /**

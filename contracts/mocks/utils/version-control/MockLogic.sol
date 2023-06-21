@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 interface ILogic {
+  event Received(uint256 version);
+
   function name() external pure returns (string memory);
 
   function magicNumber() external view returns (uint256);
@@ -18,6 +20,10 @@ abstract contract MockLogicBase is ILogic {
 
   function magicNumber() public view virtual override returns (uint256) {}
 
+  receive() external payable virtual {
+    emit Received(0);
+  }
+
   function get() public view returns (uint256) {
     return _value;
   }
@@ -33,6 +39,10 @@ abstract contract MockLogicBase is ILogic {
 }
 
 contract MockLogicV1 is MockLogicBase {
+  receive() external payable override {
+    emit Received(1);
+  }
+
   function name() external pure returns (string memory) {
     return "LogicV1";
   }
@@ -43,6 +53,10 @@ contract MockLogicV1 is MockLogicBase {
 }
 
 contract MockLogicV2 is MockLogicBase {
+  receive() external payable override {
+    emit Received(2);
+  }
+
   function name() external pure returns (string memory) {
     return "LogicV2";
   }
