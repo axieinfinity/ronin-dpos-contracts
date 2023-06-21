@@ -7,10 +7,13 @@ contract MockConditionalImplementControl is ConditionalImplementControl {
   constructor(
     address proxyStorage_,
     address currentVersion_,
-    address newVersion_
-  ) ConditionalImplementControl(proxyStorage_, currentVersion_, newVersion_) {}
+    address newVersion_,
+    uint256 upgradedAtBlock
+  ) ConditionalImplementControl(proxyStorage_, currentVersion_, newVersion_) {
+    UPGRADED_AT_BLOCK = upgradedAtBlock;
+  }
 
   function _isConditionMet() internal view override returns (bool) {
-    return block.number > 100;
+    return block.number >= UPGRADED_AT_BLOCK;
   }
 }
