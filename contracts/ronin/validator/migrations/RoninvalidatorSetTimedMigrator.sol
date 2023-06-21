@@ -10,7 +10,6 @@ import { ICoinbaseExecution } from "../../../interfaces/validator/ICoinbaseExecu
  * @dev A contract that facilitates timed migration of the Ronin validator set using conditional version control.
  */
 contract RoninValidatorSetTimedMigrator is ConditionalImplementControl {
-  event UpgradeFailed();
   /**
    * @dev Modifier that executes the function when conditions are met.
    * If the function is {wrapUpEpoch} from {ICoinbaseExecution},
@@ -22,9 +21,7 @@ contract RoninValidatorSetTimedMigrator is ConditionalImplementControl {
       uint256 currentPeriod = _getCurrentPeriod();
       _;
       if (currentPeriod != _getCurrentPeriod()) {
-        try this.selfMigrate{ gas: _gasStipenedNoGrief() }() {} catch {
-          emit UpgradeFailed();
-        }
+        this.selfMigrate();
       }
     } else {
       _;
