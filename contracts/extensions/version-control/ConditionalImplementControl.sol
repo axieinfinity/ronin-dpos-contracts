@@ -56,24 +56,24 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
 
   /**
    * @dev Constructs the ConditionalImplementControl contract.
-   * @param proxyStorage_ The address of the proxy that is allowed to delegate to this contract.
-   * @param currentVersion_ The address of the current contract implementation.
-   * @param newVersion_ The address of the new contract implementation.
+   * @param proxyStorage The address of the proxy that is allowed to delegate to this contract.
+   * @param currentVersion The address of the current contract implementation.
+   * @param newVersion The address of the new contract implementation.
    */
   constructor(
-    address proxyStorage_,
-    address currentVersion_,
-    address newVersion_
-  ) onlyContract(proxyStorage_) onlyContract(currentVersion_) onlyContract(newVersion_) {
+    address proxyStorage,
+    address currentVersion,
+    address newVersion
+  ) onlyContract(proxyStorage) onlyContract(currentVersion) onlyContract(newVersion) {
     address[] memory addrs = new address[](3);
-    addrs[0] = proxyStorage_;
-    addrs[1] = currentVersion_;
-    addrs[2] = newVersion_;
+    addrs[0] = proxyStorage;
+    addrs[1] = currentVersion;
+    addrs[2] = newVersion;
     if (addrs.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
 
-    PROXY_STORAGE = proxyStorage_;
-    NEW_VERSION = newVersion_;
-    CURRENT_VERSION = currentVersion_;
+    PROXY_STORAGE = proxyStorage;
+    NEW_VERSION = newVersion;
+    CURRENT_VERSION = currentVersion;
   }
 
   /**
