@@ -124,8 +124,8 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
 
   /**
    * @dev Internal function to check if a contract address has code.
+   * Throws an error if the contract address has no code.
    * @param addr The address of the contract to check.
-   * @dev Throws an error if the contract address has no code.
    */
   function _requireHasCode(address addr) internal view {
     if (addr.code.length == 0) revert ErrZeroCodeContract(addr);
