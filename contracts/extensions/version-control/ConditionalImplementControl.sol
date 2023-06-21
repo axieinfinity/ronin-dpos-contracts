@@ -102,6 +102,10 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
     return _isConditionMet() ? NEW_VERSION : CURRENT_VERSION;
   }
 
+  /**
+   * @dev Internal function to check if the condition for switching implementation is met.
+   * @return the boolean indicating if condition is met.
+   */
   function _isConditionMet() internal view virtual returns (bool) {}
 
   function _fallback() internal virtual {
