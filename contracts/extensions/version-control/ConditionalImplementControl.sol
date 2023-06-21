@@ -98,7 +98,9 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
    * @dev Internal function to get the current version of the contract implementation.
    * @return The address of the current version.
    */
-  function _getVersion() internal view virtual returns (address);
+  function _getVersion() internal view virtual returns (address) {
+    return _isConditionMet() ? NEW_VERSION : CURRENT_VERSION;
+  }
 
   function _isConditionMet() internal view virtual returns (bool) {}
 
