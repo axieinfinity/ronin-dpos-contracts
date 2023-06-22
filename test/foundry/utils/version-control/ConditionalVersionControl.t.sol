@@ -132,7 +132,7 @@ contract ConditionalImplementControlTest is Test {
     vm.deal(user, amount);
     manualUpgradeTo(_switcher);
 
-    vm.expectEmit(_proxy);
+    vm.expectEmit(true, false, false, false);
     emit Received(ILogic(_oldImpl).magicNumber());
     vm.prank(user);
     (bool ok,) = _proxy.call{value: amount}("");
