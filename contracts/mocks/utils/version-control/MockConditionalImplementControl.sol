@@ -9,9 +9,9 @@ contract MockConditionalImplementControl is ConditionalImplementControl {
   constructor(
     address proxyStorage,
     address prevImpl,
-    address newImplementation,
+    address newImpl,
     uint256 upgradedAtBlock
-  ) ConditionalImplementControl(proxyStorage, prevImpl, newImplementation) {
+  ) ConditionalImplementControl(proxyStorage, prevImpl, newImpl) {
     UPGRADED_AT_BLOCK = upgradedAtBlock;
   }
 
