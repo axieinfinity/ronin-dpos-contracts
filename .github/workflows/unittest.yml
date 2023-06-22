@@ -4,12 +4,10 @@ on:
     branches:
       - main
       - dev
-      - reduce-contract-size
   pull_request:
     branches:
       - main
       - dev
-      - reduce-contract-size
 
 permissions:
   packages: read
@@ -45,7 +43,7 @@ jobs:
       - name: Install Foundry
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
         with:
-          cmd: plugin:init-foundry
+          cmd: foundry-rs/foundry-toolchain@v1
 
       - name: "Run Compile"
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
