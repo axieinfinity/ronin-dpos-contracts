@@ -7,11 +7,11 @@ contract MockConditionalImplementControl is ConditionalImplementControl {
   uint256 public immutable UPGRADED_AT_BLOCK;
 
   constructor(
-    address proxyStorage_,
-    address prevImpl_,
-    address newImplementation_,
+    address proxyStorage,
+    address prevImpl,
+    address newImplementation,
     uint256 upgradedAtBlock
-  ) ConditionalImplementControl(proxyStorage_, prevImpl_, newImplementation_) {
+  ) ConditionalImplementControl(proxyStorage, prevImpl, newImplementation) {
     UPGRADED_AT_BLOCK = upgradedAtBlock;
   }
 
