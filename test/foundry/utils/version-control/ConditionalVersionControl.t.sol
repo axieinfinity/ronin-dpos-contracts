@@ -152,31 +152,31 @@ contract ConditionalImplementControlTest is Test {
   }
 
   /**
-   * @notice Tests unauthorized EOA calls to the method `selfMigrate`.
+   * @notice Tests unauthorized EOA calls to the method `selfUpgrade`.
    */
-  function testFailUnauthorizedEOACallSelfMigrate(address user) public virtual {
+  function testFailUnauthorizedEOACallSelfUpgrade(address user) public virtual {
     manualUpgradeTo(_switcher);
     vm.prank(user);
-    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalImplementControl.selfMigrate.selector));
-    MockConditionalImplementControl(_proxy).selfMigrate();
+    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalImplementControl.selfUpgrade.selector));
+    MockConditionalImplementControl(_proxy).selfUpgrade();
   }
 
   /**
-   * @notice Tests unauthorized contract calls to the method `selfMigrate`.
+   * @notice Tests unauthorized contract calls to the method `selfUpgrade`.
    */
-  function testFailUnauthorizedContractCallSelfMigrate() public virtual {
+  function testFailUnauthorizedContractCallSelfUpgrade() public virtual {
     manualUpgradeTo(_switcher);
-    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalImplementControl.selfMigrate.selector));
-    MockConditionalImplementControl(payable(address(_contractCaller))).selfMigrate();
+    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalImplementControl.selfUpgrade.selector));
+    MockConditionalImplementControl(payable(address(_contractCaller))).selfUpgrade();
   }
 
   /**
-   * @notice Tests fail calls to the method `selfMigrate` event from admin.
+   * @notice Tests fail calls to the method `selfUpgrade` event from admin.
    */
-  function testFailAdminCallSelfMigrate() public virtual {
+  function testFailAdminCallSelfUpgrade() public virtual {
     manualUpgradeTo(_switcher);
     vm.prank(_proxyAdmin);
-    MockConditionalImplementControl(_proxy).selfMigrate();
+    MockConditionalImplementControl(_proxy).selfUpgrade();
   }
 
   /**

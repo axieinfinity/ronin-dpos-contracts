@@ -14,14 +14,14 @@ contract RoninValidatorSetTimedMigrator is ConditionalImplementControl {
    * @dev Modifier that executes the function when conditions are met.
    * If the function is {wrapUpEpoch} from {ICoinbaseExecution},
    * it checks the current period before and after execution.
-   * If they differ, it triggers the {selfMigrate} function.
+   * If they differ, it triggers the {selfUpgrade} function.
    */
   modifier whenConditionsAreMet() override {
     if (msg.sig == ICoinbaseExecution.wrapUpEpoch.selector) {
       uint256 currentPeriod = _getCurrentPeriod();
       _;
       if (currentPeriod != _getCurrentPeriod()) {
-        this.selfMigrate();
+        this.selfUpgrade();
       }
     } else {
       _;
@@ -31,20 +31,20 @@ contract RoninValidatorSetTimedMigrator is ConditionalImplementControl {
   /**
    * @dev Constructs the {RoninValidatorSetTimedMigrator} contract.
    * @param proxyStorage The address of the proxy storage contract.
-   * @param currentVersion The address of the current contract implementation.
-   * @param newVersion The address of the new contract implementation.
+   * @param currentImplementation The address of the current contract implementation.
+   * @param newImplementation The address of the new contract implementation.
    */
   constructor(
     address proxyStorage,
-    address currentVersion,
-    address newVersion
-  ) ConditionalImplementControl(proxyStorage, currentVersion, newVersion) {}
+    address currentImplementation,
+    address newImplementation
+  ) ConditionalImplementControl(proxyStorage, currentImplementation, newImplementation) {}
 
   /**
    * @dev Internal function to choose the current version of the contract implementation.
    * @return The address of the current version implementation.
    */
-  function _getVersionByCondition() internal view override returns (address) {
+  function _getImplementationByCondition() internal view override returns (address) {
     return CURRENT_IMPLEMENTATION;
   }
 

@@ -46,7 +46,7 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
   modifier whenConditionsAreMet() virtual {
     _;
     if (_isConditionMet()) {
-      try this.selfMigrate{ gas: _gasStipenedNoGrief() }() {} catch {}
+      try this.selfUpgrade{ gas: _gasStipenedNoGrief() }() {} catch {}
     }
   }
 
@@ -70,23 +70,23 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
   /**
    * @dev Constructs the ConditionalImplementControl contract.
    * @param proxyStorage The address of the proxy that is allowed to delegate to this contract.
-   * @param currentVersion The address of the current contract implementation.
-   * @param newVersion The address of the new contract implementation.
+   * @param currentImplementation The address of the current contract implementation.
+   * @param newImplementation The address of the new contract implementation.
    */
   constructor(
     address proxyStorage,
-    address currentVersion,
-    address newVersion
-  ) onlyContract(proxyStorage) onlyContract(currentVersion) onlyContract(newVersion) {
+    address currentImplementation,
+    address newImplementation
+  ) onlyContract(proxyStorage) onlyContract(currentImplementation) onlyContract(newImplementation) {
     address[] memory addrs = new address[](3);
     addrs[0] = proxyStorage;
-    addrs[1] = currentVersion;
-    addrs[2] = newVersion;
+    addrs[1] = currentImplementation;
+    addrs[2] = newImplementation;
     if (addrs.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
 
     PROXY_STORAGE = proxyStorage;
-    NEW_IMPLEMENTATION = newVersion;
-    CURRENT_IMPLEMENTATION = currentVersion;
+    NEW_IMPLEMENTATION = newImplementation;
+    CURRENT_IMPLEMENTATION = currentImplementation;
   }
 
   /**
@@ -104,9 +104,10 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
   }
 
   /**
-   * @dev Executes the selfMigrate function, upgrading to the new contract implementation.
+   * @dev See {IConditionalImplementControl-selfUpgrade}.
    */
-  function selfMigrate() external onlyDelegateFromProxyStorage onlySelfCall {
+
+  function selfUpgrade() external onlyDelegateFromProxyStorage onlySelfCall {
     _upgradeTo(NEW_IMPLEMENTATION);
   }
 
@@ -114,7 +115,7 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
    * @dev Internal function to get the current version of the contract implementation.
    * @return The address of the current version.
    */
-  function _getVersionByCondition() internal view virtual returns (address) {
+  function _getImplementationByCondition() internal view virtual returns (address) {
     return _isConditionMet() ? NEW_IMPLEMENTATION : CURRENT_IMPLEMENTATION;
   }
 
@@ -128,7 +129,7 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
    * @dev Logic for fallback function.
    */
   function _fallback() internal virtual {
-    bytes memory returnData = _dispatchCall(_getVersionByCondition());
+    bytes memory returnData = _dispatchCall(_getImplementationByCondition());
     assembly {
       return(add(returnData, 0x20), mload(returnData))
     }
@@ -177,7 +178,7 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
   }
 
   /**
-   * @dev Suggested gas stipend for contract to call {selfMigrate} function.
+   * @dev Suggested gas stipend for contract to call {selfUpgrade} function.
    */
   function _gasStipenedNoGrief() internal pure virtual returns (uint256) {
     // Gas stipend for contract to perform a few read and write operations on storage, but

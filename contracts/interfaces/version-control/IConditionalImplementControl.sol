@@ -7,5 +7,8 @@ interface IConditionalImplementControl {
   /// @dev Error when contract which delegate to this contract is not compatible with ERC1967
   error ErrDelegateFromUnknownOrigin(address addr);
 
-  function selfMigrate() external;
+  /**
+   * @dev Executes the selfUpgrade function, upgrading to the new contract implementation.
+   */
+  function selfUpgrade() external;
 }

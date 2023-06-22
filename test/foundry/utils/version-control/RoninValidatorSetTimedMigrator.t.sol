@@ -145,21 +145,21 @@ contract RoninValidatorSetTimedMigratorTest is Test {
   function testFailUnauthorizedEOAForceSwitchToLogicV2() public {
     testManualUpgradeToVersionControl();
     vm.prank(alice, alice);
-    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, IConditionalImplementControl.selfMigrate.selector));
-    RoninValidatorSetTimedMigrator(proxyStorage).selfMigrate();
+    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, IConditionalImplementControl.selfUpgrade.selector));
+    RoninValidatorSetTimedMigrator(proxyStorage).selfUpgrade();
   }
 
   function testFailUnauthorizedContractForceSwitchToLogicV2() public {
     testManualUpgradeToVersionControl();
-    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, IConditionalImplementControl.selfMigrate.selector));
+    vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, IConditionalImplementControl.selfUpgrade.selector));
     vm.prank(alice, alice);
-    RoninValidatorSetTimedMigrator(payable(address(bobContract))).selfMigrate();
+    RoninValidatorSetTimedMigrator(payable(address(bobContract))).selfUpgrade();
   }
 
   function testFailAdminForceSwitchToLogicV2() public {
     testManualUpgradeToVersionControl();
     vm.prank(admin, admin);
-    RoninValidatorSetTimedMigrator(proxyStorage).selfMigrate();
+    RoninValidatorSetTimedMigrator(proxyStorage).selfUpgrade();
   }
 
   function testFailEOACallToVersionControl() public {
