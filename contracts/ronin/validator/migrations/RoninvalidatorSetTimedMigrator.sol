@@ -44,8 +44,8 @@ contract RoninValidatorSetTimedMigrator is ConditionalImplementControl {
    * @dev Internal function to choose the current version of the contract implementation.
    * @return The address of the current version implementation.
    */
-  function _getVersion() internal view override returns (address) {
-    return CURRENT_VERSION;
+  function _getVersionByCondition() internal view override returns (address) {
+    return CURRENT_IMPLEMENTATION;
   }
 
   /**
