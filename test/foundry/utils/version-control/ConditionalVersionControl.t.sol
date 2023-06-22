@@ -1,21 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Vm, Test} from "forge-std/Test.sol";
-import {console} from "forge-std/console.sol";
-import {
-  TransparentUpgradeableProxyV2, ERC1967Upgrade
-} from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
-import {ILogic, MockLogicV1, MockLogicV2} from "@ronin/contracts/mocks/utils/version-control/MockLogic.sol";
-import {IConditionalImplementControl} from
-  "@ronin/contracts/interfaces/version-control/IConditionalImplementControl.sol";
-import {AddressArrayUtils} from "@ronin/contracts/libraries/AddressArrayUtils.sol";
-import {ErrOnlySelfCall} from "@ronin/contracts/utils/CommonErrors.sol";
-import {MockActor} from "@ronin/contracts/mocks/utils/version-control/MockActor.sol";
-import {
-  MockConditionalImplementControl,
-  ConditionalImplementControl
-} from "@ronin/contracts/mocks/utils/version-control/MockConditionalImplementControl.sol";
+import { Vm, Test } from "forge-std/Test.sol";
+import { console } from "forge-std/console.sol";
+import { TransparentUpgradeableProxyV2, ERC1967Upgrade } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
+import { ILogic, MockLogicV1, MockLogicV2 } from "@ronin/contracts/mocks/utils/version-control/MockLogic.sol";
+import { IConditionalImplementControl } from "@ronin/contracts/interfaces/version-control/IConditionalImplementControl.sol";
+import { AddressArrayUtils } from "@ronin/contracts/libraries/AddressArrayUtils.sol";
+import { ErrOnlySelfCall } from "@ronin/contracts/utils/CommonErrors.sol";
+import { MockActor } from "@ronin/contracts/mocks/utils/version-control/MockActor.sol";
+import { MockConditionalImplementControl, ConditionalImplementControl } from "@ronin/contracts/mocks/utils/version-control/MockConditionalImplementControl.sol";
 
 contract ConditionalImplementControlTest is Test {
   event Upgraded(address indexed implementation);
@@ -31,7 +25,12 @@ contract ConditionalImplementControlTest is Test {
   address internal _proxyAdmin;
   MockActor internal _contractCaller;
 
-  function setUp() public virtual {
+  function setUp() public {
+    _setUp();
+    _label();
+  }
+
+  function _setUp() internal virtual {
     _proxyAdmin = vm.addr(1);
 
     _oldImpl = address(new MockLogicV1());
@@ -41,6 +40,15 @@ contract ConditionalImplementControlTest is Test {
     _proxy = payable(address(new TransparentUpgradeableProxyV2(_oldImpl, _proxyAdmin, "")));
     _switcher = payable(address(new MockConditionalImplementControl(_proxy, _oldImpl, _newImpl, _upgradedAtBlock)));
     _contractCaller = new MockActor(_proxy);
+  }
+
+  function _label() internal virtual {
+    vm.label(_proxy, "PROXY");
+    vm.label(_switcher, "SWITCHER");
+    vm.label(_oldImpl, "OLD_IMPLEMENT");
+    vm.label(_newImpl, "NEW_IMPLEMENT");
+    vm.label(_proxyAdmin, "PROXY_ADMIN");
+    vm.label(address(_contractCaller), "CONTRACT_ACTOR");
   }
 
   /**
@@ -127,15 +135,15 @@ contract ConditionalImplementControlTest is Test {
    * @notice Checks whether the proxy can receive native token using old implemenation after upgrading to the contract
    * switcher.
    */
-  function testReceiveNativeTokenOldImplAfterUsingContractSwitcher(address user, uint256 amount) public {
-    vm.assume(amount > 0 && user != _proxyAdmin);
+  function testReceiveNativeTokenOldImplAfterUsingContractSwitcher(address user, uint256 amount) public virtual {
+    vm.assume(amount > 0);
     vm.deal(user, amount);
     manualUpgradeTo(_switcher);
 
     vm.expectEmit(_proxy);
     emit Received(ILogic(_oldImpl).magicNumber());
     vm.prank(user);
-    (bool ok,) = _proxy.call{value: amount}("");
+    (bool ok, ) = _proxy.call{ value: amount }("");
     assertEq(ok, true);
     assertEq(amount, _proxy.balance);
   }
@@ -144,8 +152,8 @@ contract ConditionalImplementControlTest is Test {
    * @notice Checks whether the proxy can receive native token using new implemenation after upgrading to the contract
    * switcher.
    */
-  function testReceiveNativeTokenNewImplAfterUsingContractSwitcher(address user, uint256 amount) public {
-    vm.assume(amount > 0 && user != _proxyAdmin);
+  function testReceiveNativeTokenNewImplAfterUsingContractSwitcher(address user, uint256 amount) public virtual {
+    vm.assume(amount > 0);
     vm.deal(user, amount);
     manualUpgradeTo(_switcher);
     vm.roll(_upgradedAtBlock);
@@ -153,7 +161,7 @@ contract ConditionalImplementControlTest is Test {
     vm.expectEmit(_proxy);
     emit Received(ILogic(_newImpl).magicNumber());
     vm.prank(user);
-    (bool ok,) = _proxy.call{value: amount}("");
+    (bool ok, ) = _proxy.call{ value: amount }("");
     assertEq(ok, true);
     assertEq(amount, _proxy.balance);
   }
@@ -162,7 +170,6 @@ contract ConditionalImplementControlTest is Test {
    * @notice Tests unauthorized EOA calls to the method `selfUpgrade`.
    */
   function testFailUnauthorizedEOACallSelfUpgrade(address user) public virtual {
-    vm.assume(user != _proxyAdmin);
     manualUpgradeTo(_switcher);
     vm.prank(user);
     vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalImplementControl.selfUpgrade.selector));
@@ -191,7 +198,6 @@ contract ConditionalImplementControlTest is Test {
    * @notice Tests unauthorized EOA calls to the non-view methods.
    */
   function testFailEOACallNonViewMethodToContractSwitcher(address user) public virtual {
-    vm.assume(user != _proxyAdmin);
     vm.expectRevert(abi.encodePacked(IConditionalImplementControl.ErrDelegateFromUnknownOrigin.selector, _switcher));
     vm.prank(user);
     ILogic(_switcher).set();
@@ -201,7 +207,6 @@ contract ConditionalImplementControlTest is Test {
    * @notice Tests unauthorized EOA calls to the view methods.
    */
   function testFailEOACallViewMethodToContractSwitcher(address user) public virtual {
-    vm.assume(user != _proxyAdmin);
     vm.expectRevert(abi.encodePacked(IConditionalImplementControl.ErrDelegateFromUnknownOrigin.selector, _switcher));
     vm.prank(user);
     ILogic(_switcher).get();
