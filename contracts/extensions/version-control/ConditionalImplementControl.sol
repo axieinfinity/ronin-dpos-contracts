@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+/// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import { ERC1967Upgrade } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
@@ -15,6 +15,16 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
   using ErrorHandler for bool;
   using AddressArrayUtils for address[];
 
+  /**
+   * @dev Immutable variables for the ConditionalImplementControl contract.
+   * @notice immutable variables are directly stored in contract code.
+   * ensuring no storage writes are required.
+   * The values of immutable variables remain fixed and cannot be modified,
+   * regardless of any interactions, including delegations.
+   * PROXY_STORAGE address of the proxy that delegates to this contract
+   * NEW_VERSION address of the new implementation
+   * CURRENT_VERSION address of the previous implementation
+   */
   address public immutable PROXY_STORAGE;
   address public immutable NEW_VERSION;
   address public immutable CURRENT_VERSION;
@@ -83,6 +93,9 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
     _fallback();
   }
 
+  /**
+   * @dev Receive function that forwards the call to the current or new contract implementation based on a condition.
+   */
   receive() external payable virtual onlyDelegateFromProxyStorage {
     _fallback();
   }
@@ -108,6 +121,9 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
    */
   function _isConditionMet() internal view virtual returns (bool) {}
 
+  /**
+   * @dev Logic for fallback function.
+   */
   function _fallback() internal virtual {
     bytes memory returnData = _dispatchCall(_getVersion());
     assembly {
