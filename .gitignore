@@ -11,8 +11,9 @@ yarn-error.log
 refs/
 .vscode
 remix-compiler.config.js
-foundry
 .npmrc
 .yarn
 .yarnrc.yml
 logs/storage_layout_table.log
+cache_foundry
+out
