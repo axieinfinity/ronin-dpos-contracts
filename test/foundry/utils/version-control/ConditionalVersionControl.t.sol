@@ -128,11 +128,11 @@ contract ConditionalImplementControlTest is Test {
    * switcher.
    */
   function testReceiveNativeTokenOldImplAfterUsingContractSwitcher(address user, uint256 amount) public {
-    vm.assume(amount > 0);
+    vm.assume(amount > 0 && user != _proxyAdmin);
     vm.deal(user, amount);
     manualUpgradeTo(_switcher);
 
-    vm.expectEmit(true, false, false, false);
+    vm.expectEmit(_proxy);
     emit Received(ILogic(_oldImpl).magicNumber());
     vm.prank(user);
     (bool ok,) = _proxy.call{value: amount}("");
@@ -145,7 +145,7 @@ contract ConditionalImplementControlTest is Test {
    * switcher.
    */
   function testReceiveNativeTokenNewImplAfterUsingContractSwitcher(address user, uint256 amount) public {
-    vm.assume(amount > 0);
+    vm.assume(amount > 0 && user != _proxyAdmin);
     vm.deal(user, amount);
     manualUpgradeTo(_switcher);
     vm.roll(_upgradedAtBlock);
@@ -162,6 +162,7 @@ contract ConditionalImplementControlTest is Test {
    * @notice Tests unauthorized EOA calls to the method `selfUpgrade`.
    */
   function testFailUnauthorizedEOACallSelfUpgrade(address user) public virtual {
+    vm.assume(user != _proxyAdmin);
     manualUpgradeTo(_switcher);
     vm.prank(user);
     vm.expectRevert(abi.encodePacked(ErrOnlySelfCall.selector, ConditionalImplementControl.selfUpgrade.selector));
@@ -190,6 +191,7 @@ contract ConditionalImplementControlTest is Test {
    * @notice Tests unauthorized EOA calls to the non-view methods.
    */
   function testFailEOACallNonViewMethodToContractSwitcher(address user) public virtual {
+    vm.assume(user != _proxyAdmin);
     vm.expectRevert(abi.encodePacked(IConditionalImplementControl.ErrDelegateFromUnknownOrigin.selector, _switcher));
     vm.prank(user);
     ILogic(_switcher).set();
@@ -199,6 +201,7 @@ contract ConditionalImplementControlTest is Test {
    * @notice Tests unauthorized EOA calls to the view methods.
    */
   function testFailEOACallViewMethodToContractSwitcher(address user) public virtual {
+    vm.assume(user != _proxyAdmin);
     vm.expectRevert(abi.encodePacked(IConditionalImplementControl.ErrDelegateFromUnknownOrigin.selector, _switcher));
     vm.prank(user);
     ILogic(_switcher).get();
