@@ -1,20 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Vm, Test } from "forge-std/Test.sol";
-import { console } from "forge-std/console.sol";
-import { TransparentUpgradeableProxyV2, ERC1967Upgrade } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
-import { ILogic, MockLogicV1, MockLogicV2 } from "@ronin/contracts/mocks/utils/version-control/MockLogic.sol";
-import { IConditionalImplementControl } from "@ronin/contracts/interfaces/version-control/IConditionalImplementControl.sol";
-import { AddressArrayUtils } from "@ronin/contracts/libraries/AddressArrayUtils.sol";
-import { ErrOnlySelfCall } from "@ronin/contracts/utils/CommonErrors.sol";
-import { MockActor } from "@ronin/contracts/mocks/utils/version-control/MockActor.sol";
-import { MockConditionalImplementControl, ConditionalImplementControl } from "@ronin/contracts/mocks/utils/version-control/MockConditionalImplementControl.sol";
+import {Vm, Test} from "forge-std/Test.sol";
+import {console} from "forge-std/console.sol";
+import {
+  TransparentUpgradeableProxyV2, ERC1967Upgrade
+} from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
+import {ILogic, MockLogicV1, MockLogicV2} from "@ronin/contracts/mocks/utils/version-control/MockLogic.sol";
+import {IConditionalImplementControl} from
+  "@ronin/contracts/interfaces/version-control/IConditionalImplementControl.sol";
+import {AddressArrayUtils} from "@ronin/contracts/libraries/AddressArrayUtils.sol";
+import {ErrOnlySelfCall} from "@ronin/contracts/utils/CommonErrors.sol";
+import {MockActor} from "@ronin/contracts/mocks/utils/version-control/MockActor.sol";
+import {
+  MockConditionalImplementControl,
+  ConditionalImplementControl
+} from "@ronin/contracts/mocks/utils/version-control/MockConditionalImplementControl.sol";
 
 contract ConditionalImplementControlTest is Test {
-  /**
-   * @dev Emitted when the implementation is upgraded.
-   */
   event Upgraded(address indexed implementation);
   event Received(uint256 version);
 
@@ -26,12 +29,10 @@ contract ConditionalImplementControlTest is Test {
   address payable internal _switcher;
 
   address internal _proxyAdmin;
-  address internal _alice;
   MockActor internal _contractCaller;
 
   function setUp() public virtual {
     _proxyAdmin = vm.addr(1);
-    _alice = vm.addr(2);
 
     _oldImpl = address(new MockLogicV1());
     _newImpl = address(new MockLogicV2());
@@ -123,32 +124,38 @@ contract ConditionalImplementControlTest is Test {
   }
 
   /**
-   * @notice Checks receive native token functionality implemented in logicV1 when using contract switcher.
+   * @notice Checks whether the proxy can receive native token using old implemenation after upgrading to the contract
+   * switcher.
    */
-  function testSendNativeLogicV1AfterUpgradeToVersionControl() public {
+  function testReceiveNativeTokenOldImplAfterUsingContractSwitcher(address user, uint256 amount) public {
+    vm.assume(amount > 0);
+    vm.deal(user, amount);
     manualUpgradeTo(_switcher);
-    vm.expectEmit(true, false, false, false);
-    emit Received(1);
-    vm.deal(_alice, 10 ether);
-    vm.prank(_alice, _alice);
-    (bool ok, ) = _proxy.call{ value: 1 ether }("");
+
+    vm.expectEmit(_proxy);
+    emit Received(ILogic(_oldImpl).magicNumber());
+    vm.prank(user);
+    (bool ok,) = _proxy.call{value: amount}("");
     assertEq(ok, true);
-    assertEq(1 ether, _proxy.balance);
+    assertEq(amount, _proxy.balance);
   }
 
   /**
-   * @notice Checks receive native token functionality implemented in logicV2 when using contract switcher.
+   * @notice Checks whether the proxy can receive native token using new implemenation after upgrading to the contract
+   * switcher.
    */
-  function testSendNativeLogicV2AfterUpgradeToVersionControl() public {
+  function testReceiveNativeTokenNewImplAfterUsingContractSwitcher(address user, uint256 amount) public {
+    vm.assume(amount > 0);
+    vm.deal(user, amount);
     manualUpgradeTo(_switcher);
-    vm.roll(101);
-    vm.expectEmit(true, false, false, false);
-    emit Received(2);
-    vm.deal(_alice, 10 ether);
-    vm.prank(_alice, _alice);
-    (bool ok, ) = _proxy.call{ value: 1 ether }("");
+    vm.roll(_upgradedAtBlock);
+
+    vm.expectEmit(_proxy);
+    emit Received(ILogic(_newImpl).magicNumber());
+    vm.prank(user);
+    (bool ok,) = _proxy.call{value: amount}("");
     assertEq(ok, true);
-    assertEq(1 ether, _proxy.balance);
+    assertEq(amount, _proxy.balance);
   }
 
   /**
