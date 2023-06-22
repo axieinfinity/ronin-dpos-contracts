@@ -198,7 +198,7 @@ contract ConditionalImplementControlTest is Test {
   /**
    * @notice Tests unauthorized EOA calls to the non-view methods.
    */
-  function testFail_CallNonViewMethodToContractSwitcher_FromEOA(address user) external virtual {
+  function testFail_CallToContractSwitcher_NonViewMethod_FromEOA(address user) external virtual {
     vm.assume(user != _proxyAdmin);
     vm.expectRevert(abi.encodePacked(IConditionalImplementControl.ErrDelegateFromUnknownOrigin.selector, _switcher));
     vm.prank(user);
