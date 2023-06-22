@@ -26,11 +26,11 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
   /**
    * @dev The address of the new implementation.
    */
-  address public immutable NEW_IMPLEMENTATION;
+  address public immutable NEW_IMPL;
   /**
    * @dev The address of the previous implementation.
    */
-  address public immutable CURRENT_IMPLEMENTATION;
+  address public immutable PREV_IMPL;
 
   /**
    * @dev Modifier that only allows self calls.
@@ -70,23 +70,23 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
   /**
    * @dev Constructs the ConditionalImplementControl contract.
    * @param proxyStorage The address of the proxy that is allowed to delegate to this contract.
-   * @param currentImplementation The address of the current contract implementation.
+   * @param prevImpl The address of the current contract implementation.
    * @param newImplementation The address of the new contract implementation.
    */
   constructor(
     address proxyStorage,
-    address currentImplementation,
+    address prevImpl,
     address newImplementation
-  ) onlyContract(proxyStorage) onlyContract(currentImplementation) onlyContract(newImplementation) {
+  ) onlyContract(proxyStorage) onlyContract(prevImpl) onlyContract(newImplementation) {
     address[] memory addrs = new address[](3);
     addrs[0] = proxyStorage;
-    addrs[1] = currentImplementation;
+    addrs[1] = prevImpl;
     addrs[2] = newImplementation;
     if (addrs.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
 
     PROXY_STORAGE = proxyStorage;
-    NEW_IMPLEMENTATION = newImplementation;
-    CURRENT_IMPLEMENTATION = currentImplementation;
+    NEW_IMPL = newImplementation;
+    PREV_IMPL = prevImpl;
   }
 
   /**
@@ -108,15 +108,15 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
    */
 
   function selfUpgrade() external onlyDelegateFromProxyStorage onlySelfCall {
-    _upgradeTo(NEW_IMPLEMENTATION);
+    _upgradeTo(NEW_IMPL);
   }
 
   /**
    * @dev Internal function to get the current version of the contract implementation.
    * @return The address of the current version.
    */
-  function _getImplementationByCondition() internal view virtual returns (address) {
-    return _isConditionMet() ? NEW_IMPLEMENTATION : CURRENT_IMPLEMENTATION;
+  function _getConditionedImplementation() internal view virtual returns (address) {
+    return _isConditionMet() ? NEW_IMPL : PREV_IMPL;
   }
 
   /**
@@ -129,7 +129,7 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
    * @dev Logic for fallback function.
    */
   function _fallback() internal virtual {
-    bytes memory returnData = _dispatchCall(_getImplementationByCondition());
+    bytes memory returnData = _dispatchCall(_getConditionedImplementation());
     assembly {
       return(add(returnData, 0x20), mload(returnData))
     }

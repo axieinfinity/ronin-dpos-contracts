@@ -31,21 +31,21 @@ contract RoninValidatorSetTimedMigrator is ConditionalImplementControl {
   /**
    * @dev Constructs the {RoninValidatorSetTimedMigrator} contract.
    * @param proxyStorage The address of the proxy storage contract.
-   * @param currentImplementation The address of the current contract implementation.
+   * @param prevImpl The address of the current contract implementation.
    * @param newImplementation The address of the new contract implementation.
    */
   constructor(
     address proxyStorage,
-    address currentImplementation,
+    address prevImpl,
     address newImplementation
-  ) ConditionalImplementControl(proxyStorage, currentImplementation, newImplementation) {}
+  ) ConditionalImplementControl(proxyStorage, prevImpl, newImplementation) {}
 
   /**
    * @dev Internal function to choose the current version of the contract implementation.
    * @return The address of the current version implementation.
    */
-  function _getImplementationByCondition() internal view override returns (address) {
-    return CURRENT_IMPLEMENTATION;
+  function _getConditionedImplementation() internal view override returns (address) {
+    return PREV_IMPL;
   }
 
   /**
