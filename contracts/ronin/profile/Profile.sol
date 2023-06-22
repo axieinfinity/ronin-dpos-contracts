@@ -22,21 +22,21 @@ contract Profile is IProfile, ProfileStorage, ProfileXComponents, Initializable 
   }
 
   /**
-   * @dev See {IProfile}
+   * @inheritdoc IProfile
    */
   function getId2Profile(address id) external view returns (CandidateProfile memory) {
     return _id2Profile[id];
   }
 
   /**
-   * @dev See {IProfile}
+   * @inheritdoc IProfile
    */
   function getConsensus2Id(TConsensus consensus) external view returns (address id) {
     return _consensus2Id[consensus];
   }
 
   /**
-   * @dev See {IProfile}
+   * @inheritdoc IProfile
    */
   function getManyConsensus2Id(TConsensus[] calldata consensusList) external view returns (address[] memory idList) {
     idList = new address[](consensusList.length);
@@ -48,7 +48,7 @@ contract Profile is IProfile, ProfileStorage, ProfileXComponents, Initializable 
   }
 
   /**
-   * @dev See {IProfile}
+   * @inheritdoc IProfile
    */
   function addNewProfile(CandidateProfile memory profile) external onlyAdmin {
     CandidateProfile storage _profile = _getId2ProfileHelper(profile.id);
@@ -57,13 +57,11 @@ contract Profile is IProfile, ProfileStorage, ProfileXComponents, Initializable 
   }
 
   /**
-   * @dev Updated immediately without waiting time.
+   * @inheritdoc IProfile
    *
-   * Interactions: // TODO: remove following part when cleaning up code
+   * @dev Interactions: // TODO: remove following part when cleaning up code
    * - Update `PoolDetail` in {BaseStaking.sol}.
    * - Update `_adminOfActivePoolMapping` in {BaseStaking.sol}.
-   *
-   * Emit an {ProfileAddressChanged}.
    */
   function requestChangeAdminAddress(address id, address newAdminAddr) external {
     IStaking stakingContract = IStaking(getContract(ContractType.STAKING));
@@ -76,9 +74,9 @@ contract Profile is IProfile, ProfileStorage, ProfileXComponents, Initializable 
   }
 
   /**
-   * @dev Updated immediately without waiting time. (???)
+   * @inheritdoc IProfile
    *
-   * Interactions: // TODO: remove following part when cleaning up code
+   * @dev Interactions: // TODO: remove following part when cleaning up code
    * - Update in Staking contract for Consensus address mapping:
    *   + [x] Keep the same previous pool address. // CHECKED, NO NEED ANY CHANGES
    *   +
@@ -91,9 +89,6 @@ contract Profile is IProfile, ProfileStorage, ProfileXComponents, Initializable 
    * - Update in Proposal contract for:
    *   + Refund of emergency exit mapping
    *   + ...
-   *
-   * Emit an {ProfileAddressChanged}.
-   *
    */
   function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);

@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-import "./ProfileStorage.sol";
 import "../../extensions/collections/HasContracts.sol";
+import "../../interfaces/IProfile.sol";
 import { ContractType } from "../../utils/ContractType.sol";
+import "./ProfileStorage.sol";
 
 pragma solidity ^0.8.9;
 
-abstract contract ProfileXComponents is HasContracts, ProfileStorage {
+abstract contract ProfileXComponents is IProfile, HasContracts, ProfileStorage {
+  /**
+   * @inheritdoc IProfile
+   */
   function execApplyValidatorCandidate(
     address admin,
     address id,

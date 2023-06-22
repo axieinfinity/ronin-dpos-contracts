@@ -49,12 +49,34 @@ interface IProfile {
   function getManyConsensus2Id(TConsensus[] memory consensus) external view returns (address[] memory);
 
   /**
+   * @notice Add a new profile.
+   *
+   * @dev Requirements:
+   * - The profile must not be existent before.
+   * - Only contract admin can call this method.
+   */
+  function addNewProfile(CandidateProfile memory profile) external;
+
+  /**
    * @dev Cross-contract function to add/update new profile of a validator candidate when they
    * applying for candidate role.
    *
    * Requirements:
    * - Only `stakingContract` can call this method.
-   *
    */
   function execApplyValidatorCandidate(address admin, address id, address treasury, address bridgeOperator) external;
+
+  /**
+   * @dev Updated immediately without waiting time.
+   *
+   * Emit an {ProfileAddressChanged}.
+   */
+  function requestChangeAdminAddress(address id, address newAdminAddr) external;
+
+  /**
+   * @dev Updated immediately without waiting time. (???)
+   *
+   * Emit an {ProfileAddressChanged}.
+   */
+  function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external;
 }
