@@ -65,7 +65,14 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
 
     uint256 _amount = msg.value;
     address payable _poolAdmin = payable(msg.sender);
-    _applyValidatorCandidate(_poolAdmin, _candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate, _amount);
+    _applyValidatorCandidate({
+      _poolAdmin: _poolAdmin,
+      _candidateAdmin: _candidateAdmin,
+      _consensusAddr: _consensusAddr,
+      _treasuryAddr: _treasuryAddr,
+      _commissionRate: _commissionRate,
+      _amount: _amount
+    });
 
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
     _pool.admin = _poolAdmin;
