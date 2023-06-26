@@ -29,7 +29,7 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     address __stakingVestingContract,
     address __maintenanceContract,
     address __roninTrustedOrganizationContract,
-    address,
+    address /* __bridgeTrackingContract */,
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
