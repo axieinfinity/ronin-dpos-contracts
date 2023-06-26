@@ -222,7 +222,6 @@ describe('Credit score and bail out test', () => {
           validatorCandidates[i].candidateAdmin.address,
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
-          validatorCandidates[i].bridgeOperator.address,
           100_00,
           { value: minValidatorStakingAmount.mul(2).sub(i) }
         );
@@ -298,7 +297,6 @@ describe('Credit score and bail out test', () => {
           validatorCandidates[0].candidateAdmin.address,
           validatorCandidates[0].consensusAddr.address,
           validatorCandidates[0].treasuryAddr.address,
-          validatorCandidates[0].bridgeOperator.address,
           100_00,
           { value: minValidatorStakingAmount.mul(2) }
         );

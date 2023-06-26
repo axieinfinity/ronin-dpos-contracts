@@ -124,7 +124,6 @@ describe('Maintenance test', () => {
           validatorCandidates[i].candidateAdmin.address,
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
-          validatorCandidates[i].bridgeOperator.address,
           1,
           { value: minValidatorStakingAmount.add(maxValidatorNumber).sub(i) }
         );

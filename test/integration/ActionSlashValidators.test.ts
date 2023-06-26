@@ -161,7 +161,6 @@ describe('[Integration] Slash validators', () => {
             slashee.candidateAdmin.address,
             slashee.consensusAddr.address,
             slashee.treasuryAddr.address,
-            slashee.bridgeOperator.address,
             2_00,
             {
               value: slasheeInitStakingAmount,
@@ -309,7 +308,6 @@ describe('[Integration] Slash validators', () => {
               slashees[i].candidateAdmin.address,
               slashees[i].consensusAddr.address,
               slashees[i].treasuryAddr.address,
-              slashees[i].bridgeOperator.address,
               2_00,
               {
                 value: slasheeInitStakingAmount.add(slashees.length - i),
@@ -547,7 +545,6 @@ describe('[Integration] Slash validators', () => {
                 slashee.candidateAdmin.address,
                 slashee.consensusAddr.address,
                 slashee.treasuryAddr.address,
-                slashee.bridgeOperator.address,
                 2_00,
                 {
                   value: slasheeInitStakingAmount,

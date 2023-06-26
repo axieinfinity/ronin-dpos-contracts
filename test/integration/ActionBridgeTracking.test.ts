@@ -165,7 +165,6 @@ describe('[Integration] Bridge Tracking test', () => {
           candidates[i].candidateAdmin.address,
           candidates[i].consensusAddr.address,
           candidates[i].treasuryAddr.address,
-          candidates[i].bridgeOperator.address,
           1,
           { value: minValidatorStakingAmount + candidates.length - i }
         );

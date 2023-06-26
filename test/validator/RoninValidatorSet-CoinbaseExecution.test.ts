@@ -193,7 +193,6 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
             validatorCandidates[i].candidateAdmin.address,
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
-            validatorCandidates[i].bridgeOperator.address,
             2_00,
             {
               value: minValidatorStakingAmount.add(i * dummyStakingMultiplier),
@@ -259,16 +258,9 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
     it('Should be able to wrap up epoch at the end of period and pick top `maxValidatorNumber` to be validators', async () => {
       await stakingContract
         .connect(poolAdmin)
-        .applyValidatorCandidate(
-          candidateAdmin.address,
-          consensusAddr.address,
-          treasury.address,
-          bridgeOperator.address,
-          1_00 /* 1% */,
-          {
-            value: minValidatorStakingAmount.mul(100),
-          }
-        );
+        .applyValidatorCandidate(candidateAdmin.address, consensusAddr.address, treasury.address, 1_00 /* 1% */, {
+          value: minValidatorStakingAmount.mul(100),
+        });
       for (let i = 4; i < localValidatorCandidatesLength; i++) {
         await stakingContract
           .connect(validatorCandidates[i].poolAdmin)
@@ -276,7 +268,6 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
             validatorCandidates[i].candidateAdmin.address,
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
-            validatorCandidates[i].bridgeOperator.address,
             2_00,
             {
               value: minValidatorStakingAmount.add(i * dummyStakingMultiplier),

@@ -160,7 +160,6 @@ describe('Ronin Validator Set: candidate test', () => {
             validatorCandidates[i].candidateAdmin.address,
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
-            validatorCandidates[i].bridgeOperator.address,
             2_00,
             {
               value: minValidatorStakingAmount.add(i),
@@ -197,7 +196,6 @@ describe('Ronin Validator Set: candidate test', () => {
             whitelistedCandidates[i].candidateAdmin.address,
             whitelistedCandidates[i].consensusAddr.address,
             whitelistedCandidates[i].treasuryAddr.address,
-            whitelistedCandidates[i].bridgeOperator.address,
             2_00,
             {
               value: minValidatorStakingAmount.add(i),
@@ -236,7 +234,6 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[4].candidateAdmin.address,
           validatorCandidates[4].consensusAddr.address,
           validatorCandidates[4].treasuryAddr.address,
-          validatorCandidates[4].bridgeOperator.address,
           2_00,
           {
             value: minValidatorStakingAmount,
@@ -255,7 +252,6 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[0].candidateAdmin.address,
           validatorCandidates[5].consensusAddr.address,
           validatorCandidates[5].treasuryAddr.address,
-          validatorCandidates[5].bridgeOperator.address,
           2_00,
           {
             value: minValidatorStakingAmount,
@@ -272,7 +268,6 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[5].candidateAdmin.address,
           validatorCandidates[5].consensusAddr.address,
           validatorCandidates[0].treasuryAddr.address,
-          validatorCandidates[5].bridgeOperator.address,
           2_00,
           {
             value: minValidatorStakingAmount,
@@ -289,7 +284,6 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[5].candidateAdmin.address,
           validatorCandidates[5].consensusAddr.address,
           validatorCandidates[5].treasuryAddr.address,
-          validatorCandidates[5].bridgeOperator.address,
           maxCommissionRate + 1,
           {
             value: minValidatorStakingAmount,
@@ -324,7 +318,6 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[5].candidateAdmin.address,
           validatorCandidates[5].consensusAddr.address,
           validatorCandidates[5].treasuryAddr.address,
-          validatorCandidates[5].bridgeOperator.address,
           minCommissionRate - 1,
           {
             value: minValidatorStakingAmount,

@@ -144,7 +144,6 @@ describe('[Integration] Wrap up epoch', () => {
             validatorCandidates[i].candidateAdmin.address,
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
-            validatorCandidates[i].bridgeOperator.address,
             2_00,
             {
               value: minValidatorStakingAmount.mul(2).add(i),
@@ -253,7 +252,6 @@ describe('[Integration] Wrap up epoch', () => {
             validators[i].candidateAdmin.address,
             validators[i].consensusAddr.address,
             validators[i].treasuryAddr.address,
-            validators[i].bridgeOperator.address,
             2_00,
             {
               value: minValidatorStakingAmount.mul(3).add(i),

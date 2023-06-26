@@ -133,7 +133,6 @@ describe('[Integration] Submit Block Reward', () => {
           validator.candidateAdmin.address,
           validator.consensusAddr.address,
           validator.treasuryAddr.address,
-          validator.bridgeOperator.address,
           2_00,
           {
             value: initStakingAmount,
@@ -185,7 +184,6 @@ describe('[Integration] Submit Block Reward', () => {
           validator.candidateAdmin.address,
           validator.consensusAddr.address,
           validator.treasuryAddr.address,
-          validator.bridgeOperator.address,
           2_00,
           {
             value: initStakingAmount,

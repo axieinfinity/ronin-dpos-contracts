@@ -58,7 +58,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
-    address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external payable override nonReentrant {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
@@ -66,15 +65,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
 
     uint256 _amount = msg.value;
     address payable _poolAdmin = payable(msg.sender);
-    _applyValidatorCandidate(
-      _poolAdmin,
-      _candidateAdmin,
-      _consensusAddr,
-      _treasuryAddr,
-      _bridgeOperatorAddr,
-      _commissionRate,
-      _amount
-    );
+    _applyValidatorCandidate(_poolAdmin, _candidateAdmin, _consensusAddr, _treasuryAddr, _commissionRate, _amount);
 
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
     _pool.admin = _poolAdmin;
@@ -193,7 +184,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
-    address _bridgeOperatorAddr,
     uint256 _commissionRate,
     uint256 _amount
   ) internal {
@@ -207,7 +197,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       address[] memory _diffAddrs = new address[](3);
       _diffAddrs[0] = _poolAdmin;
       _diffAddrs[1] = _consensusAddr;
-      _diffAddrs[2] = _bridgeOperatorAddr;
       if (AddressArrayUtils.hasDuplicate(_diffAddrs)) revert AddressArrayUtils.ErrDuplicated(msg.sig);
     }
 

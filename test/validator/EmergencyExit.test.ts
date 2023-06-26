@@ -141,7 +141,6 @@ describe('Emergency Exit test', () => {
           validatorCandidates[i].candidateAdmin.address,
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
-          validatorCandidates[i].bridgeOperator.address,
           2_00,
           {
             value: stakedAmount[i],
