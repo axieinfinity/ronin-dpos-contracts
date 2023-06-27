@@ -46,13 +46,6 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
   /**
    * @inheritdoc IValidatorInfoV2
    */
-  function isValidator(address _addr) public view override returns (bool) {
-    return !_validatorMap[_addr].isNone();
-  }
-
-  /**
-   * @inheritdoc IValidatorInfoV2
-   */
   function getBlockProducers() public view override returns (address[] memory _result) {
     _result = new address[](validatorCount);
     uint256 _count = 0;

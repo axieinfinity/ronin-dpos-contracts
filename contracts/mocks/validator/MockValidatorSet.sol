@@ -81,10 +81,6 @@ contract MockValidatorSet is
     returns (uint256 _maximumPrioritizedValidatorNumber)
   {}
 
-  function isValidator(address) external pure override returns (bool) {
-    return true;
-  }
-
   function numberOfBlocksInEpoch() public view override returns (uint256) {
     return _numberOfBlocksInEpoch;
   }

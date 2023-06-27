@@ -31,11 +31,6 @@ interface IValidatorInfoV2 {
   function getValidators() external view returns (address[] memory _validatorList);
 
   /**
-   * @dev Returns whether the address is either a bridge operator or a block producer.
-   */
-  function isValidator(address _addr) external view returns (bool);
-
-  /**
    * @dev Returns the current block producer list.
    */
   function getBlockProducers() external view returns (address[] memory);

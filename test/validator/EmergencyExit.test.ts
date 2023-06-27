@@ -216,7 +216,6 @@ describe('Emergency Exit test', () => {
     expect(validatorCandidates.map((v) => v.consensusAddr.address)).deep.equal(
       await roninValidatorSet.getBlockProducers()
     );
-    expect(await roninValidatorSet.isValidator(compromisedValidator.consensusAddr.address)).to.true;
     expect(await roninValidatorSet.isBlockProducer(compromisedValidator.consensusAddr.address)).to.true;
   });
 
@@ -301,7 +300,6 @@ describe('Emergency Exit test', () => {
 
       const currentBalance = await ethers.provider.getBalance(compromisedValidator.treasuryAddr.address);
       expect(currentBalance.sub(balance)).eq(totalStakedAmount);
-      expect(await roninValidatorSet.isValidatorCandidate(compromisedValidator.consensusAddr.address)).to.false;
     });
 
     it('Should the requester not receive again in the next period ending', async () => {

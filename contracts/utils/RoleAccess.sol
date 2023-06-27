@@ -8,7 +8,7 @@ enum RoleAccess {
   /* 3 */ GOVERNOR,
   /* 4 */ CANDIDATE_ADMIN,
   /* 5 */ WITHDRAWAL_MIGRATOR,
-  /* 6 */ BRIDGE_OPERATOR,
+  /* 6 */ __DEPRECATED_BRIDGE_OPERATOR,
   /* 7 */ BLOCK_PRODUCER,
   /* 8 */ VALIDATOR_CANDIDATE
 }

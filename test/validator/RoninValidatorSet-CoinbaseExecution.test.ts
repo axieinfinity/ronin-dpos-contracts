@@ -239,10 +239,6 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
 
     it('Should validator is set with correct flags', async () => {
       for (let validatorAddr of expectingValidatorsAddr) {
-        expect(await roninValidatorSet.isValidator(validatorAddr)).eq(
-          true,
-          `Wrong validator flag for ${validatorAddr}`
-        );
         expect(await roninValidatorSet.isBlockProducer(validatorAddr)).eq(
           true,
           `Wrong block producer flag for ${validatorAddr}`
@@ -251,7 +247,6 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
     });
 
     it('Should non-validator is set with correct flags', async () => {
-      expect(await roninValidatorSet.isValidator(deployer.address)).eq(false);
       expect(await roninValidatorSet.isBlockProducer(deployer.address)).eq(false);
     });
 
@@ -340,10 +335,6 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
         expect(await roninValidatorSet.getValidators()).deep.equal(expectingValidatorsAddr);
         expect(await roninValidatorSet.getBlockProducers()).deep.equal(expectingValidatorsAddr);
         for (let validatorAddr of expectingValidatorsAddr) {
-          expect(await roninValidatorSet.isValidator(validatorAddr)).eq(
-            true,
-            `Wrong validator flag for ${validatorAddr}`
-          );
           expect(await roninValidatorSet.isBlockProducer(validatorAddr)).eq(
             true,
             `Wrong block producer flag for ${validatorAddr}`
