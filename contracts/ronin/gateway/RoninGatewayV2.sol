@@ -79,6 +79,7 @@ contract RoninGatewayV2 is
    * @dev Reverts if the method caller is not bridge operator.
    */
   function _requireBridgeOperator() internal view {
+    // TODO: uncomment below logic
     // if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isBridgeOperator(msg.sender))
     //   revert ErrUnauthorized(msg.sig, RoleAccess.BRIDGE_OPERATOR);
   }
@@ -532,6 +533,7 @@ contract RoninGatewayV2 is
     address[] memory _consensusList = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
     uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
       .getConsensusWeights(_consensusList);
+    // TODO: uncomment below logic
 
     // unchecked {
     //   for (uint _i; _i < _bridgeOperators.length; ++_i) {

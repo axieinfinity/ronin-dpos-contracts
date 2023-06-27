@@ -180,6 +180,9 @@ describe('Ronin Gateway V2 test', () => {
       await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
     period = await roninValidatorSet.currentPeriod();
+
+    // TODO: uncomment below logic
+
     // expect((await roninValidatorSet.getBridgeOperators())._bridgeOperatorList).deep.equal(
     //   candidates.map((v) => v.bridgeOperator.address)
     // );
@@ -202,6 +205,8 @@ describe('Ronin Gateway V2 test', () => {
     after(async () => {
       await network.provider.send('evm_revert', [snapshotId]);
     });
+
+    // TODO: uncomment below logic
 
     // it('Should be able to bulk deposits using bridge operator accounts', async () => {
     //   receipts = [
@@ -326,6 +331,8 @@ describe('Ronin Gateway V2 test', () => {
       const vote = await bridgeContract.depositVote(receipts[0].mainchain.chainId, receipts[0].id);
       expect(vote.status).eq(VoteStatus.Pending);
     });
+
+    // TODO: uncomment below logic
 
     // it('Should approve the vote if enough trusted votes is submitted', async () => {
     //   const tx = await bridgeContract.connect(candidates[0].bridgeOperator).tryBulkDepositFor(receipts);

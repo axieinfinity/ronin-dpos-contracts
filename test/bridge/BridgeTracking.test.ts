@@ -175,6 +175,7 @@ describe('Bridge Tracking test', () => {
     });
 
     describe('Epoch e-1: Continue voting for the vote of e-2', async () => {
+      // TODO: uncomment below logic
       // it('Should be able to record the approved votes/ballots when the epoch is wrapped up (value from buffer metric)', async () => {
       //   await mineBatchTxs(async () => {
       //     await roninValidatorSet.endEpoch();
@@ -204,6 +205,8 @@ describe('Bridge Tracking test', () => {
       //   expect(await bridgeTracking.totalBallotsOf(period, candidates[2].bridgeOperator.address)).eq(expectTotalVotes);
       // });
     });
+
+    // TODO: uncomment below logic
 
     // describe('Epoch e (first epoch of new period): Continue voting for vote in e-2', async () => {
     //   it('Should not record in the next period', async () => {
@@ -250,6 +253,7 @@ describe('Bridge Tracking test', () => {
     });
 
     describe('Epoch e-1: Vote & Approve & Vote', async () => {
+      // TODO: uncomment below logic
       // it('Should not record when not approved yet. Vote in last epoch (e-1).', async () => {
       //   await mockGateway.sendBallot(
       //     receipt.kind,
@@ -283,6 +287,7 @@ describe('Bridge Tracking test', () => {
     });
 
     describe('Epoch e: vote', async () => {
+      // TODO: uncomment below logic
       // it('Should not record for current period metric when wrapping up period. Query in next epoch (e), for current period (p-1): return 0.', async () => {
       //   await EpochController.setTimestampToPeriodEnding();
       //   await mineBatchTxs(async () => {
@@ -368,6 +373,7 @@ describe('Bridge Tracking test', () => {
     });
 
     describe('Epoch 3e: vote', async () => {
+      // TODO: uncomment below logic
       // it('Should not record new ballot. And the period metric is finalized as in epoch 2e-1.', async () => {
       //   await mockGateway.sendBallot(
       //     receipt.kind,
