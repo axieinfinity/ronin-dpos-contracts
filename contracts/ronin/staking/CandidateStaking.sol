@@ -201,7 +201,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     if (_poolAdmin != _candidateAdmin || _candidateAdmin != _treasuryAddr) revert ErrThreeInteractionAddrsNotEqual();
 
     {
-      address[] memory _diffAddrs = new address[](3);
+      address[] memory _diffAddrs = new address[](2);
       _diffAddrs[0] = _poolAdmin;
       _diffAddrs[1] = _consensusAddr;
       if (AddressArrayUtils.hasDuplicate(_diffAddrs)) revert AddressArrayUtils.ErrDuplicated(msg.sig);
