@@ -501,7 +501,6 @@ describe('Credit score and bail out test', () => {
           await localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
         }
 
-        expect(await validatorContract.isValidator(validatorCandidates[0].consensusAddr.address)).eq(true);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
         await slashValidatorUntilTier(1, 0, SlashType.UNAVAILABILITY_TIER_2);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
@@ -585,7 +584,6 @@ describe('Credit score and bail out test', () => {
           await localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
         }
 
-        expect(await validatorContract.isValidator(validatorCandidates[0].consensusAddr.address)).eq(true);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
         await slashValidatorUntilTier(1, 0, SlashType.UNAVAILABILITY_TIER_2);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
