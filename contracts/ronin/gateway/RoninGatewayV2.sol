@@ -529,9 +529,7 @@ contract RoninGatewayV2 is
     IsolatedGovernance.Vote storage _v,
     bytes32 _hash
   ) internal view returns (uint256 _totalWeight, uint256 _trustedWeight) {
-    (address[] memory _consensusList, EnumFlags.ValidatorFlag[] memory _flags) = IRoninValidatorSet(
-      getContract(ContractType.VALIDATOR)
-    ).getValidators();
+    address[] memory _consensusList = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
     uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
       .getConsensusWeights(_consensusList);
 

@@ -55,7 +55,7 @@ contract MockValidatorSet is
 
   function epochOf(uint256 _block) external view override returns (uint256) {}
 
-  function getValidators() external view override returns (address[] memory, EnumFlags.ValidatorFlag[] memory) {}
+  function getValidators() external view override returns (address[] memory) {}
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
 

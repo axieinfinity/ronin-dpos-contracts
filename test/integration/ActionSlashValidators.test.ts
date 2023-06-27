@@ -182,7 +182,7 @@ describe('[Integration] Slash validators', () => {
         expectingBlockProducerSet.push(slashee.consensusAddr.address);
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
 
-        expect((await validatorContract.getValidators())[0]).deep.equal(expectingValidatorSet);
+        expect(await validatorContract.getValidators()).deep.equal(expectingValidatorSet);
         expect(await validatorContract.getBlockProducers()).deep.equal(expectingBlockProducerSet);
       });
 
@@ -330,7 +330,7 @@ describe('[Integration] Slash validators', () => {
 
         period = await validatorContract.currentPeriod();
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
-        expect((await validatorContract.getValidators())[0]).deep.equal(expectingValidatorSet);
+        expect(await validatorContract.getValidators()).deep.equal(expectingValidatorSet);
       });
 
       describe('Check effects on indicator and staking amount', async () => {
@@ -432,7 +432,7 @@ describe('[Integration] Slash validators', () => {
 
           slashees.forEach((slashee) => expectingBlockProducerSet.push(slashee.consensusAddr.address));
           expect(await validatorContract.getBlockProducers()).deep.equal(expectingBlockProducerSet);
-          expect((await validatorContract.getValidators())[0]).deep.equal(expectingBlockProducerSet);
+          expect(await validatorContract.getValidators()).deep.equal(expectingBlockProducerSet);
           await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
             wrapUpEpochTx!,
             period,
@@ -463,7 +463,7 @@ describe('[Integration] Slash validators', () => {
           period = await validatorContract.currentPeriod();
           await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
           expect(await validatorContract.getBlockProducers()).deep.equal(expectingBlockProducerSet);
-          expect((await validatorContract.getValidators())[0]).deep.equal(expectingValidatorSet);
+          expect(await validatorContract.getValidators()).deep.equal(expectingValidatorSet);
         });
 
         it('The validator should be able to top up before deadline', async () => {
@@ -498,7 +498,7 @@ describe('[Integration] Slash validators', () => {
 
           await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
           expect(await validatorContract.getBlockProducers()).deep.equal(expectingBlockProducerSet);
-          expect((await validatorContract.getValidators())[0]).deep.equal(expectingValidatorSet);
+          expect(await validatorContract.getValidators()).deep.equal(expectingValidatorSet);
         });
 
         it('Should the event of revoking under balance candidates emitted', async () => {

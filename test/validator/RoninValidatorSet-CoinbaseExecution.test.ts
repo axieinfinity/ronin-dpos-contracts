@@ -180,7 +180,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(tx!, lastPeriod, nextEpoch, []);
-      expect((await roninValidatorSet.getValidators())[0]).deep.equal([]);
+      expect(await roninValidatorSet.getValidators()).deep.equal([]);
     });
   });
 
@@ -207,7 +207,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
         tx = await roninValidatorSet.connect(consensusAddr).wrapUpEpoch();
       });
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, false);
-      expect((await roninValidatorSet.getValidators())[0]).deep.equal([]);
+      expect(await roninValidatorSet.getValidators()).deep.equal([]);
       expect(await roninValidatorSet.getBlockProducers()).deep.equal([]);
       await expect(tx!).not.emit(roninValidatorSet, 'ValidatorSetUpdated');
     });
@@ -233,7 +233,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, expectingValidatorsAddr);
-      expect((await roninValidatorSet.getValidators())[0]).deep.equal(expectingValidatorsAddr);
+      expect(await roninValidatorSet.getValidators()).deep.equal(expectingValidatorsAddr);
       expect(await roninValidatorSet.getBlockProducers()).deep.equal(expectingValidatorsAddr);
     });
 
@@ -295,7 +295,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, currentValidatorSet);
-      expect((await roninValidatorSet.getValidators())[0]).deep.equal(currentValidatorSet);
+      expect(await roninValidatorSet.getValidators()).deep.equal(currentValidatorSet);
       expect(await roninValidatorSet.getBlockProducers()).deep.equal(currentValidatorSet);
     });
   });
@@ -337,7 +337,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       });
 
       it('Should validator is set with correct flags', async () => {
-        expect((await roninValidatorSet.getValidators())[0]).deep.equal(expectingValidatorsAddr);
+        expect(await roninValidatorSet.getValidators()).deep.equal(expectingValidatorsAddr);
         expect(await roninValidatorSet.getBlockProducers()).deep.equal(expectingValidatorsAddr);
         for (let validatorAddr of expectingValidatorsAddr) {
           expect(await roninValidatorSet.isValidator(validatorAddr)).eq(

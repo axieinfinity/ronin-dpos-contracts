@@ -28,10 +28,7 @@ interface IValidatorInfoV2 {
   /**
    * @dev Returns the current validator list.
    */
-  function getValidators()
-    external
-    view
-    returns (address[] memory _validatorList, EnumFlags.ValidatorFlag[] memory _flags);
+  function getValidators() external view returns (address[] memory _validatorList);
 
   /**
    * @dev Returns whether the address is either a bridge operator or a block producer.

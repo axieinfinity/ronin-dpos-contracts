@@ -140,9 +140,7 @@ describe('Maintenance test', () => {
       validatorCandidates.map((_) => _.consensusAddr.address)
     );
 
-    expect((await validatorContract.getValidators())[0]).deep.equal(
-      validatorCandidates.map((_) => _.consensusAddr.address)
-    );
+    expect(await validatorContract.getValidators()).deep.equal(validatorCandidates.map((_) => _.consensusAddr.address));
     expect(await validatorContract.getBlockProducers()).deep.equal(
       validatorCandidates.map((_) => _.consensusAddr.address)
     );

@@ -31,18 +31,11 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
   /**
    * @inheritdoc IValidatorInfoV2
    */
-  function getValidators()
-    public
-    view
-    override
-    returns (address[] memory _validatorList, EnumFlags.ValidatorFlag[] memory _flags)
-  {
+  function getValidators() public view override returns (address[] memory _validatorList) {
     _validatorList = new address[](validatorCount);
-    _flags = new EnumFlags.ValidatorFlag[](validatorCount);
     for (uint _i; _i < _validatorList.length; ) {
       address _validator = _validators[_i];
       _validatorList[_i] = _validator;
-      _flags[_i] = _validatorMap[_validator];
 
       unchecked {
         ++_i;

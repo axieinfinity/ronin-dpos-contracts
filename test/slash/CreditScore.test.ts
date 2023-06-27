@@ -232,7 +232,7 @@ describe('Credit score and bail out test', () => {
     localEpochController = new EpochController(minOffsetToStartSchedule, numberOfBlocksInEpoch);
     await localEpochController.mineToBeforeEndOfEpoch(2);
     await validatorContract.connect(coinbase).wrapUpEpoch();
-    expect((await validatorContract.getValidators())[0]).deep.equal(
+    expect(await validatorContract.getValidators()).deep.equal(
       validatorCandidates.slice(0, maxValidatorNumber).map((_) => _.consensusAddr.address)
     );
     expect(await validatorContract.getBlockProducers()).deep.equal(

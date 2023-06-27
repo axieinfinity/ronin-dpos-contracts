@@ -102,7 +102,7 @@ abstract contract CoinbaseExecution is
     uint256 _newPeriod = _computePeriod(block.timestamp);
     bool _periodEnding = _isPeriodEnding(_newPeriod);
 
-    (address[] memory _currentValidators, ) = getValidators();
+    address[] memory _currentValidators = getValidators();
     address[] memory _revokedCandidates;
     uint256 _epoch = epochOf(block.number);
     uint256 _nextEpoch = _epoch + 1;
