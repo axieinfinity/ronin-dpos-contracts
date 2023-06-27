@@ -163,9 +163,9 @@ describe('Bridge Tracking test', () => {
         expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(0);
       });
 
-      // it('Should be able to approve the receipts', async () => {
-      //   await mockGateway.sendApprovedVote(receipt.kind, receipt.id);
-      // });
+      it.skip('Should be able to approve the receipts', async () => {
+        await mockGateway.sendApprovedVote(receipt.kind, receipt.id);
+      });
 
       it('Should not record the approved receipts once the epoch is not yet wrapped up', async () => {
         expect(await bridgeTracking.totalVotes(period)).eq(0);
