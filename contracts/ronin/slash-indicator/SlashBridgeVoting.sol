@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../../libraries/Math.sol";
 import { HasValidatorDeprecated, HasTrustedOrgDeprecated, HasGovernanceAdminDeprecated } from "../../utils/DeprecatedSlots.sol";
-import "../../interfaces/IRoninGovernanceAdmin.sol";
+import { IRoninGovernanceAdmin } from "../../interfaces/IRoninGovernanceAdmin.sol";
 import "../../interfaces/slash-indicator/ISlashBridgeVoting.sol";
 import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";

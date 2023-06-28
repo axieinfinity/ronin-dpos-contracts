@@ -47,9 +47,13 @@ interface IBridgeAdmin {
   /**
    * @dev Adds multiple bridge operators.
    * @param bridgeOperators An array of addresses representing the bridge operators to add.
+   * @param secondaryWallets An array of addresses of hot/cold wallets for bridge operator to update their node address.
    * @return addeds An array of booleans indicating whether each bridge operator was added successfully.
    */
-  function addBridgeOperators(address[] calldata bridgeOperators) external returns (bool[] memory addeds);
+  function addBridgeOperators(
+    address[] calldata bridgeOperators,
+    address[] calldata secondaryWallets
+  ) external returns (bool[] memory addeds);
 
   /**
    * @dev Removes multiple bridge operators.

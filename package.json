@@ -25,7 +25,7 @@
     "hardhat.config.{js,ts}": "prettier --write"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "4.7.3"
+    "@openzeppelin/contracts": "4.9.0"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",
