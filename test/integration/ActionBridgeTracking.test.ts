@@ -226,6 +226,8 @@ describe('[Integration] Bridge Tracking test', () => {
     expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(0);
   });
 
+  // TODO: uncomment below logic
+
   // it('Should be able to approve the receipts', async () => {
   //   {
   //     const tx = await bridgeContract.connect(candidates[1].bridgeOperator).tryBulkDepositFor(receipts);
@@ -248,6 +250,8 @@ describe('[Integration] Bridge Tracking test', () => {
     expect(await bridgeTracking.totalBallots(period)).eq(0);
     expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(0);
   });
+
+  // TODO: uncomment below logic
 
   // it('Should be able to record the approved votes/ballots when the epoch is wrapped up', async () => {
   //   await mineBatchTxs(async () => {
