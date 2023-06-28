@@ -5,6 +5,10 @@ import { ContractType } from "./ContractType.sol";
 import { RoleAccess } from "./RoleAccess.sol";
 
 /**
+ * @dev Error indicating that given address is null when it should not.
+ */
+error ErrZeroAddress(bytes4 msgSig);
+/**
  * @dev Error indicating that the provided threshold is invalid for a specific function signature.
  * @param msgSig The function signature (bytes4) that the invalid threshold applies to.
  */

@@ -14,6 +14,7 @@ import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../libraries/IsolatedGovernance.sol";
+import "../../interfaces/IBridgeAdmin.sol";
 
 contract RoninGatewayV2 is
   GatewayV2,
@@ -79,9 +80,8 @@ contract RoninGatewayV2 is
    * @dev Reverts if the method caller is not bridge operator.
    */
   function _requireBridgeOperator() internal view {
-    // TODO: uncomment below logic
-    // if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isBridgeOperator(msg.sender))
-    //   revert ErrUnauthorized(msg.sig, RoleAccess.BRIDGE_OPERATOR);
+    if (!IBridgeAdmin(getContract(ContractType.VALIDATOR)).isBridgeOperator(msg.sender))
+      revert ErrUnauthorized(msg.sig, RoleAccess.__DEPRECATED_BRIDGE_OPERATOR);
   }
 
   /**
@@ -117,6 +117,10 @@ contract RoninGatewayV2 is
         ++_i;
       }
     }
+  }
+
+  function initializeV2(address bridgeAdmin) external reinitializer(2) {
+    _setContract(ContractType.BRIDGE_ADMIN, bridgeAdmin);
   }
 
   /**
@@ -530,23 +534,21 @@ contract RoninGatewayV2 is
     IsolatedGovernance.Vote storage _v,
     bytes32 _hash
   ) internal view returns (uint256 _totalWeight, uint256 _trustedWeight) {
+    address[] memory _bridgeOperators = IBridgeAdmin(getContract(ContractType.BRIDGE_ADMIN)).getBridgeOperators();
     address[] memory _consensusList = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
     uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
       .getConsensusWeights(_consensusList);
-    // TODO: uncomment below logic
 
-    // unchecked {
-    //   for (uint _i; _i < _bridgeOperators.length; ++_i) {
-    //     if (
-    //       _flags[_i].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator) && _v.voteHashOf[_bridgeOperators[_i]] == _hash
-    //     ) {
-    //       _totalWeight++;
-    //       if (_trustedWeights[_i] > 0) {
-    //         _trustedWeight++;
-    //       }
-    //     }
-    //   }
-    // }
+    unchecked {
+      for (uint _i; _i < _bridgeOperators.length; ++_i) {
+        if (_v.voteHashOf[_bridgeOperators[_i]] == _hash) {
+          _totalWeight++;
+          if (_trustedWeights[_i] > 0) {
+            _trustedWeight++;
+          }
+        }
+      }
+    }
   }
 
   function setTrustedThreshold(
