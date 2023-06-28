@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import { Vm, Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
-import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { TransparentUpgradeableProxyV2, ERC1967Upgrade } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 import { ILogic, MockLogicV1, MockLogicV2 } from "@ronin/contracts/mocks/utils/version-control/MockLogic.sol";
 import { IConditionalImplementControl } from "@ronin/contracts/interfaces/version-control/IConditionalImplementControl.sol";
@@ -65,7 +64,7 @@ contract ConditionalImplementControlTest is Test {
   function test_UpgradeToSwitcher() external virtual {
     _manualUpgradeTo(_switcher);
     vm.prank(_proxyAdmin);
-    assertEq(_switcher, ITransparentUpgradeableProxy(_proxy).implementation());
+    assertEq(_switcher, TransparentUpgradeableProxyV2(_proxy).implementation());
   }
 
   /**
@@ -239,7 +238,7 @@ contract ConditionalImplementControlTest is Test {
    */
   function _manualUpgradeTo(address impl) internal virtual {
     vm.prank(_proxyAdmin);
-    ITransparentUpgradeableProxy(_proxy).upgradeTo(impl);
+    TransparentUpgradeableProxyV2(_proxy).upgradeTo(impl);
   }
 
   /**

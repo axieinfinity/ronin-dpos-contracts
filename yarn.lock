@@ -1042,10 +1042,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openzeppelin/contracts@npm:4.9.0":
-  version: 4.9.0
-  resolution: "@openzeppelin/contracts@npm:4.9.0"
-  checksum: aa1499897f85821f9184497f5201152a4a272b05749c85c209e9e553d734467a78557bcd2efe35f07994d6e14f30c545b239a4f63622f27f808182efb3103658
+"@openzeppelin/contracts@npm:4.7.3":
+  version: 4.7.3
+  resolution: "@openzeppelin/contracts@npm:4.7.3"
+  checksum: 18382fcacf7cfd652f5dd0e70c08f08ea74eaa8ff11e9f9850639ada70198ae01a3f9493d89a52d724f2db394e9616bf6258017804612ba273167cf657fbb073
   languageName: node
   linkType: hard
 
@@ -6122,7 +6122,7 @@ __metadata:
     "@nomicfoundation/hardhat-chai-matchers": ^1.0.3
     "@nomicfoundation/hardhat-foundry": ^1.0.1
     "@nomiclabs/hardhat-ethers": ^2.0.3
-    "@openzeppelin/contracts": 4.9.0
+    "@openzeppelin/contracts": 4.7.3
     "@solidstate/hardhat-4byte-uploader": ^1.1.0
     "@typechain/ethers-v5": ^8.0.5
     "@typechain/hardhat": ^3.0.0
