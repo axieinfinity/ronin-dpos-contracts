@@ -18,6 +18,10 @@ interface IBridgeAdmin {
     Remove
   }
 
+  struct BridgeOperator {
+    address addr;
+  }
+
   /**
    * @dev Emitted when a bridge operator is modified.
    * @param operator The address of the bridge operator being modified.
@@ -46,13 +50,13 @@ interface IBridgeAdmin {
 
   /**
    * @dev Adds multiple bridge operators.
+   * @param authAccounts An array of addresses of hot/cold wallets for bridge operator to update their node address.
    * @param bridgeOperators An array of addresses representing the bridge operators to add.
-   * @param secondaryWallets An array of addresses of hot/cold wallets for bridge operator to update their node address.
    * @return addeds An array of booleans indicating whether each bridge operator was added successfully.
    */
   function addBridgeOperators(
-    address[] calldata bridgeOperators,
-    address[] calldata secondaryWallets
+    address[] calldata authAccounts,
+    address[] calldata bridgeOperators
   ) external returns (bool[] memory addeds);
 
   /**
