@@ -1,4 +1,4 @@
-/// npx hardhat deploy --tags 230627UpgradeTestnet --network ronin-testnet
+/// npx hardhat deploy --tags 230627UpgradeTestnetV0_5_2 --network ronin-testnet
 
 /// This script does the following:
 /// - Set new enforcer for mainchain gateway
@@ -8,11 +8,15 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { EXPLORER_URL, proxyCall, proxyInterface } from './upgradeUtils';
 import { VoteType } from '../script/proposal';
-import { RoninGatewayV2__factory } from '../types';
-import { generalRoninConf } from '../configs/config';
+import { RoninGatewayV2__factory, SlashIndicator__factory } from '../types';
+import { generalRoninConf, roninchainNetworks } from '../configs/config';
 import { network } from 'hardhat';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
+  if (!roninchainNetworks.includes(network.name!)) {
+    return;
+  }
+
   const { execute } = deployments;
   let { governor } = await getNamedAccounts(); // NOTE: Should double check the `governor` account in the `hardhat.config.ts` file
   console.log('Governor:', governor);
@@ -26,6 +30,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const SlashIndicatorLogicDepl = await deployments.get('SlashIndicatorLogic');
   const StakingLogicDepl = await deployments.get('StakingLogic');
   const StakingVestingLogicDepl = await deployments.get('StakingVestingLogic');
+  const RoninGovernanceAdminDepl = await deployments.get('RoninGovernanceAdmin');
 
   const BridgeTrackingProxy = await deployments.get('BridgeTrackingProxy');
   const MaintenanceProxy = await deployments.get('MaintenanceProxy');
@@ -56,7 +61,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     proxyInterface.encodeFunctionData('upgradeToAndCall', [RoninValidatorSetLogicDepl.address, initializeV2_SIG]),
   ];
   const SlashIndicatorInstr = [
-    proxyInterface.encodeFunctionData('upgradeToAndCall', [SlashIndicatorLogicDepl.address, initializeV2_SIG]),
+    proxyInterface.encodeFunctionData('upgradeToAndCall', [
+      SlashIndicatorLogicDepl.address,
+      new SlashIndicator__factory().interface.encodeFunctionData('initializeV2', [RoninGovernanceAdminDepl.address]),
+    ]),
   ];
   const StakingInstr = [
     proxyInterface.encodeFunctionData('upgradeToAndCall', [StakingLogicDepl.address, initializeV2_SIG]),
@@ -118,6 +126,6 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   console.log(`${EXPLORER_URL}/tx/${tx.transactionHash}`);
 };
 
-deploy.tags = ['230627UpgradeTestnet'];
+deploy.tags = ['230627UpgradeTestnetV0_5_2'];
 
 export default deploy;
