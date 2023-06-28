@@ -80,7 +80,7 @@ contract RoninGatewayV2 is
    * @dev Reverts if the method caller is not bridge operator.
    */
   function _requireBridgeOperator() internal view {
-    if (!IBridgeAdmin(getContract(ContractType.VALIDATOR)).isBridgeOperator(msg.sender))
+    if (!IBridgeAdmin(getContract(ContractType.BRIDGE_ADMIN)).isBridgeOperator(msg.sender))
       revert ErrUnauthorized(msg.sig, RoleAccess.__DEPRECATED_BRIDGE_OPERATOR);
   }
 

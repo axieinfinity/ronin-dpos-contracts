@@ -48,6 +48,10 @@ interface IBridgeAdmin {
    */
   function getBridgeOperators() external view returns (address[] memory);
 
+  function getBridgeOperatorOf(
+    address[] calldata authAccounts
+  ) external view returns (address[] memory bridgeOperators_);
+
   /**
    * @dev Adds multiple bridge operators.
    * @param authAccounts An array of addresses of hot/cold wallets for bridge operator to update their node address.

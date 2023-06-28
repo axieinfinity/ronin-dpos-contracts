@@ -123,6 +123,20 @@ contract BridgeAdmin is IBridgeAdmin, HasContracts, Initializable {
     return _bridgeOperatorSet().values();
   }
 
+  function getBridgeOperatorOf(
+    address[] calldata authAccounts
+  ) external view returns (address[] memory bridgeOperators_) {
+    uint256 length = authAccounts.length;
+    bridgeOperators_ = new address[](length);
+    mapping(address => BridgeOperator) storage bridgeOperatorMap = _bridgeOperators();
+    for (uint256 i; i < length; ) {
+      bridgeOperators_[i] = bridgeOperatorMap[authAccounts[i]].addr;
+      unchecked {
+        ++i;
+      }
+    }
+  }
+
   function _addBridgeOperators(
     address[] calldata authAccounts,
     address[] calldata bridgeOperators
