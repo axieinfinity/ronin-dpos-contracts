@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title IBridgeAdmin
+ * @title IBridgeAdminOperator
  * @dev The interface for managing bridge operators.
  */
-interface IBridgeAdmin {
+interface IBridgeAdminOperator {
   /**
    * @dev Enum representing the actions that can be performed on bridge operators.
    * - Add: Add a bridge operator.
@@ -19,7 +19,7 @@ interface IBridgeAdmin {
   }
 
   struct BridgeOperator {
-    address addr;
+    uint96 voteWeight;
   }
 
   /**
@@ -51,6 +51,8 @@ interface IBridgeAdmin {
   function getBridgeOperatorOf(
     address[] calldata authAccounts
   ) external view returns (address[] memory bridgeOperators_);
+
+  function getGovernors() external view returns (address[] memory);
 
   /**
    * @dev Adds multiple bridge operators.

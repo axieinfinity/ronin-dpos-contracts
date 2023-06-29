@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import "../../interfaces/consumers/SignatureConsumer.sol";
 import "../../libraries/BridgeOperatorsBallot.sol";
-import "../../interfaces/IRoninGovernanceAdmin.sol";
+import "../../interfaces/IBridgeAdminProposal.sol";
 import "../../libraries/IsolatedGovernance.sol";
 
-abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAdmin {
+abstract contract BOsGovernanceProposal is SignatureConsumer, IBridgeAdminProposal {
   using IsolatedGovernance for IsolatedGovernance.Vote;
   /**
    * @dev Error indicating that the order of signers is invalid.
@@ -23,14 +23,14 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IRoninGovernanceAd
   mapping(uint256 => mapping(uint256 => mapping(address => Signature))) internal _bridgeVoterSig;
 
   /**
-   * @inheritdoc IRoninGovernanceAdmin
+   * @inheritdoc IBridgeAdminProposal
    */
   function lastVotedBlock(address _bridgeVoter) external view returns (uint256) {
     return _lastVotedBlock[_bridgeVoter];
   }
 
   /**
-   * @inheritdoc IRoninGovernanceAdmin
+   * @inheritdoc IBridgeAdminProposal
    */
   function lastSyncedBridgeOperatorSetInfo() external view returns (BridgeOperatorsBallot.BridgeOperatorSet memory) {
     return _lastSyncedBridgeOperatorSetInfo;

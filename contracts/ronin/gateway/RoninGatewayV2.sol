@@ -14,7 +14,7 @@ import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../libraries/IsolatedGovernance.sol";
-import "../../interfaces/IBridgeAdmin.sol";
+import "../../interfaces/IBridgeAdminOperator.sol";
 
 contract RoninGatewayV2 is
   GatewayV2,
@@ -80,7 +80,7 @@ contract RoninGatewayV2 is
    * @dev Reverts if the method caller is not bridge operator.
    */
   function _requireBridgeOperator() internal view {
-    if (!IBridgeAdmin(getContract(ContractType.BRIDGE_ADMIN)).isBridgeOperator(msg.sender))
+    if (!IBridgeAdminOperator(getContract(ContractType.BRIDGE_ADMIN)).isBridgeOperator(msg.sender))
       revert ErrUnauthorized(msg.sig, RoleAccess.__DEPRECATED_BRIDGE_OPERATOR);
   }
 
@@ -534,7 +534,8 @@ contract RoninGatewayV2 is
     IsolatedGovernance.Vote storage _v,
     bytes32 _hash
   ) internal view returns (uint256 _totalWeight, uint256 _trustedWeight) {
-    address[] memory _bridgeOperators = IBridgeAdmin(getContract(ContractType.BRIDGE_ADMIN)).getBridgeOperators();
+    address[] memory _bridgeOperators = IBridgeAdminOperator(getContract(ContractType.BRIDGE_ADMIN))
+      .getBridgeOperators();
     address[] memory _consensusList = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
     uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
       .getConsensusWeights(_consensusList);

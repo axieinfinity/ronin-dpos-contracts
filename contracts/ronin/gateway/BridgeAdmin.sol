@@ -1,222 +1,151 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import { HasContracts } from "../../extensions/collections/HasContracts.sol";
-import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
-import { IBridgeAdmin } from "../../interfaces/IBridgeAdmin.sol";
-import { ContractType } from "../../utils/ContractType.sol";
-import { RoleAccess } from "../../utils/RoleAccess.sol";
-import { ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
+import { EnumerableSet, BridgeAdminOperator } from "./BridgeAdminOperator.sol";
+import { BOsGovernanceProposal } from "../../extensions/bridge-operator-governance/BOsGovernanceProposal.sol";
+import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
+import { IsolatedGovernance } from "../../libraries/IsolatedGovernance.sol";
+import { BridgeOperatorsBallot } from "../../libraries/BridgeOperatorsBallot.sol";
+import { IQuorum } from "../../interfaces/IQuorum.sol";
+import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
+import { ErrInvalidThreshold } from "../../utils/CommonErrors.sol";
 
-contract BridgeAdmin is IBridgeAdmin, HasContracts, Initializable {
-  using AddressArrayUtils for address[];
+contract BridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
+  using ErrorHandler for bool;
   using EnumerableSet for EnumerableSet.AddressSet;
+  using IsolatedGovernance for IsolatedGovernance.Vote;
 
-  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.bridgeOperators.slot") - 1
-  bytes32 private constant _BRIDGE_OPERATORS_SLOT = 0xd38c234075fde25875da8a6b7e36b58b86681d483271a99eeeee1d78e258a24d;
-  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.authAccountSet.slot") - 1
-  bytes32 private constant _AUTH_ACCOUNT_SET_SLOT = 0xee9a62453083ffc23e824959c176ce9a249e593eb4614183dd0c790be089488c;
-  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.bridgeOperatorSet.slot") - 1
-  bytes32 private constant _BRIDGE_OPERATOR_SET_SLOT =
-    0xfa6942bcd0cb9618731a0b9eaab9fd34c6d6385aa2aac7d7040156273bdde72c;
+  bytes32 DOMAIN_SEPARATOR;
 
-  modifier nonDuplicate(address[] calldata arr) {
-    _checkDuplicate(arr);
-    _;
-  }
+  uint256 internal _num;
+  uint256 internal _denom;
+  uint256 internal _totalWeight;
+  uint256 internal _nonce;
 
-  constructor() {
-    _disableInitializers();
-  }
+  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.bridgeOperatorInfo.slot") - 1
+  bytes32 private constant _BRIDGE_OPERATOR_INFO_SLOT =
+    0xe2e718851bb1c8eb99cbf923ff339c5e8aedd92e3d23c286f2024724214cbfc3;
 
-  /**
-   * @dev Initializes the contract storage.
-   */
-  function initialize(
+  constructor(
     address bridgeContract,
-    address[] calldata authAccounts,
-    address[] calldata bridgeOperators
-  ) external initializer nonDuplicate(bridgeOperators) nonDuplicate(authAccounts) {
-    // _requireHasCode(bridgeContract);
-    _setContract(ContractType.BRIDGE, bridgeContract);
-    _addBridgeOperators(bridgeOperators, authAccounts);
+    address[] memory governors,
+    address[] memory bridgeOperators
+  ) payable BridgeAdminOperator(bridgeContract, governors, bridgeOperators) {}
+
+  /**
+   * @dev See `BOsGovernanceProposal-_castVotesBySignatures`.
+   */
+  function voteBridgeOperatorsBySignatures(
+    BridgeOperatorsBallot.BridgeOperatorSet calldata _ballot,
+    Signature[] calldata _signatures
+  ) external {
+    _castBOVotesBySignatures(_ballot, _signatures, minimumVoteWeight(), DOMAIN_SEPARATOR);
+    IsolatedGovernance.Vote storage _v = _bridgeOperatorVote[_ballot.period][_ballot.epoch];
+    if (_v.status == VoteStatusConsumer.VoteStatus.Approved) {
+      _lastSyncedBridgeOperatorSetInfo = _ballot;
+      emit BridgeOperatorsApproved(_ballot.period, _ballot.epoch, _ballot.operators);
+      _v.status = VoteStatusConsumer.VoteStatus.Executed;
+    }
   }
 
   /**
-   * @inheritdoc IBridgeAdmin
+   * @inheritdoc IQuorum
    */
-  function addBridgeOperators(
-    address[] calldata authAccounts,
-    address[] calldata bridgeOperators
-  )
-    external
-    onlyContract(ContractType.BRIDGE)
-    nonDuplicate(bridgeOperators)
-    nonDuplicate(authAccounts)
-    returns (bool[] memory addeds)
-  {
-    addeds = _addBridgeOperators(bridgeOperators, authAccounts);
+  function setThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) external override onlyAdmin returns (uint256, uint256) {
+    return _setThreshold(_numerator, _denominator);
   }
 
   /**
-   * @inheritdoc IBridgeAdmin
+   * @inheritdoc IQuorum
    */
-  function removeBridgeOperators(
-    address[] calldata bridgeOperators
-  ) external onlyContract(ContractType.BRIDGE) nonDuplicate(bridgeOperators) returns (bool[] memory removeds) {
-    uint256 length = bridgeOperators.length;
-    removeds = new bool[](length);
-    EnumerableSet.AddressSet storage operatorSet = _bridgeOperatorSet();
+  function minimumVoteWeight() public view virtual returns (uint256) {
+    return (_num * _totalWeight + _denom - 1) / _denom;
+  }
+
+  /**
+   * @inheritdoc IQuorum
+   */
+  function getThreshold() external view virtual returns (uint256 num_, uint256 denom_) {
+    return (_num, _denom);
+  }
+
+  /**
+   * @inheritdoc IQuorum
+   */
+  function checkThreshold(uint256 _voteWeight) external view virtual returns (bool) {
+    return _voteWeight * _denom >= _num * _totalWeight;
+  }
+
+  /**
+   * @dev Returns the voted signatures for bridge operators at a specific period.
+   */
+  function getBridgeOperatorVotingSignatures(
+    uint256 _period,
+    uint256 _epoch
+  ) external view returns (address[] memory _voters, Signature[] memory _signatures) {
+    mapping(address => Signature) storage _sigMap = _bridgeVoterSig[_period][_epoch];
+    _voters = _bridgeOperatorVote[_period][_epoch].voters;
+    _signatures = new Signature[](_voters.length);
+    for (uint _i; _i < _voters.length; ) {
+      _signatures[_i] = _sigMap[_voters[_i]];
+
+      unchecked {
+        ++_i;
+      }
+    }
+  }
+
+  /**
+   * @dev Returns whether the voter `_voter` casted vote for bridge operators at a specific period.
+   */
+  function bridgeOperatorsVoted(uint256 _period, uint256 _epoch, address _voter) external view returns (bool) {
+    return _bridgeOperatorVote[_period][_epoch].voted(_voter);
+  }
+
+  /**
+   * @dev Sets threshold and returns the old one.
+   *
+   * Emits the `ThresholdUpdated` event.
+   *
+   */
+  function _setThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) internal virtual returns (uint256 _previousNum, uint256 _previousDenom) {
+    if (_numerator > _denominator) revert ErrInvalidThreshold(msg.sig);
+
+    _previousNum = _num;
+    _previousDenom = _denom;
+    _num = _numerator;
+    _denom = _denominator;
+    unchecked {
+      emit ThresholdUpdated(_nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    }
+  }
+
+  function _isBridgeVoter(address addr) internal view override returns (bool) {
+    return _bridgeOperatorInfo()[addr].voteWeight != 0;
+  }
+
+  function _sumBridgeVoterWeights(address[] memory _bridgeVoters) internal view override returns (uint256 sum) {
+    uint256 length = _bridgeOperatorSet().length();
+    mapping(address => BridgeOperator) storage bridgeOperatorInfo = _bridgeOperatorInfo();
 
     for (uint256 i; i < length; ) {
-      _checkNonZeroAddress(bridgeOperators[i]);
-      removeds[i] = operatorSet.remove(bridgeOperators[i]);
+      sum += bridgeOperatorInfo[_bridgeVoters[i]].voteWeight;
 
       unchecked {
         ++i;
       }
     }
-
-    emit OperatorSetModified(msg.sender, BridgeAction.Remove);
   }
 
-  /**
-   * @inheritdoc IBridgeAdmin
-   */
-  function updateBridgeOperator(address newBridgeOperator) external returns (bool updated) {
-    _checkNonZeroAddress(newBridgeOperator);
-
-    mapping(address => BridgeOperator) storage bridgeOperatorMap = _bridgeOperators();
-    EnumerableSet.AddressSet storage operatorSet = _bridgeOperatorSet();
-    address currentBridgeOperator = bridgeOperatorMap[msg.sender].addr;
-
-    // return false if currentBridgeOperator unexists in operatorSet
-    if (!operatorSet.remove(currentBridgeOperator)) {
-      revert ErrUnauthorized(msg.sig, RoleAccess.__DEPRECATED_BRIDGE_OPERATOR);
-    }
-
-    updated = operatorSet.add(newBridgeOperator);
-
-    emit OperatorSetModified(msg.sender, BridgeAction.Update);
-  }
-
-  /**
-   * @inheritdoc IBridgeAdmin
-   */
-  function totalBridgeOperators() external view returns (uint256) {
-    return _bridgeOperatorSet().length();
-  }
-
-  /**
-   * @inheritdoc IBridgeAdmin
-   */
-  function isBridgeOperator(address addr) external view returns (bool) {
-    return _bridgeOperatorSet().contains(addr);
-  }
-
-  /**
-   * @inheritdoc IBridgeAdmin
-   */
-  function getBridgeOperators() external view returns (address[] memory) {
-    return _bridgeOperatorSet().values();
-  }
-
-  function getBridgeOperatorOf(
-    address[] calldata authAccounts
-  ) external view returns (address[] memory bridgeOperators_) {
-    uint256 length = authAccounts.length;
-    bridgeOperators_ = new address[](length);
-    mapping(address => BridgeOperator) storage bridgeOperatorMap = _bridgeOperators();
-    for (uint256 i; i < length; ) {
-      bridgeOperators_[i] = bridgeOperatorMap[authAccounts[i]].addr;
-      unchecked {
-        ++i;
-      }
-    }
-  }
-
-  function _addBridgeOperators(
-    address[] calldata authAccounts,
-    address[] calldata bridgeOperators
-  ) private returns (bool[] memory addeds) {
-    uint256 length = bridgeOperators.length;
-    addeds = new bool[](length);
-
-    EnumerableSet.AddressSet storage authAccountSet = _authAccounts();
-    EnumerableSet.AddressSet storage bridgeOperatorSet = _bridgeOperatorSet();
-    mapping(address => BridgeOperator) storage bridgeOperatorMap = _bridgeOperators();
-
-    address authAccount;
-    address bridgeOperator;
-
-    for (uint256 i; i < length; ) {
-      authAccount = authAccounts[i];
-      bridgeOperator = bridgeOperators[i];
-
-      _checkNonZeroAddress(authAccount);
-      _checkNonZeroAddress(bridgeOperator);
-
-      addeds[i] = bridgeOperatorSet.add(bridgeOperator);
-
-      unchecked {
-        if (addeds[i]) {
-          authAccountSet.add(authAccount);
-          bridgeOperatorMap[authAccount].addr = bridgeOperator;
-        }
-        ++i;
-      }
-    }
-
-    emit OperatorSetModified(msg.sender, BridgeAction.Add);
-  }
-
-  /**
-   * @dev Internal function to access the address set of bridge operators.
-   * @return bridgeOperators the storage address set.
-   */
-  function _bridgeOperatorSet() private pure returns (EnumerableSet.AddressSet storage bridgeOperators) {
+  function _bridgeOperatorInfo() private pure returns (mapping(address => BridgeOperator) storage bridgeOperatorInfo_) {
     assembly {
-      bridgeOperators.slot := _BRIDGE_OPERATOR_SET_SLOT
+      bridgeOperatorInfo_.slot := _BRIDGE_OPERATOR_INFO_SLOT
     }
-  }
-
-  /**
-   * @dev Internal function to access the address set of bridge operators.
-   * @return authAccounts_ the storage address set.
-   */
-  function _authAccounts() private pure returns (EnumerableSet.AddressSet storage authAccounts_) {
-    assembly {
-      authAccounts_.slot := _AUTH_ACCOUNT_SET_SLOT
-    }
-  }
-
-  /**
-   * @dev Internal function to access the mapping from auth account => BridgeOperator.
-   * @return bridgeOperators_ the storage address set.
-   */
-  function _bridgeOperators() private pure returns (mapping(address => BridgeOperator) storage bridgeOperators_) {
-    assembly {
-      bridgeOperators_.slot := _BRIDGE_OPERATORS_SLOT
-    }
-  }
-
-  /**
-   * @dev Check if arr is empty and revert if it is.
-   * Checks if an array contains any duplicate addresses and reverts if duplicates are found.
-   * @param arr The array of addresses to check.
-   */
-  function _checkDuplicate(address[] calldata arr) private pure {
-    if (arr.length == 0) revert ErrEmptyArray();
-    if (arr.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
-  }
-
-  /**
-   * @dev Checks if an address is zero and reverts if it is.
-   * @param addr The address to check.
-   */
-  function _checkNonZeroAddress(address addr) private pure {
-    if (addr == address(0)) revert ErrZeroAddress(msg.sig);
   }
 }
