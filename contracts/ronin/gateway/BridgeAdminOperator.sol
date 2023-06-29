@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { HasContracts } from "../../extensions/collections/HasContracts.sol";
-import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { IBridgeAdminOperator } from "../../interfaces/IBridgeAdminOperator.sol";
+import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { RoleAccess } from "../../utils/RoleAccess.sol";
 import { ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
@@ -17,10 +17,10 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
   bytes32 private constant _BRIDGE_OPERATOR_INFO_SLOT =
     0xe2e718851bb1c8eb99cbf923ff339c5e8aedd92e3d23c286f2024724214cbfc3;
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.governorToBridgeOperator.slot") - 1
-  bytes32 private constant _GOVERNOR_TO_BRIDGE_OPERATOR_SLOT =
+  bytes32 private constant _GOVERNOR_TO_BRIDGE_VOTER_SLOT =
     0x036a0f8f5d3a4b80818dc282d4074f198396f885ba62102afe6d872c11427adc;
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.bridgeOperators.slot") - 1
-  bytes32 private constant _BRIDGE_OPERATORS_SLOT = 0xd38c234075fde25875da8a6b7e36b58b86681d483271a99eeeee1d78e258a24d;
+  bytes32 private constant _BRIDGE_VOTER_SET_SLOT = 0xd38c234075fde25875da8a6b7e36b58b86681d483271a99eeeee1d78e258a24d;
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.governorset.slot") - 1
   bytes32 private constant _GOVERNOR_SET_SLOT = 0xee9a62453083ffc23e824959c176ce9a249e593eb4614183dd0c790be089488c;
 
@@ -260,7 +260,7 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
    */
   function _bridgeVoterSet() internal pure returns (EnumerableSet.AddressSet storage bridgeOperators) {
     assembly {
-      bridgeOperators.slot := _GOVERNOR_TO_BRIDGE_OPERATOR_SLOT
+      bridgeOperators.slot := _GOVERNOR_TO_BRIDGE_VOTER_SLOT
     }
   }
 
@@ -280,7 +280,7 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
    */
   function _gorvernorToBridgeVoter() private pure returns (mapping(address => address) storage bridgeOperators_) {
     assembly {
-      bridgeOperators_.slot := _BRIDGE_OPERATORS_SLOT
+      bridgeOperators_.slot := _BRIDGE_VOTER_SET_SLOT
     }
   }
 

@@ -3,11 +3,11 @@ pragma solidity ^0.8.0;
 
 import { EnumerableSet, BridgeAdminOperator } from "./BridgeAdminOperator.sol";
 import { BOsGovernanceProposal } from "../../extensions/bridge-operator-governance/BOsGovernanceProposal.sol";
+import { IQuorum } from "../../interfaces/IQuorum.sol";
+import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { IsolatedGovernance } from "../../libraries/IsolatedGovernance.sol";
 import { BridgeOperatorsBallot } from "../../libraries/BridgeOperatorsBallot.sol";
-import { IQuorum } from "../../interfaces/IQuorum.sol";
-import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
 import { ErrInvalidThreshold } from "../../utils/CommonErrors.sol";
 
 contract BridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
@@ -15,12 +15,11 @@ contract BridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
   using EnumerableSet for EnumerableSet.AddressSet;
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
-  bytes32 DOMAIN_SEPARATOR;
+  bytes32 public DOMAIN_SEPARATOR;
 
-  uint256 internal _num;
-  uint256 internal _denom;
-
-  uint256 internal _nonce;
+  uint256 private _num;
+  uint256 private _denom;
+  uint256 private _nonce;
 
   constructor(
     uint256 num,
