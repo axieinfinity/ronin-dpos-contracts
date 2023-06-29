@@ -25,6 +25,7 @@ contract BridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
   constructor(
     uint256 num,
     uint256 denom,
+    uint256 roninChainId,
     address bridgeContract,
     uint256[] memory voteWeights,
     address[] memory governors,
@@ -33,6 +34,15 @@ contract BridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
     _nonce = 1;
     _num = num;
     _denom = denom;
+
+    DOMAIN_SEPARATOR = keccak256(
+      abi.encode(
+        keccak256("EIP712Domain(string name,string version,bytes32 salt)"),
+        keccak256("BridgeAdmin"), // name hash
+        keccak256("1"), // version hash
+        keccak256(abi.encode("BRIDGE_ADMIN", roninChainId)) // salt
+      )
+    );
   }
 
   /**
@@ -129,20 +139,11 @@ contract BridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
     }
   }
 
-  function _isBridgeVoter(address addr) internal view override returns (bool) {
-    return _bridgeOperatorInfo()[addr].voteWeight != 0;
+  function _sumBridgeVoterWeights(address[] memory _bridgeVoters) internal view override returns (uint256) {
+    return getSumBridgeVoterWeights(_bridgeVoters);
   }
 
-  function _sumBridgeVoterWeights(address[] memory _bridgeVoters) internal view override returns (uint256 sum) {
-    uint256 length = _bridgeVoterSet().length();
-    mapping(address => BridgeOperator) storage bridgeOperatorInfo = _bridgeOperatorInfo();
-
-    for (uint256 i; i < length; ) {
-      sum += bridgeOperatorInfo[_bridgeVoters[i]].voteWeight;
-
-      unchecked {
-        ++i;
-      }
-    }
+  function _isBridgeVoter(address addr) internal view override returns (bool) {
+    return _bridgeOperatorInfo()[addr].voteWeight != 0;
   }
 }

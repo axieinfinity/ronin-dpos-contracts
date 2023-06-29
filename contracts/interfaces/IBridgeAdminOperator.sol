@@ -43,6 +43,10 @@ interface IBridgeAdminOperator {
    */
   function isBridgeOperator(address addr) external view returns (bool);
 
+  function getSumBridgeVoterWeights(address[] memory _bridgeVoters) external view returns (uint256 sum);
+
+  function getTotalWeights() external view returns (uint256);
+
   /**
    * @dev Returns an array of all bridge operators.
    * @return An array containing the addresses of all bridge operators.
@@ -52,6 +56,10 @@ interface IBridgeAdminOperator {
   function getBridgeOperatorOf(
     address[] calldata authAccounts
   ) external view returns (address[] memory bridgeOperators_);
+
+  function getBridgeVoterWeight(address _addr) external view returns (uint256);
+
+  function getBridgeVoterWeights(address[] calldata bridgeVoters) external view returns (uint256[] memory weights);
 
   function getGovernors() external view returns (address[] memory);
 

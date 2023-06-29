@@ -128,6 +128,48 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
   /**
    * @inheritdoc IBridgeAdminOperator
    */
+  function getTotalWeights() external view returns (uint256) {
+    return _totalWeight;
+  }
+
+  function getBridgeVoterWeight(address bridgeVoter) external view returns (uint256) {
+    return _bridgeOperatorInfo()[bridgeVoter].voteWeight;
+  }
+
+  /**
+   * @inheritdoc IBridgeAdminOperator
+   */
+  function getBridgeVoterWeights(address[] calldata bridgeVoters) external view returns (uint256[] memory weights) {
+    uint256 length = bridgeVoters.length;
+    weights = new uint256[](length);
+    mapping(address => BridgeOperator) storage bridgeOperatorInfo = _bridgeOperatorInfo();
+    for (uint256 i; i < length; ) {
+      weights[i] = bridgeOperatorInfo[bridgeVoters[i]].voteWeight;
+      unchecked {
+        ++i;
+      }
+    }
+  }
+
+  /**
+   * @inheritdoc IBridgeAdminOperator
+   */
+  function getSumBridgeVoterWeights(address[] memory _bridgeVoters) public view returns (uint256 sum) {
+    uint256 length = _bridgeVoterSet().length();
+    mapping(address => BridgeOperator) storage bridgeOperatorInfo = _bridgeOperatorInfo();
+
+    for (uint256 i; i < length; ) {
+      sum += bridgeOperatorInfo[_bridgeVoters[i]].voteWeight;
+
+      unchecked {
+        ++i;
+      }
+    }
+  }
+
+  /**
+   * @inheritdoc IBridgeAdminOperator
+   */
   function totalBridgeOperators() external view returns (uint256) {
     return _bridgeVoterSet().length();
   }
@@ -146,10 +188,16 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
     return _bridgeVoterSet().values();
   }
 
+  /**
+   * @inheritdoc IBridgeAdminOperator
+   */
   function getGovernors() external view returns (address[] memory) {
     return _governors().values();
   }
 
+  /**
+   * @inheritdoc IBridgeAdminOperator
+   */
   function getBridgeOperatorOf(address[] calldata governors) external view returns (address[] memory bridgeOperators_) {
     uint256 length = governors.length;
     bridgeOperators_ = new address[](length);
