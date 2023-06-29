@@ -19,18 +19,21 @@ contract BridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
 
   uint256 internal _num;
   uint256 internal _denom;
-  uint256 internal _totalWeight;
+
   uint256 internal _nonce;
 
-  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.bridgeOperatorInfo.slot") - 1
-  bytes32 private constant _BRIDGE_OPERATOR_INFO_SLOT =
-    0xe2e718851bb1c8eb99cbf923ff339c5e8aedd92e3d23c286f2024724214cbfc3;
-
   constructor(
+    uint256 num,
+    uint256 denom,
     address bridgeContract,
+    uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
-  ) payable BridgeAdminOperator(bridgeContract, governors, bridgeOperators) {}
+  ) payable BridgeAdminOperator(bridgeContract, voteWeights, governors, bridgeOperators) {
+    _nonce = 1;
+    _num = num;
+    _denom = denom;
+  }
 
   /**
    * @dev See `BOsGovernanceProposal-_castVotesBySignatures`.
@@ -131,7 +134,7 @@ contract BridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
   }
 
   function _sumBridgeVoterWeights(address[] memory _bridgeVoters) internal view override returns (uint256 sum) {
-    uint256 length = _bridgeOperatorSet().length();
+    uint256 length = _bridgeVoterSet().length();
     mapping(address => BridgeOperator) storage bridgeOperatorInfo = _bridgeOperatorInfo();
 
     for (uint256 i; i < length; ) {
@@ -140,12 +143,6 @@ contract BridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
       unchecked {
         ++i;
       }
-    }
-  }
-
-  function _bridgeOperatorInfo() private pure returns (mapping(address => BridgeOperator) storage bridgeOperatorInfo_) {
-    assembly {
-      bridgeOperatorInfo_.slot := _BRIDGE_OPERATOR_INFO_SLOT
     }
   }
 }

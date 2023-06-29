@@ -19,6 +19,7 @@ interface IBridgeAdminOperator {
   }
 
   struct BridgeOperator {
+    address gorvernor;
     uint96 voteWeight;
   }
 
@@ -56,12 +57,13 @@ interface IBridgeAdminOperator {
 
   /**
    * @dev Adds multiple bridge operators.
-   * @param authAccounts An array of addresses of hot/cold wallets for bridge operator to update their node address.
+   * @param governors An array of addresses of hot/cold wallets for bridge operator to update their node address.
    * @param bridgeOperators An array of addresses representing the bridge operators to add.
    * @return addeds An array of booleans indicating whether each bridge operator was added successfully.
    */
   function addBridgeOperators(
-    address[] calldata authAccounts,
+    uint256[] calldata voteWeights,
+    address[] calldata governors,
     address[] calldata bridgeOperators
   ) external returns (bool[] memory addeds);
 
