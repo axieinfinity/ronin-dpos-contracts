@@ -28,21 +28,21 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
 
   uint256 internal _totalWeight;
 
-  modifier nonDuplicate(address[] calldata arr) {
+  modifier nonDuplicate(address[] memory arr) {
     _checkDuplicate(arr);
     _;
   }
 
-  constructor(
-    address bridgeContract,
-    uint256[] memory voteWeights,
-    address[] memory governors,
-    address[] memory bridgeOperators
-  ) payable {
-    // _requireHasCode(bridgeContract);
-    _setContract(ContractType.BRIDGE, bridgeContract);
-    _addBridgeOperators(voteWeights, bridgeOperators, governors);
-  }
+  // constructor(
+  //   address bridgeContract,
+  //   uint256[] memory voteWeights,
+  //   address[] memory governors,
+  //   address[] memory bridgeOperators
+  // ) payable {
+  //   // _requireHasCode(bridgeContract);
+  // _setContract(ContractType.BRIDGE, bridgeContract);
+  // _addBridgeOperators(voteWeights, bridgeOperators, governors);
+  // }
 
   /**
    * @inheritdoc IBridgeAdminOperator
@@ -58,7 +58,7 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
     nonDuplicate(governors)
     returns (bool[] memory addeds)
   {
-    addeds = _addBridgeOperators(voteWeights, bridgeOperators, governors);
+    addeds = _addBridgeOperators(voteWeights, governors, bridgeOperators);
   }
 
   /**
@@ -156,7 +156,9 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
   /**
    * @inheritdoc IBridgeAdminOperator
    */
-  function getSumBridgeVoterWeights(address[] memory governors) public view returns (uint256 sum) {
+  function getSumBridgeVoterWeights(
+    address[] memory governors
+  ) public view nonDuplicate(governors) returns (uint256 sum) {
     uint256 length = _bridgeOperatorSet().length();
     mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _governorToBridgeOperatorInfo();
     for (uint256 i; i < length; ) {
@@ -193,7 +195,7 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
    * @inheritdoc IBridgeAdminOperator
    */
   function getGovernors() external view returns (address[] memory) {
-    return _governors().values();
+    return _governorsSet().values();
   }
 
   /**
@@ -216,11 +218,11 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory brigdeOperators
-  ) private returns (bool[] memory addeds) {
+  ) internal returns (bool[] memory addeds) {
     uint256 length = brigdeOperators.length;
     addeds = new bool[](length);
 
-    EnumerableSet.AddressSet storage governorSet = _governors();
+    EnumerableSet.AddressSet storage governorSet = _governorsSet();
     mapping(address => address) storage governorOf = _governorOf();
     EnumerableSet.AddressSet storage bridgeOperatorSet = _bridgeOperatorSet();
     mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _governorToBridgeOperatorInfo();
@@ -276,7 +278,7 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
    * @dev Internal function to access the address set of bridge operators.
    * @return governors_ the storage address set.
    */
-  function _governors() internal pure returns (EnumerableSet.AddressSet storage governors_) {
+  function _governorsSet() internal pure returns (EnumerableSet.AddressSet storage governors_) {
     assembly {
       governors_.slot := _GOVERNOR_SET_SLOT
     }

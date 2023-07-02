@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { EnumerableSet, BridgeAdminOperator } from "../../extensions/bridge-operator-governance/BridgeAdminOperator.sol";
+import { ContractType, EnumerableSet, BridgeAdminOperator } from "../../extensions/bridge-operator-governance/BridgeAdminOperator.sol";
 import { BOsGovernanceProposal } from "../../extensions/bridge-operator-governance/BOsGovernanceProposal.sol";
 import { IQuorum } from "../../interfaces/IQuorum.sol";
 import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
@@ -29,7 +29,10 @@ contract RoninBridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
-  ) payable BridgeAdminOperator(bridgeContract, voteWeights, governors, bridgeOperators) {
+  ) payable //BridgeAdminOperator(bridgeContract, voteWeights, governors, bridgeOperators)
+  {
+    _setContract(ContractType.BRIDGE, bridgeContract);
+    _addBridgeOperators(voteWeights, bridgeOperators, governors);
     _nonce = 1;
     _num = num;
     _denom = denom;
