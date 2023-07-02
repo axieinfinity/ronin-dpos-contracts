@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { EnumerableSet, BridgeAdminOperator } from "./BridgeAdminOperator.sol";
+import { EnumerableSet, BridgeAdminOperator } from "../../extensions/bridge-operator-governance/BridgeAdminOperator.sol";
 import { BOsGovernanceProposal } from "../../extensions/bridge-operator-governance/BOsGovernanceProposal.sol";
 import { IQuorum } from "../../interfaces/IQuorum.sol";
 import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
@@ -10,7 +10,7 @@ import { IsolatedGovernance } from "../../libraries/IsolatedGovernance.sol";
 import { BridgeOperatorsBallot } from "../../libraries/BridgeOperatorsBallot.sol";
 import { ErrInvalidThreshold } from "../../utils/CommonErrors.sol";
 
-contract BridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
+contract RoninBridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
   using ErrorHandler for bool;
   using EnumerableSet for EnumerableSet.AddressSet;
   using IsolatedGovernance for IsolatedGovernance.Vote;
@@ -133,6 +133,7 @@ contract BridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
     _previousDenom = _denom;
     _num = _numerator;
     _denom = _denominator;
+
     unchecked {
       emit ThresholdUpdated(_nonce++, _numerator, _denominator, _previousNum, _previousDenom);
     }
@@ -143,6 +144,6 @@ contract BridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
   }
 
   function _isBridgeVoter(address addr) internal view override returns (bool) {
-    return _bridgeOperatorInfo()[addr].voteWeight != 0;
+    return _governorToBridgeOperatorInfo()[addr].voteWeight != 0;
   }
 }

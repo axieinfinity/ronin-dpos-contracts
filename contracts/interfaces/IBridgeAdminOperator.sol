@@ -18,8 +18,8 @@ interface IBridgeAdminOperator {
     Remove
   }
 
-  struct BridgeOperator {
-    address gorvernor;
+  struct BridgeOperatorInfo {
+    address addr;
     uint96 voteWeight;
   }
 
@@ -28,7 +28,7 @@ interface IBridgeAdminOperator {
    * @param operator The address of the bridge operator being modified.
    * @param action The action performed on the bridge operator.
    */
-  event OperatorSetModified(address indexed operator, BridgeAction indexed action);
+  event BridgeOperatorSetModified(address indexed operator, BridgeAction indexed action);
 
   /**
    * @dev Returns the total number of bridge operators.
@@ -43,7 +43,7 @@ interface IBridgeAdminOperator {
    */
   function isBridgeOperator(address addr) external view returns (bool);
 
-  function getSumBridgeVoterWeights(address[] memory _bridgeVoters) external view returns (uint256 sum);
+  function getSumBridgeVoterWeights(address[] calldata governors) external view returns (uint256 sum);
 
   function getTotalWeights() external view returns (uint256);
 
@@ -53,13 +53,11 @@ interface IBridgeAdminOperator {
    */
   function getBridgeOperators() external view returns (address[] memory);
 
-  function getBridgeOperatorOf(
-    address[] calldata authAccounts
-  ) external view returns (address[] memory bridgeOperators_);
+  function getBridgeOperatorOf(address[] calldata gorvernors) external view returns (address[] memory bridgeOperators_);
 
-  function getBridgeVoterWeight(address _addr) external view returns (uint256);
+  function getBridgeVoterWeight(address governor) external view returns (uint256);
 
-  function getBridgeVoterWeights(address[] calldata bridgeVoters) external view returns (uint256[] memory weights);
+  function getBridgeVoterWeights(address[] calldata governors) external view returns (uint256[] memory weights);
 
   function getGovernors() external view returns (address[] memory);
 
