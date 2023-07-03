@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import { AccessControlEnumerable } from "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
-import { TransparentUpgradeableProxyV2 } from "../extensions/TransparentUpgradeableProxyV2.sol";
 import { BOsGovernanceRelay } from "../extensions/bridge-operator-governance/BOsGovernanceRelay.sol";
 import { BridgeAdminOperator } from "../extensions/bridge-operator-governance/BridgeAdminOperator.sol";
 import { BridgeOperatorsBallot } from "../libraries/BridgeOperatorsBallot.sol";

@@ -1,18 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { ContractType, EnumerableSet, BridgeAdminOperator } from "../../extensions/bridge-operator-governance/BridgeAdminOperator.sol";
+import { BridgeAdminOperator } from "../../extensions/bridge-operator-governance/BridgeAdminOperator.sol";
 import { BOsGovernanceProposal } from "../../extensions/bridge-operator-governance/BOsGovernanceProposal.sol";
-import { IQuorum } from "../../interfaces/IQuorum.sol";
 import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
-import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { IsolatedGovernance } from "../../libraries/IsolatedGovernance.sol";
 import { BridgeOperatorsBallot } from "../../libraries/BridgeOperatorsBallot.sol";
-import { ErrInvalidThreshold } from "../../utils/CommonErrors.sol";
 
-contract RoninBridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal {
-  using ErrorHandler for bool;
-  using EnumerableSet for EnumerableSet.AddressSet;
+contract RoninBridgeAdmin is BridgeAdminOperator, BOsGovernanceProposal {
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
   constructor(
