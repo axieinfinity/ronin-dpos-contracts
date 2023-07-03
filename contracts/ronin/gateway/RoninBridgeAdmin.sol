@@ -65,6 +65,6 @@ contract RoninBridgeAdmin is BridgeAdminOperator, BOsGovernanceProposal {
   }
 
   function _isBridgeVoter(address addr) internal view override returns (bool) {
-    return _governorToBridgeOperatorInfo()[addr].voteWeight != 0;
+    return _getGovernorToBridgeOperatorInfo()[addr].voteWeight != 0;
   }
 }

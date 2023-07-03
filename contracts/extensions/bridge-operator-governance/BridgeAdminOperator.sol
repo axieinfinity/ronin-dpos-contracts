@@ -92,25 +92,25 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   function updateBridgeOperator(address newBridgeOperator) external returns (bool updated) {
     _checkNonZeroAddress(newBridgeOperator);
 
-    mapping(address => address) storage governorOf = _governorOf();
-    EnumerableSet.AddressSet storage operatorSet = _bridgeOperatorSet();
-    mapping(address => BridgeOperatorInfo) storage gorvernorToBridgeOperatorInfo = _governorToBridgeOperatorInfo();
+    mapping(address => address) storage _governorOf = _getGovernorOf();
+    EnumerableSet.AddressSet storage _operatorSet = _getBridgeOperatorSet();
+    mapping(address => BridgeOperatorInfo) storage _gorvernorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
-    BridgeOperatorInfo memory bridgeOperatorInfo = gorvernorToBridgeOperatorInfo[msg.sender];
+    BridgeOperatorInfo memory bridgeOperatorInfo = _gorvernorToBridgeOperatorInfo[msg.sender];
 
     address currentBridgeOperator = bridgeOperatorInfo.addr;
 
-    // return false if currentBridgeOperator unexists in operatorSet
-    if (!operatorSet.remove(currentBridgeOperator)) {
+    // return false if currentBridgeOperator unexists in _operatorSet
+    if (!_operatorSet.remove(currentBridgeOperator)) {
       revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
     }
-    updated = operatorSet.add(newBridgeOperator);
+    updated = _operatorSet.add(newBridgeOperator);
 
     bridgeOperatorInfo.addr = newBridgeOperator;
-    gorvernorToBridgeOperatorInfo[msg.sender] = bridgeOperatorInfo;
+    _gorvernorToBridgeOperatorInfo[msg.sender] = bridgeOperatorInfo;
 
-    governorOf[newBridgeOperator] = msg.sender;
-    delete governorOf[currentBridgeOperator];
+    _governorOf[newBridgeOperator] = msg.sender;
+    delete _governorOf[currentBridgeOperator];
 
     emit BridgeOperatorSetModified(msg.sender, BridgeAction.Update);
   }
@@ -133,7 +133,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   }
 
   function getBridgeVoterWeight(address governor) external view returns (uint256) {
-    return _governorToBridgeOperatorInfo()[governor].voteWeight;
+    return _getGovernorToBridgeOperatorInfo()[governor].voteWeight;
   }
 
   /**
@@ -142,7 +142,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   function getBridgeVoterWeights(address[] calldata governors) external view returns (uint256[] memory weights) {
     uint256 length = governors.length;
     weights = new uint256[](length);
-    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _governorToBridgeOperatorInfo();
+    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
     for (uint256 i; i < length; ) {
       weights[i] = governorToBridgeOperatorInfo[governors[i]].voteWeight;
       unchecked {
@@ -157,8 +157,8 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   function getSumBridgeVoterWeights(
     address[] memory governors
   ) public view nonDuplicate(governors) returns (uint256 sum) {
-    uint256 length = _bridgeOperatorSet().length();
-    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _governorToBridgeOperatorInfo();
+    uint256 length = _getBridgeOperatorSet().length();
+    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
     for (uint256 i; i < length; ) {
       sum += governorToBridgeOperatorInfo[governors[i]].voteWeight;
 
@@ -172,28 +172,28 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
    * @inheritdoc IBridgeAdminOperator
    */
   function totalBridgeOperators() external view returns (uint256) {
-    return _bridgeOperatorSet().length();
+    return _getBridgeOperatorSet().length();
   }
 
   /**
    * @inheritdoc IBridgeAdminOperator
    */
   function isBridgeOperator(address addr) external view returns (bool) {
-    return _bridgeOperatorSet().contains(addr);
+    return _getBridgeOperatorSet().contains(addr);
   }
 
   /**
    * @inheritdoc IBridgeAdminOperator
    */
   function getBridgeOperators() public view returns (address[] memory) {
-    return _bridgeOperatorSet().values();
+    return _getBridgeOperatorSet().values();
   }
 
   /**
    * @inheritdoc IBridgeAdminOperator
    */
   function getGovernors() external view returns (address[] memory) {
-    return _governorsSet().values();
+    return _getGovernorsSet().values();
   }
 
   /**
@@ -203,7 +203,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     uint256 length = governors.length;
     bridgeOperators_ = new address[](length);
 
-    mapping(address => BridgeOperatorInfo) storage gorvernorToBridgeOperator = _governorToBridgeOperatorInfo();
+    mapping(address => BridgeOperatorInfo) storage gorvernorToBridgeOperator = _getGovernorToBridgeOperatorInfo();
     for (uint256 i; i < length; ) {
       bridgeOperators_[i] = gorvernorToBridgeOperator[governors[i]].addr;
       unchecked {
@@ -227,10 +227,10 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     uint256 length = brigdeOperators.length;
     addeds = new bool[](length);
 
-    EnumerableSet.AddressSet storage governorSet = _governorsSet();
-    mapping(address => address) storage governorOf = _governorOf();
-    EnumerableSet.AddressSet storage bridgeOperatorSet = _bridgeOperatorSet();
-    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _governorToBridgeOperatorInfo();
+    EnumerableSet.AddressSet storage governorSet = _getGovernorsSet();
+    mapping(address => address) storage _governorOf = _getGovernorOf();
+    EnumerableSet.AddressSet storage bridgeOperatorSet = _getBridgeOperatorSet();
+    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
     address governor;
     uint96 voteWeight;
@@ -253,7 +253,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
 
         accumulateWeight += voteWeight;
 
-        governorOf[bridgeOperator] = governor;
+        _governorOf[bridgeOperator] = governor;
 
         bridgeOperatorInfo.addr = bridgeOperator;
         bridgeOperatorInfo.voteWeight = voteWeight;
@@ -276,10 +276,10 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     uint256 length = bridgeOperators.length;
     removeds = new bool[](length);
 
-    mapping(address => address) storage governorOf = _governorOf();
-    EnumerableSet.AddressSet storage governorSet = _governorsSet();
-    EnumerableSet.AddressSet storage operatorSet = _bridgeOperatorSet();
-    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _governorToBridgeOperatorInfo();
+    mapping(address => address) storage _governorOf = _getGovernorOf();
+    EnumerableSet.AddressSet storage governorSet = _getGovernorsSet();
+    EnumerableSet.AddressSet storage _operatorSet = _getBridgeOperatorSet();
+    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
     address governor;
     address bridgeOperator;
@@ -287,7 +287,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     BridgeOperatorInfo memory bridgeOperatorInfo;
     for (uint256 i; i < length; ) {
       bridgeOperator = bridgeOperators[i];
-      governor = governorOf[bridgeOperator];
+      governor = _governorOf[bridgeOperator];
 
       _checkNonZeroAddress(governor);
       _checkNonZeroAddress(bridgeOperator);
@@ -295,8 +295,8 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
       bridgeOperatorInfo = governorToBridgeOperatorInfo[governor];
       assert(bridgeOperatorInfo.addr == bridgeOperator);
 
-      if (removeds[i] = operatorSet.remove(bridgeOperator)) {
-        delete governorOf[bridgeOperator];
+      if (removeds[i] = _operatorSet.remove(bridgeOperator)) {
+        delete _governorOf[bridgeOperator];
         governorSet.remove(governor);
         delete governorToBridgeOperatorInfo[governor];
         accumulateWeight += bridgeOperatorInfo.voteWeight;
@@ -352,7 +352,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
    * @dev Internal function to access the address set of bridge operators.
    * @return bridgeOperators the storage address set.
    */
-  function _bridgeOperatorSet() internal pure returns (EnumerableSet.AddressSet storage bridgeOperators) {
+  function _getBridgeOperatorSet() internal pure returns (EnumerableSet.AddressSet storage bridgeOperators) {
     assembly {
       bridgeOperators.slot := BRIDGE_OPERATOR_SET_SLOT
     }
@@ -362,7 +362,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
    * @dev Internal function to access the address set of bridge operators.
    * @return governors_ the storage address set.
    */
-  function _governorsSet() internal pure returns (EnumerableSet.AddressSet storage governors_) {
+  function _getGovernorsSet() internal pure returns (EnumerableSet.AddressSet storage governors_) {
     assembly {
       governors_.slot := GOVERNOR_SET_SLOT
     }
@@ -372,7 +372,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
    * @dev Internal function to access the mapping from governor => BridgeOperatorInfo.
    * @return governorToBridgeOperatorInfo_ the mapping from governor => BridgeOperatorInfo.
    */
-  function _governorToBridgeOperatorInfo()
+  function _getGovernorToBridgeOperatorInfo()
     internal
     pure
     returns (mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo_)
@@ -382,7 +382,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     }
   }
 
-  function _governorOf() internal pure returns (mapping(address => address) storage govenorOf_) {
+  function _getGovernorOf() internal pure returns (mapping(address => address) storage govenorOf_) {
     assembly {
       govenorOf_.slot := GOVENOR_OF_SLOT
     }
