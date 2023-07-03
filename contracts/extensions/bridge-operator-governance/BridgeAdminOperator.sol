@@ -68,6 +68,7 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
     removeds = new bool[](length);
 
     mapping(address => address) storage governorOf = _governorOf();
+    EnumerableSet.AddressSet storage governorSet = _governorsSet();
     EnumerableSet.AddressSet storage operatorSet = _bridgeOperatorSet();
     mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _governorToBridgeOperatorInfo();
 
@@ -84,11 +85,12 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
 
       bridgeOperatorInfo = governorToBridgeOperatorInfo[governor];
       assert(bridgeOperatorInfo.addr == bridgeOperator);
-      accumulateWeight += bridgeOperatorInfo.voteWeight;
 
       if (removeds[i] = operatorSet.remove(bridgeOperator)) {
         delete governorOf[bridgeOperator];
+        governorSet.remove(governor);
         delete governorToBridgeOperatorInfo[governor];
+        accumulateWeight += bridgeOperatorInfo.voteWeight;
       }
 
       unchecked {
@@ -107,19 +109,25 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
   function updateBridgeOperator(address newBridgeOperator) external returns (bool updated) {
     _checkNonZeroAddress(newBridgeOperator);
 
+    mapping(address => address) storage governorOf = _governorOf();
     EnumerableSet.AddressSet storage operatorSet = _bridgeOperatorSet();
-    mapping(address => BridgeOperatorInfo) storage gorvernorToBridgeVoter = _governorToBridgeOperatorInfo();
+    mapping(address => BridgeOperatorInfo) storage gorvernorToBridgeOperatorInfo = _governorToBridgeOperatorInfo();
 
-    address currentBridgeOperator = gorvernorToBridgeVoter[msg.sender].addr;
+    BridgeOperatorInfo memory bridgeOperatorInfo = gorvernorToBridgeOperatorInfo[msg.sender];
+
+    address currentBridgeOperator = bridgeOperatorInfo.addr;
 
     // return false if currentBridgeOperator unexists in operatorSet
     if (!operatorSet.remove(currentBridgeOperator)) {
       revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
     }
-
-    gorvernorToBridgeVoter[msg.sender].addr = newBridgeOperator;
-
     updated = operatorSet.add(newBridgeOperator);
+
+    bridgeOperatorInfo.addr = newBridgeOperator;
+    gorvernorToBridgeOperatorInfo[msg.sender] = bridgeOperatorInfo;
+
+    governorOf[newBridgeOperator] = msg.sender;
+    delete governorOf[currentBridgeOperator];
 
     emit BridgeOperatorSetModified(msg.sender, BridgeAction.Update);
   }
@@ -240,18 +248,19 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
 
       addeds[i] = bridgeOperatorSet.add(bridgeOperator);
 
+      if (addeds[i]) {
+        governorSet.add(governor);
+
+        accumulateWeight += voteWeight;
+
+        governorOf[bridgeOperator] = governor;
+
+        bridgeOperatorInfo.addr = bridgeOperator;
+        bridgeOperatorInfo.voteWeight = voteWeight;
+        governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
+      }
+
       unchecked {
-        if (addeds[i]) {
-          governorSet.add(governor);
-
-          accumulateWeight += voteWeight;
-
-          governorOf[bridgeOperator] = governor;
-
-          bridgeOperatorInfo.addr = bridgeOperator;
-          bridgeOperatorInfo.voteWeight = voteWeight;
-          governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
-        }
         ++i;
       }
     }
