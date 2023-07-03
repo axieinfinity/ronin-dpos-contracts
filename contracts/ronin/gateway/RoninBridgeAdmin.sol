@@ -25,14 +25,9 @@ contract RoninBridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal
     uint256 num,
     uint256 denom,
     uint256 roninChainId,
-    address bridgeContract,
-    uint256[] memory voteWeights,
-    address[] memory governors,
-    address[] memory bridgeOperators
-  ) payable //BridgeAdminOperator(bridgeContract, voteWeights, governors, bridgeOperators)
-  {
-    _setContract(ContractType.BRIDGE, bridgeContract);
-    _addBridgeOperators(voteWeights, bridgeOperators, governors);
+    address admin,
+    address bridgeContract
+  ) payable BridgeAdminOperator(admin, bridgeContract) {
     _nonce = 1;
     _num = num;
     _denom = denom;

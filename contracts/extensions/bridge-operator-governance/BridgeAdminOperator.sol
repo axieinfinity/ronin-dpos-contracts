@@ -33,16 +33,13 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
     _;
   }
 
-  // constructor(
-  //   address bridgeContract,
-  //   uint256[] memory voteWeights,
-  //   address[] memory governors,
-  //   address[] memory bridgeOperators
-  // ) payable {
-  //   // _requireHasCode(bridgeContract);
-  // _setContract(ContractType.BRIDGE, bridgeContract);
-  // _addBridgeOperators(voteWeights, bridgeOperators, governors);
-  // }
+  constructor(address admin, address bridgeContract) payable {
+    _checkNonZeroAddress(admin);
+    assembly {
+      sstore(_ADMIN_SLOT, admin)
+    }
+    _setContract(ContractType.BRIDGE, bridgeContract);
+  }
 
   /**
    * @inheritdoc IBridgeAdminOperator
