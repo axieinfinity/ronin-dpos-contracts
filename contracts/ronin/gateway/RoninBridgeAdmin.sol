@@ -15,32 +15,13 @@ contract RoninBridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal
   using EnumerableSet for EnumerableSet.AddressSet;
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
-  bytes32 public DOMAIN_SEPARATOR;
-
-  uint256 private _num;
-  uint256 private _denom;
-  uint256 private _nonce;
-
   constructor(
     uint256 num,
     uint256 denom,
     uint256 roninChainId,
     address admin,
     address bridgeContract
-  ) payable BridgeAdminOperator(admin, bridgeContract) {
-    _nonce = 1;
-    _num = num;
-    _denom = denom;
-
-    DOMAIN_SEPARATOR = keccak256(
-      abi.encode(
-        keccak256("EIP712Domain(string name,string version,bytes32 salt)"),
-        keccak256("BridgeAdmin"), // name hash
-        keccak256("1"), // version hash
-        keccak256(abi.encode("BRIDGE_ADMIN", roninChainId)) // salt
-      )
-    );
-  }
+  ) payable BridgeAdminOperator(num, denom, roninChainId, admin, bridgeContract) {}
 
   /**
    * @dev See `BOsGovernanceProposal-_castVotesBySignatures`.
@@ -56,37 +37,6 @@ contract RoninBridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal
       emit BridgeOperatorsApproved(_ballot.period, _ballot.epoch, _ballot.operators);
       _v.status = VoteStatusConsumer.VoteStatus.Executed;
     }
-  }
-
-  /**
-   * @inheritdoc IQuorum
-   */
-  function setThreshold(
-    uint256 _numerator,
-    uint256 _denominator
-  ) external override onlyAdmin returns (uint256, uint256) {
-    return _setThreshold(_numerator, _denominator);
-  }
-
-  /**
-   * @inheritdoc IQuorum
-   */
-  function minimumVoteWeight() public view virtual returns (uint256) {
-    return (_num * _totalWeight + _denom - 1) / _denom;
-  }
-
-  /**
-   * @inheritdoc IQuorum
-   */
-  function getThreshold() external view virtual returns (uint256 num_, uint256 denom_) {
-    return (_num, _denom);
-  }
-
-  /**
-   * @inheritdoc IQuorum
-   */
-  function checkThreshold(uint256 _voteWeight) external view virtual returns (bool) {
-    return _voteWeight * _denom >= _num * _totalWeight;
   }
 
   /**
@@ -113,28 +63,6 @@ contract RoninBridgeAdmin is IQuorum, BridgeAdminOperator, BOsGovernanceProposal
    */
   function bridgeOperatorsVoted(uint256 _period, uint256 _epoch, address _voter) external view returns (bool) {
     return _bridgeOperatorVote[_period][_epoch].voted(_voter);
-  }
-
-  /**
-   * @dev Sets threshold and returns the old one.
-   *
-   * Emits the `ThresholdUpdated` event.
-   *
-   */
-  function _setThreshold(
-    uint256 _numerator,
-    uint256 _denominator
-  ) internal virtual returns (uint256 _previousNum, uint256 _previousDenom) {
-    if (_numerator > _denominator) revert ErrInvalidThreshold(msg.sig);
-
-    _previousNum = _num;
-    _previousDenom = _denom;
-    _num = _numerator;
-    _denom = _denominator;
-
-    unchecked {
-      emit ThresholdUpdated(_nonce++, _numerator, _denominator, _previousNum, _previousDenom);
-    }
   }
 
   function _sumBridgeVoterWeights(address[] memory _bridgeVoters) internal view override returns (uint256) {

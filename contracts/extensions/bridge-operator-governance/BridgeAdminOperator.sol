@@ -4,28 +4,34 @@ pragma solidity ^0.8.0;
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { HasContracts } from "../../extensions/collections/HasContracts.sol";
+import { IQuorum } from "../../interfaces/IQuorum.sol";
 import { IBridgeAdminOperator } from "../../interfaces/IBridgeAdminOperator.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { RoleAccess } from "../../utils/RoleAccess.sol";
-import { ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
+import { ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
 
-abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
+abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContracts {
   using SafeCast for uint256;
   using AddressArrayUtils for address[];
   using EnumerableSet for EnumerableSet.AddressSet;
 
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.governorToBridgeOperatorInfo.slot") - 1
-  bytes32 private constant _GOVERNOR_TO_BRIDGE_OPERATOR_INFO_SLOT =
+  bytes32 private constant GOVERNOR_TO_BRIDGE_OPERATOR_INFO_SLOT =
     0x88547008e60f5748911f2e59feb3093b7e4c2e87b2dd69d61f112fcc932de8e3;
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.govenorOf.slot") - 1
-  bytes32 private constant _GOVENOR_OF_SLOT = 0x8400683eb2cb350596d73644c0c89fe45f108600003457374f4ab3e87b4f3aa3;
+  bytes32 private constant GOVENOR_OF_SLOT = 0x8400683eb2cb350596d73644c0c89fe45f108600003457374f4ab3e87b4f3aa3;
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.governors.slot") - 1
-  bytes32 private constant _GOVERNOR_SET_SLOT = 0x546f6b46ab35b030b6816596b352aef78857377176c8b24baa2046a62cf1998c;
+  bytes32 private constant GOVERNOR_SET_SLOT = 0x546f6b46ab35b030b6816596b352aef78857377176c8b24baa2046a62cf1998c;
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.bridgeOperators.slot") - 1
-  bytes32 private constant _BRIDGE_OPERATOR_SET_SLOT =
+  bytes32 private constant BRIDGE_OPERATOR_SET_SLOT =
     0xd38c234075fde25875da8a6b7e36b58b86681d483271a99eeeee1d78e258a24d;
 
+  bytes32 public DOMAIN_SEPARATOR;
+
+  uint256 internal _num;
+  uint256 internal _denom;
+  uint256 internal _nonce;
   uint256 internal _totalWeight;
 
   modifier nonDuplicate(address[] memory arr) {
@@ -33,12 +39,25 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
     _;
   }
 
-  constructor(address admin, address bridgeContract) payable {
+  constructor(uint256 num, uint256 denom, uint256 roninChainId, address admin, address bridgeContract) payable {
     _checkNonZeroAddress(admin);
     assembly {
       sstore(_ADMIN_SLOT, admin)
     }
     _setContract(ContractType.BRIDGE, bridgeContract);
+
+    _nonce = 1;
+    _num = num;
+    _denom = denom;
+
+    DOMAIN_SEPARATOR = keccak256(
+      abi.encode(
+        keccak256("EIP712Domain(string name,string version,bytes32 salt)"),
+        keccak256("BridgeAdmin"), // name hash
+        keccak256("1"), // version hash
+        keccak256(abi.encode("BRIDGE_ADMIN", roninChainId)) // salt
+      )
+    );
   }
 
   /**
@@ -63,44 +82,8 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
    */
   function removeBridgeOperators(
     address[] calldata bridgeOperators
-  ) external onlyContract(ContractType.BRIDGE) nonDuplicate(bridgeOperators) returns (bool[] memory removeds) {
-    uint256 length = bridgeOperators.length;
-    removeds = new bool[](length);
-
-    mapping(address => address) storage governorOf = _governorOf();
-    EnumerableSet.AddressSet storage governorSet = _governorsSet();
-    EnumerableSet.AddressSet storage operatorSet = _bridgeOperatorSet();
-    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _governorToBridgeOperatorInfo();
-
-    address governor;
-    address bridgeOperator;
-    uint256 accumulateWeight;
-    BridgeOperatorInfo memory bridgeOperatorInfo;
-    for (uint256 i; i < length; ) {
-      bridgeOperator = bridgeOperators[i];
-      governor = governorOf[bridgeOperator];
-
-      _checkNonZeroAddress(governor);
-      _checkNonZeroAddress(bridgeOperator);
-
-      bridgeOperatorInfo = governorToBridgeOperatorInfo[governor];
-      assert(bridgeOperatorInfo.addr == bridgeOperator);
-
-      if (removeds[i] = operatorSet.remove(bridgeOperator)) {
-        delete governorOf[bridgeOperator];
-        governorSet.remove(governor);
-        delete governorToBridgeOperatorInfo[governor];
-        accumulateWeight += bridgeOperatorInfo.voteWeight;
-      }
-
-      unchecked {
-        ++i;
-      }
-    }
-
-    _totalWeight -= accumulateWeight;
-
-    emit BridgeOperatorSetModified(msg.sender, BridgeAction.Remove);
+  ) external onlyContract(ContractType.BRIDGE) returns (bool[] memory removeds) {
+    return _removeBridgeOperators(bridgeOperators);
   }
 
   /**
@@ -130,6 +113,16 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
     delete governorOf[currentBridgeOperator];
 
     emit BridgeOperatorSetModified(msg.sender, BridgeAction.Update);
+  }
+
+  /**
+   * @inheritdoc IQuorum
+   */
+  function setThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) external override onlyAdmin returns (uint256, uint256) {
+    return _setThreshold(_numerator, _denominator);
   }
 
   /**
@@ -192,7 +185,7 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
   /**
    * @inheritdoc IBridgeAdminOperator
    */
-  function getBridgeOperators() external view returns (address[] memory) {
+  function getBridgeOperators() public view returns (address[] memory) {
     return _bridgeOperatorSet().values();
   }
 
@@ -217,6 +210,13 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
         ++i;
       }
     }
+  }
+
+  /**
+   * @inheritdoc IQuorum
+   */
+  function minimumVoteWeight() public view virtual returns (uint256) {
+    return (_num * _totalWeight + _denom - 1) / _denom;
   }
 
   function _addBridgeOperators(
@@ -270,13 +270,91 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
     emit BridgeOperatorSetModified(msg.sender, BridgeAction.Add);
   }
 
+  function _removeBridgeOperators(
+    address[] memory bridgeOperators
+  ) internal nonDuplicate(bridgeOperators) returns (bool[] memory removeds) {
+    uint256 length = bridgeOperators.length;
+    removeds = new bool[](length);
+
+    mapping(address => address) storage governorOf = _governorOf();
+    EnumerableSet.AddressSet storage governorSet = _governorsSet();
+    EnumerableSet.AddressSet storage operatorSet = _bridgeOperatorSet();
+    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _governorToBridgeOperatorInfo();
+
+    address governor;
+    address bridgeOperator;
+    uint256 accumulateWeight;
+    BridgeOperatorInfo memory bridgeOperatorInfo;
+    for (uint256 i; i < length; ) {
+      bridgeOperator = bridgeOperators[i];
+      governor = governorOf[bridgeOperator];
+
+      _checkNonZeroAddress(governor);
+      _checkNonZeroAddress(bridgeOperator);
+
+      bridgeOperatorInfo = governorToBridgeOperatorInfo[governor];
+      assert(bridgeOperatorInfo.addr == bridgeOperator);
+
+      if (removeds[i] = operatorSet.remove(bridgeOperator)) {
+        delete governorOf[bridgeOperator];
+        governorSet.remove(governor);
+        delete governorToBridgeOperatorInfo[governor];
+        accumulateWeight += bridgeOperatorInfo.voteWeight;
+      }
+
+      unchecked {
+        ++i;
+      }
+    }
+
+    _totalWeight -= accumulateWeight;
+
+    emit BridgeOperatorSetModified(msg.sender, BridgeAction.Remove);
+  }
+
+  /**
+   * @dev Sets threshold and returns the old one.
+   *
+   * Emits the `ThresholdUpdated` event.
+   *
+   */
+  function _setThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) internal virtual returns (uint256 _previousNum, uint256 _previousDenom) {
+    if (_numerator > _denominator) revert ErrInvalidThreshold(msg.sig);
+
+    _previousNum = _num;
+    _previousDenom = _denom;
+    _num = _numerator;
+    _denom = _denominator;
+
+    unchecked {
+      emit ThresholdUpdated(_nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    }
+  }
+
+  /**
+   * @inheritdoc IQuorum
+   */
+  function getThreshold() external view virtual returns (uint256 num_, uint256 denom_) {
+    return (_num, _denom);
+  }
+
+  /**
+   * @inheritdoc IQuorum
+   */
+  function checkThreshold(uint256 _voteWeight) external view virtual returns (bool) {
+    return _voteWeight * _denom >= _num * _totalWeight;
+  }
+
   /**
    * @dev Internal function to access the address set of bridge operators.
    * @return bridgeOperators the storage address set.
    */
   function _bridgeOperatorSet() internal pure returns (EnumerableSet.AddressSet storage bridgeOperators) {
     assembly {
-      bridgeOperators.slot := _BRIDGE_OPERATOR_SET_SLOT
+      bridgeOperators.slot := BRIDGE_OPERATOR_SET_SLOT
     }
   }
 
@@ -286,7 +364,7 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
    */
   function _governorsSet() internal pure returns (EnumerableSet.AddressSet storage governors_) {
     assembly {
-      governors_.slot := _GOVERNOR_SET_SLOT
+      governors_.slot := GOVERNOR_SET_SLOT
     }
   }
 
@@ -300,13 +378,13 @@ abstract contract BridgeAdminOperator is IBridgeAdminOperator, HasContracts {
     returns (mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo_)
   {
     assembly {
-      governorToBridgeOperatorInfo_.slot := _GOVERNOR_TO_BRIDGE_OPERATOR_INFO_SLOT
+      governorToBridgeOperatorInfo_.slot := GOVERNOR_TO_BRIDGE_OPERATOR_INFO_SLOT
     }
   }
 
   function _governorOf() internal pure returns (mapping(address => address) storage govenorOf_) {
     assembly {
-      govenorOf_.slot := _GOVENOR_OF_SLOT
+      govenorOf_.slot := GOVENOR_OF_SLOT
     }
   }
 

@@ -14,6 +14,8 @@ library BridgeOperatorsBallot {
     uint256 period;
     uint256 epoch;
     address[] operators;
+    address[] governors;
+    uint256[] voteWeights;
   }
 
   // keccak256("BridgeOperatorsBallot(uint256 period,uint256 epoch,address[] operators)");
