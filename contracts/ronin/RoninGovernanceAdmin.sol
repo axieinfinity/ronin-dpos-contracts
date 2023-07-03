@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../extensions/bridge-operator-governance/BOsGovernanceProposal.sol";
 import "../extensions/sequential-governance/GovernanceProposal.sol";
 import "../extensions/collections/HasContracts.sol";
 import "../extensions/GovernanceAdmin.sol";
 import "../libraries/EmergencyExitBallot.sol";
 import { ErrorHandler } from "../libraries/ErrorHandler.sol";
+import { IsolatedGovernance } from "../libraries/IsolatedGovernance.sol";
 import { HasValidatorDeprecated } from "../utils/DeprecatedSlots.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 import "../interfaces/validator/IRoninValidatorSet.sol";
@@ -17,7 +17,6 @@ contract RoninGovernanceAdmin is
   IRoninGovernanceAdmin,
   GovernanceAdmin,
   GovernanceProposal,
-  BOsGovernanceProposal,
   HasValidatorDeprecated
 {
   using ErrorHandler for bool;
@@ -35,10 +34,9 @@ contract RoninGovernanceAdmin is
   constructor(
     uint256 _roninChainId,
     address _roninTrustedOrganizationContract,
-    address _bridgeContract,
     address _validatorContract,
     uint256 _proposalExpiryDuration
-  ) GovernanceAdmin(_roninChainId, _roninTrustedOrganizationContract, _bridgeContract, _proposalExpiryDuration) {
+  ) GovernanceAdmin(_roninChainId, _roninTrustedOrganizationContract, _proposalExpiryDuration) {
     _setContract(ContractType.VALIDATOR, _validatorContract);
   }
 
@@ -101,36 +99,10 @@ contract RoninGovernanceAdmin is
   }
 
   /**
-   * @dev Returns the voted signatures for bridge operators at a specific period.
-   */
-  function getBridgeOperatorVotingSignatures(
-    uint256 _period,
-    uint256 _epoch
-  ) external view returns (address[] memory _voters, Signature[] memory _signatures) {
-    mapping(address => Signature) storage _sigMap = _bridgeVoterSig[_period][_epoch];
-    _voters = _bridgeOperatorVote[_period][_epoch].voters;
-    _signatures = new Signature[](_voters.length);
-    for (uint _i; _i < _voters.length; ) {
-      _signatures[_i] = _sigMap[_voters[_i]];
-
-      unchecked {
-        ++_i;
-      }
-    }
-  }
-
-  /**
    * @dev Returns whether the voter `_voter` casted vote for the proposal.
    */
   function proposalVoted(uint256 _chainId, uint256 _round, address _voter) external view returns (bool) {
     return _voted(vote[_chainId][_round], _voter);
-  }
-
-  /**
-   * @dev Returns whether the voter `_voter` casted vote for bridge operators at a specific period.
-   */
-  function bridgeOperatorsVoted(uint256 _period, uint256 _epoch, address _voter) external view returns (bool) {
-    return _bridgeOperatorVote[_period][_epoch].voted(_voter);
   }
 
   /**
@@ -310,22 +282,6 @@ contract RoninGovernanceAdmin is
   }
 
   /**
-   * @dev See `BOsGovernanceProposal-_castVotesBySignatures`.
-   */
-  function voteBridgeOperatorsBySignatures(
-    BridgeOperatorsBallot.BridgeOperatorSet calldata _ballot,
-    Signature[] calldata _signatures
-  ) external {
-    _castBOVotesBySignatures(_ballot, _signatures, _getMinimumVoteWeight(), DOMAIN_SEPARATOR);
-    IsolatedGovernance.Vote storage _v = _bridgeOperatorVote[_ballot.period][_ballot.epoch];
-    if (_v.status == VoteStatus.Approved) {
-      _lastSyncedBridgeOperatorSetInfo = _ballot;
-      emit BridgeOperatorsApproved(_ballot.period, _ballot.epoch, _ballot.operators);
-      _v.status = VoteStatus.Executed;
-    }
-  }
-
-  /**
    * @inheritdoc IRoninGovernanceAdmin
    */
   function createEmergencyExitPoll(
@@ -405,46 +361,6 @@ contract RoninGovernanceAdmin is
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
         abi.encodeWithSelector(_selector, _governors)
-      )
-    );
-
-    _success.handleRevert(_selector, _returndata);
-    return abi.decode(_returndata, (uint256));
-  }
-
-  /**
-   * @dev Returns the bridge voter weight.
-   */
-  function _getBridgeVoterWeight(address _governor) internal view virtual returns (uint256) {
-    bytes4 _selector = IRoninTrustedOrganization.getBridgeVoterWeight.selector;
-    (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
-      abi.encodeWithSelector(
-        // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
-        0x4bb5274a,
-        abi.encodeWithSelector(_selector, _governor)
-      )
-    );
-    _success.handleRevert(_selector, _returndata);
-    return abi.decode(_returndata, (uint256));
-  }
-
-  /**
-   * @inheritdoc BOsGovernanceProposal
-   */
-  function _isBridgeVoter(address _addr) internal view virtual override returns (bool) {
-    return _getBridgeVoterWeight(_addr) > 0;
-  }
-
-  /**
-   * @inheritdoc BOsGovernanceProposal
-   */
-  function _sumBridgeVoterWeights(address[] memory _bridgeVoters) internal view virtual override returns (uint256) {
-    bytes4 _selector = IRoninTrustedOrganization.sumBridgeVoterWeights.selector;
-    (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
-      abi.encodeWithSelector(
-        // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
-        0x4bb5274a,
-        abi.encodeWithSelector(_selector, _bridgeVoters)
       )
     );
 

@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IBridgeAdminProposal } from "./IBridgeAdminProposal.sol";
-
-interface IRoninGovernanceAdmin is IBridgeAdminProposal {
+interface IRoninGovernanceAdmin {
   /**
    * @dev Error thrown when an invalid vote hash is provided.
    */

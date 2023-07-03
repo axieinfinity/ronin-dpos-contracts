@@ -22,7 +22,6 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernance
   constructor(
     uint256 _roninChainId,
     address _roninTrustedOrganizationContract,
-    address _bridgeContract,
     uint256 _proposalExpiryDuration
   ) CoreGovernance(_proposalExpiryDuration) {
     roninChainId = _roninChainId;
@@ -53,7 +52,6 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernance
       sstore(DOMAIN_SEPARATOR.slot, keccak256(ptr, 0x80))
     }
 
-    _setContract(ContractType.BRIDGE, _bridgeContract);
     _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, _roninTrustedOrganizationContract);
   }
 
