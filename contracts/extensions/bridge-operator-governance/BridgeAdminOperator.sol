@@ -93,18 +93,18 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     _checkNonZeroAddress(newBridgeOperator);
 
     mapping(address => address) storage _governorOf = _getGovernorOf();
-    EnumerableSet.AddressSet storage _operatorSet = _getBridgeOperatorSet();
+    EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
     mapping(address => BridgeOperatorInfo) storage _gorvernorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
     BridgeOperatorInfo memory bridgeOperatorInfo = _gorvernorToBridgeOperatorInfo[msg.sender];
 
     address currentBridgeOperator = bridgeOperatorInfo.addr;
 
-    // return false if currentBridgeOperator unexists in _operatorSet
-    if (!_operatorSet.remove(currentBridgeOperator)) {
+    // return false if currentBridgeOperator unexists in _bridgeOperatorSet
+    if (!_bridgeOperatorSet.remove(currentBridgeOperator)) {
       revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
     }
-    updated = _operatorSet.add(newBridgeOperator);
+    updated = _bridgeOperatorSet.add(newBridgeOperator);
 
     bridgeOperatorInfo.addr = newBridgeOperator;
     _gorvernorToBridgeOperatorInfo[msg.sender] = bridgeOperatorInfo;
@@ -278,7 +278,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
 
     mapping(address => address) storage _governorOf = _getGovernorOf();
     EnumerableSet.AddressSet storage governorSet = _getGovernorsSet();
-    EnumerableSet.AddressSet storage _operatorSet = _getBridgeOperatorSet();
+    EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
     mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
     address governor;
@@ -295,7 +295,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
       bridgeOperatorInfo = governorToBridgeOperatorInfo[governor];
       assert(bridgeOperatorInfo.addr == bridgeOperator);
 
-      if (removeds[i] = _operatorSet.remove(bridgeOperator)) {
+      if (removeds[i] = _bridgeOperatorSet.remove(bridgeOperator)) {
         delete _governorOf[bridgeOperator];
         governorSet.remove(governor);
         delete governorToBridgeOperatorInfo[governor];

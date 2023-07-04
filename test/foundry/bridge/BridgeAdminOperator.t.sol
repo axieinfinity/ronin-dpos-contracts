@@ -40,7 +40,6 @@ contract BridgeAdminOperatorTest is Test {
   address _admin;
   address _bridgeContract;
   address _bridgeAdminOperator;
-  mapping(uint256 => bool) _isUsed;
 
   function setUp() external {
     _setUp();
