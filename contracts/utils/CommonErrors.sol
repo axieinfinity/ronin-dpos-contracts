@@ -5,6 +5,10 @@ import { ContractType } from "./ContractType.sol";
 import { RoleAccess } from "./RoleAccess.sol";
 
 /**
+ * @dev Error indicating that arguments are invalid.
+ */
+error ErrInvalidArguments(bytes4 msgSig);
+/**
  * @dev Error indicating that given address is null when it should not.
  */
 error ErrZeroAddress(bytes4 msgSig);

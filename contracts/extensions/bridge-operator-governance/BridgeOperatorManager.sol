@@ -9,7 +9,7 @@ import { IBridgeOperatorManager } from "../../interfaces/IBridgeOperatorManager.
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { RoleAccess } from "../../utils/RoleAccess.sol";
-import { ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
+import { ErrInvalidArguments, ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
 
 abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasContracts {
   using SafeCast for uint256;
@@ -352,6 +352,7 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
       _checkNonZeroAddress(bridgeOperator);
 
       bridgeOperatorInfo = _governorToBridgeOperatorInfo[governor];
+      if (bridgeOperatorInfo.addr != bridgeOperator) revert ErrInvalidArguments(msg.sig);
 
       removeds[i] = _bridgeOperatorSet.remove(bridgeOperator);
       if (removeds[i]) {
