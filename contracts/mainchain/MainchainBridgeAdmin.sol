@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import { AccessControlEnumerable } from "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import { CoreGovernance, GovernanceRelay } from "../extensions/sequential-governance/GovernanceRelay.sol";
 import { BOsGovernanceRelay } from "../extensions/bridge-operator-governance/BOsGovernanceRelay.sol";
-import { ContractType, BridgeAdminOperator } from "../extensions/bridge-operator-governance/BridgeAdminOperator.sol";
+import { ContractType, BridgeOperatorManager } from "../extensions/bridge-operator-governance/BridgeOperatorManager.sol";
 import { ChainTypeConsumer } from "../interfaces/consumers/ChainTypeConsumer.sol";
 import { Ballot } from "../libraries/Ballot.sol";
 import { GlobalProposal } from "../libraries/GlobalProposal.sol";
@@ -12,7 +12,7 @@ import { GlobalProposal } from "../libraries/GlobalProposal.sol";
 contract MainchainBridgeAdmin is
   ChainTypeConsumer,
   AccessControlEnumerable,
-  BridgeAdminOperator,
+  BridgeOperatorManager,
   GovernanceRelay,
   BOsGovernanceRelay
 {
@@ -26,7 +26,7 @@ contract MainchainBridgeAdmin is
     address admin,
     address bridgeContract,
     address[] memory relayers
-  ) payable CoreGovernance(expiryDuration) BridgeAdminOperator(num, denom, roninChainId, admin, bridgeContract) {
+  ) payable CoreGovernance(expiryDuration) BridgeOperatorManager(num, denom, roninChainId, admin, bridgeContract) {
     _grantRole(DEFAULT_ADMIN_ROLE, admin);
     uint256 length = relayers.length;
     bytes32 relayerRole = RELAYER_ROLE;

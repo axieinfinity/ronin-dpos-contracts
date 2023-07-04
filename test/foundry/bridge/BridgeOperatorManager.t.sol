@@ -4,10 +4,10 @@ pragma solidity ^0.8.0;
 import { Vm, Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
-import { RoleAccess, ContractType, AddressArrayUtils, IBridgeAdminOperator, MockBridgeAdminOperator } from "@ronin/contracts/mocks/ronin/MockBridgeAdminOperator.sol";
+import { RoleAccess, ContractType, AddressArrayUtils, IBridgeOperatorManager, MockBridgeOperatorManager } from "@ronin/contracts/mocks/ronin/MockBridgeOperatorManager.sol";
 import { ErrUnauthorized, ErrInvalidVoteWeight, ErrZeroAddress, ErrUnexpectedInternalCall } from "@ronin/contracts/utils/CommonErrors.sol";
 
-contract BridgeAdminOperatorTest is Test {
+contract BridgeOperatorManagerTest is Test {
   using AddressArrayUtils for address[];
 
   /**
@@ -33,7 +33,12 @@ contract BridgeAdminOperatorTest is Test {
    * @param operator The address of the bridge operator being modified.
    * @param action The action performed on the bridge operator.
    */
-  event BridgeOperatorSetModified(address indexed operator, BridgeAction indexed action);
+  event BridgeOperatorSetModified(
+    address indexed operator,
+    BridgeAction indexed action,
+    bool[] statuses,
+    bytes extraData
+  );
 
   uint256 constant MAX_FUZZ_INPUTS = 100;
 
@@ -70,7 +75,7 @@ contract BridgeAdminOperatorTest is Test {
     vm.expectRevert(
       abi.encodeWithSelector(
         ErrUnexpectedInternalCall.selector,
-        IBridgeAdminOperator.addBridgeOperators.selector,
+        IBridgeOperatorManager.addBridgeOperators.selector,
         ContractType.BRIDGE,
         caller
       )
@@ -93,7 +98,7 @@ contract BridgeAdminOperatorTest is Test {
       numBridgeOperators
     );
 
-    IBridgeAdminOperator bridgeAdminOperator = _addBridgeOperators(
+    IBridgeOperatorManager bridgeAdminOperator = _addBridgeOperators(
       _bridgeContract,
       voteWeights,
       governors,
@@ -128,18 +133,18 @@ contract BridgeAdminOperatorTest is Test {
       // allow duplicate vote weights
       vm.assume(nullifyOrDuplicate);
       vm.expectRevert(
-        abi.encodeWithSelector(ErrInvalidVoteWeight.selector, IBridgeAdminOperator.addBridgeOperators.selector)
+        abi.encodeWithSelector(ErrInvalidVoteWeight.selector, IBridgeOperatorManager.addBridgeOperators.selector)
       );
     } else {
       if (modifyTimes == 1) {
         vm.expectRevert(
-          abi.encodeWithSelector(ErrZeroAddress.selector, IBridgeAdminOperator.addBridgeOperators.selector)
+          abi.encodeWithSelector(ErrZeroAddress.selector, IBridgeOperatorManager.addBridgeOperators.selector)
         );
       } else {
         vm.expectRevert(
           abi.encodeWithSelector(
             AddressArrayUtils.ErrDuplicated.selector,
-            IBridgeAdminOperator.addBridgeOperators.selector
+            IBridgeOperatorManager.addBridgeOperators.selector
           )
         );
       }
@@ -162,7 +167,7 @@ contract BridgeAdminOperatorTest is Test {
       numBridgeOperators
     );
 
-    IBridgeAdminOperator bridgeAdminOperator = _addBridgeOperators(
+    IBridgeOperatorManager bridgeAdminOperator = _addBridgeOperators(
       _bridgeContract,
       voteWeights,
       governors,
@@ -196,7 +201,12 @@ contract BridgeAdminOperatorTest is Test {
 
     vm.prank(_bridgeContract);
     vm.expectEmit(_bridgeAdminOperator);
-    emit BridgeOperatorSetModified(_bridgeContract, BridgeAction.Remove);
+    bool[] memory statuses;
+    uint256[] memory tmp = _createRandomNumbers(0, removeBridgeOperators.length, 1, 1);
+    assembly {
+      statuses := tmp
+    }
+    emit BridgeOperatorSetModified(_bridgeContract, BridgeAction.Remove, statuses, abi.encode(removeBridgeOperators));
     bridgeAdminOperator.removeBridgeOperators(removeBridgeOperators);
 
     _invariantTest(bridgeAdminOperator, voteWeights, governors, bridgeOperators);
@@ -217,7 +227,7 @@ contract BridgeAdminOperatorTest is Test {
       r3,
       numBridgeOperators
     );
-    IBridgeAdminOperator bridgeAdminOperator = _addBridgeOperators(
+    IBridgeOperatorManager bridgeAdminOperator = _addBridgeOperators(
       _bridgeContract,
       voteWeights,
       governors,
@@ -230,7 +240,9 @@ contract BridgeAdminOperatorTest is Test {
 
     vm.prank(randomGovernor);
     vm.expectEmit(_bridgeAdminOperator);
-    emit BridgeOperatorSetModified(randomGovernor, BridgeAction.Update);
+    bool[] memory statuses = new bool[](1);
+    statuses[0] = true;
+    emit BridgeOperatorSetModified(randomGovernor, BridgeAction.Update, statuses, abi.encode(newBridgeOperator));
     bridgeAdminOperator.updateBridgeOperator(newBridgeOperator);
 
     // swap and pop
@@ -255,7 +267,7 @@ contract BridgeAdminOperatorTest is Test {
       r3,
       numBridgeOperators
     );
-    IBridgeAdminOperator bridgeAdminOperator = _addBridgeOperators(
+    IBridgeOperatorManager bridgeAdminOperator = _addBridgeOperators(
       _bridgeContract,
       voteWeights,
       governors,
@@ -276,7 +288,7 @@ contract BridgeAdminOperatorTest is Test {
     vm.expectRevert(
       abi.encodeWithSelector(
         ErrUnauthorized.selector,
-        IBridgeAdminOperator.updateBridgeOperator.selector,
+        IBridgeOperatorManager.updateBridgeOperator.selector,
         RoleAccess.GOVERNOR
       )
     );
@@ -285,7 +297,7 @@ contract BridgeAdminOperatorTest is Test {
   function _setUp() internal virtual {
     _admin = makeAddr("ADMIN");
     _bridgeContract = address(new RoninGatewayV2());
-    _bridgeAdminOperator = address(new MockBridgeAdminOperator(_admin, _bridgeContract));
+    _bridgeAdminOperator = address(new MockBridgeOperatorManager(_admin, _bridgeContract));
   }
 
   function _label() internal virtual {
@@ -294,7 +306,7 @@ contract BridgeAdminOperatorTest is Test {
   }
 
   function _invariantTest(
-    IBridgeAdminOperator bridgeAdminOperator,
+    IBridgeOperatorManager bridgeAdminOperator,
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
@@ -321,10 +333,20 @@ contract BridgeAdminOperatorTest is Test {
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
-  ) internal returns (IBridgeAdminOperator bridgeAdminOperator) {
+  ) internal returns (IBridgeOperatorManager bridgeAdminOperator) {
     vm.expectEmit(_bridgeAdminOperator);
-    emit BridgeOperatorSetModified(caller, BridgeAction.Add);
-    bridgeAdminOperator = IBridgeAdminOperator(_bridgeAdminOperator);
+    bool[] memory statuses;
+    uint256[] memory tmp = _createRandomNumbers(0, voteWeights.length, 1, 1);
+    assembly {
+      statuses := tmp
+    }
+    emit BridgeOperatorSetModified(
+      caller,
+      BridgeAction.Add,
+      statuses,
+      abi.encode(voteWeights, governors, bridgeOperators)
+    );
+    bridgeAdminOperator = IBridgeOperatorManager(_bridgeAdminOperator);
     vm.prank(caller);
     bridgeAdminOperator.addBridgeOperators(voteWeights, governors, bridgeOperators);
   }

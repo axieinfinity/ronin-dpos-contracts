@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title IBridgeAdminOperator
+ * @title IBridgeOperatorManager
  * @dev The interface for managing bridge operators.
  */
-interface IBridgeAdminOperator {
+interface IBridgeOperatorManager {
   /**
    * @dev Enum representing the actions that can be performed on bridge operators.
    * - Add: Add a bridge operator.
@@ -28,7 +28,12 @@ interface IBridgeAdminOperator {
    * @param operator The address of the bridge operator being modified.
    * @param action The action performed on the bridge operator.
    */
-  event BridgeOperatorSetModified(address indexed operator, BridgeAction indexed action);
+  event BridgeOperatorSetModified(
+    address indexed operator,
+    BridgeAction indexed action,
+    bool[] statuses,
+    bytes extraData
+  );
 
   /**
    * @dev Returns the total number of bridge operators.

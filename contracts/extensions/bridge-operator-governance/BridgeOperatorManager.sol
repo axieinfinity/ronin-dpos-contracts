@@ -5,13 +5,13 @@ import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { IQuorum } from "../../interfaces/IQuorum.sol";
-import { IBridgeAdminOperator } from "../../interfaces/IBridgeAdminOperator.sol";
+import { IBridgeOperatorManager } from "../../interfaces/IBridgeOperatorManager.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { RoleAccess } from "../../utils/RoleAccess.sol";
-import { ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
+import { ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
 
-abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContracts {
+abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasContracts {
   using SafeCast for uint256;
   using AddressArrayUtils for address[];
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -27,7 +27,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   bytes32 private constant BRIDGE_OPERATOR_SET_SLOT =
     0xd38c234075fde25875da8a6b7e36b58b86681d483271a99eeeee1d78e258a24d;
 
-  bytes32 public DOMAIN_SEPARATOR;
+  bytes32 public immutable DOMAIN_SEPARATOR;
 
   uint256 internal _num;
   uint256 internal _denom;
@@ -61,7 +61,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   }
 
   /**
-   * @inheritdoc IBridgeAdminOperator
+   * @inheritdoc IBridgeOperatorManager
    */
   function addBridgeOperators(
     uint256[] calldata voteWeights,
@@ -78,7 +78,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   }
 
   /**
-   * @inheritdoc IBridgeAdminOperator
+   * @inheritdoc IBridgeOperatorManager
    */
   function removeBridgeOperators(
     address[] calldata bridgeOperators
@@ -87,7 +87,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   }
 
   /**
-   * @inheritdoc IBridgeAdminOperator
+   * @inheritdoc IBridgeOperatorManager
    */
   function updateBridgeOperator(address newBridgeOperator) external returns (bool updated) {
     _checkNonZeroAddress(newBridgeOperator);
@@ -95,9 +95,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     mapping(address => address) storage _governorOf = _getGovernorOf();
     EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
     mapping(address => BridgeOperatorInfo) storage _gorvernorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
-
     BridgeOperatorInfo memory bridgeOperatorInfo = _gorvernorToBridgeOperatorInfo[msg.sender];
-
     address currentBridgeOperator = bridgeOperatorInfo.addr;
 
     // return false if currentBridgeOperator unexists in _bridgeOperatorSet
@@ -108,11 +106,13 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
 
     bridgeOperatorInfo.addr = newBridgeOperator;
     _gorvernorToBridgeOperatorInfo[msg.sender] = bridgeOperatorInfo;
-
     _governorOf[newBridgeOperator] = msg.sender;
+
     delete _governorOf[currentBridgeOperator];
 
-    emit BridgeOperatorSetModified(msg.sender, BridgeAction.Update);
+    bool[] memory statuses = new bool[](1);
+    statuses[0] = updated;
+    emit BridgeOperatorSetModified(msg.sender, BridgeAction.Update, statuses, abi.encode(newBridgeOperator));
   }
 
   /**
@@ -123,21 +123,21 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   }
 
   /**
-   * @inheritdoc IBridgeAdminOperator
+   * @inheritdoc IBridgeOperatorManager
    */
   function getTotalWeights() external view returns (uint256) {
     return _totalWeight;
   }
 
   /**
-   * @inheritdoc IBridgeAdminOperator
+   * @inheritdoc IBridgeOperatorManager
    */
   function getBridgeVoterWeight(address governor) external view returns (uint256) {
     return _getGovernorToBridgeOperatorInfo()[governor].voteWeight;
   }
 
   /**
-   * @inheritdoc IBridgeAdminOperator
+   * @inheritdoc IBridgeOperatorManager
    */
   function getBridgeVoterWeights(address[] calldata governors) external view returns (uint256[] memory weights) {
     uint256 length = governors.length;
@@ -152,7 +152,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   }
 
   /**
-   * @inheritdoc IBridgeAdminOperator
+   * @inheritdoc IBridgeOperatorManager
    */
   function getSumBridgeVoterWeights(
     address[] memory governors
@@ -169,35 +169,35 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   }
 
   /**
-   * @inheritdoc IBridgeAdminOperator
+   * @inheritdoc IBridgeOperatorManager
    */
   function totalBridgeOperators() external view returns (uint256) {
     return _getBridgeOperatorSet().length();
   }
 
   /**
-   * @inheritdoc IBridgeAdminOperator
+   * @inheritdoc IBridgeOperatorManager
    */
   function isBridgeOperator(address addr) external view returns (bool) {
     return _getBridgeOperatorSet().contains(addr);
   }
 
   /**
-   * @inheritdoc IBridgeAdminOperator
+   * @inheritdoc IBridgeOperatorManager
    */
   function getBridgeOperators() public view returns (address[] memory) {
     return _getBridgeOperatorSet().values();
   }
 
   /**
-   * @inheritdoc IBridgeAdminOperator
+   * @inheritdoc IBridgeOperatorManager
    */
   function getGovernors() external view returns (address[] memory) {
     return _getGovernorsSet().values();
   }
 
   /**
-   * @inheritdoc IBridgeAdminOperator
+   * @inheritdoc IBridgeOperatorManager
    */
   function getBridgeOperatorOf(address[] calldata governors) external view returns (address[] memory bridgeOperators_) {
     uint256 length = governors.length;
@@ -219,12 +219,26 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     return (_num * _totalWeight + _denom - 1) / _denom;
   }
 
+  /**
+   * @dev Internal function to add bridge operators.
+   *
+   * This function adds the specified `bridgeOperators` to the bridge operator set and establishes the associated mappings.
+   *
+   * Requirements:
+   * - The caller must have the necessary permission to add bridge operators.
+   * - The lengths of `voteWeights`, `governors`, and `bridgeOperators` arrays must be equal.
+   *
+   * @param voteWeights An array of uint256 values representing the vote weights for each bridge operator.
+   * @param governors An array of addresses representing the governors for each bridge operator.
+   * @return addeds An array of boolean values indicating whether each bridge operator was successfully added.
+   */
   function _addBridgeOperators(
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory brigdeOperators
   ) internal returns (bool[] memory addeds) {
     uint256 length = brigdeOperators.length;
+    if (!(length == voteWeights.length && length == governors.length)) revert ErrLengthMismatch(msg.sig);
     addeds = new bool[](length);
 
     EnumerableSet.AddressSet storage _governorSet = _getGovernorsSet();
@@ -232,44 +246,64 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     EnumerableSet.AddressSet storage bridgeOperatorSet = _getBridgeOperatorSet();
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
-    address governor;
-    uint96 voteWeight;
-    address bridgeOperator;
-    uint256 accumulateWeight;
-    BridgeOperatorInfo memory bridgeOperatorInfo;
-    for (uint256 i; i < length; ) {
-      governor = governors[i];
-      bridgeOperator = brigdeOperators[i];
-      voteWeight = voteWeights[i].toUint96();
+    // get rid of stack too deep
+    uint256 accumulatedWeight;
+    {
+      address governor;
+      uint96 voteWeight;
+      address bridgeOperator;
+      BridgeOperatorInfo memory bridgeOperatorInfo;
 
-      _checkNonZeroAddress(governor);
-      _checkNonZeroAddress(bridgeOperator);
-      _sanityCheck(voteWeight, governor, bridgeOperator);
+      for (uint256 i; i < length; ) {
+        governor = governors[i];
+        bridgeOperator = brigdeOperators[i];
+        voteWeight = voteWeights[i].toUint96();
 
-      addeds[i] = bridgeOperatorSet.add(bridgeOperator);
+        _checkNonZeroAddress(governor);
+        _checkNonZeroAddress(bridgeOperator);
+        _sanityCheck(voteWeight, governor, bridgeOperator);
 
-      if (addeds[i]) {
-        _governorSet.add(governor);
+        addeds[i] = bridgeOperatorSet.add(bridgeOperator);
 
-        accumulateWeight += voteWeight;
+        if (addeds[i]) {
+          _governorSet.add(governor);
 
-        _governorOf[bridgeOperator] = governor;
+          accumulatedWeight += voteWeight;
 
-        bridgeOperatorInfo.addr = bridgeOperator;
-        bridgeOperatorInfo.voteWeight = voteWeight;
-        _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
-      }
+          _governorOf[bridgeOperator] = governor;
 
-      unchecked {
-        ++i;
+          bridgeOperatorInfo.addr = bridgeOperator;
+          bridgeOperatorInfo.voteWeight = voteWeight;
+          _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
+        }
+
+        unchecked {
+          ++i;
+        }
       }
     }
 
-    _totalWeight += accumulateWeight;
+    _totalWeight += accumulatedWeight;
 
-    emit BridgeOperatorSetModified(msg.sender, BridgeAction.Add);
+    emit BridgeOperatorSetModified(
+      msg.sender,
+      BridgeAction.Add,
+      addeds,
+      abi.encode(voteWeights, governors, brigdeOperators)
+    );
   }
 
+  /**
+   * @dev Internal function to remove bridge operators.
+   *
+   * This function removes the specified `bridgeOperators` from the bridge operator set and related mappings.
+   *
+   * Requirements:
+   * - The caller must have the necessary permission to remove bridge operators.
+   *
+   * @param bridgeOperators An array of addresses representing the bridge operators to be removed.
+   * @return removeds An array of boolean values indicating whether each bridge operator was successfully removed.
+   */
   function _removeBridgeOperators(
     address[] memory bridgeOperators
   ) internal nonDuplicate(bridgeOperators) returns (bool[] memory removeds) {
@@ -283,7 +317,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
 
     address governor;
     address bridgeOperator;
-    uint256 accumulateWeight;
+    uint256 accumulatedWeight;
     BridgeOperatorInfo memory bridgeOperatorInfo;
     for (uint256 i; i < length; ) {
       bridgeOperator = bridgeOperators[i];
@@ -300,7 +334,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
         delete _governorOf[bridgeOperator];
         _governorSet.remove(governor);
         delete _governorToBridgeOperatorInfo[governor];
-        accumulateWeight += bridgeOperatorInfo.voteWeight;
+        accumulatedWeight += bridgeOperatorInfo.voteWeight;
       }
 
       unchecked {
@@ -308,9 +342,9 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
       }
     }
 
-    _totalWeight -= accumulateWeight;
+    _totalWeight -= accumulatedWeight;
 
-    emit BridgeOperatorSetModified(msg.sender, BridgeAction.Remove);
+    emit BridgeOperatorSetModified(msg.sender, BridgeAction.Remove, removeds, abi.encode(bridgeOperators));
   }
 
   /**
@@ -411,6 +445,19 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     if (addr == address(0)) revert ErrZeroAddress(msg.sig);
   }
 
+  /**
+   * @dev Internal function to perform sanity checks on vote weight, governor, and bridge operator.
+   *
+   * This function verifies that the `voteWeight` is non-zero and checks for duplicate addresses among `governor` and `bridgeOperator`.
+   *
+   * Requirements:
+   * - The `voteWeight` must be non-zero.
+   * - The `governor` and `bridgeOperator` addresses must not be duplicates.
+   *
+   * @param voteWeight The vote weight to be checked.
+   * @param governor The address of the governor to be checked.
+   * @param bridgeOperator The address of the bridge operator to be checked.
+   */
   function _sanityCheck(uint256 voteWeight, address governor, address bridgeOperator) private pure {
     if (voteWeight == 0) revert ErrInvalidVoteWeight(msg.sig);
 
