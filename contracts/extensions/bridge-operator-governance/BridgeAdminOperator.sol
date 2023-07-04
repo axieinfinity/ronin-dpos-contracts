@@ -54,7 +54,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
       abi.encode(
         keccak256("EIP712Domain(string name,string version,bytes32 salt)"),
         keccak256("BridgeAdmin"), // name hash
-        keccak256("1"), // version hash
+        keccak256("2"), // version hash
         keccak256(abi.encode("BRIDGE_ADMIN", roninChainId)) // salt
       )
     );
