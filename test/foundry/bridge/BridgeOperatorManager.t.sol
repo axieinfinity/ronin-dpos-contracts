@@ -54,7 +54,7 @@ contract BridgeOperatorManagerTest is Test {
   /**
    * @notice Checks whether unauthorized caller except bridge contract can add bridge operators.
    */
-  function testFail_CallerNotBridgeContract_AddBridgeOperators(
+  function testFail_AddBridgeOperators_CallerNotBridgeContract(
     address caller,
     uint256 r1,
     uint256 r2,
@@ -85,7 +85,7 @@ contract BridgeOperatorManagerTest is Test {
   /**
    * @notice Checks whether bridge contract can add bridge operators.
    */
-  function test_CallerIsBridgeContract_AddBridgeOperators(
+  function test_AddBridgeOperators_CallerIsBridgeContract(
     uint256 r1,
     uint256 r2,
     uint256 r3,
@@ -112,7 +112,7 @@ contract BridgeOperatorManagerTest is Test {
    * @notice Checks whether bridge contract can add bridge operators
    * when governors, operators or vote weight contains null or duplicated.
    */
-  function testFail_NullOrDuplicateInputs_AddBridgeOperators(
+  function testFail_AddBridgeOperators_NullOrDuplicateInputs(
     uint256 r1,
     uint256 r2,
     uint256 r3,
@@ -154,7 +154,7 @@ contract BridgeOperatorManagerTest is Test {
   /**
    * @notice Checks whether bridge contract can remove bridge operators.
    */
-  function test_CallerIsBridgeContract_RemoveBridgeOperators(
+  function test_RemoveBridgeOperators_CallerIsBridgeContract(
     uint256 r1,
     uint256 r2,
     uint256 r3,
@@ -215,7 +215,7 @@ contract BridgeOperatorManagerTest is Test {
   /**
    * @notice Checks whether governor can update their bridge operator address.
    */
-  function test_CallerIsGovernor_UpdateBridgeOperator(
+  function test_UpdateBridgeOperator_CallerIsGovernor(
     uint256 r1,
     uint256 r2,
     uint256 r3,
@@ -255,7 +255,7 @@ contract BridgeOperatorManagerTest is Test {
   /**
    * @notice Checks whether unauthorized sender can update bridge operator address.
    */
-  function testFail_CallerIsNotGovernor_UpdateBridgeOperator(
+  function testFail_UpdateBridgeOperator_CallerIsNotGovernor(
     uint256 r1,
     uint256 r2,
     uint256 r3,
