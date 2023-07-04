@@ -23,7 +23,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   /// Upgrade contracts
 
   const GADelp = await deployments.get('RoninGovernanceAdmin'); // NOTE: Should use the previous GA contract instance.
-  const newGAAddr = '';
+  const newGAAddr = ''; // TODO: add new GA address here
 
   const BridgeTrackingProxy = await deployments.get('BridgeTrackingProxy');
   const MaintenanceProxy = await deployments.get('MaintenanceProxy');
