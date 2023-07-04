@@ -14,7 +14,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deployer } = await getNamedAccounts();
 
   const logicContract = await deployments.get('MainchainGatewayPauseEnforcerLogic');
-  const GAContract = await deployments.get('RoninGovernanceAdmin');
+  const GAContract = await deployments.get('MainchainGovernanceAdmin');
 
   const data = new PauseEnforcer__factory().interface.encodeFunctionData('initialize', [
     generalMainchainConf[network.name].bridgeContract,
