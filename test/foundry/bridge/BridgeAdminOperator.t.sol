@@ -263,8 +263,11 @@ contract BridgeAdminOperatorTest is Test {
     );
 
     address unauthorizedCaller = makeAddr("UNAUTHORIZED_CALLER");
-    for (uint256 i; i < governors.length; ++i) {
+    for (uint256 i; i < governors.length; ) {
       vm.assume(unauthorizedCaller != governors[i]);
+      unchecked {
+        ++i;
+      }
     }
     address newBridgeOperator = makeAddr("NEW_BRIDGE_OPERATOR");
 
@@ -351,7 +354,7 @@ contract BridgeAdminOperatorTest is Test {
     internal
     view
     returns (
-      bool nullifyOrDuplicate,
+      bool nullifyOrDuplicate, // true is nullify, false is duplicate
       uint256 modifyTimes,
       uint256 modifiedInputIdx,
       uint256[] memory voteWeights,

@@ -43,8 +43,14 @@ interface IBridgeAdminOperator {
    */
   function isBridgeOperator(address addr) external view returns (bool);
 
+  /**
+   * @dev Returns total weights of the bridge voter list.
+   */
   function getSumBridgeVoterWeights(address[] calldata governors) external view returns (uint256 sum);
 
+  /**
+   * @dev Returns total weights.
+   */
   function getTotalWeights() external view returns (uint256);
 
   /**
@@ -53,12 +59,26 @@ interface IBridgeAdminOperator {
    */
   function getBridgeOperators() external view returns (address[] memory);
 
+  /**
+   * @dev Returns an array of bridge operators correspoding to governor addresses.
+   * @return bridgeOperators_ An array containing the addresses of all bridge operators.
+   */
   function getBridgeOperatorOf(address[] calldata gorvernors) external view returns (address[] memory bridgeOperators_);
 
+  /**
+   * @dev Returns the weight of a bridge voter.
+   */
   function getBridgeVoterWeight(address governor) external view returns (uint256);
 
+  /**
+   * @dev Returns the weights of a list of bridge voter addresses.
+   */
   function getBridgeVoterWeights(address[] calldata governors) external view returns (uint256[] memory weights);
 
+  /**
+   * @dev Returns an array of all governors.
+   * @return An array containing the addresses of all governors.
+   */
   function getGovernors() external view returns (address[] memory);
 
   /**

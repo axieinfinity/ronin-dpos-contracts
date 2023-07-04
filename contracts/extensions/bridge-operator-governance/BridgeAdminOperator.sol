@@ -118,11 +118,8 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   /**
    * @inheritdoc IQuorum
    */
-  function setThreshold(
-    uint256 _numerator,
-    uint256 _denominator
-  ) external override onlyAdmin returns (uint256, uint256) {
-    return _setThreshold(_numerator, _denominator);
+  function setThreshold(uint256 numerator, uint256 denominator) external override onlyAdmin returns (uint256, uint256) {
+    return _setThreshold(numerator, denominator);
   }
 
   /**
@@ -132,6 +129,9 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     return _totalWeight;
   }
 
+  /**
+   * @inheritdoc IBridgeAdminOperator
+   */
   function getBridgeVoterWeight(address governor) external view returns (uint256) {
     return _getGovernorToBridgeOperatorInfo()[governor].voteWeight;
   }
@@ -320,18 +320,18 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
    *
    */
   function _setThreshold(
-    uint256 _numerator,
-    uint256 _denominator
+    uint256 numerator,
+    uint256 denominator
   ) internal virtual returns (uint256 _previousNum, uint256 _previousDenom) {
-    if (_numerator > _denominator) revert ErrInvalidThreshold(msg.sig);
+    if (numerator > denominator) revert ErrInvalidThreshold(msg.sig);
 
     _previousNum = _num;
     _previousDenom = _denom;
-    _num = _numerator;
-    _denom = _denominator;
+    _num = numerator;
+    _denom = denominator;
 
     unchecked {
-      emit ThresholdUpdated(_nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+      emit ThresholdUpdated(_nonce++, numerator, denominator, _previousNum, _previousDenom);
     }
   }
 
@@ -383,6 +383,10 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     }
   }
 
+  /**
+   * @dev Internal function to access the mapping from bridge operator => governor.
+   * @return govenorOf_ the mapping from bridge operator => governor.
+   */
   function _getGovernorOf() internal pure returns (mapping(address => address) storage govenorOf_) {
     assembly {
       govenorOf_.slot := GOVENOR_OF_SLOT
