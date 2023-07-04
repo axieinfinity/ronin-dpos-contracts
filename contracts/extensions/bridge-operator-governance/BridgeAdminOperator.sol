@@ -16,7 +16,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   using AddressArrayUtils for address[];
   using EnumerableSet for EnumerableSet.AddressSet;
 
-  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.governorToBridgeOperatorInfo.slot") - 1
+  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin._governorToBridgeOperatorInfo.slot") - 1
   bytes32 private constant GOVERNOR_TO_BRIDGE_OPERATOR_INFO_SLOT =
     0x88547008e60f5748911f2e59feb3093b7e4c2e87b2dd69d61f112fcc932de8e3;
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.govenorOf.slot") - 1
@@ -142,9 +142,9 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
   function getBridgeVoterWeights(address[] calldata governors) external view returns (uint256[] memory weights) {
     uint256 length = governors.length;
     weights = new uint256[](length);
-    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
     for (uint256 i; i < length; ) {
-      weights[i] = governorToBridgeOperatorInfo[governors[i]].voteWeight;
+      weights[i] = _governorToBridgeOperatorInfo[governors[i]].voteWeight;
       unchecked {
         ++i;
       }
@@ -158,9 +158,9 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     address[] memory governors
   ) public view nonDuplicate(governors) returns (uint256 sum) {
     uint256 length = _getBridgeOperatorSet().length();
-    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
     for (uint256 i; i < length; ) {
-      sum += governorToBridgeOperatorInfo[governors[i]].voteWeight;
+      sum += _governorToBridgeOperatorInfo[governors[i]].voteWeight;
 
       unchecked {
         ++i;
@@ -203,9 +203,9 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     uint256 length = governors.length;
     bridgeOperators_ = new address[](length);
 
-    mapping(address => BridgeOperatorInfo) storage gorvernorToBridgeOperator = _getGovernorToBridgeOperatorInfo();
+    mapping(address => BridgeOperatorInfo) storage _gorvernorToBridgeOperator = _getGovernorToBridgeOperatorInfo();
     for (uint256 i; i < length; ) {
-      bridgeOperators_[i] = gorvernorToBridgeOperator[governors[i]].addr;
+      bridgeOperators_[i] = _gorvernorToBridgeOperator[governors[i]].addr;
       unchecked {
         ++i;
       }
@@ -227,10 +227,10 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     uint256 length = brigdeOperators.length;
     addeds = new bool[](length);
 
-    EnumerableSet.AddressSet storage governorSet = _getGovernorsSet();
+    EnumerableSet.AddressSet storage _governorSet = _getGovernorsSet();
     mapping(address => address) storage _governorOf = _getGovernorOf();
     EnumerableSet.AddressSet storage bridgeOperatorSet = _getBridgeOperatorSet();
-    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
     address governor;
     uint96 voteWeight;
@@ -249,7 +249,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
       addeds[i] = bridgeOperatorSet.add(bridgeOperator);
 
       if (addeds[i]) {
-        governorSet.add(governor);
+        _governorSet.add(governor);
 
         accumulateWeight += voteWeight;
 
@@ -257,7 +257,7 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
 
         bridgeOperatorInfo.addr = bridgeOperator;
         bridgeOperatorInfo.voteWeight = voteWeight;
-        governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
+        _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
       }
 
       unchecked {
