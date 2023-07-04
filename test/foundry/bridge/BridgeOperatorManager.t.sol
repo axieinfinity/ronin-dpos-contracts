@@ -40,11 +40,11 @@ contract BridgeOperatorManagerTest is Test {
     bytes extraData
   );
 
-  uint256 constant MAX_FUZZ_INPUTS = 100;
+  uint256 private constant MAX_FUZZ_INPUTS = 100;
 
-  address _admin;
-  address _bridgeContract;
-  address _bridgeAdminOperator;
+  address private _admin;
+  address private _bridgeContract;
+  address private _bridgeAdminOperator;
 
   function setUp() external {
     _setUp();
