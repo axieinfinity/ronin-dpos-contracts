@@ -277,9 +277,9 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
     removeds = new bool[](length);
 
     mapping(address => address) storage _governorOf = _getGovernorOf();
-    EnumerableSet.AddressSet storage governorSet = _getGovernorsSet();
+    EnumerableSet.AddressSet storage _governorSet = _getGovernorsSet();
     EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
-    mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
     address governor;
     address bridgeOperator;
@@ -292,13 +292,14 @@ abstract contract BridgeAdminOperator is IQuorum, IBridgeAdminOperator, HasContr
       _checkNonZeroAddress(governor);
       _checkNonZeroAddress(bridgeOperator);
 
-      bridgeOperatorInfo = governorToBridgeOperatorInfo[governor];
+      bridgeOperatorInfo = _governorToBridgeOperatorInfo[governor];
       assert(bridgeOperatorInfo.addr == bridgeOperator);
 
-      if (removeds[i] = _bridgeOperatorSet.remove(bridgeOperator)) {
+      removeds[i] = _bridgeOperatorSet.remove(bridgeOperator);
+      if (removeds[i]) {
         delete _governorOf[bridgeOperator];
-        governorSet.remove(governor);
-        delete governorToBridgeOperatorInfo[governor];
+        _governorSet.remove(governor);
+        delete _governorToBridgeOperatorInfo[governor];
         accumulateWeight += bridgeOperatorInfo.voteWeight;
       }
 

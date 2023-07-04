@@ -46,6 +46,9 @@ contract BridgeAdminOperatorTest is Test {
     _label();
   }
 
+  /**
+   * @notice Checks whether unauthorized caller except bridge contract can add bridge operators.
+   */
   function testFail_CallerNotBridgeContract_AddBridgeOperators(
     address caller,
     uint256 r1,
@@ -74,6 +77,9 @@ contract BridgeAdminOperatorTest is Test {
     );
   }
 
+  /**
+   * @notice Checks whether bridge contract can add bridge operators.
+   */
   function test_CallerIsBridgeContract_AddBridgeOperators(
     uint256 r1,
     uint256 r2,
@@ -97,6 +103,10 @@ contract BridgeAdminOperatorTest is Test {
     _invariantTest(bridgeAdminOperator, voteWeights, governors, bridgeOperators);
   }
 
+  /**
+   * @notice Checks whether bridge contract can add bridge operators
+   * when governors, operators or vote weight contains null or duplicated.
+   */
   function testFail_NullOrDuplicateInputs_AddBridgeOperators(
     uint256 r1,
     uint256 r2,
@@ -136,6 +146,9 @@ contract BridgeAdminOperatorTest is Test {
     }
   }
 
+  /**
+   * @notice Checks whether bridge contract can remove bridge operators.
+   */
   function test_CallerIsBridgeContract_RemoveBridgeOperators(
     uint256 r1,
     uint256 r2,
@@ -189,6 +202,9 @@ contract BridgeAdminOperatorTest is Test {
     _invariantTest(bridgeAdminOperator, voteWeights, governors, bridgeOperators);
   }
 
+  /**
+   * @notice Checks whether governor can update their bridge operator address.
+   */
   function test_CallerIsGovernor_UpdateBridgeOperator(
     uint256 r1,
     uint256 r2,
@@ -224,6 +240,9 @@ contract BridgeAdminOperatorTest is Test {
     _invariantTest(bridgeAdminOperator, voteWeights, governors, bridgeOperators);
   }
 
+  /**
+   * @notice Checks whether unauthorized sender can update bridge operator address.
+   */
   function testFail_CallerIsNotGovernor_UpdateBridgeOperator(
     uint256 r1,
     uint256 r2,
