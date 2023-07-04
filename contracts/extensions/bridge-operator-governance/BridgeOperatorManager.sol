@@ -27,13 +27,38 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
   bytes32 private constant BRIDGE_OPERATOR_SET_SLOT =
     0xd38c234075fde25875da8a6b7e36b58b86681d483271a99eeeee1d78e258a24d;
 
+  /**
+   * @dev The domain separator used for computing hash digests in the contract.
+   */
   bytes32 public immutable DOMAIN_SEPARATOR;
 
+  /**
+   * @dev The numerator value used for calculations in the contract.
+   */
   uint256 internal _num;
+
+  /**
+   * @dev The denominator value used for calculations in the contract.
+   */
   uint256 internal _denom;
+
+  /**
+   * @dev The nonce value used for tracking nonces in the contract.
+   */
   uint256 internal _nonce;
+
+  /**
+   * @dev The total weight value used for storing the cumulative weight in the contract.
+   */
   uint256 internal _totalWeight;
 
+  /**
+   * @dev Modifier to ensure that the elements in the `arr` array are non-duplicates.
+   * It calls the internal `_checkDuplicate` function to perform the duplicate check.
+   *
+   * Requirements:
+   * - The elements in the `arr` array must not contain any duplicates.
+   */
   modifier nonDuplicate(address[] memory arr) {
     _checkDuplicate(arr);
     _;
@@ -327,7 +352,6 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
       _checkNonZeroAddress(bridgeOperator);
 
       bridgeOperatorInfo = _governorToBridgeOperatorInfo[governor];
-      assert(bridgeOperatorInfo.addr == bridgeOperator);
 
       removeds[i] = _bridgeOperatorSet.remove(bridgeOperator);
       if (removeds[i]) {
