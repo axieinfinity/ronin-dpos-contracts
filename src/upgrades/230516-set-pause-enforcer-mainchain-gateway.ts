@@ -7,7 +7,8 @@
 
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { GatewayV2__factory } from '../types';
-import { EXPLORER_URL, proxyCall } from './upgradeUtils';
+import { explorerUrl, proxyCall } from './upgradeUtils';
+import { network } from 'hardhat';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   const { execute } = deployments;
@@ -57,7 +58,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     gatewayInstructions.map(() => 1_000_000) // gasAmounts
   );
 
-  console.log(`${EXPLORER_URL}/tx/${tx.transactionHash}`);
+  console.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
 deploy.tags = ['230516SetNewEnforcerMainchainGateway'];

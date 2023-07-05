@@ -6,7 +6,7 @@
 /// Governor who proposes this proposal must manually vote it after running this script.
 
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { EXPLORER_URL, proxyCall, proxyInterface } from './upgradeUtils';
+import { explorerUrl, proxyCall, proxyInterface } from './upgradeUtils';
 import { VoteType } from '../script/proposal';
 import { RoninGatewayV2__factory, SlashIndicator__factory } from '../types';
 import { generalRoninConf, roninchainNetworks } from '../configs/config';
@@ -123,7 +123,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     VoteType.For // ballot type
   );
 
-  console.log(`${EXPLORER_URL}/tx/${tx.transactionHash}`);
+  console.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
 deploy.tags = ['230627UpgradeTestnetV0_5_2'];

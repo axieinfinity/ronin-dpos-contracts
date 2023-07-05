@@ -6,7 +6,7 @@
 /// Governor who proposes this proposal must manually vote it after running this script.
 
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { EXPLORER_URL, proxyInterface } from './upgradeUtils';
+import { explorerUrl, proxyInterface } from './upgradeUtils';
 import { VoteType } from '../script/proposal';
 import { generalRoninConf, roninchainNetworks } from '../configs/config';
 import { network } from 'hardhat';
@@ -65,7 +65,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     VoteType.For // ballot type
   );
 
-  console.log(`${EXPLORER_URL}/tx/${tx.transactionHash}`);
+  console.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
 deploy.tags = ['230628UpgradeGA'];
