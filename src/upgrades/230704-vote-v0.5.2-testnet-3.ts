@@ -1,13 +1,14 @@
-/// npx hardhat deploy --tags 230704VoteTestnetV0_5_2__2 --network ronin-testnet
+/// npx hardhat deploy --tags 230704VoteTestnetV0_5_2__3 --network ronin-testnet
 
 /// Governor who proposes this proposal must manually vote it after running this script.
 
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { explorerUrl, proxyInterface } from './upgradeUtils';
+import { explorerUrl, proxyCall, proxyInterface } from './upgradeUtils';
 import { VoteType } from '../script/proposal';
 import { RoninGatewayV2__factory } from '../types';
 import { generalRoninConf, roninchainNetworks } from '../configs/config';
 import { network } from 'hardhat';
+import { ProposalDetailStruct } from '../types/GovernanceAdmin';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -23,33 +24,50 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const RoninGatewayV2LogicDepl = await deployments.get('RoninGatewayV2Logic');
   const RoninGatewayV2Addr = generalRoninConf[network.name]!.bridgeContract;
 
+  const RoninGatewayPauseEnforcerProxy = await deployments.get('RoninGatewayPauseEnforcerProxy');
   const initializeV2_SIG = new RoninGatewayV2__factory().interface.encodeFunctionData('initializeV2');
 
   const RoninGatewayV2Instr = [
     proxyInterface.encodeFunctionData('upgradeToAndCall', [RoninGatewayV2LogicDepl.address, initializeV2_SIG]),
+    proxyCall(
+      new RoninGatewayV2__factory().interface.encodeFunctionData('setEmergencyPauser', [
+        RoninGatewayPauseEnforcerProxy.address,
+      ])
+    ),
   ];
 
-  const blockNumBefore = await ethers.provider.getBlockNumber();
-  const blockBefore = await ethers.provider.getBlock(blockNumBefore);
-  const timestampBefore = blockBefore.timestamp;
-  const proposalExpiryTimestamp = timestampBefore + 3600 * 24 * 10; // expired in 10 days
+  // const blockNumBefore = await ethers.provider.getBlockNumber();
+  // const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+  // const timestampBefore = blockBefore.timestamp;
+  const proposalExpiryTimestamp = 1689396507;
+  const nonce = 6;
 
   // NOTE: Should double check the RoninGovernanceAdmin address in `deployments` folder is 0x946397deDFd2f79b75a72B322944a21C3240c9c3
+  // function castProposalVoteForCurrentNetwork(
+  //   Proposal.ProposalDetail calldata _proposal,
+  //   Ballot.VoteType _support
+
+  let proposal: ProposalDetailStruct = {
+    chainId: network.config.chainId!,
+    expiryTimestamp: proposalExpiryTimestamp,
+    nonce,
+    targets: [...RoninGatewayV2Instr.map(() => RoninGatewayV2Addr)], // targets
+    values: [...RoninGatewayV2Instr].map(() => 0), // values
+    calldatas: [...RoninGatewayV2Instr], // datas
+    gasAmounts: [...RoninGatewayV2Instr].map(() => 1_000_000), // gasAmounts
+  };
+
   const tx = await execute(
     'RoninGovernanceAdmin',
     { from: governor, log: true },
-    'proposeProposalForCurrentNetwork',
-    proposalExpiryTimestamp, // expiryTimestamp
-    [...RoninGatewayV2Instr.map(() => RoninGatewayV2Addr)], // targets
-    [...RoninGatewayV2Instr].map(() => 0), // values
-    [...RoninGatewayV2Instr], // datas
-    [...RoninGatewayV2Instr].map(() => 1_000_000), // gasAmounts
+    'castProposalVoteForCurrentNetwork',
+    proposal,
     VoteType.For // ballot type
   );
 
   console.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
-deploy.tags = ['230627VoteTestnetV0_5_2__2'];
+deploy.tags = ['230627VoteTestnetV0_5_2__3'];
 
 export default deploy;
