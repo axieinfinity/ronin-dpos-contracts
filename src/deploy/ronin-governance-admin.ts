@@ -18,7 +18,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     args: [
       generalRoninConf[network.name].roninChainId,
       generalRoninConf[network.name].roninTrustedOrganizationContract?.address,
-      generalRoninConf[network.name].bridgeContract,
       generalRoninConf[network.name].validatorContract?.address,
       roninGovernanceAdminConf[network.name]?.proposalExpiryDuration,
     ],
