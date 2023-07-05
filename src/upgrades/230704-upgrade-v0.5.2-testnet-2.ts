@@ -1,7 +1,4 @@
-/// npx hardhat deploy --tags 230627UpgradeTestnetV0_5_2__2 --network ronin-testnet
-
-/// This script does the following:
-/// - Set new enforcer for mainchain gateway
+/// npx hardhat deploy --tags 230704UpgradeTestnetV0_5_2__2 --network ronin-testnet
 
 /// Governor who proposes this proposal must manually vote it after running this script.
 
@@ -53,6 +50,6 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   console.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
-deploy.tags = ['230627UpgradeTestnetV0_5_2__2'];
+deploy.tags = ['230704UpgradeTestnetV0_5_2__2'];
 
 export default deploy;

@@ -1,12 +1,9 @@
-/// npx hardhat deploy --tags 230627UpgradeTestnetV0_5_2__3 --network ronin-testnet
-
-/// This script does the following:
-/// - Set new enforcer for mainchain gateway
+/// npx hardhat deploy --tags 230704VoteTestnetV0_5_2__2 --network ronin-testnet
 
 /// Governor who proposes this proposal must manually vote it after running this script.
 
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { explorerUrl, proxyCall } from './upgradeUtils';
+import { explorerUrl, proxyInterface } from './upgradeUtils';
 import { VoteType } from '../script/proposal';
 import { RoninGatewayV2__factory } from '../types';
 import { generalRoninConf, roninchainNetworks } from '../configs/config';
@@ -23,16 +20,13 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   /// Upgrade contracts
 
-  const RoninGatewayPauseEnforcerProxy = await deployments.get('RoninGatewayPauseEnforcerProxy');
+  const RoninGatewayV2LogicDepl = await deployments.get('RoninGatewayV2Logic');
   const RoninGatewayV2Addr = generalRoninConf[network.name]!.bridgeContract;
 
+  const initializeV2_SIG = new RoninGatewayV2__factory().interface.encodeFunctionData('initializeV2');
+
   const RoninGatewayV2Instr = [
-    // proxyInterface.encodeFunctionData('upgradeToAndCall', [RoninGatewayV2LogicDepl.address, initializeV2_SIG]),
-    proxyCall(
-      new RoninGatewayV2__factory().interface.encodeFunctionData('setEmergencyPauser', [
-        RoninGatewayPauseEnforcerProxy.address,
-      ])
-    ),
+    proxyInterface.encodeFunctionData('upgradeToAndCall', [RoninGatewayV2LogicDepl.address, initializeV2_SIG]),
   ];
 
   const blockNumBefore = await ethers.provider.getBlockNumber();
@@ -56,6 +50,6 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   console.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
-deploy.tags = ['230627UpgradeTestnetV0_5_2__3'];
+deploy.tags = ['230627VoteTestnetV0_5_2__2'];
 
 export default deploy;
