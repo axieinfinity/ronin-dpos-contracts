@@ -9,7 +9,7 @@ import { IBridgeOperatorManager } from "../../interfaces/IBridgeOperatorManager.
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { RoleAccess } from "../../utils/RoleAccess.sol";
-import { ErrInvalidArguments, ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
+import { ErrOnlySelfCall, ErrInvalidArguments, ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
 
 abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasContracts {
   using SafeCast for uint256;
@@ -52,6 +52,11 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
    */
   uint256 internal _totalWeight;
 
+  modifier onlySelfCall() {
+    _requireSelfCall();
+    _;
+  }
+
   /**
    * @dev Modifier to ensure that the elements in the `arr` array are non-duplicates.
    * It calls the internal `_checkDuplicate` function to perform the duplicate check.
@@ -92,13 +97,7 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
     uint256[] calldata voteWeights,
     address[] calldata governors,
     address[] calldata bridgeOperators
-  )
-    external
-    onlyContract(ContractType.BRIDGE)
-    nonDuplicate(bridgeOperators)
-    nonDuplicate(governors)
-    returns (bool[] memory addeds)
-  {
+  ) external onlySelfCall nonDuplicate(bridgeOperators) nonDuplicate(governors) returns (bool[] memory addeds) {
     addeds = _addBridgeOperators(voteWeights, governors, bridgeOperators);
   }
 
@@ -107,7 +106,7 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
    */
   function removeBridgeOperators(
     address[] calldata bridgeOperators
-  ) external onlyContract(ContractType.BRIDGE) returns (bool[] memory removeds) {
+  ) external onlySelfCall returns (bool[] memory removeds) {
     return _removeBridgeOperators(bridgeOperators);
   }
 
@@ -487,5 +486,17 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
     addrs[1] = bridgeOperator;
 
     _checkDuplicate(addrs);
+  }
+
+  /**
+   * @dev Internal method to check method caller.
+   *
+   * Requirements:
+   *
+   * - The method caller must be this contract.
+   *
+   */
+  function _requireSelfCall() internal view virtual {
+    if (msg.sender != address(this)) revert ErrOnlySelfCall(msg.sig);
   }
 }

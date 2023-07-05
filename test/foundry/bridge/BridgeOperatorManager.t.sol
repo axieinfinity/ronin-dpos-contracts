@@ -46,14 +46,14 @@ contract BridgeOperatorManagerTest is Test {
   /**
    * @notice Checks whether unauthorized caller except bridge contract can add bridge operators.
    */
-  function testFail_AddBridgeOperators_CallerNotBridgeContract(
+  function testFail_AddBridgeOperators_CallerNotBridgeAdminOperator(
     address caller,
     uint256 r1,
     uint256 r2,
     uint256 r3,
     uint256 numBridgeOperators
   ) external {
-    vm.assume(caller != _bridgeContract);
+    vm.assume(caller != _bridgeAdminOperator);
 
     (uint256[] memory voteWeights, address[] memory governors, address[] memory bridgeOperators) = _getValidInputs(
       r1,
@@ -77,7 +77,7 @@ contract BridgeOperatorManagerTest is Test {
   /**
    * @notice Checks whether bridge contract can add bridge operators.
    */
-  function test_AddBridgeOperators_CallerIsBridgeContract(
+  function test_AddBridgeOperators_CallerIsBridgeAdminOperator(
     uint256 r1,
     uint256 r2,
     uint256 r3,
@@ -91,7 +91,7 @@ contract BridgeOperatorManagerTest is Test {
     );
 
     IBridgeOperatorManager bridgeAdminOperator = _addBridgeOperators(
-      _bridgeContract,
+      _bridgeAdminOperator,
       voteWeights,
       governors,
       bridgeOperators
@@ -119,7 +119,7 @@ contract BridgeOperatorManagerTest is Test {
       address[] memory bridgeOperators
     ) = _nullOrDuplicateInputs(r1, r2, r3, numBridgeOperators);
 
-    _addBridgeOperators(_bridgeContract, voteWeights, governors, bridgeOperators);
+    _addBridgeOperators(_bridgeAdminOperator, voteWeights, governors, bridgeOperators);
 
     if (modifiedInputIdx == uint8(InputIndex.VoteWeights)) {
       // allow duplicate vote weights
@@ -160,7 +160,7 @@ contract BridgeOperatorManagerTest is Test {
     );
 
     IBridgeOperatorManager bridgeAdminOperator = _addBridgeOperators(
-      _bridgeContract,
+      _bridgeAdminOperator,
       voteWeights,
       governors,
       bridgeOperators
@@ -191,14 +191,14 @@ contract BridgeOperatorManagerTest is Test {
       mstore(bridgeOperators, remainLength)
     }
 
-    vm.prank(_bridgeContract);
+    vm.prank(_bridgeAdminOperator);
     vm.expectEmit(_bridgeAdminOperator);
     bool[] memory statuses;
     uint256[] memory tmp = _createRandomNumbers(0, removeBridgeOperators.length, 1, 1);
     assembly {
       statuses := tmp
     }
-    emit BridgeOperatorsRemoved(_bridgeContract, statuses, removeBridgeOperators);
+    emit BridgeOperatorsRemoved(_bridgeAdminOperator, statuses, removeBridgeOperators);
     bridgeAdminOperator.removeBridgeOperators(removeBridgeOperators);
 
     _invariantTest(bridgeAdminOperator, voteWeights, governors, bridgeOperators);
@@ -220,7 +220,7 @@ contract BridgeOperatorManagerTest is Test {
       numBridgeOperators
     );
     IBridgeOperatorManager bridgeAdminOperator = _addBridgeOperators(
-      _bridgeContract,
+      _bridgeAdminOperator,
       voteWeights,
       governors,
       bridgeOperators
@@ -260,7 +260,7 @@ contract BridgeOperatorManagerTest is Test {
       numBridgeOperators
     );
     IBridgeOperatorManager bridgeAdminOperator = _addBridgeOperators(
-      _bridgeContract,
+      _bridgeAdminOperator,
       voteWeights,
       governors,
       bridgeOperators
