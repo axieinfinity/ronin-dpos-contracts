@@ -7,7 +7,7 @@ import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsume
 import { IsolatedGovernance } from "../../libraries/IsolatedGovernance.sol";
 import { BridgeOperatorsBallot } from "../../libraries/BridgeOperatorsBallot.sol";
 
-contract RoninBridgeAdmin is BridgeOperatorManager, BOsGovernanceProposal {
+contract RoninBridgeManager is BridgeOperatorManager, BOsGovernanceProposal {
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
   constructor(

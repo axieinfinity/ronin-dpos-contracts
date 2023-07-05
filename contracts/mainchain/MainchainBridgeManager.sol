@@ -9,7 +9,7 @@ import { ChainTypeConsumer } from "../interfaces/consumers/ChainTypeConsumer.sol
 import { Ballot } from "../libraries/Ballot.sol";
 import { GlobalProposal } from "../libraries/GlobalProposal.sol";
 
-contract MainchainBridgeAdmin is
+contract MainchainBridgeManager is
   ChainTypeConsumer,
   AccessControlEnumerable,
   BridgeOperatorManager,
