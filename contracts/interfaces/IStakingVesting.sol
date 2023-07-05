@@ -3,6 +3,11 @@
 pragma solidity ^0.8.9;
 
 interface IStakingVesting {
+  /**
+   * @dev Error thrown when attempting to send a bonus that has already been sent.
+   */
+  error ErrBonusAlreadySent();
+
   /// @dev Emitted when the block bonus for block producer is transferred.
   event BonusTransferred(
     uint256 indexed blockNumber,
@@ -64,13 +69,10 @@ interface IStakingVesting {
    * @return _bridgeOperatorBonus The amount of bonus actually sent for the bridge operator, returns 0 when the transfer is failed.
    *
    */
-  function requestBonus(bool _forBlockProducer, bool _forBridgeOperator)
-    external
-    returns (
-      bool _success,
-      uint256 _blockProducerBonus,
-      uint256 _bridgeOperatorBonus
-    );
+  function requestBonus(
+    bool _forBlockProducer,
+    bool _forBridgeOperator
+  ) external returns (bool _success, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus);
 
   /**
    * @dev Sets the bonus amount per block for block producer.

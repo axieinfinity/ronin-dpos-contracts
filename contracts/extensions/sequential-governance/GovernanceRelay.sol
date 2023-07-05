@@ -20,7 +20,8 @@ abstract contract GovernanceRelay is CoreGovernance {
     bytes32 _forDigest,
     bytes32 _againstDigest
   ) internal {
-    require(_supports.length > 0 && _supports.length == _signatures.length, "GovernanceRelay: invalid array length");
+    if (!(_supports.length > 0 && _supports.length == _signatures.length)) revert ErrLengthMismatch(msg.sig);
+
     uint256 _forVoteCount;
     uint256 _againstVoteCount;
     address[] memory _forVoteSigners = new address[](_signatures.length);
@@ -32,7 +33,7 @@ abstract contract GovernanceRelay is CoreGovernance {
       Ballot.VoteType _support;
       Signature calldata _sig;
 
-      for (uint256 _i; _i < _signatures.length; _i++) {
+      for (uint256 _i; _i < _signatures.length; ) {
         _sig = _signatures[_i];
         _support = _supports[_i];
 
@@ -42,12 +43,14 @@ abstract contract GovernanceRelay is CoreGovernance {
         } else if (_support == Ballot.VoteType.Against) {
           _signer = ECDSA.recover(_againstDigest, _sig.v, _sig.r, _sig.s);
           _againstVoteSigners[_againstVoteCount++] = _signer;
-        } else {
-          revert("GovernanceRelay: query for unsupported vote type");
-        }
+        } else revert ErrUnsupportedVoteType(msg.sig);
 
-        require(_lastSigner < _signer, "GovernanceRelay: invalid order");
+        if (_lastSigner >= _signer) revert ErrInvalidOrder(msg.sig);
         _lastSigner = _signer;
+
+        unchecked {
+          ++_i;
+        }
       }
     }
 
@@ -60,7 +63,7 @@ abstract contract GovernanceRelay is CoreGovernance {
     uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
     uint256 _totalForVoteWeight = _sumWeights(_forVoteSigners);
     if (_totalForVoteWeight >= _minimumForVoteWeight) {
-      require(_totalForVoteWeight > 0, "GovernanceRelay: invalid vote weight");
+      if (_totalForVoteWeight == 0) revert ErrInvalidVoteWeight(msg.sig);
       _vote.status = VoteStatus.Approved;
       emit ProposalApproved(_vote.hash);
       _tryExecute(_vote, _proposal);
@@ -70,13 +73,13 @@ abstract contract GovernanceRelay is CoreGovernance {
     uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;
     uint256 _totalAgainstVoteWeight = _sumWeights(_againstVoteSigners);
     if (_totalAgainstVoteWeight >= _minimumAgainstVoteWeight) {
-      require(_totalAgainstVoteWeight > 0, "GovernanceRelay: invalid vote weight");
+      if (_totalAgainstVoteWeight == 0) revert ErrInvalidVoteWeight(msg.sig);
       _vote.status = VoteStatus.Rejected;
       emit ProposalRejected(_vote.hash);
       return;
     }
 
-    revert("GovernanceRelay: relay failed");
+    revert ErrRelayFailed(msg.sig);
   }
 
   /**

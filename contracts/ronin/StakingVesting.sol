@@ -4,10 +4,11 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IStakingVesting.sol";
-import "../extensions/collections/HasValidatorContract.sol";
+import "../extensions/collections/HasContracts.sol";
 import "../extensions/RONTransferHelper.sol";
+import { HasValidatorDeprecated } from "../utils/DeprecatedSlots.sol";
 
-contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHelper, Initializable {
+contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts, RONTransferHelper, Initializable {
   /// @dev The block bonus for the block producer whenever a new block is mined.
   uint256 internal _blockProducerBonusPerBlock;
   /// @dev The block bonus for the bridge operator whenever a new block is mined.
@@ -27,9 +28,14 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
     uint256 __blockProducerBonusPerBlock,
     uint256 __bridgeOperatorBonusPerBlock
   ) external payable initializer {
-    _setValidatorContract(__validatorContract);
+    _setContract(ContractType.VALIDATOR, __validatorContract);
     _setBlockProducerBonusPerBlock(__blockProducerBonusPerBlock);
     _setBridgeOperatorBonusPerBlock(__bridgeOperatorBonusPerBlock);
+  }
+
+  function initializeV2() external reinitializer(2) {
+    _setContract(ContractType.VALIDATOR, ______deprecatedValidator);
+    delete ______deprecatedValidator;
   }
 
   /**
@@ -40,35 +46,31 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
   /**
    * @inheritdoc IStakingVesting
    */
-  function blockProducerBlockBonus(
-    uint256 /* _block */
-  ) public view override returns (uint256) {
+  function blockProducerBlockBonus(uint256 /* _block */) public view override returns (uint256) {
     return _blockProducerBonusPerBlock;
   }
 
   /**
    * @inheritdoc IStakingVesting
    */
-  function bridgeOperatorBlockBonus(
-    uint256 /* _block */
-  ) public view override returns (uint256) {
+  function bridgeOperatorBlockBonus(uint256 /* _block */) public view override returns (uint256) {
     return _bridgeOperatorBonusPerBlock;
   }
 
   /**
    * @inheritdoc IStakingVesting
    */
-  function requestBonus(bool _forBlockProducer, bool _forBridgeOperator)
+  function requestBonus(
+    bool _forBlockProducer,
+    bool _forBridgeOperator
+  )
     external
     override
-    onlyValidatorContract
-    returns (
-      bool _success,
-      uint256 _blockProducerBonus,
-      uint256 _bridgeOperatorBonus
-    )
+    onlyContract(ContractType.VALIDATOR)
+    returns (bool _success, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus)
   {
-    require(block.number > lastBlockSendingBonus, "StakingVesting: bonus for already sent");
+    if (block.number <= lastBlockSendingBonus) revert ErrBonusAlreadySent();
+
     lastBlockSendingBonus = block.number;
 
     _blockProducerBonus = _forBlockProducer ? blockProducerBlockBonus(block.number) : 0;
@@ -77,7 +79,7 @@ contract StakingVesting is IStakingVesting, HasValidatorContract, RONTransferHel
     uint256 _totalAmount = _blockProducerBonus + _bridgeOperatorBonus;
 
     if (_totalAmount > 0) {
-      address payable _validatorContractAddr = payable(validatorContract());
+      address payable _validatorContractAddr = payable(msg.sender);
 
       _success = _unsafeSendRON(_validatorContractAddr, _totalAmount);
 

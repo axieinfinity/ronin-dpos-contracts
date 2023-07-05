@@ -5,13 +5,11 @@ on:
       - main
       - testnet
       - dev
-      - reduce-contract-size
   pull_request:
     branches:
       - main
       - testnet
       - dev
-      - reduce-contract-size
 
 permissions:
   packages: read
@@ -26,11 +24,13 @@ jobs:
     steps:
       - name: "Checkout Repo"
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 #v3.0.2
+        with:
+          submodules: recursive
 
       - name: "Setup Node"
         uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 #v3.4.1
         with:
-          node-version: v14.18.1
+          node-version: v16.16.0
 
       - name: Github private package token in npmrc
         run: |
@@ -41,6 +41,9 @@ jobs:
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
         with:
           cmd: install
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1.0.9
 
       - name: "Run Compile"
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0

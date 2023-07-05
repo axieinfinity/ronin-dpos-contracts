@@ -81,12 +81,10 @@ contract MockStaking is RewardCalculation, GlobalConfigConsumer {
     return _stakingAmount[_user];
   }
 
-  function getManyStakingAmounts(address[] calldata _poolAddrs, address[] calldata _userList)
-    external
-    view
-    override
-    returns (uint256[] memory)
-  {}
+  function getManyStakingAmounts(
+    address[] calldata _poolAddrs,
+    address[] calldata _userList
+  ) external view override returns (uint256[] memory) {}
 
   function getStakingTotal(address _addr) public view virtual override returns (uint256) {
     return _addr == poolAddr ? _stakingTotal : 0;

@@ -30,7 +30,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types';
 import { initTest } from '../helpers/fixture';
-import { mineBatchTxs } from '../helpers/utils';
+import { getRoles, mineBatchTxs } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
@@ -68,7 +68,7 @@ const trustedDenominator = maxPrioritizedValidatorNumber;
 const mainchainId = 1;
 const numberOfBlocksInEpoch = 600;
 
-describe('Ronin Gateway V2 test', () => {
+describe('Pause Enforcer test', () => {
   before(async () => {
     [deployer, coinbase, enforcerAdmin, enforcerSentry, ...signers] = await ethers.getSigners();
     // Set up that all candidates except the 2 last ones are trusted org
@@ -101,11 +101,18 @@ describe('Ronin Gateway V2 test', () => {
     await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
     // Deploys pauser
-    pauseEnforcer = await new PauseEnforcer__factory(deployer).deploy(
-      bridgeContract.address, // target
-      enforcerAdmin.address, // admin
-      [enforcerSentry.address] // sentry
+    const pauseEnforcerLogic = await new PauseEnforcer__factory(deployer).deploy();
+    const pauseEnforcerProxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
+      pauseEnforcerLogic.address,
+      deployer.address,
+      pauseEnforcerLogic.interface.encodeFunctionData('initialize', [
+        bridgeContract.address, // target
+        enforcerAdmin.address, // admin
+        [enforcerSentry.address], // sentry
+      ])
     );
+
+    pauseEnforcer = PauseEnforcer__factory.connect(pauseEnforcerProxy.address, enforcerAdmin);
 
     // Deploys DPoS contracts
     const {
@@ -157,9 +164,16 @@ describe('Ronin Gateway V2 test', () => {
     await governanceAdminInterface.functionDelegateCalls(
       Array.from(Array(3).keys()).map(() => bridgeContract.address),
       [
-        bridgeContract.interface.encodeFunctionData('setBridgeTrackingContract', [bridgeTracking.address]),
-        bridgeContract.interface.encodeFunctionData('setValidatorContract', [roninValidatorSet.address]),
-        bridgeContract.interface.encodeFunctionData('setRoninTrustedOrganizationContract', [
+        bridgeContract.interface.encodeFunctionData('setContract', [
+          getRoles('BRIDGE_TRACKING_CONTRACT'),
+          bridgeTracking.address,
+        ]),
+        bridgeContract.interface.encodeFunctionData('setContract', [
+          getRoles('VALIDATOR_CONTRACT'),
+          roninValidatorSet.address,
+        ]),
+        bridgeContract.interface.encodeFunctionData('setContract', [
+          getRoles('RONIN_TRUSTED_ORGANIZATION_CONTRACT'),
           roninTrustedOrganizationAddress,
         ]),
       ]
@@ -248,8 +262,9 @@ describe('Ronin Gateway V2 test', () => {
     });
 
     it('Should not be able to emergency pause for a second time', async () => {
-      await expect(pauseEnforcer.connect(enforcerSentry).triggerPause()).revertedWith(
-        'PauseEnforcer: target is not on pause'
+      await expect(pauseEnforcer.connect(enforcerSentry).triggerPause()).revertedWithCustomError(
+        pauseEnforcer,
+        'ErrTargetIsNotOnPaused'
       );
     });
 
@@ -302,17 +317,20 @@ describe('Ronin Gateway V2 test', () => {
     });
 
     it('Should not be able to emergency unpause', async () => {
-      await expect(pauseEnforcer.connect(enforcerSentry).triggerUnpause()).revertedWith(
-        'PauseEnforcer: not on emergency pause'
+      await expect(pauseEnforcer.connect(enforcerSentry).triggerUnpause()).revertedWithCustomError(
+        pauseEnforcer,
+        'ErrNotOnEmergencyPause'
       );
     });
 
     it('Should not be able to override by emergency pause and emergency unpause', async () => {
-      await expect(pauseEnforcer.connect(enforcerSentry).triggerPause()).revertedWith(
-        'PauseEnforcer: target is not on pause'
+      await expect(pauseEnforcer.connect(enforcerSentry).triggerPause()).revertedWithCustomError(
+        pauseEnforcer,
+        'ErrTargetIsNotOnPaused'
       );
-      await expect(pauseEnforcer.connect(enforcerSentry).triggerUnpause()).revertedWith(
-        'PauseEnforcer: not on emergency pause'
+      await expect(pauseEnforcer.connect(enforcerSentry).triggerUnpause()).revertedWithCustomError(
+        pauseEnforcer,
+        'ErrNotOnEmergencyPause'
       );
     });
 

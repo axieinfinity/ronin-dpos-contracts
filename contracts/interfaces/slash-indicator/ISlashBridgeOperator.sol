@@ -6,6 +6,11 @@ import "./IBaseSlash.sol";
 
 interface ISlashBridgeOperator is IBaseSlash {
   /**
+   * @dev Error thrown when invalid ratios are provided.
+   */
+  error ErrInvalidRatios();
+
+  /**
    * @dev Emitted when the configs to slash bridge operator is updated. See the method
    * `getBridgeOperatorSlashingConfigs` for param details.
    */
@@ -28,11 +33,7 @@ interface ISlashBridgeOperator is IBaseSlash {
    *
    * Emits the event `Slashed`.
    */
-  function execSlashBridgeOperator(
-    address _consensusAddr,
-    uint256 _tier,
-    uint256 _period
-  ) external;
+  function execSlashBridgeOperator(address _consensusAddr, uint256 _tier, uint256 _period) external;
 
   /**
    * @dev Returns the configs related to bridge operator slashing.

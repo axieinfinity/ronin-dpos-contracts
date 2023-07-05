@@ -56,3 +56,41 @@ export const accessControlRevertStr = (addr: Address, role: string): string =>
 
 export const compareBigNumbers = (firstBigNumbers: BigNumber[], secondBigNumbers: BigNumber[]) =>
   expect(firstBigNumbers.map((_) => _.toHexString())).deep.equal(secondBigNumbers.map((_) => _.toHexString()));
+
+const CONTRACT_TYPES = [
+  'UNKNOWN',
+  'PAUSE_ENFORCER_CONTRACT',
+  'BRIDGE_CONTRACT',
+  'BRIDGE_TRACKING_CONTRACT',
+  'GOVERNANCE_ADMIN_CONTRACT',
+  'MAINTENANCE_CONTRACT',
+  'SLASH_INDICATOR_CONTRACT',
+  'STAKING_VESTING_CONTRACT',
+  'VALIDATOR_CONTRACT',
+  'STAKING_CONTRACT',
+  'RONIN_TRUSTED_ORGANIZATION_CONTRACT',
+];
+
+export const getRoles = (roleName: string): number => {
+  return CONTRACT_TYPES.indexOf(roleName);
+};
+
+export const getProxyImplementation = async (proxy: string): Promise<string> =>
+  '0x' +
+  (
+    await ethers.provider.getStorageAt(
+      proxy,
+      /// @dev value is equal to keccak256("eip1967.proxy.implementation") - 1
+      '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc'
+    )
+  ).slice(-40);
+
+export const getProxyAdmin = async (proxy: string): Promise<string> =>
+  '0x' +
+  (
+    await ethers.provider.getStorageAt(
+      proxy,
+      /// @dev value is equal to keccak256("eip1967.proxy.admin") - 1
+      '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103'
+    )
+  ).slice(-40);

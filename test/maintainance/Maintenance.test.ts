@@ -166,7 +166,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: start block is out of offset');
+      ).revertedWithCustomError(maintenanceContract, 'ErrStartBlockOutOfRange');
 
       startedAtBlock = currentBlock;
       endedAtBlock = currentBlock + 1000;
@@ -175,7 +175,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: start block is out of offset');
+      ).revertedWithCustomError(maintenanceContract, 'ErrStartBlockOutOfRange');
 
       startedAtBlock = currentBlock + maxOffsetToStartSchedule + 1;
       endedAtBlock = startedAtBlock + 1000;
@@ -184,7 +184,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: start block is out of offset');
+      ).revertedWithCustomError(maintenanceContract, 'ErrStartBlockOutOfRange');
     });
 
     it('Should not be able to schedule maintenance in case of: start block >= end block', async () => {
@@ -195,7 +195,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: start block must be less than end block');
+      ).revertedWithCustomError(maintenanceContract, 'ErrStartBlockOutOfRange');
 
       endedAtBlock = startedAtBlock;
       expect(endedAtBlock).lte(startedAtBlock);
@@ -203,7 +203,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: start block must be less than end block');
+      ).revertedWithCustomError(maintenanceContract, 'ErrStartBlockOutOfRange');
     });
 
     it('Should not be able to schedule maintenance when the maintenance period is too small or large', async () => {
@@ -213,7 +213,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: invalid maintenance duration');
+      ).revertedWithCustomError(maintenanceContract, 'ErrInvalidMaintenanceDuration');
 
       endedAtBlock = BigNumber.from(startedAtBlock).add(maxMaintenanceDurationInBlock).add(1);
       expect(endedAtBlock.sub(startedAtBlock)).gt(maxMaintenanceDurationInBlock);
@@ -221,7 +221,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: invalid maintenance duration');
+      ).revertedWithCustomError(maintenanceContract, 'ErrInvalidMaintenanceDuration');
     });
 
     it('Should not be able to schedule maintenance when the start block is not at the start of an epoch', async () => {
@@ -234,7 +234,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: start block is not at the start of an epoch');
+      ).revertedWithCustomError(maintenanceContract, 'ErrStartBlockOutOfRange');
     });
 
     it('Should not be able to schedule maintenance when the end block is not at the end of an epoch', async () => {
@@ -248,7 +248,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: end block is not at the end of an epoch');
+      ).revertedWithCustomError(maintenanceContract, 'ErrEndBlockOutOfRange');
     });
   });
 
@@ -256,13 +256,13 @@ describe('Maintenance test', () => {
     it('Should not be able to schedule maintenance using unauthorized account', async () => {
       await expect(
         maintenanceContract.connect(deployer).schedule(validatorCandidates[0].consensusAddr.address, 0, 100)
-      ).revertedWith('Maintenance: method caller must be a candidate admin');
+      ).revertedWithCustomError(maintenanceContract, 'ErrUnauthorized');
     });
 
     it('Should not be able to schedule maintenance for non-validator address', async () => {
       await expect(
         maintenanceContract.connect(validatorCandidates[0].candidateAdmin).schedule(deployer.address, 0, 100)
-      ).revertedWith('Maintenance: consensus address must be a block producer');
+      ).revertedWithCustomError(maintenanceContract, 'ErrUnauthorized');
     });
 
     it('Should be able to schedule maintenance using validator admin account', async () => {
@@ -292,7 +292,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: already scheduled');
+      ).revertedWithCustomError(maintenanceContract, 'ErrAlreadyScheduled');
     });
 
     it('Should be able to schedule maintenance for another validator using their admin account', async () => {
@@ -306,7 +306,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[3].candidateAdmin)
           .schedule(validatorCandidates[3].consensusAddr.address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintenance: exceeds total of schedules');
+      ).revertedWithCustomError(maintenanceContract, 'ErrTotalOfSchedulesExceeded');
     });
 
     it('Should the validator still appear in the block producer list since it is not maintenance time yet', async () => {
@@ -368,7 +368,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .schedule(validatorCandidates[0].consensusAddr.address, startedAtBlock, endedAtBlock)
-      ).revertedWith('Maintainance: cooldown time not end');
+      ).revertedWithCustomError(maintenanceContract, 'ErrCooldownTimeNotYetEnded');
     });
 
     it('Should be able to schedule again in current period when the previous maintenance is done, and the cooldown time is over', async () => {
@@ -401,7 +401,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[1].candidateAdmin)
           .cancelSchedule(validatorCandidates[0].consensusAddr.address)
-      ).revertedWith('Maintenance: method caller must be the candidate admin');
+      ).revertedWithCustomError(maintenanceContract, 'ErrUnauthorized');
     });
 
     it('Should the admin not be able to cancel the schedule when maintenance starts', async () => {
@@ -415,7 +415,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .cancelSchedule(validatorCandidates[0].consensusAddr.address)
-      ).revertedWith('Maintenance: already on maintenance');
+      ).revertedWithCustomError(maintenanceContract, 'ErrAlreadyOnMaintenance');
 
       await network.provider.send('evm_revert', [snapshotId]);
     });
@@ -443,7 +443,7 @@ describe('Maintenance test', () => {
         maintenanceContract
           .connect(validatorCandidates[0].candidateAdmin)
           .cancelSchedule(validatorCandidates[0].consensusAddr.address)
-      ).revertedWith('Maintenance: no schedule exists');
+      ).revertedWithCustomError(maintenanceContract, 'ErrUnexistedSchedule');
     });
 
     it('Should the validator not on maintenance mode when the from-block of the cancelled schedule comes', async () => {

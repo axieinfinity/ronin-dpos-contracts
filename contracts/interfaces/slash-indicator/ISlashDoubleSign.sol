@@ -6,6 +6,11 @@ import "./IBaseSlash.sol";
 
 interface ISlashDoubleSign is IBaseSlash {
   /**
+   * @dev Error thrown when evidence has already been submitted.
+   */
+  error ErrEvidenceAlreadySubmitted();
+
+  /**
    * @dev Emitted when the configs to slash double sign is updated. See the method `getDoubleSignSlashingConfigs`
    * for param details.
    */
@@ -23,11 +28,7 @@ interface ISlashDoubleSign is IBaseSlash {
    *
    * Emits the event `Slashed` if the double signing evidence of the two headers valid.
    */
-  function slashDoubleSign(
-    address _validatorAddr,
-    bytes calldata _header1,
-    bytes calldata _header2
-  ) external;
+  function slashDoubleSign(address _validatorAddr, bytes calldata _header1, bytes calldata _header2) external;
 
   /**
    * @dev Returns the configs related to block producer slashing.

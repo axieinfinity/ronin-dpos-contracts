@@ -6,6 +6,11 @@ import "./IBaseSlash.sol";
 
 interface ISlashBridgeVoting is IBaseSlash {
   /**
+   * @dev Error thrown when an invalid slash is encountered.
+   */
+  error ErrInvalidSlash();
+
+  /**
    * @dev Emitted when the configs to slash bridge voting is updated. See the method `getBridgeVotingSlashingConfigs` for param
    * details.
    */

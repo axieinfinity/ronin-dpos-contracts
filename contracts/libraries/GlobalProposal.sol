@@ -4,6 +4,11 @@ pragma solidity ^0.8.0;
 import "./Proposal.sol";
 
 library GlobalProposal {
+  /**
+   * @dev Error thrown when attempting to interact with an unsupported target.
+   */
+  error ErrUnsupportedTarget(bytes32 proposalHash, uint256 targetNumber);
+
   enum TargetOption {
     RoninTrustedOrganizationContract,
     GatewayContract
@@ -25,40 +30,51 @@ library GlobalProposal {
   /**
    * @dev Returns struct hash of the proposal.
    */
-  function hash(GlobalProposalDetail memory _proposal) internal pure returns (bytes32) {
-    bytes32 _targetsHash;
-    bytes32 _valuesHash;
-    bytes32 _calldatasHash;
-    bytes32 _gasAmountsHash;
-
+  function hash(GlobalProposalDetail memory _proposal) internal pure returns (bytes32 digest_) {
     uint256[] memory _values = _proposal.values;
     TargetOption[] memory _targets = _proposal.targetOptions;
     bytes32[] memory _calldataHashList = new bytes32[](_proposal.calldatas.length);
     uint256[] memory _gasAmounts = _proposal.gasAmounts;
 
-    for (uint256 _i; _i < _calldataHashList.length; _i++) {
+    for (uint256 _i; _i < _calldataHashList.length; ) {
       _calldataHashList[_i] = keccak256(_proposal.calldatas[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
 
+    /*
+     * return
+     *   keccak256(
+     *     abi.encode(
+     *       TYPE_HASH,
+     *       _proposal.nonce,
+     *       _proposal.expiryTimestamp,
+     *       _targetsHash,
+     *       _valuesHash,
+     *       _calldatasHash,
+     *       _gasAmountsHash
+     *     )
+     *   );
+     */
     assembly {
-      _targetsHash := keccak256(add(_targets, 32), mul(mload(_targets), 32))
-      _valuesHash := keccak256(add(_values, 32), mul(mload(_values), 32))
-      _calldatasHash := keccak256(add(_calldataHashList, 32), mul(mload(_calldataHashList), 32))
-      _gasAmountsHash := keccak256(add(_gasAmounts, 32), mul(mload(_gasAmounts), 32))
-    }
+      let ptr := mload(0x40)
+      mstore(ptr, TYPE_HASH)
+      mstore(add(ptr, 0x20), mload(_proposal)) // _proposal.nonce
+      mstore(add(ptr, 0x40), mload(add(_proposal, 0x20))) // _proposal.expiryTimestamp
 
-    return
-      keccak256(
-        abi.encode(
-          TYPE_HASH,
-          _proposal.nonce,
-          _proposal.expiryTimestamp,
-          _targetsHash,
-          _valuesHash,
-          _calldatasHash,
-          _gasAmountsHash
-        )
-      );
+      let arrayHashed
+      arrayHashed := keccak256(add(_targets, 32), mul(mload(_targets), 32)) // targetsHash
+      mstore(add(ptr, 0x60), arrayHashed)
+      arrayHashed := keccak256(add(_values, 32), mul(mload(_values), 32)) // _valuesHash
+      mstore(add(ptr, 0x80), arrayHashed)
+      arrayHashed := keccak256(add(_calldataHashList, 32), mul(mload(_calldataHashList), 32)) // _calldatasHash
+      mstore(add(ptr, 0xa0), arrayHashed)
+      arrayHashed := keccak256(add(_gasAmounts, 32), mul(mload(_gasAmounts), 32)) // _gasAmountsHash
+      mstore(add(ptr, 0xc0), arrayHashed)
+      digest_ := keccak256(ptr, 0xe0)
+    }
   }
 
   /**
@@ -77,13 +93,15 @@ library GlobalProposal {
     _detail.calldatas = _proposal.calldatas;
     _detail.gasAmounts = _proposal.gasAmounts;
 
-    for (uint256 _i; _i < _proposal.targetOptions.length; _i++) {
+    for (uint256 _i; _i < _proposal.targetOptions.length; ) {
       if (_proposal.targetOptions[_i] == TargetOption.GatewayContract) {
         _detail.targets[_i] = _gatewayContract;
       } else if (_proposal.targetOptions[_i] == TargetOption.RoninTrustedOrganizationContract) {
         _detail.targets[_i] = _roninTrustedOrganizationContract;
-      } else {
-        revert("GlobalProposal: unsupported target");
+      } else revert ErrUnsupportedTarget(hash(_proposal), _i);
+
+      unchecked {
+        ++_i;
       }
     }
   }
