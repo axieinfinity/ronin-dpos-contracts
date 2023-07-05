@@ -6,33 +6,25 @@ pragma solidity ^0.8.0;
  * @dev The interface for managing bridge operators.
  */
 interface IBridgeOperatorManager {
-  /**
-   * @dev Enum representing the actions that can be performed on bridge operators.
-   * - Add: Add a bridge operator.
-   * - Update: Update a bridge operator.
-   * - Remove: Remove a bridge operator.
-   */
-  enum BridgeAction {
-    Add,
-    Update,
-    Remove
-  }
-
   struct BridgeOperatorInfo {
     address addr;
     uint96 voteWeight;
   }
 
-  /**
-   * @dev Emitted when a bridge operator is modified.
-   * @param operator The address of the bridge operator being modified.
-   * @param action The action performed on the bridge operator.
-   */
-  event BridgeOperatorSetModified(
+  event BridgeOperatorsAdded(
     address indexed operator,
-    BridgeAction indexed action,
     bool[] statuses,
-    bytes extraData
+    uint256[] voteWeights,
+    address[] governors,
+    address[] bridgeOperators
+  );
+
+  event BridgeOperatorsRemoved(address indexed operator, bool[] statuses, address[] bridgeOperators);
+
+  event BridgeOperatorUpdated(
+    address indexed operator,
+    address indexed fromBridgeOperator,
+    address indexed toBridgeOperator
   );
 
   /**

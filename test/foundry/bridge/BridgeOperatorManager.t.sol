@@ -10,34 +10,26 @@ import { ErrUnauthorized, ErrInvalidVoteWeight, ErrZeroAddress, ErrUnexpectedInt
 contract BridgeOperatorManagerTest is Test {
   using AddressArrayUtils for address[];
 
-  /**
-   * @dev Enum representing the actions that can be performed on bridge operators.
-   * - Add: Add a bridge operator.
-   * - Update: Update a bridge operator.
-   * - Remove: Remove a bridge operator.
-   */
-  enum BridgeAction {
-    Add,
-    Update,
-    Remove
-  }
-
   enum InputIndex {
     VoteWeights,
     Governors,
     BridgeOperators
   }
 
-  /**
-   * @dev Emitted when a bridge operator is modified.
-   * @param operator The address of the bridge operator being modified.
-   * @param action The action performed on the bridge operator.
-   */
-  event BridgeOperatorSetModified(
+  event BridgeOperatorsAdded(
     address indexed operator,
-    BridgeAction indexed action,
     bool[] statuses,
-    bytes extraData
+    uint256[] voteWeights,
+    address[] governors,
+    address[] bridgeOperators
+  );
+
+  event BridgeOperatorsRemoved(address indexed operator, bool[] statuses, address[] bridgeOperators);
+
+  event BridgeOperatorUpdated(
+    address indexed operator,
+    address indexed fromBridgeOperator,
+    address indexed toBridgeOperator
   );
 
   uint256 private constant MAX_FUZZ_INPUTS = 100;
@@ -206,7 +198,7 @@ contract BridgeOperatorManagerTest is Test {
     assembly {
       statuses := tmp
     }
-    emit BridgeOperatorSetModified(_bridgeContract, BridgeAction.Remove, statuses, abi.encode(removeBridgeOperators));
+    emit BridgeOperatorsRemoved(_bridgeContract, statuses, removeBridgeOperators);
     bridgeAdminOperator.removeBridgeOperators(removeBridgeOperators);
 
     _invariantTest(bridgeAdminOperator, voteWeights, governors, bridgeOperators);
@@ -242,7 +234,7 @@ contract BridgeOperatorManagerTest is Test {
     vm.expectEmit(_bridgeAdminOperator);
     bool[] memory statuses = new bool[](1);
     statuses[0] = true;
-    emit BridgeOperatorSetModified(randomGovernor, BridgeAction.Update, statuses, abi.encode(newBridgeOperator));
+    emit BridgeOperatorUpdated(randomGovernor, bridgeOperators[randomSeed], newBridgeOperator);
     bridgeAdminOperator.updateBridgeOperator(newBridgeOperator);
 
     // swap and pop
@@ -340,12 +332,7 @@ contract BridgeOperatorManagerTest is Test {
     assembly {
       statuses := tmp
     }
-    emit BridgeOperatorSetModified(
-      caller,
-      BridgeAction.Add,
-      statuses,
-      abi.encode(voteWeights, governors, bridgeOperators)
-    );
+    emit BridgeOperatorsAdded(caller, statuses, voteWeights, governors, bridgeOperators);
     bridgeAdminOperator = IBridgeOperatorManager(_bridgeAdminOperator);
     vm.prank(caller);
     bridgeAdminOperator.addBridgeOperators(voteWeights, governors, bridgeOperators);

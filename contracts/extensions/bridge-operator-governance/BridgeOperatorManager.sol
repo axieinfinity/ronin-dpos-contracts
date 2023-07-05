@@ -137,7 +137,8 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
 
     bool[] memory statuses = new bool[](1);
     statuses[0] = updated;
-    emit BridgeOperatorSetModified(msg.sender, BridgeAction.Update, statuses, abi.encode(newBridgeOperator));
+
+    emit BridgeOperatorUpdated(msg.sender, currentBridgeOperator, newBridgeOperator);
   }
 
   /**
@@ -310,12 +311,7 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
 
     _totalWeight += accumulatedWeight;
 
-    emit BridgeOperatorSetModified(
-      msg.sender,
-      BridgeAction.Add,
-      addeds,
-      abi.encode(voteWeights, governors, brigdeOperators)
-    );
+    emit BridgeOperatorsAdded(msg.sender, addeds, voteWeights, governors, brigdeOperators);
   }
 
   /**
@@ -369,7 +365,7 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
 
     _totalWeight -= accumulatedWeight;
 
-    emit BridgeOperatorSetModified(msg.sender, BridgeAction.Remove, removeds, abi.encode(bridgeOperators));
+    emit BridgeOperatorsRemoved(msg.sender, removeds, bridgeOperators);
   }
 
   /**
