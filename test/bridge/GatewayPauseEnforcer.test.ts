@@ -19,6 +19,8 @@ import {
   TransparentUpgradeableProxyV2__factory,
   PauseEnforcer,
   PauseEnforcer__factory,
+  RoninBridgeManager,
+  RoninBridgeManager__factory,
 } from '../../src/types';
 import { ERC20PresetMinterPauser } from '../../src/types/ERC20PresetMinterPauser';
 import { ReceiptStruct } from '../../src/types/IRoninGatewayV2';
@@ -49,6 +51,7 @@ let governanceAdminInterface: GovernanceAdminInterface;
 let token: ERC20PresetMinterPauser;
 
 let pauseEnforcer: PauseEnforcer;
+let bridgeManager: RoninBridgeManager;
 
 let period: BigNumberish;
 let receipts: ReceiptStruct[];
@@ -114,6 +117,7 @@ describe('Ronin Gateway V2 test', () => {
       roninGovernanceAdminAddress,
       roninTrustedOrganizationAddress,
       validatorContractAddress,
+      roninBridgeManagerAddress,
     } = await initTest('RoninGatewayV2-PauseEnforcer')({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
@@ -135,12 +139,17 @@ describe('Ronin Gateway V2 test', () => {
         maxPrioritizedValidatorNumber,
         numberOfBlocksInEpoch,
       },
+      bridgeManagerArguments: {
+        numerator,
+        denominator,
+      },
     });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     bridgeTracking = BridgeTracking__factory.connect(bridgeTrackingAddress, deployer);
+    bridgeManager = RoninBridgeManager__factory.connect(roninBridgeManagerAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
       network.config.chainId!,
@@ -172,6 +181,8 @@ describe('Ronin Gateway V2 test', () => {
       ]
     );
 
+    await bridgeContract.initializeV2(roninBridgeManagerAddress);
+
     // Applies candidates and double check the bridge operators
     for (let i = 0; i < candidates.length; i++) {
       await stakingContract
@@ -183,6 +194,9 @@ describe('Ronin Gateway V2 test', () => {
           1,
           { value: minValidatorStakingAmount + candidates.length - i }
         );
+
+      // TODO: add operators to the bridgeManager contract
+      // await bridgeManager.
     }
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);

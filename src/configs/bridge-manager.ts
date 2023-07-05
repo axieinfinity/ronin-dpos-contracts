@@ -1,13 +1,14 @@
 import { BigNumberish } from 'ethers';
 import { LiteralNetwork, Network } from '../utils';
-import { Threshold } from './gateway';
 
-interface MainchainManagerConfig {
+export interface BridgeManagerArguments {
+  numerator?: BigNumberish;
+  denominator?: BigNumberish;
   expiryDuration?: BigNumberish;
 }
 
-interface BridgeManagerConfig {
-  [network: LiteralNetwork]: undefined | (Threshold & MainchainManagerConfig);
+export interface BridgeManagerConfig {
+  [network: LiteralNetwork]: undefined | BridgeManagerArguments;
 }
 
 export const bridgeManagerConf: BridgeManagerConfig = {
