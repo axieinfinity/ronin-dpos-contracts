@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import { HasContracts } from "../../extensions/collections/HasContracts.sol";
+import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { IQuorum } from "../../interfaces/IQuorum.sol";
 import { IBridgeManager } from "../../interfaces/IBridgeManager.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
@@ -73,6 +73,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     uint256 num,
     uint256 denom,
     uint256 roninChainId,
+    address bridgeContract,
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
@@ -80,6 +81,8 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     _nonce = 1;
     _num = num;
     _denom = denom;
+
+    _setContract(ContractType.BRIDGE, bridgeContract);
 
     DOMAIN_SEPARATOR = keccak256(
       abi.encode(
@@ -141,6 +144,14 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     statuses[0] = updated;
 
     emit BridgeOperatorUpdated(msg.sender, currentBridgeOperator, newBridgeOperator);
+  }
+
+  /**
+   * @inheritdoc IHasContracts
+   */
+  function setContract(ContractType contractType, address addr) external override onlySelfCall {
+    _requireHasCode(addr);
+    _setContract(contractType, addr);
   }
 
   /**

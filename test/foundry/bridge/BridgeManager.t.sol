@@ -29,6 +29,7 @@ contract BridgeManagerTest is Test {
   uint256 private constant MAX_FUZZ_INPUTS = 100;
 
   address private _bridgeManager;
+  address private _bridgeContract;
 
   function setUp() external {
     _setUp();
@@ -82,12 +83,7 @@ contract BridgeManagerTest is Test {
       numBridgeOperators
     );
 
-    IBridgeManager bridgeManager = _addBridgeOperators(
-      _bridgeManager,
-      voteWeights,
-      governors,
-      bridgeOperators
-    );
+    IBridgeManager bridgeManager = _addBridgeOperators(_bridgeManager, voteWeights, governors, bridgeOperators);
 
     _invariantTest(bridgeManager, voteWeights, governors, bridgeOperators);
   }
@@ -146,12 +142,7 @@ contract BridgeManagerTest is Test {
       numBridgeOperators
     );
 
-    IBridgeManager bridgeManager = _addBridgeOperators(
-      _bridgeManager,
-      voteWeights,
-      governors,
-      bridgeOperators
-    );
+    IBridgeManager bridgeManager = _addBridgeOperators(_bridgeManager, voteWeights, governors, bridgeOperators);
     uint256 removeAmount = _randomize(voteWeights.length, 1, voteWeights.length);
 
     uint256 tailIdx = voteWeights.length - 1;
@@ -206,12 +197,7 @@ contract BridgeManagerTest is Test {
       r3,
       numBridgeOperators
     );
-    IBridgeManager bridgeManager = _addBridgeOperators(
-      _bridgeManager,
-      voteWeights,
-      governors,
-      bridgeOperators
-    );
+    IBridgeManager bridgeManager = _addBridgeOperators(_bridgeManager, voteWeights, governors, bridgeOperators);
 
     uint256 randomSeed = _randomize(r1 ^ r2 ^ r3, 0, voteWeights.length - 1);
     address randomGovernor = governors[randomSeed];
@@ -246,12 +232,7 @@ contract BridgeManagerTest is Test {
       r3,
       numBridgeOperators
     );
-    IBridgeManager bridgeManager = _addBridgeOperators(
-      _bridgeManager,
-      voteWeights,
-      governors,
-      bridgeOperators
-    );
+    IBridgeManager bridgeManager = _addBridgeOperators(_bridgeManager, voteWeights, governors, bridgeOperators);
 
     address unauthorizedCaller = makeAddr("UNAUTHORIZED_CALLER");
     for (uint256 i; i < governors.length; ) {
@@ -275,13 +256,14 @@ contract BridgeManagerTest is Test {
   }
 
   function _setUp() internal virtual {
+    _bridgeContract = address(new RoninGatewayV2());
     (uint256[] memory voteWeights, address[] memory governors, address[] memory bridgeOperators) = _getValidInputs(
       1,
       2,
       3,
       5
     );
-    _bridgeManager = address(new MockBridgeManager(voteWeights, governors, bridgeOperators));
+    _bridgeManager = address(new MockBridgeManager(_bridgeContract, voteWeights, governors, bridgeOperators));
 
     // empty storage for testing
     vm.prank(_bridgeManager);
@@ -289,6 +271,7 @@ contract BridgeManagerTest is Test {
   }
 
   function _label() internal virtual {
+    vm.label(_bridgeContract, "BRIDGE_CONTRACT");
     vm.label(_bridgeManager, "BRIDGE_ADMIN_OPERATOR");
   }
 

@@ -5,8 +5,9 @@ import { RoleAccess, ContractType, AddressArrayUtils, IBridgeManager, BridgeMana
 
 contract MockBridgeManager is BridgeManager {
   constructor(
+    address bridgeContract,
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
-  ) payable BridgeManager(0, 0, 0, voteWeights, governors, bridgeOperators) {}
+  ) payable BridgeManager(0, 0, 0, bridgeContract, voteWeights, governors, bridgeOperators) {}
 }

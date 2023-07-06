@@ -1,23 +1,36 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { BridgeManager } from "../../extensions/bridge-operator-governance/BridgeManager.sol";
+import { ContractType, RoleAccess, ErrUnauthorized, BridgeManager } from "../../extensions/bridge-operator-governance/BridgeManager.sol";
+import { CoreGovernance } from "../../extensions/sequential-governance/CoreGovernance.sol";
 import { BOsGovernanceProposal } from "../../extensions/bridge-operator-governance/BOsGovernanceProposal.sol";
 import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
+import { GlobalProposal } from "../../libraries/GlobalProposal.sol";
 import { IsolatedGovernance } from "../../libraries/IsolatedGovernance.sol";
 import { BridgeOperatorsBallot } from "../../libraries/BridgeOperatorsBallot.sol";
 
-contract RoninBridgeManager is BridgeManager, BOsGovernanceProposal {
+contract RoninBridgeManager is BridgeManager, CoreGovernance, BOsGovernanceProposal {
   using IsolatedGovernance for IsolatedGovernance.Vote;
+
+  modifier onlyGovernor() {
+    _requireGovernor();
+    _;
+  }
 
   constructor(
     uint256 num,
     uint256 denom,
     uint256 roninChainId,
+    uint256 expiryDuratiom,
+    address bridgeContract,
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
-  ) payable BridgeManager(num, denom, roninChainId, voteWeights, governors, bridgeOperators) {}
+  )
+    payable
+    CoreGovernance(expiryDuratiom)
+    BridgeManager(num, denom, roninChainId, bridgeContract, voteWeights, governors, bridgeOperators)
+  {}
 
   /**
    * @dev See `BOsGovernanceProposal-_castVotesBySignatures`.
@@ -33,6 +46,32 @@ contract RoninBridgeManager is BridgeManager, BOsGovernanceProposal {
       emit BridgeOperatorsApproved(_ballot.period, _ballot.epoch, _ballot.operators);
       _v.status = VoteStatusConsumer.VoteStatus.Executed;
     }
+  }
+
+  /**
+   * @dev See `CoreGovernance-_proposeGlobal`.
+   *
+   * Requirements:
+   * - The method caller is governor.
+   *
+   */
+  function proposeGlobal(
+    uint256 _expiryTimestamp,
+    GlobalProposal.TargetOption[] calldata _targetOptions,
+    uint256[] calldata _values,
+    bytes[] calldata _calldatas,
+    uint256[] calldata _gasAmounts
+  ) external onlyGovernor {
+    _proposeGlobal(
+      _expiryTimestamp,
+      _targetOptions,
+      _values,
+      _calldatas,
+      _gasAmounts,
+      address(this),
+      getContract(ContractType.BRIDGE),
+      msg.sender
+    );
   }
 
   /**
@@ -65,7 +104,23 @@ contract RoninBridgeManager is BridgeManager, BOsGovernanceProposal {
     return getSumBridgeVoterWeights(_bridgeVoters);
   }
 
+  function _requireGovernor() internal view {
+    if (!_isBridgeVoter(msg.sender)) revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
+  }
+
   function _isBridgeVoter(address addr) internal view override returns (bool) {
     return _getGovernorToBridgeOperatorInfo()[addr].voteWeight != 0;
+  }
+
+  function _getChainType() internal pure override returns (ChainType) {
+    return ChainType.RoninChain;
+  }
+
+  function _getTotalWeights() internal view virtual override returns (uint256) {
+    return _totalWeight;
+  }
+
+  function _getMinimumVoteWeight() internal view virtual override returns (uint256) {
+    return (_num * _totalWeight + _denom - 1) / _denom;
   }
 }
