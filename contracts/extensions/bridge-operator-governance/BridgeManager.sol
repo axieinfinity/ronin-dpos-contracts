@@ -73,16 +73,10 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     uint256 num,
     uint256 denom,
     uint256 roninChainId,
-    address admin,
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
   ) payable nonDuplicate(governors) nonDuplicate(bridgeOperators) {
-    _checkNonZeroAddress(admin);
-    assembly {
-      sstore(_ADMIN_SLOT, admin)
-    }
-
     _nonce = 1;
     _num = num;
     _denom = denom;
@@ -152,7 +146,10 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
   /**
    * @inheritdoc IQuorum
    */
-  function setThreshold(uint256 numerator, uint256 denominator) external override onlyAdmin returns (uint256, uint256) {
+  function setThreshold(
+    uint256 numerator,
+    uint256 denominator
+  ) external override onlySelfCall returns (uint256, uint256) {
     return _setThreshold(numerator, denominator);
   }
 

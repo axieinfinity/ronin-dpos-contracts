@@ -28,7 +28,6 @@ contract BridgeManagerTest is Test {
 
   uint256 private constant MAX_FUZZ_INPUTS = 100;
 
-  address private _admin;
   address private _bridgeManager;
 
   function setUp() external {
@@ -276,14 +275,13 @@ contract BridgeManagerTest is Test {
   }
 
   function _setUp() internal virtual {
-    _admin = makeAddr("ADMIN");
     (uint256[] memory voteWeights, address[] memory governors, address[] memory bridgeOperators) = _getValidInputs(
       1,
       2,
       3,
       5
     );
-    _bridgeManager = address(new MockBridgeManager(_admin, voteWeights, governors, bridgeOperators));
+    _bridgeManager = address(new MockBridgeManager(voteWeights, governors, bridgeOperators));
 
     // empty storage for testing
     vm.prank(_bridgeManager);

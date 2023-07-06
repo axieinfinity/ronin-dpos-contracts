@@ -23,7 +23,6 @@ contract MainchainBridgeManager is
     uint256 denom,
     uint256 roninChainId,
     uint256 expiryDuration,
-    address admin,
     address[] memory relayers,
     uint256[] memory voteWeights,
     address[] memory governors,
@@ -31,9 +30,8 @@ contract MainchainBridgeManager is
   )
     payable
     CoreGovernance(expiryDuration)
-    BridgeManager(num, denom, roninChainId, admin, voteWeights, governors, bridgeOperators)
+    BridgeManager(num, denom, roninChainId, voteWeights, governors, bridgeOperators)
   {
-    _grantRole(DEFAULT_ADMIN_ROLE, admin);
     uint256 length = relayers.length;
     bytes32 relayerRole = RELAYER_ROLE;
     for (uint256 i; i < length; ) {
