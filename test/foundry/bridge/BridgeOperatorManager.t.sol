@@ -16,12 +16,7 @@ contract BridgeOperatorManagerTest is Test {
     BridgeOperators
   }
 
-  event BridgeOperatorsAdded(
-    bool[] statuses,
-    uint256[] voteWeights,
-    address[] governors,
-    address[] bridgeOperators
-  );
+  event BridgeOperatorsAdded(bool[] statuses, uint256[] voteWeights, address[] governors, address[] bridgeOperators);
 
   event BridgeOperatorsRemoved(bool[] statuses, address[] bridgeOperators);
 
@@ -34,7 +29,6 @@ contract BridgeOperatorManagerTest is Test {
   uint256 private constant MAX_FUZZ_INPUTS = 100;
 
   address private _admin;
-  address private _bridgeContract;
   address private _bridgeAdminOperator;
 
   function setUp() external {
@@ -61,8 +55,6 @@ contract BridgeOperatorManagerTest is Test {
       numBridgeOperators
     );
 
-    _addBridgeOperators(caller, voteWeights, governors, bridgeOperators);
-
     vm.expectRevert(
       abi.encodeWithSelector(
         ErrUnexpectedInternalCall.selector,
@@ -71,6 +63,8 @@ contract BridgeOperatorManagerTest is Test {
         caller
       )
     );
+
+    _addBridgeOperators(caller, voteWeights, governors, bridgeOperators);
   }
 
   /**
@@ -118,8 +112,6 @@ contract BridgeOperatorManagerTest is Test {
       address[] memory bridgeOperators
     ) = _nullOrDuplicateInputs(r1, r2, r3, numBridgeOperators);
 
-    _addBridgeOperators(_bridgeAdminOperator, voteWeights, governors, bridgeOperators);
-
     if (modifiedInputIdx == uint8(InputIndex.VoteWeights)) {
       // allow duplicate vote weights
       vm.assume(nullifyOrDuplicate);
@@ -140,6 +132,8 @@ contract BridgeOperatorManagerTest is Test {
         );
       }
     }
+
+    _addBridgeOperators(_bridgeAdminOperator, voteWeights, governors, bridgeOperators);
   }
 
   /**
@@ -276,6 +270,7 @@ contract BridgeOperatorManagerTest is Test {
 
     vm.prank(unauthorizedCaller);
     bridgeAdminOperator.updateBridgeOperator(newBridgeOperator);
+
     vm.expectRevert(
       abi.encodeWithSelector(
         ErrUnauthorized.selector,
@@ -287,12 +282,20 @@ contract BridgeOperatorManagerTest is Test {
 
   function _setUp() internal virtual {
     _admin = makeAddr("ADMIN");
-    _bridgeContract = address(new RoninGatewayV2());
-    _bridgeAdminOperator = address(new MockBridgeOperatorManager(_admin, _bridgeContract));
+    (uint256[] memory voteWeights, address[] memory governors, address[] memory bridgeOperators) = _getValidInputs(
+      1,
+      2,
+      3,
+      5
+    );
+    _bridgeAdminOperator = address(new MockBridgeOperatorManager(_admin, voteWeights, governors, bridgeOperators));
+
+    // empty storage for testing
+    vm.prank(_bridgeAdminOperator);
+    IBridgeOperatorManager(_bridgeAdminOperator).removeBridgeOperators(bridgeOperators);
   }
 
   function _label() internal virtual {
-    vm.label(_bridgeContract, "BRIDGE_CONTRACT");
     vm.label(_bridgeAdminOperator, "BRIDGE_ADMIN_OPERATOR");
   }
 

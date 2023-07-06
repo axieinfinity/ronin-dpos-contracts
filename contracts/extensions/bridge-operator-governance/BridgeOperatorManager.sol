@@ -69,12 +69,19 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
     _;
   }
 
-  constructor(uint256 num, uint256 denom, uint256 roninChainId, address admin, address bridgeContract) payable {
+  constructor(
+    uint256 num,
+    uint256 denom,
+    uint256 roninChainId,
+    address admin,
+    uint256[] memory voteWeights,
+    address[] memory governors,
+    address[] memory bridgeOperators
+  ) payable nonDuplicate(governors) nonDuplicate(bridgeOperators) {
     _checkNonZeroAddress(admin);
     assembly {
       sstore(_ADMIN_SLOT, admin)
     }
-    _setContract(ContractType.BRIDGE, bridgeContract);
 
     _nonce = 1;
     _num = num;
@@ -88,6 +95,8 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
         keccak256(abi.encode("BRIDGE_ADMIN", roninChainId)) // salt
       )
     );
+
+    _addBridgeOperators(voteWeights, governors, bridgeOperators);
   }
 
   /**

@@ -15,8 +15,10 @@ contract RoninBridgeManager is BridgeOperatorManager, BOsGovernanceProposal {
     uint256 denom,
     uint256 roninChainId,
     address admin,
-    address bridgeContract
-  ) payable BridgeOperatorManager(num, denom, roninChainId, admin, bridgeContract) {}
+    uint256[] memory voteWeights,
+    address[] memory governors,
+    address[] memory bridgeOperators
+  ) payable BridgeOperatorManager(num, denom, roninChainId, admin, voteWeights, governors, bridgeOperators) {}
 
   /**
    * @dev See `BOsGovernanceProposal-_castVotesBySignatures`.
