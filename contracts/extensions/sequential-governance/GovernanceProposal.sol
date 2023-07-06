@@ -145,7 +145,7 @@ abstract contract GovernanceProposal is CoreGovernance {
     address _roninTrustedOrganizationContract,
     address _gatewayContract
   ) internal {
-    Proposal.ProposalDetail memory _proposal = _globalProposal.into_proposal_detail(
+    Proposal.ProposalDetail memory _proposal = _globalProposal.intoProposalDetail(
       _roninTrustedOrganizationContract,
       _gatewayContract
     );

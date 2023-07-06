@@ -119,13 +119,13 @@ abstract contract GovernanceRelay is CoreGovernance {
     Ballot.VoteType[] calldata _supports,
     Signature[] calldata _signatures,
     bytes32 _domainSeparator,
-    address _roninTrustedOrganizationContract,
+    address _bridgeManager,
     address _gatewayContract,
     address _creator
   ) internal {
     Proposal.ProposalDetail memory _proposal = _proposeGlobalStruct(
       _globalProposal,
-      _roninTrustedOrganizationContract,
+      _bridgeManager,
       _gatewayContract,
       _creator
     );

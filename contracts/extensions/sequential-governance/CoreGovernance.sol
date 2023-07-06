@@ -186,7 +186,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       _calldatas,
       _gasAmounts
     );
-    Proposal.ProposalDetail memory _proposal = _globalProposal.into_proposal_detail(
+    Proposal.ProposalDetail memory _proposal = _globalProposal.intoProposalDetail(
       _roninTrustedOrganizationContract,
       _gatewayContract
     );
@@ -212,7 +212,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     address _gatewayContract,
     address _creator
   ) internal virtual returns (Proposal.ProposalDetail memory _proposal) {
-    _proposal = _globalProposal.into_proposal_detail(_roninTrustedOrganizationContract, _gatewayContract);
+    _proposal = _globalProposal.intoProposalDetail(_roninTrustedOrganizationContract, _gatewayContract);
     _proposal.validate(_proposalExpiryDuration);
 
     bytes32 _proposalHash = _proposal.hash();

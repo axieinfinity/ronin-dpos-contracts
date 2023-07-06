@@ -56,15 +56,15 @@ contract MainchainBridgeManager is
     Ballot.VoteType[] calldata _supports,
     Signature[] calldata _signatures
   ) external onlyRole(RELAYER_ROLE) {
-    _relayGlobalProposal(
-      _globalProposal,
-      _supports,
-      _signatures,
-      DOMAIN_SEPARATOR,
-      address(this),
-      getContract(ContractType.BRIDGE),
-      msg.sender
-    );
+    _relayGlobalProposal({
+      _globalProposal: _globalProposal,
+      _supports: _supports,
+      _signatures: _signatures,
+      _domainSeparator: DOMAIN_SEPARATOR,
+      _bridgeManager: address(this),
+      _gatewayContract: getContract(ContractType.BRIDGE),
+      _creator: msg.sender
+    });
   }
 
   /**
