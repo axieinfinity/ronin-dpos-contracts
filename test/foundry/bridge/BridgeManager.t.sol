@@ -4,10 +4,10 @@ pragma solidity ^0.8.0;
 import { Vm, Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
-import { RoleAccess, ContractType, AddressArrayUtils, IBridgeOperatorManager, MockBridgeOperatorManager } from "@ronin/contracts/mocks/ronin/MockBridgeOperatorManager.sol";
+import { RoleAccess, ContractType, AddressArrayUtils, IBridgeManager, MockBridgeManager } from "@ronin/contracts/mocks/ronin/MockBridgeManager.sol";
 import { ErrUnauthorized, ErrInvalidVoteWeight, ErrZeroAddress, ErrUnexpectedInternalCall } from "@ronin/contracts/utils/CommonErrors.sol";
 
-contract BridgeOperatorManagerTest is Test {
+contract BridgeManagerTest is Test {
   using AddressArrayUtils for address[];
 
   enum InputIndex {
@@ -29,7 +29,7 @@ contract BridgeOperatorManagerTest is Test {
   uint256 private constant MAX_FUZZ_INPUTS = 100;
 
   address private _admin;
-  address private _bridgeAdminOperator;
+  address private _bridgeManager;
 
   function setUp() external {
     _setUp();
@@ -46,7 +46,7 @@ contract BridgeOperatorManagerTest is Test {
     uint256 r3,
     uint256 numBridgeOperators
   ) external {
-    vm.assume(caller != _bridgeAdminOperator);
+    vm.assume(caller != _bridgeManager);
 
     (uint256[] memory voteWeights, address[] memory governors, address[] memory bridgeOperators) = _getValidInputs(
       r1,
@@ -58,7 +58,7 @@ contract BridgeOperatorManagerTest is Test {
     vm.expectRevert(
       abi.encodeWithSelector(
         ErrUnexpectedInternalCall.selector,
-        IBridgeOperatorManager.addBridgeOperators.selector,
+        IBridgeManager.addBridgeOperators.selector,
         ContractType.BRIDGE,
         caller
       )
@@ -83,14 +83,14 @@ contract BridgeOperatorManagerTest is Test {
       numBridgeOperators
     );
 
-    IBridgeOperatorManager bridgeAdminOperator = _addBridgeOperators(
-      _bridgeAdminOperator,
+    IBridgeManager bridgeManager = _addBridgeOperators(
+      _bridgeManager,
       voteWeights,
       governors,
       bridgeOperators
     );
 
-    _invariantTest(bridgeAdminOperator, voteWeights, governors, bridgeOperators);
+    _invariantTest(bridgeManager, voteWeights, governors, bridgeOperators);
   }
 
   /**
@@ -116,24 +116,19 @@ contract BridgeOperatorManagerTest is Test {
       // allow duplicate vote weights
       vm.assume(nullifyOrDuplicate);
       vm.expectRevert(
-        abi.encodeWithSelector(ErrInvalidVoteWeight.selector, IBridgeOperatorManager.addBridgeOperators.selector)
+        abi.encodeWithSelector(ErrInvalidVoteWeight.selector, IBridgeManager.addBridgeOperators.selector)
       );
     } else {
       if (modifyTimes == 1) {
-        vm.expectRevert(
-          abi.encodeWithSelector(ErrZeroAddress.selector, IBridgeOperatorManager.addBridgeOperators.selector)
-        );
+        vm.expectRevert(abi.encodeWithSelector(ErrZeroAddress.selector, IBridgeManager.addBridgeOperators.selector));
       } else {
         vm.expectRevert(
-          abi.encodeWithSelector(
-            AddressArrayUtils.ErrDuplicated.selector,
-            IBridgeOperatorManager.addBridgeOperators.selector
-          )
+          abi.encodeWithSelector(AddressArrayUtils.ErrDuplicated.selector, IBridgeManager.addBridgeOperators.selector)
         );
       }
     }
 
-    _addBridgeOperators(_bridgeAdminOperator, voteWeights, governors, bridgeOperators);
+    _addBridgeOperators(_bridgeManager, voteWeights, governors, bridgeOperators);
   }
 
   /**
@@ -152,8 +147,8 @@ contract BridgeOperatorManagerTest is Test {
       numBridgeOperators
     );
 
-    IBridgeOperatorManager bridgeAdminOperator = _addBridgeOperators(
-      _bridgeAdminOperator,
+    IBridgeManager bridgeManager = _addBridgeOperators(
+      _bridgeManager,
       voteWeights,
       governors,
       bridgeOperators
@@ -184,17 +179,17 @@ contract BridgeOperatorManagerTest is Test {
       mstore(bridgeOperators, remainLength)
     }
 
-    vm.prank(_bridgeAdminOperator);
-    vm.expectEmit(_bridgeAdminOperator);
+    vm.prank(_bridgeManager);
+    vm.expectEmit(_bridgeManager);
     bool[] memory statuses;
     uint256[] memory tmp = _createRandomNumbers(0, removeBridgeOperators.length, 1, 1);
     assembly {
       statuses := tmp
     }
     emit BridgeOperatorsRemoved(statuses, removeBridgeOperators);
-    bridgeAdminOperator.removeBridgeOperators(removeBridgeOperators);
+    bridgeManager.removeBridgeOperators(removeBridgeOperators);
 
-    _invariantTest(bridgeAdminOperator, voteWeights, governors, bridgeOperators);
+    _invariantTest(bridgeManager, voteWeights, governors, bridgeOperators);
   }
 
   /**
@@ -212,8 +207,8 @@ contract BridgeOperatorManagerTest is Test {
       r3,
       numBridgeOperators
     );
-    IBridgeOperatorManager bridgeAdminOperator = _addBridgeOperators(
-      _bridgeAdminOperator,
+    IBridgeManager bridgeManager = _addBridgeOperators(
+      _bridgeManager,
       voteWeights,
       governors,
       bridgeOperators
@@ -224,17 +219,17 @@ contract BridgeOperatorManagerTest is Test {
     address newBridgeOperator = makeAddr("NEW_BRIDGE_OPERATOR");
 
     vm.prank(randomGovernor);
-    vm.expectEmit(_bridgeAdminOperator);
+    vm.expectEmit(_bridgeManager);
     bool[] memory statuses = new bool[](1);
     statuses[0] = true;
     emit BridgeOperatorUpdated(randomGovernor, bridgeOperators[randomSeed], newBridgeOperator);
-    bridgeAdminOperator.updateBridgeOperator(newBridgeOperator);
+    bridgeManager.updateBridgeOperator(newBridgeOperator);
 
     // swap and pop
     bridgeOperators[randomSeed] = bridgeOperators[bridgeOperators.length - 1];
     bridgeOperators[bridgeOperators.length - 1] = newBridgeOperator;
 
-    _invariantTest(bridgeAdminOperator, voteWeights, governors, bridgeOperators);
+    _invariantTest(bridgeManager, voteWeights, governors, bridgeOperators);
   }
 
   /**
@@ -252,8 +247,8 @@ contract BridgeOperatorManagerTest is Test {
       r3,
       numBridgeOperators
     );
-    IBridgeOperatorManager bridgeAdminOperator = _addBridgeOperators(
-      _bridgeAdminOperator,
+    IBridgeManager bridgeManager = _addBridgeOperators(
+      _bridgeManager,
       voteWeights,
       governors,
       bridgeOperators
@@ -269,12 +264,12 @@ contract BridgeOperatorManagerTest is Test {
     address newBridgeOperator = makeAddr("NEW_BRIDGE_OPERATOR");
 
     vm.prank(unauthorizedCaller);
-    bridgeAdminOperator.updateBridgeOperator(newBridgeOperator);
+    bridgeManager.updateBridgeOperator(newBridgeOperator);
 
     vm.expectRevert(
       abi.encodeWithSelector(
         ErrUnauthorized.selector,
-        IBridgeOperatorManager.updateBridgeOperator.selector,
+        IBridgeManager.updateBridgeOperator.selector,
         RoleAccess.GOVERNOR
       )
     );
@@ -288,28 +283,28 @@ contract BridgeOperatorManagerTest is Test {
       3,
       5
     );
-    _bridgeAdminOperator = address(new MockBridgeOperatorManager(_admin, voteWeights, governors, bridgeOperators));
+    _bridgeManager = address(new MockBridgeManager(_admin, voteWeights, governors, bridgeOperators));
 
     // empty storage for testing
-    vm.prank(_bridgeAdminOperator);
-    IBridgeOperatorManager(_bridgeAdminOperator).removeBridgeOperators(bridgeOperators);
+    vm.prank(_bridgeManager);
+    IBridgeManager(_bridgeManager).removeBridgeOperators(bridgeOperators);
   }
 
   function _label() internal virtual {
-    vm.label(_bridgeAdminOperator, "BRIDGE_ADMIN_OPERATOR");
+    vm.label(_bridgeManager, "BRIDGE_ADMIN_OPERATOR");
   }
 
   function _invariantTest(
-    IBridgeOperatorManager bridgeAdminOperator,
+    IBridgeManager bridgeManager,
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
   ) internal {
-    assertEq(governors, bridgeAdminOperator.getGovernors());
-    assertEq(bridgeOperators, bridgeAdminOperator.getBridgeOperators());
-    assertEq(voteWeights, bridgeAdminOperator.getBridgeVoterWeights(governors));
-    assertEq(bridgeOperators.length, bridgeAdminOperator.totalBridgeOperators());
-    // assertEq(bridgeOperators, bridgeAdminOperator.getBridgeOperatorOf(governors));
+    assertEq(governors, bridgeManager.getGovernors());
+    assertEq(bridgeOperators, bridgeManager.getBridgeOperators());
+    assertEq(voteWeights, bridgeManager.getBridgeVoterWeights(governors));
+    assertEq(bridgeOperators.length, bridgeManager.totalBridgeOperators());
+    // assertEq(bridgeOperators, bridgeManager.getBridgeOperatorOf(governors));
 
     uint256 totalWeight;
     for (uint256 i; i < voteWeights.length; ) {
@@ -319,7 +314,7 @@ contract BridgeOperatorManagerTest is Test {
       }
     }
 
-    assertEq(totalWeight, bridgeAdminOperator.getTotalWeights());
+    assertEq(totalWeight, bridgeManager.getTotalWeights());
   }
 
   function _addBridgeOperators(
@@ -327,17 +322,17 @@ contract BridgeOperatorManagerTest is Test {
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
-  ) internal returns (IBridgeOperatorManager bridgeAdminOperator) {
-    vm.expectEmit(_bridgeAdminOperator);
+  ) internal returns (IBridgeManager bridgeManager) {
+    vm.expectEmit(_bridgeManager);
     bool[] memory statuses;
     uint256[] memory tmp = _createRandomNumbers(0, voteWeights.length, 1, 1);
     assembly {
       statuses := tmp
     }
     emit BridgeOperatorsAdded(statuses, voteWeights, governors, bridgeOperators);
-    bridgeAdminOperator = IBridgeOperatorManager(_bridgeAdminOperator);
+    bridgeManager = IBridgeManager(_bridgeManager);
     vm.prank(caller);
-    bridgeAdminOperator.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
   }
 
   function _getValidInputs(

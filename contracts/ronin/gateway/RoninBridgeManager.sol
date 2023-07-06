@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { BridgeOperatorManager } from "../../extensions/bridge-operator-governance/BridgeOperatorManager.sol";
+import { BridgeManager } from "../../extensions/bridge-operator-governance/BridgeManager.sol";
 import { BOsGovernanceProposal } from "../../extensions/bridge-operator-governance/BOsGovernanceProposal.sol";
 import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
 import { IsolatedGovernance } from "../../libraries/IsolatedGovernance.sol";
 import { BridgeOperatorsBallot } from "../../libraries/BridgeOperatorsBallot.sol";
 
-contract RoninBridgeManager is BridgeOperatorManager, BOsGovernanceProposal {
+contract RoninBridgeManager is BridgeManager, BOsGovernanceProposal {
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
   constructor(
@@ -18,7 +18,7 @@ contract RoninBridgeManager is BridgeOperatorManager, BOsGovernanceProposal {
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
-  ) payable BridgeOperatorManager(num, denom, roninChainId, admin, voteWeights, governors, bridgeOperators) {}
+  ) payable BridgeManager(num, denom, roninChainId, admin, voteWeights, governors, bridgeOperators) {}
 
   /**
    * @dev See `BOsGovernanceProposal-_castVotesBySignatures`.

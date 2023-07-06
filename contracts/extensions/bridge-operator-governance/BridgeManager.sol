@@ -5,13 +5,13 @@ import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { IQuorum } from "../../interfaces/IQuorum.sol";
-import { IBridgeOperatorManager } from "../../interfaces/IBridgeOperatorManager.sol";
+import { IBridgeManager } from "../../interfaces/IBridgeManager.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { RoleAccess } from "../../utils/RoleAccess.sol";
 import { ErrOnlySelfCall, ErrInvalidArguments, ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
 
-abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasContracts {
+abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
   using SafeCast for uint256;
   using AddressArrayUtils for address[];
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -100,7 +100,7 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
   }
 
   /**
-   * @inheritdoc IBridgeOperatorManager
+   * @inheritdoc IBridgeManager
    */
   function addBridgeOperators(
     uint256[] calldata voteWeights,
@@ -111,7 +111,7 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
   }
 
   /**
-   * @inheritdoc IBridgeOperatorManager
+   * @inheritdoc IBridgeManager
    */
   function removeBridgeOperators(
     address[] calldata bridgeOperators
@@ -120,7 +120,7 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
   }
 
   /**
-   * @inheritdoc IBridgeOperatorManager
+   * @inheritdoc IBridgeManager
    */
   function updateBridgeOperator(address newBridgeOperator) external returns (bool updated) {
     _checkNonZeroAddress(newBridgeOperator);
@@ -157,21 +157,21 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
   }
 
   /**
-   * @inheritdoc IBridgeOperatorManager
+   * @inheritdoc IBridgeManager
    */
   function getTotalWeights() external view returns (uint256) {
     return _totalWeight;
   }
 
   /**
-   * @inheritdoc IBridgeOperatorManager
+   * @inheritdoc IBridgeManager
    */
   function getBridgeVoterWeight(address governor) external view returns (uint256) {
     return _getGovernorToBridgeOperatorInfo()[governor].voteWeight;
   }
 
   /**
-   * @inheritdoc IBridgeOperatorManager
+   * @inheritdoc IBridgeManager
    */
   function getBridgeVoterWeights(address[] calldata governors) external view returns (uint256[] memory weights) {
     uint256 length = governors.length;
@@ -186,7 +186,7 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
   }
 
   /**
-   * @inheritdoc IBridgeOperatorManager
+   * @inheritdoc IBridgeManager
    */
   function getSumBridgeVoterWeights(
     address[] memory governors
@@ -203,35 +203,35 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
   }
 
   /**
-   * @inheritdoc IBridgeOperatorManager
+   * @inheritdoc IBridgeManager
    */
   function totalBridgeOperators() external view returns (uint256) {
     return _getBridgeOperatorSet().length();
   }
 
   /**
-   * @inheritdoc IBridgeOperatorManager
+   * @inheritdoc IBridgeManager
    */
   function isBridgeOperator(address addr) external view returns (bool) {
     return _getBridgeOperatorSet().contains(addr);
   }
 
   /**
-   * @inheritdoc IBridgeOperatorManager
+   * @inheritdoc IBridgeManager
    */
   function getBridgeOperators() public view returns (address[] memory) {
     return _getBridgeOperatorSet().values();
   }
 
   /**
-   * @inheritdoc IBridgeOperatorManager
+   * @inheritdoc IBridgeManager
    */
   function getGovernors() external view returns (address[] memory) {
     return _getGovernorsSet().values();
   }
 
   /**
-   * @inheritdoc IBridgeOperatorManager
+   * @inheritdoc IBridgeManager
    */
   function getBridgeOperatorOf(address[] calldata governors) external view returns (address[] memory bridgeOperators_) {
     uint256 length = governors.length;

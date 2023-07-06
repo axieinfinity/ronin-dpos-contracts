@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title IBridgeOperatorManager
+ * @title IBridgeManager
  * @dev The interface for managing bridge operators.
  */
-interface IBridgeOperatorManager {
+interface IBridgeManager {
   struct BridgeOperatorInfo {
     address addr;
     uint96 voteWeight;
