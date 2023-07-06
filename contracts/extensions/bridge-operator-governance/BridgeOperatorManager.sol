@@ -310,7 +310,7 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
 
     _totalWeight += accumulatedWeight;
 
-    emit BridgeOperatorsAdded(msg.sender, addeds, voteWeights, governors, brigdeOperators);
+    emit BridgeOperatorsAdded(addeds, voteWeights, governors, brigdeOperators);
   }
 
   /**
@@ -364,7 +364,7 @@ abstract contract BridgeOperatorManager is IQuorum, IBridgeOperatorManager, HasC
 
     _totalWeight -= accumulatedWeight;
 
-    emit BridgeOperatorsRemoved(msg.sender, removeds, bridgeOperators);
+    emit BridgeOperatorsRemoved(removeds, bridgeOperators);
   }
 
   /**

@@ -17,14 +17,13 @@ contract BridgeOperatorManagerTest is Test {
   }
 
   event BridgeOperatorsAdded(
-    address indexed operator,
     bool[] statuses,
     uint256[] voteWeights,
     address[] governors,
     address[] bridgeOperators
   );
 
-  event BridgeOperatorsRemoved(address indexed operator, bool[] statuses, address[] bridgeOperators);
+  event BridgeOperatorsRemoved(bool[] statuses, address[] bridgeOperators);
 
   event BridgeOperatorUpdated(
     address indexed operator,
@@ -198,7 +197,7 @@ contract BridgeOperatorManagerTest is Test {
     assembly {
       statuses := tmp
     }
-    emit BridgeOperatorsRemoved(_bridgeAdminOperator, statuses, removeBridgeOperators);
+    emit BridgeOperatorsRemoved(statuses, removeBridgeOperators);
     bridgeAdminOperator.removeBridgeOperators(removeBridgeOperators);
 
     _invariantTest(bridgeAdminOperator, voteWeights, governors, bridgeOperators);
@@ -332,7 +331,7 @@ contract BridgeOperatorManagerTest is Test {
     assembly {
       statuses := tmp
     }
-    emit BridgeOperatorsAdded(caller, statuses, voteWeights, governors, bridgeOperators);
+    emit BridgeOperatorsAdded(statuses, voteWeights, governors, bridgeOperators);
     bridgeAdminOperator = IBridgeOperatorManager(_bridgeAdminOperator);
     vm.prank(caller);
     bridgeAdminOperator.addBridgeOperators(voteWeights, governors, bridgeOperators);

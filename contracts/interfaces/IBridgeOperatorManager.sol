@@ -11,18 +11,12 @@ interface IBridgeOperatorManager {
     uint96 voteWeight;
   }
 
-  event BridgeOperatorsAdded(
-    address indexed operator,
-    bool[] statuses,
-    uint256[] voteWeights,
-    address[] governors,
-    address[] bridgeOperators
-  );
+  event BridgeOperatorsAdded(bool[] statuses, uint256[] voteWeights, address[] governors, address[] bridgeOperators);
 
-  event BridgeOperatorsRemoved(address indexed operator, bool[] statuses, address[] bridgeOperators);
+  event BridgeOperatorsRemoved(bool[] statuses, address[] bridgeOperators);
 
   event BridgeOperatorUpdated(
-    address indexed operator,
+    address indexed governor,
     address indexed fromBridgeOperator,
     address indexed toBridgeOperator
   );
