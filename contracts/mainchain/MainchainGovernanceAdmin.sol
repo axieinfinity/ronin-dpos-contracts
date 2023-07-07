@@ -51,29 +51,6 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
   }
 
   /**
-   * @dev See `GovernanceRelay-_relayGlobalProposal`.
-   *
-   * Requirements:
-   * - The method caller is relayer.
-   *
-   */
-  function relayGlobalProposal(
-    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures
-  ) external onlyRole(RELAYER_ROLE) {
-    _relayGlobalProposal(
-      _globalProposal,
-      _supports,
-      _signatures,
-      DOMAIN_SEPARATOR,
-      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION),
-      getContract(ContractType.BRIDGE),
-      msg.sender
-    );
-  }
-
-  /**
    * @inheritdoc GovernanceRelay
    */
   function _sumWeights(address[] memory _governors) internal view virtual override returns (uint256) {
