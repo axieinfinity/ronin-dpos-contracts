@@ -16,7 +16,10 @@ import {
 } from '../../src/types';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
-import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
+import {
+  createManyTrustedOrganizationAddressSets,
+  TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
 
 let validatorContract: MockRoninValidatorSetExtended;
 let slashIndicator: MockSlashIndicatorExtended;

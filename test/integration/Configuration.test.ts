@@ -27,7 +27,10 @@ import {
 } from '../../src/types';
 import { initTest, InitTestInput } from '../helpers/fixture';
 import { MAX_UINT255, randomAddress } from '../../src/utils';
-import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
+import {
+  createManyTrustedOrganizationAddressSets,
+  TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
 import { compareBigNumbers, getRoles } from '../helpers/utils';
 
 let stakingVestingContract: StakingVesting;

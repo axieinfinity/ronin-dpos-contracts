@@ -94,3 +94,9 @@ export const getProxyAdmin = async (proxy: string): Promise<string> =>
       '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103'
     )
   ).slice(-40);
+
+export const checkArraysHaveSameSize = (arrays: Array<any>[]) => {
+  let lengths = arrays.map((_) => _.length);
+  let uniqueLengths = [...new Set(lengths)];
+  return uniqueLengths.length == 1 && uniqueLengths[0] != 0;
+};

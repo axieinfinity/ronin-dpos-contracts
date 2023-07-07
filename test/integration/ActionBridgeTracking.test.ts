@@ -23,10 +23,12 @@ import { ReceiptStruct } from '../../src/types/IRoninGatewayV2';
 import { DEFAULT_ADDRESS } from '../../src/utils';
 import {
   createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
   TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
+import {
+  createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types';
+} from '../helpers/address-set-types/validator-candidate-set-type';
 import { initTest } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
 import { getRoles, mineBatchTxs } from '../helpers/utils';

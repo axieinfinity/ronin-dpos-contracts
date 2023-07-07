@@ -25,7 +25,10 @@ import { MockBridge__factory } from '../../src/types/factories/MockBridge__facto
 import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
 import { SignatureStruct } from '../../src/types/RoninGovernanceAdmin';
 import { randomAddress, ZERO_BYTES32 } from '../../src/utils';
-import { createManyTrustedOrganizationAddressSets, TrustedOrganizationAddressSet } from '../helpers/address-set-types';
+import {
+  createManyTrustedOrganizationAddressSets,
+  TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
 import { initTest } from '../helpers/fixture';
 import { getLastBlockTimestamp, compareAddrs } from '../helpers/utils';
 

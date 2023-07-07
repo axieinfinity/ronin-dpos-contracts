@@ -28,7 +28,7 @@ import {
   TrustedOrganizationAddressSet,
   ValidatorCandidateAddressSet,
   WhitelistedCandidateAddressSet,
-} from '../helpers/address-set-types';
+} from '../helpers/address-set-types/trusted-org-set-type';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { VoteType } from '../../src/script/proposal';
 
