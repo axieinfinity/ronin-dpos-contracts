@@ -2,14 +2,16 @@
 pragma solidity ^0.8.0;
 
 import { ContractType, RoleAccess, ErrUnauthorized, BridgeManager } from "../../extensions/bridge-operator-governance/BridgeManager.sol";
+import { GovernanceProposal } from "../../extensions/sequential-governance/GovernanceProposal.sol";
 import { CoreGovernance } from "../../extensions/sequential-governance/CoreGovernance.sol";
 import { BOsGovernanceProposal } from "../../extensions/bridge-operator-governance/BOsGovernanceProposal.sol";
 import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
+import { Ballot } from "../../libraries/Ballot.sol";
 import { GlobalProposal } from "../../libraries/GlobalProposal.sol";
 import { IsolatedGovernance } from "../../libraries/IsolatedGovernance.sol";
 import { BridgeOperatorsBallot } from "../../libraries/BridgeOperatorsBallot.sol";
 
-contract RoninBridgeManager is BridgeManager, CoreGovernance, BOsGovernanceProposal {
+contract RoninBridgeManager is BridgeManager, CoreGovernance, GovernanceProposal, BOsGovernanceProposal {
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
   modifier onlyGovernor() {
@@ -21,14 +23,14 @@ contract RoninBridgeManager is BridgeManager, CoreGovernance, BOsGovernancePropo
     uint256 num,
     uint256 denom,
     uint256 roninChainId,
-    uint256 expiryDuratiom,
+    uint256 expiryDuration,
     address bridgeContract,
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
   )
     payable
-    CoreGovernance(expiryDuratiom)
+    CoreGovernance(expiryDuration)
     BridgeManager(num, denom, roninChainId, bridgeContract, voteWeights, governors, bridgeOperators)
   {}
 
@@ -71,6 +73,47 @@ contract RoninBridgeManager is BridgeManager, CoreGovernance, BOsGovernancePropo
       address(this),
       getContract(ContractType.BRIDGE),
       msg.sender
+    );
+  }
+
+  /**
+   * @dev See `GovernanceProposal-_proposeGlobalProposalStructAndCastVotes`.
+   *
+   * Requirements:
+   * - The method caller is governor.
+   *
+   */
+  function proposeGlobalProposalStructAndCastVotes(
+    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
+    Ballot.VoteType[] calldata _supports,
+    Signature[] calldata _signatures
+  ) external onlyGovernor {
+    _proposeGlobalProposalStructAndCastVotes(
+      _globalProposal,
+      _supports,
+      _signatures,
+      DOMAIN_SEPARATOR,
+      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION),
+      getContract(ContractType.BRIDGE),
+      msg.sender
+    );
+  }
+
+  /**
+   * @dev See `GovernanceProposal-_castGlobalProposalBySignatures`.
+   */
+  function castGlobalProposalBySignatures(
+    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
+    Ballot.VoteType[] calldata _supports,
+    Signature[] calldata _signatures
+  ) external {
+    _castGlobalProposalBySignatures(
+      _globalProposal,
+      _supports,
+      _signatures,
+      DOMAIN_SEPARATOR,
+      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION),
+      getContract(ContractType.BRIDGE)
     );
   }
 
@@ -122,5 +165,10 @@ contract RoninBridgeManager is BridgeManager, CoreGovernance, BOsGovernancePropo
 
   function _getMinimumVoteWeight() internal view virtual override returns (uint256) {
     return (_num * _totalWeight + _denom - 1) / _denom;
+  }
+
+  function _getWeight(address _governor) internal view virtual override returns (uint256) {
+    BridgeOperatorInfo memory bridgeOperatorInfo = _getGovernorToBridgeOperatorInfo()[_governor];
+    return bridgeOperatorInfo.voteWeight;
   }
 }
