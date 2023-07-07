@@ -6,10 +6,10 @@ import { RoleAccess, ContractType, AddressArrayUtils, IBridgeManager, BridgeMana
 contract MockBridgeManager is BridgeManager {
   constructor(
     address bridgeContract,
-    uint256[] memory voteWeights,
+    address[] memory bridgeOperators,
     address[] memory governors,
-    address[] memory bridgeOperators
-  ) payable BridgeManager(0, 0, 0, bridgeContract, voteWeights, governors, bridgeOperators) {}
+    uint256[] memory voteWeights
+  ) payable BridgeManager(0, 0, 0, bridgeContract, bridgeOperators, governors, voteWeights) {}
 
   function _requireSelfCall() internal view override {}
 }

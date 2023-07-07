@@ -74,9 +74,9 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     uint256 denom,
     uint256 roninChainId,
     address bridgeContract,
-    uint256[] memory voteWeights,
+    address[] memory bridgeOperators,
     address[] memory governors,
-    address[] memory bridgeOperators
+    uint256[] memory voteWeights
   ) payable {
     _nonce = 1;
     _num = num;
