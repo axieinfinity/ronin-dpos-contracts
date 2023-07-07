@@ -12,13 +12,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
-  console.log(
-    bridgeManagerConf[network.name]?.numerator,
-    bridgeManagerConf[network.name]?.denominator,
-    generalRoninConf[network.name].roninChainId,
-    generalRoninConf[network.name].governanceAdmin,
-    generalRoninConf[network.name].bridgeContract
-  );
 
   await deploy('RoninBridgeManager', {
     contract: 'RoninBridgeManager',
