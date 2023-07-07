@@ -77,7 +77,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
-  ) payable nonDuplicate(governors) nonDuplicate(bridgeOperators) {
+  ) payable nonDuplicate(governors.extend(bridgeOperators)) {
     _nonce = 1;
     _num = num;
     _denom = denom;
@@ -103,7 +103,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     uint256[] calldata voteWeights,
     address[] calldata governors,
     address[] calldata bridgeOperators
-  ) external onlySelfCall nonDuplicate(bridgeOperators) nonDuplicate(governors) returns (bool[] memory addeds) {
+  ) external onlySelfCall nonDuplicate(governors.extend(bridgeOperators)) returns (bool[] memory addeds) {
     addeds = _addBridgeOperators(voteWeights, governors, bridgeOperators);
   }
 
@@ -277,9 +277,9 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
   function _addBridgeOperators(
     uint256[] memory voteWeights,
     address[] memory governors,
-    address[] memory brigdeOperators
+    address[] memory bridgeOperators
   ) internal returns (bool[] memory addeds) {
-    uint256 length = brigdeOperators.length;
+    uint256 length = bridgeOperators.length;
     if (!(length == voteWeights.length && length == governors.length)) revert ErrLengthMismatch(msg.sig);
     addeds = new bool[](length);
 
@@ -298,7 +298,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
 
       for (uint256 i; i < length; ) {
         governor = governors[i];
-        bridgeOperator = brigdeOperators[i];
+        bridgeOperator = bridgeOperators[i];
         voteWeight = voteWeights[i].toUint96();
 
         _checkNonZeroAddress(governor);
@@ -327,7 +327,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
 
     _totalWeight += accumulatedWeight;
 
-    emit BridgeOperatorsAdded(addeds, voteWeights, governors, brigdeOperators);
+    emit BridgeOperatorsAdded(addeds, voteWeights, governors, bridgeOperators);
   }
 
   /**

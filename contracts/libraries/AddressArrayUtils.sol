@@ -41,4 +41,27 @@ library AddressArrayUtils {
       yes_ := eq(_thisHash, _otherHash)
     }
   }
+
+  /**
+   * @dev Return the concatenated array from a and b.
+   */
+  function extend(address[] memory a, address[] memory b) internal pure returns (address[] memory c) {
+    uint256 lengthA = a.length;
+    uint256 lengthB = b.length;
+    c = new address[](lengthA + lengthB);
+    uint256 i;
+    for (; i < lengthA; ) {
+      c[i] = a[i];
+      unchecked {
+        ++i;
+      }
+    }
+    for (uint256 j; j < lengthB; ) {
+      c[i] = b[j];
+      unchecked {
+        ++i;
+        ++j;
+      }
+    }
+  }
 }

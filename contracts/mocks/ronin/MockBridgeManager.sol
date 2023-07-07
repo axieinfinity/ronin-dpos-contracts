@@ -10,4 +10,6 @@ contract MockBridgeManager is BridgeManager {
     address[] memory governors,
     address[] memory bridgeOperators
   ) payable BridgeManager(0, 0, 0, bridgeContract, voteWeights, governors, bridgeOperators) {}
+
+  function _requireSelfCall() internal view override {}
 }
