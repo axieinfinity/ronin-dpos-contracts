@@ -263,7 +263,7 @@ contract BridgeManagerTest is Test {
       3,
       5
     );
-    _bridgeManager = address(new MockBridgeManager(_bridgeContract, voteWeights, governors, bridgeOperators));
+    _bridgeManager = address(new MockBridgeManager(_bridgeContract, bridgeOperators, governors, voteWeights));
 
     // empty storage for testing
     vm.prank(_bridgeManager);

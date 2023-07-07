@@ -2,7 +2,6 @@ import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { generalRoninConf, mainchainNetworks } from '../configs/config';
-import { roninChainId } from '../configs/gateway';
 import { bridgeManagerConf } from '../configs/bridge-manager';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {

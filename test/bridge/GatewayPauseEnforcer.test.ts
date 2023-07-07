@@ -33,6 +33,7 @@ import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
+import { createManyOperatorTuples, OperatorTuple } from '../helpers/address-set-types/operator-tuple-type';
 import { initTest } from '../helpers/fixture';
 import { getRoles, mineBatchTxs } from '../helpers/utils';
 
@@ -42,7 +43,7 @@ let enforcerAdmin: SignerWithAddress;
 let enforcerSentry: SignerWithAddress;
 let trustedOrgs: TrustedOrganizationAddressSet[];
 let candidates: ValidatorCandidateAddressSet[];
-// let operatorTuples:
+let operatorTuples: OperatorTuple[];
 let signers: SignerWithAddress[];
 
 let bridgeContract: MockRoninGatewayV2Extended;
@@ -62,6 +63,7 @@ let receipts: ReceiptStruct[];
 const maxValidatorNumber = 6;
 const maxPrioritizedValidatorNumber = maxValidatorNumber - 2;
 const minValidatorStakingAmount = 500;
+const operatorNumber = 3;
 
 // only requires 3 operator for the proposal to pass
 const numerator = 3;
@@ -71,10 +73,14 @@ const denominator = maxValidatorNumber;
 const trustedNumerator = 1;
 const trustedDenominator = maxPrioritizedValidatorNumber;
 
+//
+const bridgeAdminNumerator = 2;
+const bridgeAdminDenominator = operatorNumber;
+
 const mainchainId = 1;
 const numberOfBlocksInEpoch = 600;
 
-describe('Ronin Gateway V2 test', () => {
+describe('Gateway Pause Enforcer test', () => {
   before(async () => {
     [deployer, coinbase, enforcerAdmin, enforcerSentry, ...signers] = await ethers.getSigners();
     // Set up that all candidates except the 2 last ones are trusted org
@@ -84,6 +90,7 @@ describe('Ronin Gateway V2 test', () => {
       signers.splice(0, maxPrioritizedValidatorNumber),
       signers.splice(0, maxPrioritizedValidatorNumber)
     );
+    operatorTuples = createManyOperatorTuples(signers.splice(0, operatorNumber * 2));
 
     // Deploys bridge contracts
     token = await new ERC20PresetMinterPauser__factory(deployer).deploy('ERC20', 'ERC20');
@@ -137,14 +144,12 @@ describe('Ronin Gateway V2 test', () => {
       stakingArguments: {
         minValidatorStakingAmount,
       },
-      roninValidatorSetArguments: {
-        maxValidatorNumber,
-        maxPrioritizedValidatorNumber,
-        numberOfBlocksInEpoch,
-      },
       bridgeManagerArguments: {
-        numerator,
-        denominator,
+        numerator: bridgeAdminNumerator,
+        denominator: bridgeAdminDenominator,
+        weights: operatorTuples.map(() => 100),
+        operators: operatorTuples.map((_) => _.operator.address),
+        governors: operatorTuples.map((_) => _.governor.address),
       },
     });
 
@@ -186,31 +191,26 @@ describe('Ronin Gateway V2 test', () => {
 
     await bridgeContract.initializeV2(roninBridgeManagerAddress);
 
-    // Applies candidates and double check the bridge operators
-    for (let i = 0; i < candidates.length; i++) {
-      await stakingContract
-        .connect(candidates[i].poolAdmin)
-        .applyValidatorCandidate(
-          candidates[i].candidateAdmin.address,
-          candidates[i].consensusAddr.address,
-          candidates[i].treasuryAddr.address,
-          1,
-          { value: minValidatorStakingAmount + candidates.length - i }
-        );
+    // // Applies candidates and double check the bridge operators
+    // for (let i = 0; i < candidates.length; i++) {
+    //   await stakingContract
+    //     .connect(candidates[i].poolAdmin)
+    //     .applyValidatorCandidate(
+    //       candidates[i].candidateAdmin.address,
+    //       candidates[i].consensusAddr.address,
+    //       candidates[i].treasuryAddr.address,
+    //       1,
+    //       { value: minValidatorStakingAmount + candidates.length - i }
+    //     );
+    // }
 
-      // TODO: add operators to the bridgeManager contract
-      // await bridgeManager.
-    }
-
-    await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-    await mineBatchTxs(async () => {
-      await roninValidatorSet.endEpoch();
-      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
-    });
-    period = await roninValidatorSet.currentPeriod();
-    // expect((await roninValidatorSet.getBridgeOperators())._bridgeOperatorList).deep.equal(
-    //   candidates.map((v) => v.bridgeOperator.address)
-    // );
+    // await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+    // await mineBatchTxs(async () => {
+    //   await roninValidatorSet.endEpoch();
+    //   await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+    // });
+    // period = await roninValidatorSet.currentPeriod();
+    expect(await bridgeManager.getBridgeOperators()).deep.equal(operatorTuples.map((v) => v.operator.address));
   });
 
   after(async () => {
@@ -306,9 +306,14 @@ describe('Ronin Gateway V2 test', () => {
       ];
       receipts.push({ ...receipts[0], id: 1 });
 
-      for (let i = 0; i < numerator - 1; i++) {
-        const tx = await bridgeContract.connect(candidates[i].bridgeOperator).tryBulkDepositFor(receipts);
+      for (let i = 0; i < bridgeAdminNumerator - 1; i++) {
+        const tx = await bridgeContract.connect(operatorTuples[i].operator).tryBulkDepositFor(receipts);
         await expect(tx).not.emit(bridgeContract, 'Deposited');
+      }
+
+      for (let i = bridgeAdminNumerator; i < bridgeAdminDenominator; i++) {
+        const tx = await bridgeContract.connect(operatorTuples[i].operator).tryBulkDepositFor(receipts);
+        await expect(tx).emit(bridgeContract, 'Deposited');
       }
     });
   });
