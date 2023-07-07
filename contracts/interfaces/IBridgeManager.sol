@@ -92,7 +92,9 @@ interface IBridgeManager {
   function removeBridgeOperators(address[] calldata bridgeOperators) external returns (bool[] memory removeds);
 
   /**
-   * @dev Updates a bridge operator.
+   * @dev Governor updates their corresponding governor and/or operator address.
+   * Requirements:
+   * - The caller must the governor of the operator that is requested changes.
    * @param bridgeOperator The address of the bridge operator to update.
    * @return updated A boolean indicating whether the bridge operator was updated successfully.
    */
