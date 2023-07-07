@@ -470,7 +470,6 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
    * @param arr The array of addresses to check.
    */
   function _checkDuplicate(address[] memory arr) internal pure {
-    if (arr.length == 0) revert ErrEmptyArray();
     if (arr.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
   }
 
