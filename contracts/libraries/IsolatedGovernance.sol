@@ -44,15 +44,9 @@ library IsolatedGovernance {
     Vote storage _v,
     uint256 _minimumVoteWeight,
     uint256 _votedWeightForHash,
-    uint256 _minimumTrustedVoteWeight,
-    uint256 _trustedVotedWeightForHash,
     bytes32 _hash
   ) internal returns (VoteStatusConsumer.VoteStatus _status) {
-    if (
-      _votedWeightForHash >= _minimumVoteWeight &&
-      _trustedVotedWeightForHash >= _minimumTrustedVoteWeight &&
-      _v.status == VoteStatusConsumer.VoteStatus.Pending
-    ) {
+    if (_votedWeightForHash >= _minimumVoteWeight && _v.status == VoteStatusConsumer.VoteStatus.Pending) {
       _v.status = VoteStatusConsumer.VoteStatus.Approved;
       _v.finalHash = _hash;
     }

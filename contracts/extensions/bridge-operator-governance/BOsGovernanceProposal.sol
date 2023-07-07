@@ -89,7 +89,7 @@ abstract contract BOsGovernanceProposal is SignatureConsumer, IBridgeAdminPropos
 
     if (!_hasValidVotes) revert ErrInvalidSignatures(msg.sig);
     address[] memory _filteredVoters = _v.filterByHash(_hash);
-    _v.syncVoteStatus(_minimumVoteWeight, _sumBridgeVoterWeights(_filteredVoters), 0, 0, _hash);
+    _v.syncVoteStatus(_minimumVoteWeight, _sumBridgeVoterWeights(_filteredVoters), _hash);
   }
 
   /**

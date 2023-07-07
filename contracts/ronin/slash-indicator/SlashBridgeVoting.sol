@@ -38,7 +38,7 @@ abstract contract SlashBridgeVoting is
       getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)
     ).getTrustedOrganization(_consensusAddr);
     uint256 _lastVotedBlock = Math.max(
-      IBridgeAdminProposal(getContract(ContractType.BRIDGE_ADMIN)).lastVotedBlock(_org.bridgeVoter),
+      IBridgeAdminProposal(getContract(ContractType.BRIDGE_MANAGER)).lastVotedBlock(_org.bridgeVoter),
       _org.addedBlock
     );
     IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));

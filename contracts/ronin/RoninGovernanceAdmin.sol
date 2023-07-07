@@ -325,7 +325,7 @@ contract RoninGovernanceAdmin is
     emit EmergencyExitPollVoted(_hash, _voter);
 
     address[] memory _voters = _v.filterByHash(_hash);
-    VoteStatus _stt = _v.syncVoteStatus(_getMinimumVoteWeight(), _sumGovernorWeights(_voters), 0, 0, _hash);
+    VoteStatus _stt = _v.syncVoteStatus(_getMinimumVoteWeight(), _sumGovernorWeights(_voters), _hash);
     if (_stt == VoteStatus.Approved) {
       _execReleaseLockedFundForEmergencyExitRequest(_consensusAddr, _recipientAfterUnlockedFund);
       emit EmergencyExitPollApproved(_hash);
