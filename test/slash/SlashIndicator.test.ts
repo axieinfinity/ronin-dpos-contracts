@@ -126,6 +126,13 @@ describe('Slash indicator test', () => {
         governanceAdminArguments: {
           proposalExpiryDuration,
         },
+        bridgeManagerArguments: {
+          numerator: 70,
+          denominator: 100,
+          weights: [],
+          operators: [],
+          governors: [],
+        },
       });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);

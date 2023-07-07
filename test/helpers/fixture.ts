@@ -141,6 +141,9 @@ export const defaultTestConfig: InitTestInput = {
   bridgeManagerArguments: {
     numerator: 70,
     denominator: 100,
+    weights: [],
+    operators: [],
+    governors: [],
   },
 };
 

@@ -1,10 +1,14 @@
 import { BigNumberish } from 'ethers';
 import { LiteralNetwork, Network } from '../utils';
+import { Address } from 'hardhat-deploy/dist/types';
 
 export interface BridgeManagerArguments {
   numerator?: BigNumberish;
   denominator?: BigNumberish;
   expiryDuration?: BigNumberish;
+  weights?: BigNumberish[];
+  operators?: Address[];
+  governors?: Address[];
 }
 
 export interface BridgeManagerConfig {

@@ -30,6 +30,9 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
       generalRoninConf[network.name].roninChainId,
       generalRoninConf[network.name].governanceAdmin?.address,
       generalRoninConf[network.name].bridgeContract,
+      bridgeManagerConf[network.name]?.weights,
+      bridgeManagerConf[network.name]?.operators,
+      bridgeManagerConf[network.name]?.governors,
     ],
   });
 };
