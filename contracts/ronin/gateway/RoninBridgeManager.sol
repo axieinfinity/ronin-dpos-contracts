@@ -143,6 +143,13 @@ contract RoninBridgeManager is BridgeManager, CoreGovernance, GovernanceProposal
     return _bridgeOperatorVote[_period][_epoch].voted(_voter);
   }
 
+  /**
+   * @dev Returns the expiry duration for a new proposal.
+   */
+  function getProposalExpiryDuration() external view returns (uint256) {
+    return _getProposalExpiryDuration();
+  }
+
   function _sumBridgeVoterWeights(address[] memory _bridgeVoters) internal view override returns (uint256) {
     return getSumBridgeVoterWeights(_bridgeVoters);
   }

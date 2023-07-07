@@ -79,6 +79,13 @@ contract MainchainBridgeManager is
   }
 
   /**
+   * @dev Returns the expiry duration for a new proposal.
+   */
+  function getProposalExpiryDuration() external view returns (uint256) {
+    return _getProposalExpiryDuration();
+  }
+
+  /**
    * @inheritdoc BOsGovernanceRelay
    */
   function _sumBridgeVoterWeights(address[] memory governors) internal view override returns (uint256) {
