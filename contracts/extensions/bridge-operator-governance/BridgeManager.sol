@@ -77,7 +77,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
-  ) payable nonDuplicate(governors.extend(bridgeOperators)) {
+  ) payable {
     _nonce = 1;
     _num = num;
     _denom = denom;
@@ -103,7 +103,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     uint256[] calldata voteWeights,
     address[] calldata governors,
     address[] calldata bridgeOperators
-  ) external onlySelfCall nonDuplicate(governors.extend(bridgeOperators)) returns (bool[] memory addeds) {
+  ) external onlySelfCall returns (bool[] memory addeds) {
     addeds = _addBridgeOperators(voteWeights, governors, bridgeOperators);
   }
 
@@ -278,7 +278,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     uint256[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
-  ) internal returns (bool[] memory addeds) {
+  ) internal nonDuplicate(governors.extend(bridgeOperators)) returns (bool[] memory addeds) {
     uint256 length = bridgeOperators.length;
     if (!(length == voteWeights.length && length == governors.length)) revert ErrLengthMismatch(msg.sig);
     addeds = new bool[](length);
@@ -292,30 +292,29 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     uint256 accumulatedWeight;
     {
       address governor;
-      uint96 voteWeight;
       address bridgeOperator;
       BridgeOperatorInfo memory bridgeOperatorInfo;
 
       for (uint256 i; i < length; ) {
         governor = governors[i];
         bridgeOperator = bridgeOperators[i];
-        voteWeight = voteWeights[i].toUint96();
 
         _checkNonZeroAddress(governor);
         _checkNonZeroAddress(bridgeOperator);
-        _sanityCheck(voteWeight, governor, bridgeOperator);
 
         addeds[i] = bridgeOperatorSet.add(bridgeOperator);
 
         if (addeds[i]) {
           _governorSet.add(governor);
 
-          accumulatedWeight += voteWeight;
+          if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
 
+          // get rid of stack too deep
+          // bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
+          // accumulatedWeight += bridgeOperatorInfo.voteWeight
+          accumulatedWeight += bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
           _governorOf[bridgeOperator] = governor;
-
           bridgeOperatorInfo.addr = bridgeOperator;
-          bridgeOperatorInfo.voteWeight = voteWeight;
           _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
         }
 
@@ -479,29 +478,6 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
    */
   function _checkNonZeroAddress(address addr) internal pure {
     if (addr == address(0)) revert ErrZeroAddress(msg.sig);
-  }
-
-  /**
-   * @dev Internal function to perform sanity checks on vote weight, governor, and bridge operator.
-   *
-   * This function verifies that the `voteWeight` is non-zero and checks for duplicate addresses among `governor` and `bridgeOperator`.
-   *
-   * Requirements:
-   * - The `voteWeight` must be non-zero.
-   * - The `governor` and `bridgeOperator` addresses must not be duplicates.
-   *
-   * @param voteWeight The vote weight to be checked.
-   * @param governor The address of the governor to be checked.
-   * @param bridgeOperator The address of the bridge operator to be checked.
-   */
-  function _sanityCheck(uint256 voteWeight, address governor, address bridgeOperator) private pure {
-    if (voteWeight == 0) revert ErrInvalidVoteWeight(msg.sig);
-
-    address[] memory addrs = new address[](2);
-    addrs[0] = governor;
-    addrs[1] = bridgeOperator;
-
-    _checkDuplicate(addrs);
   }
 
   /**
