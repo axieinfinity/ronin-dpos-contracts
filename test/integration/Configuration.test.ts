@@ -20,8 +20,6 @@ import {
   RoninGovernanceAdmin,
   BridgeTracking__factory,
   BridgeTracking,
-  MainchainGovernanceAdmin__factory,
-  MainchainGovernanceAdmin,
   RoninBridgeManager,
   RoninBridgeManager__factory,
 } from '../../src/types';
@@ -40,7 +38,6 @@ let stakingContract: Staking;
 let validatorContract: RoninValidatorSet;
 let roninTrustedOrganizationContract: RoninTrustedOrganization;
 let roninGovernanceAdminContract: RoninGovernanceAdmin;
-let mainchainGovernanceAdminContract: MainchainGovernanceAdmin;
 let bridgeTrackingContract: BridgeTracking;
 let bridgeManagerContract: RoninBridgeManager;
 
@@ -150,16 +147,11 @@ describe('[Integration] Configuration check', () => {
       stakingVestingContractAddress,
       roninTrustedOrganizationAddress,
       roninGovernanceAdminAddress,
-      mainchainGovernanceAdminAddress,
       bridgeTrackingAddress,
       roninBridgeManagerAddress,
     } = await initTest('Configuration')(config);
 
     roninGovernanceAdminContract = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
-    mainchainGovernanceAdminContract = MainchainGovernanceAdmin__factory.connect(
-      mainchainGovernanceAdminAddress,
-      deployer
-    );
     maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
     roninTrustedOrganizationContract = RoninTrustedOrganization__factory.connect(
       roninTrustedOrganizationAddress,
@@ -185,10 +177,6 @@ describe('[Integration] Configuration check', () => {
   it('Should the BridgeAdmin contract set configs correctly', async () => {
     expect(await bridgeManagerContract.getContract(getRoles('BRIDGE_CONTRACT'))).eq(config.bridgeContract);
     expect(await bridgeManagerContract.getProposalExpiryDuration()).eq(config.bridgeManagerArguments?.expiryDuration);
-  });
-
-  it('Should the MainchainGovernanceAdmin contract set configs correctly', async () => {
-    expect(await mainchainGovernanceAdminContract.getProposalExpiryDuration()).eq(MAX_UINT255);
   });
 
   it('Should the Maintenance contract set configs correctly', async () => {

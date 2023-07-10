@@ -53,6 +53,7 @@ let numerator = 7;
 let denominator = 10;
 let snapshotId: string;
 
+// TODO:  remove mainchain GA test
 describe('Governance Admin test', () => {
   before(async () => {
     [deployer, relayer, ...signers] = await ethers.getSigners();
