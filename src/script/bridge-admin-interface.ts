@@ -115,7 +115,6 @@ export class BridgeManagerInterface {
 
     const signatures = await this.generateSignatures(proposal);
     const supports = signatures.map(() => VoteType.For);
-    console.log('signer propose', this.signers[0].address);
     return this.contract
       .connect(this.signers[0])
       .proposeGlobalProposalStructAndCastVotes(proposal, supports, signatures);

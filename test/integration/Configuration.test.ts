@@ -22,8 +22,8 @@ import {
   BridgeTracking,
   MainchainGovernanceAdmin__factory,
   MainchainGovernanceAdmin,
-  BridgeManager,
-  BridgeManager__factory,
+  RoninBridgeManager,
+  RoninBridgeManager__factory,
 } from '../../src/types';
 import { initTest, InitTestInput } from '../helpers/fixture';
 import { MAX_UINT255, randomAddress } from '../../src/utils';
@@ -42,7 +42,7 @@ let roninTrustedOrganizationContract: RoninTrustedOrganization;
 let roninGovernanceAdminContract: RoninGovernanceAdmin;
 let mainchainGovernanceAdminContract: MainchainGovernanceAdmin;
 let bridgeTrackingContract: BridgeTracking;
-let bridgeManagerContract: BridgeManager;
+let bridgeManagerContract: RoninBridgeManager;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -119,6 +119,14 @@ const config: InitTestInput = {
   governanceAdminArguments: {
     proposalExpiryDuration: 60 * 60 * 24 * 14,
   },
+  bridgeManagerArguments: {
+    numerator: 70,
+    denominator: 100,
+    weights: [],
+    operators: [],
+    governors: [],
+    expiryDuration: 60 * 60 * 24 * 14, // 14 days
+  },
 };
 
 describe('[Integration] Configuration check', () => {
@@ -162,7 +170,7 @@ describe('[Integration] Configuration check', () => {
     stakingVestingContract = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);
     validatorContract = RoninValidatorSet__factory.connect(validatorContractAddress, deployer);
     bridgeTrackingContract = BridgeTracking__factory.connect(bridgeTrackingAddress, deployer);
-    bridgeManagerContract = BridgeManager__factory.connect(roninBridgeManagerAddress, deployer);
+    bridgeManagerContract = RoninBridgeManager__factory.connect(roninBridgeManagerAddress, deployer);
   });
 
   it('Should the RoninGovernanceAdmin contract set configs correctly', async () => {
@@ -176,11 +184,7 @@ describe('[Integration] Configuration check', () => {
 
   it('Should the BridgeAdmin contract set configs correctly', async () => {
     expect(await bridgeManagerContract.getContract(getRoles('BRIDGE_CONTRACT'))).eq(config.bridgeContract);
-
-    // TODO: uncomment the test below
-    // expect(await bridgeManagerContract.getProposalExpiryDuration()).eq(
-    //   config.bridgeManagerArguments?.proposalExpiryDuration
-    // );
+    expect(await bridgeManagerContract.getProposalExpiryDuration()).eq(config.bridgeManagerArguments?.expiryDuration);
   });
 
   it('Should the MainchainGovernanceAdmin contract set configs correctly', async () => {

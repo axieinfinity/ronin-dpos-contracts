@@ -122,9 +122,6 @@ describe('Ronin Gateway V2 test', () => {
       ...operatorTuples.map((_) => _.governor)
     );
 
-    console.log('operators', ...operatorTuples.map((_) => _.operator.address));
-    console.log('governors', ...operatorTuples.map((_) => _.governor.address));
-
     await TransparentUpgradeableProxyV2__factory.connect(gatewayProxy.address, deployer).changeAdmin(
       bridgeManager.address
     );

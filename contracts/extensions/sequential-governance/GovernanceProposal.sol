@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "./CoreGovernance.sol";
-import "hardhat/console.sol";
 
 abstract contract GovernanceProposal is CoreGovernance {
   using Proposal for Proposal.ProposalDetail;
@@ -48,10 +47,8 @@ abstract contract GovernanceProposal is CoreGovernance {
 
       if (_lastSigner >= _signer) revert ErrInvalidOrder(msg.sig);
       _lastSigner = _signer;
-      console.log("lastSigner", _signer);
 
       uint256 _weight = _getWeight(_signer);
-      console.log("weight", _weight);
       if (_weight > 0) {
         _hasValidVotes = true;
         if (
