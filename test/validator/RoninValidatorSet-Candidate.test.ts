@@ -23,14 +23,18 @@ import { GovernanceAdminInterface } from '../../src/script/governance-admin-inte
 import { Address } from 'hardhat-deploy/dist/types';
 import {
   createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
-  mergeToManyWhitelistedCandidateAddressSets,
   TrustedOrganizationAddressSet,
-  ValidatorCandidateAddressSet,
-  WhitelistedCandidateAddressSet,
 } from '../helpers/address-set-types/trusted-org-set-type';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { VoteType } from '../../src/script/proposal';
+import {
+  ValidatorCandidateAddressSet,
+  createManyValidatorCandidateAddressSets,
+} from '../helpers/address-set-types/validator-candidate-set-type';
+import {
+  WhitelistedCandidateAddressSet,
+  mergeToManyWhitelistedCandidateAddressSets,
+} from '../helpers/address-set-types/whitelisted-candidate-set-type';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let stakingVesting: StakingVesting;

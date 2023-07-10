@@ -16,7 +16,7 @@ import { MockValidatorSet } from '../../src/types/MockValidatorSet';
 import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types/trusted-org-set-type';
+} from '../helpers/address-set-types/validator-candidate-set-type';
 import { getLastBlockTimestamp } from '../helpers/utils';
 
 let coinbase: SignerWithAddress;

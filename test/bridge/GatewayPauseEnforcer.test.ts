@@ -73,7 +73,7 @@ const denominator = maxValidatorNumber;
 const trustedNumerator = 1;
 const trustedDenominator = maxPrioritizedValidatorNumber;
 
-//
+// requires 2/3 operator for the proposal to pass
 const bridgeAdminNumerator = 2;
 const bridgeAdminDenominator = operatorNumber;
 
@@ -190,26 +190,6 @@ describe('Gateway Pause Enforcer test', () => {
     );
 
     await bridgeContract.initializeV2(roninBridgeManagerAddress);
-
-    // // Applies candidates and double check the bridge operators
-    // for (let i = 0; i < candidates.length; i++) {
-    //   await stakingContract
-    //     .connect(candidates[i].poolAdmin)
-    //     .applyValidatorCandidate(
-    //       candidates[i].candidateAdmin.address,
-    //       candidates[i].consensusAddr.address,
-    //       candidates[i].treasuryAddr.address,
-    //       1,
-    //       { value: minValidatorStakingAmount + candidates.length - i }
-    //     );
-    // }
-
-    // await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-    // await mineBatchTxs(async () => {
-    //   await roninValidatorSet.endEpoch();
-    //   await roninValidatorSet.connect(coinbase).wrapUpEpoch();
-    // });
-    // period = await roninValidatorSet.currentPeriod();
     expect(await bridgeManager.getBridgeOperators()).deep.equal(operatorTuples.map((v) => v.operator.address));
   });
 

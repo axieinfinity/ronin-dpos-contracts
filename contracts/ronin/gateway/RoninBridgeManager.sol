@@ -93,7 +93,7 @@ contract RoninBridgeManager is BridgeManager, CoreGovernance, GovernanceProposal
       _supports,
       _signatures,
       DOMAIN_SEPARATOR,
-      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION),
+      address(this),
       getContract(ContractType.BRIDGE),
       msg.sender
     );
@@ -112,7 +112,7 @@ contract RoninBridgeManager is BridgeManager, CoreGovernance, GovernanceProposal
       _supports,
       _signatures,
       DOMAIN_SEPARATOR,
-      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION),
+      address(this),
       getContract(ContractType.BRIDGE)
     );
   }
