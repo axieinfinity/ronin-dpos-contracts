@@ -173,7 +173,7 @@ describe('Ronin Gateway V2 test', () => {
       ];
       receipts.push({ ...receipts[0], id: 1 });
 
-      for (let i = 0; i < numerator - 1; i++) {
+      for (let i = 0; i < bridgeAdminNumerator - 1; i++) {
         const tx = await bridgeContract.connect(operatorTuples[i].operator).tryBulkDepositFor(receipts);
         await expect(tx).not.emit(bridgeContract, 'Deposited');
       }
@@ -181,57 +181,37 @@ describe('Ronin Gateway V2 test', () => {
       for (let i = 0; i < receipts.length; i++) {
         const vote = await bridgeContract.depositVote(receipts[i].mainchain.chainId, receipts[i].id);
         expect(vote.status).eq(VoteStatus.Pending);
-        const [totalWeight, trustedWeight] = await bridgeContract.getDepositVoteWeight(
-          mainchainId,
-          i,
-          getReceiptHash(receipts[i])
-        );
-        expect(totalWeight).eq(numerator - 1);
-        expect(trustedWeight).eq(numerator - 1);
+        const totalWeight = await bridgeContract.getDepositVoteWeight(mainchainId, i, getReceiptHash(receipts[i]));
+        expect(totalWeight).eq(bridgeAdminNumerator - 1);
       }
     });
 
-    // it('Should be able to update the vote weights when a bridge operator exited', async () => {
-    //   await stakingContract.connect(candidates[0].poolAdmin).requestEmergencyExit(candidates[0].consensusAddr.address);
-    //   await mineBatchTxs(async () => {
-    //     await roninValidatorSet.endEpoch();
-    //     await roninValidatorSet.connect(coinbase).wrapUpEpoch();
-    //   });
-    //   {
-    //     const [totalWeight, trustedWeight] = await bridgeContract.getDepositVoteWeight(
-    //       mainchainId,
-    //       0,
-    //       getReceiptHash(receipts[0])
-    //     );
-    //     expect(totalWeight).eq(1);
-    //     expect(trustedWeight).eq(1);
-    //   }
-    //   {
-    //     const [totalWeight, trustedWeight] = await bridgeContract.getDepositVoteWeight(
-    //       mainchainId,
-    //       1,
-    //       getReceiptHash(receipts[1])
-    //     );
-    //     expect(totalWeight).eq(1);
-    //     expect(trustedWeight).eq(1);
-    //   }
-    // });
+    it.skip('Should be able to update the vote weights when a bridge operator exited', async () => {
+      // await stakingContract.connect(candidates[0].poolAdmin).requestEmergencyExit(candidates[0].consensusAddr.address);
+      // await mineBatchTxs(async () => {
+      //   await roninValidatorSet.endEpoch();
+      //   await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+      // });
+      {
+        const totalWeight = await bridgeContract.getDepositVoteWeight(mainchainId, 0, getReceiptHash(receipts[0]));
+        expect(totalWeight).eq(1);
+      }
+      {
+        const totalWeight = await bridgeContract.getDepositVoteWeight(mainchainId, 1, getReceiptHash(receipts[1]));
+        expect(totalWeight).eq(1);
+      }
+    });
 
     it('Should be able to continue to vote on the votes, the later vote is not counted but is tracked', async () => {
-      for (let i = numerator - 1; i < operatorTuples.length; i++) {
+      for (let i = bridgeAdminNumerator - 1; i < operatorTuples.length; i++) {
         await bridgeContract.connect(operatorTuples[i].operator).tryBulkDepositFor(receipts);
       }
 
       for (let i = 0; i < receipts.length; i++) {
         const vote = await bridgeContract.depositVote(receipts[i].mainchain.chainId, receipts[i].id);
         expect(vote.status).eq(VoteStatus.Executed);
-        const [totalWeight, trustedWeight] = await bridgeContract.getDepositVoteWeight(
-          mainchainId,
-          i,
-          getReceiptHash(receipts[i])
-        );
-        expect(totalWeight).eq(numerator);
-        expect(trustedWeight).eq(numerator);
+        const totalWeight = await bridgeContract.getDepositVoteWeight(mainchainId, i, getReceiptHash(receipts[i]));
+        expect(totalWeight).eq(bridgeAdminNumerator);
       }
     });
   });

@@ -11,8 +11,7 @@ contract MockRoninGatewayV2Extended is RoninGatewayV2 {
     uint256 _chainId,
     uint256 _depositId,
     bytes32 _hash
-  ) external view returns (uint256 totalWeight, uint256 deprecated) {
-    deprecated = 0;
+  ) external view returns (uint256 totalWeight) {
     totalWeight = _getVoteWeight(depositVote[_chainId][_depositId], _hash);
   }
 
@@ -22,8 +21,7 @@ contract MockRoninGatewayV2Extended is RoninGatewayV2 {
   function getMainchainWithdrewVoteWeight(
     uint256 _withdrawalId,
     bytes32 _hash
-  ) external view returns (uint256 totalWeight, uint256 deprecated) {
-    deprecated = 0;
+  ) external view returns (uint256 totalWeight) {
     totalWeight = _getVoteWeight(mainchainWithdrewVote[_withdrawalId], _hash);
   }
 
@@ -33,8 +31,7 @@ contract MockRoninGatewayV2Extended is RoninGatewayV2 {
   function getWithdrawalStatVoteWeight(
     uint256 _withdrawalId,
     bytes32 _hash
-  ) external view returns (uint256 totalWeight, uint256 deprecated) {
-    deprecated = 0;
+  ) external view returns (uint256 totalWeight) {
     totalWeight = _getVoteWeight(withdrawalStatVote[_withdrawalId], _hash);
   }
 }
