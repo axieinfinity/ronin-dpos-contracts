@@ -9,6 +9,7 @@ import { IBridgeManager } from "../../interfaces/IBridgeManager.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { RoleAccess } from "../../utils/RoleAccess.sol";
+import { TUint256 } from "../../types/Types.sol";
 import { ErrOnlySelfCall, ErrInvalidArguments, ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
 
 abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
@@ -28,29 +29,37 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     0xd38c234075fde25875da8a6b7e36b58b86681d483271a99eeeee1d78e258a24d;
 
   /**
-   * @dev The domain separator used for computing hash digests in the contract.
-   */
-  bytes32 public immutable DOMAIN_SEPARATOR;
-
-  /**
    * @dev The numerator value used for calculations in the contract.
+   * @notice value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.numerator.slot") - 1
    */
-  uint256 internal _num;
+  TUint256 internal constant NUMERATOR_SLOT =
+    TUint256.wrap(0xc55405a488814eaa0e2a685a0131142785b8d033d311c8c8244e34a7c12ca40f);
 
   /**
    * @dev The denominator value used for calculations in the contract.
+   * @notice value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.denominator.slot") - 1
    */
-  uint256 internal _denom;
+  TUint256 internal constant DENOMINATOR_SLOT =
+    TUint256.wrap(0xac1ff16a4f04f2a37a9ba5252a69baa100b460e517d1f8019c054a5ad698f9ff);
 
   /**
    * @dev The nonce value used for tracking nonces in the contract.
+   * @notice value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.nonce.slot") - 1
    */
-  uint256 internal _nonce;
+  TUint256 internal constant NONCE_SLOT =
+    TUint256.wrap(0x92872d32822c9d44b36a2537d3e0d4c46fc4de1ce154ccfaed560a8a58445f1d);
 
   /**
    * @dev The total weight value used for storing the cumulative weight in the contract.
+   * @notice value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.totalWeights.slot") - 1
    */
-  uint256 internal _totalWeight;
+  TUint256 internal constant TOTAL_WEIGHTS_SLOT =
+    TUint256.wrap(0x6924fe71b0c8b61aea02ca498b5f53b29bd95726278b1fe4eb791bb24a42644c);
+
+  /**
+   * @dev The domain separator used for computing hash digests in the contract.
+   */
+  bytes32 public immutable DOMAIN_SEPARATOR;
 
   modifier onlySelfCall() {
     _requireSelfCall();
@@ -78,9 +87,9 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
     address[] memory governors,
     uint256[] memory voteWeights
   ) payable {
-    _nonce = 1;
-    _num = num;
-    _denom = denom;
+    NONCE_SLOT.store(1);
+    NUMERATOR_SLOT.store(num);
+    DENOMINATOR_SLOT.store(denom);
 
     _setContract(ContractType.BRIDGE, bridgeContract);
 
@@ -167,8 +176,8 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
   /**
    * @inheritdoc IBridgeManager
    */
-  function getTotalWeights() external view returns (uint256) {
-    return _totalWeight;
+  function getTotalWeights() public view returns (uint256) {
+    return TOTAL_WEIGHTS_SLOT.load();
   }
 
   /**
@@ -258,7 +267,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
    * @inheritdoc IQuorum
    */
   function minimumVoteWeight() public view virtual returns (uint256) {
-    return (_num * _totalWeight + _denom - 1) / _denom;
+    return (NUMERATOR_SLOT.mul(TOTAL_WEIGHTS_SLOT.load()) + DENOMINATOR_SLOT.load() - 1) / DENOMINATOR_SLOT.load();
   }
 
   /**
@@ -324,7 +333,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
       }
     }
 
-    _totalWeight += accumulatedWeight;
+    TOTAL_WEIGHTS_SLOT.addAssign(accumulatedWeight);
 
     emit BridgeOperatorsAdded(addeds, voteWeights, governors, bridgeOperators);
   }
@@ -378,7 +387,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
       }
     }
 
-    _totalWeight -= accumulatedWeight;
+    TOTAL_WEIGHTS_SLOT.subAssign(accumulatedWeight);
 
     emit BridgeOperatorsRemoved(removeds, bridgeOperators);
   }
@@ -395,13 +404,13 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
   ) internal virtual returns (uint256 _previousNum, uint256 _previousDenom) {
     if (numerator > denominator) revert ErrInvalidThreshold(msg.sig);
 
-    _previousNum = _num;
-    _previousDenom = _denom;
-    _num = numerator;
-    _denom = denominator;
+    _previousNum = NUMERATOR_SLOT.load();
+    _previousDenom = DENOMINATOR_SLOT.load();
+    NUMERATOR_SLOT.store(numerator);
+    DENOMINATOR_SLOT.store(denominator);
 
     unchecked {
-      emit ThresholdUpdated(_nonce++, numerator, denominator, _previousNum, _previousDenom);
+      emit ThresholdUpdated(NONCE_SLOT.postIncrement(), numerator, denominator, _previousNum, _previousDenom);
     }
   }
 
@@ -409,14 +418,14 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
    * @inheritdoc IQuorum
    */
   function getThreshold() external view virtual returns (uint256 num_, uint256 denom_) {
-    return (_num, _denom);
+    return (NUMERATOR_SLOT.load(), DENOMINATOR_SLOT.load());
   }
 
   /**
    * @inheritdoc IQuorum
    */
   function checkThreshold(uint256 _voteWeight) external view virtual returns (bool) {
-    return _voteWeight * _denom >= _num * _totalWeight;
+    return _voteWeight * DENOMINATOR_SLOT.load() >= NUMERATOR_SLOT.mul(TOTAL_WEIGHTS_SLOT.load());
   }
 
   /**

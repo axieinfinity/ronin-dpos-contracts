@@ -164,11 +164,11 @@ contract RoninBridgeManager is BridgeManager, BOsGlobalProposal, BOsGovernancePr
   }
 
   function _getTotalWeights() internal view virtual override returns (uint256) {
-    return _totalWeight;
+    return getTotalWeights();
   }
 
   function _getMinimumVoteWeight() internal view virtual override returns (uint256) {
-    return (_num * _totalWeight + _denom - 1) / _denom;
+    return minimumVoteWeight();
   }
 
   function _getWeight(address _governor) internal view virtual override returns (uint256) {

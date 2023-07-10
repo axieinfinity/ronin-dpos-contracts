@@ -76,7 +76,7 @@ contract MainchainBridgeManager is
   }
 
   function _getMinimumVoteWeight() internal view override returns (uint256) {
-    return (_num * _totalWeight + _denom - 1) / _denom;
+    return minimumVoteWeight();
   }
 
   /**
@@ -99,7 +99,7 @@ contract MainchainBridgeManager is
   }
 
   function _getTotalWeights() internal view override returns (uint256) {
-    return _totalWeight;
+    return getTotalWeights();
   }
 
   function _sumWeights(address[] memory governors) internal view override returns (uint256) {
