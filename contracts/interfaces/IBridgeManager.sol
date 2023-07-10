@@ -21,6 +21,8 @@ interface IBridgeManager {
     address indexed toBridgeOperator
   );
 
+  function DOMAIN_SEPARATOR() external view returns (bytes32);
+
   /**
    * @dev Returns the total number of bridge operators.
    * @return The total number of bridge operators.

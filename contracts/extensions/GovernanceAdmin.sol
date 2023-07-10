@@ -19,11 +19,7 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernance
     _;
   }
 
-  constructor(
-    uint256 _roninChainId,
-    address _roninTrustedOrganizationContract,
-    uint256 _proposalExpiryDuration
-  ) CoreGovernance(_proposalExpiryDuration) {
+  constructor(uint256 _roninChainId, address _roninTrustedOrganizationContract) {
     roninChainId = _roninChainId;
 
     /*
@@ -64,17 +60,6 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernance
   }
 
   /**
-   * @dev Sets the expiry duration for a new proposal.
-   *
-   * Requirements:
-   * - Only allowing self-call to this method, since this contract does not have admin.
-   *
-   */
-  function setProposalExpiryDuration(uint256 _expiryDuration) external onlySelfCall {
-    _setProposalExpiryDuration(_expiryDuration);
-  }
-
-  /**
    * @dev Returns the current implementation of `_proxy`.
    *
    * Requirements:
@@ -88,13 +73,6 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernance
     (bool _success, bytes memory _returndata) = _proxy.staticcall(abi.encodeWithSelector(_selector));
     _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (address));
-  }
-
-  /**
-   * @dev Returns the proposal expiry duration.
-   */
-  function getProposalExpiryDuration() external view returns (uint256) {
-    return super._getProposalExpiryDuration();
   }
 
   /**

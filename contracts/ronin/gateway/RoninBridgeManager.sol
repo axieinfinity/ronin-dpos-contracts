@@ -2,16 +2,13 @@
 pragma solidity ^0.8.0;
 
 import { ContractType, RoleAccess, ErrUnauthorized, BridgeManager } from "../../extensions/bridge-operator-governance/BridgeManager.sol";
-import { GovernanceProposal } from "../../extensions/sequential-governance/GovernanceProposal.sol";
-import { CoreGovernance } from "../../extensions/sequential-governance/CoreGovernance.sol";
+import { Ballot, GlobalProposal, BOsGlobalProposal } from "../../extensions/bridge-operator-governance/BOsGlobalProposal.sol";
 import { BOsGovernanceProposal } from "../../extensions/bridge-operator-governance/BOsGovernanceProposal.sol";
-import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
-import { Ballot } from "../../libraries/Ballot.sol";
-import { GlobalProposal } from "../../libraries/GlobalProposal.sol";
 import { IsolatedGovernance } from "../../libraries/IsolatedGovernance.sol";
 import { BridgeOperatorsBallot } from "../../libraries/BridgeOperatorsBallot.sol";
+import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
 
-contract RoninBridgeManager is BridgeManager, CoreGovernance, GovernanceProposal, BOsGovernanceProposal {
+contract RoninBridgeManager is BridgeManager, BOsGlobalProposal, BOsGovernanceProposal {
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
   modifier onlyGovernor() {
@@ -30,7 +27,7 @@ contract RoninBridgeManager is BridgeManager, CoreGovernance, GovernanceProposal
     uint256[] memory voteWeights
   )
     payable
-    CoreGovernance(expiryDuration)
+    BOsGlobalProposal(expiryDuration)
     BridgeManager(num, denom, roninChainId, bridgeContract, bridgeOperators, governors, voteWeights)
   {}
 
@@ -64,16 +61,16 @@ contract RoninBridgeManager is BridgeManager, CoreGovernance, GovernanceProposal
     bytes[] calldata _calldatas,
     uint256[] calldata _gasAmounts
   ) external onlyGovernor {
-    _proposeGlobal(
-      _expiryTimestamp,
-      _targetOptions,
-      _values,
-      _calldatas,
-      _gasAmounts,
-      address(this),
-      getContract(ContractType.BRIDGE),
-      msg.sender
-    );
+    _proposeGlobal({
+      _expiryTimestamp: _expiryTimestamp,
+      _targetOptions: _targetOptions,
+      _values: _values,
+      _calldatas: _calldatas,
+      _gasAmounts: _gasAmounts,
+      _bridgeManagerContract: address(this),
+      _gatewayContract: getContract(ContractType.BRIDGE),
+      _creator: msg.sender
+    });
   }
 
   /**
@@ -88,15 +85,15 @@ contract RoninBridgeManager is BridgeManager, CoreGovernance, GovernanceProposal
     Ballot.VoteType[] calldata _supports,
     Signature[] calldata _signatures
   ) external onlyGovernor {
-    _proposeGlobalProposalStructAndCastVotes(
-      _globalProposal,
-      _supports,
-      _signatures,
-      DOMAIN_SEPARATOR,
-      address(this),
-      getContract(ContractType.BRIDGE),
-      msg.sender
-    );
+    _proposeGlobalProposalStructAndCastVotes({
+      _globalProposal: _globalProposal,
+      _supports: _supports,
+      _signatures: _signatures,
+      _domainSeparator: DOMAIN_SEPARATOR,
+      _bridgeManagerContract: address(this),
+      _gatewayContract: getContract(ContractType.BRIDGE),
+      _creator: msg.sender
+    });
   }
 
   /**

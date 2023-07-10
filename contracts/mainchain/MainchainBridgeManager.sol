@@ -2,7 +2,8 @@
 pragma solidity ^0.8.0;
 
 import { AccessControlEnumerable } from "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
-import { CoreGovernance, GovernanceRelay } from "../extensions/sequential-governance/GovernanceRelay.sol";
+import { CoreGovernance } from "../extensions/sequential-governance/CoreGovernance.sol";
+import { GovernanceRelay } from "../extensions/sequential-governance/GovernanceRelay.sol";
 import { BOsGovernanceRelay } from "../extensions/bridge-operator-governance/BOsGovernanceRelay.sol";
 import { ContractType, BridgeManager } from "../extensions/bridge-operator-governance/BridgeManager.sol";
 import { ChainTypeConsumer } from "../interfaces/consumers/ChainTypeConsumer.sol";
@@ -30,7 +31,7 @@ contract MainchainBridgeManager is
     uint256[] memory voteWeights
   )
     payable
-    CoreGovernance(expiryDuration)
+    GovernanceRelay(expiryDuration)
     BridgeManager(num, denom, roninChainId, bridgeContract, bridgeOperators, governors, voteWeights)
   {
     uint256 length = relayers.length;
@@ -84,6 +85,11 @@ contract MainchainBridgeManager is
   function getProposalExpiryDuration() external view returns (uint256) {
     return _getProposalExpiryDuration();
   }
+
+  /**
+   * @inheritdoc CoreGovernance
+   */
+  function _getWeight(address governor) internal view override returns (uint256) {}
 
   /**
    * @inheritdoc BOsGovernanceRelay

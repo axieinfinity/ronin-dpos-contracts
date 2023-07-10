@@ -34,9 +34,8 @@ contract RoninGovernanceAdmin is
   constructor(
     uint256 _roninChainId,
     address _roninTrustedOrganizationContract,
-    address _validatorContract,
-    uint256 _proposalExpiryDuration
-  ) GovernanceAdmin(_roninChainId, _roninTrustedOrganizationContract, _proposalExpiryDuration) {
+    address _validatorContract
+  ) GovernanceAdmin(_roninChainId, _roninTrustedOrganizationContract) {
     _setContract(ContractType.VALIDATOR, _validatorContract);
   }
 
@@ -269,7 +268,7 @@ contract RoninGovernanceAdmin is
   }
 
   /**
-   * @inheritdoc GovernanceProposal
+   * @inheritdoc CoreGovernance
    */
   function _getWeight(address _governor) internal view virtual override returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.getGovernorWeight.selector;

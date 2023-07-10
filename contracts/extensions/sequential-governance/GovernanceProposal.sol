@@ -5,65 +5,68 @@ import "./CoreGovernance.sol";
 
 abstract contract GovernanceProposal is CoreGovernance {
   using Proposal for Proposal.ProposalDetail;
-  using GlobalProposal for GlobalProposal.GlobalProposalDetail;
+
+  /// @dev Emitted when a proposal is created
+  event ProposalCreated(
+    uint256 indexed chainId,
+    uint256 indexed round,
+    bytes32 indexed proposalHash,
+    Proposal.ProposalDetail proposal,
+    address creator
+  );
 
   /**
-   * @dev Error thrown when an invalid proposal is encountered.
-   * @param actual The actual value of the proposal.
-   * @param expected The expected value of the proposal.
+   * @dev Proposes for a new proposal.
+   *
+   * Requirements:
+   * - The chain id is not equal to 0.
+   *
+   * Emits the `ProposalCreated` event.
+   *
    */
-  error ErrInvalidProposal(bytes32 actual, bytes32 expected);
+  function _proposeProposal(
+    uint256 _chainId,
+    uint256 _expiryTimestamp,
+    address[] memory _targets,
+    uint256[] memory _values,
+    bytes[] memory _calldatas,
+    uint256[] memory _gasAmounts,
+    address _creator
+  ) internal virtual returns (Proposal.ProposalDetail memory _proposal) {
+    if (_chainId == 0) revert ErrInvalidChainId(msg.sig, 0, block.chainid);
+    uint256 _round = _createVotingRound(_chainId);
+
+    _proposal = Proposal.ProposalDetail(_round, _chainId, _expiryTimestamp, _targets, _values, _calldatas, _gasAmounts);
+    _proposal.validate(_proposalExpiryDuration);
+
+    bytes32 _proposalHash = _proposal.hash();
+    _saveVotingRound(vote[_chainId][_round], _proposalHash, _expiryTimestamp);
+    emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
+  }
 
   /**
-   * @dev Casts votes by signatures.
+   * @dev Proposes proposal struct.
    *
-   * Note: This method does not verify the proposal hash with the vote hash. Please consider checking it before.
+   * Requirements:
+   * - The chain id is not equal to 0.
+   * - The proposal nonce is equal to the new round.
+   *
+   * Emits the `ProposalCreated` event.
    *
    */
-  function _castVotesBySignatures(
+  function _proposeProposalStruct(
     Proposal.ProposalDetail memory _proposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures,
-    bytes32 _forDigest,
-    bytes32 _againstDigest
-  ) internal {
-    if (!(_supports.length != 0 && _supports.length == _signatures.length)) revert ErrLengthMismatch(msg.sig);
+    address _creator
+  ) internal virtual returns (uint256 _round) {
+    uint256 _chainId = _proposal.chainId;
+    if (_chainId == 0) revert ErrInvalidChainId(msg.sig, 0, block.chainid);
+    _proposal.validate(_proposalExpiryDuration);
 
-    uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
-    uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;
-
-    address _lastSigner;
-    address _signer;
-    Signature calldata _sig;
-    bool _hasValidVotes;
-    for (uint256 _i; _i < _signatures.length; ) {
-      _sig = _signatures[_i];
-
-      if (_supports[_i] == Ballot.VoteType.For) {
-        _signer = ECDSA.recover(_forDigest, _sig.v, _sig.r, _sig.s);
-      } else if (_supports[_i] == Ballot.VoteType.Against) {
-        _signer = ECDSA.recover(_againstDigest, _sig.v, _sig.r, _sig.s);
-      } else revert ErrUnsupportedVoteType(msg.sig);
-
-      if (_lastSigner >= _signer) revert ErrInvalidOrder(msg.sig);
-      _lastSigner = _signer;
-
-      uint256 _weight = _getWeight(_signer);
-      if (_weight > 0) {
-        _hasValidVotes = true;
-        if (
-          _castVote(_proposal, _supports[_i], _minimumForVoteWeight, _minimumAgainstVoteWeight, _signer, _sig, _weight)
-        ) {
-          return;
-        }
-      }
-
-      unchecked {
-        ++_i;
-      }
-    }
-
-    if (!_hasValidVotes) revert ErrInvalidSignatures(msg.sig);
+    bytes32 _proposalHash = _proposal.hash();
+    _round = _createVotingRound(_chainId);
+    _saveVotingRound(vote[_chainId][_round], _proposalHash, _proposal.expiryTimestamp);
+    if (_round != _proposal.nonce) revert ErrInvalidProposalNonce(msg.sig);
+    emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
   }
 
   /**
@@ -110,61 +113,4 @@ abstract contract GovernanceProposal is CoreGovernance {
       ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_proposalHash, Ballot.VoteType.Against))
     );
   }
-
-  /**
-   * @dev Proposes and votes by signature.
-   */
-  function _proposeGlobalProposalStructAndCastVotes(
-    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures,
-    bytes32 _domainSeparator,
-    address _roninTrustedOrganizationContract,
-    address _gatewayContract,
-    address _creator
-  ) internal returns (Proposal.ProposalDetail memory _proposal) {
-    _proposal = _proposeGlobalStruct(_globalProposal, _roninTrustedOrganizationContract, _gatewayContract, _creator);
-    bytes32 _globalProposalHash = _globalProposal.hash();
-    _castVotesBySignatures(
-      _proposal,
-      _supports,
-      _signatures,
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.For)),
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.Against))
-    );
-  }
-
-  /**
-   * @dev Proposes a global proposal struct and casts votes by signature.
-   */
-  function _castGlobalProposalBySignatures(
-    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures,
-    bytes32 _domainSeparator,
-    address _roninTrustedOrganizationContract,
-    address _gatewayContract
-  ) internal {
-    Proposal.ProposalDetail memory _proposal = _globalProposal.intoProposalDetail(
-      _roninTrustedOrganizationContract,
-      _gatewayContract
-    );
-    bytes32 _proposalHash = _proposal.hash();
-    if (vote[0][_proposal.nonce].hash != _proposalHash)
-      revert ErrInvalidProposal(_proposalHash, vote[0][_proposal.nonce].hash);
-
-    bytes32 _globalProposalHash = _globalProposal.hash();
-    _castVotesBySignatures(
-      _proposal,
-      _supports,
-      _signatures,
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.For)),
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.Against))
-    );
-  }
-
-  /**
-   * @dev Returns the weight of a governor.
-   */
-  function _getWeight(address _governor) internal view virtual returns (uint256);
 }
