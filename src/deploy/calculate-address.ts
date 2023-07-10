@@ -30,8 +30,8 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
   if (mainchainNetworks.includes(network.name!)) {
     generalMainchainConf[network.name] = {
       ...generalMainchainConf[network.name],
-      governanceAdmin: calculateAddress(deployer, nonce++),
-      roninTrustedOrganizationContract: calculateAddress(deployer, nonce++),
+      // governanceAdmin: calculateAddress(deployer, nonce++),
+      // roninTrustedOrganizationContract: calculateAddress(deployer, nonce++),
     };
   }
 

@@ -30,10 +30,10 @@ import { BridgeManagerArguments, bridgeManagerConf } from '../../src/configs/bri
 
 export interface InitTestOutput {
   roninGovernanceAdminAddress: Address;
-  mainchainGovernanceAdminAddress: Address;
+  // mainchainGovernanceAdminAddress: Address;
   maintenanceContractAddress: Address;
   roninTrustedOrganizationAddress: Address;
-  mainchainRoninTrustedOrganizationAddress: Address;
+  // mainchainRoninTrustedOrganizationAddress: Address;
   slashContractAddress: Address;
   stakingContractAddress: Address;
   stakingVestingContractAddress: Address;
@@ -228,17 +228,17 @@ export const initTest = (id: string) =>
       'StakingProxy',
       'MaintenanceProxy',
       'StakingVestingProxy',
-      'MainchainGovernanceAdmin',
-      'MainchainRoninTrustedOrganizationProxy',
+      // 'MainchainGovernanceAdmin',
+      // 'MainchainRoninTrustedOrganizationProxy',
       'RoninBridgeManager',
       id,
     ]);
 
     const roninGovernanceAdminDeployment = await deployments.get('RoninGovernanceAdmin');
-    const mainchainGovernanceAdminDeployment = await deployments.get('MainchainGovernanceAdmin');
+    // const mainchainGovernanceAdminDeployment = await deployments.get('MainchainGovernanceAdmin');
     const maintenanceContractDeployment = await deployments.get('MaintenanceProxy');
     const roninTrustedOrganizationDeployment = await deployments.get('RoninTrustedOrganizationProxy');
-    const mainchainRoninTrustedOrganizationDeployment = await deployments.get('MainchainRoninTrustedOrganizationProxy');
+    // const mainchainRoninTrustedOrganizationDeployment = await deployments.get('MainchainRoninTrustedOrganizationProxy');
     const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
     const stakingContractDeployment = await deployments.get('StakingProxy');
     const stakingVestingContractDeployment = await deployments.get('StakingVestingProxy');
@@ -249,10 +249,10 @@ export const initTest = (id: string) =>
 
     return {
       roninGovernanceAdminAddress: roninGovernanceAdminDeployment.address,
-      mainchainGovernanceAdminAddress: mainchainGovernanceAdminDeployment.address,
+      // mainchainGovernanceAdminAddress: mainchainGovernanceAdminDeployment.address,
       maintenanceContractAddress: maintenanceContractDeployment.address,
       roninTrustedOrganizationAddress: roninTrustedOrganizationDeployment.address,
-      mainchainRoninTrustedOrganizationAddress: mainchainRoninTrustedOrganizationDeployment.address,
+      // mainchainRoninTrustedOrganizationAddress: mainchainRoninTrustedOrganizationDeployment.address,
       slashContractAddress: slashContractDeployment.address,
       stakingContractAddress: stakingContractDeployment.address,
       stakingVestingContractAddress: stakingVestingContractDeployment.address,
