@@ -59,6 +59,24 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
 
   uint256 internal _proposalExpiryDuration;
 
+  constructor(uint256 expiryDuration) {
+    _setProposalExpiryDuration(expiryDuration);
+  }
+
+  /**
+   * @dev Returns the expiry duration for a new proposal.
+   */
+  function _getProposalExpiryDuration() internal view returns (uint256) {
+    return _proposalExpiryDuration;
+  }
+
+  /**
+   * @dev Sets the expiry duration for a new proposal.
+   */
+  function _setProposalExpiryDuration(uint256 _expiryDuration) internal {
+    _proposalExpiryDuration = _expiryDuration;
+  }
+
   /**
    * @dev Creates new voting round by calculating the `_round` number of chain `_chainId`.
    * Increases the `_round` number if the previous one is not expired. Delete the previous proposal

@@ -34,8 +34,9 @@ contract RoninGovernanceAdmin is
   constructor(
     uint256 _roninChainId,
     address _roninTrustedOrganizationContract,
-    address _validatorContract
-  ) GovernanceAdmin(_roninChainId, _roninTrustedOrganizationContract) {
+    address _validatorContract,
+    uint256 _expiryDuration
+  ) CoreGovernance(_expiryDuration) GovernanceAdmin(_roninChainId, _roninTrustedOrganizationContract) {
     _setContract(ContractType.VALIDATOR, _validatorContract);
   }
 

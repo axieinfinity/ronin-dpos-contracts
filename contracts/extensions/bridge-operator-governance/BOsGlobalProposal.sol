@@ -2,14 +2,14 @@
 pragma solidity ^0.8.0;
 
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { Proposal, GlobalProposal, CoreGlobalProposal } from "../sequential-governance/CoreGlobalProposal.sol";
+import { Proposal, GlobalProposal, CoreGlobalProposal, CoreGovernance } from "../sequential-governance/CoreGlobalProposal.sol";
 import { Ballot } from "../../libraries/Ballot.sol";
 
 abstract contract BOsGlobalProposal is CoreGlobalProposal {
   using Proposal for Proposal.ProposalDetail;
   using GlobalProposal for GlobalProposal.GlobalProposalDetail;
 
-  constructor(uint256 expiryDuration) CoreGlobalProposal(expiryDuration) {}
+  constructor(uint256 expiryDuration) CoreGovernance(expiryDuration) {}
 
   /**
    * @dev Proposes and votes by signature.

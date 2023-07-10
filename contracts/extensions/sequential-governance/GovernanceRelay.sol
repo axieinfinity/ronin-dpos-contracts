@@ -2,14 +2,14 @@
 pragma solidity ^0.8.0;
 
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { Proposal, GlobalProposal, CoreGlobalProposal } from "./CoreGlobalProposal.sol";
+import { Proposal, GlobalProposal, CoreGlobalProposal, CoreGovernance } from "./CoreGlobalProposal.sol";
 import { Ballot } from "../../libraries/Ballot.sol";
 import { ErrInvalidVoteWeight, ErrRelayFailed, ErrInvalidOrder, ErrUnsupportedVoteType, ErrLengthMismatch } from "../../utils/CommonErrors.sol";
 
 abstract contract GovernanceRelay is CoreGlobalProposal {
   using GlobalProposal for GlobalProposal.GlobalProposalDetail;
 
-  constructor(uint256 expiryDuration) CoreGlobalProposal(expiryDuration) {}
+  constructor(uint256 expiryDuration) CoreGovernance(expiryDuration) {}
 
   /**
    * @dev Relays votes by signatures.

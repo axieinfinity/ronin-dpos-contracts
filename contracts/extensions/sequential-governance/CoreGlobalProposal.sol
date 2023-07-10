@@ -20,24 +20,6 @@ abstract contract CoreGlobalProposal is CoreGovernance {
     address creator
   );
 
-  constructor(uint256 expiryDuration) {
-    _setProposalExpiryDuration(expiryDuration);
-  }
-
-  /**
-   * @dev Returns the expiry duration for a new proposal.
-   */
-  function _getProposalExpiryDuration() internal view returns (uint256) {
-    return _proposalExpiryDuration;
-  }
-
-  /**
-   * @dev Sets the expiry duration for a new proposal.
-   */
-  function _setProposalExpiryDuration(uint256 _expiryDuration) internal {
-    _proposalExpiryDuration = _expiryDuration;
-  }
-
   /**
    * @dev Proposes global proposal struct.
    *
