@@ -23,7 +23,6 @@ contract MainchainBridgeManager is
     uint256 num,
     uint256 denom,
     uint256 roninChainId,
-    uint256 expiryDuration,
     address bridgeContract,
     address[] memory relayers,
     address[] memory bridgeOperators,
@@ -31,7 +30,7 @@ contract MainchainBridgeManager is
     uint256[] memory voteWeights
   )
     payable
-    GovernanceRelay(expiryDuration)
+    GovernanceRelay(type(uint256).max - 1)
     BridgeManager(num, denom, roninChainId, bridgeContract, bridgeOperators, governors, voteWeights)
   {
     uint256 length = relayers.length;
