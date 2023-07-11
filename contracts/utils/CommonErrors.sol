@@ -156,3 +156,8 @@ error ErrInvalidReceipt();
  * @dev Error indicating that an address is not payable.
  */
 error ErrNonpayableAddress(address);
+
+/**
+ * @dev Error indicating that the period is already processed, i.e. scattered reward.
+ */
+error ErrPeriodAlreadyProcessed(uint256 requestingPeriod, uint256 latestPeriod);

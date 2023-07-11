@@ -25,6 +25,7 @@ BridgeReward:_initialized (storage_slot: 0) (offset: 0) (type: t_uint8) (numberO
 BridgeReward:_initializing (storage_slot: 0) (offset: 1) (type: t_bool) (numberOfBytes: 1)
 BridgeReward:_rewardInfo (storage_slot: 1) (offset: 0) (type: t_mapping(t_addresst_struct(BridgeRewardInfo)_storage)) (numberOfBytes: 32)
 BridgeReward:_rewardPerPeriod (storage_slot: 2) (offset: 0) (type: t_uint256) (numberOfBytes: 32)
+BridgeReward:_latestRewardedPeriod (storage_slot: 3) (offset: 0) (type: t_uint256) (numberOfBytes: 32)
 BridgeTracking:______deprecatedBridge (storage_slot: 0) (offset: 0) (type: t_address) (numberOfBytes: 20)
 BridgeTracking:______deprecatedValidator (storage_slot: 1) (offset: 0) (type: t_address) (numberOfBytes: 20)
 BridgeTracking:_initialized (storage_slot: 1) (offset: 20) (type: t_uint8) (numberOfBytes: 1)

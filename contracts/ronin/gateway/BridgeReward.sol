@@ -4,6 +4,8 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../extensions/collections/HasContracts.sol";
+import "../../extensions/RONTransferHelper.sol";
+import "../../utils/CommonErrors.sol";
 
 contract BridgeReward is HasContracts, Initializable {
   struct BridgeRewardInfo {
@@ -24,6 +26,7 @@ contract BridgeReward is HasContracts, Initializable {
 
   mapping(address => BridgeRewardInfo) internal _rewardInfo;
   uint256 internal _rewardPerPeriod;
+  uint256 internal _latestRewardedPeriod;
 
   constructor() {
     _disableInitializers();
@@ -44,8 +47,11 @@ contract BridgeReward is HasContracts, Initializable {
   function execSyncReward(
     address[] calldata operatorList,
     uint256[] calldata voteCountList,
-    uint256 totalVoteCount
+    uint256 totalVoteCount,
+    uint256 period
   ) external onlyContract(ContractType.BRIDGE_TRACKING) {
+    if (period <= _latestRewardedPeriod) revert ErrPeriodAlreadyProcessed(period, _latestRewardedPeriod);
+
     uint256 rewardPerVote = _rewardPerPeriod / totalVoteCount;
     bool[] memory slashedList = _getSlashInfo(operatorList);
 
@@ -70,6 +76,8 @@ contract BridgeReward is HasContracts, Initializable {
         ++i;
       }
     }
+
+    ++_latestRewardedPeriod;
   }
 
   function getRewardPerPeriod() external view returns (uint256) {

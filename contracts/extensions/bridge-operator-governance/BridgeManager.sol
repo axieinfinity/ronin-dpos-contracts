@@ -11,7 +11,7 @@ import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { RoleAccess } from "../../utils/RoleAccess.sol";
 import { TUint256 } from "../../types/Types.sol";
-import { ErrInvalidArguments, ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized, ErrNonpayableAddress } from "../../utils/CommonErrors.sol";
+import "../../utils/CommonErrors.sol";
 
 abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallback, HasContracts {
   using SafeCast for uint256;
