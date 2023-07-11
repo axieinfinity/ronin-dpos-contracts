@@ -13,8 +13,6 @@ import {
 } from '../../src/script/proposal';
 import {
   IBridge,
-  MainchainGovernanceAdmin,
-  MainchainGovernanceAdmin__factory,
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
   Staking,
@@ -22,9 +20,8 @@ import {
   TransparentUpgradeableProxyV2__factory,
 } from '../../src/types';
 import { MockBridge__factory } from '../../src/types/factories/MockBridge__factory';
-import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
-import { SignatureStruct } from '../../src/types/RoninGovernanceAdmin';
-import { randomAddress, ZERO_BYTES32 } from '../../src/utils';
+import { ProposalDetailStruct, SignatureStruct } from '../../src/types/RoninGovernanceAdmin';
+import { ZERO_BYTES32 } from '../../src/utils';
 import {
   createManyTrustedOrganizationAddressSets,
   TrustedOrganizationAddressSet,
@@ -39,7 +36,6 @@ let trustedOrgs: TrustedOrganizationAddressSet[];
 
 let bridgeContract: IBridge;
 let stakingContract: Staking;
-let mainchainGovernanceAdmin: MainchainGovernanceAdmin;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 
@@ -67,9 +63,7 @@ describe('Governance Admin test', () => {
     );
     bridgeContract = MockBridge__factory.connect(proxy.address, deployer);
 
-    const { roninGovernanceAdminAddress, mainchainGovernanceAdminAddress, stakingContractAddress } = await initTest(
-      'RoninGovernanceAdminTest'
-    )({
+    const { roninGovernanceAdminAddress, stakingContractAddress } = await initTest('RoninGovernanceAdminTest')({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
@@ -98,10 +92,6 @@ describe('Governance Admin test', () => {
       network.config.chainId!,
       { proposalExpiryDuration },
       ...trustedOrgs.map((_) => _.governor)
-    );
-    mainchainGovernanceAdmin = MainchainGovernanceAdmin__factory.connect(mainchainGovernanceAdminAddress, deployer);
-    await TransparentUpgradeableProxyV2__factory.connect(proxy.address, deployer).changeAdmin(
-      mainchainGovernanceAdmin.address
     );
   });
 
@@ -143,203 +133,6 @@ describe('Governance Admin test', () => {
           .revertedWithCustomError(governanceAdmin, 'ErrInvalidProposalNonce')
           .withArgs(governanceAdmin.interface.getSighash('proposeProposalStructAndCastVotes'));
       });
-
-      it('Should be able to relay to mainchain governance admin contract', async () => {
-        expect(await mainchainGovernanceAdmin.proposalRelayed(proposal.chainId, proposal.nonce)).to.false;
-        await mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures);
-        expect(await mainchainGovernanceAdmin.proposalRelayed(proposal.chainId, proposal.nonce)).to.true;
-      });
-
-      it('Should not be able to relay again', async () => {
-        await expect(mainchainGovernanceAdmin.connect(relayer).relayProposal(proposal, supports, signatures))
-          .revertedWithCustomError(mainchainGovernanceAdmin, 'ErrInvalidProposalNonce')
-          .withArgs(mainchainGovernanceAdmin.interface.getSighash('relayProposal'));
-      });
-    });
-
-    // TODO: move this test suite to BridgeAdmin test
-    describe.skip('Bridge Operator Set Voting', () => {
-      //   before(async () => {
-      //     const latestBOset = await governanceAdmin.lastSyncedBridgeOperatorSetInfo();
-      //     expect(latestBOset.period).eq(0);
-      //     expect(latestBOset.epoch).eq(0);
-      //     expect(latestBOset.operators).deep.equal([]);
-      //   });
-      //   it('Should be able to vote bridge operators', async () => {
-      //     ballot = {
-      //       period: 10,
-      //       epoch: 10_000,
-      //       operators: trustedOrgs
-      //         .slice(0, 2)
-      //         .map((v) => v.bridgeVoter.address)
-      //         .sort(compareAddrs),
-      //     };
-      //     signatures = await Promise.all(
-      //       trustedOrgs.map((g) =>
-      //         g.bridgeVoter
-      //           ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
-      //           .then(mapByteSigToSigStruct)
-      //       )
-      //     );
-      //     expect(
-      //       await governanceAdmin.bridgeOperatorsVoted(ballot.period, ballot.epoch, trustedOrgs[0].bridgeVoter.address)
-      //     ).to.false;
-      //     await governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures);
-      //     expect(
-      //       await governanceAdmin.bridgeOperatorsVoted(ballot.period, ballot.epoch, trustedOrgs[0].bridgeVoter.address)
-      //     ).to.true;
-      //     const latestBOset = await governanceAdmin.lastSyncedBridgeOperatorSetInfo();
-      //     expect(latestBOset.period).eq(ballot.period);
-      //     expect(latestBOset.epoch).eq(ballot.epoch);
-      //     expect(latestBOset.operators).deep.equal(ballot.operators);
-      //   });
-      //   it('Should be able relay vote bridge operators', async () => {
-      //     expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.false;
-      //     const [, signatures] = await governanceAdmin.getBridgeOperatorVotingSignatures(ballot.period, ballot.epoch);
-      //     await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures);
-      //     expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.true;
-      //     const bridgeOperators = await bridgeContract.getBridgeOperators();
-      //     expect([...bridgeOperators].sort(compareAddrs)).deep.equal(ballot.operators);
-      //     const latestBOset = await mainchainGovernanceAdmin.lastSyncedBridgeOperatorSetInfo();
-      //     expect(latestBOset.period).eq(ballot.period);
-      //     expect(latestBOset.epoch).eq(ballot.epoch);
-      //     expect(latestBOset.operators).deep.equal(ballot.operators);
-      //   });
-      //   it('Should not able to relay again', async () => {
-      //     await expect(
-      //       mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures)
-      //     ).revertedWithCustomError(mainchainGovernanceAdmin, 'ErrQueryForOutdatedBridgeOperatorSet');
-      //   });
-      //   it('Should not be able to relay using invalid period/epoch', async () => {
-      //     await expect(
-      //       mainchainGovernanceAdmin
-      //         .connect(relayer)
-      //         .relayBridgeOperators(
-      //           { ...ballot, period: BigNumber.from(ballot.period).add(1), operators: [ethers.constants.AddressZero] },
-      //           signatures
-      //         )
-      //     ).revertedWithCustomError(mainchainGovernanceAdmin, 'ErrQueryForOutdatedBridgeOperatorSet');
-      //   });
-      //   it('Should not be able to use the signatures for another period', async () => {
-      //     const ballot = {
-      //       period: 100,
-      //       epoch: 10_000,
-      //       operators: trustedOrgs.slice(0, 1).map((v) => v.bridgeVoter.address),
-      //     };
-      //     await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWithCustomError(
-      //       governanceAdmin,
-      //       'ErrInvalidSignerOrder'
-      //     );
-      //   });
-      //   it('Should not be able to vote for duplicated operators', async () => {
-      //     const ballot = {
-      //       period: 100,
-      //       epoch: 10_000,
-      //       operators: [ethers.constants.AddressZero, ethers.constants.AddressZero],
-      //     };
-      //     await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWithCustomError(
-      //       governanceAdmin,
-      //       'ErrInvalidOrderOfBridgeOperator'
-      //     );
-      //   });
-      //   it('Should be able to vote for the same operator set again', async () => {
-      //     ballot = {
-      //       ...ballot,
-      //       epoch: BigNumber.from(ballot.epoch).add(1),
-      //     };
-      //     signatures = await Promise.all(
-      //       trustedOrgs.map((g) =>
-      //         g.bridgeVoter
-      //           ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
-      //           .then(mapByteSigToSigStruct)
-      //       )
-      //     );
-      //     await governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures);
-      //   });
-      //   it('Should not be able to relay with the same operator set', async () => {
-      //     await expect(
-      //       mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures)
-      //     ).revertedWithCustomError(mainchainGovernanceAdmin, 'ErrBridgeOperatorSetIsAlreadyVoted');
-      //   });
-      //   it('Should not be able to vote bridge operators with a smaller epoch/period', async () => {
-      //     ballot = {
-      //       period: 100,
-      //       epoch: 100,
-      //       operators: trustedOrgs.map((v) => v.bridgeVoter.address),
-      //     };
-      //     await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWithCustomError(
-      //       governanceAdmin,
-      //       'ErrQueryForOutdatedBridgeOperatorSet'
-      //     );
-      //   });
-      //   it('Should not be able to vote invalid order of bridge operators', async () => {
-      //     const duplicatedNumber = 11;
-      //     ballot = {
-      //       period: 100,
-      //       epoch: 10_001,
-      //       operators: [
-      //         ...trustedOrgs.map((v, i) => (i < duplicatedNumber ? v.bridgeVoter.address : randomAddress())),
-      //         ethers.constants.AddressZero,
-      //       ],
-      //     };
-      //     await expect(governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures)).revertedWithCustomError(
-      //       governanceAdmin,
-      //       'ErrInvalidOrderOfBridgeOperator'
-      //     );
-      //   });
-      //   it('Should be able to vote for a larger number of bridge operators', async () => {
-      //     ballot.operators.pop();
-      //     ballot = {
-      //       ...ballot,
-      //       operators: [ethers.constants.AddressZero, ...ballot.operators.sort(compareAddrs)],
-      //     };
-      //     signatures = await Promise.all(
-      //       trustedOrgs.map((g) =>
-      //         g.bridgeVoter
-      //           ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
-      //           .then(mapByteSigToSigStruct)
-      //       )
-      //     );
-      //     const lastLength = (await governanceAdmin.lastSyncedBridgeOperatorSetInfo()).operators.length;
-      //     await governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures);
-      //     const latestBOset = await governanceAdmin.lastSyncedBridgeOperatorSetInfo();
-      //     expect(lastLength).not.eq(ballot.operators.length);
-      //     expect(latestBOset.period).eq(ballot.period);
-      //     expect(latestBOset.epoch).eq(ballot.epoch);
-      //     expect(latestBOset.operators).deep.equal(ballot.operators);
-      //   });
-      //   it('Should be able relay vote bridge operators', async () => {
-      //     const [, signatures] = await governanceAdmin.getBridgeOperatorVotingSignatures(ballot.period, ballot.epoch);
-      //     await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures);
-      //     const bridgeOperators = await bridgeContract.getBridgeOperators();
-      //     expect([...bridgeOperators].sort(compareAddrs)).deep.equal(ballot.operators);
-      //     const latestBOset = await mainchainGovernanceAdmin.lastSyncedBridgeOperatorSetInfo();
-      //     expect(latestBOset.period).eq(ballot.period);
-      //     expect(latestBOset.epoch).eq(ballot.epoch);
-      //     expect(latestBOset.operators).deep.equal(ballot.operators);
-      //   });
-      //   it('Should be able to vote for a same number of bridge operators', async () => {
-      //     ballot.operators.pop();
-      //     ballot = {
-      //       ...ballot,
-      //       epoch: BigNumber.from(ballot.epoch).add(1),
-      //       operators: [...ballot.operators, randomAddress()].sort(compareAddrs),
-      //     };
-      //     signatures = await Promise.all(
-      //       trustedOrgs.map((g) =>
-      //         g.bridgeVoter
-      //           ._signTypedData(governanceAdminInterface.domain, BridgeOperatorsBallotTypes, ballot)
-      //           .then(mapByteSigToSigStruct)
-      //       )
-      //     );
-      //     const lastLength = (await governanceAdmin.lastSyncedBridgeOperatorSetInfo()).operators.length;
-      //     await governanceAdmin.voteBridgeOperatorsBySignatures(ballot, signatures);
-      //     const latestBOset = await governanceAdmin.lastSyncedBridgeOperatorSetInfo();
-      //     expect(lastLength).eq(ballot.operators.length);
-      //     expect(latestBOset.period).eq(ballot.period);
-      //     expect(latestBOset.epoch).eq(ballot.epoch);
-      //     expect(latestBOset.operators).deep.equal(ballot.operators);
-      //   });
     });
   });
 
@@ -513,16 +306,6 @@ describe('Governance Admin test', () => {
 
       previousProposal = proposal;
       previousHash = getProposalHash(proposal);
-    });
-
-    it('Should the approved proposal can be relayed on mainchain (even when the time of expiry is passed)', async () => {
-      expect(
-        await mainchainGovernanceAdmin
-          .connect(relayer)
-          .relayProposal(previousProposal, previousSupports, previousSignatures)
-      )
-        .emit(mainchainGovernanceAdmin, 'ProposalApproved')
-        .withArgs(previousHash);
     });
 
     it('Should the expired proposal can be manually marked as expired', async () => {

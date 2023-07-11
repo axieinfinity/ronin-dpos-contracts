@@ -228,36 +228,33 @@ export const initTest = (id: string) =>
       'StakingProxy',
       'MaintenanceProxy',
       'StakingVestingProxy',
-      // 'MainchainGovernanceAdmin',
-      // 'MainchainRoninTrustedOrganizationProxy',
+      'MainchainBridgeManager',
       'RoninBridgeManager',
       id,
     ]);
 
     const roninGovernanceAdminDeployment = await deployments.get('RoninGovernanceAdmin');
-    // const mainchainGovernanceAdminDeployment = await deployments.get('MainchainGovernanceAdmin');
     const maintenanceContractDeployment = await deployments.get('MaintenanceProxy');
     const roninTrustedOrganizationDeployment = await deployments.get('RoninTrustedOrganizationProxy');
-    // const mainchainRoninTrustedOrganizationDeployment = await deployments.get('MainchainRoninTrustedOrganizationProxy');
     const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
     const stakingContractDeployment = await deployments.get('StakingProxy');
     const stakingVestingContractDeployment = await deployments.get('StakingVestingProxy');
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
     const bridgeTrackingDeployment = await deployments.get('BridgeTrackingProxy');
     const roninBridgeManagerDeployment = await deployments.get('RoninBridgeManager');
+    const mainchainBridgeManagerDeployment = await deployments.get('MainchainBridgeManager');
     await EpochController.setTimestampToPeriodEnding();
 
     return {
       roninGovernanceAdminAddress: roninGovernanceAdminDeployment.address,
-      // mainchainGovernanceAdminAddress: mainchainGovernanceAdminDeployment.address,
       maintenanceContractAddress: maintenanceContractDeployment.address,
       roninTrustedOrganizationAddress: roninTrustedOrganizationDeployment.address,
-      // mainchainRoninTrustedOrganizationAddress: mainchainRoninTrustedOrganizationDeployment.address,
       slashContractAddress: slashContractDeployment.address,
       stakingContractAddress: stakingContractDeployment.address,
       stakingVestingContractAddress: stakingVestingContractDeployment.address,
       validatorContractAddress: validatorContractDeployment.address,
       bridgeTrackingAddress: bridgeTrackingDeployment.address,
       roninBridgeManagerAddress: roninBridgeManagerDeployment.address,
+      mainchainBridgeManagerAddress: mainchainBridgeManagerDeployment.address,
     };
   }, id);
