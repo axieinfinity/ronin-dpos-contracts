@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { IBridgeManagerCallback, EnumerableSet, BridgeManagerCallback } from "./BridgeManagerCallback.sol";
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { RONTransferHelper } from "../../extensions/RONTransferHelper.sol";
 import { IQuorum } from "../../interfaces/IQuorum.sol";
@@ -11,9 +11,9 @@ import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { RoleAccess } from "../../utils/RoleAccess.sol";
 import { TUint256 } from "../../types/Types.sol";
-import { ErrOnlySelfCall, ErrInvalidArguments, ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized, ErrNonpayableAddress } from "../../utils/CommonErrors.sol";
+import { ErrInvalidArguments, ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized, ErrNonpayableAddress } from "../../utils/CommonErrors.sol";
 
-abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts, RONTransferHelper {
+abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallback, HasContracts, RONTransferHelper {
   using SafeCast for uint256;
   using AddressArrayUtils for address[];
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -61,11 +61,6 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts, RONTra
    * @dev The domain separator used for computing hash digests in the contract.
    */
   bytes32 public immutable DOMAIN_SEPARATOR;
-
-  modifier onlySelfCall() {
-    _requireSelfCall();
-    _;
-  }
 
   /**
    * @dev Modifier to ensure that the elements in the `arr` array are non-duplicates.
@@ -152,6 +147,11 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts, RONTra
 
     bool[] memory statuses = new bool[](1);
     statuses[0] = updated;
+
+    _notifyRegisters(
+      IBridgeManagerCallback.onBridgeOperatorUpdated.selector,
+      abi.encode(currentBridgeOperator, newBridgeOperator, updated)
+    );
 
     emit BridgeOperatorUpdated(msg.sender, currentBridgeOperator, newBridgeOperator);
   }
@@ -337,6 +337,8 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts, RONTra
 
     TOTAL_WEIGHTS_SLOT.addAssign(accumulatedWeight);
 
+    _notifyRegisters(IBridgeManagerCallback.onBridgeOperatorsAdded.selector, abi.encode(bridgeOperators, addeds));
+
     emit BridgeOperatorsAdded(addeds, voteWeights, governors, bridgeOperators);
   }
 
@@ -390,6 +392,8 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts, RONTra
     }
 
     TOTAL_WEIGHTS_SLOT.subAssign(accumulatedWeight);
+
+    _notifyRegisters(IBridgeManagerCallback.onBridgeOperatorsRemoved.selector, abi.encode(bridgeOperators, removeds));
 
     emit BridgeOperatorsRemoved(removeds, bridgeOperators);
   }
@@ -497,17 +501,5 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts, RONTra
    */
   function _checkPayableAddress(address addr) internal {
     if (!_sendRON(payable(addr), 0)) revert ErrNonpayableAddress(addr);
-  }
-
-  /**
-   * @dev Internal method to check method caller.
-   *
-   * Requirements:
-   *
-   * - The method caller must be this contract.
-   *
-   */
-  function _requireSelfCall() internal view virtual {
-    if (msg.sender != address(this)) revert ErrOnlySelfCall(msg.sig);
   }
 }

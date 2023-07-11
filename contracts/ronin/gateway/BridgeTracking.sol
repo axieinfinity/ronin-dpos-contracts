@@ -5,6 +5,7 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../interfaces/IBridgeTracking.sol";
+import { IBridgeSlashing } from "../../interfaces/IBridgeSlashing.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import { HasBridgeDeprecated, HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
@@ -43,6 +44,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   mapping(uint256 => PeriodVotingMetric) internal _periodMetric;
   /// @dev Mapping from vote kind => receipt id => receipt stats
   mapping(VoteKind => mapping(uint256 => ReceiptTrackingInfo)) internal _receiptTrackingInfo;
+  uint256 internal _trackedPeriod;
 
   modifier skipOnUnstarted() {
     _skipOnUnstarted();
@@ -88,12 +90,13 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   function initializeV3(address _bridgeManager, address _bridgeSlash, address _bridgeReward) external reinitializer(3) {
     _setContract(ContractType.BRIDGE_SLASH, _bridgeSlash);
     _setContract(ContractType.BRIDGE_REWARD, _bridgeReward);
+    _setContract(ContractType.BRIDGE_MANAGER, _bridgeManager);
   }
 
   /**
    * @inheritdoc IBridgeTracking
    */
-  function totalVotes(uint256 _period) external view override returns (uint256 _totalVotes) {
+  function totalVotes(uint256 _period) public view override returns (uint256 _totalVotes) {
     _totalVotes = _periodMetric[_period].totalRequests;
     if (_isBufferCountedForPeriod(_period)) {
       _totalVotes += _bufferMetric.requests.length;
@@ -103,7 +106,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   /**
    * @inheritdoc IBridgeTracking
    */
-  function totalBallots(uint256 _period) external view override returns (uint256 _totalBallots) {
+  function totalBallots(uint256 _period) public view override returns (uint256 _totalBallots) {
     _totalBallots = _periodMetric[_period].totalBallots;
     if (_isBufferCountedForPeriod(_period)) {
       _totalBallots += _bufferMetric.data.totalBallots;
@@ -116,11 +119,19 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   function getManyTotalBallots(
     uint256 _period,
     address[] calldata _bridgeOperators
-  ) external view override returns (uint256[] memory _res) {
-    _res = new uint256[](_bridgeOperators.length);
-    bool _isBufferCounted = _isBufferCountedForPeriod(_period);
-    for (uint _i = 0; _i < _bridgeOperators.length; ) {
-      _res[_i] = _totalBallotsOf(_period, _bridgeOperators[_i], _isBufferCounted);
+  ) public view override returns (uint256[] memory _res) {
+    _res = _getManyTotalBallots(_period, _bridgeOperators);
+  }
+
+  function _getManyTotalBallots(
+    uint256 period,
+    address[] memory bridgeOperators
+  ) internal view returns (uint256[] memory res) {
+    uint256 length = bridgeOperators.length;
+    res = new uint256[](length);
+    bool isBufferCounted = _isBufferCountedForPeriod(period);
+    for (uint _i = 0; _i < length; ) {
+      res[_i] = _totalBallotsOf(period, bridgeOperators[_i], isBufferCounted);
 
       unchecked {
         ++_i;
@@ -187,6 +198,11 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
     }
 
     _increaseBallot(_kind, _requestId, _operator, _period);
+
+    if (_trackedPeriod < _period) {
+      IBridgeSlashing(getContract(ContractType.BRIDGE_SLASH)).slashUnavailability(_trackedPeriod);
+      _trackedPeriod = _period;
+    }
   }
 
   /**
@@ -200,12 +216,12 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
 
     _receiptInfo.voted[_operator] = true;
 
-    uint256 _trackedPeriod = _receiptInfo.trackedPeriod;
+    uint256 trackedPeriod = _receiptInfo.trackedPeriod;
 
     // Do not increase ballot for receipt that is neither in the buffer, nor in the most current tracked period.
     // If the receipt is not tracked in a period, increase metric in buffer.
     unchecked {
-      if (_trackedPeriod == 0) {
+      if (trackedPeriod == 0) {
         if (_bufferMetric.data.totalBallotsOf[_operator] == 0) {
           _bufferMetric.data.voters.push(_operator);
         }
@@ -213,8 +229,8 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
         _bufferMetric.data.totalBallotsOf[_operator]++;
       }
       // If the receipt is tracked in the most current tracked period, increase metric in the period.
-      else if (_trackedPeriod == _currentPeriod) {
-        PeriodVotingMetric storage _metric = _periodMetric[_trackedPeriod];
+      else if (trackedPeriod == _currentPeriod) {
+        PeriodVotingMetric storage _metric = _periodMetric[trackedPeriod];
         _metric.totalBallots++;
         _metric.totalBallotsOf[_operator]++;
       }
@@ -245,11 +261,11 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
     IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     uint256 _currentEpoch = _validatorContract.epochOf(block.number);
     if (_bufferMetric.lastEpoch < _currentEpoch) {
-      (, uint256 _trackedPeriod) = _validatorContract.tryGetPeriodOfEpoch(_bufferMetric.lastEpoch + 1);
+      (, uint256 trackedPeriod) = _validatorContract.tryGetPeriodOfEpoch(_bufferMetric.lastEpoch + 1);
       _bufferMetric.lastEpoch = _currentEpoch;
 
       // Copy numbers of totals
-      PeriodVotingMetric storage _metric = _periodMetric[_trackedPeriod];
+      PeriodVotingMetric storage _metric = _periodMetric[trackedPeriod];
       _metric.totalRequests += _bufferMetric.requests.length;
       _metric.totalBallots += _bufferMetric.data.totalBallots;
 
