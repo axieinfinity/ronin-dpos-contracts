@@ -4,15 +4,16 @@ pragma solidity ^0.8.0;
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
+import { RONTransferHelper } from "../../extensions/RONTransferHelper.sol";
 import { IQuorum } from "../../interfaces/IQuorum.sol";
 import { IBridgeManager } from "../../interfaces/IBridgeManager.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { RoleAccess } from "../../utils/RoleAccess.sol";
 import { TUint256 } from "../../types/Types.sol";
-import { ErrOnlySelfCall, ErrInvalidArguments, ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized } from "../../utils/CommonErrors.sol";
+import { ErrOnlySelfCall, ErrInvalidArguments, ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized, ErrNonpayableAddress } from "../../utils/CommonErrors.sol";
 
-abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
+abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts, RONTransferHelper {
   using SafeCast for uint256;
   using AddressArrayUtils for address[];
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -310,6 +311,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
 
         _checkNonZeroAddress(governor);
         _checkNonZeroAddress(bridgeOperator);
+        _checkPayableAddress(bridgeOperator);
 
         addeds[i] = bridgeOperatorSet.add(bridgeOperator);
 
@@ -487,6 +489,14 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, HasContracts {
    */
   function _checkNonZeroAddress(address addr) internal pure {
     if (addr == address(0)) revert ErrZeroAddress(msg.sig);
+  }
+
+  /**
+   * @dev Checks if an address non-payable and reverts if it is.
+   * @param addr The address to check.
+   */
+  function _checkPayableAddress(address addr) internal {
+    if (!_sendRON(payable(addr), 0)) revert ErrNonpayableAddress(addr);
   }
 
   /**

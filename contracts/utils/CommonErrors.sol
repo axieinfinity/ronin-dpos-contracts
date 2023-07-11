@@ -147,3 +147,8 @@ error ErrInvalidReceiptKind();
  * @dev Error indicating that a receipt is invalid.
  */
 error ErrInvalidReceipt();
+
+/**
+ * @dev Error indicating that an address is not payable.
+ */
+error ErrNonpayableAddress(address);
