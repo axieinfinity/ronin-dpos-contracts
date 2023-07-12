@@ -19,7 +19,7 @@ interface IBridgeSlash {
    * @dev Struct representing the status of a bridge operator.
    */
   struct BridgeSlashInfo {
-    uint64 penalizedDuration;
+    uint64 penaltyDuration;
     uint192 newlyAddedAtPeriod;
   }
 
@@ -43,16 +43,16 @@ interface IBridgeSlash {
     uint256 period
   ) external;
 
-  function TIER_1_PENALIZE_DURATION() external view returns (uint256);
+  function TIER_1_PENALTY_DURATION() external view returns (uint256);
 
-  function TIER_2_PENALIZE_DURATION() external view returns (uint256);
+  function TIER_2_PENALTY_DURATION() external view returns (uint256);
 
-  function REMOVE_DURATION_THRESHOLD() external view returns (uint256);
+  function REMOVING_DURATION_THRESHOLD() external view returns (uint256);
 
   /**
    * @dev Returns the penalize durations for the specified bridge operators.
    * @param bridgeOperators The addresses of the bridge operators.
    * @return durations The penalized durations for the bridge operators.
    */
-  function penalizeDurationOf(address[] calldata bridgeOperators) external returns (uint256[] memory durations);
+  function penaltyDurationOf(address[] calldata bridgeOperators) external returns (uint256[] memory durations);
 }

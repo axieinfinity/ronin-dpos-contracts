@@ -17,11 +17,11 @@ import { IdentityGuard } from "../../utils/IdentityGuard.sol";
  */
 contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Initializable, HasContracts {
   /// @inheritdoc IBridgeSlash
-  uint256 public constant TIER_1_PENALIZE_DURATION = 1 days;
+  uint256 public constant TIER_1_PENALTY_DURATION = 1 days;
   /// @inheritdoc IBridgeSlash
-  uint256 public constant TIER_2_PENALIZE_DURATION = 5 days;
+  uint256 public constant TIER_2_PENALTY_DURATION = 5 days;
   /// @inheritdoc IBridgeSlash
-  uint256 public constant REMOVE_DURATION_THRESHOLD = 30 days;
+  uint256 public constant REMOVING_DURATION_THRESHOLD = 30 days;
 
   /// @dev Tier 1 slashing threshold ratio is 10%
   uint256 private constant TIER_1_THRESHOLD = 10_00;
@@ -111,11 +111,11 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     address[] memory bridgeOperatorsToRemoved = new address[](allBridgeOperators.length);
     uint256 removeLength;
     {
-      uint256[] memory penalizedDurations = _getPenalizedDurations();
+      uint256[] memory penaltyDurations = _getPenaltyDurations();
       mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
 
       BridgeSlashInfo memory status;
-      uint256 penalizedDuration;
+      uint256 penaltyDuration;
       address bridgeOperator;
       Tier tier;
 
@@ -125,18 +125,18 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
 
         if (status.newlyAddedAtPeriod < period) {
           tier = _getSlashTier(ballots[i], totalBallotsForPeriod);
-          penalizedDuration = status.penalizedDuration + penalizedDurations[uint8(tier)];
+          penaltyDuration = status.penaltyDuration + penaltyDurations[uint8(tier)];
 
-          if (penalizedDuration >= REMOVE_DURATION_THRESHOLD) {
+          if (penaltyDuration >= REMOVING_DURATION_THRESHOLD) {
             bridgeOperatorsToRemoved[removeLength] = bridgeOperator;
             ++removeLength;
           }
 
-          status.penalizedDuration = uint64(penalizedDuration);
+          status.penaltyDuration = uint64(penaltyDuration);
           _bridgeSlashInfos[bridgeOperator] = status;
 
           if (tier != Tier.Tier0) {
-            emit Slashed(tier, bridgeOperator, period, block.timestamp + penalizedDuration);
+            emit Slashed(tier, bridgeOperator, period, block.timestamp + penaltyDuration);
           }
         }
 
@@ -157,12 +157,12 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   /**
    * @inheritdoc IBridgeSlash
    */
-  function penalizeDurationOf(address[] calldata bridgeOperators) external view returns (uint256[] memory durations) {
+  function penaltyDurationOf(address[] calldata bridgeOperators) external view returns (uint256[] memory durations) {
     uint256 length = bridgeOperators.length;
     durations = new uint256[](length);
     mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
     for (uint256 i; i < length; ) {
-      durations[i] = _bridgeSlashInfos[bridgeOperators[i]].penalizedDuration;
+      durations[i] = _bridgeSlashInfos[bridgeOperators[i]].penaltyDuration;
       unchecked {
         ++i;
       }
@@ -177,7 +177,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
    */
   function _getSlashTier(uint256 ballot, uint256 totalBallots) internal pure virtual returns (Tier tier) {
     uint256 ratio = (ballot * PERCENTAGE_FRACTION) / totalBallots;
-    tier = ratio > TIER_2_PENALIZE_DURATION ? Tier.Tier2 : ratio > TIER_1_PENALIZE_DURATION ? Tier.Tier1 : Tier.Tier0;
+    tier = ratio > TIER_2_PENALTY_DURATION ? Tier.Tier2 : ratio > TIER_1_PENALTY_DURATION ? Tier.Tier1 : Tier.Tier0;
   }
 
   /**
@@ -194,10 +194,10 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     }
   }
 
-  function _getPenalizedDurations() internal pure virtual returns (uint256[] memory penalizedDurations) {
-    penalizedDurations = new uint256[](3);
+  function _getPenaltyDurations() internal pure virtual returns (uint256[] memory penaltyDurations) {
+    penaltyDurations = new uint256[](3);
     // reserve index 0
-    penalizedDurations[uint8(Tier.Tier1)] = TIER_1_PENALIZE_DURATION;
-    penalizedDurations[uint8(Tier.Tier2)] = TIER_2_PENALIZE_DURATION;
+    penaltyDurations[uint8(Tier.Tier1)] = TIER_1_PENALTY_DURATION;
+    penaltyDurations[uint8(Tier.Tier2)] = TIER_2_PENALTY_DURATION;
   }
 }
