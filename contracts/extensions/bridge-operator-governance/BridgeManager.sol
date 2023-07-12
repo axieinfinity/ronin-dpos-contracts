@@ -6,7 +6,7 @@ import { IBridgeManagerCallback, EnumerableSet, BridgeManagerCallback } from "./
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { RONTransferHelper } from "../../extensions/RONTransferHelper.sol";
 import { IQuorum } from "../../interfaces/IQuorum.sol";
-import { IBridgeManager } from "../../interfaces/IBridgeManager.sol";
+import { IBridgeManager } from "../../interfaces/bridge/IBridgeManager.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { RoleAccess } from "../../utils/RoleAccess.sol";

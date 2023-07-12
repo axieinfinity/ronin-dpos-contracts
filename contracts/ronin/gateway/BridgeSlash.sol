@@ -3,10 +3,10 @@ pragma solidity ^0.8.17;
 
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
-import { IBridgeSlash } from "../../interfaces/IBridgeSlash.sol";
-import { IBridgeManager } from "../../interfaces/IBridgeManager.sol";
-import { IBridgeManagerCallback } from "../../interfaces/IBridgeManagerCallback.sol";
-import { IBridgeTracking } from "../../interfaces/IBridgeTracking.sol";
+import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
+import { IBridgeManager } from "../../interfaces/bridge/IBridgeManager.sol";
+import { IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
+import { IBridgeTracking } from "../../interfaces/bridge/IBridgeTracking.sol";
 import { IRoninValidatorSet } from "../../interfaces/validator/IRoninValidatorSet.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { IdentityGuard } from "../../utils/IdentityGuard.sol";
@@ -100,22 +100,15 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   /**
    * @inheritdoc IBridgeSlash
    */
-  function slashUnavailability(uint256 period) external onlyContract(ContractType.BRIDGE_TRACKING) {
+  function execSlashBridgeOperators(
+    address[] memory allBridgeOperators,
+    uint256[] memory ballots,
+    uint256 totalBallotsForPeriod,
+    uint256 period
+  ) external onlyContract(ContractType.BRIDGE_TRACKING) {
     IBridgeManager bridgeManager = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER));
 
-    uint256 totalBallotsForPeriod;
-    uint256[] memory ballots;
-    address[] memory allBridgeOperators;
-    // get rid of stack too deep
-    {
-      allBridgeOperators = bridgeManager.getBridgeOperators();
-      IBridgeTracking bridgeTracker = IBridgeTracking(msg.sender);
-      totalBallotsForPeriod = bridgeTracker.totalBallots(period);
-      ballots = bridgeTracker.getManyTotalBallots(period, allBridgeOperators);
-    }
-
-    uint256 length = allBridgeOperators.length;
-    address[] memory bridgeOperatorsToRemoved = new address[](length);
+    address[] memory bridgeOperatorsToRemoved = new address[](allBridgeOperators.length);
     uint256 removeLength;
     {
       uint256[] memory penalizedDurations = _getPenalizedDurations();
@@ -126,7 +119,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
       address bridgeOperator;
       Tier tier;
 
-      for (uint256 i; i < length; ) {
+      for (uint256 i; i < allBridgeOperators.length; ) {
         bridgeOperator = allBridgeOperators[i];
         status = _bridgeSlashInfos[bridgeOperator];
 

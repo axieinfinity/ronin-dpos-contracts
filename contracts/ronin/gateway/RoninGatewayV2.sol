@@ -8,13 +8,13 @@ import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/MinimumWithdrawal.sol";
 import "../../interfaces/IERC20Mintable.sol";
 import "../../interfaces/IERC721Mintable.sol";
-import "../../interfaces/IBridgeTracking.sol";
+import "../../interfaces/bridge/IBridgeTracking.sol";
 import "../../interfaces/IRoninGatewayV2.sol";
 import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../libraries/IsolatedGovernance.sol";
-import "../../interfaces/IBridgeManager.sol";
+import "../../interfaces/bridge/IBridgeManager.sol";
 
 contract RoninGatewayV2 is
   GatewayV2,

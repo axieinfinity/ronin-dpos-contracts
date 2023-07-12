@@ -10,6 +10,7 @@ import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../extensions/collections/HasContracts.sol";
 
+// TODO: remove this from slashing logic of consensus contract
 abstract contract SlashBridgeVoting is
   ISlashBridgeVoting,
   HasContracts,

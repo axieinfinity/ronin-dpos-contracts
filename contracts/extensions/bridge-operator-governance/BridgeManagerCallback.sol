@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import { IBridgeManagerCallback } from "../../interfaces/IBridgeManagerCallback.sol";
+import { IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { IdentityGuard } from "../../utils/IdentityGuard.sol";
 

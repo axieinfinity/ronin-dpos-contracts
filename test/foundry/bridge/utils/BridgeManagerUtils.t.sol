@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import { Test } from "forge-std/Test.sol";
 import { Sorting } from "@ronin/contracts/mocks/libraries/Sorting.sol";
 import { AddressArrayUtils } from "@ronin/contracts/libraries/AddressArrayUtils.sol";
-import { IBridgeManager } from "@ronin/contracts/interfaces/IBridgeManager.sol";
+import { IBridgeManager } from "@ronin/contracts/interfaces/bridge/IBridgeManager.sol";
 
 abstract contract BridgeManagerUtils is Test {
   using Sorting for uint256[];

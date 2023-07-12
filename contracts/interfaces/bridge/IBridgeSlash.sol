@@ -36,7 +36,12 @@ interface IBridgeSlash {
    * @dev Slashes the unavailability of bridge operators during a specific period.
    * @param period The period to slash the bridge operators for.
    */
-  function slashUnavailability(uint256 period) external;
+  function execSlashBridgeOperators(
+    address[] calldata operators,
+    uint256[] calldata ballots,
+    uint256 totalBallotsForPeriod,
+    uint256 period
+  ) external;
 
   function TIER_1_PENALIZE_DURATION() external view returns (uint256);
 

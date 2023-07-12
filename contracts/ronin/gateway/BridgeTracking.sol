@@ -4,8 +4,10 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../extensions/collections/HasContracts.sol";
-import "../../interfaces/IBridgeTracking.sol";
-import { IBridgeSlash } from "../../interfaces/IBridgeSlash.sol";
+import "../../interfaces/bridge/IBridgeTracking.sol";
+import { IBridgeManager } from "../../interfaces/bridge/IBridgeManager.sol";
+import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
+import { IBridgeReward } from "../../interfaces/bridge/IBridgeReward.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import { HasBridgeDeprecated, HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
@@ -119,7 +121,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   function getManyTotalBallots(
     uint256 _period,
     address[] calldata _bridgeOperators
-  ) public view override returns (uint256[] memory _res) {
+  ) external view override returns (uint256[] memory _res) {
     _res = _getManyTotalBallots(_period, _bridgeOperators);
   }
 
@@ -199,8 +201,27 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
 
     _increaseBallot(_kind, _requestId, _operator, _period);
 
+    // When switching to new period, wrap up vote info, then slash and distribute reward accordingly.
     if (_trackedPeriod < _period) {
-      IBridgeSlash(getContract(ContractType.BRIDGE_SLASH)).slashUnavailability(_trackedPeriod);
+      IBridgeManager bridgeManager = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER));
+      address[] memory allBridgeOperators = bridgeManager.getBridgeOperators();
+      uint256 totalBallotsForPeriod = totalBallots(_trackedPeriod);
+      uint256[] memory ballots = _getManyTotalBallots(_trackedPeriod, allBridgeOperators);
+
+      IBridgeSlash(getContract(ContractType.BRIDGE_SLASH)).execSlashBridgeOperators(
+        allBridgeOperators,
+        ballots,
+        totalBallotsForPeriod,
+        _trackedPeriod
+      );
+
+      IBridgeReward(getContract(ContractType.BRIDGE_REWARD)).execSyncReward(
+        allBridgeOperators,
+        ballots,
+        totalBallotsForPeriod,
+        _trackedPeriod
+      );
+
       _trackedPeriod = _period;
     }
   }

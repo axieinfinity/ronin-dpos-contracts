@@ -5,23 +5,10 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/RONTransferHelper.sol";
+import { IBridgeReward } from "../../interfaces/bridge/IBridgeReward.sol";
 import "../../utils/CommonErrors.sol";
 
-contract BridgeReward is HasContracts, Initializable {
-  struct BridgeRewardInfo {
-    uint256 claimed;
-    uint256 slashed;
-  }
-
-  /// @dev Event emitted when the reward per period config is updated.
-  event UpdatedRewardPerPeriod(uint256 newRewardPerPeriod);
-  /// @dev Event emitted when the reward of the `operator` is scattered with `amount`.
-  event BridgeRewardScattered(address operator, uint256 amount);
-  /// @dev Event emitted when the reward of the `operator` is slashed with `amount`.
-  event BridgeRewardSlashed(address operator, uint256 amount);
-  /// @dev Event emitted when the reward of the `operator` is scattered with `amount` but failed to transfer.
-  event BridgeRewardScatterFailed(address operator, uint256 amount);
-
+contract BridgeReward is IBridgeReward, HasContracts, Initializable {
   receive() external payable {}
 
   mapping(address => BridgeRewardInfo) internal _rewardInfo;
@@ -49,7 +36,10 @@ contract BridgeReward is HasContracts, Initializable {
     uint256[] calldata voteCountList,
     uint256 totalVoteCount,
     uint256 period
-  ) external onlyContract(ContractType.BRIDGE_TRACKING) {
+  )
+    external
+    onlyContract(ContractType.BRIDGE_TRACKING) // TODO: allow bridge or/and governor call this method
+  {
     if (period <= _latestRewardedPeriod) revert ErrPeriodAlreadyProcessed(period, _latestRewardedPeriod);
 
     uint256 rewardPerVote = _rewardPerPeriod / totalVoteCount;
@@ -93,5 +83,7 @@ contract BridgeReward is HasContracts, Initializable {
     emit UpdatedRewardPerPeriod(rewardPerPeriod);
   }
 
-  function _getSlashInfo(address[] memory operatorList) internal returns (bool[] memory _slashed) {}
+  function _getSlashInfo(address[] memory operatorList) internal returns (bool[] memory _slashed) {
+    // TODO: call to slash
+  }
 }

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.9;
 
-import "../interfaces/IBridgeTracking.sol";
+import "../interfaces/bridge/IBridgeTracking.sol";
 import "../extensions/collections/HasContracts.sol";
 import { HasBridgeTrackingDeprecated } from "../utils/DeprecatedSlots.sol";
 
