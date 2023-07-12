@@ -8,6 +8,7 @@ import { IBridgeManager } from "../../interfaces/bridge/IBridgeManager.sol";
 import { IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
 import { IBridgeTracking } from "../../interfaces/bridge/IBridgeTracking.sol";
 import { IRoninValidatorSet } from "../../interfaces/validator/IRoninValidatorSet.sol";
+import { Math } from "../../libraries/Math.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { IdentityGuard } from "../../utils/IdentityGuard.sol";
 
@@ -115,7 +116,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
       mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
 
       BridgeSlashInfo memory status;
-      uint256 penaltyDuration;
+      uint256 slashUntilPeriodNumber;
       address bridgeOperator;
       Tier tier;
 
@@ -125,18 +126,18 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
 
         if (status.newlyAddedAtPeriod < period) {
           tier = _getSlashTier(ballots[i], totalBallotsForPeriod);
-          penaltyDuration = status.penaltyDuration + penaltyDurations[uint8(tier)];
+          slashUntilPeriodNumber = Math.max(period, status.slashUntilPeriodNumber) + penaltyDurations[uint8(tier)];
 
-          if (penaltyDuration >= REMOVING_DURATION_THRESHOLD) {
+          if (slashUntilPeriodNumber >= REMOVING_DURATION_THRESHOLD) {
             bridgeOperatorsToRemoved[removeLength] = bridgeOperator;
             ++removeLength;
           }
 
-          status.penaltyDuration = uint64(penaltyDuration);
+          status.slashUntilPeriodNumber = uint64(slashUntilPeriodNumber);
           _bridgeSlashInfos[bridgeOperator] = status;
 
           if (tier != Tier.Tier0) {
-            emit Slashed(tier, bridgeOperator, period, block.timestamp + penaltyDuration);
+            emit Slashed(tier, bridgeOperator, period, slashUntilPeriodNumber);
           }
         }
 
@@ -162,7 +163,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     durations = new uint256[](length);
     mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
     for (uint256 i; i < length; ) {
-      durations[i] = _bridgeSlashInfos[bridgeOperators[i]].penaltyDuration;
+      durations[i] = _bridgeSlashInfos[bridgeOperators[i]].slashUntilPeriodNumber;
       unchecked {
         ++i;
       }
