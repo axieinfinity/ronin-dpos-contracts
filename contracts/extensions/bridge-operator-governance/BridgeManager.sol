@@ -125,7 +125,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @inheritdoc IBridgeManager
    */
   function updateBridgeOperator(address newBridgeOperator) external returns (bool updated) {
-    _checkNonZeroAddress(newBridgeOperator);
+    _requireNonZeroAddress(newBridgeOperator);
 
     mapping(address => address) storage _governorOf = _getGovernorOf();
     EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
@@ -309,9 +309,9 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
         governor = governors[i];
         bridgeOperator = bridgeOperators[i];
 
-        _checkNonZeroAddress(governor);
-        _checkNonZeroAddress(bridgeOperator);
-        _checkPayableAddress(bridgeOperator);
+        _requireNonZeroAddress(governor);
+        _requireNonZeroAddress(bridgeOperator);
+        _requirePayableAddress(bridgeOperator);
 
         addeds[i] = bridgeOperatorSet.add(bridgeOperator);
 
@@ -372,8 +372,8 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
       bridgeOperator = bridgeOperators[i];
       governor = _governorOf[bridgeOperator];
 
-      _checkNonZeroAddress(governor);
-      _checkNonZeroAddress(bridgeOperator);
+      _requireNonZeroAddress(governor);
+      _requireNonZeroAddress(bridgeOperator);
 
       bridgeOperatorInfo = _governorToBridgeOperatorInfo[governor];
       if (bridgeOperatorInfo.addr != bridgeOperator) revert ErrInvalidArguments(msg.sig);
@@ -485,21 +485,5 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    */
   function _checkDuplicate(address[] memory arr) internal pure {
     if (arr.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
-  }
-
-  /**
-   * @dev Checks if an address is zero and reverts if it is.
-   * @param addr The address to check.
-   */
-  function _checkNonZeroAddress(address addr) internal pure {
-    if (addr == address(0)) revert ErrZeroAddress(msg.sig);
-  }
-
-  /**
-   * @dev Checks if an address non-payable and reverts if it is.
-   * @param addr The address to check.
-   */
-  function _checkPayableAddress(address addr) internal {
-    if (!_sendRON(payable(addr), 0)) revert ErrNonpayableAddress(addr);
   }
 }

@@ -2,19 +2,20 @@
 pragma solidity ^0.8.17;
 
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import { HasContracts } from "../../extensions/collections/HasContracts.sol";
+import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { IBridgeSlashing } from "../../interfaces/IBridgeSlashing.sol";
 import { IBridgeManager } from "../../interfaces/IBridgeManager.sol";
 import { IBridgeManagerCallback } from "../../interfaces/IBridgeManagerCallback.sol";
 import { IBridgeTracking } from "../../interfaces/IBridgeTracking.sol";
 import { IRoninValidatorSet } from "../../interfaces/validator/IRoninValidatorSet.sol";
 import { ContractType } from "../../utils/ContractType.sol";
+import { IdentityGuard } from "../../utils/IdentityGuard.sol";
 
 /**
  * @title SlashBridgeIndicator
  * @dev A contract that implements slashing functionality for bridge operators based on their availability.
  */
-contract SlashBridgeIndicator is IBridgeSlashing, IBridgeManagerCallback, Initializable, HasContracts {
+contract SlashBridgeIndicator is IBridgeSlashing, IBridgeManagerCallback, IdentityGuard, Initializable, HasContracts {
   /// @inheritdoc IBridgeSlashing
   uint256 public constant TIER_1_PENALIZE_DURATION = 1 days;
   /// @inheritdoc IBridgeSlashing
@@ -40,6 +41,14 @@ contract SlashBridgeIndicator is IBridgeSlashing, IBridgeManagerCallback, Initia
     _setContract(ContractType.VALIDATOR, validatorContract);
     _setContract(ContractType.BRIDGE_MANAGER, bridgeManagerContract);
     _setContract(ContractType.BRIDGE_TRACKING, bridgeTrackingContract);
+  }
+
+  /**
+   * @inheritdoc IHasContracts
+   */
+  function setContract(ContractType contractType, address addr) external override onlySelfCall {
+    _requireHasCode(addr);
+    _setContract(contractType, addr);
   }
 
   /**

@@ -4,13 +4,13 @@ pragma solidity ^0.8.0;
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { IBridgeManagerCallback } from "../../interfaces/IBridgeManagerCallback.sol";
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
-import { ErrOnlySelfCall } from "../../utils/CommonErrors.sol";
+import { IdentityGuard } from "../../utils/IdentityGuard.sol";
 
 /**
  * @title BridgeManagerCallback
  * @dev A contract that manages callback registrations and execution for a bridge.
  */
-abstract contract BridgeManagerCallback {
+abstract contract BridgeManagerCallback is IdentityGuard {
   using ErrorHandler for bool;
   using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -19,15 +19,6 @@ abstract contract BridgeManagerCallback {
    * @dev Value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.callbackRegisters.slot") - 1.
    */
   bytes32 private constant CALLBACK_REGISTERS_SLOT = 0x5da136eb38f8d8e354915fc8a767c0dc81d49de5fb65d5477122a82ddd976240;
-
-  /**
-   * @dev Modifier to restrict functions to only be called by this contract.
-   * @dev Reverts if the caller is not this contract.
-   */
-  modifier onlySelfCall() {
-    _requireSelfCall();
-    _;
-  }
 
   /**
    * @dev Registers multiple callbacks with the bridge.
@@ -111,13 +102,5 @@ abstract contract BridgeManagerCallback {
     assembly {
       callbackRegisters_.slot := CALLBACK_REGISTERS_SLOT
     }
-  }
-
-  /**
-   * @dev Internal method to check the method caller.
-   * @dev Reverts if the method caller is not this contract.
-   */
-  function _requireSelfCall() internal view virtual {
-    if (msg.sender != address(this)) revert ErrOnlySelfCall(msg.sig);
   }
 }

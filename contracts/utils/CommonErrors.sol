@@ -5,6 +5,10 @@ import { ContractType } from "./ContractType.sol";
 import { RoleAccess } from "./RoleAccess.sol";
 
 /**
+ * @dev Error of set to non-contract.
+ */
+error ErrZeroCodeContract(address addr);
+/**
  * @dev Error indicating that arguments are invalid.
  */
 error ErrInvalidArguments(bytes4 msgSig);

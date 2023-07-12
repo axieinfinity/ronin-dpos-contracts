@@ -5,19 +5,21 @@ import "../extensions/sequential-governance/CoreGovernance.sol";
 import "../extensions/collections/HasContracts.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 import { ErrorHandler } from "../libraries/ErrorHandler.sol";
+import { IdentityGuard } from "../utils/IdentityGuard.sol";
 import { HasGovernanceAdminDeprecated, HasBridgeDeprecated } from "../utils/DeprecatedSlots.sol";
 
-abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernanceAdminDeprecated, HasBridgeDeprecated {
+abstract contract GovernanceAdmin is
+  CoreGovernance,
+  IdentityGuard,
+  HasContracts,
+  HasGovernanceAdminDeprecated,
+  HasBridgeDeprecated
+{
   using ErrorHandler for bool;
 
   uint256 public roninChainId;
   /// @dev Domain separator
   bytes32 public DOMAIN_SEPARATOR;
-
-  modifier onlySelfCall() {
-    _requireSelfCall();
-    _;
-  }
 
   constructor(uint256 _roninChainId, address _roninTrustedOrganizationContract) {
     roninChainId = _roninChainId;
@@ -153,17 +155,5 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernance
     );
     _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
-  }
-
-  /**
-   * @dev Internal method to check method caller.
-   *
-   * Requirements:
-   *
-   * - The method caller must be this contract.
-   *
-   */
-  function _requireSelfCall() internal view virtual {
-    if (msg.sender != address(this)) revert ErrOnlySelfCall(msg.sig);
   }
 }
