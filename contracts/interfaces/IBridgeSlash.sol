@@ -18,7 +18,7 @@ interface IBridgeSlash {
   /**
    * @dev Struct representing the status of a bridge operator.
    */
-  struct BridgeOperatorStatus {
+  struct BridgeSlashInfo {
     uint64 penalizedDuration;
     uint192 newlyAddedAtPeriod;
   }

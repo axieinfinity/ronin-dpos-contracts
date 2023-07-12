@@ -29,9 +29,8 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   uint256 private constant TIER_2_THRESHOLD = 30_00;
   /// @dev Max percentage 100%. Values [0; 100_00] reflexes [0; 100%]
   uint256 private constant PERCENTAGE_FRACTION = 100_00;
-  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeSlash.bridgeOperatorStatuses.slot") - 1
-  bytes32 private constant BRIDGE_OPERATOR_STATUSES_SLOT =
-    0x315ed8a0abb9fd55e40c49aa52c641ee78f97b4f2e33534e1bafd5daaa763881;
+  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeSlash.bridgeSlashInfos.slot") - 1
+  bytes32 private constant BRIDGE_SLASH_INFOS_SLOT = 0xd08d185790a07c7b9b721e2713c8580010a57f31c72c16f6e80b831d0ee45bfe;
 
   function initialize(
     address validatorContract,
@@ -60,10 +59,10 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
     uint256 length = bridgeOperators.length;
     uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
-    mapping(address => BridgeOperatorStatus) storage _bridgeOperatorStatuses = _getBridgeOperatorStatuses();
+    mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
     for (uint256 i; i < length; ) {
       if (addeds[i]) {
-        _bridgeOperatorStatuses[bridgeOperators[i]].newlyAddedAtPeriod = uint192(currentPeriod);
+        _bridgeSlashInfos[bridgeOperators[i]].newlyAddedAtPeriod = uint192(currentPeriod);
       }
       unchecked {
         ++i;
@@ -116,16 +115,16 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     uint256 removeLength;
     {
       uint256[] memory penalizedDurations = _getPenalizedDurations();
-      mapping(address => BridgeOperatorStatus) storage _bridgeOperatorStatuses = _getBridgeOperatorStatuses();
+      mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
 
-      BridgeOperatorStatus memory status;
+      BridgeSlashInfo memory status;
       uint256 penalizedDuration;
       address bridgeOperator;
       Tier tier;
 
       for (uint256 i; i < length; ) {
         bridgeOperator = allBridgeOperators[i];
-        status = _bridgeOperatorStatuses[bridgeOperator];
+        status = _bridgeSlashInfos[bridgeOperator];
 
         if (status.newlyAddedAtPeriod < period) {
           tier = _getSlashTier(ballots[i], totalBallotsForPeriod);
@@ -137,9 +136,11 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
           }
 
           status.penalizedDuration = uint64(penalizedDuration);
-          _bridgeOperatorStatuses[bridgeOperator] = status;
+          _bridgeSlashInfos[bridgeOperator] = status;
 
-          emit Slashed(tier, bridgeOperator, period, block.timestamp + penalizedDuration);
+          if (tier != Tier.Tier0) {
+            emit Slashed(tier, bridgeOperator, period, block.timestamp + penalizedDuration);
+          }
         }
 
         unchecked {
@@ -162,9 +163,9 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   function penalizeDurationOf(address[] calldata bridgeOperators) external view returns (uint256[] memory durations) {
     uint256 length = bridgeOperators.length;
     durations = new uint256[](length);
-    mapping(address => BridgeOperatorStatus) storage _bridgeOperatorStatuses = _getBridgeOperatorStatuses();
+    mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
     for (uint256 i; i < length; ) {
-      durations[i] = _bridgeOperatorStatuses[bridgeOperators[i]].penalizedDuration;
+      durations[i] = _bridgeSlashInfos[bridgeOperators[i]].penalizedDuration;
       unchecked {
         ++i;
       }
@@ -183,16 +184,16 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   }
 
   /**
-   * @dev Internal function to access the mapping from bridge operator => BridgeOperatorStatus.
-   * @return bridgeOperatorStatuses_ the mapping from governor => BridgeOperatorInfo.
+   * @dev Internal function to access the mapping from bridge operator => BridgeSlashInfo.
+   * @return bridgeSlashInfos_ the mapping from bridge operator => BridgeSlashInfo.
    */
-  function _getBridgeOperatorStatuses()
+  function _getBridgeSlashInfos()
     internal
     pure
-    returns (mapping(address => BridgeOperatorStatus) storage bridgeOperatorStatuses_)
+    returns (mapping(address => BridgeSlashInfo) storage bridgeSlashInfos_)
   {
     assembly {
-      bridgeOperatorStatuses_.slot := BRIDGE_OPERATOR_STATUSES_SLOT
+      bridgeSlashInfos_.slot := BRIDGE_SLASH_INFOS_SLOT
     }
   }
 
