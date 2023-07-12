@@ -107,10 +107,6 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     uint256 totalBallotsForPeriod,
     uint256 period
   ) external onlyContract(ContractType.BRIDGE_TRACKING) {
-    IBridgeManager bridgeManager = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER));
-
-    address[] memory bridgeOperatorsToRemoved = new address[](allBridgeOperators.length);
-    uint256 removeLength;
     {
       uint256[] memory penaltyDurations = _getPenaltyDurations();
       mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
@@ -129,8 +125,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
           slashUntilPeriodNumber = Math.max(period, status.slashUntilPeriodNumber) + penaltyDurations[uint8(tier)];
 
           if (slashUntilPeriodNumber >= REMOVING_DURATION_THRESHOLD) {
-            bridgeOperatorsToRemoved[removeLength] = bridgeOperator;
-            ++removeLength;
+            emit Slashed(Tier.Kick, bridgeOperator, period, type(uint256).max);
           }
 
           status.slashUntilPeriodNumber = uint64(slashUntilPeriodNumber);
@@ -146,13 +141,6 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
         }
       }
     }
-
-    // shorten bridgeOperatorsToRemoved array
-    assembly {
-      mstore(bridgeOperatorsToRemoved, removeLength)
-    }
-
-    bridgeManager.removeBridgeOperators(bridgeOperatorsToRemoved);
   }
 
   /**
