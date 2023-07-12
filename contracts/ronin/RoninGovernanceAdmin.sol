@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../extensions/sequential-governance/GovernanceProposal.sol";
+import "../extensions/sequential-governance/governance-proposal/GovernanceProposal.sol";
 import "../extensions/collections/HasContracts.sol";
 import "../extensions/GovernanceAdmin.sol";
 import "../libraries/EmergencyExitBallot.sol";
@@ -269,7 +269,7 @@ contract RoninGovernanceAdmin is
   }
 
   /**
-   * @inheritdoc CoreGovernance
+   * @dev Returns weight of a govenor.
    */
   function _getWeight(address _governor) internal view virtual override returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.getGovernorWeight.selector;

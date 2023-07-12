@@ -216,8 +216,8 @@ export const initTest = (id: string) =>
       'StakingProxy',
       'MaintenanceProxy',
       'StakingVestingProxy',
-      'MainchainBridgeManager',
       'RoninBridgeManager',
+      'MainchainBridgeManager',
       id,
     ]);
 

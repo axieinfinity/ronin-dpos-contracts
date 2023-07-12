@@ -2,8 +2,8 @@ import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { generalRoninConf, roninchainNetworks } from '../configs/config';
-import { roninChainId } from '../configs/gateway';
 import { bridgeManagerConf } from '../configs/bridge-manager';
+import { verifyAddress } from '../script/verify-address';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -13,8 +13,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  await deploy('RoninBridgeManager', {
-    contract: 'RoninBridgeManager',
+  const deployment = await deploy('RoninBridgeManager', {
     from: deployer,
     log: true,
     args: [
@@ -27,9 +26,13 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
       bridgeManagerConf[network.name]?.governors,
       bridgeManagerConf[network.name]?.weights,
     ],
+    nonce: generalRoninConf[network.name].bridgeManagerContract?.nonce,
   });
+
+  verifyAddress(deployment.address, generalRoninConf[network.name].bridgeManagerContract?.address);
 };
 
 deploy.tags = ['RoninBridgeManager'];
+deploy.dependencies = ['CalculateAddresses'];
 
 export default deploy;
