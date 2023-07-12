@@ -5,7 +5,7 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../interfaces/IBridgeTracking.sol";
-import { IBridgeSlashing } from "../../interfaces/IBridgeSlashing.sol";
+import { IBridgeSlash } from "../../interfaces/IBridgeSlash.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import { HasBridgeDeprecated, HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
@@ -200,7 +200,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
     _increaseBallot(_kind, _requestId, _operator, _period);
 
     if (_trackedPeriod < _period) {
-      IBridgeSlashing(getContract(ContractType.BRIDGE_SLASH)).slashUnavailability(_trackedPeriod);
+      IBridgeSlash(getContract(ContractType.BRIDGE_SLASH)).slashUnavailability(_trackedPeriod);
       _trackedPeriod = _period;
     }
   }

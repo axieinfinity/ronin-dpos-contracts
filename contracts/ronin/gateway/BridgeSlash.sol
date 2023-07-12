@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
-import { IBridgeSlashing } from "../../interfaces/IBridgeSlashing.sol";
+import { IBridgeSlash } from "../../interfaces/IBridgeSlash.sol";
 import { IBridgeManager } from "../../interfaces/IBridgeManager.sol";
 import { IBridgeManagerCallback } from "../../interfaces/IBridgeManagerCallback.sol";
 import { IBridgeTracking } from "../../interfaces/IBridgeTracking.sol";
@@ -12,15 +12,15 @@ import { ContractType } from "../../utils/ContractType.sol";
 import { IdentityGuard } from "../../utils/IdentityGuard.sol";
 
 /**
- * @title SlashBridgeIndicator
+ * @title BridgeSlash
  * @dev A contract that implements slashing functionality for bridge operators based on their availability.
  */
-contract SlashBridgeIndicator is IBridgeSlashing, IBridgeManagerCallback, IdentityGuard, Initializable, HasContracts {
-  /// @inheritdoc IBridgeSlashing
+contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Initializable, HasContracts {
+  /// @inheritdoc IBridgeSlash
   uint256 public constant TIER_1_PENALIZE_DURATION = 1 days;
-  /// @inheritdoc IBridgeSlashing
+  /// @inheritdoc IBridgeSlash
   uint256 public constant TIER_2_PENALIZE_DURATION = 5 days;
-  /// @inheritdoc IBridgeSlashing
+  /// @inheritdoc IBridgeSlash
   uint256 public constant REMOVE_DURATION_THRESHOLD = 30 days;
 
   /// @dev Tier 1 slashing threshold ratio is 10%
@@ -29,7 +29,7 @@ contract SlashBridgeIndicator is IBridgeSlashing, IBridgeManagerCallback, Identi
   uint256 private constant TIER_2_THRESHOLD = 30_00;
   /// @dev Max percentage 100%. Values [0; 100_00] reflexes [0; 100%]
   uint256 private constant PERCENTAGE_FRACTION = 100_00;
-  /// @dev value is equal to keccak256("@ronin.dpos.gateway.SlashBridgeIndicator.bridgeOperatorStatuses.slot") - 1
+  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeSlash.bridgeOperatorStatuses.slot") - 1
   bytes32 private constant BRIDGE_OPERATOR_STATUSES_SLOT =
     0x315ed8a0abb9fd55e40c49aa52c641ee78f97b4f2e33534e1bafd5daaa763881;
 
@@ -95,7 +95,7 @@ contract SlashBridgeIndicator is IBridgeSlashing, IBridgeManagerCallback, Identi
   }
 
   /**
-   * @inheritdoc IBridgeSlashing
+   * @inheritdoc IBridgeSlash
    */
   function slashUnavailability(uint256 period) external onlyContract(ContractType.BRIDGE_TRACKING) {
     IBridgeManager bridgeManager = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER));
@@ -157,7 +157,7 @@ contract SlashBridgeIndicator is IBridgeSlashing, IBridgeManagerCallback, Identi
   }
 
   /**
-   * @inheritdoc IBridgeSlashing
+   * @inheritdoc IBridgeSlash
    */
   function penalizeDurationOf(address[] calldata bridgeOperators) external view returns (uint256[] memory durations) {
     uint256 length = bridgeOperators.length;

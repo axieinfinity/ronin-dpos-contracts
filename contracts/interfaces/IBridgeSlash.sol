@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title IBridgeSlashing
- * @dev Interface for the SlashBridgeIndicator contract to manage slashing functionality for bridge operators.
+ * @title IBridgeSlash
+ * @dev Interface for the BridgeSlash contract to manage slashing functionality for bridge operators.
  */
-interface IBridgeSlashing {
+interface IBridgeSlash {
   /**
    * @dev Enumeration representing the slashing tiers for bridge operators.
    */
