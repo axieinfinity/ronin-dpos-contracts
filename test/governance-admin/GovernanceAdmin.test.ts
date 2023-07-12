@@ -77,9 +77,6 @@ describe('Governance Admin test', () => {
         numerator,
         denominator,
       },
-      mainchainGovernanceAdminArguments: {
-        relayers: [relayer.address],
-      },
       governanceAdminArguments: {
         proposalExpiryDuration,
       },

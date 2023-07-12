@@ -2,7 +2,7 @@ import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { generalRoninConf, mainchainNetworks } from '../configs/config';
-import { bridgeManagerConf, mainchainBridgeManagerConf } from '../configs/bridge-manager';
+import { bridgeManagerConf } from '../configs/bridge-manager';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!mainchainNetworks.includes(network.name!)) {
@@ -21,7 +21,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
       bridgeManagerConf[network.name]?.denominator,
       generalRoninConf[network.name].roninChainId,
       generalRoninConf[network.name].bridgeContract,
-      mainchainBridgeManagerConf[network.name]?.relayers,
       bridgeManagerConf[network.name]?.operators,
       bridgeManagerConf[network.name]?.governors,
       bridgeManagerConf[network.name]?.weights,

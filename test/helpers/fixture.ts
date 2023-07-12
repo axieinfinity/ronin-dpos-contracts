@@ -17,7 +17,6 @@ import {
 } from '../../src/configs/config';
 import {
   RoninGovernanceAdminArguments,
-  MainchainGovernanceAdminArguments,
   MaintenanceArguments,
   Network,
   RoninTrustedOrganizationArguments,
@@ -30,16 +29,15 @@ import { BridgeManagerArguments, bridgeManagerConf } from '../../src/configs/bri
 
 export interface InitTestOutput {
   roninGovernanceAdminAddress: Address;
-  // mainchainGovernanceAdminAddress: Address;
   maintenanceContractAddress: Address;
   roninTrustedOrganizationAddress: Address;
-  // mainchainRoninTrustedOrganizationAddress: Address;
   slashContractAddress: Address;
   stakingContractAddress: Address;
   stakingVestingContractAddress: Address;
   validatorContractAddress: Address;
   bridgeTrackingAddress: Address;
   roninBridgeManagerAddress: Address;
+  mainchainBridgeManagerAddress: Address;
 }
 
 export interface InitTestInput {
@@ -52,7 +50,6 @@ export interface InitTestInput {
   slashIndicatorArguments?: SlashIndicatorArguments;
   roninValidatorSetArguments?: RoninValidatorSetArguments;
   roninTrustedOrganizationArguments?: RoninTrustedOrganizationArguments;
-  mainchainGovernanceAdminArguments?: MainchainGovernanceAdminArguments;
   governanceAdminArguments?: RoninGovernanceAdminArguments;
   bridgeManagerArguments?: BridgeManagerArguments;
 }
@@ -129,11 +126,6 @@ export const defaultTestConfig: InitTestInput = {
     denominator: 1,
   },
 
-  mainchainGovernanceAdminArguments: {
-    roleSetter: ethers.constants.AddressZero,
-    relayers: [],
-  },
-
   governanceAdminArguments: {
     proposalExpiryDuration: 60 * 60 * 24 * 14, // 14 days
   },
@@ -204,10 +196,6 @@ export const initTest = (id: string) =>
       roninTrustedOrganizationConf[network.name] = {
         ...defaultTestConfig?.roninTrustedOrganizationArguments,
         ...options?.roninTrustedOrganizationArguments,
-      };
-      mainchainGovernanceAdminConf[network.name] = {
-        ...defaultTestConfig?.mainchainGovernanceAdminArguments,
-        ...options?.mainchainGovernanceAdminArguments,
       };
       roninGovernanceAdminConf[network.name] = {
         ...defaultTestConfig?.governanceAdminArguments,

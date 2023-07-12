@@ -109,10 +109,6 @@ const config: InitTestInput = {
     numerator: 0,
     denominator: 1,
   },
-  mainchainGovernanceAdminArguments: {
-    roleSetter: ethers.constants.AddressZero,
-    relayers: [],
-  },
   governanceAdminArguments: {
     proposalExpiryDuration: 60 * 60 * 24 * 14,
   },
