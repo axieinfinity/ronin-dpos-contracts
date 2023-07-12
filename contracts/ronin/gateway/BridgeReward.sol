@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/RONTransferHelper.sol";
 import { IBridgeReward } from "../../interfaces/bridge/IBridgeReward.sol";
+import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
 import "../../utils/CommonErrors.sol";
 
 contract BridgeReward is IBridgeReward, HasContracts, Initializable {
@@ -43,14 +44,14 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
     if (period <= _latestRewardedPeriod) revert ErrPeriodAlreadyProcessed(period, _latestRewardedPeriod);
 
     uint256 rewardPerVote = _rewardPerPeriod / totalVoteCount;
-    bool[] memory slashedList = _getSlashInfo(operatorList);
+    uint256[] memory slashedDurationList = _getSlashInfo(operatorList);
 
     for (uint i; i < operatorList.length; ) {
       address iOperator = operatorList[i];
       uint256 iReward = voteCountList[i] * rewardPerVote;
 
       BridgeRewardInfo storage _iRewardInfo = _rewardInfo[iOperator];
-      if (slashedList[i]) {
+      if (slashedDurationList[i] > 0) {
         _iRewardInfo.slashed += iReward;
         emit BridgeRewardSlashed(iOperator, iReward);
       } else {
@@ -83,7 +84,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
     emit UpdatedRewardPerPeriod(rewardPerPeriod);
   }
 
-  function _getSlashInfo(address[] memory operatorList) internal returns (bool[] memory _slashed) {
-    // TODO: call to slash
+  function _getSlashInfo(address[] memory operatorList) internal returns (uint256[] memory _slashedDuration) {
+    return IBridgeSlash(getContract(ContractType.BRIDGE_SLASH)).penaltyDurationOf(operatorList);
   }
 }
