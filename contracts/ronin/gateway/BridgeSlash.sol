@@ -32,6 +32,10 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeSlash.bridgeSlashInfos.slot") - 1
   bytes32 private constant BRIDGE_SLASH_INFOS_SLOT = 0xd08d185790a07c7b9b721e2713c8580010a57f31c72c16f6e80b831d0ee45bfe;
 
+  constructor() {
+    _disableInitializers();
+  }
+
   function initialize(
     address validatorContract,
     address bridgeManagerContract,
