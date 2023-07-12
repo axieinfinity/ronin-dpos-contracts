@@ -5,12 +5,15 @@ import { ethers, network } from 'hardhat';
 
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import {
+  BridgeManager__factory,
   BridgeTracking,
   BridgeTracking__factory,
   MockGatewayForTracking,
   MockGatewayForTracking__factory,
   MockRoninValidatorSetExtended,
   MockRoninValidatorSetExtended__factory,
+  RoninBridgeManager,
+  RoninBridgeManager__factory,
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
   Staking,
@@ -41,6 +44,7 @@ let stakingContract: Staking;
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
+let bridgeAdmin: RoninBridgeManager;
 
 let period: BigNumberish;
 
@@ -50,6 +54,9 @@ const minValidatorStakingAmount = 500;
 const numerator = 2;
 const denominator = 4;
 const numberOfBlocksInEpoch = 600;
+
+const bridgeAdminNumerator = 2;
+const bridgeAdminDenominator = 2;
 
 describe('Bridge Tracking test', () => {
   before(async () => {
@@ -63,33 +70,43 @@ describe('Bridge Tracking test', () => {
     ]);
 
     // Deploys DPoS contracts
-    const { roninGovernanceAdminAddress, stakingContractAddress, validatorContractAddress, bridgeTrackingAddress } =
-      await initTest('BridgeTracking')({
-        roninTrustedOrganizationArguments: {
-          trustedOrganizations: trustedOrgs.map((v) => ({
-            consensusAddr: v.consensusAddr.address,
-            governor: v.governor.address,
-            bridgeVoter: v.bridgeVoter.address,
-            weight: 100,
-            addedBlock: 0,
-          })),
-          numerator,
-          denominator,
-        },
-        stakingArguments: {
-          minValidatorStakingAmount,
-        },
-        roninValidatorSetArguments: {
-          maxValidatorNumber,
-          maxPrioritizedValidatorNumber,
-          numberOfBlocksInEpoch,
-        },
-      });
+    const {
+      roninGovernanceAdminAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      bridgeTrackingAddress,
+      roninBridgeManagerAddress,
+    } = await initTest('BridgeTracking')({
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: trustedOrgs.map((v) => ({
+          consensusAddr: v.consensusAddr.address,
+          governor: v.governor.address,
+          bridgeVoter: v.bridgeVoter.address,
+          weight: 100,
+          addedBlock: 0,
+        })),
+        numerator,
+        denominator,
+      },
+      stakingArguments: {
+        minValidatorStakingAmount,
+      },
+      roninValidatorSetArguments: {
+        maxValidatorNumber,
+        maxPrioritizedValidatorNumber,
+        numberOfBlocksInEpoch,
+      },
+      bridgeManagerArguments: {
+        numerator: bridgeAdminNumerator,
+        denominator: bridgeAdminDenominator,
+      },
+    });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     bridgeTracking = BridgeTracking__factory.connect(bridgeTrackingAddress, deployer);
+    bridgeAdmin = RoninBridgeManager__factory.connect(roninBridgeManagerAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
       network.config.chainId!,
@@ -101,8 +118,17 @@ describe('Bridge Tracking test', () => {
     await mockGateway.deployed();
 
     await governanceAdminInterface.functionDelegateCalls(
-      [bridgeTracking.address],
-      [bridgeTracking.interface.encodeFunctionData('setContract', [getRoles('BRIDGE_CONTRACT'), mockGateway.address])]
+      [bridgeTracking.address, governanceAdmin.address],
+      [
+        bridgeTracking.interface.encodeFunctionData('setContract', [getRoles('BRIDGE_CONTRACT'), mockGateway.address]),
+        governanceAdmin.interface.encodeFunctionData('changeProxyAdmin', [bridgeTracking.address, bridgeAdmin.address]),
+      ]
+    );
+
+    await bridgeTracking.initializeV3(
+      bridgeAdmin.address,
+      '0x0000000000000000000000000000000000000001',
+      '0x0000000000000000000000000000000000000002'
     );
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
