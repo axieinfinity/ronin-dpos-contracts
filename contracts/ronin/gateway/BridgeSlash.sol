@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
-import { IBridgeManager } from "../../interfaces/bridge/IBridgeManager.sol";
 import { IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
 import { IBridgeTracking } from "../../interfaces/bridge/IBridgeTracking.sol";
 import { IRoninValidatorSet } from "../../interfaces/validator/IRoninValidatorSet.sol";
@@ -107,38 +106,37 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     uint256 totalBallotsForPeriod,
     uint256 period
   ) external onlyContract(ContractType.BRIDGE_TRACKING) {
-    {
-      uint256[] memory penaltyDurations = _getPenaltyDurations();
-      mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
+    uint256[] memory penaltyDurations = _getPenaltyDurations();
+    mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
 
-      BridgeSlashInfo memory status;
-      uint256 slashUntilPeriodNumber;
-      address bridgeOperator;
-      Tier tier;
+    BridgeSlashInfo memory status;
+    uint256 slashUntilPeriodNumber;
+    address bridgeOperator;
+    Tier tier;
 
-      for (uint256 i; i < allBridgeOperators.length; ) {
-        bridgeOperator = allBridgeOperators[i];
-        status = _bridgeSlashInfos[bridgeOperator];
+    for (uint256 i; i < allBridgeOperators.length; ) {
+      bridgeOperator = allBridgeOperators[i];
+      status = _bridgeSlashInfos[bridgeOperator];
 
-        if (status.newlyAddedAtPeriod < period) {
-          tier = _getSlashTier(ballots[i], totalBallotsForPeriod);
-          slashUntilPeriodNumber = Math.max(period, status.slashUntilPeriodNumber) + penaltyDurations[uint8(tier)];
+      if (status.newlyAddedAtPeriod < period) {
+        tier = _getSlashTier(ballots[i], totalBallotsForPeriod);
+        slashUntilPeriodNumber = Math.max(period, status.slashUntilPeriodNumber) + penaltyDurations[uint8(tier)];
 
-          if (slashUntilPeriodNumber >= REMOVING_DURATION_THRESHOLD) {
-            emit Slashed(Tier.Kick, bridgeOperator, period, type(uint256).max);
-          }
-
-          status.slashUntilPeriodNumber = uint64(slashUntilPeriodNumber);
-          _bridgeSlashInfos[bridgeOperator] = status;
-
-          if (tier != Tier.Tier0) {
-            emit Slashed(tier, bridgeOperator, period, slashUntilPeriodNumber);
-          }
+        if (slashUntilPeriodNumber >= REMOVING_DURATION_THRESHOLD) {
+          slashUntilPeriodNumber = type(uint64).max;
+          tier = Tier.Kick;
         }
 
-        unchecked {
-          ++i;
+        status.slashUntilPeriodNumber = uint64(slashUntilPeriodNumber);
+        _bridgeSlashInfos[bridgeOperator] = status;
+
+        if (tier != Tier.Tier0) {
+          emit Slashed(tier, bridgeOperator, period, slashUntilPeriodNumber);
         }
+      }
+
+      unchecked {
+        ++i;
       }
     }
   }
