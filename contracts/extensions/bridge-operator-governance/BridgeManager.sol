@@ -13,7 +13,7 @@ import { RoleAccess } from "../../utils/RoleAccess.sol";
 import { TUint256 } from "../../types/Types.sol";
 import { ErrInvalidArguments, ErrLengthMismatch, ErrInvalidThreshold, ErrInvalidVoteWeight, ErrEmptyArray, ErrZeroAddress, ErrUnauthorized, ErrNonpayableAddress } from "../../utils/CommonErrors.sol";
 
-abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallback, HasContracts, RONTransferHelper {
+abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallback, HasContracts {
   using SafeCast for uint256;
   using AddressArrayUtils for address[];
   using EnumerableSet for EnumerableSet.AddressSet;

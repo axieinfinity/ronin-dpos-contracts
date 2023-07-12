@@ -5,10 +5,9 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IStakingVesting.sol";
 import "../extensions/collections/HasContracts.sol";
-import "../extensions/RONTransferHelper.sol";
 import { HasValidatorDeprecated } from "../utils/DeprecatedSlots.sol";
 
-contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts, RONTransferHelper, Initializable {
+contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts, Initializable {
   /// @dev The block bonus for the block producer whenever a new block is mined.
   uint256 internal _blockProducerBonusPerBlock;
   /// @dev The block bonus for the bridge operator whenever a new block is mined.

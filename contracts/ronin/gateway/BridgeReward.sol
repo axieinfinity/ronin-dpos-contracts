@@ -4,9 +4,8 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../extensions/collections/HasContracts.sol";
-import "../../extensions/RONTransferHelper.sol";
 
-contract BridgeReward is HasContracts, Initializable, RONTransferHelper {
+contract BridgeReward is HasContracts, Initializable {
   struct BridgeRewardInfo {
     uint256 claimed;
     uint256 slashed;

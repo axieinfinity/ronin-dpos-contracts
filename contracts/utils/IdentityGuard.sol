@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { LibSafeTransfer } from "../libraries/LibSafeTransfer.sol";
+import { RONTransferHelper } from "../extensions/RONTransferHelper.sol";
 import { ErrZeroAddress, ErrOnlySelfCall, ErrZeroCodeContract, ErrNonpayableAddress } from "./CommonErrors.sol";
 
-abstract contract IdentityGuard {
-  using LibSafeTransfer for address;
-
+abstract contract IdentityGuard is RONTransferHelper {
   /**
    * @dev Modifier to restrict functions to only be called by this contract.
    * @dev Reverts if the caller is not this contract.
@@ -38,7 +36,7 @@ abstract contract IdentityGuard {
    * @param addr The address to check.
    */
   function _requirePayableAddress(address addr) internal {
-    if (!addr.trySafeNativeTransfer(0, LibSafeTransfer.GAS_STIPEND_NO_STORAGE_WRITES)) {
+    if (!_unsafeSendRON(payable(addr), 0, 0)) {
       revert ErrNonpayableAddress(addr);
     }
   }
