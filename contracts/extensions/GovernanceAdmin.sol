@@ -45,7 +45,7 @@ abstract contract GovernanceAdmin is
 
       mstore(ptr, 0x599a80fcaa47b95e2323ab4d34d34e0cc9feda4b843edafcc30c7bdf60ea15bf) // keccak256("EIP712Domain(string name,string version,bytes32 salt)")
       mstore(add(ptr, 0x20), 0x7e7935007966eb860f4a2ee3dcc9fd53fb3205ce2aa86b0126d4893d4d4c14b9) // keccak256("GovernanceAdmin")
-      mstore(add(ptr, 0x40), 0xad7c5bef027816a800da1736444fb58a807ef4c9603b7848673f7e3a68eb14a5) // keccak256("2")
+      mstore(add(ptr, 0x40), 0x2a80e1ef1d7842f27f2e6be0972bb708b9a135c38860dbe73c27c3486c34f4de) // keccak256("3")
       mstore(add(ptr, 0x60), salt)
       sstore(DOMAIN_SEPARATOR.slot, keccak256(ptr, 0x80))
     }
