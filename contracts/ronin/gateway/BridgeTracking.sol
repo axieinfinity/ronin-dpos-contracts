@@ -75,7 +75,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   function initialize(address bridgeContract, address validatorContract, uint256 startedAtBlock) external initializer {
     _setContract(ContractType.BRIDGE, bridgeContract);
     _setContract(ContractType.VALIDATOR, validatorContract);
-    startedAtBlock = _startedAtBlock;
+    _startedAtBlock = startedAtBlock;
   }
 
   function initializeV2() external reinitializer(2) {
