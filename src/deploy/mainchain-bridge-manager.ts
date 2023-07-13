@@ -14,8 +14,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deployer } = await getNamedAccounts();
 
   let nonce = await ethers.provider.getTransactionCount(deployer);
-  console.log('deploy MainchainBridgeManager');
-  console.log('nonce', nonce);
 
   const deployment = await deploy('MainchainBridgeManager', {
     from: deployer,

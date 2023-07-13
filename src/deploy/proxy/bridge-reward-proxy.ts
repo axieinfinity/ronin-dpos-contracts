@@ -24,8 +24,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     bridgeRewardConf[network.name]!.rewardPerPeriod,
   ]);
 
-  console.log(bridgeRewardConf[network.name]);
-
   const deployment = await deploy('BridgeRewardProxy', {
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,

@@ -12,7 +12,6 @@ const calculateAddress = (from: string, nonce: number) => ({
 const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
   const { deployer } = await getNamedAccounts();
   let nonce = await ethers.provider.getTransactionCount(deployer);
-  console.log('nonce', nonce);
 
   if (roninchainNetworks.includes(network.name!)) {
     generalRoninConf[network.name] = {
@@ -37,11 +36,6 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
       bridgeManagerContract: calculateAddress(deployer, nonce++),
     };
   }
-
-  console.log('OK');
-  console.log('network name', network.name);
-  console.log(generalRoninConf[network.name]);
-  console.log(generalMainchainConf[network.name]);
 
   // Only for local
   if ([Network.Local.toString()].includes(network.name)) {

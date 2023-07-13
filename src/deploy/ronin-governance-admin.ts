@@ -14,9 +14,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   let nonce = await ethers.provider.getTransactionCount(deployer);
 
-  console.log('deploy abc');
-  console.log('nonce', nonce);
-
   const deployment = await deploy('RoninGovernanceAdmin', {
     from: deployer,
     log: true,
