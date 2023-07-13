@@ -32,7 +32,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeSlash.bridgeSlashInfos.slot") - 1
   bytes32 private constant BRIDGE_SLASH_INFOS_SLOT = 0xd08d185790a07c7b9b721e2713c8580010a57f31c72c16f6e80b831d0ee45bfe;
 
-  constructor() {
+  constructor() payable {
     _disableInitializers();
   }
 
@@ -111,9 +111,6 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     // Get the storage mapping for bridge slash information.
     mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
 
-    // Calculate the next period.
-    uint256 nextPeriod = period + 1;
-
     // Declare variables for iteration.
     BridgeSlashInfo memory status;
     uint256 slashUntilPeriod;
@@ -132,10 +129,10 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
         tier = _getSlashTier(ballots[i], totalBallotsForPeriod);
 
         // Calculate the slash until period number.
-        slashUntilPeriod = penaltyDurations[uint8(tier)] + Math.max(nextPeriod, status.slashUntilPeriod);
+        slashUntilPeriod = penaltyDurations[uint8(tier)] + Math.max(period - 1, status.slashUntilPeriod);
 
-        // Check if the slash duration exceeds the threshold for removal
-        if (slashUntilPeriod - nextPeriod >= REMOVING_DURATION_THRESHOLD) {
+        // Check if the slash duration exceeds the threshold for removal.
+        if (slashUntilPeriod - (period - 1) >= REMOVING_DURATION_THRESHOLD) {
           slashUntilPeriod = type(uint64).max;
           tier = Tier.Kick;
         }
@@ -158,12 +155,14 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   /**
    * @inheritdoc IBridgeSlash
    */
-  function penaltyDurationOf(address[] calldata bridgeOperators) external view returns (uint256[] memory durations) {
+  function getSlashUntilPeriodOf(
+    address[] calldata bridgeOperators
+  ) external view returns (uint256[] memory untilPeriods) {
     uint256 length = bridgeOperators.length;
-    durations = new uint256[](length);
+    untilPeriods = new uint256[](length);
     mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
     for (uint256 i; i < length; ) {
-      durations[i] = _bridgeSlashInfos[bridgeOperators[i]].slashUntilPeriod;
+      untilPeriods[i] = _bridgeSlashInfos[bridgeOperators[i]].slashUntilPeriod;
       unchecked {
         ++i;
       }
@@ -183,18 +182,18 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
 
   /**
    * @dev Internal function to access the mapping from bridge operator => BridgeSlashInfo.
-   * @return bridgeSlashInfos_ the mapping from bridge operator => BridgeSlashInfo.
+   * @return bridgeSlashInfos the mapping from bridge operator => BridgeSlashInfo.
    */
-  function _getBridgeSlashInfos()
-    internal
-    pure
-    returns (mapping(address => BridgeSlashInfo) storage bridgeSlashInfos_)
-  {
+  function _getBridgeSlashInfos() internal pure returns (mapping(address => BridgeSlashInfo) storage bridgeSlashInfos) {
     assembly {
-      bridgeSlashInfos_.slot := BRIDGE_SLASH_INFOS_SLOT
+      bridgeSlashInfos.slot := BRIDGE_SLASH_INFOS_SLOT
     }
   }
 
+  /**
+   * @dev Internal function to retrieve the penalty durations for different slash tiers.
+   * @return penaltyDurations The array of penalty durations for each slash tier.
+   */
   function _getPenaltyDurations() internal pure virtual returns (uint256[] memory penaltyDurations) {
     penaltyDurations = new uint256[](3);
     // reserve index 0

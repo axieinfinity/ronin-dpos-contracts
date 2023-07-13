@@ -44,16 +44,28 @@ interface IBridgeSlash {
     uint256 period
   ) external;
 
+  /**
+   * @dev Returns the penalty duration for Tier 1 slashing.
+   * @return The duration in period number for Tier 1 slashing.
+   */
   function TIER_1_PENALTY_DURATION() external view returns (uint256);
 
+  /**
+   * @dev Returns the penalty duration for Tier 2 slashing.
+   * @return The duration in period number for Tier 2 slashing.
+   */
   function TIER_2_PENALTY_DURATION() external view returns (uint256);
 
+  /**
+   * @dev Returns the threshold duration for removing bridge operators.
+   * @return The duration in period number that exceeds which a bridge operator will be removed.
+   */
   function REMOVING_DURATION_THRESHOLD() external view returns (uint256);
 
   /**
    * @dev Returns the penalize durations for the specified bridge operators.
    * @param bridgeOperators The addresses of the bridge operators.
-   * @return durations The penalized durations for the bridge operators.
+   * @return untilPeriods The penalized periods for the bridge operators.
    */
-  function penaltyDurationOf(address[] calldata bridgeOperators) external returns (uint256[] memory durations);
+  function getSlashUntilPeriodOf(address[] calldata bridgeOperators) external returns (uint256[] memory untilPeriods);
 }
