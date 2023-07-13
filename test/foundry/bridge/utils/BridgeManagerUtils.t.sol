@@ -2,13 +2,20 @@
 pragma solidity ^0.8.0;
 
 import { Test } from "forge-std/Test.sol";
+import { Randomizer } from "../../helpers/Randomizer.t.sol";
 import { Sorting } from "@ronin/contracts/mocks/libraries/Sorting.sol";
 import { AddressArrayUtils } from "@ronin/contracts/libraries/AddressArrayUtils.sol";
 import { IBridgeManager } from "@ronin/contracts/interfaces/bridge/IBridgeManager.sol";
+import { IBridgeManagerEventsTest } from "../interfaces/IBridgeManagerEvents.t.sol";
 
-abstract contract BridgeManagerUtils is Test {
+abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
   using Sorting for uint256[];
   using AddressArrayUtils for address[];
+
+  uint256 internal constant DEFAULT_R1 = 1;
+  uint256 internal constant DEFAULT_R2 = 2;
+  uint256 internal constant DEFAULT_R3 = 3;
+  uint256 internal constant DEFAULT_NUM_BRIDGE_OPERATORS = 5;
 
   uint256 internal constant MIN_AMOUNT = 1;
   uint256 internal constant MIN_FUZZ_INPUTS = 1;
@@ -16,23 +23,42 @@ abstract contract BridgeManagerUtils is Test {
   uint256 internal constant MIN_VOTE_WEIGHT = 1;
   uint256 internal constant MAX_VOTE_WEIGHT = type(uint96).max;
 
-  function _getValidInputs(
+  function _addBridgeOperators(
+    address caller,
+    address bridgeManagerContract,
+    uint256[] memory voteWeights,
+    address[] memory governors,
+    address[] memory bridgeOperators
+  ) internal virtual returns (IBridgeManager bridgeManager) {
+    vm.expectEmit(bridgeManagerContract);
+    bool[] memory statuses;
+    uint256[] memory tmp = _createRandomNumbers(0, voteWeights.length, 1, 1);
+    assembly {
+      statuses := tmp
+    }
+    emit BridgeOperatorsAdded(statuses, voteWeights, governors, bridgeOperators);
+    bridgeManager = IBridgeManager(bridgeManagerContract);
+    vm.prank(caller);
+    bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+  }
+
+  function getValidInputs(
     uint256 r1,
     uint256 r2,
     uint256 r3,
     uint256 numBridgeOperators
   )
-    internal
+    public
     pure
     virtual
-    returns (uint256[] memory voteWeights, address[] memory governors, address[] memory bridgeOperators)
+    returns (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights)
   {
     // ensure r1, r2, r3 is unique
     vm.assume(!(r1 == r2 || r2 == r3 || r1 == r3));
     numBridgeOperators = _bound(numBridgeOperators, MIN_FUZZ_INPUTS, MAX_FUZZ_INPUTS);
 
-    governors = _createAddresses(r1, numBridgeOperators);
-    bridgeOperators = _createAddresses(r2, numBridgeOperators);
+    governors = _createRandomAddresses(r1, numBridgeOperators);
+    bridgeOperators = _createRandomAddresses(r2, numBridgeOperators);
     voteWeights = _createRandomNumbers(r3, numBridgeOperators, MIN_VOTE_WEIGHT, MAX_VOTE_WEIGHT);
 
     _ensureValidAddBridgeOperatorsInputs(voteWeights, governors, bridgeOperators);
@@ -56,7 +82,7 @@ abstract contract BridgeManagerUtils is Test {
       address[] memory bridgeOperators
     )
   {
-    (voteWeights, governors, bridgeOperators) = _getValidInputs(r1, r2, r3, numBridgeOperators);
+    (bridgeOperators, governors, voteWeights) = getValidInputs(r1, r2, r3, numBridgeOperators);
     uint256[] memory uintGovernors;
     uint256[] memory uintBridgeOperators;
     assembly {
@@ -198,41 +224,6 @@ abstract contract BridgeManagerUtils is Test {
     assembly {
       outputs := uintOutputs
     }
-  }
-
-  function _createAddresses(uint256 seed, uint256 amount) internal pure returns (address[] memory addrs) {
-    addrs = new address[](amount);
-    for (uint256 i; i < amount; ) {
-      seed = uint256(keccak256(abi.encode(seed)));
-      addrs[i] = vm.addr(seed);
-      unchecked {
-        ++i;
-      }
-    }
-  }
-
-  function _createRandomNumbers(
-    uint256 seed,
-    uint256 amount,
-    uint256 min,
-    uint256 max
-  ) internal pure returns (uint256[] memory nums) {
-    uint256 r;
-    nums = new uint256[](amount);
-
-    for (uint256 i; i < amount; ) {
-      r = _randomize(seed, min, max);
-      nums[i] = r;
-      seed = r;
-
-      unchecked {
-        ++i;
-      }
-    }
-  }
-
-  function _randomize(uint256 seed, uint256 min, uint256 max) internal pure returns (uint256 r) {
-    r = _bound(uint256(keccak256(abi.encode(seed))), min, max);
   }
 
   function _ensureNonZero(uint256[] memory arr) internal pure {

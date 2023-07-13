@@ -3,12 +3,11 @@ pragma solidity ^0.8.0;
 
 import { console } from "forge-std/console.sol";
 import { IBridgeManager, BridgeManagerUtils } from "./utils/BridgeManagerUtils.t.sol";
-import { IBridgeManagerEventsTest } from "./interfaces/IBridgeManagerEvents.t.sol";
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
 import { RoleAccess, ContractType, AddressArrayUtils, MockBridgeManager } from "@ronin/contracts/mocks/ronin/MockBridgeManager.sol";
 import { ErrUnauthorized, ErrInvalidVoteWeight, ErrZeroAddress, ErrUnexpectedInternalCall } from "@ronin/contracts/utils/CommonErrors.sol";
 
-contract BridgeManagerCRUDTest is BridgeManagerUtils, IBridgeManagerEventsTest {
+contract BridgeManagerCRUDTest is BridgeManagerUtils {
   using AddressArrayUtils for address[];
 
   enum InputIndex {
@@ -18,7 +17,6 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils, IBridgeManagerEventsTest {
   }
 
   address internal _bridgeManager;
-  address internal _bridgeContract;
 
   function setUp() external {
     _setUp();
@@ -37,7 +35,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils, IBridgeManagerEventsTest {
   ) external virtual {
     vm.assume(caller != _bridgeManager);
 
-    (uint256[] memory voteWeights, address[] memory governors, address[] memory bridgeOperators) = _getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
       r1,
       r2,
       r3,
@@ -53,7 +51,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils, IBridgeManagerEventsTest {
       )
     );
 
-    _addBridgeOperators(caller, voteWeights, governors, bridgeOperators);
+    _addBridgeOperators(caller, _bridgeManager, voteWeights, governors, bridgeOperators);
   }
 
   /**
@@ -65,14 +63,20 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils, IBridgeManagerEventsTest {
     uint256 r3,
     uint256 numBridgeOperators
   ) external virtual {
-    (uint256[] memory voteWeights, address[] memory governors, address[] memory bridgeOperators) = _getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
       r1,
       r2,
       r3,
       numBridgeOperators
     );
 
-    IBridgeManager bridgeManager = _addBridgeOperators(_bridgeManager, voteWeights, governors, bridgeOperators);
+    IBridgeManager bridgeManager = _addBridgeOperators(
+      _bridgeManager,
+      _bridgeManager,
+      voteWeights,
+      governors,
+      bridgeOperators
+    );
 
     _invariantTest(bridgeManager, voteWeights, governors, bridgeOperators);
   }
@@ -112,7 +116,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils, IBridgeManagerEventsTest {
       }
     }
 
-    _addBridgeOperators(_bridgeManager, voteWeights, governors, bridgeOperators);
+    _addBridgeOperators(_bridgeManager, _bridgeManager, voteWeights, governors, bridgeOperators);
   }
 
   /**
@@ -124,14 +128,20 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils, IBridgeManagerEventsTest {
     uint256 r3,
     uint16 numBridgeOperators
   ) external virtual {
-    (uint256[] memory voteWeights, address[] memory governors, address[] memory bridgeOperators) = _getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
       r1,
       r2,
       r3,
       numBridgeOperators
     );
 
-    IBridgeManager bridgeManager = _addBridgeOperators(_bridgeManager, voteWeights, governors, bridgeOperators);
+    IBridgeManager bridgeManager = _addBridgeOperators(
+      _bridgeManager,
+      _bridgeManager,
+      voteWeights,
+      governors,
+      bridgeOperators
+    );
     uint256 removeAmount = _randomize(voteWeights.length, 1, voteWeights.length);
 
     uint256 tailIdx = voteWeights.length - 1;
@@ -180,13 +190,19 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils, IBridgeManagerEventsTest {
     uint256 r3,
     uint16 numBridgeOperators
   ) external virtual {
-    (uint256[] memory voteWeights, address[] memory governors, address[] memory bridgeOperators) = _getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
       r1,
       r2,
       r3,
       numBridgeOperators
     );
-    IBridgeManager bridgeManager = _addBridgeOperators(_bridgeManager, voteWeights, governors, bridgeOperators);
+    IBridgeManager bridgeManager = _addBridgeOperators(
+      _bridgeManager,
+      _bridgeManager,
+      voteWeights,
+      governors,
+      bridgeOperators
+    );
 
     uint256 randomSeed = _randomize(_triShuffle(r1, r2, r3), 0, voteWeights.length - 1);
     address randomGovernor = governors[randomSeed];
@@ -215,13 +231,19 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils, IBridgeManagerEventsTest {
     uint256 r3,
     uint16 numBridgeOperators
   ) external virtual {
-    (uint256[] memory voteWeights, address[] memory governors, address[] memory bridgeOperators) = _getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
       r1,
       r2,
       r3,
       numBridgeOperators
     );
-    IBridgeManager bridgeManager = _addBridgeOperators(_bridgeManager, voteWeights, governors, bridgeOperators);
+    IBridgeManager bridgeManager = _addBridgeOperators(
+      _bridgeManager,
+      _bridgeManager,
+      voteWeights,
+      governors,
+      bridgeOperators
+    );
 
     address unauthorizedCaller = makeAddr("UNAUTHORIZED_CALLER");
     for (uint256 i; i < governors.length; ) {
@@ -245,14 +267,13 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils, IBridgeManagerEventsTest {
   }
 
   function _setUp() internal virtual {
-    _bridgeContract = address(new RoninGatewayV2());
-    (uint256[] memory voteWeights, address[] memory governors, address[] memory bridgeOperators) = _getValidInputs(
-      1,
-      2,
-      3,
-      5
+    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+      DEFAULT_R1,
+      DEFAULT_R2,
+      DEFAULT_R3,
+      DEFAULT_NUM_BRIDGE_OPERATORS
     );
-    _bridgeManager = address(new MockBridgeManager(_bridgeContract, bridgeOperators, governors, voteWeights));
+    _bridgeManager = address(new MockBridgeManager(bridgeOperators, governors, voteWeights));
 
     // empty storage for testing
     vm.prank(_bridgeManager);
@@ -260,25 +281,6 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils, IBridgeManagerEventsTest {
   }
 
   function _label() internal virtual {
-    vm.label(_bridgeContract, "BRIDGE_CONTRACT");
     vm.label(_bridgeManager, "BRIDGE_ADMIN_OPERATOR");
-  }
-
-  function _addBridgeOperators(
-    address caller,
-    uint256[] memory voteWeights,
-    address[] memory governors,
-    address[] memory bridgeOperators
-  ) internal virtual returns (IBridgeManager bridgeManager) {
-    vm.expectEmit(_bridgeManager);
-    bool[] memory statuses;
-    uint256[] memory tmp = _createRandomNumbers(0, voteWeights.length, 1, 1);
-    assembly {
-      statuses := tmp
-    }
-    emit BridgeOperatorsAdded(statuses, voteWeights, governors, bridgeOperators);
-    bridgeManager = IBridgeManager(_bridgeManager);
-    vm.prank(caller);
-    bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
   }
 }
