@@ -30,7 +30,7 @@ import {
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { initTest } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
-import { getRoles, mineBatchTxs } from '../helpers/utils';
+import { ContractType, mineBatchTxs } from '../helpers/utils';
 import {
   OperatorTuple,
   createManyOperatorTuples,
@@ -134,7 +134,7 @@ describe('Bridge Tracking test', () => {
     await governanceAdminInterface.functionDelegateCalls(
       [bridgeTracking.address, governanceAdmin.address],
       [
-        bridgeTracking.interface.encodeFunctionData('setContract', [getRoles('BRIDGE_CONTRACT'), mockGateway.address]),
+        bridgeTracking.interface.encodeFunctionData('setContract', [ContractType.BRIDGE, mockGateway.address]),
         governanceAdmin.interface.encodeFunctionData('changeProxyAdmin', [bridgeTracking.address, bridgeAdmin.address]),
       ]
     );
@@ -178,8 +178,8 @@ describe('Bridge Tracking test', () => {
 
   describe('Config test', async () => {
     it('Should be able to get contract configs correctly', async () => {
-      expect(await bridgeTracking.getContract(getRoles('BRIDGE_CONTRACT'))).eq(mockGateway.address);
-      expect(await mockGateway.getContract(getRoles('BRIDGE_TRACKING_CONTRACT'))).eq(bridgeTracking.address);
+      expect(await bridgeTracking.getContract(ContractType.BRIDGE)).eq(mockGateway.address);
+      expect(await mockGateway.getContract(ContractType.BRIDGE_TRACKING)).eq(bridgeTracking.address);
       expect(await roninValidatorSet.currentPeriod()).eq(period);
     });
   });

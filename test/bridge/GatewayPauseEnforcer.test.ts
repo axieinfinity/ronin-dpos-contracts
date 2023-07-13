@@ -35,7 +35,7 @@ import {
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { createManyOperatorTuples, OperatorTuple } from '../helpers/address-set-types/operator-tuple-type';
 import { initTest } from '../helpers/fixture';
-import { getRoles, mineBatchTxs } from '../helpers/utils';
+import { ContractType, mineBatchTxs } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
@@ -175,15 +175,15 @@ describe('Gateway Pause Enforcer test', () => {
       Array.from(Array(3).keys()).map(() => bridgeContract.address),
       [
         bridgeContract.interface.encodeFunctionData('setContract', [
-          getRoles('BRIDGE_TRACKING_CONTRACT'),
+          ContractType.BRIDGE_TRACKING,
           bridgeTracking.address,
         ]),
         bridgeContract.interface.encodeFunctionData('setContract', [
-          getRoles('VALIDATOR_CONTRACT'),
+          ContractType.VALIDATOR,
           roninValidatorSet.address,
         ]),
         bridgeContract.interface.encodeFunctionData('setContract', [
-          getRoles('RONIN_TRUSTED_ORGANIZATION_CONTRACT'),
+          ContractType.RONIN_TRUSTED_ORGANIZATION,
           roninTrustedOrganizationAddress,
         ]),
       ]

@@ -25,7 +25,7 @@ import { ERC20PresetMinterPauser } from '../../src/types/ERC20PresetMinterPauser
 import { ReceiptStruct } from '../../src/types/IRoninGatewayV2';
 import { DEFAULT_ADDRESS } from '../../src/utils';
 import { initTest } from '../helpers/fixture';
-import { getRoles, mineBatchTxs } from '../helpers/utils';
+import { ContractType, mineBatchTxs } from '../helpers/utils';
 import { OperatorTuple, createManyOperatorTuples } from '../helpers/address-set-types/operator-tuple-type';
 import { BridgeManagerInterface } from '../../src/script/bridge-admin-interface';
 
@@ -129,7 +129,7 @@ describe('Ronin Gateway V2 test', () => {
       [TargetOption.GatewayContract],
       [
         bridgeContract.interface.encodeFunctionData('setContract', [
-          getRoles('BRIDGE_TRACKING_CONTRACT'),
+          ContractType.BRIDGE_TRACKING,
           bridgeTracking.address,
         ]),
       ]
