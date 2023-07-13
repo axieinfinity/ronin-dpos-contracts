@@ -125,6 +125,6 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
   }
 
   function _getSlashInfo(address[] memory operatorList) internal returns (uint256[] memory _slashedDuration) {
-    return IBridgeSlash(getContract(ContractType.BRIDGE_SLASH)).penaltyDurationOf(operatorList);
+    return IBridgeSlash(getContract(ContractType.BRIDGE_SLASH)).getSlashUntilPeriodOf(operatorList);
   }
 }

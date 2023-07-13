@@ -12,8 +12,7 @@ interface IBridgeSlash {
   enum Tier {
     Tier0,
     Tier1,
-    Tier2,
-    Kick
+    Tier2
   }
 
   /**
@@ -32,6 +31,13 @@ interface IBridgeSlash {
    * @param slashUntilPeriod The period until which the operator is penalized.
    */
   event Slashed(Tier indexed tier, address indexed bridgeOperator, uint256 indexed period, uint256 slashUntilPeriod);
+
+  /**
+   * @dev Emitted when a removal request is made for a bridge operator.
+   * @param period The period for which the removal request is made.
+   * @param bridgeOperator The address of the bridge operator being requested for removal.
+   */
+  event RemovalRequested(uint256 indexed period, address indexed bridgeOperator);
 
   /**
    * @dev Slashes the unavailability of bridge operators during a specific period.
@@ -60,7 +66,7 @@ interface IBridgeSlash {
    * @dev Returns the threshold duration for removing bridge operators.
    * @return The duration in period number that exceeds which a bridge operator will be removed.
    */
-  function REMOVING_DURATION_THRESHOLD() external view returns (uint256);
+  function REMOVE_DURATION_THRESHOLD() external view returns (uint256);
 
   /**
    * @dev Returns the penalize durations for the specified bridge operators.

@@ -62,18 +62,6 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    */
   bytes32 public immutable DOMAIN_SEPARATOR;
 
-  /**
-   * @dev Modifier to ensure that the elements in the `arr` array are non-duplicates.
-   * It calls the internal `_checkDuplicate` function to perform the duplicate check.
-   *
-   * Requirements:
-   * - The elements in the `arr` array must not contain any duplicates.
-   */
-  modifier nonDuplicate(address[] memory arr) {
-    _checkDuplicate(arr);
-    _;
-  }
-
   constructor(
     uint256 num,
     uint256 denom,
@@ -476,14 +464,5 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     assembly {
       govenorOf_.slot := GOVENOR_OF_SLOT
     }
-  }
-
-  /**
-   * @dev Check if arr is empty and revert if it is.
-   * Checks if an array contains any duplicate addresses and reverts if duplicates are found.
-   * @param arr The array of addresses to check.
-   */
-  function _checkDuplicate(address[] memory arr) internal pure {
-    if (arr.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
   }
 }

@@ -2,15 +2,30 @@
 pragma solidity ^0.8.0;
 
 import { RONTransferHelper } from "../extensions/RONTransferHelper.sol";
+import { AddressArrayUtils } from "../libraries/AddressArrayUtils.sol";
 import { ErrZeroAddress, ErrOnlySelfCall, ErrZeroCodeContract, ErrNonpayableAddress } from "./CommonErrors.sol";
 
 abstract contract IdentityGuard is RONTransferHelper {
+  using AddressArrayUtils for address[];
+
   /**
    * @dev Modifier to restrict functions to only be called by this contract.
    * @dev Reverts if the caller is not this contract.
    */
   modifier onlySelfCall() virtual {
     _requireSelfCall();
+    _;
+  }
+
+  /**
+   * @dev Modifier to ensure that the elements in the `arr` array are non-duplicates.
+   * It calls the internal `_checkDuplicate` function to perform the duplicate check.
+   *
+   * Requirements:
+   * - The elements in the `arr` array must not contain any duplicates.
+   */
+  modifier nonDuplicate(address[] memory arr) virtual {
+    _requireNonDuplicate(arr);
     _;
   }
 
@@ -47,5 +62,14 @@ abstract contract IdentityGuard is RONTransferHelper {
    */
   function _requireNonZeroAddress(address addr) internal pure {
     if (addr == address(0)) revert ErrZeroAddress(msg.sig);
+  }
+
+  /**
+   * @dev Check if arr is empty and revert if it is.
+   * Checks if an array contains any duplicate addresses and reverts if duplicates are found.
+   * @param arr The array of addresses to check.
+   */
+  function _requireNonDuplicate(address[] memory arr) internal pure {
+    if (arr.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
   }
 }

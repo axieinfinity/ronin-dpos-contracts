@@ -46,12 +46,17 @@ abstract contract BridgeManagerCallback is IdentityGuard {
    * @param registers The array of callback addresses to register.
    * @return registereds An array indicating the success status of each registration.
    */
-  function _registerCallbacks(address[] memory registers) internal returns (bool[] memory registereds) {
+  function _registerCallbacks(
+    address[] memory registers
+  ) internal nonDuplicate(registers) returns (bool[] memory registereds) {
     uint256 length = registers.length;
     registereds = new bool[](length);
     EnumerableSet.AddressSet storage callbackRegisters = _getCallbackRegisters();
+
     for (uint256 i; i < length; ) {
+      _requireHasCode(registers[i]);
       registereds[i] = callbackRegisters.add(registers[i]);
+
       unchecked {
         ++i;
       }
@@ -63,12 +68,16 @@ abstract contract BridgeManagerCallback is IdentityGuard {
    * @param registers The array of callback addresses to unregister.
    * @return unregistereds An array indicating the success status of each unregistration.
    */
-  function _unregisterCallbacks(address[] memory registers) internal returns (bool[] memory unregistereds) {
+  function _unregisterCallbacks(
+    address[] memory registers
+  ) internal nonDuplicate(registers) returns (bool[] memory unregistereds) {
     uint256 length = registers.length;
     unregistereds = new bool[](length);
     EnumerableSet.AddressSet storage callbackRegisters = _getCallbackRegisters();
+
     for (uint256 i; i < length; ) {
       unregistereds[i] = callbackRegisters.remove(registers[i]);
+
       unchecked {
         ++i;
       }
@@ -78,15 +87,19 @@ abstract contract BridgeManagerCallback is IdentityGuard {
   /**
    * @dev Internal function to notify all registered callbacks with the provided function signature and data.
    * @param callbackFnSig The function signature of the callback method.
-   * @param data The data to pass to the callback method.
+   * @param inputs The data to pass to the callback method.
    */
-  function _notifyRegisters(bytes4 callbackFnSig, bytes memory data) internal {
+  function _notifyRegisters(bytes4 callbackFnSig, bytes memory inputs) internal {
+    bool success;
+    bytes memory returnOrRevertData;
     address[] memory registers = _getCallbackRegisters().values();
     uint256 length = registers.length;
-    bytes memory callData = abi.encodePacked(callbackFnSig, data);
+    bytes memory callData = abi.encodePacked(callbackFnSig, inputs);
+
     for (uint256 i; i < length; ) {
-      (bool success, bytes memory returnOrRevertData) = registers[i].call(callData);
+      (success, returnOrRevertData) = registers[i].call(callData);
       success.handleRevert(msg.sig, returnOrRevertData);
+
       if (abi.decode(returnOrRevertData, (bytes4)) != callbackFnSig) {
         revert ErrInvalidReturnData(callbackFnSig, registers[i], returnOrRevertData);
       }
@@ -99,11 +112,11 @@ abstract contract BridgeManagerCallback is IdentityGuard {
 
   /**
    * @dev Internal function to retrieve the address set of callback registers.
-   * @return callbackRegisters_ The storage reference to the callback registers.
+   * @return callbackRegisters The storage reference to the callback registers.
    */
-  function _getCallbackRegisters() internal pure returns (EnumerableSet.AddressSet storage callbackRegisters_) {
+  function _getCallbackRegisters() internal pure returns (EnumerableSet.AddressSet storage callbackRegisters) {
     assembly {
-      callbackRegisters_.slot := CALLBACK_REGISTERS_SLOT
+      callbackRegisters.slot := CALLBACK_REGISTERS_SLOT
     }
   }
 }
