@@ -25,7 +25,12 @@ import {
   StakingArguments,
   StakingVestingArguments,
 } from '../../src/utils';
-import { BridgeManagerArguments, bridgeManagerConf } from '../../src/configs/bridge-manager';
+import {
+  BridgeManagerArguments,
+  BridgeRewardArguments,
+  bridgeManagerConf,
+  bridgeRewardConf,
+} from '../../src/configs/bridge-manager';
 
 export interface InitTestOutput {
   roninGovernanceAdminAddress: Address;
@@ -36,6 +41,8 @@ export interface InitTestOutput {
   stakingVestingContractAddress: Address;
   validatorContractAddress: Address;
   bridgeTrackingAddress: Address;
+  bridgeSlashAddress: Address;
+  bridgeRewardAddress: Address;
   roninBridgeManagerAddress: Address;
   mainchainBridgeManagerAddress: Address;
 }
@@ -52,6 +59,7 @@ export interface InitTestInput {
   roninTrustedOrganizationArguments?: RoninTrustedOrganizationArguments;
   governanceAdminArguments?: RoninGovernanceAdminArguments;
   bridgeManagerArguments?: BridgeManagerArguments;
+  bridgeRewardArguments?: BridgeRewardArguments;
 }
 
 export const defaultTestConfig: InitTestInput = {
@@ -138,6 +146,10 @@ export const defaultTestConfig: InitTestInput = {
     governors: [],
     expiryDuration: 60 * 60 * 24 * 14, // 14 days
   },
+
+  bridgeRewardArguments: {
+    rewardPerPeriod: BigNumber.from(10).pow(18), // 1 RON per block
+  },
 };
 
 export const initTest = (id: string) =>
@@ -205,6 +217,10 @@ export const initTest = (id: string) =>
         ...defaultTestConfig?.bridgeManagerArguments,
         ...options?.bridgeManagerArguments,
       };
+      bridgeRewardConf[network.name] = {
+        ...defaultTestConfig?.bridgeRewardArguments,
+        ...options?.bridgeRewardArguments,
+      };
     }
 
     await deployments.fixture([
@@ -229,6 +245,8 @@ export const initTest = (id: string) =>
     const stakingVestingContractDeployment = await deployments.get('StakingVestingProxy');
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
     const bridgeTrackingDeployment = await deployments.get('BridgeTrackingProxy');
+    const bridgeSlashDeployment = await deployments.get('BridgeSlashProxy');
+    const bridgeRewardDeployment = await deployments.get('BridgeRewardProxy');
     const roninBridgeManagerDeployment = await deployments.get('RoninBridgeManager');
     const mainchainBridgeManagerDeployment = await deployments.get('MainchainBridgeManager');
     await EpochController.setTimestampToPeriodEnding();
@@ -242,6 +260,8 @@ export const initTest = (id: string) =>
       stakingVestingContractAddress: stakingVestingContractDeployment.address,
       validatorContractAddress: validatorContractDeployment.address,
       bridgeTrackingAddress: bridgeTrackingDeployment.address,
+      bridgeSlashAddress: bridgeSlashDeployment.address,
+      bridgeRewardAddress: bridgeRewardDeployment.address,
       roninBridgeManagerAddress: roninBridgeManagerDeployment.address,
       mainchainBridgeManagerAddress: mainchainBridgeManagerDeployment.address,
     };

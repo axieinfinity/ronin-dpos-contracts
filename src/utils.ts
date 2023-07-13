@@ -3,6 +3,7 @@ import { ethers } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
 
 import { TrustedOrganizationStruct } from './types/IRoninTrustedOrganization';
+import { BridgeRewardArguments } from './configs/bridge-manager';
 
 export const DEFAULT_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -63,6 +64,8 @@ export interface GeneralConfig {
     roninTrustedOrganizationContract?: AddressExtended;
     bridgeTrackingContract?: AddressExtended;
     bridgeManagerContract?: AddressExtended;
+    bridgeSlashContract?: AddressExtended;
+    bridgeRewardContract?: AddressExtended;
     startedAtBlock?: BigNumberish;
     bridgeContract: Address;
   };
@@ -207,3 +210,4 @@ export interface GatewayPauseEnforcerArguments {
 export interface GatewayPauseEnforcerConfig {
   [network: LiteralNetwork]: GatewayPauseEnforcerArguments | undefined;
 }
+

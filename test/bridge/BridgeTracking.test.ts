@@ -76,6 +76,8 @@ describe('Bridge Tracking test', () => {
       validatorContractAddress,
       bridgeTrackingAddress,
       roninBridgeManagerAddress,
+      bridgeSlashAddress,
+      bridgeRewardAddress,
     } = await initTest('BridgeTracking')({
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
@@ -125,11 +127,7 @@ describe('Bridge Tracking test', () => {
       ]
     );
 
-    await bridgeTracking.initializeV3(
-      bridgeAdmin.address,
-      '0x0000000000000000000000000000000000000001',
-      '0x0000000000000000000000000000000000000002'
-    );
+    await bridgeTracking.initializeV3(bridgeAdmin.address, bridgeSlashAddress, bridgeRewardAddress);
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();

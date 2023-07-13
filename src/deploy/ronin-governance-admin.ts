@@ -29,7 +29,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     nonce: generalRoninConf[network.name].governanceAdmin?.nonce,
   });
 
-  console.log('deploy abc failed');
   verifyAddress(deployment.address, generalRoninConf[network.name].governanceAdmin?.address);
 };
 
