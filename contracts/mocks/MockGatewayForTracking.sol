@@ -7,18 +7,18 @@ import "../extensions/collections/HasContracts.sol";
 import { HasBridgeTrackingDeprecated } from "../utils/DeprecatedSlots.sol";
 
 contract MockGatewayForTracking is HasContracts, HasBridgeTrackingDeprecated {
-  constructor(address _bridgeTrackingContract) {
-    _setContract(ContractType.BRIDGE_TRACKING, _bridgeTrackingContract);
+  constructor(address bridgeTrackingContract) {
+    _setContract(ContractType.BRIDGE_TRACKING, bridgeTrackingContract);
   }
 
-  function sendBallot(IBridgeTracking.VoteKind _kind, uint256 _id, address[] memory _voters) external {
+  function sendBallot(IBridgeTracking.VoteKind kind, uint256 id, address[] memory voters) external {
     IBridgeTracking bridgeTrackingContract = IBridgeTracking(getContract(ContractType.BRIDGE_TRACKING));
-    for (uint256 _i; _i < _voters.length; _i++) {
-      bridgeTrackingContract.recordVote(_kind, _id, _voters[_i]);
+    for (uint256 i; i < voters.length; i++) {
+      bridgeTrackingContract.recordVote(kind, id, voters[i]);
     }
   }
 
-  function sendApprovedVote(IBridgeTracking.VoteKind _kind, uint256 _id) external {
-    IBridgeTracking(getContract(ContractType.BRIDGE_TRACKING)).handleVoteApproved(_kind, _id);
+  function sendApprovedVote(IBridgeTracking.VoteKind kind, uint256 id) external {
+    IBridgeTracking(getContract(ContractType.BRIDGE_TRACKING)).handleVoteApproved(kind, id);
   }
 }
