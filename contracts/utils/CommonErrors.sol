@@ -5,6 +5,13 @@ import { ContractType } from "./ContractType.sol";
 import { RoleAccess } from "./RoleAccess.sol";
 
 /**
+ * @dev Error thrown when the return data from a callback function is invalid.
+ * @param callbackFnSig The signature of the callback function that returned invalid data.
+ * @param register The address of the register where the callback function was invoked.
+ * @param returnData The invalid return data received from the callback function.
+ */
+error ErrInvalidReturnData(bytes4 callbackFnSig, address register, bytes returnData);
+/**
  * @dev Error of set to non-contract.
  */
 error ErrZeroCodeContract(address addr);

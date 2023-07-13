@@ -5,6 +5,7 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
 import { IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { IdentityGuard } from "../../utils/IdentityGuard.sol";
+import { ErrInvalidReturnData } from "../../utils/CommonErrors.sol";
 
 /**
  * @title BridgeManagerCallback
@@ -86,7 +87,9 @@ abstract contract BridgeManagerCallback is IdentityGuard {
     for (uint256 i; i < length; ) {
       (bool success, bytes memory returnOrRevertData) = registers[i].call(callData);
       success.handleRevert(msg.sig, returnOrRevertData);
-      if (abi.decode(returnOrRevertData, (bytes4)) != callbackFnSig) revert();
+      if (abi.decode(returnOrRevertData, (bytes4)) != callbackFnSig) {
+        revert ErrInvalidReturnData(callbackFnSig, registers[i], returnOrRevertData);
+      }
 
       unchecked {
         ++i;
