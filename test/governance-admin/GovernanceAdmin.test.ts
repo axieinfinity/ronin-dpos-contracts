@@ -27,10 +27,9 @@ import {
   TrustedOrganizationAddressSet,
 } from '../helpers/address-set-types/trusted-org-set-type';
 import { initTest } from '../helpers/fixture';
-import { getLastBlockTimestamp, compareAddrs } from '../helpers/utils';
+import { getLastBlockTimestamp, compareAddrs, mineDummyBlock } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
-let relayer: SignerWithAddress;
 let signers: SignerWithAddress[];
 let trustedOrgs: TrustedOrganizationAddressSet[];
 
@@ -44,15 +43,14 @@ let supports: VoteType[];
 let signatures: SignatureStruct[];
 let ballot: BOsBallot;
 
-let proposalExpiryDuration = 60;
+let proposalExpiryDuration = 60; // TODO: why block timestamp is wrong???
 let numerator = 7;
 let denominator = 10;
 let snapshotId: string;
 
-// TODO:  remove mainchain GA test
 describe('Governance Admin test', () => {
   before(async () => {
-    [deployer, relayer, ...signers] = await ethers.getSigners();
+    [deployer, ...signers] = await ethers.getSigners();
     trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 21 * 3));
 
     const logic = await new MockBridge__factory(deployer).deploy();
@@ -92,7 +90,18 @@ describe('Governance Admin test', () => {
     );
   });
 
+  describe('Test config', async () => {
+    it('Should the GA set up the config correctly', async () => {
+      (await governanceAdmin.getProposalExpiryDuration()).eq(proposalExpiryDuration);
+    });
+  });
+
   describe('General case of governance admin', async () => {
+    before(async () => {
+      // Mine a dummy block to reduce the first block after test setup gone too far, that exceeds proposal duration
+      await mineDummyBlock();
+    });
+
     describe('Proposals', () => {
       it('Should be able to propose to change staking config', async () => {
         const newMinValidatorStakingAmount = 555;
@@ -116,6 +125,9 @@ describe('Governance Admin test', () => {
         await governanceAdmin
           .connect(trustedOrgs[0].governor)
           .proposeProposalStructAndCastVotes(proposal, supports, signatures);
+
+        console.log('[<] latestTimestamp + 1', await getLastBlockTimestamp());
+        console.log('[<]', trustedOrgs[0].governor.address);
         expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address))
           .to.true;
         expect(await stakingContract.minValidatorStakingAmount()).eq(newMinValidatorStakingAmount);
