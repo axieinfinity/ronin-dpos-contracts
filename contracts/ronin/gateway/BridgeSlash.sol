@@ -10,6 +10,7 @@ import { IRoninValidatorSet } from "../../interfaces/validator/IRoninValidatorSe
 import { Math } from "../../libraries/Math.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { IdentityGuard } from "../../utils/IdentityGuard.sol";
+import { ErrLengthMismatch } from "../../utils/CommonErrors.sol";
 
 /**
  * @title BridgeSlash
@@ -72,6 +73,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     address[] calldata bridgeOperators,
     bool[] memory addeds
   ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
+    if (bridgeOperators.length != addeds.length) revert ErrLengthMismatch(msg.sig);
     uint256 length = bridgeOperators.length;
     uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
     mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
@@ -117,6 +119,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     uint256 totalBallotsForPeriod,
     uint256 period
   ) external onlyPeriodHasBallots(totalBallotsForPeriod) onlyContract(ContractType.BRIDGE_TRACKING) {
+    if (allBridgeOperators.length != ballots.length) revert ErrLengthMismatch(msg.sig);
     // Get penalty durations for each slash tier.
     uint256[] memory penaltyDurations = _getPenaltyDurations();
     // Get the storage mapping for bridge slash information.
@@ -190,7 +193,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
    */
   function _getSlashTier(uint256 ballot, uint256 totalBallots) internal pure virtual returns (Tier tier) {
     uint256 ratio = (ballot * PERCENTAGE_FRACTION) / totalBallots;
-    tier = ratio > TIER_2_PENALTY_DURATION ? Tier.Tier2 : ratio > TIER_1_PENALTY_DURATION ? Tier.Tier1 : Tier.Tier0;
+    tier = ratio > TIER_2_THRESHOLD ? Tier.Tier2 : ratio > TIER_1_THRESHOLD ? Tier.Tier1 : Tier.Tier0;
   }
 
   /**

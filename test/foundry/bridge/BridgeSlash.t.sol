@@ -6,6 +6,7 @@ import { Test } from "forge-std/Test.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
+import { MockValidatorContract } from "@ronin/contracts/mocks/ronin/MockValidatorContract.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
 import { IBridgeSlash, BridgeSlash } from "@ronin/contracts/ronin/gateway/BridgeSlash.sol";
 import { IBridgeManager, BridgeManagerUtils } from "./utils/BridgeManagerUtils.t.sol";
@@ -17,94 +18,99 @@ import { IBridgeSlashEventsTest } from "./interfaces/IBridgeSlashEvents.t.sol";
 contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
   using ErrorHandler for bool;
 
-  // @dev label for making address
-  string internal constant ADMIN = "ADMIN";
-  string internal constant GATEWAY = "GATEWAY";
-  string internal constant VALIDATOR = "VALIDATOR";
-  string internal constant BRIDGE_SLASH = "BRIDGE_SLASH";
-  string internal constant BRIDGE_MANAGER = "BRIDGE_MANAGER";
-  string internal constant BRIDGE_TRACKING = "BRIDGE_TRACKING";
+  uint256 internal constant MIN_PERIOD_DURATION = 1;
+  uint256 internal constant MAX_PERIOD_DURATION = 365;
 
   /// @dev immutable contracts
   address internal _admin;
   address internal _validatorContract;
   address internal _bridgeManagerContract;
   /// @dev proxy contracts
+  address internal _gatewayLogic;
   address internal _gatewayContract;
+  address internal _bridgeSlashLogic;
   address internal _bridgeSlashContract;
+  address internal _bridgeTrackingLogic;
   address internal _bridgeTrackingContract;
 
-  bytes internal _initBridgeManagerInputs;
+  bytes internal _defaultBridgeManagerInputs;
 
   function setUp() external {
     _setUp();
+    _label();
   }
 
-  function _setUp() internal virtual {
-    _admin = makeAddr(ADMIN);
+  function test_Valid_ExecSlashBridgeOperators(uint256 r1, uint256 period, uint256 duration) external {
+    period = _bound(period, 1, type(uint64).max);
+    duration = _bound(duration, MIN_PERIOD_DURATION, MAX_PERIOD_DURATION);
 
-    // immutable contracts
-    _validatorContract = makeAddr(VALIDATOR);
-    _bridgeManagerContract = makeAddr(BRIDGE_MANAGER);
+    (address[] memory bridgeOperators, , ) = abi.decode(_defaultBridgeManagerInputs, (address[], address[], uint256[]));
 
-    // proxy contracts
-    _gatewayContract = makeAddr(GATEWAY);
-    _bridgeSlashContract = makeAddr(BRIDGE_SLASH);
-    _bridgeTrackingContract = makeAddr(BRIDGE_TRACKING);
+    for (uint256 i; i < duration; ) {
+      uint256[] memory ballots = _createRandomNumbers(r1, bridgeOperators.length, 0, MAX_FUZZ_INPUTS);
 
-    (, bytes memory bridgeManagerInputs) = address(this).staticcall(
-      abi.encodeCall(this.getValidInputs, (DEFAULT_R1, DEFAULT_R2, DEFAULT_R3, DEFAULT_NUM_BRIDGE_OPERATORS))
-    );
-    _initBridgeManagerInputs = bridgeManagerInputs;
-    _initImmutable(_bridgeManagerContract, "MockBridgeManager.sol", bridgeManagerInputs);
+      uint256 totalBallotsForPeriod;
+      for (uint256 j; j < ballots.length; ) {
+        totalBallotsForPeriod += ballots[j];
+        unchecked {
+          ++j;
+        }
+      }
 
-    _initProxy(_gatewayContract, GATEWAY, _admin, type(RoninGatewayV2).creationCode, "");
-    _initProxy(
-      _bridgeSlashContract,
-      BRIDGE_SLASH,
-      _admin,
-      type(BridgeSlash).creationCode,
-      abi.encodeCall(BridgeSlash.initialize, (_validatorContract, _bridgeManagerContract, _bridgeTrackingContract))
-    );
-    _initProxy(_bridgeTrackingContract, BRIDGE_TRACKING, _admin, type(BridgeTracking).creationCode, "");
-  }
+      vm.prank(_bridgeTrackingContract, _bridgeTrackingContract);
+      IBridgeSlash(_bridgeSlashContract).execSlashBridgeOperators(
+        bridgeOperators,
+        ballots,
+        totalBallotsForPeriod,
+        period
+      );
 
-  function test_Valid_ExecSlashBridgeOperators(uint256 r1, uint256 period) external {
-    vm.assume(period != 0);
+      r1 = uint256(keccak256(abi.encode(r1)));
 
-    (address[] memory allBridgeOperators, , ) = abi.decode(_initBridgeManagerInputs, (address[], address[], uint256[]));
-
-    uint256[] memory ballots = _createRandomNumbers(r1, allBridgeOperators.length, 0, MAX_FUZZ_INPUTS);
-    uint256 totalBallotsForPeriod;
-    for (uint256 i; i < ballots.length; ) {
-      totalBallotsForPeriod += ballots[i];
       unchecked {
+        ++period;
         ++i;
       }
     }
+  }
 
-    vm.prank(_bridgeTrackingContract, _bridgeTrackingContract);
-    IBridgeSlash(_bridgeSlashContract).execSlashBridgeOperators(
-      allBridgeOperators,
-      ballots,
-      totalBallotsForPeriod,
-      period
+  function _setUp() internal virtual {
+    _admin = vm.addr(1);
+    _validatorContract = address(new MockValidatorContract());
+    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+      DEFAULT_R1,
+      DEFAULT_R2,
+      DEFAULT_R3,
+      DEFAULT_NUM_BRIDGE_OPERATORS
+    );
+    _defaultBridgeManagerInputs = abi.encode(bridgeOperators, governors, voteWeights);
+    _bridgeManagerContract = address(new MockBridgeManager(bridgeOperators, governors, voteWeights));
+
+    _gatewayLogic = address(new RoninGatewayV2());
+    _gatewayContract = address(new TransparentUpgradeableProxy(_gatewayLogic, _admin, ""));
+
+    _bridgeTrackingLogic = address(new BridgeTracking());
+    _bridgeTrackingContract = address(new TransparentUpgradeableProxy(_bridgeTrackingLogic, _admin, ""));
+
+    _bridgeSlashLogic = address(new BridgeSlash());
+    _bridgeSlashContract = address(
+      new TransparentUpgradeableProxy(
+        _bridgeSlashLogic,
+        _admin,
+        abi.encodeCall(BridgeSlash.initialize, (_validatorContract, _bridgeManagerContract, _bridgeTrackingContract))
+      )
     );
   }
 
-  function _initImmutable(address to, string memory contractPath, bytes memory args) internal {
-    deployCodeTo(contractPath, args, to);
-  }
-
-  function _initProxy(
-    address proxy,
-    string memory label,
-    address admin,
-    bytes memory logicBytecode,
-    bytes memory args
-  ) internal {
-    address logic = makeAddr(string(abi.encodePacked(label, "_LOGIC")));
-    vm.etch(logic, logicBytecode);
-    deployCodeTo("TransparentUpgradeableProxyV2.sol", abi.encode(logic, admin, args), proxy);
+  function _label() internal virtual {
+    vm.label(_admin, "ADMIN");
+    vm.label(_validatorContract, "VALIDATOR");
+    vm.label(_bridgeManagerContract, "BRIDGE_MANAGER");
+    vm.label(_gatewayLogic, "GATEWAY_LOGIC");
+    vm.label(_gatewayContract, "GATEWAY");
+    vm.label(_bridgeTrackingLogic, "BRIDGE_TRACKING_LOGIC");
+    vm.label(_bridgeTrackingContract, "BRIDGE_TRACKING");
+    vm.label(_bridgeSlashLogic, "BRIDGE_SLASH_LOGIC");
+    vm.label(_bridgeSlashContract, "BRIDGE_SLASH");
   }
 }

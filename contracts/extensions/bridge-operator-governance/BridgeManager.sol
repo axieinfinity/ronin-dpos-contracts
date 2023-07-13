@@ -133,9 +133,6 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
 
     delete _governorOf[currentBridgeOperator];
 
-    bool[] memory statuses = new bool[](1);
-    statuses[0] = updated;
-
     _notifyRegisters(
       IBridgeManagerCallback.onBridgeOperatorUpdated.selector,
       abi.encode(currentBridgeOperator, newBridgeOperator, updated)
@@ -403,9 +400,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     NUMERATOR_SLOT.store(numerator);
     DENOMINATOR_SLOT.store(denominator);
 
-    unchecked {
-      emit ThresholdUpdated(NONCE_SLOT.postIncrement(), numerator, denominator, _previousNum, _previousDenom);
-    }
+    emit ThresholdUpdated(NONCE_SLOT.postIncrement(), numerator, denominator, _previousNum, _previousDenom);
   }
 
   /**
