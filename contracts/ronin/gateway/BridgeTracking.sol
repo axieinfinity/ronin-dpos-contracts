@@ -90,9 +90,9 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   }
 
   function initializeV3(address _bridgeManager, address _bridgeSlash, address _bridgeReward) external reinitializer(3) {
+    _setContract(ContractType.BRIDGE_MANAGER, _bridgeManager);
     _setContract(ContractType.BRIDGE_SLASH, _bridgeSlash);
     _setContract(ContractType.BRIDGE_REWARD, _bridgeReward);
-    _setContract(ContractType.BRIDGE_MANAGER, _bridgeManager);
   }
 
   /**
