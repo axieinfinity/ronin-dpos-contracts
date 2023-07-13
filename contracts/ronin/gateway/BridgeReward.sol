@@ -33,9 +33,10 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
   }
 
   function execSyncReward(
-    address[] calldata operatorList,
-    uint256[] calldata voteCountList,
-    uint256 totalVoteCount,
+    address[] calldata operators,
+    uint256[] calldata ballots,
+    uint256 totalBallot,
+    uint256 totalVote,
     uint256 period
   )
     external
@@ -43,32 +44,71 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
   {
     if (period <= _latestRewardedPeriod) revert ErrPeriodAlreadyProcessed(period, _latestRewardedPeriod);
 
-    uint256 rewardPerVote = _rewardPerPeriod / totalVoteCount;
-    uint256[] memory slashedDurationList = _getSlashInfo(operatorList);
+    uint256[] memory slashedDurationList = _getSlashInfo(operators);
+    bool iSlashed;
 
-    for (uint i; i < operatorList.length; ) {
-      address iOperator = operatorList[i];
-      uint256 iReward = voteCountList[i] * rewardPerVote;
-
-      BridgeRewardInfo storage _iRewardInfo = _rewardInfo[iOperator];
-      if (slashedDurationList[i] > 0) {
-        _iRewardInfo.slashed += iReward;
-        emit BridgeRewardSlashed(iOperator, iReward);
-      } else {
-        _iRewardInfo.claimed += iReward;
-        if (_sendRON(payable(iOperator), iReward)) {
-          emit BridgeRewardScattered(iOperator, iReward);
-        } else {
-          emit BridgeRewardScatterFailed(iOperator, iReward);
+    if (!_validateBridgeTrackingResponse(totalBallot, totalVote, ballots) || totalBallot == 0) {
+      // Shares equally in case the bridge has nothing to vote or bridge tracking response is incorrect
+      uint256 rewardEach = _rewardPerPeriod / operators.length;
+      for (uint i; i < operators.length; ) {
+        iSlashed = period <= slashedDurationList[i];
+        _updateRewardAndTransfer(operators[i], rewardEach, iSlashed);
+        unchecked {
+          ++i;
         }
       }
-
-      unchecked {
-        ++i;
+    } else {
+      // Shares the bridge operators reward proportionally
+      uint256 iReward;
+      for (uint i; i < operators.length; ) {
+        iReward = (_rewardPerPeriod * ballots[i]) / totalBallot;
+        iSlashed = period <= slashedDurationList[i];
+        _updateRewardAndTransfer(operators[i], iReward, iSlashed);
+        unchecked {
+          ++i;
+        }
       }
     }
 
     ++_latestRewardedPeriod;
+  }
+
+  /**
+   * @dev Returns whether the responses from bridge tracking are correct.
+   */
+  function _validateBridgeTrackingResponse(
+    uint256 totalBallots,
+    uint256 totalVotes,
+    uint256[] memory ballots
+  ) private returns (bool valid) {
+    valid = true;
+    uint256 sumBallots;
+    for (uint _i; _i < ballots.length; _i++) {
+      if (ballots[_i] > totalVotes) {
+        valid = false;
+        break;
+      }
+      sumBallots += ballots[_i];
+    }
+    valid = valid && (sumBallots <= totalBallots);
+    if (!valid) {
+      emit BridgeTrackingIncorrectlyResponded();
+    }
+  }
+
+  function _updateRewardAndTransfer(address operator, uint256 reward, bool slashed) private {
+    BridgeRewardInfo storage _iRewardInfo = _rewardInfo[operator];
+    if (slashed) {
+      _iRewardInfo.slashed += reward;
+      emit BridgeRewardSlashed(operator, reward);
+    } else {
+      _iRewardInfo.claimed += reward;
+      if (_sendRON(payable(operator), reward)) {
+        emit BridgeRewardScattered(operator, reward);
+      } else {
+        emit BridgeRewardScatterFailed(operator, reward);
+      }
+    }
   }
 
   function getRewardPerPeriod() external view returns (uint256) {

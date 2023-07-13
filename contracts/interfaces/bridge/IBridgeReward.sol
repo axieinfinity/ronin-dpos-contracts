@@ -8,6 +8,8 @@ interface IBridgeReward {
     uint256 slashed;
   }
 
+  /// @dev Event emiited when the bridge tracking contract tracks the invalid data, cause malform in sharing bridge reward.
+  event BridgeTrackingIncorrectlyResponded();
   /// @dev Event emitted when the reward per period config is updated.
   event UpdatedRewardPerPeriod(uint256 newRewardPerPeriod);
   /// @dev Event emitted when the reward of the `operator` is scattered with `amount`.
@@ -18,9 +20,10 @@ interface IBridgeReward {
   event BridgeRewardScatterFailed(address operator, uint256 amount);
 
   function execSyncReward(
-    address[] calldata operatorList,
-    uint256[] calldata voteCountList,
-    uint256 totalVoteCount,
+    address[] calldata operators,
+    uint256[] calldata ballots,
+    uint256 totalBallot,
+    uint256 totalVote,
     uint256 period
   ) external;
 

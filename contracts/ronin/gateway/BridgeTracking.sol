@@ -93,6 +93,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
     _setContract(ContractType.BRIDGE_MANAGER, _bridgeManager);
     _setContract(ContractType.BRIDGE_SLASH, _bridgeSlash);
     _setContract(ContractType.BRIDGE_REWARD, _bridgeReward);
+    _trackedPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod() - 1;
   }
 
   /**
@@ -215,12 +216,13 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
         _trackedPeriod
       );
 
-      IBridgeReward(getContract(ContractType.BRIDGE_REWARD)).execSyncReward(
-        allBridgeOperators,
-        ballots,
-        totalBallotsForPeriod,
-        _trackedPeriod
-      );
+      IBridgeReward(getContract(ContractType.BRIDGE_REWARD)).execSyncReward({
+        operators: allBridgeOperators,
+        ballots: ballots,
+        totalBallot: totalBallotsForPeriod,
+        totalVote: totalVotes(_trackedPeriod),
+        period: _trackedPeriod
+      });
 
       _trackedPeriod = _period;
     }
