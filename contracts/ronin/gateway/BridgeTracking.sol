@@ -72,10 +72,10 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   /**
    * @dev Initializes the contract storage.
    */
-  function initialize(address bridgeContract, address validatorContract, uint256 startedAtBlock) external initializer {
+  function initialize(address bridgeContract, address validatorContract, uint256 startedAtBlock_) external initializer {
     _setContract(ContractType.BRIDGE, bridgeContract);
     _setContract(ContractType.VALIDATOR, validatorContract);
-    _startedAtBlock = startedAtBlock;
+    _startedAtBlock = startedAtBlock_;
   }
 
   function initializeV2() external reinitializer(2) {
@@ -103,20 +103,20 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   /**
    * @inheritdoc IBridgeTracking
    */
-  function totalVotes(uint256 period) public view override returns (uint256 totalVotes) {
-    totalVotes = _periodMetric[period].totalRequests;
+  function totalVotes(uint256 period) public view override returns (uint256 totalVotes_) {
+    totalVotes_ = _periodMetric[period].totalRequests;
     if (_isBufferCountedForPeriod(period)) {
-      totalVotes += _bufferMetric.requests.length;
+      totalVotes_ += _bufferMetric.requests.length;
     }
   }
 
   /**
    * @inheritdoc IBridgeTracking
    */
-  function totalBallots(uint256 period) public view override returns (uint256 totalBallots) {
-    totalBallots = _periodMetric[period].totalBallots;
+  function totalBallots(uint256 period) public view override returns (uint256 totalBallots_) {
+    totalBallots_ = _periodMetric[period].totalBallots;
     if (_isBufferCountedForPeriod(period)) {
-      totalBallots += _bufferMetric.data.totalBallots;
+      totalBallots_ += _bufferMetric.data.totalBallots;
     }
   }
 
