@@ -58,7 +58,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     TUint256.wrap(0x6924fe71b0c8b61aea02ca498b5f53b29bd95726278b1fe4eb791bb24a42644c);
 
   /**
-   * @dev The domain separator used for computing hash digests in the contract.
+   * @inheritdoc IBridgeManager
    */
   bytes32 public immutable DOMAIN_SEPARATOR;
 
