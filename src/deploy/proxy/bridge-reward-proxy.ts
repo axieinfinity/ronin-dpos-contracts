@@ -5,6 +5,7 @@ import { generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { verifyAddress } from '../../script/verify-address';
 import { BridgeReward__factory } from '../../types';
 import { bridgeRewardConf } from '../../configs/bridge-manager';
+import { BigNumber } from 'ethers';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -23,11 +24,14 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     bridgeRewardConf[network.name]!.rewardPerPeriod,
   ]);
 
+  console.log(bridgeRewardConf[network.name]);
+
   const deployment = await deploy('BridgeRewardProxy', {
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
     args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, data],
+    value: BigNumber.from(bridgeRewardConf[network.name]!.topupAmount),
     nonce: generalRoninConf[network.name].bridgeRewardContract?.nonce,
   });
   verifyAddress(deployment.address, generalRoninConf[network.name].bridgeRewardContract?.address);

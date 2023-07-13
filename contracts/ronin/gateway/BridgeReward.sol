@@ -10,13 +10,13 @@ import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
 import "../../utils/CommonErrors.sol";
 
 contract BridgeReward is IBridgeReward, HasContracts, Initializable {
-  receive() external payable {}
+  // receive() external payable {}
 
   mapping(address => BridgeRewardInfo) internal _rewardInfo;
   uint256 internal _rewardPerPeriod;
   uint256 internal _latestRewardedPeriod;
 
-  constructor() {
+  constructor() payable {
     _disableInitializers();
   }
 
@@ -25,7 +25,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
     address bridgeTrackingContract,
     address bridgeSlashContract,
     uint256 rewardPerPeriod
-  ) external {
+  ) external payable {
     _setContract(ContractType.BRIDGE_MANAGER, bridgeManagerContract);
     _setContract(ContractType.BRIDGE_TRACKING, bridgeTrackingContract);
     _setContract(ContractType.BRIDGE_SLASH, bridgeSlashContract);

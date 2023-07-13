@@ -30,6 +30,7 @@ export const bridgeManagerConf: BridgeManagerConfig = {
 
 export interface BridgeRewardArguments {
   rewardPerPeriod?: BigNumberish;
+  topupAmount?: BigNumberish;
 }
 export interface BridgeRewardConfig {
   [network: LiteralNetwork]: BridgeRewardArguments | undefined;

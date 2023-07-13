@@ -46,7 +46,8 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   mapping(uint256 => PeriodVotingMetric) internal _periodMetric;
   /// @dev Mapping from vote kind => receipt id => receipt stats
   mapping(VoteKind => mapping(uint256 => ReceiptTrackingInfo)) internal _receiptTrackingInfo;
-  uint256 internal _trackedPeriod;
+  /// @dev The latest period that get synced with bridge's slashing and rewarding contract
+  uint256 internal _lastSyncPeriod;
 
   modifier skipOnUnstarted() {
     _skipOnUnstarted();
@@ -93,7 +94,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
     _setContract(ContractType.BRIDGE_MANAGER, _bridgeManager);
     _setContract(ContractType.BRIDGE_SLASH, _bridgeSlash);
     _setContract(ContractType.BRIDGE_REWARD, _bridgeReward);
-    _trackedPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod() - 1;
+    _lastSyncPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod() - 1;
   }
 
   /**
@@ -203,28 +204,28 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
     _increaseBallot(_kind, _requestId, _operator, _period);
 
     // When switching to new period, wrap up vote info, then slash and distribute reward accordingly.
-    if (_trackedPeriod < _period) {
-      IBridgeManager bridgeManager = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER));
-      address[] memory allBridgeOperators = bridgeManager.getBridgeOperators();
-      uint256 totalBallotsForPeriod = totalBallots(_trackedPeriod);
-      uint256[] memory ballots = _getManyTotalBallots(_trackedPeriod, allBridgeOperators);
+    if (_lastSyncPeriod < _period) {
+      address[] memory allBridgeOperators = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER))
+        .getBridgeOperators();
+      uint256 totalBallotsForPeriod = totalBallots(_lastSyncPeriod);
+      uint256[] memory ballots = _getManyTotalBallots(_lastSyncPeriod, allBridgeOperators);
 
       IBridgeSlash(getContract(ContractType.BRIDGE_SLASH)).execSlashBridgeOperators(
         allBridgeOperators,
         ballots,
         totalBallotsForPeriod,
-        _trackedPeriod
+        _lastSyncPeriod
       );
 
       IBridgeReward(getContract(ContractType.BRIDGE_REWARD)).execSyncReward({
         operators: allBridgeOperators,
         ballots: ballots,
         totalBallot: totalBallotsForPeriod,
-        totalVote: totalVotes(_trackedPeriod),
-        period: _trackedPeriod
+        totalVote: totalVotes(_lastSyncPeriod),
+        period: _lastSyncPeriod
       });
 
-      _trackedPeriod = _period;
+      _lastSyncPeriod = _period;
     }
   }
 
@@ -307,7 +308,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
       for (uint _i = 0; _i < _bufferMetric.requests.length; ) {
         Request storage _bufferRequest = _bufferMetric.requests[_i];
         ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[_bufferRequest.kind][_bufferRequest.id];
-        _receiptInfo.trackedPeriod = _trackedPeriod;
+        _receiptInfo.trackedPeriod = trackedPeriod;
 
         unchecked {
           ++_i;

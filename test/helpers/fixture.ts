@@ -148,7 +148,8 @@ export const defaultTestConfig: InitTestInput = {
   },
 
   bridgeRewardArguments: {
-    rewardPerPeriod: BigNumber.from(10).pow(18), // 1 RON per block
+    rewardPerPeriod: 5_000,
+    topupAmount: BigNumber.from(100_000_000_000),
   },
 };
 
