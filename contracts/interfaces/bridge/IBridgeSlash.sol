@@ -20,7 +20,7 @@ interface IBridgeSlash {
    * @dev Struct representing the status of a bridge operator.
    */
   struct BridgeSlashInfo {
-    uint64 slashUntilPeriodNumber;
+    uint64 slashUntilPeriod;
     uint192 newlyAddedAtPeriod;
   }
 
@@ -29,9 +29,9 @@ interface IBridgeSlash {
    * @param tier The slash tier of the operator.
    * @param bridgeOperator The address of the slashed bridge operator.
    * @param period The period in which the operator is slashed.
-   * @param until The timestamp until which the operator is penalized.
+   * @param slashUntilPeriod The period until which the operator is penalized.
    */
-  event Slashed(Tier indexed tier, address indexed bridgeOperator, uint256 indexed period, uint256 until);
+  event Slashed(Tier indexed tier, address indexed bridgeOperator, uint256 indexed period, uint256 slashUntilPeriod);
 
   /**
    * @dev Slashes the unavailability of bridge operators during a specific period.

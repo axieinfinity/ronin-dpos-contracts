@@ -17,11 +17,11 @@ import { IdentityGuard } from "../../utils/IdentityGuard.sol";
  */
 contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Initializable, HasContracts {
   /// @inheritdoc IBridgeSlash
-  uint256 public constant TIER_1_PENALTY_DURATION = 1 days;
+  uint256 public constant TIER_1_PENALTY_DURATION = 1;
   /// @inheritdoc IBridgeSlash
-  uint256 public constant TIER_2_PENALTY_DURATION = 5 days;
+  uint256 public constant TIER_2_PENALTY_DURATION = 5;
   /// @inheritdoc IBridgeSlash
-  uint256 public constant REMOVING_DURATION_THRESHOLD = 30 days;
+  uint256 public constant REMOVING_DURATION_THRESHOLD = 30;
 
   /// @dev Tier 1 slashing threshold ratio is 10%
   uint256 private constant TIER_1_THRESHOLD = 10_00;
@@ -106,32 +106,46 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     uint256 totalBallotsForPeriod,
     uint256 period
   ) external onlyContract(ContractType.BRIDGE_TRACKING) {
+    // Get penalty durations for each slash tier.
     uint256[] memory penaltyDurations = _getPenaltyDurations();
+    // Get the storage mapping for bridge slash information.
     mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
 
+    // Calculate the next period.
+    uint256 nextPeriod = period + 1;
+
+    // Declare variables for iteration.
     BridgeSlashInfo memory status;
-    uint256 slashUntilPeriodNumber;
+    uint256 slashUntilPeriod;
     address bridgeOperator;
     Tier tier;
 
-    for (uint256 i; i < allBridgeOperators.length; ) {
+    uint256 length = allBridgeOperators.length;
+    for (uint256 i; i < length; ) {
       bridgeOperator = allBridgeOperators[i];
       status = _bridgeSlashInfos[bridgeOperator];
 
+      // Check if the bridge operator was added before the current period.
+      // Bridge operators added in current period will not be slashed.
       if (status.newlyAddedAtPeriod < period) {
+        // Determine the slash tier for the bridge operator based on their ballots.
         tier = _getSlashTier(ballots[i], totalBallotsForPeriod);
-        slashUntilPeriodNumber = Math.max(period, status.slashUntilPeriodNumber) + penaltyDurations[uint8(tier)];
 
-        if (slashUntilPeriodNumber >= REMOVING_DURATION_THRESHOLD) {
-          slashUntilPeriodNumber = type(uint64).max;
+        // Calculate the slash until period number.
+        slashUntilPeriod = penaltyDurations[uint8(tier)] + Math.max(nextPeriod, status.slashUntilPeriod);
+
+        // Check if the slash duration exceeds the threshold for removal
+        if (slashUntilPeriod - nextPeriod >= REMOVING_DURATION_THRESHOLD) {
+          slashUntilPeriod = type(uint64).max;
           tier = Tier.Kick;
         }
 
-        status.slashUntilPeriodNumber = uint64(slashUntilPeriodNumber);
-        _bridgeSlashInfos[bridgeOperator] = status;
-
+        // Emit the Slashed event if the tier is not Tier 0.
+        // Update the slash until period number for the bridge operator if the tier is not Tier 0.
         if (tier != Tier.Tier0) {
-          emit Slashed(tier, bridgeOperator, period, slashUntilPeriodNumber);
+          emit Slashed(tier, bridgeOperator, period, slashUntilPeriod);
+          status.slashUntilPeriod = uint64(slashUntilPeriod);
+          _bridgeSlashInfos[bridgeOperator] = status;
         }
       }
 
@@ -149,7 +163,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     durations = new uint256[](length);
     mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
     for (uint256 i; i < length; ) {
-      durations[i] = _bridgeSlashInfos[bridgeOperators[i]].slashUntilPeriodNumber;
+      durations[i] = _bridgeSlashInfos[bridgeOperators[i]].slashUntilPeriod;
       unchecked {
         ++i;
       }
