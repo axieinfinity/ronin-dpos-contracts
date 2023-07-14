@@ -156,7 +156,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
   /**
    * @dev Internal helper for querying whether an address is an operator.
    */
-  function _isBridgeOperator(address operator) internal returns (bool) {
+  function _isBridgeOperator(address operator) internal view returns (bool) {
     return IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).isBridgeOperator(operator);
   }
 }
