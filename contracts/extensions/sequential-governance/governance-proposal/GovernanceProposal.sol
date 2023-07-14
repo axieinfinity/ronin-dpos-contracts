@@ -51,4 +51,25 @@ abstract contract GovernanceProposal is CoreGovernance, CommonGovernanceProposal
       ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_proposalHash, Ballot.VoteType.Against))
     );
   }
+
+  /**
+   * @dev See {CommonGovernanceProposal-_getProposalSignatures}
+   */
+  function getProposalSignatures(
+    uint256 _chainId,
+    uint256 _round
+  )
+    external
+    view
+    returns (address[] memory _voters, Ballot.VoteType[] memory _supports, Signature[] memory _signatures)
+  {
+    return _getProposalSignatures(_chainId, _round);
+  }
+
+  /**
+   * @dev See {CommonGovernanceProposal-_proposalVoted}
+   */
+  function proposalVoted(uint256 _chainId, uint256 _round, address _voter) external view returns (bool) {
+    return _proposalVoted(_chainId, _round, _voter);
+  }
 }

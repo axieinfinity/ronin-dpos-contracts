@@ -56,13 +56,6 @@ contract RoninGovernanceAdmin is
   }
 
   /**
-   * @dev Returns whether the voter `_voter` casted vote for the proposal.
-   */
-  function proposalVoted(uint256 _chainId, uint256 _round, address _voter) external view returns (bool) {
-    return _voted(vote[_chainId][_round], _voter);
-  }
-
-  /**
    * @dev Returns whether the voter casted vote for emergency exit poll.
    */
   function emergencyPollVoted(bytes32 _voteHash, address _voter) external view returns (bool) {

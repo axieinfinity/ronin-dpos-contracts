@@ -8,6 +8,13 @@ abstract contract GlobalGovernanceRelay is CommonGovernanceRelay, GlobalCoreGove
   using GlobalProposal for GlobalProposal.GlobalProposalDetail;
 
   /**
+   * @dev Returns whether the voter `_voter` casted vote for the proposal.
+   */
+  function globalProposalRelayed(uint256 _round) external view returns (bool) {
+    return vote[0][_round].status != VoteStatus.Pending;
+  }
+
+  /**
    * @dev Relays voted global proposal.
    *
    * Requirements:

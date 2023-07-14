@@ -61,4 +61,24 @@ abstract contract GlobalGovernanceProposal is GlobalCoreGovernance, CommonGovern
       ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.Against))
     );
   }
+
+  /**
+   * @dev See {CommonGovernanceProposal-_getProposalSignatures}
+   */
+  function getGlobalProposalSignatures(
+    uint256 _round
+  )
+    external
+    view
+    returns (address[] memory _voters, Ballot.VoteType[] memory _supports, Signature[] memory _signatures)
+  {
+    return _getProposalSignatures(0, _round);
+  }
+
+  /**
+   * @dev See {CommonGovernanceProposal-_proposalVoted}
+   */
+  function globalProposalVoted(uint256 _round, address _voter) external view returns (bool) {
+    return _proposalVoted(0, _round, _voter);
+  }
 }

@@ -99,59 +99,6 @@ contract RoninBridgeManager is BridgeManager, GlobalGovernanceProposal {
   }
 
   /**
-   * @dev Returns the voted signatures for the proposals.
-   *
-   * Note: The signatures can be empty in case the proposal is voted on the current network.
-   *
-   */
-  function getProposalSignatures(
-    uint256 _round
-  )
-    external
-    view
-    returns (address[] memory _voters, Ballot.VoteType[] memory _supports, Signature[] memory _signatures)
-  {
-    uint256 _chainId = 0;
-
-    ProposalVote storage _vote = vote[_chainId][_round];
-
-    uint256 _forLength = _vote.forVoteds.length;
-    uint256 _againstLength = _vote.againstVoteds.length;
-    uint256 _voterLength = _forLength + _againstLength;
-
-    _supports = new Ballot.VoteType[](_voterLength);
-    _signatures = new Signature[](_voterLength);
-    _voters = new address[](_voterLength);
-    for (uint256 _i; _i < _forLength; ) {
-      _supports[_i] = Ballot.VoteType.For;
-      _signatures[_i] = vote[_chainId][_round].sig[_vote.forVoteds[_i]];
-      _voters[_i] = _vote.forVoteds[_i];
-
-      unchecked {
-        ++_i;
-      }
-    }
-    for (uint256 _i; _i < _againstLength; ) {
-      _supports[_i + _forLength] = Ballot.VoteType.Against;
-      _signatures[_i + _forLength] = vote[_chainId][_round].sig[_vote.againstVoteds[_i]];
-      _voters[_i + _forLength] = _vote.againstVoteds[_i];
-
-      unchecked {
-        ++_i;
-      }
-    }
-  }
-
-  /**
-   * @dev Returns whether the voter `_voter` casted vote for the proposal.
-   */
-  function proposalVoted(uint256 _round, address _voter) external view returns (bool) {
-    //    uint256 _round = _createVotingRound(0);
-    //    _saveVotingRound(vote[0][_round], _proposalHash, _globalProposal.expiryTimestamp);
-    return _voted(vote[0][_round], _voter);
-  }
-
-  /**
    * @dev Returns the expiry duration for a new proposal.
    */
   function getProposalExpiryDuration() external view returns (uint256) {
