@@ -24,6 +24,13 @@ interface IBridgeSlash {
   }
 
   /**
+   * @dev Emitted when new bridge operators are added.
+   * @param period The period in which the bridge operators are added.
+   * @param bridgeOperators The array of addresses representing the newly added bridge operators.
+   */
+  event NewBridgeOperatorsAdded(uint256 indexed period, address[] bridgeOperators);
+
+  /**
    * @dev Event emitted when a bridge operator is slashed.
    * @param tier The slash tier of the operator.
    * @param bridgeOperator The address of the slashed bridge operator.
@@ -56,6 +63,13 @@ interface IBridgeSlash {
    * @return untilPeriods The penalized periods for the bridge operators.
    */
   function getSlashUntilPeriodOf(address[] calldata bridgeOperators) external returns (uint256[] memory untilPeriods);
+
+  /**
+   * @dev Retrieves the added periods of the specified bridge operators.
+   * @param bridgeOperators An array of bridge operator addresses.
+   * @return addedPeriods An array of uint256 values representing the added periods for each bridge operator.
+   */
+  function getAddedPeriodOf(address[] calldata bridgeOperators) external view returns (uint256[] memory addedPeriods);
 
   /**
    * @dev Returns the penalty duration for Tier 1 slashing.

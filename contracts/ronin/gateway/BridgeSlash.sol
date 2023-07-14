@@ -75,15 +75,28 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
     if (bridgeOperators.length != addeds.length) revert ErrLengthMismatch(msg.sig);
     uint256 length = bridgeOperators.length;
+    uint256 numAdded;
+    address[] memory adddedBridgeOperators = new address[](length);
     uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
     mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
     for (uint256 i; i < length; ) {
-      if (addeds[i]) {
-        _bridgeSlashInfos[bridgeOperators[i]].newlyAddedAtPeriod = uint192(currentPeriod);
-      }
       unchecked {
+        if (addeds[i]) {
+          _bridgeSlashInfos[bridgeOperators[i]].newlyAddedAtPeriod = uint192(currentPeriod);
+          adddedBridgeOperators[numAdded] = bridgeOperators[i];
+          ++numAdded;
+        }
         ++i;
       }
+    }
+
+    // resize adddedBridgeOperators array
+    assembly {
+      mstore(adddedBridgeOperators, numAdded)
+    }
+
+    if (numAdded != 0) {
+      emit NewBridgeOperatorsAdded(currentPeriod, adddedBridgeOperators);
     }
 
     return IBridgeManagerCallback.onBridgeOperatorsAdded.selector;
@@ -179,6 +192,21 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
     for (uint256 i; i < length; ) {
       untilPeriods[i] = _bridgeSlashInfos[bridgeOperators[i]].slashUntilPeriod;
+      unchecked {
+        ++i;
+      }
+    }
+  }
+
+  /**
+   * @inheritdoc IBridgeSlash
+   */
+  function getAddedPeriodOf(address[] calldata bridgeOperators) external view returns (uint256[] memory addedPeriods) {
+    uint256 length = bridgeOperators.length;
+    addedPeriods = new uint256[](length);
+    mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
+    for (uint256 i; i < length; ) {
+      addedPeriods[i] = _bridgeSlashInfos[bridgeOperators[i]].newlyAddedAtPeriod;
       unchecked {
         ++i;
       }
