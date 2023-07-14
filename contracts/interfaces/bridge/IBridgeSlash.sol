@@ -72,6 +72,20 @@ interface IBridgeSlash {
   function getAddedPeriodOf(address[] calldata bridgeOperators) external view returns (uint256[] memory addedPeriods);
 
   /**
+   * @dev Gets the slash tier based on the given ballot and total ballots.
+   * @param ballot The ballot count for a bridge operator.
+   * @param totalBallots The total ballot count for the period.
+   * @return tier The slash tier.
+   */
+  function getSlashTier(uint256 ballot, uint256 totalBallots) external pure returns (Tier tier);
+
+  /**
+   * @dev Retrieve the penalty durations for different slash tiers.
+   * @return penaltyDurations The array of penalty durations for each slash tier.
+   */
+  function getPenaltyDurations() external pure returns (uint256[] memory penaltyDurations);
+
+  /**
    * @dev Returns the penalty duration for Tier 1 slashing.
    * @return The duration in period number for Tier 1 slashing.
    */

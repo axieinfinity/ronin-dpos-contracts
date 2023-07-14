@@ -5,13 +5,13 @@ import { console } from "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
 import { LibArrayUtils } from "../helpers/LibArrayUtils.t.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
 import { MockValidatorContract } from "@ronin/contracts/mocks/ronin/MockValidatorContract.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
 import { IBridgeSlash, BridgeSlash } from "@ronin/contracts/ronin/gateway/BridgeSlash.sol";
 import { IBridgeManager, BridgeManagerUtils } from "./utils/BridgeManagerUtils.t.sol";
 import { RoninBridgeManager } from "@ronin/contracts/ronin/gateway/RoninBridgeManager.sol";
+import { Math } from "@ronin/contracts/libraries/Math.sol";
 import { RoleAccess, ContractType, AddressArrayUtils, MockBridgeManager } from "@ronin/contracts/mocks/ronin/MockBridgeManager.sol";
 import { ErrProxyCallFailed, ErrorHandler } from "@ronin/contracts/libraries/ErrorHandler.sol";
 import { IBridgeSlashEventsTest } from "./interfaces/IBridgeSlashEvents.t.sol";
@@ -40,6 +40,41 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
   function setUp() external {
     _setUp();
     _label();
+  }
+
+  function test_slashTierLogic(uint128 ballot, uint256 totalBallots, uint64 period, uint64 slashUntilPeriod) external {
+    vm.assume(period != 0);
+    vm.assume(totalBallots != 0 && ballot < totalBallots);
+
+    IBridgeSlash bridgeSlashContract = IBridgeSlash(_bridgeSlashContract);
+    IBridgeSlash.Tier tier = bridgeSlashContract.getSlashTier(ballot, totalBallots);
+    uint256[] memory penaltyDurations = bridgeSlashContract.getPenaltyDurations();
+    uint256 newSlashUntilPeriod = _slashTierLogic(tier, period, slashUntilPeriod, penaltyDurations);
+
+    console.log(uint8(tier), period, slashUntilPeriod, newSlashUntilPeriod);
+
+    if (tier == IBridgeSlash.Tier.Tier1) {
+      if (period < slashUntilPeriod) {
+        assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + 1);
+      } else {
+        assertTrue(newSlashUntilPeriod == period);
+      }
+    } else if (tier == IBridgeSlash.Tier.Tier2) {
+      if (period < slashUntilPeriod) {
+        assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + 5);
+      } else {
+        assertTrue(newSlashUntilPeriod == uint256(period) + 4);
+      }
+    }
+  }
+
+  function _slashTierLogic(
+    IBridgeSlash.Tier tier,
+    uint64 period,
+    uint64 slashUntilPeriod,
+    uint256[] memory penaltyDurations
+  ) internal pure returns (uint256 newSlashUntilPeriod) {
+    newSlashUntilPeriod = penaltyDurations[uint8(tier)] + Math.max(period - 1, slashUntilPeriod);
   }
 
   function test_bridgeSlash_recordEvents_onBridgeOperatorsAdded(

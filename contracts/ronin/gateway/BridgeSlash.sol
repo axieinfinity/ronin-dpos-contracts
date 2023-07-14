@@ -221,11 +221,12 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   }
 
   /**
-   * @dev Gets the slash tier based on the given ballot and total ballots.
-   * @param ballot The ballot count for a bridge operator.
-   * @param totalBallots The total ballot count for the period.
-   * @return tier The slash tier.
+   * @inheritdoc IBridgeSlash
    */
+  function getSlashTier(uint256 ballot, uint256 totalBallots) external pure returns (Tier tier) {
+    tier = _getSlashTier(ballot, totalBallots);
+  }
+
   function _getSlashTier(uint256 ballot, uint256 totalBallots) internal pure virtual returns (Tier tier) {
     uint256 ratio = (ballot * PERCENTAGE_FRACTION) / totalBallots;
     tier = ratio > TIER_2_THRESHOLD ? Tier.Tier2 : ratio > TIER_1_THRESHOLD ? Tier.Tier1 : Tier.Tier0;
@@ -242,9 +243,12 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   }
 
   /**
-   * @dev Internal function to retrieve the penalty durations for different slash tiers.
-   * @return penaltyDurations The array of penalty durations for each slash tier.
+   * @inheritdoc IBridgeSlash
    */
+  function getPenaltyDurations() external pure returns (uint256[] memory penaltyDurations) {
+    penaltyDurations = _getPenaltyDurations();
+  }
+
   function _getPenaltyDurations() internal pure virtual returns (uint256[] memory penaltyDurations) {
     penaltyDurations = new uint256[](3);
     // reserve index 0
