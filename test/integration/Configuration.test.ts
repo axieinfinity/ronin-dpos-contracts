@@ -121,6 +121,7 @@ const config: InitTestInput = {
   bridgeManagerArguments: {
     numerator: 70,
     denominator: 100,
+    callbackRegisters: [],
     weights: [],
     operators: [],
     governors: [],
@@ -235,9 +236,7 @@ describe('[Integration] Configuration check', () => {
     expect(await slashContract.getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).to.eq(
       roninTrustedOrganizationContract.address
     );
-    expect(await slashContract.getContract(ContractType.GOVERNANCE_ADMIN)).to.eq(
-      roninGovernanceAdminContract.address
-    );
+    expect(await slashContract.getContract(ContractType.GOVERNANCE_ADMIN)).to.eq(roninGovernanceAdminContract.address);
     await compareBigNumbers(
       await slashContract.getBridgeOperatorSlashingConfigs(),
       [
@@ -308,9 +307,7 @@ describe('[Integration] Configuration check', () => {
   it('Should the ValidatorSetContract contract set configs correctly', async () => {
     expect(await validatorContract.getContract(ContractType.SLASH_INDICATOR)).to.eq(slashContract.address);
     expect(await validatorContract.getContract(ContractType.STAKING)).to.eq(stakingContract.address);
-    expect(await validatorContract.getContract(ContractType.STAKING_VESTING)).to.eq(
-      stakingVestingContract.address
-    );
+    expect(await validatorContract.getContract(ContractType.STAKING_VESTING)).to.eq(stakingVestingContract.address);
     expect(await validatorContract.getContract(ContractType.MAINTENANCE)).to.eq(maintenanceContract.address);
     expect(await validatorContract.getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).to.eq(
       roninTrustedOrganizationContract.address
@@ -338,16 +335,12 @@ describe('[Integration] Configuration check', () => {
 
   it('Should the BridgeReward contract set configs correctly', async () => {
     expect(await bridgeRewardContract.getContract(ContractType.BRIDGE_MANAGER)).to.eq(bridgeManagerContract.address);
-    expect(await bridgeRewardContract.getContract(ContractType.BRIDGE_TRACKING)).to.eq(
-      bridgeTrackingContract.address
-    );
+    expect(await bridgeRewardContract.getContract(ContractType.BRIDGE_TRACKING)).to.eq(bridgeTrackingContract.address);
     expect(await bridgeRewardContract.getContract(ContractType.BRIDGE_SLASH)).to.eq(bridgeSlashContract.address);
   });
 
   it('Should the BridgeSlash contract set configs correctly', async () => {
     expect(await bridgeSlashContract.getContract(ContractType.BRIDGE_MANAGER)).to.eq(bridgeManagerContract.address);
-    expect(await bridgeSlashContract.getContract(ContractType.BRIDGE_TRACKING)).to.eq(
-      bridgeTrackingContract.address
-    );
+    expect(await bridgeSlashContract.getContract(ContractType.BRIDGE_TRACKING)).to.eq(bridgeTrackingContract.address);
   });
 });

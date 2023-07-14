@@ -42,7 +42,7 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     _label();
   }
 
-  function test_slashTierLogic(uint128 ballot, uint256 totalBallots, uint64 period, uint64 slashUntilPeriod) external {
+  function test_slashTierLogic(uint96 ballot, uint256 totalBallots, uint64 period, uint64 slashUntilPeriod) external {
     vm.assume(period != 0);
     vm.assume(totalBallots != 0 && ballot < totalBallots);
 

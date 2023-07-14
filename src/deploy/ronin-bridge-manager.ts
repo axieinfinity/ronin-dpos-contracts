@@ -22,6 +22,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
       generalRoninConf[network.name].roninChainId,
       bridgeManagerConf[network.name]?.expiryDuration,
       generalRoninConf[network.name].bridgeContract,
+      bridgeManagerConf[network.name]?.callbackRegisters,
       bridgeManagerConf[network.name]?.operators,
       bridgeManagerConf[network.name]?.governors,
       bridgeManagerConf[network.name]?.weights,

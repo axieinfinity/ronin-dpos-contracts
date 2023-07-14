@@ -131,6 +131,7 @@ describe('Slash indicator test', () => {
         bridgeManagerArguments: {
           numerator: 70,
           denominator: 100,
+          callbackRegisters: [],
           weights: [],
           operators: [],
           governors: [],

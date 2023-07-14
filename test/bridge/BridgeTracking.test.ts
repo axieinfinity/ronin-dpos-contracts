@@ -110,6 +110,7 @@ describe('Bridge Tracking test', () => {
       bridgeManagerArguments: {
         numerator: bridgeAdminNumerator,
         denominator: bridgeAdminDenominator,
+        callbackRegisters: [],
         operators: operatorTuples.map((_) => _.operator.address),
         governors: operatorTuples.map((_) => _.governor.address),
         weights: operatorTuples.map((_) => 100),

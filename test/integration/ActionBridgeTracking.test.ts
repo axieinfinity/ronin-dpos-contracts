@@ -136,6 +136,7 @@ describe('[Integration] Bridge Tracking test', () => {
       bridgeManagerArguments: {
         numerator: bridgeAdminNumerator,
         denominator: bridgeAdminDenominator,
+        callbackRegisters: [],
         weights: operatorTuples.map(() => 100),
         operators: operatorTuples.map((_) => _.operator.address),
         governors: operatorTuples.map((_) => _.governor.address),
@@ -175,14 +176,8 @@ describe('[Integration] Bridge Tracking test', () => {
     await governanceAdminInterface.functionDelegateCalls(
       [bridgeTracking.address, bridgeTracking.address],
       [
-        bridgeTracking.interface.encodeFunctionData('setContract', [
-          ContractType.BRIDGE,
-          bridgeContract.address,
-        ]),
-        bridgeTracking.interface.encodeFunctionData('setContract', [
-          ContractType.VALIDATOR,
-          roninValidatorSet.address,
-        ]),
+        bridgeTracking.interface.encodeFunctionData('setContract', [ContractType.BRIDGE, bridgeContract.address]),
+        bridgeTracking.interface.encodeFunctionData('setContract', [ContractType.VALIDATOR, roninValidatorSet.address]),
       ]
     );
     await bridgeAdminInterface.functionDelegateCalls(

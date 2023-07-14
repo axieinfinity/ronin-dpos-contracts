@@ -147,6 +147,7 @@ describe('Gateway Pause Enforcer test', () => {
       bridgeManagerArguments: {
         numerator: bridgeAdminNumerator,
         denominator: bridgeAdminDenominator,
+        callbackRegisters: [],
         weights: operatorTuples.map(() => 100),
         operators: operatorTuples.map((_) => _.operator.address),
         governors: operatorTuples.map((_) => _.governor.address),
@@ -178,10 +179,7 @@ describe('Gateway Pause Enforcer test', () => {
           ContractType.BRIDGE_TRACKING,
           bridgeTracking.address,
         ]),
-        bridgeContract.interface.encodeFunctionData('setContract', [
-          ContractType.VALIDATOR,
-          roninValidatorSet.address,
-        ]),
+        bridgeContract.interface.encodeFunctionData('setContract', [ContractType.VALIDATOR, roninValidatorSet.address]),
         bridgeContract.interface.encodeFunctionData('setContract', [
           ContractType.RONIN_TRUSTED_ORGANIZATION,
           roninTrustedOrganizationAddress,
