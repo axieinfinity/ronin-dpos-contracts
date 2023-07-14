@@ -121,7 +121,6 @@ const config: InitTestInput = {
   bridgeManagerArguments: {
     numerator: 70,
     denominator: 100,
-    callbackRegisters: [],
     weights: [],
     operators: [],
     governors: [],

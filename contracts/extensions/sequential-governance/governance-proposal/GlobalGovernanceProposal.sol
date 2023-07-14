@@ -47,6 +47,7 @@ abstract contract GlobalGovernanceProposal is GlobalCoreGovernance, CommonGovern
       _bridgeManagerContract,
       _gatewayContract
     );
+
     bytes32 _proposalHash = _proposal.hash();
     if (vote[0][_proposal.nonce].hash != _proposalHash)
       revert ErrInvalidProposal(_proposalHash, vote[0][_proposal.nonce].hash);

@@ -147,7 +147,6 @@ describe('Gateway Pause Enforcer test', () => {
       bridgeManagerArguments: {
         numerator: bridgeAdminNumerator,
         denominator: bridgeAdminDenominator,
-        callbackRegisters: [],
         weights: operatorTuples.map(() => 100),
         operators: operatorTuples.map((_) => _.operator.address),
         governors: operatorTuples.map((_) => _.governor.address),

@@ -9,7 +9,6 @@ export interface BridgeManagerArguments {
   weights?: BigNumberish[];
   operators?: Address[];
   governors?: Address[];
-  callbackRegisters?: Address[];
 }
 
 export interface BridgeManagerConfig {

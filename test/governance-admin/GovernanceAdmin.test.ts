@@ -126,8 +126,6 @@ describe('Governance Admin test', () => {
           .connect(trustedOrgs[0].governor)
           .proposeProposalStructAndCastVotes(proposal, supports, signatures);
 
-        console.log('[<] latestTimestamp + 1', await getLastBlockTimestamp());
-        console.log('[<]', trustedOrgs[0].governor.address);
         expect(await governanceAdmin.proposalVoted(proposal.chainId, proposal.nonce, trustedOrgs[0].governor.address))
           .to.true;
         expect(await stakingContract.minValidatorStakingAmount()).eq(newMinValidatorStakingAmount);
