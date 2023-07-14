@@ -55,15 +55,15 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
 
     if (tier == IBridgeSlash.Tier.Tier1) {
       if (period < slashUntilPeriod) {
-        assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + 1);
+        assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + bridgeSlashContract.TIER_1_PENALTY_DURATION());
       } else {
-        assertTrue(newSlashUntilPeriod == period);
+        assertTrue(newSlashUntilPeriod == period + bridgeSlashContract.TIER_1_PENALTY_DURATION() - 1);
       }
     } else if (tier == IBridgeSlash.Tier.Tier2) {
       if (period < slashUntilPeriod) {
-        assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + 5);
+        assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + bridgeSlashContract.TIER_2_PENALTY_DURATION());
       } else {
-        assertTrue(newSlashUntilPeriod == uint256(period) + 4);
+        assertTrue(newSlashUntilPeriod == uint256(period) + bridgeSlashContract.TIER_2_PENALTY_DURATION() - 1);
       }
     }
   }
