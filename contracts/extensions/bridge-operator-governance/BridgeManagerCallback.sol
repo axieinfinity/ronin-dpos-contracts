@@ -17,7 +17,7 @@ abstract contract BridgeManagerCallback is IdentityGuard {
 
   /**
    * @dev Storage slot for the address set of callback registers.
-   * @dev Value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.callbackRegisters.slot") - 1.
+   * @dev Value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin._callbackRegisters.slot") - 1.
    */
   bytes32 private constant CALLBACK_REGISTERS_SLOT = 0x5da136eb38f8d8e354915fc8a767c0dc81d49de5fb65d5477122a82ddd976240;
 
@@ -51,11 +51,11 @@ abstract contract BridgeManagerCallback is IdentityGuard {
   ) internal nonDuplicate(registers) returns (bool[] memory registereds) {
     uint256 length = registers.length;
     registereds = new bool[](length);
-    EnumerableSet.AddressSet storage callbackRegisters = _getCallbackRegisters();
+    EnumerableSet.AddressSet storage _callbackRegisters = _getCallbackRegisters();
 
     for (uint256 i; i < length; ) {
       _requireHasCode(registers[i]);
-      registereds[i] = callbackRegisters.add(registers[i]);
+      registereds[i] = _callbackRegisters.add(registers[i]);
 
       unchecked {
         ++i;
@@ -73,10 +73,10 @@ abstract contract BridgeManagerCallback is IdentityGuard {
   ) internal nonDuplicate(registers) returns (bool[] memory unregistereds) {
     uint256 length = registers.length;
     unregistereds = new bool[](length);
-    EnumerableSet.AddressSet storage callbackRegisters = _getCallbackRegisters();
+    EnumerableSet.AddressSet storage _callbackRegisters = _getCallbackRegisters();
 
     for (uint256 i; i < length; ) {
-      unregistereds[i] = callbackRegisters.remove(registers[i]);
+      unregistereds[i] = _callbackRegisters.remove(registers[i]);
 
       unchecked {
         ++i;
