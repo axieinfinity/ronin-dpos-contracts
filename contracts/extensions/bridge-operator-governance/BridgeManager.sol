@@ -66,10 +66,11 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     uint256 denom,
     uint256 roninChainId,
     address bridgeContract,
+    address[] memory callbackRegisters,
     address[] memory bridgeOperators,
     address[] memory governors,
     uint256[] memory voteWeights
-  ) payable {
+  ) payable BridgeManagerCallback(callbackRegisters) {
     NONCE_SLOT.store(1);
     NUMERATOR_SLOT.store(num);
     DENOMINATOR_SLOT.store(denom);

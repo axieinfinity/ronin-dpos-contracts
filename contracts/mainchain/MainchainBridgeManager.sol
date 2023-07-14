@@ -15,13 +15,14 @@ contract MainchainBridgeManager is ChainTypeConsumer, AccessControlEnumerable, B
     uint256 denom,
     uint256 roninChainId,
     address bridgeContract,
+    address[] memory callbackRegisters,
     address[] memory bridgeOperators,
     address[] memory governors,
     uint256[] memory voteWeights
   )
     payable
     CoreGovernance(type(uint256).max - 1)
-    BridgeManager(num, denom, roninChainId, bridgeContract, bridgeOperators, governors, voteWeights)
+    BridgeManager(num, denom, roninChainId, bridgeContract, callbackRegisters, bridgeOperators, governors, voteWeights)
   {}
 
   /**

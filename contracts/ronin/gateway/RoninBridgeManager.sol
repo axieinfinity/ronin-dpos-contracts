@@ -21,13 +21,14 @@ contract RoninBridgeManager is BridgeManager, GlobalGovernanceProposal {
     uint256 roninChainId,
     uint256 expiryDuration,
     address bridgeContract,
+    address[] memory callbackRegisters,
     address[] memory bridgeOperators,
     address[] memory governors,
     uint256[] memory voteWeights
   )
     payable
     CoreGovernance(expiryDuration)
-    BridgeManager(num, denom, roninChainId, bridgeContract, bridgeOperators, governors, voteWeights)
+    BridgeManager(num, denom, roninChainId, bridgeContract, callbackRegisters, bridgeOperators, governors, voteWeights)
   {}
 
   /**

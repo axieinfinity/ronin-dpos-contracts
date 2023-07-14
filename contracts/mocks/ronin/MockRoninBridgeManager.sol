@@ -10,6 +10,7 @@ contract MockRoninBridgeManager is RoninBridgeManager {
     uint256 roninChainId,
     uint256 expiryDuration,
     address bridgeContract,
+    address[] memory callbackRegisters,
     address[] memory bridgeOperators,
     address[] memory governors,
     uint256[] memory voteWeights
@@ -20,6 +21,7 @@ contract MockRoninBridgeManager is RoninBridgeManager {
       roninChainId,
       expiryDuration,
       bridgeContract,
+      callbackRegisters,
       bridgeOperators,
       governors,
       voteWeights

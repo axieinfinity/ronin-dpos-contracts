@@ -21,6 +21,10 @@ abstract contract BridgeManagerCallback is IdentityGuard {
    */
   bytes32 private constant CALLBACK_REGISTERS_SLOT = 0x5da136eb38f8d8e354915fc8a767c0dc81d49de5fb65d5477122a82ddd976240;
 
+  constructor(address[] memory callbackRegisters) payable {
+    _registerCallbacks(callbackRegisters);
+  }
+
   /**
    * @dev Registers multiple callbacks with the bridge.
    * @param registers The array of callback addresses to register.
