@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
-import { IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
+import { IERC165, IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
 import { IBridgeTracking } from "../../interfaces/bridge/IBridgeTracking.sol";
 import { IRoninValidatorSet } from "../../interfaces/validator/IRoninValidatorSet.sol";
 import { Math } from "../../libraries/Math.sol";
@@ -179,6 +179,13 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
         ++i;
       }
     }
+  }
+
+  /**
+   * @inheritdoc IERC165
+   */
+  function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+    return interfaceId == type(IBridgeManagerCallback).interfaceId || interfaceId == type(IERC165).interfaceId;
   }
 
   /**

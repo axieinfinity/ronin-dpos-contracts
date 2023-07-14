@@ -5,6 +5,12 @@ import { ContractType } from "./ContractType.sol";
 import { RoleAccess } from "./RoleAccess.sol";
 
 /**
+ * @dev The error indicating an unsupported interface.
+ * @param interfaceId The bytes4 interface identifier that is not supported.
+ * @param addr The address where the unsupported interface was encountered.
+ */
+error ErrUnsupportedInterface(bytes4 interfaceId, address addr);
+/**
  * @dev Error thrown when the return data from a callback function is invalid.
  * @param callbackFnSig The signature of the callback function that returned invalid data.
  * @param register The address of the register where the callback function was invoked.
