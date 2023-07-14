@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import { console } from "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
+import { LibArrayUtils } from "../helpers/LibArrayUtils.t.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
@@ -17,6 +18,7 @@ import { IBridgeSlashEventsTest } from "./interfaces/IBridgeSlashEvents.t.sol";
 
 contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
   using ErrorHandler for bool;
+  using LibArrayUtils for uint256[];
 
   uint256 internal constant MIN_PERIOD_DURATION = 1;
   uint256 internal constant MAX_PERIOD_DURATION = 365;
@@ -40,30 +42,62 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     _label();
   }
 
-  function test_Valid_ExecSlashBridgeOperators(uint256 r1, uint256 period, uint256 duration) external {
+  function test_bridgeSlash_recordEvents_onBridgeOperatorsAdded(
+    uint256 r1,
+    uint256 r2,
+    uint256 r3,
+    uint256 numBridgeOperators,
+    uint256 period
+  ) external {
+    vm.assume(r1 != DEFAULT_R1 && r2 != DEFAULT_R2 && r3 != DEFAULT_R3);
+
+    period = _bound(period, 1, type(uint64).max);
+
+    MockValidatorContract(payable(_validatorContract)).setCurrentPeriod(period);
+    address[] memory registers = new address[](1);
+    registers[0] = _bridgeSlashContract;
+    MockBridgeManager(payable(_bridgeManagerContract)).registerCallbacks(registers);
+
+    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+      r1,
+      r2,
+      r3,
+      numBridgeOperators
+    );
+
+    vm.expectEmit(_bridgeSlashContract);
+    emit NewBridgeOperatorsAdded(period, bridgeOperators);
+
+    _addBridgeOperators(_bridgeManagerContract, _bridgeManagerContract, voteWeights, governors, bridgeOperators);
+
+    uint256[] memory addedPeriods = IBridgeSlash(_bridgeSlashContract).getAddedPeriodOf(bridgeOperators);
+    for (uint256 i; i < addedPeriods.length; ) {
+      assertEq(addedPeriods[i], period);
+      unchecked {
+        ++i;
+      }
+    }
+  }
+
+  function test_ExcludeNewlyAddedOperators_ExecSlashBridgeOperators(
+    uint256 r1,
+    uint256 period,
+    uint256 duration
+  ) external {
     period = _bound(period, 1, type(uint64).max);
     duration = _bound(duration, MIN_PERIOD_DURATION, MAX_PERIOD_DURATION);
 
     (address[] memory bridgeOperators, , ) = abi.decode(_defaultBridgeManagerInputs, (address[], address[], uint256[]));
 
+    vm.startPrank(_bridgeTrackingContract, _bridgeTrackingContract);
+    uint256[] memory ballots;
+    uint256 totalBallotsForPeriod;
+    IBridgeSlash bridgeSlashContract = IBridgeSlash(_bridgeSlashContract);
     for (uint256 i; i < duration; ) {
-      uint256[] memory ballots = _createRandomNumbers(r1, bridgeOperators.length, 0, MAX_FUZZ_INPUTS);
+      ballots = _createRandomNumbers(r1, bridgeOperators.length, 0, MAX_FUZZ_INPUTS);
+      totalBallotsForPeriod = ballots.sum();
 
-      uint256 totalBallotsForPeriod;
-      for (uint256 j; j < ballots.length; ) {
-        totalBallotsForPeriod += ballots[j];
-        unchecked {
-          ++j;
-        }
-      }
-
-      vm.prank(_bridgeTrackingContract, _bridgeTrackingContract);
-      IBridgeSlash(_bridgeSlashContract).execSlashBridgeOperators(
-        bridgeOperators,
-        ballots,
-        totalBallotsForPeriod,
-        period
-      );
+      bridgeSlashContract.execSlashBridgeOperators(bridgeOperators, ballots, totalBallotsForPeriod, period);
 
       r1 = uint256(keccak256(abi.encode(r1)));
 
@@ -72,6 +106,33 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
         ++i;
       }
     }
+    vm.stopPrank();
+  }
+
+  function test_Valid_ExecSlashBridgeOperators(uint256 r1, uint256 period, uint256 duration) external {
+    period = _bound(period, 1, type(uint64).max);
+    duration = _bound(duration, MIN_PERIOD_DURATION, MAX_PERIOD_DURATION);
+
+    (address[] memory bridgeOperators, , ) = abi.decode(_defaultBridgeManagerInputs, (address[], address[], uint256[]));
+
+    vm.startPrank(_bridgeTrackingContract, _bridgeTrackingContract);
+    uint256[] memory ballots;
+    uint256 totalBallotsForPeriod;
+    IBridgeSlash bridgeSlashContract = IBridgeSlash(_bridgeSlashContract);
+    for (uint256 i; i < duration; ) {
+      ballots = _createRandomNumbers(r1, bridgeOperators.length, 0, MAX_FUZZ_INPUTS);
+      totalBallotsForPeriod = ballots.sum();
+
+      bridgeSlashContract.execSlashBridgeOperators(bridgeOperators, ballots, totalBallotsForPeriod, period);
+
+      r1 = uint256(keccak256(abi.encode(r1)));
+
+      unchecked {
+        ++period;
+        ++i;
+      }
+    }
+    vm.stopPrank();
   }
 
   function _setUp() internal virtual {

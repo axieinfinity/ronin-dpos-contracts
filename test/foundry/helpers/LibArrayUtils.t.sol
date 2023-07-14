@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+library LibArrayUtils {
+  function sum(uint256[] memory arr) internal pure returns (uint256 total) {
+    uint256 length = arr.length;
+    for (uint256 i; i < length; ) {
+      total += arr[i];
+      unchecked {
+        ++i;
+      }
+    }
+  }
+}
