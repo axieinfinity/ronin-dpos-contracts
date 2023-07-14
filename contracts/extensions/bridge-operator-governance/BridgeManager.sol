@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { IBridgeManagerCallback, EnumerableSet, BridgeManagerCallback } from "./BridgeManagerCallback.sol";
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
-import { RONTransferHelper } from "../../extensions/RONTransferHelper.sol";
 import { IQuorum } from "../../interfaces/IQuorum.sol";
 import { IBridgeManager } from "../../interfaces/bridge/IBridgeManager.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
@@ -114,6 +113,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    */
   function updateBridgeOperator(address newBridgeOperator) external returns (bool updated) {
     _requireNonZeroAddress(newBridgeOperator);
+    _requirePayableAddress(newBridgeOperator);
 
     mapping(address => address) storage _governorOf = _getGovernorOf();
     EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
