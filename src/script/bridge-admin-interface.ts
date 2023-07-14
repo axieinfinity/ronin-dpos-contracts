@@ -48,7 +48,7 @@ export class BridgeManagerInterface {
     this.interface = new TransparentUpgradeableProxyV2__factory().interface;
   }
 
-  async createProposal(
+  async createGlobalProposal(
     expiryTimestamp: BigNumberish,
     targetOption: TargetOption,
     value: BigNumberish,
@@ -58,7 +58,7 @@ export class BridgeManagerInterface {
   ) {
     const proposal: GlobalProposalDetailStruct = {
       expiryTimestamp,
-      nonce: nonce ?? (await this.contract.round(network.config.chainId!)).add(1),
+      nonce: nonce ?? (await this.contract.round(0)).add(1),
       targetOptions: [targetOption],
       values: [value],
       calldatas: [calldata],
@@ -85,7 +85,7 @@ export class BridgeManagerInterface {
   }
 
   async functionDelegateCall(targetOption: TargetOption, data: BytesLike) {
-    const proposal = await this.createProposal(
+    const proposal = await this.createGlobalProposal(
       await this.defaultExpiryTimestamp(),
       targetOption,
       0,
@@ -121,7 +121,7 @@ export class BridgeManagerInterface {
   }
 
   async upgrade(targetOption: TargetOption, to: Address) {
-    const proposal = await this.createProposal(
+    const proposal = await this.createGlobalProposal(
       await this.defaultExpiryTimestamp(),
       targetOption,
       0,
