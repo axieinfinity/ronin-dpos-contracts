@@ -19,6 +19,13 @@ interface IBridgeReward {
   /// @dev Event emitted when the reward of the `operator` is scattered with `amount` but failed to transfer.
   event BridgeRewardScatterFailed(address operator, uint256 amount);
 
+  /**
+   * @dev Invoke calculate and transfer reward to operators based on their performance.
+   *
+   * Requirements:
+   * - This method is only called once each period.
+   * - The caller must be the bridge tracking contract or a bridge operator.
+   */
   function execSyncReward(
     address[] calldata operators,
     uint256[] calldata ballots,
@@ -27,7 +34,13 @@ interface IBridgeReward {
     uint256 period
   ) external;
 
+  /**
+   * @dev Getter for all bridge operators per period.
+   */
   function getRewardPerPeriod() external view returns (uint256);
 
+  /**
+   * @dev Setter for all bridge operators per period.
+   */
   function setRewardPerPeriod(uint256 rewardPerPeriod) external;
 }

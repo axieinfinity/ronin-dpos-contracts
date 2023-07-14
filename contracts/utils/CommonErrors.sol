@@ -50,6 +50,12 @@ error ErrUnauthorized(bytes4 msgSig, RoleAccess expectedRole);
 
 /**
  * @dev Error indicating that the caller is unauthorized to perform a specific function.
+ * @param msgSig The function signature (bytes4) that the caller is unauthorized to perform.
+ */
+error ErrUnauthorizedCall(bytes4 msgSig);
+
+/**
+ * @dev Error indicating that the caller is unauthorized to perform a specific function.
  * @param msgSig The function signature (bytes4).
  * @param expectedContractType The contract type required to perform the function.
  * @param actual The actual address that called to the function.

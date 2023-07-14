@@ -5,6 +5,7 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/RONTransferHelper.sol";
+import { IBridgeManager } from "../../interfaces/bridge/IBridgeManager.sol";
 import { IBridgeReward } from "../../interfaces/bridge/IBridgeReward.sol";
 import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
 import "../../utils/CommonErrors.sol";
@@ -32,21 +33,25 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
     _setRewardPerPeriod(rewardPerPeriod);
   }
 
+  /**
+   * @inheritdoc IBridgeReward
+   */
   function execSyncReward(
     address[] calldata operators,
     uint256[] calldata ballots,
     uint256 totalBallot,
     uint256 totalVote,
     uint256 period
-  )
-    external
-    onlyContract(ContractType.BRIDGE_TRACKING) // TODO: allow bridge or/and governor call this method
-  {
+  ) external {
+    if (msg.sender != getContract(ContractType.BRIDGE_TRACKING) && !_isBridgeOperator(msg.sender)) {
+      revert ErrUnauthorizedCall(msg.sig);
+    }
     if (period <= _latestRewardedPeriod) revert ErrPeriodAlreadyProcessed(period, _latestRewardedPeriod);
 
     uint256[] memory slashedDurationList = _getSlashInfo(operators);
     bool iSlashed;
 
+    // Validate the bridge tracking response whether it has informed data
     if (!_validateBridgeTrackingResponse(totalBallot, totalVote, ballots) || totalBallot == 0) {
       // Shares equally in case the bridge has nothing to vote or bridge tracking response is incorrect
       uint256 rewardEach = _rewardPerPeriod / operators.length;
@@ -75,6 +80,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
 
   /**
    * @dev Returns whether the responses from bridge tracking are correct.
+   * Emit a {BridgeTrackingIncorrectlyResponded} event when in case of incorrect data.
    */
   function _validateBridgeTrackingResponse(
     uint256 totalBallots,
@@ -96,6 +102,9 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
     }
   }
 
+  /**
+   * @dev Transfer `reward` to a `operator` or only emit event based on the operator `slashed` status.
+   */
   function _updateRewardAndTransfer(address operator, uint256 reward, bool slashed) private {
     BridgeRewardInfo storage _iRewardInfo = _rewardInfo[operator];
     if (slashed) {
@@ -111,20 +120,40 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
     }
   }
 
+  /**
+   * @inheritdoc IBridgeReward
+   */
   function getRewardPerPeriod() external view returns (uint256) {
     return _rewardPerPeriod;
   }
 
+  /**
+   * @inheritdoc IBridgeReward
+   */
   function setRewardPerPeriod(uint256 rewardPerPeriod) external onlyContract(ContractType.BRIDGE_MANAGER) {
     _setRewardPerPeriod(rewardPerPeriod);
   }
 
+  /**
+   * @dev Internal function for setting the total reward per period.
+   * Emit an {UpdatedRewardPerPeriod} event after set.
+   */
   function _setRewardPerPeriod(uint256 rewardPerPeriod) internal {
     _rewardPerPeriod = rewardPerPeriod;
     emit UpdatedRewardPerPeriod(rewardPerPeriod);
   }
 
+  /**
+   * @dev Internal helper for querying slash info of a list of operators.
+   */
   function _getSlashInfo(address[] memory operatorList) internal returns (uint256[] memory _slashedDuration) {
     return IBridgeSlash(getContract(ContractType.BRIDGE_SLASH)).getSlashUntilPeriodOf(operatorList);
+  }
+
+  /**
+   * @dev Internal helper for querying whether an address is an operator.
+   */
+  function _isBridgeOperator(address operator) internal returns (bool) {
+    return IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).isBridgeOperator(operator);
   }
 }
