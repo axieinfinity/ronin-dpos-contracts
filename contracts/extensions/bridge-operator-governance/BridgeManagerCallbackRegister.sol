@@ -2,16 +2,17 @@
 pragma solidity ^0.8.0;
 
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { IBridgeManagerCallbackRegister } from "../../interfaces/bridge/IBridgeManagerCallbackRegister.sol";
 import { IERC165, IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { IdentityGuard } from "../../utils/IdentityGuard.sol";
 import { ErrInvalidReturnData, ErrUnsupportedInterface } from "../../utils/CommonErrors.sol";
 
 /**
- * @title BridgeManagerCallback
+ * @title BridgeManagerCallbackRegister
  * @dev A contract that manages callback registrations and execution for a bridge.
  */
-abstract contract BridgeManagerCallback is IdentityGuard {
+abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManagerCallbackRegister {
   using ErrorHandler for bool;
   using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -26,18 +27,14 @@ abstract contract BridgeManagerCallback is IdentityGuard {
   }
 
   /**
-   * @dev Registers multiple callbacks with the bridge.
-   * @param registers The array of callback addresses to register.
-   * @return registereds An array indicating the success status of each registration.
+   * @inheritdoc IBridgeManagerCallbackRegister
    */
   function registerCallbacks(address[] calldata registers) external onlySelfCall returns (bool[] memory registereds) {
     registereds = _registerCallbacks(registers);
   }
 
   /**
-   * @dev Unregisters multiple callbacks from the bridge.
-   * @param registers The array of callback addresses to unregister.
-   * @return unregistereds An array indicating the success status of each unregistration.
+   * @inheritdoc IBridgeManagerCallbackRegister
    */
   function unregisterCallbacks(
     address[] calldata registers

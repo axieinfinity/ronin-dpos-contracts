@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import { IBridgeManagerCallback, EnumerableSet, BridgeManagerCallback } from "./BridgeManagerCallback.sol";
+import { IBridgeManagerCallback, EnumerableSet, BridgeManagerCallbackRegister } from "./BridgeManagerCallbackRegister.sol";
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { IQuorum } from "../../interfaces/IQuorum.sol";
 import { IBridgeManager } from "../../interfaces/bridge/IBridgeManager.sol";
@@ -12,7 +12,7 @@ import { RoleAccess } from "../../utils/RoleAccess.sol";
 import { TUint256 } from "../../types/Types.sol";
 import "../../utils/CommonErrors.sol";
 
-abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallback, HasContracts {
+abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbackRegister, HasContracts {
   using SafeCast for uint256;
   using AddressArrayUtils for address[];
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -70,7 +70,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     address[] memory bridgeOperators,
     address[] memory governors,
     uint256[] memory voteWeights
-  ) payable BridgeManagerCallback(callbackRegisters) {
+  ) payable BridgeManagerCallbackRegister(callbackRegisters) {
     NONCE_SLOT.store(1);
     NUMERATOR_SLOT.store(num);
     DENOMINATOR_SLOT.store(denom);
