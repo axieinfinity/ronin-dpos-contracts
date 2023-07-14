@@ -10,6 +10,8 @@ import { Ballot } from "../libraries/Ballot.sol";
 import { GlobalProposal } from "../libraries/GlobalProposal.sol";
 
 contract MainchainBridgeManager is ChainTypeConsumer, AccessControlEnumerable, BridgeManager, GlobalGovernanceRelay {
+  uint256 private constant DEFAULT_EXPIRY_DURATION = 1 << 255;
+
   constructor(
     uint256 num,
     uint256 denom,
@@ -21,7 +23,7 @@ contract MainchainBridgeManager is ChainTypeConsumer, AccessControlEnumerable, B
     uint256[] memory voteWeights
   )
     payable
-    CoreGovernance(type(uint256).max - 1)
+    CoreGovernance(DEFAULT_EXPIRY_DURATION)
     BridgeManager(num, denom, roninChainId, bridgeContract, callbackRegisters, bridgeOperators, governors, voteWeights)
   {}
 

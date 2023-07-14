@@ -51,10 +51,9 @@ let roninBridgeManager: RoninBridgeManager;
 let mainchainBridgeManager: MainchainBridgeManager;
 let bridgeManagerInterface: BridgeManagerInterface;
 
-let proposal: ProposalDetailStruct;
+let proposal: GlobalProposalDetailStruct;
 let supports: VoteType[];
-let signatures: SignatureStruct[];
-let ballot: BOsBallot;
+let signatures: SignatureStruct[] = [];
 
 let proposalExpiryDuration = 60;
 let numerator = 7;
@@ -132,8 +131,6 @@ describe('Bridge Admin test', async () => {
   });
 
   describe('Bridge Operator Set Voting', () => {
-    let proposal: GlobalProposalDetailStruct;
-
     describe('Vote the set on Ronin chain', async () => {
       it('Should be able to vote bridge operators', async () => {
         const latestTimestamp = await getLastBlockTimestamp();
@@ -164,18 +161,21 @@ describe('Bridge Admin test', async () => {
           currentOperatorTuples.map((_) => _.operator.address)
         );
       });
-      // it('Should be able relay vote bridge operators', async () => {
-      //   expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.false;
-      //   const [, signatures] = await governanceAdmin.getBridgeOperatorVotingSignatures(ballot.period, ballot.epoch);
-      //   await mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures);
-      //   expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.true;
-      //   const bridgeOperators = await bridgeContract.getBridgeOperators();
-      //   expect([...bridgeOperators].sort(compareAddrs)).deep.equal(ballot.operators);
-      //   const latestBOset = await mainchainGovernanceAdmin.lastSyncedBridgeOperatorSetInfo();
-      //   expect(latestBOset.period).eq(ballot.period);
-      //   expect(latestBOset.epoch).eq(ballot.epoch);
-      //   expect(latestBOset.operators).deep.equal(ballot.operators);
-      // });
+
+      it('Should be able relay vote bridge operators', async () => {
+        // expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.false;
+        expect(await mainchainBridgeManager.getBridgeOperators()).deep.equal(
+          [currentOperatorTuples[0]].map((_) => _.operator.address)
+        );
+        await mainchainBridgeManager
+          .connect(operatorTuples[0].governor)
+          .relayGlobalProposal(proposal, supports, signatures);
+        // expect(await mainchainGovernanceAdmin.bridgeOperatorsRelayed(ballot.period, ballot.epoch)).to.true;
+        const bridgeOperators = await mainchainBridgeManager.getBridgeOperators();
+        expect(await mainchainBridgeManager.getBridgeOperators()).deep.equal(
+          currentOperatorTuples.map((_) => _.operator.address)
+        );
+      });
       // it('Should not able to relay again', async () => {
       //   await expect(
       //     mainchainGovernanceAdmin.connect(relayer).relayBridgeOperators(ballot, signatures)
