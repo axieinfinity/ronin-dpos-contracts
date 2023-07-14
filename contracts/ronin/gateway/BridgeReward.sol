@@ -11,8 +11,6 @@ import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
 import "../../utils/CommonErrors.sol";
 
 contract BridgeReward is IBridgeReward, HasContracts, Initializable {
-  // receive() external payable {}
-
   mapping(address => BridgeRewardInfo) internal _rewardInfo;
   uint256 internal _rewardPerPeriod;
   uint256 internal _latestRewardedPeriod;
@@ -32,6 +30,11 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
     _setContract(ContractType.BRIDGE_SLASH, bridgeSlashContract);
     _setRewardPerPeriod(rewardPerPeriod);
   }
+
+  /**
+   * @inheritdoc IBridgeReward
+   */
+  function receiveRON() external payable {}
 
   /**
    * @inheritdoc IBridgeReward

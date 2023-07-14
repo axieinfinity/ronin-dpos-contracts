@@ -20,6 +20,11 @@ interface IBridgeReward {
   event BridgeRewardScatterFailed(address operator, uint256 amount);
 
   /**
+   * @dev Receives RON from any address.
+   */
+  function receiveRON() external payable;
+
+  /**
    * @dev Invoke calculate and transfer reward to operators based on their performance.
    *
    * Requirements:
