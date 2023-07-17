@@ -50,7 +50,7 @@ let stakingContract: Staking;
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
-let bridgeAdmin: RoninBridgeManager;
+let bridgeManager: RoninBridgeManager;
 
 let period: BigNumberish;
 
@@ -120,7 +120,7 @@ describe('Bridge Tracking test', () => {
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     bridgeTracking = BridgeTracking__factory.connect(bridgeTrackingAddress, deployer);
-    bridgeAdmin = RoninBridgeManager__factory.connect(roninBridgeManagerAddress, deployer);
+    bridgeManager = RoninBridgeManager__factory.connect(roninBridgeManagerAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
       network.config.chainId!,
@@ -135,7 +135,10 @@ describe('Bridge Tracking test', () => {
       [bridgeTracking.address, governanceAdmin.address],
       [
         bridgeTracking.interface.encodeFunctionData('setContract', [ContractType.BRIDGE, mockGateway.address]),
-        governanceAdmin.interface.encodeFunctionData('changeProxyAdmin', [bridgeTracking.address, bridgeAdmin.address]),
+        governanceAdmin.interface.encodeFunctionData('changeProxyAdmin', [
+          bridgeTracking.address,
+          bridgeManager.address,
+        ]),
       ]
     );
 
@@ -169,7 +172,7 @@ describe('Bridge Tracking test', () => {
     expect(period).gt(0);
 
     // InitV3 after the period 0
-    await bridgeTracking.initializeV3(bridgeAdmin.address, bridgeSlashAddress, bridgeRewardAddress);
+    await bridgeTracking.initializeV3(bridgeManager.address, bridgeSlashAddress, bridgeRewardAddress);
   });
 
   after(async () => {
