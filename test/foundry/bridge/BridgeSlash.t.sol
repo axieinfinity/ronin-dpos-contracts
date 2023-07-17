@@ -8,7 +8,7 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/trans
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
 import { MockValidatorContract } from "@ronin/contracts/mocks/ronin/MockValidatorContract.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
-import { IBridgeSlash, BridgeSlash } from "@ronin/contracts/ronin/gateway/BridgeSlash.sol";
+import { IBridgeSlash, MockBridgeSlash, BridgeSlash } from "@ronin/contracts/mocks/ronin/MockBridgeSlash.sol";
 import { IBridgeManager, BridgeManagerUtils } from "./utils/BridgeManagerUtils.t.sol";
 import { RoninBridgeManager } from "@ronin/contracts/ronin/gateway/RoninBridgeManager.sol";
 import { Math } from "@ronin/contracts/libraries/Math.sol";
@@ -48,8 +48,11 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
 
     IBridgeSlash bridgeSlashContract = IBridgeSlash(_bridgeSlashContract);
     IBridgeSlash.Tier tier = bridgeSlashContract.getSlashTier(ballot, totalBallots);
-    uint256[] memory penaltyDurations = bridgeSlashContract.getPenaltyDurations();
-    uint256 newSlashUntilPeriod = _slashTierLogic(tier, period, slashUntilPeriod, penaltyDurations);
+    uint256 newSlashUntilPeriod = MockBridgeSlash(payable(_bridgeSlashContract)).calcSlashUntilPeriod(
+      tier,
+      period,
+      slashUntilPeriod
+    );
 
     console.log(uint8(tier), period, slashUntilPeriod, newSlashUntilPeriod);
 
@@ -66,15 +69,6 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
         assertTrue(newSlashUntilPeriod == uint256(period) + bridgeSlashContract.TIER_2_PENALTY_DURATION() - 1);
       }
     }
-  }
-
-  function _slashTierLogic(
-    IBridgeSlash.Tier tier,
-    uint64 period,
-    uint64 slashUntilPeriod,
-    uint256[] memory penaltyDurations
-  ) internal pure returns (uint256 newSlashUntilPeriod) {
-    newSlashUntilPeriod = penaltyDurations[uint8(tier)] + Math.max(period - 1, slashUntilPeriod);
   }
 
   function test_bridgeSlash_recordEvents_onBridgeOperatorsAdded(
@@ -188,7 +182,7 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     _bridgeTrackingLogic = address(new BridgeTracking());
     _bridgeTrackingContract = address(new TransparentUpgradeableProxy(_bridgeTrackingLogic, _admin, ""));
 
-    _bridgeSlashLogic = address(new BridgeSlash());
+    _bridgeSlashLogic = address(new MockBridgeSlash());
     _bridgeSlashContract = address(
       new TransparentUpgradeableProxy(
         _bridgeSlashLogic,

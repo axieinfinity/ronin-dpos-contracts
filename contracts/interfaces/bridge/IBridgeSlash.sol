@@ -55,7 +55,7 @@ interface IBridgeSlash {
     uint256[] calldata ballots,
     uint256 totalBallotsForPeriod,
     uint256 period
-  ) external;
+  ) external returns (bool slashed);
 
   /**
    * @dev Returns the penalize durations for the specified bridge operators.
