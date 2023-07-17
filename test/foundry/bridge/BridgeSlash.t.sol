@@ -19,9 +19,10 @@ import { IBridgeSlashEventsTest } from "./interfaces/IBridgeSlashEvents.t.sol";
 contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
   using ErrorHandler for bool;
   using LibArrayUtils for uint256[];
+  using AddressArrayUtils for address[];
 
   uint256 internal constant MIN_PERIOD_DURATION = 1;
-  uint256 internal constant MAX_PERIOD_DURATION = 365;
+  uint256 internal constant MAX_PERIOD_DURATION = 20;
 
   /// @dev immutable contracts
   address internal _admin;
@@ -89,6 +90,7 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     period = _bound(period, 1, type(uint64).max);
 
     MockValidatorContract(payable(_validatorContract)).setCurrentPeriod(period);
+    vm.prank(_bridgeManagerContract, _bridgeManagerContract);
     address[] memory registers = new address[](1);
     registers[0] = _bridgeSlashContract;
     MockBridgeManager(payable(_bridgeManagerContract)).registerCallbacks(registers);
@@ -117,22 +119,64 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
   function test_ExcludeNewlyAddedOperators_ExecSlashBridgeOperators(
     uint256 r1,
     uint256 period,
-    uint256 duration
+    uint256 duration,
+    uint256 newlyAddedSize
   ) external {
     period = _bound(period, 1, type(uint64).max);
     duration = _bound(duration, MIN_PERIOD_DURATION, MAX_PERIOD_DURATION);
+    newlyAddedSize = _bound(newlyAddedSize, MIN_FUZZ_INPUTS, MAX_FUZZ_INPUTS);
+
+    address[] memory registers = new address[](1);
+    registers[0] = _bridgeSlashContract;
+    vm.prank(_bridgeManagerContract, _bridgeManagerContract);
+    MockBridgeManager(payable(_bridgeManagerContract)).registerCallbacks(registers);
 
     (address[] memory bridgeOperators, , ) = abi.decode(_defaultBridgeManagerInputs, (address[], address[], uint256[]));
 
-    vm.startPrank(_bridgeTrackingContract, _bridgeTrackingContract);
-    uint256[] memory ballots;
-    uint256 totalBallotsForPeriod;
-    IBridgeSlash bridgeSlashContract = IBridgeSlash(_bridgeSlashContract);
     for (uint256 i; i < duration; ) {
-      ballots = _createRandomNumbers(r1, bridgeOperators.length, 0, MAX_FUZZ_INPUTS);
-      totalBallotsForPeriod = ballots.sum();
+      MockValidatorContract(payable(_validatorContract)).setCurrentPeriod(period);
+      uint256[] memory newlyAddedAtPeriods;
+      address[] memory newlyAddedOperators;
+      {
+        vm.assume(r1 != DEFAULT_R1 && ~r1 != DEFAULT_R2 && r1 >> 1 != DEFAULT_R3);
+        address[] memory newlyAddedGovernors;
+        uint256[] memory newlyAddedWeights;
+        (newlyAddedOperators, newlyAddedGovernors, newlyAddedWeights) = getValidInputs(
+          r1,
+          ~r1,
+          r1 >> 1,
+          newlyAddedSize
+        );
 
-      bridgeSlashContract.execSlashBridgeOperators(bridgeOperators, ballots, totalBallotsForPeriod, period);
+        vm.prank(_bridgeManagerContract, _bridgeManagerContract);
+        IBridgeManager(_bridgeManagerContract).addBridgeOperators(
+          newlyAddedWeights,
+          newlyAddedGovernors,
+          newlyAddedOperators
+        );
+        newlyAddedAtPeriods = IBridgeSlash(_bridgeSlashContract).getAddedPeriodOf(newlyAddedOperators);
+      }
+
+      uint256[] memory ballots = _createRandomNumbers(r1, bridgeOperators.length + newlyAddedSize, 0, MAX_FUZZ_INPUTS);
+      vm.prank(_bridgeTrackingContract, _bridgeTrackingContract);
+      IBridgeSlash(_bridgeSlashContract).execSlashBridgeOperators(
+        bridgeOperators.extend(newlyAddedOperators),
+        ballots,
+        ballots.sum(),
+        period
+      );
+
+      uint256 length = newlyAddedAtPeriods.length;
+      uint256[] memory slashUntilPeriods = IBridgeSlash(_bridgeSlashContract).getSlashUntilPeriodOf(
+        newlyAddedOperators
+      );
+      for (uint256 j; j < length; ) {
+        assertEq(slashUntilPeriods[j], 0);
+        assertEq(newlyAddedAtPeriods[j], period);
+        unchecked {
+          ++j;
+        }
+      }
 
       r1 = uint256(keccak256(abi.encode(r1)));
 
@@ -141,7 +185,6 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
         ++i;
       }
     }
-    vm.stopPrank();
   }
 
   function test_Valid_ExecSlashBridgeOperators(uint256 r1, uint256 period, uint256 duration) external {
@@ -154,9 +197,12 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     uint256[] memory ballots;
     uint256 totalBallotsForPeriod;
     IBridgeSlash bridgeSlashContract = IBridgeSlash(_bridgeSlashContract);
+    MockValidatorContract validatorContract = MockValidatorContract(payable(_validatorContract));
     for (uint256 i; i < duration; ) {
       ballots = _createRandomNumbers(r1, bridgeOperators.length, 0, MAX_FUZZ_INPUTS);
       totalBallotsForPeriod = ballots.sum();
+
+      validatorContract.setCurrentPeriod(period);
 
       bridgeSlashContract.execSlashBridgeOperators(bridgeOperators, ballots, totalBallotsForPeriod, period);
 
