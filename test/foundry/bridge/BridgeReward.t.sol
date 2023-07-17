@@ -53,9 +53,6 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
 
     uint256 rewardPerPeriod = IBridgeReward(_bridgeRewardContract).getRewardPerPeriod();
 
-    if (totalBallots == 0) {
-      assertTrue(!isValidResponse);
-    }
     if (isValidResponse) {
       _assertCalculateRewardProportionally(
         isValidResponse,
@@ -68,6 +65,19 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
       _assertCalculateRewardEqually(isValidResponse, rewardPerPeriod, totalBallots, bridgeRewardContract, ballots);
     }
     _assertSlashBridgeOperators(period, slashUntils, bridgeRewardContract);
+  }
+
+  function test_WhenTotalBallotsZero_NotValidBridgeTrackingResponse(uint256 totalVotes) external {
+    MockBridgeReward bridgeRewardContract = MockBridgeReward(payable(_bridgeRewardContract));
+
+    (address[] memory bridgeOperators, , ) = abi.decode(_defaultBridgeManagerInputs, (address[], address[], uint256[]));
+
+    uint256[] memory ballots = new uint256[](bridgeOperators.length);
+    uint256 totalBallots = ballots.sum();
+
+    bool isValidResponse = bridgeRewardContract.isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots);
+
+    assertTrue(!isValidResponse);
   }
 
   function _assertCalculateRewardProportionally(
@@ -83,6 +93,9 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
     uint256 actual;
     uint256 expected;
     for (uint256 i; i < length; ) {
+      console.log("actual", actual);
+      console.log("expected", expected);
+
       actual = bridgeRewardContract.calcReward(isValidResponse, length, rewardPerPeriod, ballots[i], totalBallots);
       expected = (rewardPerPeriod * ballots[i]) / totalBallots;
 
@@ -109,6 +122,7 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
     for (uint256 i; i < length; ) {
       console.log("actual", actual);
       console.log("expected", expected);
+
       actual = bridgeRewardContract.calcReward(isValidResponse, length, rewardPerPeriod, ballots[i], totalBallots);
       assertTrue(actual == expected);
 
