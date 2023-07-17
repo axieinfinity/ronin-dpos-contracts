@@ -51,34 +51,38 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
     }
     if (period <= _latestRewardedPeriod) revert ErrPeriodAlreadyProcessed(period, _latestRewardedPeriod);
 
-    uint256[] memory slashedDurationList = _getSlashInfo(operators);
-    bool iSlashed;
-
-    // Validate the bridge tracking response whether it has informed data
-    if (!_validateBridgeTrackingResponse(totalBallot, totalVote, ballots) || totalBallot == 0) {
-      // Shares equally in case the bridge has nothing to vote or bridge tracking response is incorrect
-      uint256 rewardEach = _rewardPerPeriod / operators.length;
-      for (uint i; i < operators.length; ) {
-        iSlashed = period <= slashedDurationList[i];
-        _updateRewardAndTransfer(operators[i], rewardEach, iSlashed);
-        unchecked {
-          ++i;
-        }
-      }
-    } else {
-      // Shares the bridge operators reward proportionally
-      uint256 iReward;
-      for (uint i; i < operators.length; ) {
-        iReward = (_rewardPerPeriod * ballots[i]) / totalBallot;
-        iSlashed = period <= slashedDurationList[i];
-        _updateRewardAndTransfer(operators[i], iReward, iSlashed);
-        unchecked {
-          ++i;
-        }
-      }
+    // prevent reentrancy
+    unchecked {
+      ++_latestRewardedPeriod;
     }
 
-    ++_latestRewardedPeriod;
+    bool isSlashed;
+    uint256 rewardPerPeriod = _rewardPerPeriod;
+    uint256[] memory slashedDurationList = _getSlashInfo(operators);
+
+    // Validate the bridge tracking response whether it has informed data
+    bool isValidBridgeTrackingresponse = _validateBridgeTrackingResponse(totalBallot, totalVote, ballots);
+
+    uint256 reward;
+    uint256 numBridgeOperators = operators.length;
+
+    for (uint256 i; i < operators.length; ) {
+      (reward, isSlashed) = _calcRewardAndCheckSlashedStatus(
+        isValidBridgeTrackingresponse,
+        numBridgeOperators,
+        rewardPerPeriod,
+        ballots[i],
+        totalBallot,
+        period,
+        slashedDurationList[i]
+      );
+
+      _updateRewardAndTransfer(operators[i], reward, isSlashed);
+
+      unchecked {
+        ++i;
+      }
+    }
   }
 
   /**
@@ -90,6 +94,46 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
     uint256 totalVotes,
     uint256[] memory ballots
   ) private returns (bool valid) {
+    valid = _isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots);
+    if (!valid) {
+      emit BridgeTrackingIncorrectlyResponded();
+    }
+  }
+
+  function _calcRewardAndCheckSlashedStatus(
+    bool isValidTrackingResponse,
+    uint256 numBridgeOperators,
+    uint256 rewardPerPeriod,
+    uint256 ballot,
+    uint256 totalBallots,
+    uint256 period,
+    uint256 slashUntilPeriod
+  ) internal pure returns (uint256 reward, bool isSlashed) {
+    isSlashed = _isSlashedThisPeriod(period, slashUntilPeriod);
+    reward = _calcReward(isValidTrackingResponse, numBridgeOperators, rewardPerPeriod, ballot, totalBallots);
+  }
+
+  function _isSlashedThisPeriod(uint256 period, uint256 slashDuration) internal pure returns (bool) {
+    return period <= slashDuration;
+  }
+
+  function _calcReward(
+    bool isValidTrackingResponse,
+    uint256 numBridgeOperators,
+    uint256 rewardPerPeriod,
+    uint256 ballot,
+    uint256 totalBallots
+  ) internal pure returns (uint256 reward) {
+    // Shares equally in case the bridge has nothing to vote or bridge tracking response is incorrect
+    // Else shares the bridge operators reward proportionally
+    reward = isValidTrackingResponse ? (rewardPerPeriod * ballot) / totalBallots : rewardPerPeriod / numBridgeOperators;
+  }
+
+  function _isValidBridgeTrackingResponse(
+    uint256 totalBallots,
+    uint256 totalVotes,
+    uint256[] memory ballots
+  ) internal pure returns (bool valid) {
     valid = true;
     uint256 sumBallots;
     for (uint _i; _i < ballots.length; _i++) {
@@ -99,18 +143,15 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
       }
       sumBallots += ballots[_i];
     }
-    valid = valid && (sumBallots <= totalBallots);
-    if (!valid) {
-      emit BridgeTrackingIncorrectlyResponded();
-    }
+    valid = valid && (sumBallots <= totalBallots) && totalBallots != 0;
   }
 
   /**
    * @dev Transfer `reward` to a `operator` or only emit event based on the operator `slashed` status.
    */
-  function _updateRewardAndTransfer(address operator, uint256 reward, bool slashed) private {
+  function _updateRewardAndTransfer(address operator, uint256 reward, bool isSlashed) private {
     BridgeRewardInfo storage _iRewardInfo = _rewardInfo[operator];
-    if (slashed) {
+    if (isSlashed) {
       _iRewardInfo.slashed += reward;
       emit BridgeRewardSlashed(operator, reward);
     } else {
