@@ -53,10 +53,6 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     address bridgeManagerContract,
     address bridgeTrackingContract
   ) external initializer {
-    _requireHasCode(validatorContract);
-    _requireHasCode(bridgeManagerContract);
-    _requireHasCode(bridgeTrackingContract);
-
     _setContract(ContractType.VALIDATOR, validatorContract);
     _setContract(ContractType.BRIDGE_MANAGER, bridgeManagerContract);
     _setContract(ContractType.BRIDGE_TRACKING, bridgeTrackingContract);
