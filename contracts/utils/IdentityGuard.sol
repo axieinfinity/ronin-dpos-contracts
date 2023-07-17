@@ -3,7 +3,8 @@ pragma solidity ^0.8.0;
 
 import { RONTransferHelper } from "../extensions/RONTransferHelper.sol";
 import { AddressArrayUtils } from "../libraries/AddressArrayUtils.sol";
-import { ErrZeroAddress, ErrOnlySelfCall, ErrZeroCodeContract, ErrNonpayableAddress } from "./CommonErrors.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { ErrZeroAddress, ErrOnlySelfCall, ErrZeroCodeContract, ErrNonpayableAddress, ErrUnsupportedInterface } from "./CommonErrors.sol";
 
 abstract contract IdentityGuard is RONTransferHelper {
   using AddressArrayUtils for address[];
@@ -71,5 +72,11 @@ abstract contract IdentityGuard is RONTransferHelper {
    */
   function _requireNonDuplicate(address[] memory arr) internal pure {
     if (arr.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
+  }
+
+  function _requireSupportsInterface(address register, bytes4 interfaceId) internal view {
+    if (!IERC165(register).supportsInterface(interfaceId)) {
+      revert ErrUnsupportedInterface(interfaceId, register);
+    }
   }
 }

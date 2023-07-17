@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { IBridgeManagerCallbackRegister } from "../../interfaces/bridge/IBridgeManagerCallbackRegister.sol";
-import { IERC165, IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
+import { IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { IdentityGuard } from "../../utils/IdentityGuard.sol";
-import { ErrInvalidReturnData, ErrUnsupportedInterface } from "../../utils/CommonErrors.sol";
+import { ErrInvalidReturnData } from "../../utils/CommonErrors.sol";
 
 /**
  * @title BridgeManagerCallbackRegister
@@ -54,11 +54,12 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
     registereds = new bool[](length);
     EnumerableSet.AddressSet storage _callbackRegisters = _getCallbackRegisters();
     address register;
+    bytes4 callbackInterface = type(IBridgeManagerCallback).interfaceId;
     for (uint256 i; i < length; ) {
       register = registers[i];
 
       _requireHasCode(register);
-      _requireSupportsInterface(register);
+      _requireSupportsInterface(register, callbackInterface);
       registereds[i] = _callbackRegisters.add(register);
 
       unchecked {
@@ -121,12 +122,6 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
   function _getCallbackRegisters() internal pure returns (EnumerableSet.AddressSet storage callbackRegisters) {
     assembly {
       callbackRegisters.slot := CALLBACK_REGISTERS_SLOT
-    }
-  }
-
-  function _requireSupportsInterface(address register) internal view {
-    if (!IERC165(register).supportsInterface(type(IBridgeManagerCallback).interfaceId)) {
-      revert ErrUnsupportedInterface(type(IBridgeManagerCallback).interfaceId, register);
     }
   }
 }
