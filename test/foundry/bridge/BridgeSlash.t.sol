@@ -65,6 +65,12 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     } else if (tier == IBridgeSlash.Tier.Tier2) {
       if (period < slashUntilPeriod) {
         assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + bridgeSlashContract.TIER_2_PENALTY_DURATION());
+
+        if (
+          MockBridgeSlash(payable(_bridgeSlashContract)).isSlashDurationMetRemovalThreshold(newSlashUntilPeriod, period)
+        ) {
+          assertTrue(newSlashUntilPeriod - period + 1 >= bridgeSlashContract.REMOVE_DURATION_THRESHOLD());
+        }
       } else {
         assertTrue(newSlashUntilPeriod == uint256(period) + bridgeSlashContract.TIER_2_PENALTY_DURATION() - 1);
       }

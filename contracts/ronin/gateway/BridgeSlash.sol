@@ -149,7 +149,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
         slashUntilPeriod = _calcSlashUntilPeriod(tier, period, status.slashUntilPeriod, penaltyDurations);
 
         // Check if the slash duration exceeds the threshold for removal.
-        if (slashUntilPeriod - (period - 1) >= REMOVE_DURATION_THRESHOLD) {
+        if (_isSlashDurationMetRemovalThreshold(slashUntilPeriod, period)) {
           slashUntilPeriod = SLASH_PERMANENT_DURATION;
           emit RemovalRequested(period, bridgeOperator);
         }
@@ -250,6 +250,27 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     tier = _getSlashTier(ballot, totalBallots);
   }
 
+  /**
+   * @dev Checks if the slash duration exceeds the threshold for removal and handles it accordingly.
+   * @param slashUntilPeriod The slash until period number.
+   * @param period The current period.
+   * @return met A boolean indicates that the threshold for removal is met.
+   */
+  function _isSlashDurationMetRemovalThreshold(
+    uint256 slashUntilPeriod,
+    uint256 period
+  ) internal pure returns (bool met) {
+    met = slashUntilPeriod - (period - 1) >= REMOVE_DURATION_THRESHOLD;
+  }
+
+  /**
+   * @dev Calculates the slash until period based on the specified tier, current period, and slash until period.
+   * @param tier The slash tier representing the severity of the slash.
+   * @param period The current period in which the calculation is performed.
+   * @param slashUntilPeriod The existing slash until period.
+   * @param penaltyDurations An array of penalty durations for each slash tier.
+   * @return newSlashUntilPeriod The newly calculated slash until period.
+   */
   function _calcSlashUntilPeriod(
     Tier tier,
     uint256 period,
