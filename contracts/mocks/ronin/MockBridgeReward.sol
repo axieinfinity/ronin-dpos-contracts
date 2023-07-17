@@ -40,7 +40,15 @@ contract MockBridgeReward is BridgeReward {
     uint256 totalVotes,
     uint256[] memory ballots
   ) external pure returns (bool valid) {
-    valid = _isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots);
+    return _isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots);
+  }
+
+  function isSharingRewardEqually(
+    uint256 totalBallots,
+    uint256 totalVotes,
+    uint256[] memory ballots
+  ) external returns (bool shareEqually) {
+    return _isSharingRewardEqually(totalBallots, totalVotes, ballots);
   }
 
   function isSlashedThisPeriod(uint256 period, uint256 slashUntilDuration) external pure returns (bool) {

@@ -49,20 +49,21 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
     MockBridgeReward bridgeRewardContract = MockBridgeReward(payable(_bridgeRewardContract));
 
     uint256 totalBallots = ballots.sum();
-    bool isValidResponse = bridgeRewardContract.isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots);
+    bool isSharingEqually = bridgeRewardContract.isSharingRewardEqually(totalBallots, totalVotes, ballots);
 
     uint256 rewardPerPeriod = IBridgeReward(_bridgeRewardContract).getRewardPerPeriod();
 
-    if (isValidResponse) {
+    if (isSharingEqually) {
+      _assertCalculateRewardEqually(isSharingEqually, rewardPerPeriod, totalBallots, bridgeRewardContract, ballots);
+    }
+    else {
       _assertCalculateRewardProportionally(
-        isValidResponse,
+        isSharingEqually,
         rewardPerPeriod,
         totalBallots,
         bridgeRewardContract,
         ballots
       );
-    } else {
-      _assertCalculateRewardEqually(isValidResponse, rewardPerPeriod, totalBallots, bridgeRewardContract, ballots);
     }
     _assertSlashBridgeOperators(period, slashUntils, bridgeRewardContract);
   }
@@ -76,18 +77,20 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
     uint256 totalBallots = ballots.sum();
 
     bool isValidResponse = bridgeRewardContract.isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots);
+    bool isSharingRewardEqually = bridgeRewardContract.isSharingRewardEqually(totalBallots, totalVotes, ballots);
 
-    assertTrue(!isValidResponse);
+    assertTrue(isValidResponse);
+    assertTrue(isSharingRewardEqually);
   }
 
   function _assertCalculateRewardProportionally(
-    bool isValidResponse,
+    bool isShareEqually,
     uint256 rewardPerPeriod,
     uint256 totalBallots,
     MockBridgeReward bridgeRewardContract,
     uint256[] memory ballots
   ) internal {
-    assertTrue(isValidResponse);
+    assertFalse(isShareEqually);
     uint256 length = ballots.length;
 
     uint256 actual;
@@ -96,7 +99,7 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
       console.log("actual", actual);
       console.log("expected", expected);
 
-      actual = bridgeRewardContract.calcReward(isValidResponse, length, rewardPerPeriod, ballots[i], totalBallots);
+      actual = bridgeRewardContract.calcReward(isShareEqually, length, rewardPerPeriod, ballots[i], totalBallots);
       expected = (rewardPerPeriod * ballots[i]) / totalBallots;
 
       assertTrue(actual == expected);
@@ -108,13 +111,13 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
   }
 
   function _assertCalculateRewardEqually(
-    bool isValidResponse,
+    bool isSharingEqually,
     uint256 rewardPerPeriod,
     uint256 totalBallots,
     MockBridgeReward bridgeRewardContract,
     uint256[] memory ballots
   ) internal {
-    assertTrue(!isValidResponse);
+    assertTrue(isSharingEqually);
     uint256 actual;
     uint256 length = ballots.length;
     uint256 expected = rewardPerPeriod / length;
@@ -123,7 +126,7 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
       console.log("actual", actual);
       console.log("expected", expected);
 
-      actual = bridgeRewardContract.calcReward(isValidResponse, length, rewardPerPeriod, ballots[i], totalBallots);
+      actual = bridgeRewardContract.calcReward(isSharingEqually, length, rewardPerPeriod, ballots[i], totalBallots);
       assertTrue(actual == expected);
 
       unchecked {

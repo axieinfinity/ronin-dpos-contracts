@@ -61,7 +61,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
     uint256[] memory slashedDurationList = _getSlashInfo(operators);
 
     // Validate should share the reward equally
-    bool isSharingRewardEqually = _validateSharingRewardEqually(totalBallot, totalVote, ballots);
+    bool isSharingRewardEqually = _isSharingRewardEqually(totalBallot, totalVote, ballots);
 
     uint256 reward;
     uint256 numBridgeOperators = operators.length;
@@ -91,11 +91,11 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
    *
    * Emit a {BridgeTrackingIncorrectlyResponded} event when in case of incorrect data.
    */
-  function _validateSharingRewardEqually(
+  function _isSharingRewardEqually(
     uint256 totalBallots,
     uint256 totalVotes,
     uint256[] memory ballots
-  ) private returns (bool shareEqually) {
+  ) internal returns (bool shareEqually) {
     bool valid = _isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots);
     if (!valid) {
       emit BridgeTrackingIncorrectlyResponded();
@@ -130,7 +130,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
   ) internal pure returns (uint256 reward) {
     // Shares equally in case the bridge has nothing to vote or bridge tracking response is incorrect
     // Else shares the bridge operators reward proportionally
-    reward = isSharingRewardEqually ? (rewardPerPeriod * ballot) / totalBallots : rewardPerPeriod / numBridgeOperators;
+    reward = isSharingRewardEqually ? rewardPerPeriod / numBridgeOperators : (rewardPerPeriod * ballot) / totalBallots;
   }
 
   function _isValidBridgeTrackingResponse(
