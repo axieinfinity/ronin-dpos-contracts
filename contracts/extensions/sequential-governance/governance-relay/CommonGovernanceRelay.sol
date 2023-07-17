@@ -83,6 +83,11 @@ abstract contract CommonGovernanceRelay is CoreGovernance {
   }
 
   /**
+   * @dev Returns the weight of a governor.
+   */
+  function _getWeight(address _governor) internal view virtual returns (uint256);
+
+  /**
    * @dev Returns the weight of the governor list.
    */
   function _sumWeights(address[] memory _governors) internal view virtual returns (uint256);

@@ -1,27 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "../utils/CommonErrors.sol";
+
 interface IRoninGovernanceAdmin {
-  /**
-   * @dev Error thrown when an invalid vote hash is provided.
-   */
-  error ErrInvalidVoteHash();
-
-  /**
-   * @dev Error thrown when querying for an empty vote.
-   */
-  error ErrQueryForEmptyVote();
-
-  /**
-   * @dev Error thrown when querying for an expired vote.
-   */
-  error ErrQueryForExpiredVote();
-
-  /**
-   * @dev Error thrown when querying for a non-existent vote.
-   */
-  error ErrQueryForNonExistentVote();
-
   /// @dev Emitted when an emergency exit poll is created.
   event EmergencyExitPollCreated(
     bytes32 _voteHash,

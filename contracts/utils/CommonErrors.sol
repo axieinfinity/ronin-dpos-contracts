@@ -180,3 +180,23 @@ error ErrNonpayableAddress(address);
  * @dev Error indicating that the period is already processed, i.e. scattered reward.
  */
 error ErrPeriodAlreadyProcessed(uint256 requestingPeriod, uint256 latestPeriod);
+
+/**
+ * @dev Error thrown when an invalid vote hash is provided.
+ */
+error ErrInvalidVoteHash();
+
+/**
+ * @dev Error thrown when querying for an empty vote.
+ */
+error ErrQueryForEmptyVote();
+
+/**
+ * @dev Error thrown when querying for an expired vote.
+ */
+error ErrQueryForExpiredVote();
+
+/**
+ * @dev Error thrown when querying for a non-existent vote.
+ */
+error ErrQueryForNonExistentVote();
