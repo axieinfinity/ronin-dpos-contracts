@@ -36,27 +36,42 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
     _label();
   }
 
+  /**
+   * @notice Test the fuzz reward calculation logic.
+   * @param r1 Random number for generating slashUntils.
+   * @param r2 Random number for generating ballots.
+   * @param totalVotes Total number of votes.
+   * @param period The period being tested.
+   */
   function test_Fuzz_RewardCalculationLogic(uint256 r1, uint256 r2, uint256 totalVotes, uint256 period) external {
+    // Ensure r1 and r2 are not equal
     vm.assume(r1 != r2);
 
+    // Bound the period within the valid range
     period = _bound(period, 1, type(uint64).max);
 
+    // Decode the default bridge manager inputs
     (address[] memory bridgeOperators, , ) = abi.decode(_defaultBridgeManagerInputs, (address[], address[], uint256[]));
 
+    // Generate random numbers for slashUntils and ballots
     uint256[] memory slashUntils = _createRandomNumbers(r1, bridgeOperators.length, 0, MAX_FUZZ_INPUTS);
     uint256[] memory ballots = _createRandomNumbers(r2, bridgeOperators.length, 0, MAX_FUZZ_INPUTS);
 
+    // Get the bridge reward contract instance
     MockBridgeReward bridgeRewardContract = MockBridgeReward(payable(_bridgeRewardContract));
 
+    // Calculate the total number of ballots
     uint256 totalBallots = ballots.sum();
+    // Determine if the reward should be shared equally among bridge operators
     bool isSharingEqually = bridgeRewardContract.isSharingRewardEqually(totalBallots, totalVotes, ballots);
 
+    // Get the reward per period from the bridge reward contract
     uint256 rewardPerPeriod = IBridgeReward(_bridgeRewardContract).getRewardPerPeriod();
 
+    // Assert the reward calculation based on the sharing method
     if (isSharingEqually) {
       _assertCalculateRewardEqually(isSharingEqually, rewardPerPeriod, totalBallots, bridgeRewardContract, ballots);
-    }
-    else {
+    } else {
       _assertCalculateRewardProportionally(
         isSharingEqually,
         rewardPerPeriod,
@@ -65,24 +80,43 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
         ballots
       );
     }
+    // Assert the slashing of bridge operators for the given period
     _assertSlashBridgeOperators(period, slashUntils, bridgeRewardContract);
   }
 
+  /**
+   * @notice Test the scenario when the total number of ballots is zero and the bridge tracking response is not valid.
+   * @dev This function is for internal testing purposes only.
+   * @param totalVotes Total number of votes.
+   */
   function test_WhenTotalBallotsZero_NotValidBridgeTrackingResponse(uint256 totalVotes) external {
+    // Get the bridge reward contract instance
     MockBridgeReward bridgeRewardContract = MockBridgeReward(payable(_bridgeRewardContract));
 
+    // Decode the default bridge manager inputs
     (address[] memory bridgeOperators, , ) = abi.decode(_defaultBridgeManagerInputs, (address[], address[], uint256[]));
-
+    // Create an empty array for ballots
     uint256[] memory ballots = new uint256[](bridgeOperators.length);
+    // Calculate the total number of ballots
     uint256 totalBallots = ballots.sum();
 
+    // Check if the bridge tracking response is valid and if the reward should be shared equally
     bool isValidResponse = bridgeRewardContract.isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots);
     bool isSharingRewardEqually = bridgeRewardContract.isSharingRewardEqually(totalBallots, totalVotes, ballots);
 
+    // Assert that the bridge tracking response is not valid and the reward is shared equally
     assertTrue(isValidResponse);
     assertTrue(isSharingRewardEqually);
   }
 
+  /**
+   * @notice Asserts the calculation of rewards proportionally.
+   * @param isShareEqually Flag indicating whether rewards are shared equally.
+   * @param rewardPerPeriod The total reward amount per period.
+   * @param totalBallots The total number of ballots.
+   * @param bridgeRewardContract The mock bridge reward contract.
+   * @param ballots The array of ballots for bridge operators.
+   */
   function _assertCalculateRewardProportionally(
     bool isShareEqually,
     uint256 rewardPerPeriod,
@@ -90,18 +124,22 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
     MockBridgeReward bridgeRewardContract,
     uint256[] memory ballots
   ) internal {
+    // Assert that rewards are not shared equally
     assertFalse(isShareEqually);
-    uint256 length = ballots.length;
 
+    uint256 length = ballots.length;
     uint256 actual;
     uint256 expected;
+
     for (uint256 i; i < length; ) {
       console.log("actual", actual);
       console.log("expected", expected);
 
+      // Calculate the actual and expected rewards
       actual = bridgeRewardContract.calcReward(isShareEqually, length, rewardPerPeriod, ballots[i], totalBallots);
       expected = (rewardPerPeriod * ballots[i]) / totalBallots;
 
+      // Assert that the actual and expected rewards are equal
       assertTrue(actual == expected);
 
       unchecked {
@@ -110,6 +148,14 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
     }
   }
 
+  /**
+   * @notice Asserts the calculation of rewards when shared equally.
+   * @param isSharingEqually Flag indicating whether rewards are shared equally.
+   * @param rewardPerPeriod The total reward amount per period.
+   * @param totalBallots The total number of ballots.
+   * @param bridgeRewardContract The mock bridge reward contract.
+   * @param ballots The array of ballots for bridge operators.
+   */
   function _assertCalculateRewardEqually(
     bool isSharingEqually,
     uint256 rewardPerPeriod,
@@ -117,6 +163,7 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
     MockBridgeReward bridgeRewardContract,
     uint256[] memory ballots
   ) internal {
+    // Assert that rewards are shared equally
     assertTrue(isSharingEqually);
     uint256 actual;
     uint256 length = ballots.length;
@@ -126,7 +173,9 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
       console.log("actual", actual);
       console.log("expected", expected);
 
+      // Calculate the actual and expected rewards
       actual = bridgeRewardContract.calcReward(isSharingEqually, length, rewardPerPeriod, ballots[i], totalBallots);
+      // Assert that the actual reward is equal to the expected reward
       assertTrue(actual == expected);
 
       unchecked {
@@ -135,6 +184,12 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
     }
   }
 
+  /**
+   * @notice Asserts the slashing of bridge operators for a given period.
+   * @param period The period being tested.
+   * @param slashUntils The array of slash until periods for bridge operators.
+   * @param bridgeRewardContract The mock bridge reward contract.
+   */
   function _assertSlashBridgeOperators(
     uint256 period,
     uint256[] memory slashUntils,
@@ -142,7 +197,9 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
   ) internal {
     uint256 length = slashUntils.length;
     for (uint256 i; i < length; ) {
+      // Check if the bridge operator is slashed for the current period
       if (period <= slashUntils[i]) {
+        // Assert that the bridge operator is slashed for the current period
         assertTrue(bridgeRewardContract.isSlashedThisPeriod(period, slashUntils[i]));
       }
 
