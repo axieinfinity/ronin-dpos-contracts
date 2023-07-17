@@ -17,7 +17,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   using AddressArrayUtils for address[];
   using EnumerableSet for EnumerableSet.AddressSet;
 
-  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin._governorToBridgeOperatorInfo.slot") - 1
+  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.governorToBridgeOperatorInfo.slot") - 1
   bytes32 private constant GOVERNOR_TO_BRIDGE_OPERATOR_INFO_SLOT =
     0x88547008e60f5748911f2e59feb3093b7e4c2e87b2dd69d61f112fcc932de8e3;
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.govenorOf.slot") - 1
