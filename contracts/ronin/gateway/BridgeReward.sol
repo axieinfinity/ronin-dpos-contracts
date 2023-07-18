@@ -24,7 +24,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable {
     address bridgeTrackingContract,
     address bridgeSlashContract,
     uint256 rewardPerPeriod
-  ) external payable {
+  ) external payable initializer {
     _setContract(ContractType.BRIDGE_MANAGER, bridgeManagerContract);
     _setContract(ContractType.BRIDGE_TRACKING, bridgeTrackingContract);
     _setContract(ContractType.BRIDGE_SLASH, bridgeSlashContract);
