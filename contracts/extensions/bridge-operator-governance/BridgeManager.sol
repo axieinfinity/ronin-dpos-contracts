@@ -299,13 +299,12 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
         _requireNonZeroAddress(governor);
         _requireNonZeroAddress(bridgeOperator);
         _requirePayableAddress(bridgeOperator);
+        if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
 
         addeds[i] = bridgeOperatorSet.add(bridgeOperator);
 
         if (addeds[i]) {
           if (_governorSet.add(governor)) {
-            if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
-
             // get rid of stack too deep
             // bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
             // accumulatedWeight += bridgeOperatorInfo.voteWeight
