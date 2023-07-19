@@ -68,7 +68,7 @@ const trustedDenominator = maxPrioritizedValidatorNumber;
 const mainchainId = 1;
 const numberOfBlocksInEpoch = 600;
 
-describe('Ronin Gateway V2 test', () => {
+describe('Pause Enforcer test', () => {
   before(async () => {
     [deployer, coinbase, enforcerAdmin, enforcerSentry, ...signers] = await ethers.getSigners();
     // Set up that all candidates except the 2 last ones are trusted org
@@ -101,11 +101,18 @@ describe('Ronin Gateway V2 test', () => {
     await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
     // Deploys pauser
-    pauseEnforcer = await new PauseEnforcer__factory(deployer).deploy(
-      bridgeContract.address, // target
-      enforcerAdmin.address, // admin
-      [enforcerSentry.address] // sentry
+    const pauseEnforcerLogic = await new PauseEnforcer__factory(deployer).deploy();
+    const pauseEnforcerProxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
+      pauseEnforcerLogic.address,
+      deployer.address,
+      pauseEnforcerLogic.interface.encodeFunctionData('initialize', [
+        bridgeContract.address, // target
+        enforcerAdmin.address, // admin
+        [enforcerSentry.address], // sentry
+      ])
     );
+
+    pauseEnforcer = PauseEnforcer__factory.connect(pauseEnforcerProxy.address, enforcerAdmin);
 
     // Deploys DPoS contracts
     const {

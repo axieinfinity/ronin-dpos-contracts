@@ -1,8 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { generalRoninConf, roninchainNetworks } from '../configs/config';
-import { gatewayPauseEnforcerConf } from '../configs/gateway';
+import { roninchainNetworks } from '../../configs/config';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -12,18 +11,13 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  await deploy('RoninGatewayPauseEnforcer', {
+  await deploy('RoninGatewayPauseEnforcerLogic', {
     contract: 'PauseEnforcer',
     from: deployer,
     log: true,
-    args: [
-      generalRoninConf[network.name].bridgeContract,
-      gatewayPauseEnforcerConf[network.name]?.enforcerAdmin,
-      gatewayPauseEnforcerConf[network.name]?.sentries,
-    ],
   });
 };
 
-deploy.tags = ['RoninGatewayPauseEnforcer'];
+deploy.tags = ['RoninGatewayPauseEnforcerLogic'];
 
 export default deploy;

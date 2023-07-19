@@ -119,6 +119,15 @@ contract RoninGatewayV2 is
     }
   }
 
+  function initializeV2() external reinitializer(2) {
+    _setContract(ContractType.VALIDATOR, ____deprecated0);
+    _setContract(ContractType.BRIDGE_TRACKING, ____deprecated1);
+    _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, ____deprecated2);
+    delete ____deprecated0;
+    delete ____deprecated1;
+    delete ____deprecated2;
+  }
+
   /**
    * @dev Migrates withdrawals.
    *
