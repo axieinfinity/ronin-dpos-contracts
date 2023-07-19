@@ -1,24 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { AccessControlEnumerable } from "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import { CoreGovernance } from "../extensions/sequential-governance/CoreGovernance.sol";
 import { GlobalGovernanceRelay } from "../extensions/sequential-governance/governance-relay/GlobalGovernanceRelay.sol";
 import { GovernanceRelay } from "../extensions/sequential-governance/governance-relay/GovernanceRelay.sol";
 import { ContractType, BridgeManager } from "../extensions/bridge-operator-governance/BridgeManager.sol";
-import { ChainTypeConsumer } from "../interfaces/consumers/ChainTypeConsumer.sol";
 import { Ballot } from "../libraries/Ballot.sol";
 import { Proposal } from "../libraries/Proposal.sol";
 import { GlobalProposal } from "../libraries/GlobalProposal.sol";
 import "../utils/CommonErrors.sol";
 
-contract MainchainBridgeManager is
-  ChainTypeConsumer,
-  AccessControlEnumerable,
-  BridgeManager,
-  GovernanceRelay,
-  GlobalGovernanceRelay
-{
+contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGovernanceRelay {
   uint256 private constant DEFAULT_EXPIRY_DURATION = 1 << 255;
 
   modifier onlyGovernor() {
