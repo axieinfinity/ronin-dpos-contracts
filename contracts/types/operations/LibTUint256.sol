@@ -30,30 +30,30 @@ library LibTUint256 {
   /**
    * @dev Stores a value into the TUint256 variable.
    * @param self The TUint256 variable.
-   * @param b The value to be stored.
+   * @param other The value to be stored.
    * @return res The stored value.
    */
-  function store(TUint256 self, uint256 b) internal returns (uint256 res) {
+  function store(TUint256 self, uint256 other) internal returns (uint256 res) {
     assembly {
-      sstore(self, b)
-      res := b
+      sstore(self, other)
+      res := other
     }
   }
 
   /**
    * @dev Multiplies the TUint256 variable by a given value.
    * @param self The TUint256 variable.
-   * @param b The value to multiply by.
+   * @param other The value to multiply by.
    * @return res The resulting value after multiplication.
    */
-  function mul(TUint256 self, uint256 b) internal view returns (uint256 res) {
+  function mul(TUint256 self, uint256 other) internal view returns (uint256 res) {
     assembly {
       let storedVal := sload(self)
       if iszero(iszero(storedVal)) {
-        res := mul(storedVal, b)
+        res := mul(storedVal, other)
 
         // Overflow check
-        if iszero(eq(b, div(res, storedVal))) {
+        if iszero(eq(other, div(res, storedVal))) {
           // Load free memory pointer
           let ptr := mload(0x40)
           // Store 4 bytes the function selector of Panic(uint256)
@@ -71,14 +71,14 @@ library LibTUint256 {
   /**
    * @dev Divides the TUint256 variable by a given value.
    * @param self The TUint256 variable.
-   * @param b The value to divide by.
+   * @param other The value to divide by.
    * @return res The resulting value after division.
    */
-  function div(TUint256 self, uint256 b) internal view returns (uint256 res) {
+  function div(TUint256 self, uint256 other) internal view returns (uint256 res) {
     assembly {
       let storedVal := sload(self)
       // revert if divide by zero
-      if iszero(b) {
+      if iszero(other) {
         // Load free memory pointer
         let ptr := mload(0x40)
         // Store 4 bytes the function selector of Panic(uint256)
@@ -89,22 +89,22 @@ library LibTUint256 {
         // Revert 36 bytes of error starting from 0x1c
         revert(add(ptr, 0x1c), 0x24)
       }
-      res := div(storedVal, b)
+      res := div(storedVal, other)
     }
   }
 
   /**
    * @dev Subtracts a given value from the TUint256 variable.
    * @param self The TUint256 variable.
-   * @param b The value to subtract.
+   * @param other The value to subtract.
    * @return res The resulting value after subtraction.
    */
-  function sub(TUint256 self, uint256 b) internal view returns (uint256 res) {
+  function sub(TUint256 self, uint256 other) internal view returns (uint256 res) {
     assembly {
       let storedVal := sload(self)
 
       // Underflow check
-      if lt(storedVal, b) {
+      if lt(storedVal, other) {
         // Load free memory pointer
         let ptr := mload(0x40)
         // Store 4 bytes the function selector of Panic(uint256)
@@ -116,23 +116,23 @@ library LibTUint256 {
         revert(add(ptr, 0x1c), 0x24)
       }
 
-      res := sub(storedVal, b)
+      res := sub(storedVal, other)
     }
   }
 
   /**
    * @dev Adds a given value to the TUint256 variable.
    * @param self The TUint256 variable.
-   * @param b The value to add.
+   * @param other The value to add.
    * @return res The resulting value after addition.
    */
-  function add(TUint256 self, uint256 b) internal view returns (uint256 res) {
+  function add(TUint256 self, uint256 other) internal view returns (uint256 res) {
     assembly {
       let storedVal := sload(self)
-      res := add(storedVal, b)
+      res := add(storedVal, other)
 
       // Overflow check
-      if lt(res, b) {
+      if lt(res, other) {
         // Load free memory pointer
         let ptr := mload(0x40)
         // Store 4 bytes the function selector of Panic(uint256)
@@ -187,20 +187,20 @@ library LibTUint256 {
   /**
    * @dev Adds a given value to the TUint256 variable and stores the result.
    * @param self The TUint256 variable.
-   * @param b The value to add.
+   * @param other The value to add.
    * @return res The resulting value after addition and storage.
    */
-  function addAssign(TUint256 self, uint256 b) internal returns (uint256 res) {
-    res = store(self, add(self, b));
+  function addAssign(TUint256 self, uint256 other) internal returns (uint256 res) {
+    res = store(self, add(self, other));
   }
 
   /**
    * @dev Subtracts a given value from the TUint256 variable and stores the result.
    * @param self The TUint256 variable.
-   * @param b The value to subtract.
+   * @param other The value to subtract.
    * @return res The resulting value after subtraction and storage.
    */
-  function subAssign(TUint256 self, uint256 b) internal returns (uint256 res) {
-    res = store(self, sub(self, b));
+  function subAssign(TUint256 self, uint256 other) internal returns (uint256 res) {
+    res = store(self, sub(self, other));
   }
 }
