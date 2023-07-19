@@ -6,7 +6,6 @@ import '@nomicfoundation/hardhat-chai-matchers';
 import 'hardhat-contract-sizer';
 import '@solidstate/hardhat-4byte-uploader';
 import 'hardhat-storage-layout';
-import '@nomicfoundation/hardhat-foundry';
 
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, NetworkUserConfig, SolcUserConfig } from 'hardhat/types';
