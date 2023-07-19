@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { TUint256 } from "../../types/Types.sol";
+import { TUint256Slot } from "../../types/Types.sol";
 
 contract MockTUint256 {
-  TUint256 private constant CUSTOM_SLOT_UINT256 = TUint256.wrap(keccak256(abi.encode(type(MockTUint256).name)));
+  TUint256Slot private constant CUSTOM_SLOT_UINT256 = TUint256Slot.wrap(keccak256(abi.encode(type(MockTUint256).name)));
 
   uint256 private _primitiveUint256;
 

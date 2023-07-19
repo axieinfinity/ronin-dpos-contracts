@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import { TUint256 } from "../Types.sol";
+import { TUint256Slot } from "../Types.sol";
 
 /**
- * @title LibTUint256
+ * @title LibTUint256Slot
  * @dev Library for handling unsigned 256-bit integers.
  */
-library LibTUint256 {
+library LibTUint256Slot {
   /// @dev value is equal to bytes4(keccak256("Panic(uint256)"))
   /// @dev see: https://github.com/foundry-rs/forge-std/blob/master/src/StdError.sol
   uint256 private constant PANIC_ERROR_SIGNATURE = 0x4e487b71;
@@ -17,23 +17,23 @@ library LibTUint256 {
   uint256 private constant DIVISION_ERROR_CODE = 0x12;
 
   /**
-   * @dev Loads the value of the TUint256 variable.
-   * @param self The TUint256 variable.
+   * @dev Loads the value of the TUint256Slot variable.
+   * @param self The TUint256Slot variable.
    * @return val The loaded value.
    */
-  function load(TUint256 self) internal view returns (uint256 val) {
+  function load(TUint256Slot self) internal view returns (uint256 val) {
     assembly {
       val := sload(self)
     }
   }
 
   /**
-   * @dev Stores a value into the TUint256 variable.
-   * @param self The TUint256 variable.
+   * @dev Stores a value into the TUint256Slot variable.
+   * @param self The TUint256Slot variable.
    * @param other The value to be stored.
    * @return res The stored value.
    */
-  function store(TUint256 self, uint256 other) internal returns (uint256 res) {
+  function store(TUint256Slot self, uint256 other) internal returns (uint256 res) {
     assembly {
       sstore(self, other)
       res := other
@@ -41,12 +41,12 @@ library LibTUint256 {
   }
 
   /**
-   * @dev Multiplies the TUint256 variable by a given value.
-   * @param self The TUint256 variable.
+   * @dev Multiplies the TUint256Slot variable by a given value.
+   * @param self The TUint256Slot variable.
    * @param other The value to multiply by.
    * @return res The resulting value after multiplication.
    */
-  function mul(TUint256 self, uint256 other) internal view returns (uint256 res) {
+  function mul(TUint256Slot self, uint256 other) internal view returns (uint256 res) {
     assembly {
       let storedVal := sload(self)
       if iszero(iszero(storedVal)) {
@@ -69,12 +69,12 @@ library LibTUint256 {
   }
 
   /**
-   * @dev Divides the TUint256 variable by a given value.
-   * @param self The TUint256 variable.
+   * @dev Divides the TUint256Slot variable by a given value.
+   * @param self The TUint256Slot variable.
    * @param other The value to divide by.
    * @return res The resulting value after division.
    */
-  function div(TUint256 self, uint256 other) internal view returns (uint256 res) {
+  function div(TUint256Slot self, uint256 other) internal view returns (uint256 res) {
     assembly {
       let storedVal := sload(self)
       // revert if divide by zero
@@ -94,12 +94,12 @@ library LibTUint256 {
   }
 
   /**
-   * @dev Subtracts a given value from the TUint256 variable.
-   * @param self The TUint256 variable.
+   * @dev Subtracts a given value from the TUint256Slot variable.
+   * @param self The TUint256Slot variable.
    * @param other The value to subtract.
    * @return res The resulting value after subtraction.
    */
-  function sub(TUint256 self, uint256 other) internal view returns (uint256 res) {
+  function sub(TUint256Slot self, uint256 other) internal view returns (uint256 res) {
     assembly {
       let storedVal := sload(self)
 
@@ -121,12 +121,12 @@ library LibTUint256 {
   }
 
   /**
-   * @dev Adds a given value to the TUint256 variable.
-   * @param self The TUint256 variable.
+   * @dev Adds a given value to the TUint256Slot variable.
+   * @param self The TUint256Slot variable.
    * @param other The value to add.
    * @return res The resulting value after addition.
    */
-  function add(TUint256 self, uint256 other) internal view returns (uint256 res) {
+  function add(TUint256Slot self, uint256 other) internal view returns (uint256 res) {
     assembly {
       let storedVal := sload(self)
       res := add(storedVal, other)
@@ -147,60 +147,60 @@ library LibTUint256 {
   }
 
   /**
-   * @dev Increments the TUint256 variable by 1 and returns the new value.
-   * @param self The TUint256 variable.
+   * @dev Increments the TUint256Slot variable by 1 and returns the new value.
+   * @param self The TUint256Slot variable.
    * @return res The resulting value after incrementing.
    */
-  function preIncrement(TUint256 self) internal returns (uint256 res) {
+  function preIncrement(TUint256Slot self) internal returns (uint256 res) {
     res = addAssign(self, 1);
   }
 
   /**
-   * @dev Increments the TUint256 variable by 1 and returns the original value.
-   * @param self The TUint256 variable.
+   * @dev Increments the TUint256Slot variable by 1 and returns the original value.
+   * @param self The TUint256Slot variable.
    * @return res The original value before incrementing.
    */
-  function postIncrement(TUint256 self) internal returns (uint256 res) {
+  function postIncrement(TUint256Slot self) internal returns (uint256 res) {
     res = load(self);
     store(self, res + 1);
   }
 
   /**
-   * @dev Decrements the TUint256 variable by 1 and returns the new value.
-   * @param self The TUint256 variable.
+   * @dev Decrements the TUint256Slot variable by 1 and returns the new value.
+   * @param self The TUint256Slot variable.
    * @return res The resulting value after decrementing.
    */
-  function preDecrement(TUint256 self) internal returns (uint256 res) {
+  function preDecrement(TUint256Slot self) internal returns (uint256 res) {
     res = subAssign(self, 1);
   }
 
   /**
-   * @dev Decrements the TUint256 variable by 1 and returns the new value.
-   * @param self The TUint256 variable.
+   * @dev Decrements the TUint256Slot variable by 1 and returns the new value.
+   * @param self The TUint256Slot variable.
    * @return res The resulting value before decrementing.
    */
-  function postDecrement(TUint256 self) internal returns (uint256 res) {
+  function postDecrement(TUint256Slot self) internal returns (uint256 res) {
     res = load(self);
     store(self, res - 1);
   }
 
   /**
-   * @dev Adds a given value to the TUint256 variable and stores the result.
-   * @param self The TUint256 variable.
+   * @dev Adds a given value to the TUint256Slot variable and stores the result.
+   * @param self The TUint256Slot variable.
    * @param other The value to add.
    * @return res The resulting value after addition and storage.
    */
-  function addAssign(TUint256 self, uint256 other) internal returns (uint256 res) {
+  function addAssign(TUint256Slot self, uint256 other) internal returns (uint256 res) {
     res = store(self, add(self, other));
   }
 
   /**
-   * @dev Subtracts a given value from the TUint256 variable and stores the result.
-   * @param self The TUint256 variable.
+   * @dev Subtracts a given value from the TUint256Slot variable and stores the result.
+   * @param self The TUint256Slot variable.
    * @param other The value to subtract.
    * @return res The resulting value after subtraction and storage.
    */
-  function subAssign(TUint256 self, uint256 other) internal returns (uint256 res) {
+  function subAssign(TUint256Slot self, uint256 other) internal returns (uint256 res) {
     res = store(self, sub(self, other));
   }
 }
