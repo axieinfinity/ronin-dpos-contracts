@@ -4,16 +4,13 @@ pragma solidity ^0.8.0;
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { IBridgeManagerCallbackRegister } from "../../interfaces/bridge/IBridgeManagerCallbackRegister.sol";
 import { IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
-import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { IdentityGuard } from "../../utils/IdentityGuard.sol";
-import { ErrInvalidReturnData } from "../../utils/CommonErrors.sol";
 
 /**
  * @title BridgeManagerCallbackRegister
  * @dev A contract that manages callback registrations and execution for a bridge.
  */
 abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManagerCallbackRegister {
-  using ErrorHandler for bool;
   using EnumerableSet for EnumerableSet.AddressSet;
 
   /**
@@ -95,24 +92,21 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
    * @param inputs The data to pass to the callback method.
    */
   function _notifyRegisters(bytes4 callbackFnSig, bytes memory inputs) internal {
-    bool success;
-    bytes memory returnOrRevertData;
     address[] memory registers = _getCallbackRegisters().values();
     uint256 length = registers.length;
+    bool[] memory statuses = new bool[](length);
+    bytes[] memory returnDatas = new bytes[](length);
     bytes memory callData = abi.encodePacked(callbackFnSig, inputs);
 
     for (uint256 i; i < length; ) {
-      (success, returnOrRevertData) = registers[i].call(callData);
-      success.handleRevert(msg.sig, returnOrRevertData);
-
-      if (abi.decode(returnOrRevertData, (bytes4)) != callbackFnSig) {
-        revert ErrInvalidReturnData(callbackFnSig, registers[i], returnOrRevertData);
-      }
+      (statuses[i], returnDatas[i]) = registers[i].call(callData);
 
       unchecked {
         ++i;
       }
     }
+
+    emit Notified(registers, statuses, returnDatas);
   }
 
   /**
