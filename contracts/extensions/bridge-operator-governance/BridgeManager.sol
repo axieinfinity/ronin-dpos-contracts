@@ -303,17 +303,17 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
         addeds[i] = bridgeOperatorSet.add(bridgeOperator);
 
         if (addeds[i]) {
-          _governorSet.add(governor);
+          if (_governorSet.add(governor)) {
+            if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
 
-          if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
-
-          // get rid of stack too deep
-          // bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
-          // accumulatedWeight += bridgeOperatorInfo.voteWeight
-          accumulatedWeight += bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
-          _governorOf[bridgeOperator] = governor;
-          bridgeOperatorInfo.addr = bridgeOperator;
-          _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
+            // get rid of stack too deep
+            // bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
+            // accumulatedWeight += bridgeOperatorInfo.voteWeight
+            accumulatedWeight += bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
+            _governorOf[bridgeOperator] = governor;
+            bridgeOperatorInfo.addr = bridgeOperator;
+            _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
+          }
         }
 
         unchecked {
@@ -367,10 +367,11 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
 
       removeds[i] = _bridgeOperatorSet.remove(bridgeOperator);
       if (removeds[i]) {
-        delete _governorOf[bridgeOperator];
-        _governorSet.remove(governor);
-        delete _governorToBridgeOperatorInfo[governor];
-        accumulatedWeight += bridgeOperatorInfo.voteWeight;
+        if (_governorSet.remove(governor)) {
+          delete _governorOf[bridgeOperator];
+          delete _governorToBridgeOperatorInfo[governor];
+          accumulatedWeight += bridgeOperatorInfo.voteWeight;
+        }
       }
 
       unchecked {
