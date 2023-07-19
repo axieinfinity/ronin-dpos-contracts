@@ -19,18 +19,23 @@ import {
   TransparentUpgradeableProxyV2__factory,
   PauseEnforcer,
   PauseEnforcer__factory,
+  RoninBridgeManager,
+  RoninBridgeManager__factory,
 } from '../../src/types';
 import { ERC20PresetMinterPauser } from '../../src/types/ERC20PresetMinterPauser';
 import { ReceiptStruct } from '../../src/types/IRoninGatewayV2';
 import { DEFAULT_ADDRESS, DEFAULT_ADMIN_ROLE, SENTRY_ROLE } from '../../src/utils';
 import {
   createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
   TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
+import {
+  createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types';
+} from '../helpers/address-set-types/validator-candidate-set-type';
+import { createManyOperatorTuples, OperatorTuple } from '../helpers/address-set-types/operator-tuple-type';
 import { initTest } from '../helpers/fixture';
-import { getRoles, mineBatchTxs } from '../helpers/utils';
+import { ContractType, mineBatchTxs } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
@@ -38,6 +43,7 @@ let enforcerAdmin: SignerWithAddress;
 let enforcerSentry: SignerWithAddress;
 let trustedOrgs: TrustedOrganizationAddressSet[];
 let candidates: ValidatorCandidateAddressSet[];
+let operatorTuples: OperatorTuple[];
 let signers: SignerWithAddress[];
 
 let bridgeContract: MockRoninGatewayV2Extended;
@@ -49,6 +55,7 @@ let governanceAdminInterface: GovernanceAdminInterface;
 let token: ERC20PresetMinterPauser;
 
 let pauseEnforcer: PauseEnforcer;
+let bridgeManager: RoninBridgeManager;
 
 let period: BigNumberish;
 let receipts: ReceiptStruct[];
@@ -56,6 +63,7 @@ let receipts: ReceiptStruct[];
 const maxValidatorNumber = 6;
 const maxPrioritizedValidatorNumber = maxValidatorNumber - 2;
 const minValidatorStakingAmount = 500;
+const operatorNumber = 3;
 
 // only requires 3 operator for the proposal to pass
 const numerator = 3;
@@ -65,10 +73,14 @@ const denominator = maxValidatorNumber;
 const trustedNumerator = 1;
 const trustedDenominator = maxPrioritizedValidatorNumber;
 
+// requires 2/3 operator for the proposal to pass
+const bridgeAdminNumerator = 2;
+const bridgeAdminDenominator = operatorNumber;
+
 const mainchainId = 1;
 const numberOfBlocksInEpoch = 600;
 
-describe('Pause Enforcer test', () => {
+describe('Gateway Pause Enforcer test', () => {
   before(async () => {
     [deployer, coinbase, enforcerAdmin, enforcerSentry, ...signers] = await ethers.getSigners();
     // Set up that all candidates except the 2 last ones are trusted org
@@ -78,6 +90,7 @@ describe('Pause Enforcer test', () => {
       signers.splice(0, maxPrioritizedValidatorNumber),
       signers.splice(0, maxPrioritizedValidatorNumber)
     );
+    operatorTuples = createManyOperatorTuples(signers.splice(0, operatorNumber * 2));
 
     // Deploys bridge contracts
     token = await new ERC20PresetMinterPauser__factory(deployer).deploy('ERC20', 'ERC20');
@@ -121,6 +134,7 @@ describe('Pause Enforcer test', () => {
       roninGovernanceAdminAddress,
       roninTrustedOrganizationAddress,
       validatorContractAddress,
+      roninBridgeManagerAddress,
     } = await initTest('RoninGatewayV2-PauseEnforcer')({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
@@ -137,10 +151,12 @@ describe('Pause Enforcer test', () => {
       stakingArguments: {
         minValidatorStakingAmount,
       },
-      roninValidatorSetArguments: {
-        maxValidatorNumber,
-        maxPrioritizedValidatorNumber,
-        numberOfBlocksInEpoch,
+      bridgeManagerArguments: {
+        numerator: bridgeAdminNumerator,
+        denominator: bridgeAdminDenominator,
+        weights: operatorTuples.map(() => 100),
+        operators: operatorTuples.map((_) => _.operator.address),
+        governors: operatorTuples.map((_) => _.governor.address),
       },
     });
 
@@ -148,6 +164,7 @@ describe('Pause Enforcer test', () => {
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     bridgeTracking = BridgeTracking__factory.connect(bridgeTrackingAddress, deployer);
+    bridgeManager = RoninBridgeManager__factory.connect(roninBridgeManagerAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
       network.config.chainId!,
@@ -165,43 +182,19 @@ describe('Pause Enforcer test', () => {
       Array.from(Array(3).keys()).map(() => bridgeContract.address),
       [
         bridgeContract.interface.encodeFunctionData('setContract', [
-          getRoles('BRIDGE_TRACKING_CONTRACT'),
+          ContractType.BRIDGE_TRACKING,
           bridgeTracking.address,
         ]),
+        bridgeContract.interface.encodeFunctionData('setContract', [ContractType.VALIDATOR, roninValidatorSet.address]),
         bridgeContract.interface.encodeFunctionData('setContract', [
-          getRoles('VALIDATOR_CONTRACT'),
-          roninValidatorSet.address,
-        ]),
-        bridgeContract.interface.encodeFunctionData('setContract', [
-          getRoles('RONIN_TRUSTED_ORGANIZATION_CONTRACT'),
+          ContractType.RONIN_TRUSTED_ORGANIZATION,
           roninTrustedOrganizationAddress,
         ]),
       ]
     );
 
-    // Applies candidates and double check the bridge operators
-    for (let i = 0; i < candidates.length; i++) {
-      await stakingContract
-        .connect(candidates[i].poolAdmin)
-        .applyValidatorCandidate(
-          candidates[i].candidateAdmin.address,
-          candidates[i].consensusAddr.address,
-          candidates[i].treasuryAddr.address,
-          candidates[i].bridgeOperator.address,
-          1,
-          { value: minValidatorStakingAmount + candidates.length - i }
-        );
-    }
-
-    await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
-    await mineBatchTxs(async () => {
-      await roninValidatorSet.endEpoch();
-      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
-    });
-    period = await roninValidatorSet.currentPeriod();
-    expect((await roninValidatorSet.getBridgeOperators())._bridgeOperatorList).deep.equal(
-      candidates.map((v) => v.bridgeOperator.address)
-    );
+    await bridgeContract.initializeV2(roninBridgeManagerAddress);
+    expect(await bridgeManager.getBridgeOperators()).deep.equal(operatorTuples.map((v) => v.operator.address));
   });
 
   after(async () => {
@@ -297,9 +290,14 @@ describe('Pause Enforcer test', () => {
       ];
       receipts.push({ ...receipts[0], id: 1 });
 
-      for (let i = 0; i < numerator - 1; i++) {
-        const tx = await bridgeContract.connect(candidates[i].bridgeOperator).tryBulkDepositFor(receipts);
+      for (let i = 0; i < bridgeAdminNumerator - 1; i++) {
+        const tx = await bridgeContract.connect(operatorTuples[i].operator).tryBulkDepositFor(receipts);
         await expect(tx).not.emit(bridgeContract, 'Deposited');
+      }
+
+      for (let i = bridgeAdminNumerator; i < bridgeAdminDenominator; i++) {
+        const tx = await bridgeContract.connect(operatorTuples[i].operator).tryBulkDepositFor(receipts);
+        await expect(tx).emit(bridgeContract, 'Deposited');
       }
     });
   });

@@ -75,7 +75,6 @@ abstract contract CandidateManager is
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
-    address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external override onlyContract(ContractType.STAKING) {
     uint256 _length = _candidates.length;
@@ -87,7 +86,6 @@ abstract contract CandidateManager is
       ValidatorCandidate storage existentInfo = _candidateInfo[_candidates[_i]];
       if (_candidateAdmin == existentInfo.admin) revert ErrExistentCandidateAdmin(_candidateAdmin);
       if (_treasuryAddr == existentInfo.treasuryAddr) revert ErrExistentTreasury(_treasuryAddr);
-      if (_bridgeOperatorAddr == existentInfo.bridgeOperatorAddr) revert ErrExistentBridgeOperator(_bridgeOperatorAddr);
 
       unchecked {
         ++_i;
@@ -101,9 +99,8 @@ abstract contract CandidateManager is
     _info.admin = _candidateAdmin;
     _info.consensusAddr = _consensusAddr;
     _info.treasuryAddr = _treasuryAddr;
-    _info.bridgeOperatorAddr = _bridgeOperatorAddr;
     _info.commissionRate = _commissionRate;
-    emit CandidateGranted(_consensusAddr, _treasuryAddr, _candidateAdmin, _bridgeOperatorAddr);
+    emit CandidateGranted(_consensusAddr, _treasuryAddr, _candidateAdmin);
   }
 
   /**
@@ -268,13 +265,6 @@ abstract contract CandidateManager is
    */
   function isCandidateAdmin(address _candidate, address _admin) external view override returns (bool) {
     return _candidateInfo[_candidate].admin == _admin;
-  }
-
-  /**
-   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
-   */
-  function _bridgeOperatorOf(address _consensusAddr) internal view virtual returns (address) {
-    return _candidateInfo[_consensusAddr].bridgeOperatorAddr;
   }
 
   /**

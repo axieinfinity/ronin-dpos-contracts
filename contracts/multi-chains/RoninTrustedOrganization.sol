@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../libraries/AddressArrayUtils.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";

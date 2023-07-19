@@ -1,7 +1,7 @@
 import { BigNumber, BigNumberish } from 'ethers';
 import { GatewayPauseEnforcerConfig, LiteralNetwork, Network } from '../utils';
 
-interface Threshold {
+export interface Threshold {
   numerator: BigNumberish;
   denominator: BigNumberish;
 }

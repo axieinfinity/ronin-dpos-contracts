@@ -5,13 +5,13 @@ import { ERC1967Upgrade } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upg
 import { IConditionalImplementControl } from "../../interfaces/version-control/IConditionalImplementControl.sol";
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
-import { ErrOnlySelfCall } from "../../utils/CommonErrors.sol";
+import { ErrOnlySelfCall, IdentityGuard } from "../../utils/IdentityGuard.sol";
 
 /**
  * @title ConditionalImplementControl
  * @dev A contract that allows conditional version control of contract implementations.
  */
-abstract contract ConditionalImplementControl is IConditionalImplementControl, ERC1967Upgrade {
+abstract contract ConditionalImplementControl is IConditionalImplementControl, IdentityGuard, ERC1967Upgrade {
   using ErrorHandler for bool;
   using AddressArrayUtils for address[];
 
@@ -31,14 +31,6 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
    * @dev The address of the previous implementation.
    */
   address public immutable PREV_IMPL;
-
-  /**
-   * @dev Modifier that only allows self calls.
-   */
-  modifier onlySelfCall() {
-    _requireSelfCall();
-    _;
-  }
 
   /**
    * @dev Modifier that executes the function when conditions are met.
@@ -149,15 +141,6 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
   }
 
   /**
-   * @dev Internal function to check if a contract address has code.
-   * Throws an error if the contract address has no code.
-   * @param addr The address of the contract to check.
-   */
-  function _requireHasCode(address addr) internal view {
-    if (addr.code.length == 0) revert ErrZeroCodeContract(addr);
-  }
-
-  /**
    * @dev Internal function to check if the caller is delegating from proxy storage.
    * Throws an error if the current implementation of the proxy storage is not this contract.
    */
@@ -173,7 +156,7 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, E
    * - The method caller must be this contract.
    *
    */
-  function _requireSelfCall() internal view virtual {
+  function _requireSelfCall() internal view override {
     if (msg.sender != PROXY_STORAGE) revert ErrOnlySelfCall(msg.sig);
   }
 

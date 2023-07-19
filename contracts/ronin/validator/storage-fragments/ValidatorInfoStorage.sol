@@ -168,7 +168,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
    * @inheritdoc IValidatorInfo
    */
   function isOperatingBridge(address _consensusAddr) public view override returns (bool) {
-    return _validatorMap[_consensusAddr].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator);
+    return _validatorMap[_consensusAddr].hasFlag(EnumFlags.ValidatorFlag.DeprecatedBridgeOperator);
   }
 
   /**
