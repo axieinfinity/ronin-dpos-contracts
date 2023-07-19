@@ -48,7 +48,9 @@ library AddressArrayUtils {
   function extend(address[] memory a, address[] memory b) internal pure returns (address[] memory c) {
     uint256 lengthA = a.length;
     uint256 lengthB = b.length;
-    c = new address[](lengthA + lengthB);
+    unchecked {
+      c = new address[](lengthA + lengthB);
+    }
     uint256 i;
     for (; i < lengthA; ) {
       c[i] = a[i];
