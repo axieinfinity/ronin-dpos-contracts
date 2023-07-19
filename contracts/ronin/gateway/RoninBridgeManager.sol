@@ -238,7 +238,6 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
   }
 
   function _getWeight(address _governor) internal view virtual override returns (uint256) {
-    BridgeOperatorInfo memory bridgeOperatorInfo = _getGovernorToBridgeOperatorInfo()[_governor];
-    return bridgeOperatorInfo.voteWeight;
+    return _getGovernorToBridgeOperatorInfo()[_governor].voteWeight;
   }
 }
