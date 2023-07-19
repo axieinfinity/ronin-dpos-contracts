@@ -3,8 +3,9 @@ pragma solidity ^0.8.0;
 
 import { TUint256Slot } from "../../types/Types.sol";
 
-contract MockTUint256 {
-  TUint256Slot private constant CUSTOM_SLOT_UINT256 = TUint256Slot.wrap(keccak256(abi.encode(type(MockTUint256).name)));
+contract MockTUint256Slot {
+  TUint256Slot private constant CUSTOM_SLOT_UINT256 =
+    TUint256Slot.wrap(keccak256(abi.encode(type(MockTUint256Slot).name)));
 
   uint256 private _primitiveUint256;
 

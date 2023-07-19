@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import { stdError, Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
-import { MockTUint256 } from "@ronin/contracts/mocks/types/MockTUint256.sol";
+import { MockTUint256Slot } from "@ronin/contracts/mocks/types/MockTUint256Slot.sol";
 
-contract TUint256Test is Test {
-  MockTUint256 internal mock;
+contract TUint256SlotTest is Test {
+  MockTUint256Slot internal mock;
 
   function setUp() external {
     _setUp();
@@ -199,7 +199,7 @@ contract TUint256Test is Test {
   }
 
   function _setUp() internal virtual {
-    mock = new MockTUint256();
+    mock = new MockTUint256Slot();
   }
 
   function _label() internal virtual {
