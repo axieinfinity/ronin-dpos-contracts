@@ -54,15 +54,13 @@ library LibTUint256Slot {
 
         // Overflow check
         if iszero(eq(other, div(res, storedVal))) {
-          // Load free memory pointer
-          let ptr := mload(0x40)
           // Store 4 bytes the function selector of Panic(uint256)
           // Equivalent to revert Panic(uint256)
-          mstore(ptr, PANIC_ERROR_SIGNATURE)
+          mstore(0x00, PANIC_ERROR_SIGNATURE)
           // Store 4 bytes of division error code in the next slot
-          mstore(add(ptr, 0x20), ARITHMETIC_ERROR_CODE)
+          mstore(0x20, ARITHMETIC_ERROR_CODE)
           // Revert 36 bytes of error starting from 0x1c
-          revert(add(ptr, 0x1c), 0x24)
+          revert(0x1c, 0x24)
         }
       }
     }
@@ -79,15 +77,13 @@ library LibTUint256Slot {
       let storedVal := sload(self)
       // revert if divide by zero
       if iszero(other) {
-        // Load free memory pointer
-        let ptr := mload(0x40)
         // Store 4 bytes the function selector of Panic(uint256)
         // Equivalent to revert Panic(uint256)
-        mstore(ptr, PANIC_ERROR_SIGNATURE)
-        // Store 4 bytes of arithmetic error code in the next slot
-        mstore(add(ptr, 0x20), DIVISION_ERROR_CODE)
+        mstore(0x00, PANIC_ERROR_SIGNATURE)
+        // Store 4 bytes of division error code in the next slot
+        mstore(0x20, DIVISION_ERROR_CODE)
         // Revert 36 bytes of error starting from 0x1c
-        revert(add(ptr, 0x1c), 0x24)
+        revert(0x1c, 0x24)
       }
       res := div(storedVal, other)
     }
@@ -105,15 +101,13 @@ library LibTUint256Slot {
 
       // Underflow check
       if lt(storedVal, other) {
-        // Load free memory pointer
-        let ptr := mload(0x40)
         // Store 4 bytes the function selector of Panic(uint256)
         // Equivalent to revert Panic(uint256)
-        mstore(ptr, PANIC_ERROR_SIGNATURE)
-        // Store 4 bytes of arithmetic error code in the next slot
-        mstore(add(ptr, 0x20), ARITHMETIC_ERROR_CODE)
+        mstore(0x00, PANIC_ERROR_SIGNATURE)
+        // Store 4 bytes of division error code in the next slot
+        mstore(0x20, ARITHMETIC_ERROR_CODE)
         // Revert 36 bytes of error starting from 0x1c
-        revert(add(ptr, 0x1c), 0x24)
+        revert(0x1c, 0x24)
       }
 
       res := sub(storedVal, other)
@@ -133,15 +127,13 @@ library LibTUint256Slot {
 
       // Overflow check
       if lt(res, other) {
-        // Load free memory pointer
-        let ptr := mload(0x40)
         // Store 4 bytes the function selector of Panic(uint256)
         // Equivalent to revert Panic(uint256)
-        mstore(ptr, PANIC_ERROR_SIGNATURE)
-        // Store 4 bytes of arithmetic error code in the next slot
-        mstore(add(ptr, 0x20), ARITHMETIC_ERROR_CODE)
+        mstore(0x00, PANIC_ERROR_SIGNATURE)
+        // Store 4 bytes of division error code in the next slot
+        mstore(0x20, ARITHMETIC_ERROR_CODE)
         // Revert 36 bytes of error starting from 0x1c
-        revert(add(ptr, 0x1c), 0x24)
+        revert(0x1c, 0x24)
       }
     }
   }
