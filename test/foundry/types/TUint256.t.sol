@@ -108,7 +108,7 @@ contract TUint256Test is Test {
   function test_Fail_DivideByZero_Div(uint256 initVal) external {
     mock.setCustomSlot(initVal);
     vm.expectRevert(stdError.divisionError);
-    uint256 actualB = mock.divCustomSlot(0);
+    mock.divCustomSlot(0);
   }
 
   function test_AddAssign(uint128 initVal, uint96 val) external {

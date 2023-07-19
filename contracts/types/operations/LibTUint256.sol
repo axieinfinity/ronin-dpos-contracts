@@ -8,12 +8,12 @@ import { TUint256 } from "../Types.sol";
  * @dev Library for handling unsigned 256-bit integers.
  */
 library LibTUint256 {
-  bytes private constant arithmeticError = abi.encodeWithSignature("Panic(uint256)", 0x11);
-  bytes private constant divisionError = abi.encodeWithSignature("Panic(uint256)", 0x12);
-
   /// @dev value is equal to bytes4(keccak256("Panic(uint256)"))
+  /// @dev see: https://github.com/foundry-rs/forge-std/blob/master/src/StdError.sol
   uint256 private constant PANIC_ERROR_SIGNATURE = 0x4e487b71;
+  /// @dev error code for {Arithmetic over/underflow} error
   uint256 private constant ARITHMETIC_ERROR_CODE = 0x11;
+  /// @dev error code for {Division or modulo by 0} error
   uint256 private constant DIVISION_ERROR_CODE = 0x12;
 
   /**
