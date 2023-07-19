@@ -43,7 +43,7 @@ jobs:
           cmd: install
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1.0.9
+        uses: foundry-rs/foundry-toolchain@cb603ca0abb544f301eaed59ac0baf579aa6aecf #v1.0.10
 
       - name: "Run Compile"
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
