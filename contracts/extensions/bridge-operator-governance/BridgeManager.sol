@@ -9,7 +9,7 @@ import { IBridgeManager } from "../../interfaces/bridge/IBridgeManager.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import { RoleAccess } from "../../utils/RoleAccess.sol";
-import { TUint256 } from "../../types/Types.sol";
+import { TUint256Slot } from "../../types/Types.sol";
 import "../../utils/CommonErrors.sol";
 
 abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbackRegister, HasContracts {
@@ -32,29 +32,29 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @dev The numerator value used for calculations in the contract.
    * @notice value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.numerator.slot") - 1
    */
-  TUint256 internal constant NUMERATOR_SLOT =
-    TUint256.wrap(0xc55405a488814eaa0e2a685a0131142785b8d033d311c8c8244e34a7c12ca40f);
+  TUint256Slot internal constant NUMERATOR_SLOT =
+    TUint256Slot.wrap(0xc55405a488814eaa0e2a685a0131142785b8d033d311c8c8244e34a7c12ca40f);
 
   /**
    * @dev The denominator value used for calculations in the contract.
    * @notice value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.denominator.slot") - 1
    */
-  TUint256 internal constant DENOMINATOR_SLOT =
-    TUint256.wrap(0xac1ff16a4f04f2a37a9ba5252a69baa100b460e517d1f8019c054a5ad698f9ff);
+  TUint256Slot internal constant DENOMINATOR_SLOT =
+    TUint256Slot.wrap(0xac1ff16a4f04f2a37a9ba5252a69baa100b460e517d1f8019c054a5ad698f9ff);
 
   /**
    * @dev The nonce value used for tracking nonces in the contract.
    * @notice value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.nonce.slot") - 1
    */
-  TUint256 internal constant NONCE_SLOT =
-    TUint256.wrap(0x92872d32822c9d44b36a2537d3e0d4c46fc4de1ce154ccfaed560a8a58445f1d);
+  TUint256Slot internal constant NONCE_SLOT =
+    TUint256Slot.wrap(0x92872d32822c9d44b36a2537d3e0d4c46fc4de1ce154ccfaed560a8a58445f1d);
 
   /**
    * @dev The total weight value used for storing the cumulative weight in the contract.
    * @notice value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.totalWeights.slot") - 1
    */
-  TUint256 internal constant TOTAL_WEIGHTS_SLOT =
-    TUint256.wrap(0x6924fe71b0c8b61aea02ca498b5f53b29bd95726278b1fe4eb791bb24a42644c);
+  TUint256Slot internal constant TOTAL_WEIGHTS_SLOT =
+    TUint256Slot.wrap(0x6924fe71b0c8b61aea02ca498b5f53b29bd95726278b1fe4eb791bb24a42644c);
 
   /**
    * @inheritdoc IBridgeManager

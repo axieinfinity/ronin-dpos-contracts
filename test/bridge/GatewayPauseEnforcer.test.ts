@@ -114,11 +114,18 @@ describe('Gateway Pause Enforcer test', () => {
     await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
     // Deploys pauser
-    pauseEnforcer = await new PauseEnforcer__factory(deployer).deploy(
-      bridgeContract.address, // target
-      enforcerAdmin.address, // admin
-      [enforcerSentry.address] // sentry
+    const pauseEnforcerLogic = await new PauseEnforcer__factory(deployer).deploy();
+    const pauseEnforcerProxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
+      pauseEnforcerLogic.address,
+      deployer.address,
+      pauseEnforcerLogic.interface.encodeFunctionData('initialize', [
+        bridgeContract.address, // target
+        enforcerAdmin.address, // admin
+        [enforcerSentry.address], // sentry
+      ])
     );
+
+    pauseEnforcer = PauseEnforcer__factory.connect(pauseEnforcerProxy.address, enforcerAdmin);
 
     // Deploys DPoS contracts
     const {
@@ -186,7 +193,8 @@ describe('Gateway Pause Enforcer test', () => {
       ]
     );
 
-    await bridgeContract.initializeV2(roninBridgeManagerAddress);
+    await bridgeContract.initializeV3(roninBridgeManagerAddress);
+    period = await roninValidatorSet.currentPeriod();
     expect(await bridgeManager.getBridgeOperators()).deep.equal(operatorTuples.map((v) => v.operator.address));
   });
 

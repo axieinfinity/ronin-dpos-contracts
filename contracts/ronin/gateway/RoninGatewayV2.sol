@@ -81,7 +81,7 @@ contract RoninGatewayV2 is
    */
   function _requireBridgeOperator() internal view {
     if (!IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).isBridgeOperator(msg.sender))
-      revert ErrUnauthorized(msg.sig, RoleAccess.BRIDGE_OPERATOR);
+      revert ErrUnauthorized(msg.sig, RoleAccess.__DEPRECATED_BRIDGE_OPERATOR);
   }
 
   /**
@@ -119,7 +119,16 @@ contract RoninGatewayV2 is
     }
   }
 
-  function initializeV2(address bridgeAdmin) external reinitializer(2) {
+  function initializeV2() external reinitializer(2) {
+    _setContract(ContractType.VALIDATOR, ____deprecated0);
+    _setContract(ContractType.BRIDGE_TRACKING, ____deprecated1);
+    _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, ____deprecated2);
+    delete ____deprecated0;
+    delete ____deprecated1;
+    delete ____deprecated2;
+  }
+
+  function initializeV3(address bridgeAdmin) external reinitializer(3) {
     _setContract(ContractType.BRIDGE_MANAGER, bridgeAdmin);
   }
 

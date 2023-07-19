@@ -135,7 +135,7 @@ describe('Ronin Gateway V2 test', () => {
       ]
     );
 
-    await bridgeContract.initializeV2(roninBridgeManagerAddress);
+    await bridgeContract.initializeV3(roninBridgeManagerAddress);
     expect(await bridgeManager.getBridgeOperators()).deep.equal(operatorTuples.map((v) => v.operator.address));
   });
 

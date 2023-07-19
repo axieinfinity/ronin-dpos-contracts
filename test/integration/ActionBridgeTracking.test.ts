@@ -195,7 +195,7 @@ describe('[Integration] Bridge Tracking test', () => {
     );
 
     // Set up bridge manager for current gateway contract
-    await bridgeContract.initializeV2(bridgeManager.address);
+    await bridgeContract.initializeV3(bridgeManager.address);
     expect(await bridgeManager.getBridgeOperators()).deep.equal(operatorTuples.map((v) => v.operator.address));
 
     // Apply candidates and double check the bridge operators
