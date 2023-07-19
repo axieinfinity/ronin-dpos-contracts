@@ -5,7 +5,7 @@ import { console } from "forge-std/console.sol";
 import { IBridgeManager, BridgeManagerUtils } from "./utils/BridgeManagerUtils.t.sol";
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
 import { RoleAccess, ContractType, AddressArrayUtils, MockBridgeManager } from "@ronin/contracts/mocks/ronin/MockBridgeManager.sol";
-import { ErrUnauthorized, ErrInvalidVoteWeight, ErrZeroAddress, ErrUnexpectedInternalCall } from "@ronin/contracts/utils/CommonErrors.sol";
+import { ErrBridgeOperatorAlreadyExisted, ErrUnauthorized, ErrInvalidVoteWeight, ErrZeroAddress, ErrUnexpectedInternalCall } from "@ronin/contracts/utils/CommonErrors.sol";
 
 contract BridgeManagerCRUDTest is BridgeManagerUtils {
   using AddressArrayUtils for address[];
@@ -21,6 +21,28 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
   function setUp() external {
     _setUp();
     _label();
+  }
+
+  function test_Fail_MaliciousUpdateBridgeOperator() external {
+    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+      DEFAULT_R1,
+      DEFAULT_R2,
+      DEFAULT_R3,
+      DEFAULT_NUM_BRIDGE_OPERATORS
+    );
+    _bridgeManager = address(new MockBridgeManager(bridgeOperators, governors, voteWeights));
+    MockBridgeManager bridgeManager = MockBridgeManager(_bridgeManager);
+
+    vm.startPrank(governors[0]);
+    address lastOperator;
+
+    for (uint256 i = 1; i < bridgeOperators.length; ++i) {
+      lastOperator = bridgeOperators[i];
+      vm.expectRevert(abi.encodeWithSelector(ErrBridgeOperatorAlreadyExisted.selector, lastOperator));
+      bridgeManager.updateBridgeOperator(lastOperator);
+    }
+
+    vm.stopPrank();
   }
 
   /**

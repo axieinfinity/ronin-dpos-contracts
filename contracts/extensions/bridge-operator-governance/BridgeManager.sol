@@ -127,6 +127,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
       revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
     }
     updated = _bridgeOperatorSet.add(newBridgeOperator);
+    if (!updated) revert ErrBridgeOperatorAlreadyExisted(newBridgeOperator);
 
     bridgeOperatorInfo.addr = newBridgeOperator;
     _gorvernorToBridgeOperatorInfo[msg.sender] = bridgeOperatorInfo;

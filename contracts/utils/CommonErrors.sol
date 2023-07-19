@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import { ContractType } from "./ContractType.sol";
 import { RoleAccess } from "./RoleAccess.sol";
 
+error ErrBridgeOperatorAlreadyExisted(address bridgeOperator);
 /**
  * @dev The error indicating an unsupported interface.
  * @param interfaceId The bytes4 interface identifier that is not supported.
