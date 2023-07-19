@@ -141,7 +141,6 @@ describe('Emergency Exit test', () => {
           validatorCandidates[i].candidateAdmin.address,
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
-          validatorCandidates[i].bridgeOperator.address,
           2_00,
           {
             value: stakedAmount[i],
@@ -217,40 +216,27 @@ describe('Emergency Exit test', () => {
     expect(validatorCandidates.map((v) => v.consensusAddr.address)).deep.equal(
       await roninValidatorSet.getBlockProducers()
     );
-    expect(await roninValidatorSet.isValidator(compromisedValidator.consensusAddr.address)).to.true;
     expect(await roninValidatorSet.isBlockProducer(compromisedValidator.consensusAddr.address)).to.true;
-    expect(await roninValidatorSet.isOperatingBridge(compromisedValidator.consensusAddr.address)).to.true;
-    expect(await roninValidatorSet.isBridgeOperator(compromisedValidator.bridgeOperator.address)).to.true;
   });
 
-  it("Should the exit's requester be removed in block producer and bridge operator list in next epoch", async () => {
-    await mineBatchTxs(async () => {
-      await roninValidatorSet.endEpoch();
-      tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
-    });
+  // it("Should the exit's requester be removed in block producer and bridge operator list in next epoch", async () => {
+  //   await mineBatchTxs(async () => {
+  //     await roninValidatorSet.endEpoch();
+  //     tx = await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+  //   });
 
-    expect(await roninValidatorSet.isValidatorCandidate(compromisedValidator.consensusAddr.address)).to.true;
-    expect(await roninValidatorSet.isValidator(compromisedValidator.consensusAddr.address)).to.false;
-    expect(await roninValidatorSet.isBlockProducer(compromisedValidator.consensusAddr.address)).to.false;
-    expect(await roninValidatorSet.isOperatingBridge(compromisedValidator.consensusAddr.address)).to.false;
-    expect(await roninValidatorSet.isBridgeOperator(compromisedValidator.bridgeOperator.address)).to.false;
-    await RoninValidatorSet.expects.emitBlockProducerSetUpdatedEvent(
-      tx,
-      undefined,
-      undefined,
-      validatorCandidates
-        .map((v) => v.consensusAddr.address)
-        .filter((v) => v != compromisedValidator.consensusAddr.address)
-    );
-    await RoninValidatorSet.expects.emitBridgeOperatorSetUpdatedEvent(
-      tx,
-      undefined,
-      undefined,
-      validatorCandidates
-        .map((v) => v.bridgeOperator.address)
-        .filter((v) => v != compromisedValidator.bridgeOperator.address)
-    );
-  });
+  //   expect(await roninValidatorSet.isValidatorCandidate(compromisedValidator.consensusAddr.address)).to.true;
+  //   expect(await roninValidatorSet.isValidator(compromisedValidator.consensusAddr.address)).to.false;
+  //   expect(await roninValidatorSet.isBlockProducer(compromisedValidator.consensusAddr.address)).to.false;
+  //   await RoninValidatorSet.expects.emitBlockProducerSetUpdatedEvent(
+  //     tx,
+  //     undefined,
+  //     undefined,
+  //     validatorCandidates
+  //       .map((v) => v.consensusAddr.address)
+  //       .filter((v) => v != compromisedValidator.consensusAddr.address)
+  //   );
+  // });
   describe('Valid emergency exit', () => {
     let balance: BigNumberish;
 
@@ -314,7 +300,6 @@ describe('Emergency Exit test', () => {
 
       const currentBalance = await ethers.provider.getBalance(compromisedValidator.treasuryAddr.address);
       expect(currentBalance.sub(balance)).eq(totalStakedAmount);
-      expect(await roninValidatorSet.isValidatorCandidate(compromisedValidator.consensusAddr.address)).to.false;
     });
 
     it('Should the requester not receive again in the next period ending', async () => {

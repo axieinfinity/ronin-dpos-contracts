@@ -301,9 +301,6 @@ describe('[Integration] Configuration check', () => {
     expect(await validatorContract.getContract(getRoles('RONIN_TRUSTED_ORGANIZATION_CONTRACT'))).to.eq(
       roninTrustedOrganizationContract.address
     );
-    expect(await validatorContract.getContract(getRoles('BRIDGE_TRACKING_CONTRACT'))).to.eq(
-      bridgeTrackingContract.address
-    );
     expect(await validatorContract.maxValidatorNumber()).to.eq(config.roninValidatorSetArguments?.maxValidatorNumber);
     expect(await validatorContract.maxValidatorCandidate()).to.eq(
       config.roninValidatorSetArguments?.maxValidatorCandidate

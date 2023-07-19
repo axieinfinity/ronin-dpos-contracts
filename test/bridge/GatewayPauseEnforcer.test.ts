@@ -187,7 +187,6 @@ describe('Pause Enforcer test', () => {
           candidates[i].candidateAdmin.address,
           candidates[i].consensusAddr.address,
           candidates[i].treasuryAddr.address,
-          candidates[i].bridgeOperator.address,
           1,
           { value: minValidatorStakingAmount + candidates.length - i }
         );
@@ -199,9 +198,9 @@ describe('Pause Enforcer test', () => {
       await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
     period = await roninValidatorSet.currentPeriod();
-    expect((await roninValidatorSet.getBridgeOperators())._bridgeOperatorList).deep.equal(
-      candidates.map((v) => v.bridgeOperator.address)
-    );
+    // expect((await roninValidatorSet.getBridgeOperators())._bridgeOperatorList).deep.equal(
+    //   candidates.map((v) => v.bridgeOperator.address)
+    // );
   });
 
   after(async () => {

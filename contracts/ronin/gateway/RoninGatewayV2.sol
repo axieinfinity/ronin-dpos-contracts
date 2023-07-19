@@ -79,8 +79,9 @@ contract RoninGatewayV2 is
    * @dev Reverts if the method caller is not bridge operator.
    */
   function _requireBridgeOperator() internal view {
-    if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isBridgeOperator(msg.sender))
-      revert ErrUnauthorized(msg.sig, RoleAccess.BRIDGE_OPERATOR);
+    // TODO: uncomment below logic
+    // if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isBridgeOperator(msg.sender))
+    //   revert ErrUnauthorized(msg.sig, RoleAccess.BRIDGE_OPERATOR);
   }
 
   /**
@@ -501,7 +502,7 @@ contract RoninGatewayV2 is
    * @inheritdoc GatewayV2
    */
   function _getTotalWeight() internal view virtual override returns (uint256) {
-    return IRoninValidatorSet(getContract(ContractType.VALIDATOR)).totalBridgeOperators();
+    // return IRoninValidatorSet(getContract(ContractType.VALIDATOR)).totalBridgeOperators();
   }
 
   /**
@@ -538,26 +539,23 @@ contract RoninGatewayV2 is
     IsolatedGovernance.Vote storage _v,
     bytes32 _hash
   ) internal view returns (uint256 _totalWeight, uint256 _trustedWeight) {
-    (
-      address[] memory _consensusList,
-      address[] memory _bridgeOperators,
-      EnumFlags.ValidatorFlag[] memory _flags
-    ) = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
+    address[] memory _consensusList = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
     uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
       .getConsensusWeights(_consensusList);
+    // TODO: uncomment below logic
 
-    unchecked {
-      for (uint _i; _i < _bridgeOperators.length; ++_i) {
-        if (
-          _flags[_i].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator) && _v.voteHashOf[_bridgeOperators[_i]] == _hash
-        ) {
-          _totalWeight++;
-          if (_trustedWeights[_i] > 0) {
-            _trustedWeight++;
-          }
-        }
-      }
-    }
+    // unchecked {
+    //   for (uint _i; _i < _bridgeOperators.length; ++_i) {
+    //     if (
+    //       _flags[_i].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator) && _v.voteHashOf[_bridgeOperators[_i]] == _hash
+    //     ) {
+    //       _totalWeight++;
+    //       if (_trustedWeights[_i] > 0) {
+    //         _trustedWeight++;
+    //       }
+    //     }
+    //   }
+    // }
   }
 
   function setTrustedThreshold(

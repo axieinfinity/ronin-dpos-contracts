@@ -10,7 +10,7 @@ library EnumFlags {
   enum ValidatorFlag {
     None, // bit(00)
     BlockProducer, // bit(01)
-    BridgeOperator, // bit(10)
+    DeprecatedBridgeOperator, // bit(10)
     Both // bit(11)
   }
 

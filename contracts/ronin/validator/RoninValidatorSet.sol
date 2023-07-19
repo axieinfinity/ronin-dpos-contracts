@@ -29,7 +29,7 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     address __stakingVestingContract,
     address __maintenanceContract,
     address __roninTrustedOrganizationContract,
-    address __bridgeTrackingContract,
+    address /* __bridgeTrackingContract */,
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
@@ -43,7 +43,6 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     _setContract(ContractType.STAKING, __stakingContract);
     _setContract(ContractType.STAKING_VESTING, __stakingVestingContract);
     _setContract(ContractType.MAINTENANCE, __maintenanceContract);
-    _setContract(ContractType.BRIDGE_TRACKING, __bridgeTrackingContract);
     _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, __roninTrustedOrganizationContract);
 
     _setMaxValidatorNumber(__maxValidatorNumber);
@@ -60,7 +59,6 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     _setContract(ContractType.MAINTENANCE, ______deprecatedMaintenance);
     _setContract(ContractType.SLASH_INDICATOR, ______deprecatedSlashIndicator);
     _setContract(ContractType.STAKING_VESTING, ______deprecatedStakingVesting);
-    _setContract(ContractType.BRIDGE_TRACKING, ______deprecatedBridgeTracking);
     _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, ______deprecatedTrustedOrg);
 
     delete ______deprecatedStakingContract;
@@ -79,14 +77,5 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     if (msg.sender != getContract(ContractType.STAKING_VESTING) && msg.sender != getContract(ContractType.STAKING)) {
       revert ErrUnauthorizedReceiveRON();
     }
-  }
-
-  /**
-   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
-   */
-  function _bridgeOperatorOf(
-    address _consensusAddr
-  ) internal view override(EmergencyExit, ValidatorInfoStorage) returns (address) {
-    return super._bridgeOperatorOf(_consensusAddr);
   }
 }

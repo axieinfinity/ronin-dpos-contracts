@@ -36,7 +36,6 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     uint256 _revokingTimestamp = block.timestamp + _secLeftToRevoke;
     _setRevokingTimestamp(_candidateInfo[_consensusAddr], _revokingTimestamp);
     _emergencyExitJailedTimestamp[_consensusAddr] = _revokingTimestamp;
-    _bridgeRewardDeprecatedAtPeriod[_consensusAddr][currentPeriod()] = true;
 
     uint256 _deductedAmount = IStaking(msg.sender).execDeductStakingAmount(_consensusAddr, _emergencyExitLockedAmount);
     if (_deductedAmount > 0) {
@@ -160,15 +159,6 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   function _removeCandidate(address _consensusAddr) internal override {
     delete _lockedFundReleased[_consensusAddr];
     super._removeCandidate(_consensusAddr);
-  }
-
-  /**
-   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
-   */
-  function _bridgeOperatorOf(
-    address _consensusAddr
-  ) internal view virtual override(CandidateManager, ValidatorInfoStorage) returns (address) {
-    return CandidateManager._bridgeOperatorOf(_consensusAddr);
   }
 
   /**
