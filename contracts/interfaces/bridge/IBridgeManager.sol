@@ -18,7 +18,7 @@ interface IBridgeManager {
 
   /**
    * @dev Emitted when new bridge operators are added.
-   * @param statuses The array of boolean values representing the statuses of the added bridge operators.
+   * @param statuses The array of boolean values represents whether the corresponding bridge operator is added successfully.
    * @param voteWeights The array of vote weights assigned to the added bridge operators.
    * @param governors The array of addresses representing the governors associated with the added bridge operators.
    * @param bridgeOperators The array of addresses representing the added bridge operators.
