@@ -111,7 +111,7 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
         }
       }
 
-      emit Notified(registers, statuses, returnDatas);
+      emit Notified(callData, registers, statuses, returnDatas);
     }
   }
 

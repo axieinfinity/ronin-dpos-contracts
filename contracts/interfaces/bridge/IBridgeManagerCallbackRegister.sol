@@ -5,7 +5,7 @@ interface IBridgeManagerCallbackRegister {
   /**
    * @dev Emitted when the contract notifies multiple registers with statuses and return data.
    */
-  event Notified(address[] registers, bool[] statuses, bytes[] returnDatas);
+  event Notified(bytes callData, address[] registers, bool[] statuses, bytes[] returnDatas);
 
   function getCallbackRegisters() external view returns (address[] memory registers);
 
