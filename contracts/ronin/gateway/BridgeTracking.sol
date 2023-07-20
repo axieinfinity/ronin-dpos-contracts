@@ -8,7 +8,7 @@ import "../../interfaces/bridge/IBridgeTracking.sol";
 import { IBridgeManager } from "../../interfaces/bridge/IBridgeManager.sol";
 import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
 import { IBridgeReward } from "../../interfaces/bridge/IBridgeReward.sol";
-import "../../interfaces/validator/IRoninValidatorSet.sol";
+import { IRoninValidatorSet } from "../../interfaces/validator/IRoninValidatorSet.sol";
 import { HasBridgeDeprecated, HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
 contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContracts, Initializable, IBridgeTracking {

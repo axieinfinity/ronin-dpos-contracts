@@ -6,9 +6,11 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/RONTransferHelper.sol";
 import { IBridgeManager } from "../../interfaces/bridge/IBridgeManager.sol";
+import { IBridgeTracking } from "../../interfaces/bridge/IBridgeTracking.sol";
 import { IBridgeReward } from "../../interfaces/bridge/IBridgeReward.sol";
 import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
 import { RONTransferHelper } from "../../extensions/RONTransferHelper.sol";
+import { IRoninValidatorSet } from "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../utils/CommonErrors.sol";
 
 contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransferHelper {
@@ -37,6 +39,34 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
    */
   function receiveRON() external payable {}
 
+  function syncReward() external {
+    if (!_isBridgeOperator(msg.sender)) {
+      revert ErrUnauthorizedCall(msg.sig);
+    }
+
+    IBridgeManager bridgeManagerContract = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER));
+    IBridgeTracking bridgeTrackingContract = IBridgeTracking(getContract(ContractType.BRIDGE_TRACKING));
+
+    uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
+    if (currentPeriod <= _latestRewardedPeriod) {
+      revert ErrPeriodAlreadyProcessed(currentPeriod, _latestRewardedPeriod);
+    }
+
+    uint256 period = currentPeriod + 1;
+    address[] memory operators = bridgeManagerContract.getBridgeOperators();
+    uint256[] memory ballots = bridgeTrackingContract.getManyTotalBallots(period, operators);
+    uint256 totalBallot = bridgeTrackingContract.totalBallots(period);
+    uint256 totalVote = bridgeTrackingContract.totalVotes(period);
+
+    _syncReward({
+      operators: operators,
+      ballots: ballots,
+      totalBallot: totalBallot,
+      totalVote: totalVote,
+      period: period
+    });
+  }
+
   /**
    * @inheritdoc IBridgeReward
    */
@@ -46,16 +76,24 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
     uint256 totalBallot,
     uint256 totalVote,
     uint256 period
-  ) external {
-    if (msg.sender != getContract(ContractType.BRIDGE_TRACKING) && !_isBridgeOperator(msg.sender)) {
-      revert ErrUnauthorizedCall(msg.sig);
-    }
-    if (period <= _latestRewardedPeriod) revert ErrPeriodAlreadyProcessed(period, _latestRewardedPeriod);
+  ) external onlyContract(ContractType.BRIDGE_TRACKING) {
+    _syncReward({
+      operators: operators,
+      ballots: ballots,
+      totalBallot: totalBallot,
+      totalVote: totalVote,
+      period: period
+    });
+  }
 
-    // prevent reentrancy
-    unchecked {
-      ++_latestRewardedPeriod;
-    }
+  function _syncReward(
+    address[] memory operators,
+    uint256[] memory ballots,
+    uint256 totalBallot,
+    uint256 totalVote,
+    uint256 period
+  ) internal onlyContract(ContractType.BRIDGE_TRACKING) {
+    if (period <= _latestRewardedPeriod++) revert ErrInvalidPeriod(period, _latestRewardedPeriod);
 
     bool isSlashed;
     uint256 rewardPerPeriod = _rewardPerPeriod;
@@ -161,7 +199,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
       emit BridgeRewardSlashed(operator, reward);
     } else {
       _iRewardInfo.claimed += reward;
-      if (_sendRON(payable(operator), reward)) {
+      if (_unsafeSendRON({ recipient: payable(operator), amount: reward, gas: 0 })) {
         emit BridgeRewardScattered(operator, reward);
       } else {
         emit BridgeRewardScatterFailed(operator, reward);
