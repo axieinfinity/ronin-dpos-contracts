@@ -114,7 +114,6 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    */
   function updateBridgeOperator(address newBridgeOperator) external returns (bool updated) {
     _requireNonZeroAddress(newBridgeOperator);
-    _requirePayableAddress(newBridgeOperator);
 
     mapping(address => address) storage _governorOf = _getGovernorOf();
     EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
@@ -298,7 +297,6 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
 
         _requireNonZeroAddress(governor);
         _requireNonZeroAddress(bridgeOperator);
-        _requirePayableAddress(bridgeOperator);
         if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
 
         addeds[i] = bridgeOperatorSet.add(bridgeOperator);

@@ -8,9 +8,10 @@ import "../../extensions/RONTransferHelper.sol";
 import { IBridgeManager } from "../../interfaces/bridge/IBridgeManager.sol";
 import { IBridgeReward } from "../../interfaces/bridge/IBridgeReward.sol";
 import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
+import { RONTransferHelper } from "../../extensions/RONTransferHelper.sol";
 import "../../utils/CommonErrors.sol";
 
-contract BridgeReward is IBridgeReward, HasContracts, Initializable {
+contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransferHelper {
   mapping(address => BridgeRewardInfo) internal _rewardInfo;
   uint256 internal _rewardPerPeriod;
   uint256 internal _latestRewardedPeriod;

@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { RONTransferHelper } from "../extensions/RONTransferHelper.sol";
 import { AddressArrayUtils } from "../libraries/AddressArrayUtils.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import { ErrZeroAddress, ErrOnlySelfCall, ErrZeroCodeContract, ErrNonpayableAddress, ErrUnsupportedInterface } from "./CommonErrors.sol";
+import { ErrZeroAddress, ErrOnlySelfCall, ErrZeroCodeContract, ErrUnsupportedInterface } from "./CommonErrors.sol";
 
-abstract contract IdentityGuard is RONTransferHelper {
+abstract contract IdentityGuard {
   using AddressArrayUtils for address[];
 
   /**
@@ -45,16 +44,6 @@ abstract contract IdentityGuard is RONTransferHelper {
    */
   function _requireHasCode(address addr) internal view {
     if (addr.code.length == 0) revert ErrZeroCodeContract(addr);
-  }
-
-  /**
-   * @dev Checks if an address non-payable and reverts if it is.
-   * @param addr The address to check.
-   */
-  function _requirePayableAddress(address addr) internal {
-    if (!_unsafeSendRON(payable(addr), 0, 0)) {
-      revert ErrNonpayableAddress(addr);
-    }
   }
 
   /**
