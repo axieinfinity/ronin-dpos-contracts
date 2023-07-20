@@ -3,10 +3,14 @@ pragma solidity ^0.8.0;
 
 import { AddressArrayUtils } from "../libraries/AddressArrayUtils.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import { ErrZeroAddress, ErrOnlySelfCall, ErrZeroCodeContract, ErrUnsupportedInterface } from "./CommonErrors.sol";
+import { ErrAddressIsNotCreatedEOA, ErrZeroAddress, ErrOnlySelfCall, ErrZeroCodeContract, ErrUnsupportedInterface } from "./CommonErrors.sol";
 
 abstract contract IdentityGuard {
   using AddressArrayUtils for address[];
+
+  /// @dev value is equal to keccak256(abi.encode())
+  /// @dev see: https://eips.ethereum.org/EIPS/eip-1052
+  bytes32 internal constant CREATED_ACCOUNT_HASH = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
 
   /**
    * @dev Modifier to restrict functions to only be called by this contract.
@@ -61,6 +65,15 @@ abstract contract IdentityGuard {
    */
   function _requireNonDuplicate(address[] memory arr) internal pure {
     if (arr.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
+  }
+
+  /**
+   * @dev Internal function to require that the provided address is a created externally owned account (EOA).
+   * This internal function is used to ensure that the provided address is a valid externally owned account (EOA).
+   * It checks the codehash of the address against a predefined constant to confirm that the address is a created EOA.
+   */
+  function _requireCreatedEOA(address addr) internal view {
+    if (addr.codehash != CREATED_ACCOUNT_HASH) revert ErrAddressIsNotCreatedEOA(addr, addr.codehash);
   }
 
   /**

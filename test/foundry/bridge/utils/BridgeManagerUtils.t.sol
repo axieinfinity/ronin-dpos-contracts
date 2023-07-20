@@ -49,7 +49,6 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
     uint256 numBridgeOperators
   )
     public
-    pure
     virtual
     returns (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights)
   {
@@ -71,7 +70,6 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
     uint256 numBridgeOperators
   )
     internal
-    view
     virtual
     returns (
       bool nullifyOrDuplicate, // true is nullify, false is duplicate

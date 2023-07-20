@@ -4,6 +4,15 @@ pragma solidity ^0.8.0;
 import { ContractType } from "./ContractType.sol";
 import { RoleAccess } from "./RoleAccess.sol";
 
+/**
+ * @dev Error thrown when an address is expected to be an already created externally owned account (EOA).
+ * This error indicates that the provided address is invalid for certain contract operations that require already created EOA.
+ */
+error ErrAddressIsNotCreatedEOA(address addr, bytes32 codehash);
+/**
+ * @dev Error thrown when attempting to add a bridge operator that already exists in the contract.
+ * This error indicates that the provided bridge operator address is already registered as a bridge operator in the contract.
+ */
 error ErrBridgeOperatorAlreadyExisted(address bridgeOperator);
 /**
  * @dev The error indicating an unsupported interface.

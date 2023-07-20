@@ -229,6 +229,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
     uint256 randomSeed = _randomize(_triShuffle(r1, r2, r3), 0, voteWeights.length - 1);
     address randomGovernor = governors[randomSeed];
     address newBridgeOperator = makeAddr("NEW_BRIDGE_OPERATOR");
+    vm.deal(newBridgeOperator, 1 ether);
 
     vm.prank(randomGovernor);
     vm.expectEmit(_bridgeManager);

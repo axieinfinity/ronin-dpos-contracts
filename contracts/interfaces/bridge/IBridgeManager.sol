@@ -115,9 +115,18 @@ interface IBridgeManager {
   function getBridgeOperatorOf(address[] calldata gorvernors) external view returns (address[] memory bridgeOperators_);
 
   /**
+   * @dev Retrieves the governors corresponding to a given array of bridge operators.
+   * This external function allows external callers to obtain the governors associated with a given array of bridge operators.
+   * The function takes an input array `bridgeOperators` containing bridge operator addresses and returns an array of corresponding governors.
+   * @param bridgeOperators An array of bridge operator addresses for which governors are to be retrieved.
+   * @return governors An array of addresses representing the governors corresponding to the provided bridge operators.
+   */
+  function getGovernorsOf(address[] calldata bridgeOperators) external view returns (address[] memory governors);
+
+  /**
    * @dev Returns the weights of a list of bridge voter addresses.
    */
-  function getGovernorWeights(address[] memory governors) external view returns (uint256[] memory weights);
+  function getGovernorWeights(address[] calldata governors) external view returns (uint256[] memory weights);
 
   /**
    * @dev Returns an array of all governors.

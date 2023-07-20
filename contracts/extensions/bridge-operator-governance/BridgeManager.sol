@@ -113,7 +113,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @inheritdoc IBridgeManager
    */
   function updateBridgeOperator(address newBridgeOperator) external returns (bool updated) {
-    _requireNonZeroAddress(newBridgeOperator);
+    _requireCreatedEOA(newBridgeOperator);
 
     mapping(address => address) storage _governorOf = _getGovernorOf();
     EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
@@ -168,16 +168,8 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getGovernorWeights(address[] memory governors) public view returns (uint256[] memory weights) {
-    uint256 length = governors.length;
-    weights = new uint256[](length);
-    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
-    for (uint256 i; i < length; ) {
-      weights[i] = _governorToBridgeOperatorInfo[governors[i]].voteWeight;
-      unchecked {
-        ++i;
-      }
-    }
+  function getGovernorWeights(address[] calldata governors) external view returns (uint256[] memory weights) {
+    weights = _getGovernorWeights(governors);
   }
 
   /**
@@ -212,15 +204,15 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getBridgeOperators() public view returns (address[] memory) {
-    return _getBridgeOperatorSet().values();
+  function getBridgeOperators() external view returns (address[] memory) {
+    return _getBridgeOperators();
   }
 
   /**
    * @inheritdoc IBridgeManager
    */
-  function getGovernors() public view returns (address[] memory) {
-    return _getGovernorsSet().values();
+  function getGovernors() external view returns (address[] memory) {
+    return _getGovernors();
   }
 
   /**
@@ -239,6 +231,19 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     }
   }
 
+  function getGovernorsOf(address[] calldata bridgeOperators) external view returns (address[] memory governors) {
+    uint256 length = bridgeOperators.length;
+    governors = new address[](length);
+    mapping(address => address) storage _governorOf = _getGovernorOf();
+
+    for (uint256 i; i < length; ) {
+      governors[i] = _governorOf[bridgeOperators[i]];
+      unchecked {
+        ++i;
+      }
+    }
+  }
+
   /**
    * @inheritdoc IBridgeManager
    */
@@ -247,9 +252,9 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     view
     returns (address[] memory governors, address[] memory bridgeOperators, uint256[] memory weights)
   {
-    governors = getGovernors();
-    bridgeOperators = getBridgeOperators();
-    weights = getGovernorWeights(governors);
+    governors = _getGovernors();
+    bridgeOperators = _getBridgeOperators();
+    weights = _getGovernorWeights(governors);
   }
 
   /**
@@ -257,6 +262,20 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    */
   function minimumVoteWeight() public view virtual returns (uint256) {
     return (NUMERATOR_SLOT.mul(TOTAL_WEIGHTS_SLOT.load()) + DENOMINATOR_SLOT.load() - 1) / DENOMINATOR_SLOT.load();
+  }
+
+  /**
+   * @inheritdoc IQuorum
+   */
+  function getThreshold() external view virtual returns (uint256 num_, uint256 denom_) {
+    return (NUMERATOR_SLOT.load(), DENOMINATOR_SLOT.load());
+  }
+
+  /**
+   * @inheritdoc IQuorum
+   */
+  function checkThreshold(uint256 _voteWeight) external view virtual returns (bool) {
+    return _voteWeight * DENOMINATOR_SLOT.load() >= NUMERATOR_SLOT.mul(TOTAL_WEIGHTS_SLOT.load());
   }
 
   /**
@@ -298,8 +317,8 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
           governor = governors[i];
           bridgeOperator = bridgeOperators[i];
 
-          _requireNonZeroAddress(governor);
-          _requireNonZeroAddress(bridgeOperator);
+          _requireCreatedEOA(governor);
+          _requireCreatedEOA(bridgeOperator);
           if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
 
           addeds[i] = !(_governorSet.contains(governor) &&
@@ -414,18 +433,24 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     emit ThresholdUpdated(NONCE_SLOT.postIncrement(), numerator, denominator, _previousNum, _previousDenom);
   }
 
-  /**
-   * @inheritdoc IQuorum
-   */
-  function getThreshold() external view virtual returns (uint256 num_, uint256 denom_) {
-    return (NUMERATOR_SLOT.load(), DENOMINATOR_SLOT.load());
+  function _getBridgeOperators() internal view returns (address[] memory) {
+    return _getBridgeOperatorSet().values();
   }
 
-  /**
-   * @inheritdoc IQuorum
-   */
-  function checkThreshold(uint256 _voteWeight) external view virtual returns (bool) {
-    return _voteWeight * DENOMINATOR_SLOT.load() >= NUMERATOR_SLOT.mul(TOTAL_WEIGHTS_SLOT.load());
+  function _getGovernors() internal view returns (address[] memory) {
+    return _getGovernorsSet().values();
+  }
+
+  function _getGovernorWeights(address[] memory governors) internal view returns (uint256[] memory weights) {
+    uint256 length = governors.length;
+    weights = new uint256[](length);
+    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+    for (uint256 i; i < length; ) {
+      weights[i] = _governorToBridgeOperatorInfo[governors[i]].voteWeight;
+      unchecked {
+        ++i;
+      }
+    }
   }
 
   /**
