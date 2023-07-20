@@ -360,6 +360,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
       address bridgeOperator;
       uint256 accumulatedWeight;
       BridgeOperatorInfo memory bridgeOperatorInfo;
+
       for (uint256 i; i < length; ) {
         bridgeOperator = bridgeOperators[i];
         governor = _governorOf[bridgeOperator];

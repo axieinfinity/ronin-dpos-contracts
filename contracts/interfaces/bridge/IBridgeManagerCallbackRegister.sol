@@ -7,6 +7,10 @@ interface IBridgeManagerCallbackRegister {
    */
   event Notified(bytes callData, address[] registers, bool[] statuses, bytes[] returnDatas);
 
+  /**
+   * @dev Retrieves the addresses of registered callbacks.
+   * @return registers An array containing the addresses of registered callbacks.
+   */
   function getCallbackRegisters() external view returns (address[] memory registers);
 
   /**

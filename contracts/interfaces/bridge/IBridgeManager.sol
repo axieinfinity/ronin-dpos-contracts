@@ -62,6 +62,31 @@ interface IBridgeManager {
    */
   function isBridgeOperator(address addr) external view returns (bool);
 
+  /**
+   * @dev Retrieves the full information of all registered bridge operators.
+   *
+   * This external function allows external callers to obtain the full information of all the registered bridge operators.
+   * The returned arrays include the addresses of governors, bridge operators, and their corresponding vote weights.
+   *
+   * @return governors An array of addresses representing the governors of each bridge operator.
+   * @return bridgeOperators An array of addresses representing the registered bridge operators.
+   * @return weights An array of uint256 values representing the vote weights of each bridge operator.
+   *
+   * Note: The length of each array will be the same, and the order of elements corresponds to the same bridge operator.
+   *
+   * Example Usage:
+   * ```
+   * (address[] memory governors, address[] memory bridgeOperators, uint256[] memory weights) = getFullBridgeOperatorInfos();
+   * for (uint256 i = 0; i < bridgeOperators.length; i++) {
+   *     // Access individual information for each bridge operator.
+   *     address governor = governors[i];
+   *     address bridgeOperator = bridgeOperators[i];
+   *     uint256 weight = weights[i];
+   *     // ... (Process or use the information as required) ...
+   * }
+   * ```
+   *
+   */
   function getFullBridgeOperatorInfos()
     external
     view
@@ -105,6 +130,26 @@ interface IBridgeManager {
    * @param governors An array of addresses of hot/cold wallets for bridge operator to update their node address.
    * @param bridgeOperators An array of addresses representing the bridge operators to add.
    * @return addeds An array of booleans indicating whether each bridge operator was added successfully.
+   *
+   * Note: return boolean array `addeds` indicates whether a group (voteWeight, governor, operator) are recorded.
+   * It is expected that FE/BE staticcall to the function first to get the return values and handle it correctly.
+   * Governors are expected to see the outcome of this function and decide if they want to vote for the proposal or not.
+   *
+   * Example Usage:
+   * Making an `eth_call` in ethers.js
+   * ```
+   * const {addeds} = await bridgeManagerContract.callStatic.addBridgeOperators(
+   *  voteWeights,
+   *  governors,
+   *  bridgeOperators,
+   *  // overriding the caller to the contract itself since we use `onlySelfCall` guard
+   *  {from: bridgeManagerContract.address}
+   * )
+   * const filteredOperators = bridgeOperators.filter((_, index) => addeds[index]);
+   * const filteredWeights = weights.filter((_, index) => addeds[index]);
+   * const filteredGovernors = governors.filter((_, index) => addeds[index]);
+   * // ... (Process or use the information as required) ...
+   * ```
    */
   function addBridgeOperators(
     uint256[] calldata voteWeights,
@@ -116,6 +161,22 @@ interface IBridgeManager {
    * @dev Removes multiple bridge operators.
    * @param bridgeOperators An array of addresses representing the bridge operators to remove.
    * @return removeds An array of booleans indicating whether each bridge operator was removed successfully.
+   *
+   * * Note: return boolean array `removeds` indicates whether a group (voteWeight, governor, operator) are recorded.
+   * It is expected that FE/BE staticcall to the function first to get the return values and handle it correctly.
+   * Governors are expected to see the outcome of this function and decide if they want to vote for the proposal or not.
+   *
+   * Example Usage:
+   * Making an `eth_call` in ethers.js
+   * ```
+   * const {removeds} = await bridgeManagerContract.callStatic.removeBridgeOperators(
+   *  bridgeOperators,
+   *  // overriding the caller to the contract itself since we use `onlySelfCall` guard
+   *  {from: bridgeManagerContract.address}
+   * )
+   * const filteredOperators = bridgeOperators.filter((_, index) => removeds[index]);
+   * // ... (Process or use the information as required) ...
+   * ```
    */
   function removeBridgeOperators(address[] calldata bridgeOperators) external returns (bool[] memory removeds);
 

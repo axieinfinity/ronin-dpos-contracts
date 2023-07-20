@@ -77,28 +77,30 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
 
     uint256 numAdded;
     uint256 length = bridgeOperators.length;
-    address[] memory adddedBridgeOperators = new address[](length);
-    mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
-    uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
+    if (length != 0) {
+      address[] memory adddedBridgeOperators = new address[](length);
+      mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
+      uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
 
-    for (uint256 i; i < length; ) {
-      unchecked {
-        if (addeds[i]) {
-          _bridgeSlashInfos[bridgeOperators[i]].newlyAddedAtPeriod = uint192(currentPeriod);
-          adddedBridgeOperators[numAdded++] = bridgeOperators[i];
+      for (uint256 i; i < length; ) {
+        unchecked {
+          if (addeds[i]) {
+            _bridgeSlashInfos[bridgeOperators[i]].newlyAddedAtPeriod = uint192(currentPeriod);
+            adddedBridgeOperators[numAdded++] = bridgeOperators[i];
+          }
+
+          ++i;
         }
-
-        ++i;
       }
-    }
 
-    // resize adddedBridgeOperators array
-    assembly {
-      mstore(adddedBridgeOperators, numAdded)
-    }
+      // resize adddedBridgeOperators array
+      assembly {
+        mstore(adddedBridgeOperators, numAdded)
+      }
 
-    if (numAdded != 0) {
-      emit NewBridgeOperatorsAdded(currentPeriod, adddedBridgeOperators);
+      if (numAdded != 0) {
+        emit NewBridgeOperatorsAdded(currentPeriod, adddedBridgeOperators);
+      }
     }
 
     return IBridgeManagerCallback.onBridgeOperatorsAdded.selector;
@@ -143,52 +145,53 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   ) external onlyContract(ContractType.BRIDGE_TRACKING) onlyPeriodHasVotes(totalVotesForPeriod) returns (bool slashed) {
     uint256 length = allBridgeOperators.length;
     if (length != ballots.length) revert ErrLengthMismatch(msg.sig);
+    if (length == 0) {
+      // Get penalty durations for each slash tier.
+      uint256[] memory penaltyDurations = _getPenaltyDurations();
+      // Get the storage mapping for bridge slash information.
+      mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
 
-    // Get penalty durations for each slash tier.
-    uint256[] memory penaltyDurations = _getPenaltyDurations();
-    // Get the storage mapping for bridge slash information.
-    mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
+      // Declare variables for iteration.
+      BridgeSlashInfo memory status;
+      uint256 slashUntilPeriod;
+      address bridgeOperator;
+      Tier tier;
 
-    // Declare variables for iteration.
-    BridgeSlashInfo memory status;
-    uint256 slashUntilPeriod;
-    address bridgeOperator;
-    Tier tier;
+      for (uint256 i; i < length; ) {
+        bridgeOperator = allBridgeOperators[i];
+        status = _bridgeSlashInfos[bridgeOperator];
 
-    for (uint256 i; i < length; ) {
-      bridgeOperator = allBridgeOperators[i];
-      status = _bridgeSlashInfos[bridgeOperator];
+        // Check if the bridge operator was added before the current period.
+        // Bridge operators added in current period will not be slashed.
+        if (status.newlyAddedAtPeriod < period) {
+          // Determine the slash tier for the bridge operator based on their ballots.
+          tier = _getSlashTier(ballots[i], totalVotesForPeriod);
 
-      // Check if the bridge operator was added before the current period.
-      // Bridge operators added in current period will not be slashed.
-      if (status.newlyAddedAtPeriod < period) {
-        // Determine the slash tier for the bridge operator based on their ballots.
-        tier = _getSlashTier(ballots[i], totalVotesForPeriod);
+          slashUntilPeriod = _calcSlashUntilPeriod(tier, period, status.slashUntilPeriod, penaltyDurations);
 
-        slashUntilPeriod = _calcSlashUntilPeriod(tier, period, status.slashUntilPeriod, penaltyDurations);
-
-        // Check if the slash duration exceeds the threshold for removal.
-        if (_isSlashDurationMetRemovalThreshold(slashUntilPeriod, period)) {
-          slashUntilPeriod = SLASH_PERMANENT_DURATION;
-          emit RemovalRequested(period, bridgeOperator);
-        }
-
-        // Emit the Slashed event if the tier is not Tier 0 and bridge operator will not be removed.
-        // Update the slash until period number for the bridge operator if the tier is not Tier 0.
-        if (tier != Tier.Tier0) {
-          slashed = true;
-
-          if (slashUntilPeriod != SLASH_PERMANENT_DURATION) {
-            emit Slashed(tier, bridgeOperator, period, slashUntilPeriod);
+          // Check if the slash duration exceeds the threshold for removal.
+          if (_isSlashDurationMetRemovalThreshold(slashUntilPeriod, period)) {
+            slashUntilPeriod = SLASH_PERMANENT_DURATION;
+            emit RemovalRequested(period, bridgeOperator);
           }
 
-          // Store updated slash until period
-          _bridgeSlashInfos[bridgeOperator].slashUntilPeriod = uint64(slashUntilPeriod);
-        }
-      }
+          // Emit the Slashed event if the tier is not Tier 0 and bridge operator will not be removed.
+          // Update the slash until period number for the bridge operator if the tier is not Tier 0.
+          if (tier != Tier.Tier0) {
+            slashed = true;
 
-      unchecked {
-        ++i;
+            if (slashUntilPeriod != SLASH_PERMANENT_DURATION) {
+              emit Slashed(tier, bridgeOperator, period, slashUntilPeriod);
+            }
+
+            // Store updated slash until period
+            _bridgeSlashInfos[bridgeOperator].slashUntilPeriod = uint64(slashUntilPeriod);
+          }
+        }
+
+        unchecked {
+          ++i;
+        }
       }
     }
   }
