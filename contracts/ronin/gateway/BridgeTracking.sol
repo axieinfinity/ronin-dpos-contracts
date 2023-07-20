@@ -206,25 +206,27 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
 
     _increaseBallot(kind, requestId, operator, period);
 
+    uint256 lastSyncPeriod = _lastSyncPeriod;
     // When switching to new period, wrap up vote info, then slash and distribute reward accordingly.
-    if (_lastSyncPeriod < period) {
+    if (lastSyncPeriod < period) {
       address[] memory allOperators = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getBridgeOperators();
-      uint256 totalBallotsForPeriod = totalBallots(_lastSyncPeriod);
-      uint256[] memory ballots = _getManyTotalBallots(_lastSyncPeriod, allOperators);
+      uint256[] memory ballots = _getManyTotalBallots(lastSyncPeriod, allOperators);
 
-      IBridgeSlash(getContract(ContractType.BRIDGE_SLASH)).execSlashBridgeOperators(
-        allOperators,
-        ballots,
-        totalBallotsForPeriod,
-        _lastSyncPeriod
-      );
+      uint256 totalVotesForPeriod = totalVotes(lastSyncPeriod);
+
+      IBridgeSlash(getContract(ContractType.BRIDGE_SLASH)).execSlashBridgeOperators({
+        operators: allOperators,
+        ballots: ballots,
+        totalVotesForPeriod: totalVotesForPeriod,
+        period: lastSyncPeriod
+      });
 
       IBridgeReward(getContract(ContractType.BRIDGE_REWARD)).execSyncReward({
         operators: allOperators,
         ballots: ballots,
-        totalBallot: totalBallotsForPeriod,
-        totalVote: totalVotes(_lastSyncPeriod),
-        period: _lastSyncPeriod
+        totalBallot: totalBallots(lastSyncPeriod),
+        totalVote: totalVotesForPeriod,
+        period: lastSyncPeriod
       });
 
       _lastSyncPeriod = period;

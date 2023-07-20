@@ -47,23 +47,18 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
    * @notice Tests the fuzz slash tier logic by simulating the slash calculation for a given ballot and total ballots.
    * @dev This function is for testing purposes only.
    * @param ballot The number of ballots for the specific bridge operator.
-   * @param totalBallots The total number of ballots for the period.
+   * @param totalVotes The total number of votes for the period.
    * @param period The current period.
    * @param slashUntilPeriod The slash until period for the bridge operator.
    */
-  function test_Fuzz_SlashTierLogic(
-    uint96 ballot,
-    uint256 totalBallots,
-    uint64 period,
-    uint64 slashUntilPeriod
-  ) external {
-    // Assume period is not zero and totalBallots is not zero, and ballot is less than totalBallots
+  function test_Fuzz_SlashTierLogic(uint96 ballot, uint96 totalVotes, uint64 period, uint64 slashUntilPeriod) external {
+    // Assume period is not zero and totalVotes is not zero, and ballot is less than totalVotes
     vm.assume(period != 0);
-    vm.assume(totalBallots != 0 && ballot < totalBallots);
+    vm.assume(totalVotes != 0 && ballot < totalVotes);
 
     // Get the bridge slash contract and determine the slash tier
     IBridgeSlash bridgeSlashContract = IBridgeSlash(_bridgeSlashContract);
-    IBridgeSlash.Tier tier = bridgeSlashContract.getSlashTier(ballot, totalBallots);
+    IBridgeSlash.Tier tier = bridgeSlashContract.getSlashTier(ballot, totalVotes);
     // Calculate the new slash until period using the mock bridge slash contract
     uint256 newSlashUntilPeriod = MockBridgeSlash(payable(_bridgeSlashContract)).calcSlashUntilPeriod(
       tier,
@@ -72,18 +67,19 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     );
 
     // Log the tier and slash period information
+    console.log("tier", "period", "slashUntilPeriod", "newSlashUntilPeriod");
     console.log(uint8(tier), period, slashUntilPeriod, newSlashUntilPeriod);
 
     if (tier == IBridgeSlash.Tier.Tier1) {
       // Check the slash duration for Tier 1
-      if (period < slashUntilPeriod) {
+      if (period <= slashUntilPeriod) {
         assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + bridgeSlashContract.TIER_1_PENALTY_DURATION());
       } else {
         assertTrue(newSlashUntilPeriod == period + bridgeSlashContract.TIER_1_PENALTY_DURATION() - 1);
       }
     } else if (tier == IBridgeSlash.Tier.Tier2) {
       // Check the slash duration for Tier 2
-      if (period < slashUntilPeriod) {
+      if (period <= slashUntilPeriod) {
         assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + bridgeSlashContract.TIER_2_PENALTY_DURATION());
 
         // Check if the slash duration meets the removal threshold

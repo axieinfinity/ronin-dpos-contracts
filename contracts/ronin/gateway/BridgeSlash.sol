@@ -36,11 +36,11 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   bytes32 private constant BRIDGE_SLASH_INFOS_SLOT = 0xd08d185790a07c7b9b721e2713c8580010a57f31c72c16f6e80b831d0ee45bfe;
 
   /**
-   * @dev The modifier verifies if the `totalBallotsForPeriod` is non-zero, indicating the presence of ballots for the period.
-   * @param totalBallotsForPeriod The total number of ballots for the period.
+   * @dev The modifier verifies if the `totalVotesForPeriod` is non-zero, indicating the presence of ballots for the period.
+   * @param totalVotesForPeriod The total number of ballots for the period.
    */
-  modifier onlyPeriodHasBallots(uint256 totalBallotsForPeriod) {
-    if (totalBallotsForPeriod == 0) return;
+  modifier onlyPeriodHasVotes(uint256 totalVotesForPeriod) {
+    if (totalVotesForPeriod == 0) return;
     _;
   }
 
@@ -105,19 +105,42 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   }
 
   /**
+   * @inheritdoc IBridgeManagerCallback
+   */
+  function onBridgeOperatorUpdated(
+    address currentBridgeOperator,
+    address newBridgeOperator,
+    bool updated
+  ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
+    if (updated) {
+      mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
+      BridgeSlashInfo memory currentSlashInfo = _bridgeSlashInfos[currentBridgeOperator];
+      BridgeSlashInfo memory newSlashInfo = _bridgeSlashInfos[newBridgeOperator];
+
+      newSlashInfo.slashUntilPeriod = uint64(
+        Math.max(currentSlashInfo.slashUntilPeriod, newSlashInfo.slashUntilPeriod)
+      );
+      newSlashInfo.newlyAddedAtPeriod = uint192(
+        Math.max(currentSlashInfo.newlyAddedAtPeriod, newSlashInfo.newlyAddedAtPeriod)
+      );
+
+      _bridgeSlashInfos[newBridgeOperator] = newSlashInfo;
+
+      delete _bridgeSlashInfos[currentBridgeOperator];
+    }
+
+    return IBridgeManagerCallback.onBridgeOperatorUpdated.selector;
+  }
+
+  /**
    * @inheritdoc IBridgeSlash
    */
   function execSlashBridgeOperators(
     address[] memory allBridgeOperators,
     uint256[] memory ballots,
-    uint256 totalBallotsForPeriod,
+    uint256 totalVotesForPeriod,
     uint256 period
-  )
-    external
-    onlyContract(ContractType.BRIDGE_TRACKING)
-    onlyPeriodHasBallots(totalBallotsForPeriod)
-    returns (bool slashed)
-  {
+  ) external onlyContract(ContractType.BRIDGE_TRACKING) onlyPeriodHasVotes(totalVotesForPeriod) returns (bool slashed) {
     uint256 length = allBridgeOperators.length;
     if (length != ballots.length) revert ErrLengthMismatch(msg.sig);
 
@@ -140,7 +163,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
       // Bridge operators added in current period will not be slashed.
       if (status.newlyAddedAtPeriod < period) {
         // Determine the slash tier for the bridge operator based on their ballots.
-        tier = _getSlashTier(ballots[i], totalBallotsForPeriod);
+        tier = _getSlashTier(ballots[i], totalVotesForPeriod);
 
         slashUntilPeriod = _calcSlashUntilPeriod(tier, period, status.slashUntilPeriod, penaltyDurations);
 
@@ -178,17 +201,6 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     bool[] calldata
   ) external view onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
     return IBridgeManagerCallback.onBridgeOperatorsAdded.selector;
-  }
-
-  /**
-   * @inheritdoc IBridgeManagerCallback
-   */
-  function onBridgeOperatorUpdated(
-    address,
-    address,
-    bool
-  ) external view onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
-    return IBridgeManagerCallback.onBridgeOperatorUpdated.selector;
   }
 
   /**
@@ -242,8 +254,8 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   /**
    * @inheritdoc IBridgeSlash
    */
-  function getSlashTier(uint256 ballot, uint256 totalBallots) external pure returns (Tier tier) {
-    tier = _getSlashTier(ballot, totalBallots);
+  function getSlashTier(uint256 ballot, uint256 totalVotes) external pure returns (Tier tier) {
+    tier = _getSlashTier(ballot, totalVotes);
   }
 
   /**
@@ -277,8 +289,8 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     newSlashUntilPeriod = penaltyDurations[uint8(tier)] + Math.max(period - 1, slashUntilPeriod);
   }
 
-  function _getSlashTier(uint256 ballot, uint256 totalBallots) internal pure virtual returns (Tier tier) {
-    uint256 ratio = (ballot * PERCENTAGE_FRACTION) / totalBallots;
+  function _getSlashTier(uint256 ballot, uint256 totalVotes) internal pure virtual returns (Tier tier) {
+    uint256 ratio = ((totalVotes - ballot) * PERCENTAGE_FRACTION) / totalVotes;
     tier = ratio > TIER_2_THRESHOLD ? Tier.Tier2 : ratio > TIER_1_THRESHOLD ? Tier.Tier1 : Tier.Tier0;
   }
 
