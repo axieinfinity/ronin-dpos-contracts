@@ -118,8 +118,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     mapping(address => address) storage _governorOf = _getGovernorOf();
     EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
     mapping(address => BridgeOperatorInfo) storage _gorvernorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
-    BridgeOperatorInfo memory bridgeOperatorInfo = _gorvernorToBridgeOperatorInfo[msg.sender];
-    address currentBridgeOperator = bridgeOperatorInfo.addr;
+    address currentBridgeOperator = _gorvernorToBridgeOperatorInfo[msg.sender].addr;
 
     // return false if currentBridgeOperator unexists in _bridgeOperatorSet
     if (!_bridgeOperatorSet.remove(currentBridgeOperator)) {
@@ -128,8 +127,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     updated = _bridgeOperatorSet.add(newBridgeOperator);
     if (!updated) revert ErrBridgeOperatorAlreadyExisted(newBridgeOperator);
 
-    bridgeOperatorInfo.addr = newBridgeOperator;
-    _gorvernorToBridgeOperatorInfo[msg.sender] = bridgeOperatorInfo;
+    _gorvernorToBridgeOperatorInfo[msg.sender].addr = newBridgeOperator;
     _governorOf[newBridgeOperator] = msg.sender;
 
     delete _governorOf[currentBridgeOperator];
