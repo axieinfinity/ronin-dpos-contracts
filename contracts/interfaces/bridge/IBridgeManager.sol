@@ -90,11 +90,6 @@ interface IBridgeManager {
   function getBridgeOperatorOf(address[] calldata gorvernors) external view returns (address[] memory bridgeOperators_);
 
   /**
-   * @dev Returns the weight of a bridge voter.
-   */
-  function getGovernorWeight(address governor) external view returns (uint256);
-
-  /**
    * @dev Returns the weights of a list of bridge voter addresses.
    */
   function getGovernorWeights(address[] memory governors) external view returns (uint256[] memory weights);
