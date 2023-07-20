@@ -52,7 +52,8 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
       revert ErrPeriodAlreadyProcessed(currentPeriod, _latestRewardedPeriod);
     }
 
-    uint256 period = currentPeriod + 1;
+    // Only sync the period that is after the latest rewarded period.
+    uint256 period = _latestRewardedPeriod + 1;
     address[] memory operators = bridgeManagerContract.getBridgeOperators();
     uint256[] memory ballots = bridgeTrackingContract.getManyTotalBallots(period, operators);
     uint256 totalBallot = bridgeTrackingContract.totalBallots(period);
@@ -77,6 +78,13 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
     uint256 totalVote,
     uint256 period
   ) external onlyContract(ContractType.BRIDGE_TRACKING) {
+    // Only sync the period that is after the latest rewarded period.
+    if (period != _latestRewardedPeriod + 1) {
+      // Emit event instead of revert since bridge tracking and voting process depends on this.
+      emit BridgeRewardSyncTooFarPeriod(period, _latestRewardedPeriod);
+      return;
+    }
+
     _syncReward({
       operators: operators,
       ballots: ballots,
@@ -93,7 +101,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
     uint256 totalVote,
     uint256 period
   ) internal onlyContract(ContractType.BRIDGE_TRACKING) {
-    if (period != _latestRewardedPeriod++) revert ErrInvalidPeriod(period, _latestRewardedPeriod);
+    ++_latestRewardedPeriod;
 
     bool isSlashed;
     uint256 rewardPerPeriod = _rewardPerPeriod;

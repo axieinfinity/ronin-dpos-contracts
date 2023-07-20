@@ -18,6 +18,8 @@ interface IBridgeReward {
   event BridgeRewardSlashed(address operator, uint256 amount);
   /// @dev Event emitted when the reward of the `operator` is scattered with `amount` but failed to transfer.
   event BridgeRewardScatterFailed(address operator, uint256 amount);
+  /// @dev Event emitted when the requesting period to sync  is too far.
+  event BridgeRewardSyncTooFarPeriod(uint256 requestingPeriod, uint256 latestPeriod);
 
   /**
    * @dev Receives RON from any address.

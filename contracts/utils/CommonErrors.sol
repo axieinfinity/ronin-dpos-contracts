@@ -183,12 +183,6 @@ error ErrNonpayableAddress(address);
 error ErrPeriodAlreadyProcessed(uint256 requestingPeriod, uint256 latestPeriod);
 
 /**
- * @dev Error indicating that the period is not valid to sync reward, e.g. requesting
- * period is too far or in-between periods are not synced.
- */
-error ErrInvalidPeriod(uint256 requestingPeriod, uint256 latestPeriod);
-
-/**
  * @dev Error thrown when an invalid vote hash is provided.
  */
 error ErrInvalidVoteHash();
