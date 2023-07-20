@@ -62,10 +62,15 @@ interface IBridgeManager {
    */
   function isBridgeOperator(address addr) external view returns (bool);
 
+  function getFullBridgeOperatorInfos()
+    external
+    view
+    returns (address[] memory governors, address[] memory bridgeOperators, uint256[] memory weights);
+
   /**
-   * @dev Returns total weights of the bridge voter list.
+   * @dev Returns total weights of the governor list.
    */
-  function getSumBridgeVoterWeights(address[] calldata governors) external view returns (uint256 sum);
+  function getSumGovernorWeights(address[] calldata governors) external view returns (uint256 sum);
 
   /**
    * @dev Returns total weights.
@@ -87,12 +92,12 @@ interface IBridgeManager {
   /**
    * @dev Returns the weight of a bridge voter.
    */
-  function getBridgeVoterWeight(address governor) external view returns (uint256);
+  function getGovernorWeight(address governor) external view returns (uint256);
 
   /**
    * @dev Returns the weights of a list of bridge voter addresses.
    */
-  function getBridgeVoterWeights(address[] calldata governors) external view returns (uint256[] memory weights);
+  function getGovernorWeights(address[] memory governors) external view returns (uint256[] memory weights);
 
   /**
    * @dev Returns an array of all governors.

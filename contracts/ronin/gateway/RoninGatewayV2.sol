@@ -492,7 +492,7 @@ contract RoninGatewayV2 is
    * @inheritdoc GatewayV2
    */
   function _getTotalWeight() internal view virtual override returns (uint256) {
-    return IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).totalBridgeOperators();
+    return IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getTotalWeights();
   }
 
   /**
@@ -521,12 +521,14 @@ contract RoninGatewayV2 is
     IsolatedGovernance.Vote storage _v,
     bytes32 _hash
   ) internal view returns (uint256 _totalWeight) {
-    address[] memory _bridgeOperators = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getBridgeOperators();
-
+    (, address[] memory bridgeOperators, uint256[] memory weights) = IBridgeManager(
+      getContract(ContractType.BRIDGE_MANAGER)
+    ).getFullBridgeOperatorInfos();
+    uint256 length = bridgeOperators.length;
     unchecked {
-      for (uint _i; _i < _bridgeOperators.length; ++_i) {
-        if (_v.voteHashOf[_bridgeOperators[_i]] == _hash) {
-          _totalWeight++;
+      for (uint _i; _i < length; ++_i) {
+        if (_v.voteHashOf[bridgeOperators[_i]] == _hash) {
+          _totalWeight += weights[_i];
         }
       }
     }

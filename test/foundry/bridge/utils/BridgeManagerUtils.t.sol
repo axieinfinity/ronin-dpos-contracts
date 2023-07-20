@@ -253,7 +253,7 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
   ) internal virtual {
     assertEq(governors, bridgeManager.getGovernors());
     assertEq(bridgeOperators, bridgeManager.getBridgeOperators());
-    assertEq(voteWeights, bridgeManager.getBridgeVoterWeights(governors));
+    assertEq(voteWeights, bridgeManager.getGovernorWeights(governors));
     assertEq(bridgeOperators.length, bridgeManager.totalBridgeOperators());
     // assertEq(_sort(bridgeOperators), _sort(bridgeManager.getBridgeOperatorOf(governors)));
 

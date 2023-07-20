@@ -170,14 +170,14 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getBridgeVoterWeight(address governor) external view returns (uint256) {
+  function getGovernorWeight(address governor) external view returns (uint256) {
     return _getGovernorToBridgeOperatorInfo()[governor].voteWeight;
   }
 
   /**
    * @inheritdoc IBridgeManager
    */
-  function getBridgeVoterWeights(address[] calldata governors) external view returns (uint256[] memory weights) {
+  function getGovernorWeights(address[] memory governors) public view returns (uint256[] memory weights) {
     uint256 length = governors.length;
     weights = new uint256[](length);
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
@@ -192,9 +192,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getSumBridgeVoterWeights(
-    address[] memory governors
-  ) public view nonDuplicate(governors) returns (uint256 sum) {
+  function getSumGovernorWeights(address[] memory governors) public view nonDuplicate(governors) returns (uint256 sum) {
     uint256 length = _getBridgeOperatorSet().length();
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
     for (uint256 i; i < length; ) {
@@ -230,7 +228,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getGovernors() external view returns (address[] memory) {
+  function getGovernors() public view returns (address[] memory) {
     return _getGovernorsSet().values();
   }
 
@@ -248,6 +246,19 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
         ++i;
       }
     }
+  }
+
+  /**
+   * @inheritdoc IBridgeManager
+   */
+  function getFullBridgeOperatorInfos()
+    external
+    view
+    returns (address[] memory governors, address[] memory bridgeOperators, uint256[] memory weights)
+  {
+    governors = getGovernors();
+    bridgeOperators = getBridgeOperators();
+    weights = getGovernorWeights(governors);
   }
 
   /**
