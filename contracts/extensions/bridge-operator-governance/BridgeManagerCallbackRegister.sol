@@ -94,19 +94,21 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
   function _notifyRegisters(bytes4 callbackFnSig, bytes memory inputs) internal {
     address[] memory registers = _getCallbackRegisters().values();
     uint256 length = registers.length;
-    bool[] memory statuses = new bool[](length);
-    bytes[] memory returnDatas = new bytes[](length);
-    bytes memory callData = abi.encodePacked(callbackFnSig, inputs);
+    if (length != 0) {
+      bool[] memory statuses = new bool[](length);
+      bytes[] memory returnDatas = new bytes[](length);
+      bytes memory callData = abi.encodePacked(callbackFnSig, inputs);
 
-    for (uint256 i; i < length; ) {
-      (statuses[i], returnDatas[i]) = registers[i].call(callData);
+      for (uint256 i; i < length; ) {
+        (statuses[i], returnDatas[i]) = registers[i].call(callData);
 
-      unchecked {
-        ++i;
+        unchecked {
+          ++i;
+        }
       }
-    }
 
-    emit Notified(registers, statuses, returnDatas);
+      emit Notified(registers, statuses, returnDatas);
+    }
   }
 
   /**
