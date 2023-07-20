@@ -277,13 +277,12 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   ) internal nonDuplicate(governors.extend(bridgeOperators)) returns (bool[] memory addeds) {
     uint256 length = bridgeOperators.length;
     if (!(length == voteWeights.length && length == governors.length)) revert ErrLengthMismatch(msg.sig);
+    addeds = new bool[](length);
     // simply skip add operations if inputs are empty.
     if (length != 0) {
-      addeds = new bool[](length);
-
       EnumerableSet.AddressSet storage _governorSet = _getGovernorsSet();
       mapping(address => address) storage _governorOf = _getGovernorOf();
-      EnumerableSet.AddressSet storage bridgeOperatorSet = _getBridgeOperatorSet();
+      EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
       mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
       // get rid of stack too deep
@@ -301,18 +300,21 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
           _requireNonZeroAddress(bridgeOperator);
           if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
 
-          addeds[i] = bridgeOperatorSet.add(bridgeOperator);
+          addeds[i] = !(_governorSet.contains(governor) &&
+            _governorSet.contains(bridgeOperator) &&
+            _bridgeOperatorSet.contains(governor) &&
+            _bridgeOperatorSet.contains(bridgeOperator));
 
           if (addeds[i]) {
-            if (_governorSet.add(governor)) {
-              // get rid of stack too deep
-              // bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
-              // accumulatedWeight += bridgeOperatorInfo.voteWeight
-              accumulatedWeight += bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
-              _governorOf[bridgeOperator] = governor;
-              bridgeOperatorInfo.addr = bridgeOperator;
-              _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
-            }
+            _governorSet.add(governor);
+            _bridgeOperatorSet.add(bridgeOperator);
+            _governorOf[bridgeOperator] = governor;
+            // get rid of stack too deep
+            // bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
+            // accumulatedWeight += bridgeOperatorInfo.voteWeight
+            bridgeOperatorInfo.addr = bridgeOperator;
+            accumulatedWeight += bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
+            _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
           }
 
           unchecked {
@@ -344,10 +346,9 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     address[] memory bridgeOperators
   ) internal nonDuplicate(bridgeOperators) returns (bool[] memory removeds) {
     uint256 length = bridgeOperators.length;
+    removeds = new bool[](length);
     // simply skip remove operations if inputs are empty.
-    if (length == 0) {
-      removeds = new bool[](length);
-
+    if (length != 0) {
       mapping(address => address) storage _governorOf = _getGovernorOf();
       EnumerableSet.AddressSet storage _governorSet = _getGovernorsSet();
       EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
@@ -367,13 +368,14 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
         bridgeOperatorInfo = _governorToBridgeOperatorInfo[governor];
         if (bridgeOperatorInfo.addr != bridgeOperator) revert ErrInvalidArguments(msg.sig);
 
-        removeds[i] = _bridgeOperatorSet.remove(bridgeOperator);
+        removeds[i] = _bridgeOperatorSet.contains(bridgeOperator) && _governorSet.contains(governor);
         if (removeds[i]) {
-          if (_governorSet.remove(governor)) {
-            delete _governorOf[bridgeOperator];
-            delete _governorToBridgeOperatorInfo[governor];
-            accumulatedWeight += bridgeOperatorInfo.voteWeight;
-          }
+          _governorSet.remove(governor);
+          _bridgeOperatorSet.remove(bridgeOperator);
+
+          delete _governorOf[bridgeOperator];
+          delete _governorToBridgeOperatorInfo[governor];
+          accumulatedWeight += bridgeOperatorInfo.voteWeight;
         }
 
         unchecked {
