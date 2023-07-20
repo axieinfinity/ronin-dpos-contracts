@@ -244,7 +244,13 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
         _admin,
         abi.encodeCall(
           BridgeReward.initialize,
-          (_bridgeManagerContract, _bridgeTrackingContract, _bridgeSlashContract, DEFAULT_REWARD_PER_PERIOD)
+          (
+            _bridgeManagerContract,
+            _bridgeTrackingContract,
+            _bridgeSlashContract,
+            _validatorContract,
+            DEFAULT_REWARD_PER_PERIOD
+          )
         )
       )
     );

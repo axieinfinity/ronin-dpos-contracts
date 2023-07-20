@@ -26,11 +26,13 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
     address bridgeManagerContract,
     address bridgeTrackingContract,
     address bridgeSlashContract,
+    address validatorSetContract,
     uint256 rewardPerPeriod
   ) external payable initializer {
     _setContract(ContractType.BRIDGE_MANAGER, bridgeManagerContract);
     _setContract(ContractType.BRIDGE_TRACKING, bridgeTrackingContract);
     _setContract(ContractType.BRIDGE_SLASH, bridgeSlashContract);
+    _setContract(ContractType.VALIDATOR, validatorSetContract);
     _setRewardPerPeriod(rewardPerPeriod);
   }
 
