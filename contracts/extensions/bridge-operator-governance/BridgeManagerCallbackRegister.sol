@@ -39,6 +39,10 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
     unregistereds = _unregisterCallbacks(registers);
   }
 
+  function getCallbackRegisters() external view returns (address[] memory registers) {
+    registers = _getCallbackRegisters().values();
+  }
+
   /**
    * @dev Internal function to register multiple callbacks with the bridge.
    * @param registers The array of callback addresses to register.

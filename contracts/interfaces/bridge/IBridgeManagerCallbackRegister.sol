@@ -7,6 +7,8 @@ interface IBridgeManagerCallbackRegister {
    */
   event Notified(address[] registers, bool[] statuses, bytes[] returnDatas);
 
+  function getCallbackRegisters() external view returns (address[] memory registers);
+
   /**
    * @dev Registers multiple callbacks with the bridge.
    * @param registers The array of callback addresses to register.
