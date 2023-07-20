@@ -63,6 +63,12 @@ abstract contract IdentityGuard {
     if (arr.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
   }
 
+  /**
+   * @dev Internal function to require that the specified contract supports the given interface.
+   * @param contractAddr The address of the contract to check for interface support.
+   * @param interfaceId The interface ID to check for support.
+   * @dev If the contract does not support the interface, a revert with the corresponding error message is triggered.
+   */
   function _requireSupportsInterface(address contractAddr, bytes4 interfaceId) internal view {
     if (!IERC165(contractAddr).supportsInterface(interfaceId)) {
       revert ErrUnsupportedInterface(interfaceId, contractAddr);
