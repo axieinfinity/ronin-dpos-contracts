@@ -63,9 +63,9 @@ abstract contract IdentityGuard {
     if (arr.hasDuplicate()) revert AddressArrayUtils.ErrDuplicated(msg.sig);
   }
 
-  function _requireSupportsInterface(address register, bytes4 interfaceId) internal view {
-    if (!IERC165(register).supportsInterface(interfaceId)) {
-      revert ErrUnsupportedInterface(interfaceId, register);
+  function _requireSupportsInterface(address contractAddr, bytes4 interfaceId) internal view {
+    if (!IERC165(contractAddr).supportsInterface(interfaceId)) {
+      revert ErrUnsupportedInterface(interfaceId, contractAddr);
     }
   }
 }
