@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-import "../../extensions/collections/HasContracts.sol";
 import "../../interfaces/IProfile.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 import "./ProfileStorage.sol";
 
 pragma solidity ^0.8.9;
 
-abstract contract ProfileXComponents is IProfile, HasContracts, ProfileStorage {
+abstract contract ProfileXComponents is IProfile, ProfileStorage {
   /**
    * @inheritdoc IProfile
    */

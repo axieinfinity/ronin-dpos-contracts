@@ -3,9 +3,10 @@
 pragma solidity ^0.8.9;
 
 import "../../udvts/Types.sol";
+import "../../extensions/collections/HasContracts.sol";
 import { IProfile } from "../../interfaces/IProfile.sol";
 
-abstract contract ProfileStorage is IProfile {
+abstract contract ProfileStorage is IProfile, HasContracts {
   /// @dev Mapping from id address => candidate profile.
   mapping(address => CandidateProfile) internal _id2Profile;
   /// @dev Mapping from consensus address => id address.
