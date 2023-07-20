@@ -59,7 +59,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     address candidateAdmin,
     TConsensus consensusAddr,
     address payable treasuryAddr,
-    address bridgeOperatorAddr,
     uint256 commissionRate
   ) external payable override nonReentrant {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
@@ -69,15 +68,14 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     address payable poolAdmin = payable(msg.sender);
     address poolId = TConsensus.unwrap(consensusAddr);
 
-    _applyValidatorCandidate(
-      poolAdmin,
-      candidateAdmin,
-      poolId,
-      treasuryAddr,
-      bridgeOperatorAddr,
-      commissionRate,
-      amount
-    );
+    _applyValidatorCandidate({
+      poolAdmin: poolAdmin,
+      candidateAdmin: candidateAdmin,
+      poolId: poolId,
+      treasuryAddr: treasuryAddr,
+      commissionRate: commissionRate,
+      amount: amount
+    });
 
     PoolDetail storage _pool = _poolDetail[poolId];
     _pool.admin = poolAdmin;
@@ -219,7 +217,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     address candidateAdmin,
     address poolId,
     address payable treasuryAddr,
-    address bridgeOperatorAddr,
     uint256 commissionRate,
     uint256 amount
   ) internal {
@@ -234,7 +231,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       address[] memory diffAddrs = new address[](3);
       diffAddrs[0] = poolAdmin;
       diffAddrs[1] = poolId;
-      diffAddrs[2] = bridgeOperatorAddr;
       if (AddressArrayUtils.hasDuplicate(diffAddrs)) revert AddressArrayUtils.ErrDuplicated(msg.sig);
     }
 
@@ -242,12 +238,11 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       candidateAdmin,
       poolId,
       treasuryAddr,
-      bridgeOperatorAddr,
       commissionRate
     );
 
     IProfile profileContract = IProfile(getContract(ContractType.PROFILE));
-    profileContract.execApplyValidatorCandidate(candidateAdmin, poolId, treasuryAddr, bridgeOperatorAddr);
+    profileContract.execApplyValidatorCandidate(candidateAdmin, poolId, treasuryAddr);
   }
 
   /**

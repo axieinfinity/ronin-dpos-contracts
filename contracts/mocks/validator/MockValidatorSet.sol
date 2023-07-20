@@ -52,10 +52,6 @@ contract MockValidatorSet is
 
   function checkMiningRewardDeprecatedAtPeriod(TConsensus, uint256 period) external view override returns (bool) {}
 
-  function checkBridgeRewardDeprecatedAtLatestPeriod(
-    TConsensus _consensusAddr
-  ) external view override returns (bool _result) {}
-
   function checkBridgeRewardDeprecatedAtPeriod(
     TConsensus _consensusAddr,
     uint256 _period
@@ -63,17 +59,7 @@ contract MockValidatorSet is
 
   function epochOf(uint256 _block) external view override returns (uint256) {}
 
-  function getValidators()
-    external
-    view
-    override
-    returns (
-      address[] memory consensusList,
-      address[] memory bridgeOperatorList,
-      EnumFlags.ValidatorFlag[] memory flagList,
-      address[] memory candidateIdList
-    )
-  {}
+  function getValidators() external view override returns (address[] memory) {}
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
 
@@ -99,30 +85,9 @@ contract MockValidatorSet is
     returns (uint256 _maximumPrioritizedValidatorNumber)
   {}
 
-  function isValidator(address) external pure override returns (bool) {
-    return true;
-  }
-
   function numberOfBlocksInEpoch() public view override returns (uint256) {
     return _numberOfBlocksInEpoch;
   }
-
-  function getBridgeOperators()
-    external
-    view
-    override
-    returns (address[] memory _bridges, address[] memory _validators)
-  {}
-
-  function getBridgeOperatorsOf(
-    TConsensus[] memory _validatorAddrs
-  ) external view override returns (address[] memory) {}
-
-  function isBridgeOperator(address) external pure override returns (bool) {
-    return true;
-  }
-
-  function totalBridgeOperators() external view override returns (uint256) {}
 
   function getBlockProducers() external view override returns (address[] memory) {}
 
@@ -156,10 +121,6 @@ contract MockValidatorSet is
   ) external view override returns (bool isJailed_, uint256 blockLeft_, uint256 epochLeft_) {}
 
   function totalDeprecatedReward() external view override returns (uint256) {}
-
-  function _bridgeOperatorOfCandidateId(address _candidateId) internal view override returns (address) {
-    return super._bridgeOperatorOfCandidateId(_candidateId);
-  }
 
   function _convertC2P(TConsensus consensusAddr) internal view override returns (address) {
     return super._convertC2P(consensusAddr);

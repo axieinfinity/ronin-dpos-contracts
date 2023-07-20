@@ -21,8 +21,6 @@ interface IProfile {
     address admin;
     /// @dev Treasury address.
     address payable treasury;
-    /// @dev Address of the bridge operator corresponding to the candidate.
-    address bridgeOperator;
     /// @dev Address to voting proposal.
     address governor;
     /// @dev Address to voting bridge operators.
@@ -64,7 +62,7 @@ interface IProfile {
    * Requirements:
    * - Only `stakingContract` can call this method.
    */
-  function execApplyValidatorCandidate(address admin, address id, address treasury, address bridgeOperator) external;
+  function execApplyValidatorCandidate(address admin, address id, address treasury) external;
 
   /**
    * @dev Updated immediately without waiting time.

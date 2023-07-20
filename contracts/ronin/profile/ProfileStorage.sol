@@ -21,7 +21,6 @@ abstract contract ProfileStorage is IProfile {
     _profile.consensus = mNewProfile.consensus;
     _profile.admin = mNewProfile.admin;
     _profile.treasury = mNewProfile.treasury;
-    _profile.bridgeOperator = mNewProfile.bridgeOperator;
     _profile.governor = mNewProfile.governor;
     _profile.bridgeVoter = mNewProfile.bridgeVoter;
 

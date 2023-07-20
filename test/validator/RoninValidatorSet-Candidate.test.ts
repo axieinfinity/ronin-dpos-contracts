@@ -169,7 +169,6 @@ describe('Ronin Validator Set: candidate test', () => {
             validatorCandidates[i].candidateAdmin.address,
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
-            validatorCandidates[i].bridgeOperator.address,
             2_00,
             {
               value: minValidatorStakingAmount.add(i),
@@ -194,7 +193,7 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, expectingValidatorsAddr);
-      expect((await roninValidatorSet.getValidators())[0]).deep.equal(expectingValidatorsAddr);
+      expect(await roninValidatorSet.getValidators()).deep.equal(expectingValidatorsAddr);
       expect(await roninValidatorSet.getBlockProducers()).deep.equal(expectingValidatorsAddr);
     });
 
@@ -206,7 +205,6 @@ describe('Ronin Validator Set: candidate test', () => {
             whitelistedCandidates[i].candidateAdmin.address,
             whitelistedCandidates[i].consensusAddr.address,
             whitelistedCandidates[i].treasuryAddr.address,
-            whitelistedCandidates[i].bridgeOperator.address,
             2_00,
             {
               value: minValidatorStakingAmount.add(i),
@@ -232,7 +230,7 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx!).emit(roninValidatorSet, 'WrappedUpEpoch').withArgs(lastPeriod, epoch, true);
       lastPeriod = await roninValidatorSet.currentPeriod();
       await RoninValidatorSet.expects.emitValidatorSetUpdatedEvent(tx!, lastPeriod, expectingValidatorsAddr);
-      expect((await roninValidatorSet.getValidators())[0]).deep.equal(expectingValidatorsAddr);
+      expect(await roninValidatorSet.getValidators()).deep.equal(expectingValidatorsAddr);
       expect(await roninValidatorSet.getBlockProducers()).deep.equal(expectingValidatorsAddr);
     });
   });
@@ -245,7 +243,6 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[4].candidateAdmin.address,
           validatorCandidates[4].consensusAddr.address,
           validatorCandidates[4].treasuryAddr.address,
-          validatorCandidates[4].bridgeOperator.address,
           2_00,
           {
             value: minValidatorStakingAmount,
@@ -264,7 +261,6 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[0].candidateAdmin.address,
           validatorCandidates[5].consensusAddr.address,
           validatorCandidates[5].treasuryAddr.address,
-          validatorCandidates[5].bridgeOperator.address,
           2_00,
           {
             value: minValidatorStakingAmount,
@@ -281,7 +277,6 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[5].candidateAdmin.address,
           validatorCandidates[5].consensusAddr.address,
           validatorCandidates[0].treasuryAddr.address,
-          validatorCandidates[5].bridgeOperator.address,
           2_00,
           {
             value: minValidatorStakingAmount,
@@ -291,25 +286,6 @@ describe('Ronin Validator Set: candidate test', () => {
       await expect(tx).revertedWithCustomError(stakingContract, 'ErrThreeInteractionAddrsNotEqual');
     });
 
-    it('Should not be able to apply for candidate role with existed bridge operator address', async () => {
-      let tx = stakingContract
-        .connect(validatorCandidates[5].poolAdmin)
-        .applyValidatorCandidate(
-          validatorCandidates[5].candidateAdmin.address,
-          validatorCandidates[5].consensusAddr.address,
-          validatorCandidates[5].treasuryAddr.address,
-          validatorCandidates[0].bridgeOperator.address,
-          2_00,
-          {
-            value: minValidatorStakingAmount,
-          }
-        );
-
-      await expect(tx)
-        .revertedWithCustomError(roninValidatorSet, 'ErrExistentBridgeOperator')
-        .withArgs(validatorCandidates[0].bridgeOperator.address);
-    });
-
     it('Should not be able to apply for candidate role with commission rate higher than allowed', async () => {
       let tx = stakingContract
         .connect(validatorCandidates[5].poolAdmin)
@@ -317,7 +293,6 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[5].candidateAdmin.address,
           validatorCandidates[5].consensusAddr.address,
           validatorCandidates[5].treasuryAddr.address,
-          validatorCandidates[5].bridgeOperator.address,
           maxCommissionRate + 1,
           {
             value: minValidatorStakingAmount,
@@ -352,7 +327,6 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[5].candidateAdmin.address,
           validatorCandidates[5].consensusAddr.address,
           validatorCandidates[5].treasuryAddr.address,
-          validatorCandidates[5].bridgeOperator.address,
           minCommissionRate - 1,
           {
             value: minValidatorStakingAmount,

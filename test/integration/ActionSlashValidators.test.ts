@@ -205,7 +205,6 @@ describe('[Integration] Slash validators', () => {
             slashee.candidateAdmin.address,
             slashee.consensusAddr.address,
             slashee.treasuryAddr.address,
-            slashee.bridgeOperator.address,
             2_00,
             {
               value: slasheeInitStakingAmount,
@@ -227,7 +226,7 @@ describe('[Integration] Slash validators', () => {
         expectingBlockProducerSet.push(slashee.consensusAddr.address);
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
 
-        expect((await validatorContract.getValidators())[0]).deep.equal(expectingValidatorSet);
+        expect(await validatorContract.getValidators()).deep.equal(expectingValidatorSet);
         expect(await validatorContract.getBlockProducers()).deep.equal(expectingBlockProducerSet);
       });
 
@@ -354,7 +353,6 @@ describe('[Integration] Slash validators', () => {
               slashees[i].candidateAdmin.address,
               slashees[i].consensusAddr.address,
               slashees[i].treasuryAddr.address,
-              slashees[i].bridgeOperator.address,
               2_00,
               {
                 value: slasheeInitStakingAmount.add(slashees.length - i),
@@ -377,7 +375,7 @@ describe('[Integration] Slash validators', () => {
 
         period = await validatorContract.currentPeriod();
         await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
-        expect((await validatorContract.getValidators())[0]).deep.equal(expectingValidatorSet);
+        expect(await validatorContract.getValidators()).deep.equal(expectingValidatorSet);
       });
 
       describe('Check effects on indicator and staking amount', async () => {
@@ -479,7 +477,7 @@ describe('[Integration] Slash validators', () => {
 
           slashees.forEach((slashee) => expectingBlockProducerSet.push(slashee.consensusAddr.address));
           expect(await validatorContract.getBlockProducers()).deep.equal(expectingBlockProducerSet);
-          expect((await validatorContract.getValidators())[0]).deep.equal(expectingBlockProducerSet);
+          expect(await validatorContract.getValidators()).deep.equal(expectingBlockProducerSet);
           await RoninValidatorSetExpects.emitBlockProducerSetUpdatedEvent(
             wrapUpEpochTx!,
             period,
@@ -510,7 +508,7 @@ describe('[Integration] Slash validators', () => {
           period = await validatorContract.currentPeriod();
           await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
           expect(await validatorContract.getBlockProducers()).deep.equal(expectingBlockProducerSet);
-          expect((await validatorContract.getValidators())[0]).deep.equal(expectingValidatorSet);
+          expect(await validatorContract.getValidators()).deep.equal(expectingValidatorSet);
         });
 
         it('The validator should be able to top up before deadline', async () => {
@@ -545,7 +543,7 @@ describe('[Integration] Slash validators', () => {
 
           await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
           expect(await validatorContract.getBlockProducers()).deep.equal(expectingBlockProducerSet);
-          expect((await validatorContract.getValidators())[0]).deep.equal(expectingValidatorSet);
+          expect(await validatorContract.getValidators()).deep.equal(expectingValidatorSet);
         });
 
         it('Should the event of revoking under balance candidates emitted', async () => {
@@ -592,7 +590,6 @@ describe('[Integration] Slash validators', () => {
                 slashee.candidateAdmin.address,
                 slashee.consensusAddr.address,
                 slashee.treasuryAddr.address,
-                slashee.bridgeOperator.address,
                 2_00,
                 {
                   value: slasheeInitStakingAmount,
@@ -603,8 +600,7 @@ describe('[Integration] Slash validators', () => {
               applyCandidateTx!,
               slashee.consensusAddr.address,
               slashee.treasuryAddr.address,
-              slashee.candidateAdmin.address,
-              slashee.bridgeOperator.address
+              slashee.candidateAdmin.address
             );
           }
         });

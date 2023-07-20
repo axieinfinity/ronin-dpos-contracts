@@ -14,8 +14,7 @@ abstract contract ProfileXComponents is IProfile, HasContracts, ProfileStorage {
   function execApplyValidatorCandidate(
     address admin,
     address id,
-    address treasury,
-    address bridgeOperator
+    address treasury
   ) external override onlyContract(ContractType.STAKING) {
     // TODO: handle previous added consensus
     CandidateProfile storage _profile = _id2Profile[id];
@@ -25,7 +24,6 @@ abstract contract ProfileXComponents is IProfile, HasContracts, ProfileStorage {
       consensus: TConsensus.wrap(id),
       admin: admin,
       treasury: payable(treasury),
-      bridgeOperator: bridgeOperator,
       governor: address(0),
       bridgeVoter: address(0)
     });

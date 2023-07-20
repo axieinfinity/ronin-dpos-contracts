@@ -99,7 +99,6 @@ interface ICandidateStaking is IRewardPool {
     address candidateAdmin,
     TConsensus consensusAddr,
     address payable treasuryAddr,
-    address bridgeOperatorAddr,
     uint256 commissionRate
   ) external payable;
 

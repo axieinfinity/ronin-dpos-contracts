@@ -25,8 +25,7 @@ export const expects = {
     tx: ContractTransaction,
     expectingConsensusAddr: string,
     expectingTreasuryAddr: string,
-    expectingAdmin: string,
-    expectingBridgeOperatorAddr: string
+    expectingAdmin: string
   ) {
     await expectEvent(
       contractInterface,
@@ -36,7 +35,6 @@ export const expects = {
         expect(event.args[0], 'invalid consensus address').deep.equal(expectingConsensusAddr);
         expect(event.args[1], 'invalid treasury address').deep.equal(expectingTreasuryAddr);
         expect(event.args[2], 'invalid admin address').deep.equal(expectingAdmin);
-        expect(event.args[3], 'invalid bridge operator address').deep.equal(expectingBridgeOperatorAddr);
       },
       1
     );

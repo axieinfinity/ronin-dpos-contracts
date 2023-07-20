@@ -46,14 +46,4 @@ interface IJailingInfo {
    * @dev Returns whether the incoming reward of the block producer is deprecated during a specific period.
    */
   function checkMiningRewardDeprecatedAtPeriod(TConsensus addr, uint256 period) external view returns (bool);
-
-  /**
-   * @dev Returns whether the incoming reward of the validator with `_consensusAddr` is deprecated in the latest wrapped up period.
-   */
-  function checkBridgeRewardDeprecatedAtLatestPeriod(TConsensus addr) external view returns (bool result);
-
-  /**
-   * @dev Returns whether the incoming reward of the validator with `_consensusAddr` is deprecated in the  `_period`.
-   */
-  function checkBridgeRewardDeprecatedAtPeriod(TConsensus addr, uint256 period) external view returns (bool _result);
 }

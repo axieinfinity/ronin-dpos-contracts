@@ -11,7 +11,7 @@ abstract contract JailingStorage is IJailingInfo {
   /// @dev Mapping from consensus address => period number => whether the block producer get cut off reward, due to bailout.
   mapping(address => mapping(uint256 => bool)) internal _miningRewardBailoutCutOffAtPeriod;
   /// @dev Mapping from consensus address => period number => block operator has no pending reward.
-  mapping(address => mapping(uint256 => bool)) internal _bridgeRewardDeprecatedAtPeriod;
+  mapping(address => mapping(uint256 => bool)) internal ______deprecatedBridgeRewardDeprecatedAtPeriod;
 
   /// @dev Mapping from consensus address => the last block that the block producer is jailed.
   mapping(address => uint256) internal _blockProducerJailedBlock;
@@ -116,27 +116,6 @@ abstract contract JailingStorage is IJailingInfo {
   }
 
   /**
-   * @inheritdoc IJailingInfo
-   *
-   * @dev Because the information of deprecating bridge reward of a period is only determined at the end of that period, this
-   * method will return the deprecating info of the latest period. A method for querying that info of current period is no need.
-   */
-  function checkBridgeRewardDeprecatedAtLatestPeriod(TConsensus consensus) external view override returns (bool) {
-    uint256 period = currentPeriod() - 1;
-    return _bridgeRewardDeprecated(_convertC2P(consensus), period);
-  }
-
-  /**
-   * @inheritdoc IJailingInfo
-   */
-  function checkBridgeRewardDeprecatedAtPeriod(
-    TConsensus consensus,
-    uint256 period
-  ) external view override returns (bool) {
-    return _bridgeRewardDeprecated(_convertC2P(consensus), period);
-  }
-
-  /**
    * @dev See `ITimingInfo-epochOf`
    */
   function epochOf(uint256 _block) public view virtual returns (uint256);
@@ -165,13 +144,6 @@ abstract contract JailingStorage is IJailingInfo {
    */
   function _miningRewardDeprecatedById(address _validatorAddr, uint256 _period) internal view returns (bool) {
     return _miningRewardDeprecatedAtPeriod[_validatorAddr][_period];
-  }
-
-  /**
-   * @dev Returns whether the bridge operator has no pending reward in the period.
-   */
-  function _bridgeRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
-    return _bridgeRewardDeprecatedAtPeriod[_validatorAddr][_period];
   }
 
   function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address);

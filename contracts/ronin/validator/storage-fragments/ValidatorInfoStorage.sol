@@ -189,7 +189,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
   }
 
   function _isOperatingBridgeById(address validatorId) internal view returns (bool) {
-    return _validatorMap[validatorId].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator);
+    return _validatorMap[validatorId].hasFlag(EnumFlags.ValidatorFlag.DeprecatedBridgeOperator);
   }
 
   /**

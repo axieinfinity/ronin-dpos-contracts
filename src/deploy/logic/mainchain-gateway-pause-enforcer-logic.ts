@@ -1,8 +1,7 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { generalMainchainConf, mainchainNetworks } from '../configs/config';
-import { gatewayPauseEnforcerConf } from '../configs/gateway';
+import { mainchainNetworks } from '../../configs/config';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!mainchainNetworks.includes(network.name!)) {
@@ -12,18 +11,13 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  await deploy('MainchainGatewayPauseEnforcer', {
+  await deploy('MainchainGatewayPauseEnforcerLogic', {
     contract: 'PauseEnforcer',
     from: deployer,
     log: true,
-    args: [
-      generalMainchainConf[network.name].bridgeContract,
-      gatewayPauseEnforcerConf[network.name]?.enforcerAdmin,
-      gatewayPauseEnforcerConf[network.name]?.sentries,
-    ],
   });
 };
 
-deploy.tags = ['MainchainGatewayPauseEnforcer'];
+deploy.tags = ['MainchainGatewayPauseEnforcerLogic'];
 
 export default deploy;
