@@ -93,7 +93,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
     uint256 totalVote,
     uint256 period
   ) internal onlyContract(ContractType.BRIDGE_TRACKING) {
-    if (period <= _latestRewardedPeriod++) revert ErrInvalidPeriod(period, _latestRewardedPeriod);
+    if (period != _latestRewardedPeriod++) revert ErrInvalidPeriod(period, _latestRewardedPeriod);
 
     bool isSlashed;
     uint256 rewardPerPeriod = _rewardPerPeriod;
