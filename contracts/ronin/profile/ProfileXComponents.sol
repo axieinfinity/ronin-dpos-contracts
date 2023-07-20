@@ -24,8 +24,7 @@ abstract contract ProfileXComponents is IProfile, HasContracts, ProfileStorage {
       consensus: TConsensus.wrap(id),
       admin: admin,
       treasury: payable(treasury),
-      governor: address(0),
-      bridgeVoter: address(0)
+      governor: address(0)
     });
 
     _addNewProfile(_profile, mProfile);

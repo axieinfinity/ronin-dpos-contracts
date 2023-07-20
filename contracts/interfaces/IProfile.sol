@@ -23,8 +23,6 @@ interface IProfile {
     address payable treasury;
     /// @dev Address to voting proposal.
     address governor;
-    /// @dev Address to voting bridge operators.
-    address bridgeVoter;
   }
 
   /// @dev Event emitted when a profile with `id` is added.
