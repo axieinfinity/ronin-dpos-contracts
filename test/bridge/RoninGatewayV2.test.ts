@@ -182,7 +182,7 @@ describe('Ronin Gateway V2 test', () => {
         const vote = await bridgeContract.depositVote(receipts[i].mainchain.chainId, receipts[i].id);
         expect(vote.status).eq(VoteStatus.Pending);
         const totalWeight = await bridgeContract.getDepositVoteWeight(mainchainId, i, getReceiptHash(receipts[i]));
-        expect(totalWeight).eq(bridgeAdminNumerator - 1);
+        expect(totalWeight).eq((bridgeAdminNumerator - 1) * 100);
       }
     });
 
@@ -211,7 +211,7 @@ describe('Ronin Gateway V2 test', () => {
         const vote = await bridgeContract.depositVote(receipts[i].mainchain.chainId, receipts[i].id);
         expect(vote.status).eq(VoteStatus.Executed);
         const totalWeight = await bridgeContract.getDepositVoteWeight(mainchainId, i, getReceiptHash(receipts[i]));
-        expect(totalWeight).eq(bridgeAdminNumerator);
+        expect(totalWeight).eq(bridgeAdminNumerator * 100);
       }
     });
   });
