@@ -73,7 +73,8 @@ abstract contract IdentityGuard {
    * It checks the codehash of the address against a predefined constant to confirm that the address is a created EOA.
    */
   function _requireCreatedEOA(address addr) internal view {
-    if (addr.codehash != CREATED_ACCOUNT_HASH) revert ErrAddressIsNotCreatedEOA(addr, addr.codehash);
+    bytes32 codehash = addr.codehash;
+    if (codehash != CREATED_ACCOUNT_HASH) revert ErrAddressIsNotCreatedEOA(addr, codehash);
   }
 
   /**
