@@ -324,9 +324,9 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
         _requireCreatedEOA(bridgeOperator);
         if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
 
-        addeds[i] = !(_governorSet.contains(governor) &&
-          _governorSet.contains(bridgeOperator) &&
-          _bridgeOperatorSet.contains(governor) &&
+        addeds[i] = !(_governorSet.contains(governor) ||
+          _governorSet.contains(bridgeOperator) ||
+          _bridgeOperatorSet.contains(governor) ||
           _bridgeOperatorSet.contains(bridgeOperator));
 
         if (addeds[i]) {
