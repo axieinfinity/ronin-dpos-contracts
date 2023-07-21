@@ -95,7 +95,7 @@ interface IBridgeManager {
   /**
    * @dev Returns total weights of the governor list.
    */
-  function getSumGovernorWeights(address[] calldata governors) external view returns (uint256 sum);
+  function sumGovernorsWeight(address[] calldata governors) external view returns (uint256 sum);
 
   /**
    * @dev Returns total weights.

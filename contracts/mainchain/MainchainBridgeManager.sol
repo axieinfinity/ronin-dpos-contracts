@@ -89,7 +89,7 @@ contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGoverna
   }
 
   function _sumWeights(address[] memory governors) internal view override returns (uint256) {
-    return getSumGovernorWeights(governors);
+    return sumGovernorsWeight(governors);
   }
 
   function _getChainType() internal pure override returns (ChainType) {

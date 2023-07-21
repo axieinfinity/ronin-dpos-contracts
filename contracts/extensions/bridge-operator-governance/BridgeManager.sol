@@ -175,7 +175,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getSumGovernorWeights(address[] memory governors) public view nonDuplicate(governors) returns (uint256 sum) {
+  function sumGovernorsWeight(address[] memory governors) public view nonDuplicate(governors) returns (uint256 sum) {
     uint256 length = _getBridgeOperatorSet().length();
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
     for (uint256 i; i < length; ) {
