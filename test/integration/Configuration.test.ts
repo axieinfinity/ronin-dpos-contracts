@@ -36,6 +36,7 @@ import {
   TrustedOrganizationAddressSet,
 } from '../helpers/address-set-types/trusted-org-set-type';
 import { ContractType, compareBigNumbers } from '../helpers/utils';
+import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 
 let stakingVestingContract: StakingVesting;
 let maintenanceContract: Maintenance;
@@ -49,6 +50,7 @@ let roninGovernanceAdminContract: RoninGovernanceAdmin;
 let bridgeManagerContract: RoninBridgeManager;
 let bridgeRewardContract: BridgeReward;
 let bridgeSlashContract: BridgeSlash;
+let governanceAdminInterface: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -174,6 +176,17 @@ describe('[Integration] Configuration check', () => {
     bridgeRewardContract = BridgeReward__factory.connect(bridgeRewardAddress, deployer);
     bridgeSlashContract = BridgeSlash__factory.connect(bridgeSlashAddress, deployer);
     bridgeManagerContract = RoninBridgeManager__factory.connect(roninBridgeManagerAddress, deployer);
+
+    governanceAdminInterface = new GovernanceAdminInterface(
+      roninGovernanceAdminContract,
+      network.config.chainId!,
+      undefined,
+      ...trustedOrgs.map((_) => _.governor)
+    );
+    await governanceAdminInterface.functionDelegateCalls(
+      [stakingContract.address],
+      [stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress])]
+    );
   });
 
   it('Should the RoninGovernanceAdmin contract set configs correctly', async () => {
@@ -287,10 +300,10 @@ describe('[Integration] Configuration check', () => {
 
   it('Should the StakingContract contract set configs correctly', async () => {
     expect(await stakingContract.getContract(ContractType.VALIDATOR)).to.eq(validatorContract.address);
+    expect(await stakingContract.getContract(ContractType.PROFILE)).to.eq(profileContract.address);
     expect(await stakingContract.minValidatorStakingAmount()).to.eq(config.stakingArguments?.minValidatorStakingAmount);
     expect(await stakingContract.cooldownSecsToUndelegate()).to.eq(config.stakingArguments?.cooldownSecsToUndelegate);
     expect(await stakingContract.waitingSecsToRevoke()).to.eq(config.stakingArguments?.waitingSecsToRevoke);
-    expect(await stakingContract.getContract(getRole('PROFILE_CONTRACT'))).to.eq(profileContract.address);
   });
 
   it('Should the StakingVestingContract contract set configs correctly', async () => {
