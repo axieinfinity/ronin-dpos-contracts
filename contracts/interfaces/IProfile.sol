@@ -5,11 +5,6 @@ pragma solidity ^0.8.9;
 import "../utils/RoleAccess.sol";
 
 interface IProfile {
-  struct PublicKey {
-    bytes32 firstHalf;
-    bytes32 secondHalf;
-  }
-
   struct CandidateProfile {
     /**
      * @dev Primary key of the profile, use for backward querying.
@@ -28,7 +23,7 @@ interface IProfile {
     /// @dev Address to voting proposal.
     address governor;
     /// @dev Public key for fast finality.
-    PublicKey pubkey;
+    bytes pubkey;
   }
 
   /// @dev Event emitted when a profile with `id` is added.
