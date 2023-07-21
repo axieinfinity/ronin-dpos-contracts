@@ -11,20 +11,21 @@ abstract contract ProfileStorage is IProfile, HasContracts {
   mapping(address => CandidateProfile) internal _id2Profile;
   /// @dev Mapping from consensus address => id address.
   mapping(TConsensus => address) internal _consensus2Id;
+  /// @dev Upgradeable gap.
+  bytes32[50] __gap;
 
   /**
    * @dev Add a profile from memory to storage.
    */
-  function _addNewProfile(CandidateProfile storage _profile, CandidateProfile memory mNewProfile) internal {
-    _consensus2Id[mNewProfile.consensus] = mNewProfile.id;
+  function _addNewProfile(CandidateProfile storage _profile, CandidateProfile memory newProfile) internal {
+    _profile.id = newProfile.id;
+    _profile.consensus = newProfile.consensus;
+    _profile.admin = newProfile.admin;
+    _profile.treasury = newProfile.treasury;
+    _profile.governor = newProfile.governor;
+    _profile.pubkey = newProfile.pubkey;
 
-    _profile.id = mNewProfile.id;
-    _profile.consensus = mNewProfile.consensus;
-    _profile.admin = mNewProfile.admin;
-    _profile.treasury = mNewProfile.treasury;
-    _profile.governor = mNewProfile.governor;
-
-    emit ProfileAdded(mNewProfile.id);
+    emit ProfileAdded(newProfile.id);
   }
 
   /**
