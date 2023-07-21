@@ -300,56 +300,58 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     if (!(length == voteWeights.length && length == governors.length)) revert ErrLengthMismatch(msg.sig);
     addeds = new bool[](length);
     // simply skip add operations if inputs are empty.
-    if (length != 0) {
-      EnumerableSet.AddressSet storage _governorSet = _getGovernorsSet();
-      mapping(address => address) storage _governorOf = _getGovernorOf();
-      EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
-      mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+    if (length == 0) {
+      return addeds;
+    }
 
-      // get rid of stack too deep
-      uint256 accumulatedWeight;
-      {
-        address governor;
-        address bridgeOperator;
-        BridgeOperatorInfo memory bridgeOperatorInfo;
+    EnumerableSet.AddressSet storage _governorSet = _getGovernorsSet();
+    mapping(address => address) storage _governorOf = _getGovernorOf();
+    EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
+    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
-        for (uint256 i; i < length; ) {
-          governor = governors[i];
-          bridgeOperator = bridgeOperators[i];
+    // get rid of stack too deep
+    uint256 accumulatedWeight;
+    {
+      address governor;
+      address bridgeOperator;
+      BridgeOperatorInfo memory bridgeOperatorInfo;
 
-          _requireCreatedEOA(governor);
-          _requireCreatedEOA(bridgeOperator);
-          if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
+      for (uint256 i; i < length; ) {
+        governor = governors[i];
+        bridgeOperator = bridgeOperators[i];
 
-          addeds[i] = !(_governorSet.contains(governor) &&
-            _governorSet.contains(bridgeOperator) &&
-            _bridgeOperatorSet.contains(governor) &&
-            _bridgeOperatorSet.contains(bridgeOperator));
+        _requireCreatedEOA(governor);
+        _requireCreatedEOA(bridgeOperator);
+        if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
 
-          if (addeds[i]) {
-            _governorSet.add(governor);
-            _bridgeOperatorSet.add(bridgeOperator);
-            _governorOf[bridgeOperator] = governor;
-            // get rid of stack too deep
-            // bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
-            // accumulatedWeight += bridgeOperatorInfo.voteWeight
-            bridgeOperatorInfo.addr = bridgeOperator;
-            accumulatedWeight += bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
-            _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
-          }
+        addeds[i] = !(_governorSet.contains(governor) &&
+          _governorSet.contains(bridgeOperator) &&
+          _bridgeOperatorSet.contains(governor) &&
+          _bridgeOperatorSet.contains(bridgeOperator));
 
-          unchecked {
-            ++i;
-          }
+        if (addeds[i]) {
+          _governorSet.add(governor);
+          _bridgeOperatorSet.add(bridgeOperator);
+          _governorOf[bridgeOperator] = governor;
+          // get rid of stack too deep
+          // bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
+          // accumulatedWeight += bridgeOperatorInfo.voteWeight
+          bridgeOperatorInfo.addr = bridgeOperator;
+          accumulatedWeight += bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
+          _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
+        }
+
+        unchecked {
+          ++i;
         }
       }
-
-      TOTAL_WEIGHTS_SLOT.addAssign(accumulatedWeight);
-
-      _notifyRegisters(IBridgeManagerCallback.onBridgeOperatorsAdded.selector, abi.encode(bridgeOperators, addeds));
-
-      emit BridgeOperatorsAdded(addeds, voteWeights, governors, bridgeOperators);
     }
+
+    TOTAL_WEIGHTS_SLOT.addAssign(accumulatedWeight);
+
+    _notifyRegisters(IBridgeManagerCallback.onBridgeOperatorsAdded.selector, abi.encode(bridgeOperators, addeds));
+
+    emit BridgeOperatorsAdded(addeds, voteWeights, governors, bridgeOperators);
   }
 
   /**
@@ -369,48 +371,50 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     uint256 length = bridgeOperators.length;
     removeds = new bool[](length);
     // simply skip remove operations if inputs are empty.
-    if (length != 0) {
-      mapping(address => address) storage _governorOf = _getGovernorOf();
-      EnumerableSet.AddressSet storage _governorSet = _getGovernorsSet();
-      EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
-      mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+    if (length == 0) {
+      return removeds;
+    }
 
-      address governor;
-      address bridgeOperator;
-      uint256 accumulatedWeight;
-      BridgeOperatorInfo memory bridgeOperatorInfo;
+    mapping(address => address) storage _governorOf = _getGovernorOf();
+    EnumerableSet.AddressSet storage _governorSet = _getGovernorsSet();
+    EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
+    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
-      for (uint256 i; i < length; ) {
-        bridgeOperator = bridgeOperators[i];
-        governor = _governorOf[bridgeOperator];
+    address governor;
+    address bridgeOperator;
+    uint256 accumulatedWeight;
+    BridgeOperatorInfo memory bridgeOperatorInfo;
 
-        _requireNonZeroAddress(governor);
-        _requireNonZeroAddress(bridgeOperator);
+    for (uint256 i; i < length; ) {
+      bridgeOperator = bridgeOperators[i];
+      governor = _governorOf[bridgeOperator];
 
-        bridgeOperatorInfo = _governorToBridgeOperatorInfo[governor];
-        if (bridgeOperatorInfo.addr != bridgeOperator) revert ErrInvalidArguments(msg.sig);
+      _requireNonZeroAddress(governor);
+      _requireNonZeroAddress(bridgeOperator);
 
-        removeds[i] = _bridgeOperatorSet.contains(bridgeOperator) && _governorSet.contains(governor);
-        if (removeds[i]) {
-          _governorSet.remove(governor);
-          _bridgeOperatorSet.remove(bridgeOperator);
+      bridgeOperatorInfo = _governorToBridgeOperatorInfo[governor];
+      if (bridgeOperatorInfo.addr != bridgeOperator) revert ErrInvalidArguments(msg.sig);
 
-          delete _governorOf[bridgeOperator];
-          delete _governorToBridgeOperatorInfo[governor];
-          accumulatedWeight += bridgeOperatorInfo.voteWeight;
-        }
+      removeds[i] = _bridgeOperatorSet.contains(bridgeOperator) && _governorSet.contains(governor);
+      if (removeds[i]) {
+        _governorSet.remove(governor);
+        _bridgeOperatorSet.remove(bridgeOperator);
 
-        unchecked {
-          ++i;
-        }
+        delete _governorOf[bridgeOperator];
+        delete _governorToBridgeOperatorInfo[governor];
+        accumulatedWeight += bridgeOperatorInfo.voteWeight;
       }
 
-      TOTAL_WEIGHTS_SLOT.subAssign(accumulatedWeight);
-
-      _notifyRegisters(IBridgeManagerCallback.onBridgeOperatorsRemoved.selector, abi.encode(bridgeOperators, removeds));
-
-      emit BridgeOperatorsRemoved(removeds, bridgeOperators);
+      unchecked {
+        ++i;
+      }
     }
+
+    TOTAL_WEIGHTS_SLOT.subAssign(accumulatedWeight);
+
+    _notifyRegisters(IBridgeManagerCallback.onBridgeOperatorsRemoved.selector, abi.encode(bridgeOperators, removeds));
+
+    emit BridgeOperatorsRemoved(removeds, bridgeOperators);
   }
 
   /**

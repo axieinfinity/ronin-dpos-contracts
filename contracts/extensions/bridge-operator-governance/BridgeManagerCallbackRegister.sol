@@ -53,6 +53,10 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
   ) internal nonDuplicate(registers) returns (bool[] memory registereds) {
     uint256 length = registers.length;
     registereds = new bool[](length);
+    if (length == 0) {
+      return registereds;
+    }
+
     EnumerableSet.AddressSet storage _callbackRegisters = _getCallbackRegisters();
     address register;
     bytes4 callbackInterface = type(IBridgeManagerCallback).interfaceId;
@@ -98,21 +102,23 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
   function _notifyRegisters(bytes4 callbackFnSig, bytes memory inputs) internal {
     address[] memory registers = _getCallbackRegisters().values();
     uint256 length = registers.length;
-    if (length != 0) {
-      bool[] memory statuses = new bool[](length);
-      bytes[] memory returnDatas = new bytes[](length);
-      bytes memory callData = abi.encodePacked(callbackFnSig, inputs);
-
-      for (uint256 i; i < length; ) {
-        (statuses[i], returnDatas[i]) = registers[i].call(callData);
-
-        unchecked {
-          ++i;
-        }
-      }
-
-      emit Notified(callData, registers, statuses, returnDatas);
+    if (length == 0) {
+      return;
     }
+
+    bool[] memory statuses = new bool[](length);
+    bytes[] memory returnDatas = new bytes[](length);
+    bytes memory callData = abi.encodePacked(callbackFnSig, inputs);
+
+    for (uint256 i; i < length; ) {
+      (statuses[i], returnDatas[i]) = registers[i].call(callData);
+
+      unchecked {
+        ++i;
+      }
+    }
+
+    emit Notified(callData, registers, statuses, returnDatas);
   }
 
   /**

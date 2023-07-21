@@ -146,52 +146,54 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     uint256 length = allBridgeOperators.length;
     if (length != ballots.length) revert ErrLengthMismatch(msg.sig);
     if (length == 0) {
-      // Get penalty durations for each slash tier.
-      uint256[] memory penaltyDurations = _getPenaltyDurations();
-      // Get the storage mapping for bridge slash information.
-      mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
+      return slashed;
+    }
 
-      // Declare variables for iteration.
-      BridgeSlashInfo memory status;
-      uint256 slashUntilPeriod;
-      address bridgeOperator;
-      Tier tier;
+    // Get penalty durations for each slash tier.
+    uint256[] memory penaltyDurations = _getPenaltyDurations();
+    // Get the storage mapping for bridge slash information.
+    mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
 
-      for (uint256 i; i < length; ) {
-        bridgeOperator = allBridgeOperators[i];
-        status = _bridgeSlashInfos[bridgeOperator];
+    // Declare variables for iteration.
+    BridgeSlashInfo memory status;
+    uint256 slashUntilPeriod;
+    address bridgeOperator;
+    Tier tier;
 
-        // Check if the bridge operator was added before the current period.
-        // Bridge operators added in current period will not be slashed.
-        if (status.newlyAddedAtPeriod < period) {
-          // Determine the slash tier for the bridge operator based on their ballots.
-          tier = _getSlashTier(ballots[i], totalVotesForPeriod);
+    for (uint256 i; i < length; ) {
+      bridgeOperator = allBridgeOperators[i];
+      status = _bridgeSlashInfos[bridgeOperator];
 
-          slashUntilPeriod = _calcSlashUntilPeriod(tier, period, status.slashUntilPeriod, penaltyDurations);
+      // Check if the bridge operator was added before the current period.
+      // Bridge operators added in current period will not be slashed.
+      if (status.newlyAddedAtPeriod < period) {
+        // Determine the slash tier for the bridge operator based on their ballots.
+        tier = _getSlashTier(ballots[i], totalVotesForPeriod);
 
-          // Check if the slash duration exceeds the threshold for removal.
-          if (_isSlashDurationMetRemovalThreshold(slashUntilPeriod, period)) {
-            slashUntilPeriod = SLASH_PERMANENT_DURATION;
-            emit RemovalRequested(period, bridgeOperator);
-          }
+        slashUntilPeriod = _calcSlashUntilPeriod(tier, period, status.slashUntilPeriod, penaltyDurations);
 
-          // Emit the Slashed event if the tier is not Tier 0 and bridge operator will not be removed.
-          // Update the slash until period number for the bridge operator if the tier is not Tier 0.
-          if (tier != Tier.Tier0) {
-            slashed = true;
-
-            if (slashUntilPeriod != SLASH_PERMANENT_DURATION) {
-              emit Slashed(tier, bridgeOperator, period, slashUntilPeriod);
-            }
-
-            // Store updated slash until period
-            _bridgeSlashInfos[bridgeOperator].slashUntilPeriod = uint64(slashUntilPeriod);
-          }
+        // Check if the slash duration exceeds the threshold for removal.
+        if (_isSlashDurationMetRemovalThreshold(slashUntilPeriod, period)) {
+          slashUntilPeriod = SLASH_PERMANENT_DURATION;
+          emit RemovalRequested(period, bridgeOperator);
         }
 
-        unchecked {
-          ++i;
+        // Emit the Slashed event if the tier is not Tier 0 and bridge operator will not be removed.
+        // Update the slash until period number for the bridge operator if the tier is not Tier 0.
+        if (tier != Tier.Tier0) {
+          slashed = true;
+
+          if (slashUntilPeriod != SLASH_PERMANENT_DURATION) {
+            emit Slashed(tier, bridgeOperator, period, slashUntilPeriod);
+          }
+
+          // Store updated slash until period
+          _bridgeSlashInfos[bridgeOperator].slashUntilPeriod = uint64(slashUntilPeriod);
         }
+      }
+
+      unchecked {
+        ++i;
       }
     }
   }
