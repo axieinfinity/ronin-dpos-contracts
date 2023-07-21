@@ -214,7 +214,7 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
 
     _validatorContract = address(new MockValidatorContract());
 
-    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = getValidInputs(
       DEFAULT_R1,
       DEFAULT_R2,
       DEFAULT_R3,

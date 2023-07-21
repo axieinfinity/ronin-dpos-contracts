@@ -24,7 +24,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
   }
 
   function test_Fail_MaliciousUpdateBridgeOperator() external {
-    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = getValidInputs(
       DEFAULT_R1,
       DEFAULT_R2,
       DEFAULT_R3,
@@ -57,7 +57,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
   ) external virtual {
     vm.assume(caller != _bridgeManager);
 
-    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = getValidInputs(
       r1,
       r2,
       r3,
@@ -85,7 +85,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
     uint256 r3,
     uint256 numBridgeOperators
   ) external virtual {
-    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = getValidInputs(
       r1,
       r2,
       r3,
@@ -117,7 +117,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
       bool nullifyOrDuplicate,
       uint256 modifyTimes,
       uint256 modifiedInputIdx,
-      uint256[] memory voteWeights,
+      uint96[] memory voteWeights,
       address[] memory governors,
       address[] memory bridgeOperators
     ) = _nullOrDuplicateInputs(r1, r2, r3, numBridgeOperators);
@@ -150,7 +150,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
     uint256 r3,
     uint16 numBridgeOperators
   ) external virtual {
-    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = getValidInputs(
       r1,
       r2,
       r3,
@@ -212,7 +212,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
     uint256 r3,
     uint16 numBridgeOperators
   ) external virtual {
-    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = getValidInputs(
       r1,
       r2,
       r3,
@@ -254,7 +254,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
     uint256 r3,
     uint16 numBridgeOperators
   ) external virtual {
-    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = getValidInputs(
       r1,
       r2,
       r3,
@@ -290,7 +290,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
   }
 
   function _setUp() internal virtual {
-    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = getValidInputs(
       DEFAULT_R1,
       DEFAULT_R2,
       DEFAULT_R3,

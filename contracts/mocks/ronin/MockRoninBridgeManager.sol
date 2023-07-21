@@ -13,7 +13,7 @@ contract MockRoninBridgeManager is RoninBridgeManager {
     address[] memory callbackRegisters,
     address[] memory bridgeOperators,
     address[] memory governors,
-    uint256[] memory voteWeights
+    uint96[] memory voteWeights
   )
     RoninBridgeManager(
       num,

@@ -75,32 +75,34 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
     if (bridgeOperators.length != addeds.length) revert ErrLengthMismatch(msg.sig);
 
-    uint256 numAdded;
     uint256 length = bridgeOperators.length;
-    if (length != 0) {
-      address[] memory adddedBridgeOperators = new address[](length);
-      mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
-      uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
+    if (length == 0) {
+      return IBridgeManagerCallback.onBridgeOperatorsAdded.selector;
+    }
 
-      for (uint256 i; i < length; ) {
-        unchecked {
-          if (addeds[i]) {
-            _bridgeSlashInfos[bridgeOperators[i]].newlyAddedAtPeriod = uint192(currentPeriod);
-            adddedBridgeOperators[numAdded++] = bridgeOperators[i];
-          }
+    uint256 numAdded;
+    address[] memory adddedBridgeOperators = new address[](length);
+    mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
+    uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
 
-          ++i;
+    for (uint256 i; i < length; ) {
+      unchecked {
+        if (addeds[i]) {
+          _bridgeSlashInfos[bridgeOperators[i]].newlyAddedAtPeriod = uint192(currentPeriod);
+          adddedBridgeOperators[numAdded++] = bridgeOperators[i];
         }
-      }
 
-      // resize adddedBridgeOperators array
-      assembly {
-        mstore(adddedBridgeOperators, numAdded)
+        ++i;
       }
+    }
 
-      if (numAdded != 0) {
-        emit NewBridgeOperatorsAdded(currentPeriod, adddedBridgeOperators);
-      }
+    // resize adddedBridgeOperators array
+    assembly {
+      mstore(adddedBridgeOperators, numAdded)
+    }
+
+    if (numAdded != 0) {
+      emit NewBridgeOperatorsAdded(currentPeriod, adddedBridgeOperators);
     }
 
     return IBridgeManagerCallback.onBridgeOperatorsAdded.selector;

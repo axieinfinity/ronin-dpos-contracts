@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { IBridgeManagerCallback, EnumerableSet, BridgeManagerCallbackRegister } from "./BridgeManagerCallbackRegister.sol";
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { IQuorum } from "../../interfaces/IQuorum.sol";
@@ -13,7 +12,6 @@ import { TUint256Slot } from "../../types/Types.sol";
 import "../../utils/CommonErrors.sol";
 
 abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbackRegister, HasContracts {
-  using SafeCast for uint256;
   using AddressArrayUtils for address[];
   using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -69,7 +67,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     address[] memory callbackRegisters,
     address[] memory bridgeOperators,
     address[] memory governors,
-    uint256[] memory voteWeights
+    uint96[] memory voteWeights
   ) payable BridgeManagerCallbackRegister(callbackRegisters) {
     NONCE_SLOT.store(1);
     NUMERATOR_SLOT.store(num);
@@ -93,7 +91,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @inheritdoc IBridgeManager
    */
   function addBridgeOperators(
-    uint256[] calldata voteWeights,
+    uint96[] calldata voteWeights,
     address[] calldata governors,
     address[] calldata bridgeOperators
   ) external onlySelfCall returns (bool[] memory addeds) {
@@ -292,7 +290,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @return addeds An array of boolean values indicating whether each bridge operator was successfully added.
    */
   function _addBridgeOperators(
-    uint256[] memory voteWeights,
+    uint96[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
   ) internal nonDuplicate(governors.extend(bridgeOperators)) returns (bool[] memory addeds) {
@@ -322,7 +320,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
 
         _requireCreatedEOA(governor);
         _requireCreatedEOA(bridgeOperator);
-        if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
+        if (voteWeights[i] == 0) revert ErrInvalidVoteWeight(msg.sig);
 
         addeds[i] = !(_governorSet.contains(governor) ||
           _governorSet.contains(bridgeOperator) ||
@@ -334,10 +332,10 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
           _bridgeOperatorSet.add(bridgeOperator);
           _governorOf[bridgeOperator] = governor;
           // get rid of stack too deep
-          // bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
+          // bridgeOperatorInfo.voteWeight = voteWeights[i];
           // accumulatedWeight += bridgeOperatorInfo.voteWeight
           bridgeOperatorInfo.addr = bridgeOperator;
-          accumulatedWeight += bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
+          accumulatedWeight += bridgeOperatorInfo.voteWeight = voteWeights[i];
           _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
         }
 

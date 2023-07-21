@@ -26,7 +26,7 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
     address[] memory callbackRegisters,
     address[] memory bridgeOperators,
     address[] memory governors,
-    uint256[] memory voteWeights
+    uint96[] memory voteWeights
   )
     payable
     CoreGovernance(expiryDuration)

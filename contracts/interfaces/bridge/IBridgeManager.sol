@@ -23,7 +23,7 @@ interface IBridgeManager {
    * @param governors The array of addresses representing the governors associated with the added bridge operators.
    * @param bridgeOperators The array of addresses representing the added bridge operators.
    */
-  event BridgeOperatorsAdded(bool[] statuses, uint256[] voteWeights, address[] governors, address[] bridgeOperators);
+  event BridgeOperatorsAdded(bool[] statuses, uint96[] voteWeights, address[] governors, address[] bridgeOperators);
 
   /**
    * @dev Emitted when bridge operators are removed.
@@ -161,7 +161,7 @@ interface IBridgeManager {
    * ```
    */
   function addBridgeOperators(
-    uint256[] calldata voteWeights,
+    uint96[] calldata voteWeights,
     address[] calldata governors,
     address[] calldata bridgeOperators
   ) external returns (bool[] memory addeds);

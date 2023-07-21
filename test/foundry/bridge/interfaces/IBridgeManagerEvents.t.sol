@@ -7,7 +7,7 @@ interface IBridgeManagerEventsTest {
     uint96 voteWeight;
   }
 
-  event BridgeOperatorsAdded(bool[] statuses, uint256[] voteWeights, address[] governors, address[] bridgeOperators);
+  event BridgeOperatorsAdded(bool[] statuses, uint96[] voteWeights, address[] governors, address[] bridgeOperators);
 
   event BridgeOperatorsRemoved(bool[] statuses, address[] bridgeOperators);
 
