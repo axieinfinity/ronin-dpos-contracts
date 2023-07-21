@@ -18,8 +18,8 @@ import { IBridgeSlashEventsTest } from "./interfaces/IBridgeSlashEvents.t.sol";
 
 contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
   using ErrorHandler for bool;
-  using LibArrayUtils for uint256[];
-  using AddressArrayUtils for address[];
+  using LibArrayUtils for *;
+  using AddressArrayUtils for *;
 
   uint256 internal constant MIN_PERIOD_DURATION = 1;
   uint256 internal constant MAX_PERIOD_DURATION = 20;
@@ -110,6 +110,9 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     uint256 numBridgeOperators,
     uint256 period
   ) external {
+    address[] memory currentOperators = IBridgeManager(_bridgeManagerContract).getBridgeOperators();
+    vm.prank(_bridgeManagerContract, _bridgeManagerContract);
+    IBridgeManager(_bridgeManagerContract).removeBridgeOperators(currentOperators);
     // Assume the input values are not equal to the default values
     vm.assume(r1 != DEFAULT_R1 && r2 != DEFAULT_R2 && r3 != DEFAULT_R3);
     // Bound the period between 1 and the maximum value of uint64
@@ -162,6 +165,8 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     uint256 duration,
     uint256 newlyAddedSize
   ) external {
+    vm.assume(r1 != 0);
+    vm.assume(r1 != DEFAULT_R1 && r1 != DEFAULT_R2 && r1 != DEFAULT_R3);
     // Bound the period, duration, and newlyAddedSize values
     period = _bound(period, 1, type(uint64).max);
     duration = _bound(duration, MIN_PERIOD_DURATION, MAX_PERIOD_DURATION);
@@ -183,23 +188,23 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
       uint256[] memory newlyAddedAtPeriods;
       address[] memory newlyAddedOperators;
       {
-        vm.assume(r1 != DEFAULT_R1 && ~r1 != DEFAULT_R2 && r1 >> 1 != DEFAULT_R3);
         address[] memory newlyAddedGovernors;
         uint256[] memory newlyAddedWeights;
         (newlyAddedOperators, newlyAddedGovernors, newlyAddedWeights) = getValidInputs(
           r1,
           ~r1,
-          r1 >> 1,
+          r1 << 1,
           newlyAddedSize
         );
 
         // Add the newly added operators using the bridge manager contract
         vm.prank(_bridgeManagerContract, _bridgeManagerContract);
-        IBridgeManager(_bridgeManagerContract).addBridgeOperators(
+        bool[] memory addeds = IBridgeManager(_bridgeManagerContract).addBridgeOperators(
           newlyAddedWeights,
           newlyAddedGovernors,
           newlyAddedOperators
         );
+        vm.assume(addeds.sum() == addeds.length);
         // Retrieve the added periods for the newly added operators
         newlyAddedAtPeriods = IBridgeSlash(_bridgeSlashContract).getAddedPeriodOf(newlyAddedOperators);
       }
