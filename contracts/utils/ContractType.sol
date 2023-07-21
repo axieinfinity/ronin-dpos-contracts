@@ -13,5 +13,8 @@ enum ContractType {
   /*  8 */ VALIDATOR,
   /*  9 */ STAKING,
   /* 10 */ RONIN_TRUSTED_ORGANIZATION,
-  /* 11 */ PROFILE
+  /* 11 */ BRIDGE_MANAGER,
+  /* 12 */ BRIDGE_SLASH,
+  /* 13 */ BRIDGE_REWARD,
+  /* 14 */ PROFILE
 }

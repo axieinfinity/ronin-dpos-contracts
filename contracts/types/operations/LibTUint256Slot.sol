@@ -31,12 +31,10 @@ library LibTUint256Slot {
    * @dev Stores a value into the TUint256Slot variable.
    * @param self The TUint256Slot variable.
    * @param other The value to be stored.
-   * @return res The stored value.
    */
-  function store(TUint256Slot self, uint256 other) internal returns (uint256 res) {
+  function store(TUint256Slot self, uint256 other) internal {
     assembly {
       sstore(self, other)
-      res := other
     }
   }
 
@@ -183,7 +181,7 @@ library LibTUint256Slot {
    * @return res The resulting value after addition and storage.
    */
   function addAssign(TUint256Slot self, uint256 other) internal returns (uint256 res) {
-    res = store(self, add(self, other));
+    store(self, res = add(self, other));
   }
 
   /**
@@ -193,6 +191,6 @@ library LibTUint256Slot {
    * @return res The resulting value after subtraction and storage.
    */
   function subAssign(TUint256Slot self, uint256 other) internal returns (uint256 res) {
-    res = store(self, sub(self, other));
+    store(self, res = sub(self, other));
   }
 }

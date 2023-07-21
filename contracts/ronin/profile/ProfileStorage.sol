@@ -18,6 +18,8 @@ abstract contract ProfileStorage is IProfile, HasContracts {
    * @dev Add a profile from memory to storage.
    */
   function _addNewProfile(CandidateProfile storage _profile, CandidateProfile memory newProfile) internal {
+    _consensus2Id[newProfile.consensus] = newProfile.id;
+
     _profile.id = newProfile.id;
     _profile.consensus = newProfile.consensus;
     _profile.admin = newProfile.admin;

@@ -5,26 +5,23 @@ import "../extensions/sequential-governance/CoreGovernance.sol";
 import "../extensions/collections/HasContracts.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
 import { ErrorHandler } from "../libraries/ErrorHandler.sol";
+import { IdentityGuard } from "../utils/IdentityGuard.sol";
 import { HasGovernanceAdminDeprecated, HasBridgeDeprecated } from "../utils/DeprecatedSlots.sol";
 
-abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernanceAdminDeprecated, HasBridgeDeprecated {
+abstract contract GovernanceAdmin is
+  CoreGovernance,
+  IdentityGuard,
+  HasContracts,
+  HasGovernanceAdminDeprecated,
+  HasBridgeDeprecated
+{
   using ErrorHandler for bool;
 
   uint256 public roninChainId;
   /// @dev Domain separator
   bytes32 public DOMAIN_SEPARATOR;
 
-  modifier onlySelfCall() {
-    _requireSelfCall();
-    _;
-  }
-
-  constructor(
-    uint256 _roninChainId,
-    address _roninTrustedOrganizationContract,
-    address _bridgeContract,
-    uint256 _proposalExpiryDuration
-  ) CoreGovernance(_proposalExpiryDuration) {
+  constructor(uint256 _roninChainId, address _roninTrustedOrganizationContract) {
     roninChainId = _roninChainId;
 
     /*
@@ -48,12 +45,11 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernance
 
       mstore(ptr, 0x599a80fcaa47b95e2323ab4d34d34e0cc9feda4b843edafcc30c7bdf60ea15bf) // keccak256("EIP712Domain(string name,string version,bytes32 salt)")
       mstore(add(ptr, 0x20), 0x7e7935007966eb860f4a2ee3dcc9fd53fb3205ce2aa86b0126d4893d4d4c14b9) // keccak256("GovernanceAdmin")
-      mstore(add(ptr, 0x40), 0xad7c5bef027816a800da1736444fb58a807ef4c9603b7848673f7e3a68eb14a5) // keccak256("2")
+      mstore(add(ptr, 0x40), 0x2a80e1ef1d7842f27f2e6be0972bb708b9a135c38860dbe73c27c3486c34f4de) // keccak256("3")
       mstore(add(ptr, 0x60), salt)
       sstore(DOMAIN_SEPARATOR.slot, keccak256(ptr, 0x80))
     }
 
-    _setContract(ContractType.BRIDGE, _bridgeContract);
     _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, _roninTrustedOrganizationContract);
   }
 
@@ -159,17 +155,5 @@ abstract contract GovernanceAdmin is CoreGovernance, HasContracts, HasGovernance
     );
     _success.handleRevert(_selector, _returndata);
     return abi.decode(_returndata, (uint256));
-  }
-
-  /**
-   * @dev Internal method to check method caller.
-   *
-   * Requirements:
-   *
-   * - The method caller must be this contract.
-   *
-   */
-  function _requireSelfCall() internal view virtual {
-    if (msg.sender != address(this)) revert ErrOnlySelfCall(msg.sig);
   }
 }

@@ -14,6 +14,11 @@ interface IBridgeTracking {
   }
 
   /**
+   * @dev Returns the block that allow incomming mutable call.
+   */
+  function startedAtBlock() external view returns (uint256);
+
+  /**
    * @dev Returns the total number of votes at the specific period `_period`.
    */
   function totalVotes(uint256 _period) external view returns (uint256);

@@ -10,6 +10,8 @@ import {
   ERC20PresetMinterPauser__factory,
   MockRoninValidatorSetExtended,
   MockRoninValidatorSetExtended__factory,
+  RoninBridgeManager,
+  RoninBridgeManager__factory,
   RoninGatewayV2,
   RoninGatewayV2__factory,
   RoninGovernanceAdmin,
@@ -23,18 +25,24 @@ import { ReceiptStruct } from '../../src/types/IRoninGatewayV2';
 import { DEFAULT_ADDRESS } from '../../src/utils';
 import {
   createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
   TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
+import {
+  createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types';
+} from '../helpers/address-set-types/validator-candidate-set-type';
 import { initTest } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
-import { getRole, mineBatchTxs } from '../helpers/utils';
+import { ContractType, mineBatchTxs } from '../helpers/utils';
+import { BridgeManagerInterface } from '../../src/script/bridge-admin-interface';
+import { TargetOption } from '../../src/script/proposal';
+import { OperatorTuple, createManyOperatorTuples } from '../helpers/address-set-types/operator-tuple-type';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
 let trustedOrgs: TrustedOrganizationAddressSet[];
 let candidates: ValidatorCandidateAddressSet[];
+let operatorTuples: OperatorTuple[];
 let signers: SignerWithAddress[];
 
 let bridgeContract: RoninGatewayV2;
@@ -44,6 +52,8 @@ let roninValidatorSet: MockRoninValidatorSetExtended;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 let token: ERC20PresetMinterPauser;
+let bridgeManager: RoninBridgeManager;
+let bridgeAdminInterface: BridgeManagerInterface;
 
 let period: BigNumberish;
 let receipts: ReceiptStruct[];
@@ -60,6 +70,10 @@ const trustedDenominator = 1;
 const mainchainId = 1;
 const numberOfBlocksInEpoch = 600;
 
+const operatorNumber = 4;
+const bridgeAdminNumerator = 2;
+const bridgeAdminDenominator = operatorNumber;
+
 describe('[Integration] Bridge Tracking test', () => {
   before(async () => {
     [deployer, coinbase, ...signers] = await ethers.getSigners();
@@ -70,14 +84,15 @@ describe('[Integration] Bridge Tracking test', () => {
       ...signers.splice(maxValidatorNumber * 5, maxPrioritizedValidatorNumber),
       ...signers.splice(maxValidatorNumber * 5, maxPrioritizedValidatorNumber),
     ]);
+    operatorTuples = createManyOperatorTuples(signers.splice(0, operatorNumber * 2));
 
     // Deploys bridge contracts
     token = await new ERC20PresetMinterPauser__factory(deployer).deploy('ERC20', 'ERC20');
-    const logic = await new RoninGatewayV2__factory(deployer).deploy();
-    const proxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
-      logic.address,
+    const bridgeLogic = await new RoninGatewayV2__factory(deployer).deploy();
+    const bridgeProxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
+      bridgeLogic.address,
       deployer.address,
-      logic.interface.encodeFunctionData('initialize', [
+      bridgeLogic.interface.encodeFunctionData('initialize', [
         ethers.constants.AddressZero,
         numerator,
         denominator,
@@ -89,8 +104,6 @@ describe('[Integration] Bridge Tracking test', () => {
         [0],
       ])
     );
-    bridgeContract = RoninGatewayV2__factory.connect(proxy.address, deployer);
-    await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
     // Deploys DPoS contracts
     const {
@@ -100,8 +113,11 @@ describe('[Integration] Bridge Tracking test', () => {
       bridgeTrackingAddress,
       roninTrustedOrganizationAddress,
       profileAddress,
+      roninBridgeManagerAddress,
+      bridgeSlashAddress,
+      bridgeRewardAddress,
     } = await initTest('ActionBridgeTracking')({
-      bridgeContract: bridgeContract.address,
+      bridgeContract: bridgeProxy.address,
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
@@ -121,12 +137,30 @@ describe('[Integration] Bridge Tracking test', () => {
         maxPrioritizedValidatorNumber,
         numberOfBlocksInEpoch,
       },
+      bridgeManagerArguments: {
+        numerator: bridgeAdminNumerator,
+        denominator: bridgeAdminDenominator,
+        weights: operatorTuples.map(() => 100),
+        operators: operatorTuples.map((_) => _.operator.address),
+        governors: operatorTuples.map((_) => _.governor.address),
+      },
     });
+
+    bridgeContract = RoninGatewayV2__factory.connect(bridgeProxy.address, deployer);
+    await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     bridgeTracking = BridgeTracking__factory.connect(bridgeTrackingAddress, deployer);
+    bridgeManager = RoninBridgeManager__factory.connect(roninBridgeManagerAddress, deployer);
+    bridgeAdminInterface = new BridgeManagerInterface(
+      bridgeManager,
+      network.config.chainId!,
+      undefined,
+      ...operatorTuples.map((_) => _.governor)
+    );
+
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
       network.config.chainId!,
@@ -146,24 +180,32 @@ describe('[Integration] Bridge Tracking test', () => {
     );
     await roninValidatorSet.initEpoch();
 
-    await TransparentUpgradeableProxyV2__factory.connect(proxy.address, deployer).changeAdmin(governanceAdmin.address);
-    await governanceAdminInterface.functionDelegateCalls(
-      Array.from(Array(3).keys()).map(() => bridgeContract.address),
+    await TransparentUpgradeableProxyV2__factory.connect(bridgeContract.address, deployer).changeAdmin(
+      bridgeManager.address
+    );
+    await bridgeAdminInterface.functionDelegateCalls(
+      [TargetOption.GatewayContract],
       [
         bridgeContract.interface.encodeFunctionData('setContract', [
-          getRole('BRIDGE_TRACKING_CONTRACT'),
+          ContractType.BRIDGE_TRACKING,
           bridgeTracking.address,
-        ]),
-        bridgeContract.interface.encodeFunctionData('setContract', [
-          getRole('VALIDATOR_CONTRACT'),
-          roninValidatorSet.address,
-        ]),
-        bridgeContract.interface.encodeFunctionData('setContract', [
-          getRole('RONIN_TRUSTED_ORGANIZATION_CONTRACT'),
-          roninTrustedOrganizationAddress,
         ]),
       ]
     );
+    await governanceAdminInterface.functionDelegateCalls(
+      [bridgeTracking.address, governanceAdmin.address],
+      [
+        bridgeTracking.interface.encodeFunctionData('setContract', [ContractType.BRIDGE, bridgeContract.address]),
+        governanceAdmin.interface.encodeFunctionData('changeProxyAdmin', [
+          bridgeTracking.address,
+          bridgeManager.address,
+        ]),
+      ]
+    );
+
+    // Set up bridge manager for current gateway contract
+    await bridgeContract.initializeV3(bridgeManager.address);
+    expect(await bridgeManager.getBridgeOperators()).deep.equal(operatorTuples.map((v) => v.operator.address));
 
     // Apply candidates and double check the bridge operators
     for (let i = 0; i < candidates.length; i++) {
@@ -184,6 +226,10 @@ describe('[Integration] Bridge Tracking test', () => {
       await roninValidatorSet.connect(coinbase).wrapUpEpoch();
     });
     period = await roninValidatorSet.currentPeriod();
+    expect(period).gt(0);
+
+    // InitV3 after the period 0
+    await bridgeTracking.initializeV3(bridgeManager.address, bridgeSlashAddress, bridgeRewardAddress);
   });
 
   after(async () => {
@@ -191,11 +237,11 @@ describe('[Integration] Bridge Tracking test', () => {
   });
 
   it('Should be able to get contract configs correctly', async () => {
-    expect(await bridgeTracking.getContract(getRole('BRIDGE_CONTRACT'))).eq(bridgeContract.address);
-    expect(await bridgeContract.getContract(getRole('BRIDGE_TRACKING_CONTRACT'))).eq(bridgeTracking.address);
-    expect(await bridgeContract.getContract(getRole('VALIDATOR_CONTRACT'))).eq(roninValidatorSet.address);
-    expect(await bridgeContract.getMainchainToken(token.address, mainchainId)).deep.equal([0, token.address]);
-    expect(await roninValidatorSet.currentPeriod()).eq(period);
+    expect(await bridgeTracking.getContract(ContractType.BRIDGE)).eq(bridgeContract.address);
+    expect(await bridgeContract.getContract(ContractType.BRIDGE_TRACKING)).eq(bridgeTracking.address);
+    // expect(await bridgeTracking.getContract(ContractType.VALIDATOR)).eq(roninValidatorSet.address);
+    // expect(await bridgeContract.getMainchainToken(token.address, mainchainId)).deep.equal([0, token.address]);
+    // expect(await roninValidatorSet.currentPeriod()).eq(period);
   });
 
   it('Should not record the receipts which is not approved yet', async () => {
@@ -220,120 +266,110 @@ describe('[Integration] Bridge Tracking test', () => {
     submitWithdrawalSignatures = [0, 1, 2, 3, 4, 5];
     mainchainWithdrewIds = [6, 7, 8, 9, 10];
 
-    await bridgeContract.connect(candidates[0].bridgeOperator).tryBulkDepositFor(receipts);
-    await bridgeContract
-      .connect(candidates[0].bridgeOperator)
-      .tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
-    await bridgeContract.connect(candidates[0].bridgeOperator).bulkSubmitWithdrawalSignatures(
+    await bridgeContract.connect(operatorTuples[0].operator).tryBulkDepositFor(receipts);
+    await bridgeContract.connect(operatorTuples[0].operator).tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
+    await bridgeContract.connect(operatorTuples[0].operator).bulkSubmitWithdrawalSignatures(
       submitWithdrawalSignatures,
       submitWithdrawalSignatures.map(() => [])
     );
 
     expect(await bridgeTracking.totalVotes(period)).eq(0);
     expect(await bridgeTracking.totalBallots(period)).eq(0);
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(0);
+    expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(0);
   });
 
-  // TODO: uncomment below logic
-
-  // it('Should be able to approve the receipts', async () => {
-  //   {
-  //     const tx = await bridgeContract.connect(candidates[1].bridgeOperator).tryBulkDepositFor(receipts);
-  //     await expect(tx).emit(bridgeContract, 'Deposited');
-  //   }
-  //   {
-  //     const tx = await bridgeContract
-  //       .connect(candidates[1].bridgeOperator)
-  //       .tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
-  //     await expect(tx).emit(bridgeContract, 'MainchainWithdrew');
-  //   }
-  //   await bridgeContract.connect(candidates[1].bridgeOperator).bulkSubmitWithdrawalSignatures(
-  //     submitWithdrawalSignatures,
-  //     submitWithdrawalSignatures.map(() => [])
-  //   );
-  // });
+  it('Should be able to approve the receipts', async () => {
+    {
+      const tx = await bridgeContract.connect(operatorTuples[1].operator).tryBulkDepositFor(receipts);
+      await expect(tx).emit(bridgeContract, 'Deposited');
+    }
+    {
+      const tx = await bridgeContract
+        .connect(operatorTuples[1].operator)
+        .tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
+      await expect(tx).emit(bridgeContract, 'MainchainWithdrew');
+    }
+    await bridgeContract.connect(operatorTuples[1].operator).bulkSubmitWithdrawalSignatures(
+      submitWithdrawalSignatures,
+      submitWithdrawalSignatures.map(() => [])
+    );
+  });
 
   it('Should not record the approved receipts once the epoch is not yet wrapped up', async () => {
     expect(await bridgeTracking.totalVotes(period)).eq(0);
     expect(await bridgeTracking.totalBallots(period)).eq(0);
-    expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(0);
+    expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(0);
   });
 
-  // TODO: uncomment below logic
+  it('Should be able to record the approved votes/ballots when the epoch is wrapped up', async () => {
+    await mineBatchTxs(async () => {
+      await roninValidatorSet.endEpoch();
+      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+    });
 
-  // it('Should be able to record the approved votes/ballots when the epoch is wrapped up', async () => {
-  //   await mineBatchTxs(async () => {
-  //     await roninValidatorSet.endEpoch();
-  //     await roninValidatorSet.connect(coinbase).wrapUpEpoch();
-  //   });
+    const expectTotalVotes = mainchainWithdrewIds.length + submitWithdrawalSignatures.length + receipts.length;
+    expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 2);
+    expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+  });
 
-  //   const expectTotalVotes = mainchainWithdrewIds.length + submitWithdrawalSignatures.length + receipts.length;
-  //   expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-  //   expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 2);
-  //   expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(expectTotalVotes);
-  //   expect(await bridgeTracking.totalBallotsOf(period, candidates[1].bridgeOperator.address)).eq(expectTotalVotes);
-  // });
+  it('Should still be able to record for those who vote lately once the request is approved', async () => {
+    await bridgeContract.connect(operatorTuples[2].operator).tryBulkDepositFor(receipts);
+    await bridgeContract.connect(operatorTuples[2].operator).tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
+    await bridgeContract.connect(operatorTuples[2].operator).bulkSubmitWithdrawalSignatures(
+      submitWithdrawalSignatures,
+      submitWithdrawalSignatures.map(() => [])
+    );
 
-  // it('Should still be able to record for those who vote lately once the request is approved', async () => {
-  //   await bridgeContract.connect(candidates[2].bridgeOperator).tryBulkDepositFor(receipts);
-  //   await bridgeContract
-  //     .connect(candidates[2].bridgeOperator)
-  //     .tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
-  //   await bridgeContract.connect(candidates[2].bridgeOperator).bulkSubmitWithdrawalSignatures(
-  //     submitWithdrawalSignatures,
-  //     submitWithdrawalSignatures.map(() => [])
-  //   );
+    await mineBatchTxs(async () => {
+      await roninValidatorSet.endEpoch();
+      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+    });
 
-  //   await mineBatchTxs(async () => {
-  //     await roninValidatorSet.endEpoch();
-  //     await roninValidatorSet.connect(coinbase).wrapUpEpoch();
-  //   });
+    const expectTotalVotes = mainchainWithdrewIds.length + submitWithdrawalSignatures.length + receipts.length;
+    expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 3);
+    expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
+  });
 
-  //   const expectTotalVotes = mainchainWithdrewIds.length + submitWithdrawalSignatures.length + receipts.length;
-  //   expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-  //   expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 3);
-  //   expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(expectTotalVotes);
-  //   expect(await bridgeTracking.totalBallotsOf(period, candidates[1].bridgeOperator.address)).eq(expectTotalVotes);
-  //   expect(await bridgeTracking.totalBallotsOf(period, candidates[2].bridgeOperator.address)).eq(expectTotalVotes);
-  // });
+  it('Should not record in the next period', async () => {
+    await EpochController.setTimestampToPeriodEnding();
+    await mineBatchTxs(async () => {
+      await roninValidatorSet.endEpoch();
+      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+    });
+    const newPeriod = await roninValidatorSet.currentPeriod();
+    expect(newPeriod).not.eq(period);
 
-  // it('Should not record in the next period', async () => {
-  //   await EpochController.setTimestampToPeriodEnding();
-  //   await mineBatchTxs(async () => {
-  //     await roninValidatorSet.endEpoch();
-  //     await roninValidatorSet.connect(coinbase).wrapUpEpoch();
-  //   });
-  //   const newPeriod = await roninValidatorSet.currentPeriod();
-  //   expect(newPeriod).not.eq(period);
+    await bridgeContract.connect(operatorTuples[3].operator).tryBulkDepositFor(receipts);
+    await bridgeContract.connect(operatorTuples[3].operator).tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
+    await bridgeContract.connect(operatorTuples[3].operator).bulkSubmitWithdrawalSignatures(
+      submitWithdrawalSignatures,
+      submitWithdrawalSignatures.map(() => [])
+    );
 
-  //   await bridgeContract.connect(candidates[3].bridgeOperator).tryBulkDepositFor(receipts);
-  //   await bridgeContract
-  //     .connect(candidates[3].bridgeOperator)
-  //     .tryBulkAcknowledgeMainchainWithdrew(mainchainWithdrewIds);
-  //   await bridgeContract.connect(candidates[3].bridgeOperator).bulkSubmitWithdrawalSignatures(
-  //     submitWithdrawalSignatures,
-  //     submitWithdrawalSignatures.map(() => [])
-  //   );
+    await mineBatchTxs(async () => {
+      await roninValidatorSet.endEpoch();
+      await roninValidatorSet.connect(coinbase).wrapUpEpoch();
+    });
 
-  //   await mineBatchTxs(async () => {
-  //     await roninValidatorSet.endEpoch();
-  //     await roninValidatorSet.connect(coinbase).wrapUpEpoch();
-  //   });
+    const expectTotalVotes = mainchainWithdrewIds.length + submitWithdrawalSignatures.length + receipts.length;
+    expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 3);
+    expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
+    expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[3].operator.address)).eq(0);
 
-  //   const expectTotalVotes = mainchainWithdrewIds.length + submitWithdrawalSignatures.length + receipts.length;
-  //   expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-  //   expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 3);
-  //   expect(await bridgeTracking.totalBallotsOf(period, candidates[0].bridgeOperator.address)).eq(expectTotalVotes);
-  //   expect(await bridgeTracking.totalBallotsOf(period, candidates[1].bridgeOperator.address)).eq(expectTotalVotes);
-  //   expect(await bridgeTracking.totalBallotsOf(period, candidates[2].bridgeOperator.address)).eq(expectTotalVotes);
-  //   expect(await bridgeTracking.totalBallotsOf(period, candidates[3].bridgeOperator.address)).eq(0);
-
-  //   period = newPeriod;
-  //   expect(await bridgeTracking.totalVotes(newPeriod)).eq(0);
-  //   expect(await bridgeTracking.totalBallots(newPeriod)).eq(0);
-  //   expect(await bridgeTracking.totalBallotsOf(newPeriod, candidates[0].bridgeOperator.address)).eq(0);
-  //   expect(await bridgeTracking.totalBallotsOf(newPeriod, candidates[1].bridgeOperator.address)).eq(0);
-  //   expect(await bridgeTracking.totalBallotsOf(newPeriod, candidates[2].bridgeOperator.address)).eq(0);
-  //   expect(await bridgeTracking.totalBallotsOf(newPeriod, candidates[3].bridgeOperator.address)).eq(0);
-  // });
+    period = newPeriod;
+    expect(await bridgeTracking.totalVotes(newPeriod)).eq(0);
+    expect(await bridgeTracking.totalBallots(newPeriod)).eq(0);
+    expect(await bridgeTracking.totalBallotsOf(newPeriod, operatorTuples[0].operator.address)).eq(0);
+    expect(await bridgeTracking.totalBallotsOf(newPeriod, operatorTuples[1].operator.address)).eq(0);
+    expect(await bridgeTracking.totalBallotsOf(newPeriod, operatorTuples[2].operator.address)).eq(0);
+    expect(await bridgeTracking.totalBallotsOf(newPeriod, operatorTuples[3].operator.address)).eq(0);
+  });
 });

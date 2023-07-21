@@ -15,7 +15,7 @@ import { defaultTestConfig } from '../../test/helpers/fixture';
 
 export const getGovernanceAdminDomain = (roninChainId: BigNumberish): TypedDataDomain => ({
   name: 'GovernanceAdmin',
-  version: '2',
+  version: '3',
   salt: keccak256(AbiCoder.prototype.encode(['string', 'uint256'], ['RONIN_GOVERNANCE_ADMIN', roninChainId])),
 });
 

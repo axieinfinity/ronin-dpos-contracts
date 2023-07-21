@@ -24,14 +24,16 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
       stakingContract: calculateAddress(deployer, nonce++),
       validatorContract: calculateAddress(deployer, nonce++),
       bridgeTrackingContract: calculateAddress(deployer, nonce++),
+      bridgeSlashContract: calculateAddress(deployer, nonce++),
+      bridgeRewardContract: calculateAddress(deployer, nonce++),
+      bridgeManagerContract: calculateAddress(deployer, nonce++),
     };
   }
 
   if (mainchainNetworks.includes(network.name!)) {
     generalMainchainConf[network.name] = {
       ...generalMainchainConf[network.name],
-      governanceAdmin: calculateAddress(deployer, nonce++),
-      roninTrustedOrganizationContract: calculateAddress(deployer, nonce++),
+      bridgeManagerContract: calculateAddress(deployer, nonce++),
     };
   }
 
@@ -50,6 +52,8 @@ deploy.dependencies = [
   'RoninValidatorSetLogic',
   'RoninTrustedOrganizationLogic',
   'BridgeTrackingLogic',
+  'BridgeSlashLogic',
+  'BridgeRewardLogic',
   'MainchainGatewayV2Logic',
   'RoninGatewayV2Logic',
 ];

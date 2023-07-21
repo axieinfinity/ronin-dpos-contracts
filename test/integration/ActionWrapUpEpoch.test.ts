@@ -15,16 +15,18 @@ import {
 } from '../../src/types';
 import { expects as StakingExpects } from '../helpers/staking';
 import { EpochController, expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
-import { getRole, mineBatchTxs } from '../helpers/utils';
+import { ContractType, mineBatchTxs } from '../helpers/utils';
 import { initTest } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import { Address } from 'hardhat-deploy/dist/types';
 import {
   createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
   TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
+import {
+  createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types';
+} from '../helpers/address-set-types/validator-candidate-set-type';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
@@ -118,26 +120,26 @@ describe('[Integration] Wrap up epoch', () => {
   describe('Configuration test', () => {
     describe('ValidatorSetContract configuration', async () => {
       it('Should the ValidatorSetContract config the StakingContract correctly', async () => {
-        let _stakingContract = await validatorContract.getContract(getRole('STAKING_CONTRACT'));
+        let _stakingContract = await validatorContract.getContract(ContractType.STAKING);
         expect(_stakingContract).to.eq(stakingContract.address);
       });
 
       it('Should the ValidatorSetContract config the Slashing correctly', async () => {
-        let _slashingContract = await validatorContract.getContract(getRole('SLASH_INDICATOR_CONTRACT'));
+        let _slashingContract = await validatorContract.getContract(ContractType.SLASH_INDICATOR);
         expect(_slashingContract).to.eq(slashContract.address);
       });
     });
 
     describe('StakingContract configuration', async () => {
       it('Should the StakingContract config the ValidatorSetContract correctly', async () => {
-        let _validatorSetContract = await stakingContract.getContract(getRole('VALIDATOR_CONTRACT'));
+        let _validatorSetContract = await stakingContract.getContract(ContractType.VALIDATOR);
         expect(_validatorSetContract).to.eq(validatorContract.address);
       });
     });
 
     describe('SlashIndicatorContract configuration', async () => {
       it('Should the SlashIndicatorContract config the ValidatorSetContract correctly', async () => {
-        let _validatorSetContract = await slashContract.getContract(getRole('VALIDATOR_CONTRACT'));
+        let _validatorSetContract = await slashContract.getContract(ContractType.VALIDATOR);
         expect(_validatorSetContract).to.eq(validatorContract.address);
       });
     });

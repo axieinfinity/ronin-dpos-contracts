@@ -4,12 +4,13 @@ pragma solidity ^0.8.9;
 
 import "../../libraries/Math.sol";
 import { HasValidatorDeprecated, HasTrustedOrgDeprecated, HasGovernanceAdminDeprecated } from "../../utils/DeprecatedSlots.sol";
-import "../../interfaces/IRoninGovernanceAdmin.sol";
+import { IBridgeAdminProposal } from "../../interfaces/IBridgeAdminProposal.sol";
 import "../../interfaces/slash-indicator/ISlashBridgeVoting.sol";
 import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../extensions/collections/HasContracts.sol";
 
+// TODO: remove this from slashing logic of consensus contract
 abstract contract SlashBridgeVoting is
   ISlashBridgeVoting,
   HasContracts,
@@ -38,7 +39,7 @@ abstract contract SlashBridgeVoting is
       getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)
     ).getTrustedOrganization(_consensusAddr);
     uint256 _lastVotedBlock = Math.max(
-      IRoninGovernanceAdmin(getContract(ContractType.GOVERNANCE_ADMIN)).lastVotedBlock(_org.bridgeVoter),
+      IBridgeAdminProposal(getContract(ContractType.BRIDGE_MANAGER)).lastVotedBlock(_org.bridgeVoter),
       _org.addedBlock
     );
     IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./CoreGovernance.sol";
+import "../CoreGovernance.sol";
 
-abstract contract GovernanceRelay is CoreGovernance {
+abstract contract CommonGovernanceRelay is CoreGovernance {
   using Proposal for Proposal.ProposalDetail;
   using GlobalProposal for GlobalProposal.GlobalProposalDetail;
 
@@ -83,61 +83,9 @@ abstract contract GovernanceRelay is CoreGovernance {
   }
 
   /**
-   * @dev Relays voted proposal.
-   *
-   * Requirements:
-   * - The relay proposal is finalized.
-   *
+   * @dev Returns the weight of a governor.
    */
-  function _relayProposal(
-    Proposal.ProposalDetail calldata _proposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures,
-    bytes32 _domainSeparator,
-    address _creator
-  ) internal {
-    _proposeProposalStruct(_proposal, _creator);
-    bytes32 _proposalHash = _proposal.hash();
-    _relayVotesBySignatures(
-      _proposal,
-      _supports,
-      _signatures,
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_proposalHash, Ballot.VoteType.For)),
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_proposalHash, Ballot.VoteType.Against))
-    );
-  }
-
-  /**
-   * @dev Relays voted global proposal.
-   *
-   * Requirements:
-   * - The relay proposal is finalized.
-   *
-   */
-  function _relayGlobalProposal(
-    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures,
-    bytes32 _domainSeparator,
-    address _roninTrustedOrganizationContract,
-    address _gatewayContract,
-    address _creator
-  ) internal {
-    Proposal.ProposalDetail memory _proposal = _proposeGlobalStruct(
-      _globalProposal,
-      _roninTrustedOrganizationContract,
-      _gatewayContract,
-      _creator
-    );
-    bytes32 _globalProposalHash = _globalProposal.hash();
-    _relayVotesBySignatures(
-      _proposal,
-      _supports,
-      _signatures,
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.For)),
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.Against))
-    );
-  }
+  function _getWeight(address _governor) internal view virtual returns (uint256);
 
   /**
    * @dev Returns the weight of the governor list.

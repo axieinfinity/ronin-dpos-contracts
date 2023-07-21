@@ -10,7 +10,7 @@ library GlobalProposal {
   error ErrUnsupportedTarget(bytes32 proposalHash, uint256 targetNumber);
 
   enum TargetOption {
-    RoninTrustedOrganizationContract,
+    BridgeManager,
     GatewayContract
   }
 
@@ -80,9 +80,9 @@ library GlobalProposal {
   /**
    * @dev Converts into the normal proposal.
    */
-  function into_proposal_detail(
+  function intoProposalDetail(
     GlobalProposalDetail memory _proposal,
-    address _roninTrustedOrganizationContract,
+    address _bridgeManager,
     address _gatewayContract
   ) internal pure returns (Proposal.ProposalDetail memory _detail) {
     _detail.nonce = _proposal.nonce;
@@ -96,8 +96,8 @@ library GlobalProposal {
     for (uint256 _i; _i < _proposal.targetOptions.length; ) {
       if (_proposal.targetOptions[_i] == TargetOption.GatewayContract) {
         _detail.targets[_i] = _gatewayContract;
-      } else if (_proposal.targetOptions[_i] == TargetOption.RoninTrustedOrganizationContract) {
-        _detail.targets[_i] = _roninTrustedOrganizationContract;
+      } else if (_proposal.targetOptions[_i] == TargetOption.BridgeManager) {
+        _detail.targets[_i] = _bridgeManager;
       } else revert ErrUnsupportedTarget(hash(_proposal), _i);
 
       unchecked {

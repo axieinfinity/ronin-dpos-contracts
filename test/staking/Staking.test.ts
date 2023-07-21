@@ -4,6 +4,7 @@ import { BigNumber, ContractTransaction } from 'ethers';
 import { ethers, network } from 'hardhat';
 
 import {
+  Profile,
   Profile__factory,
   Staking,
   Staking__factory,
@@ -13,8 +14,11 @@ import {
 import { MockValidatorSet__factory } from '../../src/types/factories/MockValidatorSet__factory';
 import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
-import { createManyValidatorCandidateAddressSets, ValidatorCandidateAddressSet } from '../helpers/address-set-types';
-import { getLastBlockTimestamp, getRole } from '../helpers/utils';
+import {
+  createManyValidatorCandidateAddressSets,
+  ValidatorCandidateAddressSet,
+} from '../helpers/address-set-types/validator-candidate-set-type';
+import { getLastBlockTimestamp } from '../helpers/utils';
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -30,6 +34,7 @@ let sparePoolAddrSet: ValidatorCandidateAddressSet;
 let stakingProxyContract: TransparentUpgradeableProxyV2;
 let validatorContract: MockValidatorSet;
 let stakingContract: Staking;
+let profileContract: Profile;
 let signers: SignerWithAddress[];
 let validatorCandidates: ValidatorCandidateAddressSet[];
 
@@ -57,11 +62,12 @@ describe('Staking test', () => {
     const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
 
     const profileLogicContract = await new Profile__factory(deployer).deploy();
-    const profileContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
+    const profileContractProxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       profileLogicContract.address,
       proxyAdmin.address,
       profileLogicContract.interface.encodeFunctionData('initialize', [stakingContractAddr, validatorContractAddr])
     );
+    profileContract = Profile__factory.connect(profileContractProxy.address, deployer);
 
     validatorContract = await new MockValidatorSet__factory(deployer).deploy(
       stakingContractAddr,

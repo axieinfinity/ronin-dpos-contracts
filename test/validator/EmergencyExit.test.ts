@@ -22,10 +22,12 @@ import { GovernanceAdminInterface } from '../../src/script/governance-admin-inte
 import { Address } from 'hardhat-deploy/dist/types';
 import {
   createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
   TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
+import {
+  createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types';
+} from '../helpers/address-set-types/validator-candidate-set-type';
 import { getEmergencyExitBallotHash } from '../../src/script/proposal';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
