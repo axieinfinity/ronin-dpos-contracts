@@ -150,7 +150,6 @@ describe('[Integration] Slash validators', () => {
           slashee.candidateAdmin.address,
           slashee.consensusAddr.address,
           slashee.treasuryAddr.address,
-          slashee.bridgeOperator.address,
           2_00,
           {
             value: slasheeInitStakingAmount,
