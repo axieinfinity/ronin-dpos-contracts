@@ -39,6 +39,9 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
     unregistereds = _unregisterCallbacks(registers);
   }
 
+  /**
+   * @inheritdoc IBridgeManagerCallbackRegister
+   */
   function getCallbackRegisters() external view returns (address[] memory registers) {
     registers = _getCallbackRegisters().values();
   }
@@ -53,9 +56,7 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
   ) internal nonDuplicate(registers) returns (bool[] memory registereds) {
     uint256 length = registers.length;
     registereds = new bool[](length);
-    if (length == 0) {
-      return registereds;
-    }
+    if (length == 0) return registereds;
 
     EnumerableSet.AddressSet storage _callbackRegisters = _getCallbackRegisters();
     address register;
@@ -102,9 +103,7 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
   function _notifyRegisters(bytes4 callbackFnSig, bytes memory inputs) internal {
     address[] memory registers = _getCallbackRegisters().values();
     uint256 length = registers.length;
-    if (length == 0) {
-      return;
-    }
+    if (length == 0) return;
 
     bool[] memory statuses = new bool[](length);
     bytes[] memory returnDatas = new bytes[](length);

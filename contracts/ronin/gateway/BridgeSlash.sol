@@ -147,9 +147,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   ) external onlyContract(ContractType.BRIDGE_TRACKING) onlyPeriodHasVotes(totalVotesForPeriod) returns (bool slashed) {
     uint256 length = allBridgeOperators.length;
     if (length != ballots.length) revert ErrLengthMismatch(msg.sig);
-    if (length == 0) {
-      return slashed;
-    }
+    if (length == 0) slashed;
 
     // Get penalty durations for each slash tier.
     uint256[] memory penaltyDurations = _getPenaltyDurations();

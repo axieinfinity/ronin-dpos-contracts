@@ -10,6 +10,11 @@ import { RoleAccess } from "./RoleAccess.sol";
  */
 error ErrAddressIsNotCreatedEOA(address addr, bytes32 codehash);
 /**
+ * @dev Error raised when a bridge operator update operation fails.
+ * @param bridgeOperator The address of the bridge operator that failed to update.
+ */
+error ErrBridgeOperatorUpdateFailed(address bridgeOperator);
+/**
  * @dev Error thrown when attempting to add a bridge operator that already exists in the contract.
  * This error indicates that the provided bridge operator address is already registered as a bridge operator in the contract.
  */

@@ -5,7 +5,7 @@ import { console } from "forge-std/console.sol";
 import { IBridgeManager, BridgeManagerUtils } from "./utils/BridgeManagerUtils.t.sol";
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
 import { RoleAccess, ContractType, AddressArrayUtils, MockBridgeManager } from "@ronin/contracts/mocks/ronin/MockBridgeManager.sol";
-import { ErrBridgeOperatorAlreadyExisted, ErrUnauthorized, ErrInvalidVoteWeight, ErrZeroAddress, ErrUnexpectedInternalCall } from "@ronin/contracts/utils/CommonErrors.sol";
+import { ErrBridgeOperatorUpdateFailed, ErrBridgeOperatorAlreadyExisted, ErrUnauthorized, ErrInvalidVoteWeight, ErrZeroAddress, ErrUnexpectedInternalCall } from "@ronin/contracts/utils/CommonErrors.sol";
 
 contract BridgeManagerCRUDTest is BridgeManagerUtils {
   using AddressArrayUtils for address[];
@@ -38,7 +38,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
 
     for (uint256 i = 1; i < bridgeOperators.length; ++i) {
       lastOperator = bridgeOperators[i];
-      vm.expectRevert(abi.encodeWithSelector(ErrBridgeOperatorAlreadyExisted.selector, lastOperator));
+      vm.expectRevert(abi.encodeWithSelector(ErrBridgeOperatorUpdateFailed.selector, lastOperator));
       bridgeManager.updateBridgeOperator(lastOperator);
     }
 

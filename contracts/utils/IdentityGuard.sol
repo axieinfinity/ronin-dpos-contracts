@@ -71,6 +71,7 @@ abstract contract IdentityGuard {
    * @dev Internal function to require that the provided address is a created externally owned account (EOA).
    * This internal function is used to ensure that the provided address is a valid externally owned account (EOA).
    * It checks the codehash of the address against a predefined constant to confirm that the address is a created EOA.
+   * @notice This method only works with non-state EOA accounts
    */
   function _requireCreatedEOA(address addr) internal view {
     bytes32 codehash = addr.codehash;
