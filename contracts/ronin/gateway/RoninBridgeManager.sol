@@ -12,11 +12,6 @@ import "../../utils/CommonErrors.sol";
 contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernanceProposal {
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
-  modifier onlyGovernor() {
-    _requireGovernor();
-    _;
-  }
-
   constructor(
     uint256 num,
     uint256 denom,
@@ -219,10 +214,6 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
    */
   function getProposalExpiryDuration() external view returns (uint256) {
     return _getProposalExpiryDuration();
-  }
-
-  function _requireGovernor() internal view {
-    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
   }
 
   function _getChainType() internal pure override returns (ChainType) {

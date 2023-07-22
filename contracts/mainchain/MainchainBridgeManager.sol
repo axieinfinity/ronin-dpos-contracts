@@ -13,11 +13,6 @@ import "../utils/CommonErrors.sol";
 contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGovernanceRelay {
   uint256 private constant DEFAULT_EXPIRY_DURATION = 1 << 255;
 
-  modifier onlyGovernor() {
-    _requireGorvernor();
-    _;
-  }
-
   constructor(
     uint256 num,
     uint256 denom,
@@ -82,10 +77,6 @@ contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGoverna
 
   function _getTotalWeights() internal view override returns (uint256) {
     return getTotalWeights();
-  }
-
-  function _requireGorvernor() private view {
-    if (_getWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
   }
 
   function _sumWeights(address[] memory governors) internal view override returns (uint256) {

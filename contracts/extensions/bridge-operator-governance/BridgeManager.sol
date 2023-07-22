@@ -59,6 +59,11 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    */
   bytes32 public immutable DOMAIN_SEPARATOR;
 
+  modifier onlyGovernor() {
+    _requireGovernor(msg.sender);
+    _;
+  }
+
   constructor(
     uint256 num,
     uint256 denom,
@@ -110,12 +115,8 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function updateBridgeOperator(address newBridgeOperator) external returns (bool updated) {
+  function updateBridgeOperator(address newBridgeOperator) external onlyGovernor returns (bool updated) {
     _requireCreatedEOA(newBridgeOperator);
-
-    // Checks authorization
-    EnumerableSet.AddressSet storage _governorSet = _getGovernorsSet();
-    if (!_governorSet.contains(msg.sender)) revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
 
     // Queries the previous bridge operator
     mapping(address => BridgeOperatorInfo) storage _gorvernorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
@@ -446,6 +447,12 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
       unchecked {
         ++i;
       }
+    }
+  }
+
+  function _requireGovernor(address addr) internal view {
+    if (_getGovernorToBridgeOperatorInfo()[addr].voteWeight == 0) {
+      revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
     }
   }
 
