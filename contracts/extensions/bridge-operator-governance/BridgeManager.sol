@@ -115,7 +115,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function updateBridgeOperator(address newBridgeOperator) external onlyGovernor returns (bool updated) {
+  function updateBridgeOperator(address newBridgeOperator) external onlyGovernor {
     _requireCreatedEOA(newBridgeOperator);
 
     // Queries the previous bridge operator
@@ -127,7 +127,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
 
     // Tries replace the bridge operator
     EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
-    updated = _bridgeOperatorSet.remove(currentBridgeOperator) && _bridgeOperatorSet.add(newBridgeOperator);
+    bool updated = _bridgeOperatorSet.remove(currentBridgeOperator) && _bridgeOperatorSet.add(newBridgeOperator);
     if (!updated) revert ErrBridgeOperatorUpdateFailed(newBridgeOperator);
 
     mapping(address => address) storage _governorOf = _getGovernorOf();
@@ -137,7 +137,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
 
     _notifyRegisters(
       IBridgeManagerCallback.onBridgeOperatorUpdated.selector,
-      abi.encode(currentBridgeOperator, newBridgeOperator, updated)
+      abi.encode(currentBridgeOperator, newBridgeOperator)
     );
     emit BridgeOperatorUpdated(msg.sender, currentBridgeOperator, newBridgeOperator);
   }
@@ -172,6 +172,13 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    */
   function getGovernorWeights(address[] calldata governors) external view returns (uint256[] memory weights) {
     weights = _getGovernorWeights(governors);
+  }
+
+  /**
+   * @inheritdoc IBridgeManager
+   */
+  function getGovernorWeight(address governor) external view returns (uint256) {
+    return _getGovernorWeight(governor);
   }
 
   /**
@@ -233,6 +240,9 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     }
   }
 
+  /**
+   * @inheritdoc IBridgeManager
+   */
   function getGovernorsOf(address[] calldata bridgeOperators) external view returns (address[] memory governors) {
     uint256 length = bridgeOperators.length;
     governors = new address[](length);
@@ -257,6 +267,33 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     governors = _getGovernors();
     bridgeOperators = _getBridgeOperators();
     weights = _getGovernorWeights(governors);
+  }
+
+  /**
+   * @inheritdoc IBridgeManager
+   */
+  function getBridgeOperatorWeights(
+    address[] calldata bridgeOperators
+  ) external view returns (uint256[] memory weights) {
+    uint256 length = bridgeOperators.length;
+    weights = new uint256[](length);
+    mapping(address => address) storage _governorOf = _getGovernorOf();
+    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+    for (uint256 i; i < length; ) {
+      weights[i] = _governorToBridgeOperatorInfo[_governorOf[bridgeOperators[i]]].voteWeight;
+      unchecked {
+        ++i;
+      }
+    }
+  }
+
+  /**
+   * @inheritdoc IBridgeManager
+   */
+  function getBridgeOperatorWeight(address bridgeOperator) external view returns (uint256) {
+    mapping(address => address) storage _governorOf = _getGovernorOf();
+    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+    return _governorToBridgeOperatorInfo[_governorOf[bridgeOperator]].voteWeight;
   }
 
   /**
@@ -469,9 +506,18 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @dev If the address does not have governor role access (vote weight is zero), a revert with the corresponding error message is triggered.
    */
   function _requireGovernor(address addr) internal view {
-    if (_getGovernorToBridgeOperatorInfo()[addr].voteWeight == 0) {
+    if (_getGovernorWeight(addr) == 0) {
       revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
     }
+  }
+
+  /**
+   * @dev Internal function to retrieve the vote weight of a specific governor.
+   * @param governor The address of the governor to get the vote weight for.
+   * @return voteWeight The vote weight of the specified governor.
+   */
+  function _getGovernorWeight(address governor) internal view returns (uint256) {
+    return _getGovernorToBridgeOperatorInfo()[governor].voteWeight;
   }
 
   /**

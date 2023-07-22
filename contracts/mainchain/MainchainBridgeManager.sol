@@ -64,6 +64,10 @@ contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGoverna
     });
   }
 
+  /**
+   * @dev Internal function to retrieve the minimum vote weight required for governance actions.
+   * @return minimumVoteWeight The minimum vote weight required for governance actions.
+   */
   function _getMinimumVoteWeight() internal view override returns (uint256) {
     return minimumVoteWeight();
   }
@@ -75,20 +79,37 @@ contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGoverna
     return _getProposalExpiryDuration();
   }
 
+  /**
+   * @dev Internal function to retrieve the total weights of all governors.
+   * @return totalWeights The total weights of all governors combined.
+   */
   function _getTotalWeights() internal view override returns (uint256) {
     return getTotalWeights();
   }
 
+  /**
+   * @dev Internal function to calculate the sum of weights for a given array of governors.
+   * @param governors An array containing the addresses of governors to calculate the sum of weights.
+   * @return sumWeights The sum of weights for the provided governors.
+   */
   function _sumWeights(address[] memory governors) internal view override returns (uint256) {
     return sumGovernorsWeight(governors);
   }
 
+  /**
+   * @dev Internal function to retrieve the chain type of the contract.
+   * @return chainType The chain type, indicating the type of the chain the contract operates on (e.g., Mainchain).
+   */
   function _getChainType() internal pure override returns (ChainType) {
     return ChainType.Mainchain;
   }
 
+  /**
+   * @dev Internal function to retrieve the vote weight of a specific governor.
+   * @param _governor The address of the governor to get the vote weight for.
+   * @return voteWeight The vote weight of the specified governor.
+   */
   function _getWeight(address _governor) internal view virtual override returns (uint256) {
-    BridgeOperatorInfo memory bridgeOperatorInfo = _getGovernorToBridgeOperatorInfo()[_governor];
-    return bridgeOperatorInfo.voteWeight;
+    return _getGovernorToBridgeOperatorInfo()[_governor].voteWeight;
   }
 }

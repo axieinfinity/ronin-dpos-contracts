@@ -73,9 +73,8 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     address[] calldata bridgeOperators,
     bool[] memory addeds
   ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
-    if (bridgeOperators.length != addeds.length) revert ErrLengthMismatch(msg.sig);
-
     uint256 length = bridgeOperators.length;
+    if (length != addeds.length) revert ErrLengthMismatch(msg.sig);
     if (length == 0) {
       return IBridgeManagerCallback.onBridgeOperatorsAdded.selector;
     }
@@ -113,25 +112,20 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
    */
   function onBridgeOperatorUpdated(
     address currentBridgeOperator,
-    address newBridgeOperator,
-    bool updated
+    address newBridgeOperator
   ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
-    if (updated) {
-      mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
-      BridgeSlashInfo memory currentSlashInfo = _bridgeSlashInfos[currentBridgeOperator];
-      BridgeSlashInfo memory newSlashInfo = _bridgeSlashInfos[newBridgeOperator];
+    mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
+    BridgeSlashInfo memory currentSlashInfo = _bridgeSlashInfos[currentBridgeOperator];
+    BridgeSlashInfo memory newSlashInfo = _bridgeSlashInfos[newBridgeOperator];
 
-      newSlashInfo.slashUntilPeriod = uint64(
-        Math.max(currentSlashInfo.slashUntilPeriod, newSlashInfo.slashUntilPeriod)
-      );
-      newSlashInfo.newlyAddedAtPeriod = uint192(
-        Math.max(currentSlashInfo.newlyAddedAtPeriod, newSlashInfo.newlyAddedAtPeriod)
-      );
+    newSlashInfo.slashUntilPeriod = uint64(Math.max(currentSlashInfo.slashUntilPeriod, newSlashInfo.slashUntilPeriod));
+    newSlashInfo.newlyAddedAtPeriod = uint192(
+      Math.max(currentSlashInfo.newlyAddedAtPeriod, newSlashInfo.newlyAddedAtPeriod)
+    );
 
-      _bridgeSlashInfos[newBridgeOperator] = newSlashInfo;
+    _bridgeSlashInfos[newBridgeOperator] = newSlashInfo;
 
-      delete _bridgeSlashInfos[currentBridgeOperator];
-    }
+    delete _bridgeSlashInfos[currentBridgeOperator];
 
     return IBridgeManagerCallback.onBridgeOperatorUpdated.selector;
   }

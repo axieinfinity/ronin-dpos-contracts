@@ -83,15 +83,15 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
     Ballot.VoteType _support
   ) external onlyGovernor {
     address _voter = msg.sender;
-    Proposal.ProposalDetail memory _proposal = _proposeProposal(
-      block.chainid,
-      _expiryTimestamp,
-      _targets,
-      _values,
-      _calldatas,
-      _gasAmounts,
-      _voter
-    );
+    Proposal.ProposalDetail memory _proposal = _proposeProposal({
+      _chainId: block.chainid,
+      _expiryTimestamp: _expiryTimestamp,
+      _targets: _targets,
+      _values: _values,
+      _calldatas: _calldatas,
+      _gasAmounts: _gasAmounts,
+      _creator: _voter
+    });
     _castProposalVoteForCurrentNetwork(_voter, _proposal, _support);
   }
 
@@ -181,14 +181,14 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
     Ballot.VoteType[] calldata _supports,
     Signature[] calldata _signatures
   ) external {
-    _castGlobalProposalBySignatures(
-      _globalProposal,
-      _supports,
-      _signatures,
-      DOMAIN_SEPARATOR,
-      address(this),
-      getContract(ContractType.BRIDGE)
-    );
+    _castGlobalProposalBySignatures({
+      _globalProposal: _globalProposal,
+      _supports: _supports,
+      _signatures: _signatures,
+      _domainSeparator: DOMAIN_SEPARATOR,
+      _bridgeManagerContract: address(this),
+      _gatewayContract: getContract(ContractType.BRIDGE)
+    });
   }
 
   /**

@@ -4,17 +4,24 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../extensions/GatewayV2.sol";
+import { IBridgeManager } from "../interfaces/bridge/IBridgeManager.sol";
+import { IBridgeManagerCallback } from "../interfaces/bridge/IBridgeManagerCallback.sol";
+import { HasContracts, ContractType } from "../extensions/collections/HasContracts.sol";
 import "../extensions/WithdrawalLimitation.sol";
 import "../libraries/Transfer.sol";
 import "../interfaces/IMainchainGatewayV2.sol";
 
-contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessControlEnumerable, IMainchainGatewayV2 {
+contract MainchainGatewayV2 is
+  WithdrawalLimitation,
+  Initializable,
+  AccessControlEnumerable,
+  IMainchainGatewayV2,
+  IBridgeManagerCallback,
+  HasContracts
+{
   using Token for Token.Info;
   using Transfer for Transfer.Request;
   using Transfer for Transfer.Receipt;
-
-  /// @dev Emitted when the bridge operators are replaced
-  event BridgeOperatorsReplaced(address[] operators);
 
   /// @dev Withdrawal unlocker role hash
   bytes32 public constant WITHDRAWAL_UNLOCKER_ROLE = keccak256("WITHDRAWAL_UNLOCKER_ROLE");
@@ -37,7 +44,7 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
   /// @dev Mapping from validator address => last block that the bridge operator is added
   mapping(address => uint256) internal _bridgeOperatorAddedBlock;
   /// @dev Bridge operators array
-  address[] internal _bridgeOperators;
+  uint256[] private ______deprecatedBridgeOperators;
 
   fallback() external payable {
     _fallback();
@@ -97,47 +104,54 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
     }
   }
 
-  /**
-   * @inheritdoc IBridge
-   */
-  function replaceBridgeOperators(address[] calldata _list) external onlyAdmin {
-    address _addr;
-    for (uint256 _i = 0; _i < _list.length; ) {
-      _addr = _list[_i];
-      if (_bridgeOperatorAddedBlock[_addr] == 0) {
-        _bridgeOperators.push(_addr);
-      }
-      _bridgeOperatorAddedBlock[_addr] = block.number;
-
-      unchecked {
-        ++_i;
-      }
-    }
-
-    {
-      uint256 _i;
-      while (_i < _bridgeOperators.length) {
-        _addr = _bridgeOperators[_i];
-        if (_bridgeOperatorAddedBlock[_addr] < block.number) {
-          delete _bridgeOperatorAddedBlock[_addr];
-          _bridgeOperators[_i] = _bridgeOperators[_bridgeOperators.length - 1];
-          _bridgeOperators.pop();
-          continue;
-        }
-        unchecked {
-          _i++;
-        }
-      }
-    }
-
-    emit BridgeOperatorsReplaced(_list);
+  function initializeV2(address bridgeManagerContract) external reinitializer(2) {
+    _setContract(ContractType.BRIDGE_MANAGER, bridgeManagerContract);
   }
 
   /**
-   * @inheritdoc IBridge
+   * @inheritdoc IBridgeManagerCallback
    */
-  function getBridgeOperators() external view returns (address[] memory) {
-    return _bridgeOperators;
+  function onBridgeOperatorsAdded(
+    address[] calldata bridgeOperators,
+    bool[] calldata addeds
+  ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
+    uint256 length = bridgeOperators.length;
+    if (length != addeds.length) revert ErrLengthMismatch(msg.sig);
+    if (length == 0) {
+      return IBridgeManagerCallback.onBridgeOperatorsAdded.selector;
+    }
+    for (uint256 i; i < length; ) {
+      if (addeds[i]) {
+        _bridgeOperatorAddedBlock[bridgeOperators[i]] = block.number;
+      }
+      unchecked {
+        ++i;
+      }
+    }
+
+    return IBridgeManagerCallback.onBridgeOperatorsAdded.selector;
+  }
+
+  /**
+   * @inheritdoc IBridgeManagerCallback
+   */
+  function onBridgeOperatorUpdated(
+    address currentBridgeOperator,
+    address newBridgeOperator
+  ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
+    _bridgeOperatorAddedBlock[newBridgeOperator] = _bridgeOperatorAddedBlock[currentBridgeOperator];
+    delete _bridgeOperatorAddedBlock[currentBridgeOperator];
+    return IBridgeManagerCallback.onBridgeOperatorUpdated.selector;
+  }
+
+  /**
+   * @inheritdoc IBridgeManagerCallback
+   */
+  function onBridgeOperatorsRemoved(
+    address[] calldata,
+    bool[] calldata
+  ) external view onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
+    return IBridgeManagerCallback.onBridgeOperatorsRemoved.selector;
   }
 
   /**
@@ -481,13 +495,13 @@ contract MainchainGatewayV2 is WithdrawalLimitation, Initializable, AccessContro
    * @inheritdoc GatewayV2
    */
   function _getTotalWeight() internal view override returns (uint256) {
-    return _bridgeOperators.length;
+    return IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getTotalWeights();
   }
 
   /**
    * @dev Returns the weight of an address.
    */
   function _getWeight(address _addr) internal view returns (uint256) {
-    return _bridgeOperatorAddedBlock[_addr] > 0 ? 1 : 0;
+    return IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getBridgeOperatorWeight(_addr);
   }
 }
