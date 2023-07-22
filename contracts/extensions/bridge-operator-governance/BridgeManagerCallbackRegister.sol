@@ -125,7 +125,7 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
    * @return callbackRegisters The storage reference to the callback registers.
    */
   function _getCallbackRegisters() internal pure returns (EnumerableSet.AddressSet storage callbackRegisters) {
-    assembly {
+    assembly ("memory-safe") {
       callbackRegisters.slot := CALLBACK_REGISTERS_SLOT
     }
   }

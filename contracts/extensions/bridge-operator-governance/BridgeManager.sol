@@ -430,14 +430,27 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     emit ThresholdUpdated(NONCE_SLOT.postIncrement(), numerator, denominator, previousNum, previousDenom);
   }
 
+  /**
+   * @dev Internal function to get all bridge operators.
+   * @return bridgeOperators An array containing all the registered bridge operator addresses.
+   */
   function _getBridgeOperators() internal view returns (address[] memory) {
     return _getBridgeOperatorSet().values();
   }
 
+  /**
+   * @dev Internal function to get all governors.
+   * @return governors An array containing all the registered governor addresses.
+   */
   function _getGovernors() internal view returns (address[] memory) {
     return _getGovernorsSet().values();
   }
 
+  /**
+   * @dev Internal function to get the vote weights of a given array of governors.
+   * @param governors An array containing the addresses of governors.
+   * @return weights An array containing the vote weights of the corresponding governors.
+   */
   function _getGovernorWeights(address[] memory governors) internal view returns (uint256[] memory weights) {
     uint256 length = governors.length;
     weights = new uint256[](length);
@@ -450,6 +463,11 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     }
   }
 
+  /**
+   * @dev Internal function to require that the caller has governor role access.
+   * @param addr The address to check for governor role access.
+   * @dev If the address does not have governor role access (vote weight is zero), a revert with the corresponding error message is triggered.
+   */
   function _requireGovernor(address addr) internal view {
     if (_getGovernorToBridgeOperatorInfo()[addr].voteWeight == 0) {
       revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
@@ -461,7 +479,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @return bridgeOperators the storage address set.
    */
   function _getBridgeOperatorSet() internal pure returns (EnumerableSet.AddressSet storage bridgeOperators) {
-    assembly {
+    assembly ("memory-safe") {
       bridgeOperators.slot := BRIDGE_OPERATOR_SET_SLOT
     }
   }
@@ -471,7 +489,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @return governors the storage address set.
    */
   function _getGovernorsSet() internal pure returns (EnumerableSet.AddressSet storage governors) {
-    assembly {
+    assembly ("memory-safe") {
       governors.slot := GOVERNOR_SET_SLOT
     }
   }
@@ -485,7 +503,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     pure
     returns (mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo)
   {
-    assembly {
+    assembly ("memory-safe") {
       governorToBridgeOperatorInfo.slot := GOVERNOR_TO_BRIDGE_OPERATOR_INFO_SLOT
     }
   }
@@ -495,7 +513,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @return governorOf the mapping from bridge operator => governor.
    */
   function _getGovernorOf() internal pure returns (mapping(address => address) storage governorOf) {
-    assembly {
+    assembly ("memory-safe") {
       governorOf.slot := GOVENOR_OF_SLOT
     }
   }

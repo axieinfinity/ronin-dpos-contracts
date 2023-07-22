@@ -97,7 +97,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     }
 
     // resize adddedBridgeOperators array
-    assembly {
+    assembly ("memory-safe") {
       mstore(adddedBridgeOperators, numAdded)
     }
 
@@ -304,7 +304,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
    * @return bridgeSlashInfos the mapping from bridge operator => BridgeSlashInfo.
    */
   function _getBridgeSlashInfos() internal pure returns (mapping(address => BridgeSlashInfo) storage bridgeSlashInfos) {
-    assembly {
+    assembly ("memory-safe") {
       bridgeSlashInfos.slot := BRIDGE_SLASH_INFOS_SLOT
     }
   }
