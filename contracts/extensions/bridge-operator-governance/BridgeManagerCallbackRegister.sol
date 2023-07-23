@@ -15,7 +15,7 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
 
   /**
    * @dev Storage slot for the address set of callback registers.
-   * @dev Value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin._callbackRegisters.slot") - 1.
+   * @dev Value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.callbackRegisters.slot") - 1.
    */
   bytes32 private constant CALLBACK_REGISTERS_SLOT = 0x5da136eb38f8d8e354915fc8a767c0dc81d49de5fb65d5477122a82ddd976240;
 
@@ -61,11 +61,13 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
     EnumerableSet.AddressSet storage _callbackRegisters = _getCallbackRegisters();
     address register;
     bytes4 callbackInterface = type(IBridgeManagerCallback).interfaceId;
+
     for (uint256 i; i < length; ) {
       register = registers[i];
 
       _requireHasCode(register);
       _requireSupportsInterface(register, callbackInterface);
+
       registereds[i] = _callbackRegisters.add(register);
 
       unchecked {

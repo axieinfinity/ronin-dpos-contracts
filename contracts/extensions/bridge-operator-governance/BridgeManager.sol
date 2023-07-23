@@ -59,7 +59,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    */
   bytes32 public immutable DOMAIN_SEPARATOR;
 
-  modifier onlyGovernor() {
+  modifier onlyGovernor() virtual {
     _requireGovernor(msg.sender);
     _;
   }
@@ -109,7 +109,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   function removeBridgeOperators(
     address[] calldata bridgeOperators
   ) external onlySelfCall returns (bool[] memory removeds) {
-    return _removeBridgeOperators(bridgeOperators);
+    removeds = _removeBridgeOperators(bridgeOperators);
   }
 
   /**
@@ -139,6 +139,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
       IBridgeManagerCallback.onBridgeOperatorUpdated.selector,
       abi.encode(currentBridgeOperator, newBridgeOperator)
     );
+
     emit BridgeOperatorUpdated(msg.sender, currentBridgeOperator, newBridgeOperator);
   }
 
@@ -177,23 +178,17 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getGovernorWeight(address governor) external view returns (uint256) {
-    return _getGovernorWeight(governor);
+  function getGovernorWeight(address governor) external view returns (uint256 weight) {
+    weight = _getGovernorWeight(governor);
   }
 
   /**
    * @inheritdoc IBridgeManager
    */
-  function sumGovernorsWeight(address[] memory governors) public view nonDuplicate(governors) returns (uint256 sum) {
-    uint256 length = _getBridgeOperatorSet().length();
-    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
-    for (uint256 i; i < length; ) {
-      sum += _governorToBridgeOperatorInfo[governors[i]].voteWeight;
-
-      unchecked {
-        ++i;
-      }
-    }
+  function sumGovernorsWeight(
+    address[] calldata governors
+  ) external view nonDuplicate(governors) returns (uint256 sum) {
+    sum = _sumGovernorsWeight(governors);
   }
 
   /**
@@ -279,6 +274,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     weights = new uint256[](length);
     mapping(address => address) storage _governorOf = _getGovernorOf();
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+
     for (uint256 i; i < length; ) {
       weights[i] = _governorToBridgeOperatorInfo[_governorOf[bridgeOperators[i]]].voteWeight;
       unchecked {
@@ -290,10 +286,10 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getBridgeOperatorWeight(address bridgeOperator) external view returns (uint256) {
+  function getBridgeOperatorWeight(address bridgeOperator) external view returns (uint256 weight) {
     mapping(address => address) storage _governorOf = _getGovernorOf();
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
-    return _governorToBridgeOperatorInfo[_governorOf[bridgeOperator]].voteWeight;
+    weight = _governorToBridgeOperatorInfo[_governorOf[bridgeOperator]].voteWeight;
   }
 
   /**
@@ -346,10 +342,9 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
-    uint256 accumulatedWeight;
-
     address governor;
     address bridgeOperator;
+    uint256 accumulatedWeight;
     BridgeOperatorInfo memory bridgeOperatorInfo;
 
     for (uint256 i; i < length; ) {
@@ -494,6 +489,25 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
     for (uint256 i; i < length; ) {
       weights[i] = _governorToBridgeOperatorInfo[governors[i]].voteWeight;
+      unchecked {
+        ++i;
+      }
+    }
+  }
+
+  /**
+   * @dev Internal function to calculate the sum of vote weights for a given array of governors.
+   * @param governors An array containing the addresses of governors to calculate the sum of vote weights.
+   * @return sum The total sum of vote weights for the provided governors.
+   * @notice The input array `governors` must contain unique addresses to avoid duplicate calculations.
+   */
+  function _sumGovernorsWeight(address[] memory governors) internal view nonDuplicate(governors) returns (uint256 sum) {
+    uint256 length = _getBridgeOperatorSet().length();
+    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+
+    for (uint256 i; i < length; ) {
+      sum += _governorToBridgeOperatorInfo[governors[i]].voteWeight;
+
       unchecked {
         ++i;
       }
