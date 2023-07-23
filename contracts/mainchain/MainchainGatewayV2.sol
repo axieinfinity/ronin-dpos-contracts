@@ -261,6 +261,13 @@ contract MainchainGatewayV2 is
     if (_token.tokenAddr == address(0)) revert ErrUnsupportedToken();
   }
 
+  function supportsInterface(bytes4 interfaceId) public view override(IERC165, AccessControlEnumerable) returns (bool) {
+    return
+      interfaceId == type(IERC165).interfaceId ||
+      interfaceId == type(IBridgeManagerCallback).interfaceId ||
+      super.supportsInterface(interfaceId);
+  }
+
   /**
    * @dev Maps mainchain tokens to Ronin network.
    *
