@@ -209,6 +209,8 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
     uint256 lastSyncPeriod = _lastSyncPeriod;
     // When switching to new period, wrap up vote info, then slash and distribute reward accordingly.
     if (lastSyncPeriod < period) {
+      _lastSyncPeriod = period;
+
       address[] memory allOperators = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getBridgeOperators();
       uint256[] memory ballots = _getManyTotalBallots(lastSyncPeriod, allOperators);
 
@@ -228,8 +230,6 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
         totalVote: totalVotesForPeriod,
         period: lastSyncPeriod
       });
-
-      _lastSyncPeriod = period;
     }
   }
 
