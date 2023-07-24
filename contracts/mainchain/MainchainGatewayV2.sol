@@ -40,10 +40,10 @@ contract MainchainGatewayV2 is
   /// @dev Mapping from withdrawal id => locked
   mapping(uint256 => bool) public withdrawalLocked;
 
-  /// @dev Mapping from validator address => last block that the bridge operator is added
-  mapping(address => uint256) internal _bridgeOperatorAddedBlock;
-  /// @dev Bridge operators array
-  uint256[] private ______deprecatedBridgeOperators;
+  /// @custom:deprecated Previously `_bridgeOperatorAddedBlock` (mapping(address => uint256))
+  uint256 private ______deprecatedBridgeOperatorAddedBlock;
+  /// @custom:deprecated Previously `_bridgeOperators` (uint256[])
+  uint256 private ______deprecatedBridgeOperators;
 
   fallback() external payable {
     _fallback();
