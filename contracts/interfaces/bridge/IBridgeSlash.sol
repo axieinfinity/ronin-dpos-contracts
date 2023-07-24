@@ -19,16 +19,9 @@ interface IBridgeSlash {
    * @dev Struct representing the status of a bridge operator.
    */
   struct BridgeSlashInfo {
-    uint64 slashUntilPeriod;
-    uint192 newlyAddedAtPeriod;
+    uint128 slashUntilPeriod;
+    uint128 newlyAddedAtPeriod;
   }
-
-  /**
-   * @dev Emitted when new bridge operators are added.
-   * @param period The period in which the bridge operators are added.
-   * @param bridgeOperators The array of addresses representing the newly added bridge operators.
-   */
-  event NewBridgeOperatorsAdded(uint256 indexed period, address[] bridgeOperators);
 
   /**
    * @dev Event emitted when a bridge operator is slashed.
@@ -53,7 +46,8 @@ interface IBridgeSlash {
   function execSlashBridgeOperators(
     address[] calldata operators,
     uint256[] calldata ballots,
-    uint256 totalVotesForPeriod,
+    uint256 totalBallots,
+    uint256 totalVotes,
     uint256 period
   ) external returns (bool slashed);
 

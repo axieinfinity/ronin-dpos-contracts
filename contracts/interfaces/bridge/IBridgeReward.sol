@@ -36,8 +36,8 @@ interface IBridgeReward {
   function execSyncReward(
     address[] calldata operators,
     uint256[] calldata ballots,
-    uint256 totalBallot,
-    uint256 totalVote,
+    uint256 totalBallots,
+    uint256 totalVotes,
     uint256 period
   ) external;
 

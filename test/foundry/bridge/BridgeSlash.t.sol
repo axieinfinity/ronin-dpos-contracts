@@ -217,6 +217,7 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
         bridgeOperators.extend(newlyAddedOperators),
         ballots,
         ballots.sum(),
+        ballots.sum(),
         period
       );
 
@@ -271,7 +272,13 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
       validatorContract.setCurrentPeriod(period);
 
       // Execute the `execSlashBridgeOperators` function
-      bridgeSlashContract.execSlashBridgeOperators(bridgeOperators, ballots, totalBallotsForPeriod, period);
+      bridgeSlashContract.execSlashBridgeOperators(
+        bridgeOperators,
+        ballots,
+        totalBallotsForPeriod,
+        totalBallotsForPeriod,
+        period
+      );
 
       // Generate the next random number for r1 using the keccak256 hash function
       r1 = uint256(keccak256(abi.encode(r1)));

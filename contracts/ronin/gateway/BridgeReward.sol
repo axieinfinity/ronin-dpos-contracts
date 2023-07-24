@@ -58,14 +58,14 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
     uint256 period = _latestRewardedPeriod + 1;
     address[] memory operators = bridgeManagerContract.getBridgeOperators();
     uint256[] memory ballots = bridgeTrackingContract.getManyTotalBallots(period, operators);
-    uint256 totalBallot = bridgeTrackingContract.totalBallots(period);
-    uint256 totalVote = bridgeTrackingContract.totalVotes(period);
+    uint256 totalBallots = bridgeTrackingContract.totalBallots(period);
+    uint256 totalVotes = bridgeTrackingContract.totalVotes(period);
 
     _syncReward({
       operators: operators,
       ballots: ballots,
-      totalBallot: totalBallot,
-      totalVote: totalVote,
+      totalBallots: totalBallots,
+      totalVotes: totalVotes,
       period: period
     });
   }
@@ -76,8 +76,8 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
   function execSyncReward(
     address[] calldata operators,
     uint256[] calldata ballots,
-    uint256 totalBallot,
-    uint256 totalVote,
+    uint256 totalBallots,
+    uint256 totalVotes,
     uint256 period
   ) external onlyContract(ContractType.BRIDGE_TRACKING) {
     // Only sync the period that is after the latest rewarded period.
@@ -90,8 +90,8 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
     _syncReward({
       operators: operators,
       ballots: ballots,
-      totalBallot: totalBallot,
-      totalVote: totalVote,
+      totalBallots: totalBallots,
+      totalVotes: totalVotes,
       period: period
     });
   }
@@ -99,8 +99,8 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
   function _syncReward(
     address[] memory operators,
     uint256[] memory ballots,
-    uint256 totalBallot,
-    uint256 totalVote,
+    uint256 totalBallots,
+    uint256 totalVotes,
     uint256 period
   ) internal onlyContract(ContractType.BRIDGE_TRACKING) {
     ++_latestRewardedPeriod;
@@ -110,7 +110,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
     uint256[] memory slashedDurationList = _getSlashInfo(operators);
 
     // Validate should share the reward equally
-    bool isSharingRewardEqually = _isSharingRewardEqually(totalBallot, totalVote, ballots);
+    bool isSharingRewardEqually = _isSharingRewardEqually(totalBallots, totalVotes, ballots);
 
     uint256 reward;
     uint256 numBridgeOperators = operators.length;
@@ -121,7 +121,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
         numBridgeOperators,
         rewardPerPeriod,
         ballots[i],
-        totalBallot,
+        totalBallots,
         period,
         slashedDurationList[i]
       );

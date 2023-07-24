@@ -214,20 +214,22 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
       address[] memory allOperators = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getBridgeOperators();
       uint256[] memory ballots = _getManyTotalBallots(lastSyncPeriod, allOperators);
 
-      uint256 totalVotesForPeriod = totalVotes(lastSyncPeriod);
+      uint256 _totalVotes = totalVotes(lastSyncPeriod);
+      uint256 _totalBallots = totalBallots(lastSyncPeriod);
 
       IBridgeSlash(getContract(ContractType.BRIDGE_SLASH)).execSlashBridgeOperators({
         operators: allOperators,
         ballots: ballots,
-        totalVotesForPeriod: totalVotesForPeriod,
+        totalBallots: _totalBallots,
+        totalVotes: _totalVotes,
         period: lastSyncPeriod
       });
 
       IBridgeReward(getContract(ContractType.BRIDGE_REWARD)).execSyncReward({
         operators: allOperators,
         ballots: ballots,
-        totalBallot: totalBallots(lastSyncPeriod),
-        totalVote: totalVotesForPeriod,
+        totalBallots: _totalBallots,
+        totalVotes: _totalVotes,
         period: lastSyncPeriod
       });
     }
