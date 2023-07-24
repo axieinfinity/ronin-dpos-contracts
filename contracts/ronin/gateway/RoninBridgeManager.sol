@@ -246,6 +246,6 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
    * @return The vote weight of the specified governor.
    */
   function _getWeight(address _governor) internal view virtual override returns (uint256) {
-    return _getGovernorToBridgeOperatorInfo()[_governor].voteWeight;
+    return _getGovernorWeight(_governor);
   }
 }
