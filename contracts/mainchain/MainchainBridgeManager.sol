@@ -103,13 +103,4 @@ contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGoverna
   function _getChainType() internal pure override returns (ChainType) {
     return ChainType.Mainchain;
   }
-
-  /**
-   * @dev Internal function to retrieve the vote weight of a specific governor.
-   * @param _governor The address of the governor to get the vote weight for.
-   * @return voteWeight The vote weight of the specified governor.
-   */
-  function _getWeight(address _governor) internal view virtual override returns (uint256) {
-    return _getGovernorWeight(_governor);
-  }
 }

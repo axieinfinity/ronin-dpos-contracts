@@ -16,7 +16,6 @@ contract MainchainGatewayV2 is
   Initializable,
   AccessControlEnumerable,
   IMainchainGatewayV2,
-  IBridgeManagerCallback,
   HasContracts
 {
   using Token for Token.Info;
@@ -106,52 +105,6 @@ contract MainchainGatewayV2 is
 
   function initializeV2(address bridgeManagerContract) external reinitializer(2) {
     _setContract(ContractType.BRIDGE_MANAGER, bridgeManagerContract);
-  }
-
-  /**
-   * @inheritdoc IBridgeManagerCallback
-   */
-  function onBridgeOperatorsAdded(
-    address[] calldata bridgeOperators,
-    bool[] calldata addeds
-  ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
-    uint256 length = bridgeOperators.length;
-    if (length != addeds.length) revert ErrLengthMismatch(msg.sig);
-    if (length == 0) {
-      return IBridgeManagerCallback.onBridgeOperatorsAdded.selector;
-    }
-    for (uint256 i; i < length; ) {
-      if (addeds[i]) {
-        _bridgeOperatorAddedBlock[bridgeOperators[i]] = block.number;
-      }
-      unchecked {
-        ++i;
-      }
-    }
-
-    return IBridgeManagerCallback.onBridgeOperatorsAdded.selector;
-  }
-
-  /**
-   * @inheritdoc IBridgeManagerCallback
-   */
-  function onBridgeOperatorUpdated(
-    address currentBridgeOperator,
-    address newBridgeOperator
-  ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
-    _bridgeOperatorAddedBlock[newBridgeOperator] = _bridgeOperatorAddedBlock[currentBridgeOperator];
-    delete _bridgeOperatorAddedBlock[currentBridgeOperator];
-    return IBridgeManagerCallback.onBridgeOperatorUpdated.selector;
-  }
-
-  /**
-   * @inheritdoc IBridgeManagerCallback
-   */
-  function onBridgeOperatorsRemoved(
-    address[] calldata,
-    bool[] calldata
-  ) external view onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
-    return IBridgeManagerCallback.onBridgeOperatorsRemoved.selector;
   }
 
   /**
@@ -259,13 +212,6 @@ contract MainchainGatewayV2 is
   function getRoninToken(address _mainchainToken) public view returns (MappedToken memory _token) {
     _token = _roninToken[_mainchainToken];
     if (_token.tokenAddr == address(0)) revert ErrUnsupportedToken();
-  }
-
-  function supportsInterface(bytes4 interfaceId) public view override(IERC165, AccessControlEnumerable) returns (bool) {
-    return
-      interfaceId == type(IERC165).interfaceId ||
-      interfaceId == type(IBridgeManagerCallback).interfaceId ||
-      super.supportsInterface(interfaceId);
   }
 
   /**
