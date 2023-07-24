@@ -43,7 +43,7 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidato
 
     address validatorId = _convertC2P(consensusAddr);
 
-    // Edge case: non-validator who never apply for the candidate role, nor have a profile.
+    // TODO: Edge case: non-validator who never apply for the candidate role, nor have a profile.
     // Must be slashed by the consensus address, since the validatorId will be address(0).
     if (validatorId == address(0)) {
       validatorId = TConsensus.unwrap(consensusAddr);
