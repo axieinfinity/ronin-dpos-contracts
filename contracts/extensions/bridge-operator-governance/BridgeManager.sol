@@ -114,6 +114,9 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
 
   /**
    * @inheritdoc IBridgeManager
+   * @notice This method checks authorization by querying the corresponding operator of the msg.sender and then
+   * attempts to remove it from the `_bridgeOperatorSet` for gas optimization. In case we allow a governor can leave
+   * their operator address blank null `address(0)`, consider add authorization check.
    */
   function updateBridgeOperator(address newBridgeOperator) external onlyGovernor {
     _requireCreatedEOA(newBridgeOperator);
