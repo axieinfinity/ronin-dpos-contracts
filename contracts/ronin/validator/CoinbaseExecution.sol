@@ -179,7 +179,7 @@ abstract contract CoinbaseExecution is
   function _distributeMiningReward(address _consensusAddr, address payable _treasury) private {
     uint256 _amount = _miningReward[_consensusAddr];
     if (_amount > 0) {
-      if (_unsafeSendRON(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
+      if (_unsafeSendRONLimitGas(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
         emit MiningRewardDistributed(_consensusAddr, _treasury, _amount);
         return;
       }

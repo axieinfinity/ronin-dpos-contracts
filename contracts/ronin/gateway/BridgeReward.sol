@@ -209,7 +209,7 @@ contract BridgeReward is IBridgeReward, HasContracts, Initializable, RONTransfer
       emit BridgeRewardSlashed(operator, reward);
     } else {
       _iRewardInfo.claimed += reward;
-      if (_unsafeSendRON({ recipient: payable(operator), amount: reward, gas: 0 })) {
+      if (_unsafeSendRONLimitGas({ recipient: payable(operator), amount: reward, gas: 0 })) {
         emit BridgeRewardScattered(operator, reward);
       } else {
         emit BridgeRewardScatterFailed(operator, reward);
