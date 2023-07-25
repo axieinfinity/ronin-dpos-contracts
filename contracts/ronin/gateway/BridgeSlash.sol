@@ -324,6 +324,10 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     }
   }
 
+  /**
+   * @dev Internal function to retrieve the penalty durations for each slashing tier.
+   * @return penaltyDurations An array containing the penalty durations for Tier0, Tier1, and Tier2 in that order.
+   */
   function _getPenaltyDurations() internal pure virtual returns (uint256[] memory penaltyDurations) {
     // reserve index 0
     penaltyDurations = new uint256[](3);
