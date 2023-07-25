@@ -65,4 +65,10 @@ interface IBridgeSlash is IBridgeSlashEvents {
    * @return The duration in period number that exceeds which a bridge operator will be removed.
    */
   function REMOVE_DURATION_THRESHOLD() external view returns (uint256);
+
+  /**
+   * @dev External function to retrieve the value of the minimum vote threshold to execute slashing rule.
+   * @return minimumVoteThreshold The minimum vote threshold value.
+   */
+  function MINIMUM_VOTE_THRESHOLD() external view returns (uint256);
 }

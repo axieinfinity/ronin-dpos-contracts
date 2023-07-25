@@ -54,7 +54,7 @@ contract BridgeSlashTest is IBridgeSlashEvents, BridgeManagerUtils {
   function test_Fuzz_SlashTierLogic(uint96 ballot, uint96 totalVotes, uint64 period, uint64 slashUntilPeriod) external {
     // Assume period is not zero and totalVotes is not zero, and ballot is less than totalVotes
     vm.assume(period != 0);
-    vm.assume(totalVotes != 0 && ballot < totalVotes);
+    vm.assume(totalVotes >= IBridgeSlash(_bridgeSlashContract).MINIMUM_VOTE_THRESHOLD() && ballot < totalVotes);
 
     // Get the bridge slash contract and determine the slash tier
     IBridgeSlash bridgeSlashContract = IBridgeSlash(_bridgeSlashContract);

@@ -22,6 +22,8 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   /// @inheritdoc IBridgeSlash
   uint256 public constant TIER_2_PENALTY_DURATION = 5;
   /// @inheritdoc IBridgeSlash
+  uint256 public constant MINIMUM_VOTE_THRESHOLD = 50;
+  /// @inheritdoc IBridgeSlash
   uint256 public constant REMOVE_DURATION_THRESHOLD = 30;
 
   /// @dev Tier 1 slashing threshold ratio is 10%
@@ -36,11 +38,11 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   bytes32 private constant BRIDGE_SLASH_INFOS_SLOT = 0xd08d185790a07c7b9b721e2713c8580010a57f31c72c16f6e80b831d0ee45bfe;
 
   /**
-   * @dev The modifier verifies if the `totalVotesForPeriod` is non-zero, indicating the presence of ballots for the period.
-   * @param totalVotesForPeriod The total number of ballots for the period.
+   * @dev The modifier verifies if the `totalVotes` is non-zero, indicating the presence of ballots for the period.
+   * @param totalVotes The total number of ballots for the period.
    */
-  modifier onlyPeriodHasVotes(uint256 totalVotesForPeriod) {
-    if (totalVotesForPeriod == 0) return;
+  modifier onlyPeriodHasEnoughVotes(uint256 totalVotes) {
+    if (totalVotes <= MINIMUM_VOTE_THRESHOLD) return;
     _;
   }
 
@@ -111,7 +113,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     uint256 totalBallots,
     uint256 totalVotes,
     uint256 period
-  ) external onlyContract(ContractType.BRIDGE_TRACKING) onlyPeriodHasVotes(totalVotes) returns (bool slashed) {
+  ) external onlyContract(ContractType.BRIDGE_TRACKING) onlyPeriodHasEnoughVotes(totalVotes) returns (bool slashed) {
     uint256 length = allBridgeOperators.length;
     if (length != ballots.length) revert ErrLengthMismatch(msg.sig);
     if (length == 0) return slashed;
