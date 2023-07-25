@@ -37,6 +37,12 @@ interface IBridgeReward is IBridgeRewardEvents {
   function getRewardPerPeriod() external view returns (uint256);
 
   /**
+   * @dev External function to retrieve the latest rewarded period in the contract.
+   * @return latestRewardedPeriod The latest rewarded period value.
+   */
+  function getLatestRewardedPeriod() external view returns (uint256);
+
+  /**
    * @dev Setter for all bridge operators per period.
    */
   function setRewardPerPeriod(uint256 rewardPerPeriod) external;

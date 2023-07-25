@@ -43,7 +43,7 @@ contract MockBridgeReward is BridgeReward {
     return _isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots);
   }
 
-  function shouldSharingRewardEqually(
+  function shouldShareEqually(
     uint256 totalBallots,
     uint256 totalVotes,
     uint256[] memory ballots
