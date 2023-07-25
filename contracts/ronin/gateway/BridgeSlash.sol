@@ -59,14 +59,6 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   }
 
   /**
-   * @inheritdoc IHasContracts
-   */
-  function setContract(ContractType contractType, address addr) external override onlySelfCall {
-    _requireHasCode(addr);
-    _setContract(contractType, addr);
-  }
-
-  /**
    * @inheritdoc IBridgeManagerCallback
    */
   function onBridgeOperatorsAdded(
