@@ -6,9 +6,9 @@ import { Randomizer } from "../../helpers/Randomizer.t.sol";
 import { Sorting } from "@ronin/contracts/mocks/libraries/Sorting.sol";
 import { AddressArrayUtils } from "@ronin/contracts/libraries/AddressArrayUtils.sol";
 import { IBridgeManager } from "@ronin/contracts/interfaces/bridge/IBridgeManager.sol";
-import { IBridgeManagerEventsTest } from "../interfaces/IBridgeManagerEvents.t.sol";
+import { IBridgeManagerEvents } from "@ronin/contracts/interfaces/bridge/events/IBridgeManagerEvents.sol";
 
-abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
+abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEvents {
   using Sorting for uint256[];
   using AddressArrayUtils for address[];
 

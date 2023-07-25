@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import { console } from "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
 import { LibArrayUtils } from "../helpers/LibArrayUtils.t.sol";
-import { IBridgeRewardEvents } from "./interfaces/IBridgeRewardEvents.t.sol";
+import { IBridgeRewardEvents } from "@ronin/contracts/interfaces/bridge/events/IBridgeRewardEvents.sol";
 import { IBridgeManager, BridgeManagerUtils } from "./utils/BridgeManagerUtils.t.sol";
 import { MockValidatorContract } from "@ronin/contracts/mocks/ronin/MockValidatorContract.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
@@ -63,7 +63,7 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
     // Calculate the total number of ballots
     uint256 totalBallots = ballots.sum();
     // Determine if the reward should be shared equally among bridge operators
-    bool isSharingEqually = bridgeRewardContract.isSharingRewardEqually(totalBallots, totalVotes, ballots);
+    bool isSharingEqually = bridgeRewardContract.shouldSharingRewardEqually(totalBallots, totalVotes, ballots);
 
     // Get the reward per period from the bridge reward contract
     uint256 rewardPerPeriod = IBridgeReward(_bridgeRewardContract).getRewardPerPeriod();
@@ -102,11 +102,11 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
 
     // Check if the bridge tracking response is valid and if the reward should be shared equally
     bool isValidResponse = bridgeRewardContract.isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots);
-    bool isSharingRewardEqually = bridgeRewardContract.isSharingRewardEqually(totalBallots, totalVotes, ballots);
+    bool shouldSharingRewardEqually = bridgeRewardContract.shouldSharingRewardEqually(totalBallots, totalVotes, ballots);
 
     // Assert that the bridge tracking response is not valid and the reward is shared equally
     assertTrue(isValidResponse);
-    assertTrue(isSharingRewardEqually);
+    assertTrue(shouldSharingRewardEqually);
   }
 
   /**
@@ -200,7 +200,7 @@ contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
       // Check if the bridge operator is slashed for the current period
       if (period <= slashUntils[i]) {
         // Assert that the bridge operator is slashed for the current period
-        assertTrue(bridgeRewardContract.isSlashedThisPeriod(period, slashUntils[i]));
+        assertTrue(bridgeRewardContract.shouldSlashedThisPeriod(period, slashUntils[i]));
       }
 
       unchecked {

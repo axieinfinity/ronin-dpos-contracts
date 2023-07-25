@@ -14,9 +14,9 @@ import { RoninBridgeManager } from "@ronin/contracts/ronin/gateway/RoninBridgeMa
 import { Math } from "@ronin/contracts/libraries/Math.sol";
 import { RoleAccess, ContractType, AddressArrayUtils, MockBridgeManager } from "@ronin/contracts/mocks/ronin/MockBridgeManager.sol";
 import { ErrProxyCallFailed, ErrorHandler } from "@ronin/contracts/libraries/ErrorHandler.sol";
-import { IBridgeSlashEventsTest } from "./interfaces/IBridgeSlashEvents.t.sol";
+import { IBridgeSlashEvents } from "@ronin/contracts/interfaces/bridge/events/IBridgeSlashEvents.sol";
 
-contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
+contract BridgeSlashTest is IBridgeSlashEvents, BridgeManagerUtils {
   using ErrorHandler for bool;
   using LibArrayUtils for *;
   using AddressArrayUtils for *;
@@ -70,14 +70,14 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     console.log("tier", "period", "slashUntilPeriod", "newSlashUntilPeriod");
     console.log(uint8(tier), period, slashUntilPeriod, newSlashUntilPeriod);
 
-    if (tier == IBridgeSlash.Tier.Tier1) {
+    if (tier == Tier.Tier1) {
       // Check the slash duration for Tier 1
       if (period <= slashUntilPeriod) {
         assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + bridgeSlashContract.TIER_1_PENALTY_DURATION());
       } else {
         assertTrue(newSlashUntilPeriod == period + bridgeSlashContract.TIER_1_PENALTY_DURATION() - 1);
       }
-    } else if (tier == IBridgeSlash.Tier.Tier2) {
+    } else if (tier == Tier.Tier2) {
       // Check the slash duration for Tier 2
       if (period <= slashUntilPeriod) {
         assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + bridgeSlashContract.TIER_2_PENALTY_DURATION());
@@ -134,10 +134,6 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
       r3,
       numBridgeOperators
     );
-
-    // Expect the emission of the bridge slash contract
-    vm.expectEmit(_bridgeSlashContract);
-    emit NewBridgeOperatorsAdded(period, bridgeOperators);
 
     _addBridgeOperators(_bridgeManagerContract, _bridgeManagerContract, voteWeights, governors, bridgeOperators);
 

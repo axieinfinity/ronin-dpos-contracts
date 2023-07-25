@@ -239,6 +239,15 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     tier = _getSlashTier(ballot, totalVotes);
   }
 
+  /**
+   * @dev Internal function to validate the bridge tracking response for a given set of ballots.
+   * @param totalBallots The total number of ballots available for the tracking response.
+   * @param totalVotes The total number of votes recorded in the tracking response.
+   * @param ballots An array containing the individual ballot counts in the tracking response.
+   * @return valid A boolean indicating whether the bridge tracking response is valid or not.
+   * @notice The function checks if each individual ballot count is not greater than the total votes recorded.
+   * @notice It also verifies that the sum of all individual ballot counts does not exceed the total available ballots.
+   */
   function _isValidBridgeTrackingResponse(
     uint256 totalBallots,
     uint256 totalVotes,
@@ -246,9 +255,10 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   ) internal pure returns (bool valid) {
     valid = true;
     uint256 sumBallots;
+    uint256 length = ballots.length;
 
     unchecked {
-      for (uint256 i; i < ballots.length; ++i) {
+      for (uint256 i; i < length; ++i) {
         if (ballots[i] > totalVotes) {
           valid = false;
           break;
@@ -292,6 +302,13 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     newSlashUntilPeriod = penaltyDurations[uint8(tier)] + Math.max(period - 1, slashUntilPeriod);
   }
 
+  /**
+   * @dev Internal function to determine the slashing tier based on the given ballot count and total votes.
+   * @param ballot The individual ballot count of a bridge operator.
+   * @param totalVotes The total number of votes recorded for the bridge operator.
+   * @return tier The calculated slashing tier for the bridge operator.
+   * @notice The `ratio` is calculated as the percentage of uncast votes (totalVotes - ballot) relative to the total votes.
+   */
   function _getSlashTier(uint256 ballot, uint256 totalVotes) internal pure virtual returns (Tier tier) {
     uint256 ratio = ((totalVotes - ballot) * PERCENTAGE_FRACTION) / totalVotes;
     tier = ratio > TIER_2_THRESHOLD ? Tier.Tier2 : ratio > TIER_1_THRESHOLD ? Tier.Tier1 : Tier.Tier0;
