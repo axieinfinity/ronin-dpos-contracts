@@ -32,6 +32,18 @@ interface IBridgeReward is IBridgeRewardEvents {
   ) external;
 
   /**
+   * @dev Retrieve the total amount of rewards that have been topped up in the contract.
+   * @return totalRewardsToppedUp The total rewards topped up value.
+   */
+  function getTotalRewardsToppedUp() external view returns (uint256);
+
+  /**
+   * @dev Retrieve the total amount of rewards that have been scattered to bridge operators in the contract.
+   * @return totalRewardsScattered The total rewards scattered value.
+   */
+  function getTotalRewardsScattered() external view returns (uint256);
+
+  /**
    * @dev Getter for all bridge operators per period.
    */
   function getRewardPerPeriod() external view returns (uint256);

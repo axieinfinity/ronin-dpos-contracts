@@ -12,7 +12,7 @@ import { IBridgeReward } from "../../interfaces/bridge/IBridgeReward.sol";
 import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
 import { Math } from "../../libraries/Math.sol";
 import { TUint256Slot } from "../../types/Types.sol";
-import { ErrLengthMismatch, ErrUnauthorizedCall } from "../../utils/CommonErrors.sol";
+import { ErrInvalidArguments, ErrLengthMismatch, ErrUnauthorizedCall } from "../../utils/CommonErrors.sol";
 
 contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initializable {
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.rewardInfo.slot") - 1
@@ -23,8 +23,17 @@ contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initial
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.latestRewardedPeriod.slot") - 1
   TUint256Slot private constant LATEST_REWARDED_PERIOD_SLOT =
     TUint256Slot.wrap(0x2417f25874c1cdc139a787dd21df976d40d767090442b3a2496917ecfc93b619);
+  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.totalRewardsToppedUp.slot") - 1
+  TUint256Slot private constant TOTAL_REWARDS_TOPPED_UP =
+    TUint256Slot.wrap(0x9a8c9f129792436c37b7bd2d79c56132fc05bf26cc8070794648517c2a0c6c64);
+  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.totalRewardsScattered.slot") - 1
+  TUint256Slot private constant TOTAL_REWARDS_SCATTERED =
+    TUint256Slot.wrap(0x3663384f6436b31a97d9c9a02f64ab8b73ead575c5b6224fa0800a6bd57f62f4);
+
+  address private immutable self;
 
   constructor() payable {
+    self = address(this);
     _disableInitializers();
   }
 
@@ -41,12 +50,15 @@ contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initial
     _setContract(ContractType.VALIDATOR, validatorSetContract);
     _setRewardPerPeriod(rewardPerPeriod);
     _syncLatestRewardedPeriod();
+    _receiveRON();
   }
 
   /**
    * @inheritdoc IBridgeReward
    */
-  function receiveRON() external payable {}
+  function receiveRON() external payable {
+    _receiveRON();
+  }
 
   /**
    * @inheritdoc IBridgeReward
@@ -99,15 +111,13 @@ contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initial
     // Only sync the period that is after the latest rewarded period.
     unchecked {
       uint256 latestRewardedPeriod = getLatestRewardedPeriod();
-      if (period != latestRewardedPeriod + 1) {
+      if (period < latestRewardedPeriod + 1) revert ErrInvalidArguments(msg.sig);
+      else if (period > latestRewardedPeriod + 1) {
         // Emit event instead of revert since bridge tracking and voting process depends on this.
         emit BridgeRewardSyncTooFarPeriod(period, latestRewardedPeriod);
-        _syncLatestRewardedPeriod();
-        return;
       }
     }
-
-    LATEST_REWARDED_PERIOD_SLOT.postIncrement();
+    LATEST_REWARDED_PERIOD_SLOT.store(period);
 
     _syncReward({
       operators: operators,
@@ -116,6 +126,31 @@ contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initial
       totalVotes: totalVotes,
       period: period
     });
+  }
+
+  /**
+   * @inheritdoc IBridgeReward
+   */
+  function getTotalRewardsToppedUp() external view returns (uint256) {
+    return TOTAL_REWARDS_TOPPED_UP.load();
+  }
+
+  /**
+   * @inheritdoc IBridgeReward
+   */
+  function getTotalRewardsScattered() external view returns (uint256) {
+    return TOTAL_REWARDS_SCATTERED.load();
+  }
+
+  /**
+   * @dev Internal function to receive RON tokens as rewards and update the total topped-up rewards amount.
+   */
+  function _receiveRON() internal {
+    // prevent transfer RON directly to logic contract
+    if (address(this) == self) revert ErrUnauthorizedCall(msg.sig);
+
+    emit SafeReceived(msg.sender, TOTAL_REWARDS_TOPPED_UP.load(), msg.value);
+    TOTAL_REWARDS_TOPPED_UP.addAssign(msg.value);
   }
 
   /**
@@ -141,6 +176,7 @@ contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initial
 
     uint256 reward;
     bool shouldSlash;
+    uint256 sumRewards;
 
     for (uint256 i; i < numBridgeOperators; ) {
       (reward, shouldSlash) = _calcRewardAndCheckSlashedStatus({
@@ -153,12 +189,15 @@ contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initial
         slashUntilPeriod: slashedDurationList[i]
       });
 
+      sumRewards += shouldSlash ? 0 : reward;
       _updateRewardAndTransfer({ period: period, operator: operators[i], reward: reward, shouldSlash: shouldSlash });
 
       unchecked {
         ++i;
       }
     }
+
+    TOTAL_REWARDS_SCATTERED.addAssign(sumRewards);
   }
 
   /**
