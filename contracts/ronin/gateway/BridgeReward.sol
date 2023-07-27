@@ -3,6 +3,7 @@
 pragma solidity ^0.8.9;
 
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import { BridgeTrackingHelper } from "../../extensions/bridge-operator-governance/BridgeTrackingHelper.sol";
 import { ContractType, HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { RONTransferHelper } from "../../extensions/RONTransferHelper.sol";
 import { IRoninValidatorSet } from "../../interfaces/validator/IRoninValidatorSet.sol";
@@ -14,7 +15,7 @@ import { Math } from "../../libraries/Math.sol";
 import { TUint256Slot } from "../../types/Types.sol";
 import { ErrInvalidArguments, ErrLengthMismatch, ErrUnauthorizedCall } from "../../utils/CommonErrors.sol";
 
-contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initializable {
+contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONTransferHelper, Initializable {
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.rewardInfo.slot") - 1
   bytes32 private constant REWARD_INFO_SLOT = 0x518cfd198acbffe95e740cfce1af28a3f7de51f0d784893d3d72c5cc59d7062a;
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.rewardPerPeriod.slot") - 1
@@ -280,38 +281,6 @@ contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initial
     // Shares equally in case the bridge has nothing to vote or bridge tracking response is incorrect
     // Else shares the bridge operators reward proportionally
     reward = shouldShareEqually ? rewardPerPeriod / numBridgeOperators : (rewardPerPeriod * ballot) / totalBallots;
-  }
-
-  /**
-   * @dev Internal function to validate the bridge tracking response for a given set of ballots.
-   * @param totalBallots The total number of ballots available for the tracking response.
-   * @param totalVotes The total number of votes recorded in the tracking response.
-   * @param ballots An array containing the individual ballot counts in the tracking response.
-   * @return valid A boolean indicating whether the bridge tracking response is valid or not.
-   * @notice The function checks if each individual ballot count is not greater than the total votes recorded.
-   * @notice It also verifies that the sum of all individual ballot counts does not exceed the total available ballots.
-   */
-  function _isValidBridgeTrackingResponse(
-    uint256 totalBallots,
-    uint256 totalVotes,
-    uint256[] memory ballots
-  ) internal pure returns (bool valid) {
-    valid = true;
-    uint256 sumBallots;
-    uint256 length = ballots.length;
-
-    unchecked {
-      for (uint256 i; i < length; ++i) {
-        if (ballots[i] > totalVotes) {
-          valid = false;
-          break;
-        }
-
-        sumBallots += ballots[i];
-      }
-    }
-
-    valid = valid && (sumBallots <= totalBallots);
   }
 
   /**
