@@ -24,16 +24,16 @@ contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initial
   TUint256Slot private constant LATEST_REWARDED_PERIOD_SLOT =
     TUint256Slot.wrap(0x2417f25874c1cdc139a787dd21df976d40d767090442b3a2496917ecfc93b619);
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.totalRewardsToppedUp.slot") - 1
-  TUint256Slot private constant TOTAL_REWARDS_TOPPED_UP =
+  TUint256Slot private constant TOTAL_REWARDS_TOPPED_UP_SLOT =
     TUint256Slot.wrap(0x9a8c9f129792436c37b7bd2d79c56132fc05bf26cc8070794648517c2a0c6c64);
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.totalRewardsScattered.slot") - 1
-  TUint256Slot private constant TOTAL_REWARDS_SCATTERED =
+  TUint256Slot private constant TOTAL_REWARDS_SCATTERED_SLOT =
     TUint256Slot.wrap(0x3663384f6436b31a97d9c9a02f64ab8b73ead575c5b6224fa0800a6bd57f62f4);
 
-  address private immutable self;
+  address private immutable _self;
 
   constructor() payable {
-    self = address(this);
+    _self = address(this);
     _disableInitializers();
   }
 
@@ -132,14 +132,14 @@ contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initial
    * @inheritdoc IBridgeReward
    */
   function getTotalRewardsToppedUp() external view returns (uint256) {
-    return TOTAL_REWARDS_TOPPED_UP.load();
+    return TOTAL_REWARDS_TOPPED_UP_SLOT.load();
   }
 
   /**
    * @inheritdoc IBridgeReward
    */
   function getTotalRewardsScattered() external view returns (uint256) {
-    return TOTAL_REWARDS_SCATTERED.load();
+    return TOTAL_REWARDS_SCATTERED_SLOT.load();
   }
 
   /**
@@ -147,10 +147,10 @@ contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initial
    */
   function _receiveRON() internal {
     // prevent transfer RON directly to logic contract
-    if (address(this) == self) revert ErrUnauthorizedCall(msg.sig);
+    if (address(this) == _self) revert ErrUnauthorizedCall(msg.sig);
 
-    emit SafeReceived(msg.sender, TOTAL_REWARDS_TOPPED_UP.load(), msg.value);
-    TOTAL_REWARDS_TOPPED_UP.addAssign(msg.value);
+    emit SafeReceived(msg.sender, TOTAL_REWARDS_TOPPED_UP_SLOT.load(), msg.value);
+    TOTAL_REWARDS_TOPPED_UP_SLOT.addAssign(msg.value);
   }
 
   /**
@@ -197,7 +197,7 @@ contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initial
       }
     }
 
-    TOTAL_REWARDS_SCATTERED.addAssign(sumRewards);
+    TOTAL_REWARDS_SCATTERED_SLOT.addAssign(sumRewards);
   }
 
   /**
