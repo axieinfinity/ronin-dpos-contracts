@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import { BridgeTrackingHelper } from "../../extensions/bridge-operator-governance/BridgeTrackingHelper.sol";
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
 import { IERC165, IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
@@ -16,7 +17,14 @@ import { ErrLengthMismatch } from "../../utils/CommonErrors.sol";
  * @title BridgeSlash
  * @dev A contract that implements slashing functionality for bridge operators based on their availability.
  */
-contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Initializable, HasContracts {
+contract BridgeSlash is
+  IBridgeSlash,
+  IBridgeManagerCallback,
+  BridgeTrackingHelper,
+  IdentityGuard,
+  Initializable,
+  HasContracts
+{
   /// @inheritdoc IBridgeSlash
   uint256 public constant TIER_1_PENALTY_DURATION = 1;
   /// @inheritdoc IBridgeSlash
@@ -116,8 +124,8 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   ) external onlyContract(ContractType.BRIDGE_TRACKING) onlyPeriodHasEnoughVotes(totalVotes) returns (bool slashed) {
     uint256 length = allBridgeOperators.length;
     if (length != ballots.length) revert ErrLengthMismatch(msg.sig);
-    if (length == 0) return slashed;
-    if (!_isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots)) return slashed;
+    if (length == 0) return false;
+    if (!_isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots)) return false;
 
     // Get penalty durations for each slash tier.
     uint256[] memory penaltyDurations = _getPenaltyDurations();
@@ -231,38 +239,6 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
    */
   function getSlashTier(uint256 ballot, uint256 totalVotes) external pure returns (Tier tier) {
     tier = _getSlashTier(ballot, totalVotes);
-  }
-
-  /**
-   * @dev Internal function to validate the bridge tracking response for a given set of ballots.
-   * @param totalBallots The total number of ballots available for the tracking response.
-   * @param totalVotes The total number of votes recorded in the tracking response.
-   * @param ballots An array containing the individual ballot counts in the tracking response.
-   * @return valid A boolean indicating whether the bridge tracking response is valid or not.
-   * @notice The function checks if each individual ballot count is not greater than the total votes recorded.
-   * @notice It also verifies that the sum of all individual ballot counts does not exceed the total available ballots.
-   */
-  function _isValidBridgeTrackingResponse(
-    uint256 totalBallots,
-    uint256 totalVotes,
-    uint256[] memory ballots
-  ) internal pure returns (bool valid) {
-    valid = true;
-    uint256 sumBallots;
-    uint256 length = ballots.length;
-
-    unchecked {
-      for (uint256 i; i < length; ++i) {
-        if (ballots[i] > totalVotes) {
-          valid = false;
-          break;
-        }
-
-        sumBallots += ballots[i];
-      }
-    }
-
-    valid = valid && (sumBallots <= totalBallots);
   }
 
   /**
