@@ -69,10 +69,6 @@ contract BridgeReward is IBridgeReward, HasContracts, RONTransferHelper, Initial
     uint256 latestRewardedPeriod = getLatestRewardedPeriod();
     uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
 
-    if (latestRewardedPeriod == 0) {
-      _syncLatestRewardedPeriod();
-      return;
-    }
     if (currentPeriod <= latestRewardedPeriod) return;
 
     LATEST_REWARDED_PERIOD_SLOT.addAssign(periodLength);
