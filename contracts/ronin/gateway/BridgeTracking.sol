@@ -214,14 +214,14 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
       address[] memory allOperators = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getBridgeOperators();
       uint256[] memory ballots = _getManyTotalBallots(lastSyncPeriod, allOperators);
 
-      uint256 totalVote = totalVote(lastSyncPeriod);
-      uint256 totalBallot = totalBallot(lastSyncPeriod);
+      uint256 totalVote_ = totalVote(lastSyncPeriod);
+      uint256 totalBallot_ = totalBallot(lastSyncPeriod);
 
       address bridgeSlashContract = getContract(ContractType.BRIDGE_SLASH);
       (bool success, bytes memory returnOrRevertData) = bridgeSlashContract.call(
         abi.encodeCall(
           IBridgeSlash.execSlashBridgeOperators,
-          (allOperators, ballots, totalBallot, totalVote, lastSyncPeriod)
+          (allOperators, ballots, totalBallot_, totalVote_, lastSyncPeriod)
         )
       );
       if (!success) {
@@ -234,7 +234,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
 
       address bridgeRewardContract = getContract(ContractType.BRIDGE_REWARD);
       (success, returnOrRevertData) = bridgeRewardContract.call(
-        abi.encodeCall(IBridgeReward.execSyncReward, (allOperators, ballots, totalBallot, totalVote, lastSyncPeriod))
+        abi.encodeCall(IBridgeReward.execSyncReward, (allOperators, ballots, totalBallot_, totalVote_, lastSyncPeriod))
       );
       if (!success) {
         emit ExternalCallFailed(bridgeRewardContract, IBridgeReward.execSyncReward.selector, returnOrRevertData);
