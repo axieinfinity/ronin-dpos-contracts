@@ -74,6 +74,7 @@ abstract contract IdentityGuard {
    * @notice This method only works with non-state EOA accounts
    */
   function _requireCreatedEOA(address addr) internal view {
+    _requireNonZeroAddress(addr);
     bytes32 codehash = addr.codehash;
     if (codehash != CREATED_ACCOUNT_HASH) revert ErrAddressIsNotCreatedEOA(addr, codehash);
   }
