@@ -141,10 +141,8 @@ export const defaultTestConfig: InitTestInput = {
   bridgeManagerArguments: {
     numerator: 70,
     denominator: 100,
-    weights: [],
-    operators: [],
-    governors: [],
     expiryDuration: 60 * 60 * 24 * 14, // 14 days
+    members: [],
   },
 
   bridgeRewardArguments: {
