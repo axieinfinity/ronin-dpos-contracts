@@ -125,7 +125,10 @@ contract BridgeSlash is
     uint256 length = allBridgeOperators.length;
     if (length != ballots.length) revert ErrLengthMismatch(msg.sig);
     if (length == 0) return false;
-    if (!_isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots)) return false;
+    if (!_isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots)) {
+      emit BridgeTrackingIncorrectlyResponded();
+      return false;
+    }
 
     // Get penalty durations for each slash tier.
     uint256[] memory penaltyDurations = _getPenaltyDurations();

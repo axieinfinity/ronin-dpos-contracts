@@ -19,8 +19,6 @@ interface IBridgeRewardEvents {
    * @param amount The amount of RON received.
    */
   event SafeReceived(address indexed from, uint256 balanceBefore, uint256 amount);
-  /// @dev Event emited when the bridge tracking contract tracks the invalid data, cause malform in sharing bridge reward.
-  event BridgeTrackingIncorrectlyResponded();
   /// @dev Event emitted when the reward per period config is updated.
   event UpdatedRewardPerPeriod(uint256 newRewardPerPeriod);
   /// @dev Event emitted when the reward of the `operator` is scattered with `amount`.

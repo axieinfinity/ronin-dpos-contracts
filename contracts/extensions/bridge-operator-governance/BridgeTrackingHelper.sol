@@ -2,6 +2,9 @@
 pragma solidity ^0.8.0;
 
 abstract contract BridgeTrackingHelper {
+  /// @dev Event emited when the bridge tracking contract tracks the invalid data, cause malform in sharing bridge reward.
+  event BridgeTrackingIncorrectlyResponded();
+
   /**
    * @dev Internal function to validate the bridge tracking response for a given set of ballots.
    * @param totalBallots The total number of ballots available for the tracking response.
