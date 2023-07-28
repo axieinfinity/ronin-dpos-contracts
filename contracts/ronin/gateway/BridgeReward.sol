@@ -24,10 +24,10 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.latestRewardedPeriod.slot") - 1
   TUint256Slot private constant LATEST_REWARDED_PERIOD_SLOT =
     TUint256Slot.wrap(0x2417f25874c1cdc139a787dd21df976d40d767090442b3a2496917ecfc93b619);
-  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.totalRewardsToppedUp.slot") - 1
+  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.totalRewardToppedUp.slot") - 1
   TUint256Slot private constant TOTAL_REWARDS_TOPPED_UP_SLOT =
     TUint256Slot.wrap(0x9a8c9f129792436c37b7bd2d79c56132fc05bf26cc8070794648517c2a0c6c64);
-  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.totalRewardsScattered.slot") - 1
+  /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.totalRewardScattered.slot") - 1
   TUint256Slot private constant TOTAL_REWARDS_SCATTERED_SLOT =
     TUint256Slot.wrap(0x3663384f6436b31a97d9c9a02f64ab8b73ead575c5b6224fa0800a6bd57f62f4);
 
@@ -82,8 +82,8 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
         _syncReward({
           operators: operators,
           ballots: bridgeTrackingContract.getManyTotalBallots(latestRewardedPeriod, operators),
-          totalBallots: bridgeTrackingContract.totalBallots(latestRewardedPeriod),
-          totalVotes: bridgeTrackingContract.totalVotes(latestRewardedPeriod),
+          totalBallot: bridgeTrackingContract.totalBallot(latestRewardedPeriod),
+          totalVote: bridgeTrackingContract.totalVote(latestRewardedPeriod),
           period: latestRewardedPeriod += i
         });
 
@@ -98,8 +98,8 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
   function execSyncReward(
     address[] calldata operators,
     uint256[] calldata ballots,
-    uint256 totalBallots,
-    uint256 totalVotes,
+    uint256 totalBallot,
+    uint256 totalVote,
     uint256 period
   ) external onlyContract(ContractType.BRIDGE_TRACKING) {
     if (operators.length != ballots.length) revert ErrLengthMismatch(msg.sig);
@@ -119,8 +119,8 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
     _syncReward({
       operators: operators,
       ballots: ballots,
-      totalBallots: totalBallots,
-      totalVotes: totalVotes,
+      totalBallot: totalBallot,
+      totalVote: totalVote,
       period: period
     });
   }
@@ -128,14 +128,14 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
   /**
    * @inheritdoc IBridgeReward
    */
-  function getTotalRewardsToppedUp() external view returns (uint256) {
+  function getTotalRewardToppedUp() external view returns (uint256) {
     return TOTAL_REWARDS_TOPPED_UP_SLOT.load();
   }
 
   /**
    * @inheritdoc IBridgeReward
    */
-  function getTotalRewardsScattered() external view returns (uint256) {
+  function getTotalRewardScattered() external view returns (uint256) {
     return TOTAL_REWARDS_SCATTERED_SLOT.load();
   }
 
@@ -154,22 +154,22 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
    * @dev Internal function to synchronize and distribute rewards to bridge operators for a given period.
    * @param operators An array containing the addresses of bridge operators to receive rewards.
    * @param ballots An array containing the individual ballot counts for each bridge operator.
-   * @param totalBallots The total number of available ballots for the period.
-   * @param totalVotes The total number of votes recorded for the period.
+   * @param totalBallot The total number of available ballots for the period.
+   * @param totalVote The total number of votes recorded for the period.
    * @param period The period for which the rewards are being synchronized.
    */
   function _syncReward(
     address[] memory operators,
     uint256[] memory ballots,
-    uint256 totalBallots,
-    uint256 totalVotes,
+    uint256 totalBallot,
+    uint256 totalVote,
     uint256 period
   ) internal {
     uint256 numBridgeOperators = operators.length;
     uint256 rewardPerPeriod = getRewardPerPeriod();
     uint256[] memory slashedDurationList = _getSlashInfo(operators);
     // Validate should share the reward equally
-    bool shouldShareEqually = _shouldShareEqually(totalBallots, totalVotes, ballots);
+    bool shouldShareEqually = _shouldShareEqually(totalBallot, totalVote, ballots);
 
     uint256 reward;
     bool shouldSlash;
@@ -181,7 +181,7 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
         numBridgeOperators: numBridgeOperators,
         rewardPerPeriod: rewardPerPeriod,
         ballot: ballots[i],
-        totalBallots: totalBallots,
+        totalBallot: totalBallot,
         period: period,
         slashUntilPeriod: slashedDurationList[i]
       });
@@ -214,16 +214,16 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
    * Emit a {BridgeTrackingIncorrectlyResponded} event when in case of incorrect data.
    */
   function _shouldShareEqually(
-    uint256 totalBallots,
-    uint256 totalVotes,
+    uint256 totalBallot,
+    uint256 totalVote,
     uint256[] memory ballots
   ) internal returns (bool shareEqually) {
-    bool valid = _isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots);
+    bool valid = _isValidBridgeTrackingResponse(totalBallot, totalVote, ballots);
     if (!valid) {
       emit BridgeTrackingIncorrectlyResponded();
     }
 
-    return !valid || totalBallots == 0;
+    return !valid || totalBallot == 0;
   }
 
   /**
@@ -232,7 +232,7 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
    * @param numBridgeOperators The total number of bridge operators for proportional reward calculation.
    * @param rewardPerPeriod The total reward available for the period.
    * @param ballot The individual ballot count of the bridge operator for the period.
-   * @param totalBallots The total number of available ballots for the period.
+   * @param totalBallot The total number of available ballots for the period.
    * @param period The period for which the reward is being calculated.
    * @param slashUntilPeriod The period until which slashing is effective for the bridge operator.
    * @return reward The calculated reward for the bridge operator.
@@ -243,12 +243,12 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
     uint256 numBridgeOperators,
     uint256 rewardPerPeriod,
     uint256 ballot,
-    uint256 totalBallots,
+    uint256 totalBallot,
     uint256 period,
     uint256 slashUntilPeriod
   ) internal pure returns (uint256 reward, bool shouldSlash) {
     shouldSlash = _shouldSlashedThisPeriod(period, slashUntilPeriod);
-    reward = _calcReward(shouldShareEqually, numBridgeOperators, rewardPerPeriod, ballot, totalBallots);
+    reward = _calcReward(shouldShareEqually, numBridgeOperators, rewardPerPeriod, ballot, totalBallot);
   }
 
   /**
@@ -268,7 +268,7 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
    * @param numBridgeOperators The total number of bridge operators for proportional reward calculation.
    * @param rewardPerPeriod The total reward available for the period.
    * @param ballot The individual ballot count of the bridge operator for the period.
-   * @param totalBallots The total number of available ballots for the period.
+   * @param totalBallot The total number of available ballots for the period.
    * @return reward The calculated reward for the bridge operator.
    */
   function _calcReward(
@@ -276,11 +276,11 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
     uint256 numBridgeOperators,
     uint256 rewardPerPeriod,
     uint256 ballot,
-    uint256 totalBallots
+    uint256 totalBallot
   ) internal pure returns (uint256 reward) {
     // Shares equally in case the bridge has nothing to vote or bridge tracking response is incorrect
     // Else shares the bridge operators reward proportionally
-    reward = shouldShareEqually ? rewardPerPeriod / numBridgeOperators : (rewardPerPeriod * ballot) / totalBallots;
+    reward = shouldShareEqually ? rewardPerPeriod / numBridgeOperators : (rewardPerPeriod * ballot) / totalBallot;
   }
 
   /**

@@ -47,18 +47,18 @@ contract BridgeSlashTest is IBridgeSlashEvents, BridgeManagerUtils {
    * @notice Tests the fuzz slash tier logic by simulating the slash calculation for a given ballot and total ballots.
    * @dev This function is for testing purposes only.
    * @param ballot The number of ballots for the specific bridge operator.
-   * @param totalVotes The total number of votes for the period.
+   * @param totalVote The total number of votes for the period.
    * @param period The current period.
    * @param slashUntilPeriod The slash until period for the bridge operator.
    */
-  function test_Fuzz_SlashTierLogic(uint96 ballot, uint96 totalVotes, uint64 period, uint64 slashUntilPeriod) external {
-    // Assume period is not zero and totalVotes is not zero, and ballot is less than totalVotes
+  function test_Fuzz_SlashTierLogic(uint96 ballot, uint96 totalVote, uint64 period, uint64 slashUntilPeriod) external {
+    // Assume period is not zero and totalVote is not zero, and ballot is less than totalVote
     vm.assume(period != 0);
-    vm.assume(totalVotes >= IBridgeSlash(_bridgeSlashContract).MINIMUM_VOTE_THRESHOLD() && ballot < totalVotes);
+    vm.assume(totalVote >= IBridgeSlash(_bridgeSlashContract).MINIMUM_VOTE_THRESHOLD() && ballot < totalVote);
 
     // Get the bridge slash contract and determine the slash tier
     IBridgeSlash bridgeSlashContract = IBridgeSlash(_bridgeSlashContract);
-    IBridgeSlash.Tier tier = bridgeSlashContract.getSlashTier(ballot, totalVotes);
+    IBridgeSlash.Tier tier = bridgeSlashContract.getSlashTier(ballot, totalVote);
     // Calculate the new slash until period using the mock bridge slash contract
     uint256 newSlashUntilPeriod = MockBridgeSlash(payable(_bridgeSlashContract)).calcSlashUntilPeriod(
       tier,
@@ -256,13 +256,13 @@ contract BridgeSlashTest is IBridgeSlashEvents, BridgeManagerUtils {
 
     vm.startPrank(_bridgeTrackingContract, _bridgeTrackingContract);
     uint256[] memory ballots;
-    uint256 totalBallotsForPeriod;
+    uint256 totalBallotForPeriod;
     IBridgeSlash bridgeSlashContract = IBridgeSlash(_bridgeSlashContract);
     MockValidatorContract validatorContract = MockValidatorContract(payable(_validatorContract));
     for (uint256 i; i < duration; ) {
       // Generate random ballots for bridge operators
       ballots = _createRandomNumbers(r1, bridgeOperators.length, 0, MAX_FUZZ_INPUTS);
-      totalBallotsForPeriod = ballots.sum();
+      totalBallotForPeriod = ballots.sum();
 
       // Set the current period in the mock validator contract
       validatorContract.setCurrentPeriod(period);
@@ -271,8 +271,8 @@ contract BridgeSlashTest is IBridgeSlashEvents, BridgeManagerUtils {
       bridgeSlashContract.execSlashBridgeOperators(
         bridgeOperators,
         ballots,
-        totalBallotsForPeriod,
-        totalBallotsForPeriod,
+        totalBallotForPeriod,
+        totalBallotForPeriod,
         period
       );
 

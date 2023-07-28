@@ -15,8 +15,8 @@ interface IBridgeSlash is IBridgeSlashEvents {
   function execSlashBridgeOperators(
     address[] calldata operators,
     uint256[] calldata ballots,
-    uint256 totalBallots,
-    uint256 totalVotes,
+    uint256 totalBallot,
+    uint256 totalVote,
     uint256 period
   ) external returns (bool slashed);
 
@@ -37,10 +37,10 @@ interface IBridgeSlash is IBridgeSlashEvents {
   /**
    * @dev Gets the slash tier based on the given ballot and total ballots.
    * @param ballot The ballot count for a bridge operator.
-   * @param totalVotes The total vote count for the period.
+   * @param totalVote The total vote count for the period.
    * @return tier The slash tier.
    */
-  function getSlashTier(uint256 ballot, uint256 totalVotes) external pure returns (Tier tier);
+  function getSlashTier(uint256 ballot, uint256 totalVote) external pure returns (Tier tier);
 
   /**
    * @dev Retrieve the penalty durations for different slash tiers.

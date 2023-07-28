@@ -9,7 +9,7 @@ contract MockBridgeReward is BridgeReward {
     uint256 numBridgeOperators,
     uint256 rewardPerPeriod,
     uint256 ballot,
-    uint256 totalBallots,
+    uint256 totalBallot,
     uint256 period,
     uint256 slashUntilPeriod
   ) external pure returns (uint256 reward, bool isSlashed) {
@@ -19,7 +19,7 @@ contract MockBridgeReward is BridgeReward {
         numBridgeOperators,
         rewardPerPeriod,
         ballot,
-        totalBallots,
+        totalBallot,
         period,
         slashUntilPeriod
       );
@@ -30,25 +30,25 @@ contract MockBridgeReward is BridgeReward {
     uint256 numBridgeOperators,
     uint256 rewardPerPeriod,
     uint256 ballot,
-    uint256 totalBallots
+    uint256 totalBallot
   ) external pure returns (uint256 reward) {
-    reward = _calcReward(isValidTrackingResponse, numBridgeOperators, rewardPerPeriod, ballot, totalBallots);
+    reward = _calcReward(isValidTrackingResponse, numBridgeOperators, rewardPerPeriod, ballot, totalBallot);
   }
 
   function isValidBridgeTrackingResponse(
-    uint256 totalBallots,
-    uint256 totalVotes,
+    uint256 totalBallot,
+    uint256 totalVote,
     uint256[] memory ballots
   ) external pure returns (bool valid) {
-    return _isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots);
+    return _isValidBridgeTrackingResponse(totalBallot, totalVote, ballots);
   }
 
   function shouldShareEqually(
-    uint256 totalBallots,
-    uint256 totalVotes,
+    uint256 totalBallot,
+    uint256 totalVote,
     uint256[] memory ballots
   ) external returns (bool shareEqually) {
-    return _shouldShareEqually(totalBallots, totalVotes, ballots);
+    return _shouldShareEqually(totalBallot, totalVote, ballots);
   }
 
   function shouldSlashedThisPeriod(uint256 period, uint256 slashUntilDuration) external pure returns (bool) {

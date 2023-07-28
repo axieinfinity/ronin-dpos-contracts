@@ -26,22 +26,22 @@ interface IBridgeReward is IBridgeRewardEvents {
   function execSyncReward(
     address[] calldata operators,
     uint256[] calldata ballots,
-    uint256 totalBallots,
-    uint256 totalVotes,
+    uint256 totalBallot,
+    uint256 totalVote,
     uint256 period
   ) external;
 
   /**
    * @dev Retrieve the total amount of rewards that have been topped up in the contract.
-   * @return totalRewardsToppedUp The total rewards topped up value.
+   * @return totalRewardToppedUp The total rewards topped up value.
    */
-  function getTotalRewardsToppedUp() external view returns (uint256);
+  function getTotalRewardToppedUp() external view returns (uint256);
 
   /**
    * @dev Retrieve the total amount of rewards that have been scattered to bridge operators in the contract.
-   * @return totalRewardsScattered The total rewards scattered value.
+   * @return totalRewardScattered The total rewards scattered value.
    */
-  function getTotalRewardsScattered() external view returns (uint256);
+  function getTotalRewardScattered() external view returns (uint256);
 
   /**
    * @dev Getter for all bridge operators per period.

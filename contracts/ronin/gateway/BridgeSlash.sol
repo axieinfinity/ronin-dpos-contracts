@@ -46,11 +46,11 @@ contract BridgeSlash is
   bytes32 private constant BRIDGE_SLASH_INFOS_SLOT = 0xd08d185790a07c7b9b721e2713c8580010a57f31c72c16f6e80b831d0ee45bfe;
 
   /**
-   * @dev The modifier verifies if the `totalVotes` is non-zero, indicating the presence of ballots for the period.
-   * @param totalVotes The total number of ballots for the period.
+   * @dev The modifier verifies if the `totalVote` is non-zero, indicating the presence of ballots for the period.
+   * @param totalVote The total number of ballots for the period.
    */
-  modifier onlyPeriodHasEnoughVotes(uint256 totalVotes) {
-    if (totalVotes <= MINIMUM_VOTE_THRESHOLD) return;
+  modifier onlyPeriodHasEnoughVotes(uint256 totalVote) {
+    if (totalVote <= MINIMUM_VOTE_THRESHOLD) return;
     _;
   }
 
@@ -118,14 +118,14 @@ contract BridgeSlash is
   function execSlashBridgeOperators(
     address[] memory allBridgeOperators,
     uint256[] memory ballots,
-    uint256 totalBallots,
-    uint256 totalVotes,
+    uint256 totalBallot,
+    uint256 totalVote,
     uint256 period
-  ) external onlyContract(ContractType.BRIDGE_TRACKING) onlyPeriodHasEnoughVotes(totalVotes) returns (bool slashed) {
+  ) external onlyContract(ContractType.BRIDGE_TRACKING) onlyPeriodHasEnoughVotes(totalVote) returns (bool slashed) {
     uint256 length = allBridgeOperators.length;
     if (length != ballots.length) revert ErrLengthMismatch(msg.sig);
     if (length == 0) return false;
-    if (!_isValidBridgeTrackingResponse(totalBallots, totalVotes, ballots)) {
+    if (!_isValidBridgeTrackingResponse(totalBallot, totalVote, ballots)) {
       emit BridgeTrackingIncorrectlyResponded();
       return false;
     }
@@ -149,7 +149,7 @@ contract BridgeSlash is
       // Bridge operators added in current period will not be slashed.
       if (status.newlyAddedAtPeriod < period) {
         // Determine the slash tier for the bridge operator based on their ballots.
-        tier = _getSlashTier(ballots[i], totalVotes);
+        tier = _getSlashTier(ballots[i], totalVote);
 
         slashUntilPeriod = _calcSlashUntilPeriod(tier, period, status.slashUntilPeriod, penaltyDurations);
 
@@ -240,8 +240,8 @@ contract BridgeSlash is
   /**
    * @inheritdoc IBridgeSlash
    */
-  function getSlashTier(uint256 ballot, uint256 totalVotes) external pure returns (Tier tier) {
-    tier = _getSlashTier(ballot, totalVotes);
+  function getSlashTier(uint256 ballot, uint256 totalVote) external pure returns (Tier tier) {
+    tier = _getSlashTier(ballot, totalVote);
   }
 
   /**
@@ -278,12 +278,12 @@ contract BridgeSlash is
   /**
    * @dev Internal function to determine the slashing tier based on the given ballot count and total votes.
    * @param ballot The individual ballot count of a bridge operator.
-   * @param totalVotes The total number of votes recorded for the bridge operator.
+   * @param totalVote The total number of votes recorded for the bridge operator.
    * @return tier The calculated slashing tier for the bridge operator.
-   * @notice The `ratio` is calculated as the percentage of uncast votes (totalVotes - ballot) relative to the total votes.
+   * @notice The `ratio` is calculated as the percentage of uncast votes (totalVote - ballot) relative to the total votes.
    */
-  function _getSlashTier(uint256 ballot, uint256 totalVotes) internal pure virtual returns (Tier tier) {
-    uint256 ratio = ((totalVotes - ballot) * PERCENTAGE_FRACTION) / totalVotes;
+  function _getSlashTier(uint256 ballot, uint256 totalVote) internal pure virtual returns (Tier tier) {
+    uint256 ratio = ((totalVote - ballot) * PERCENTAGE_FRACTION) / totalVote;
     tier = ratio > TIER_2_THRESHOLD ? Tier.Tier2 : ratio > TIER_1_THRESHOLD ? Tier.Tier1 : Tier.Tier0;
   }
 
