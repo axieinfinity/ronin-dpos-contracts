@@ -137,11 +137,11 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
     uint256 length = operators.length;
     res = new uint256[](length);
     bool isBufferCounted = _isBufferCountedForPeriod(period);
-    for (uint _i = 0; _i < length; ) {
-      res[_i] = _totalBallotOf(period, operators[_i], isBufferCounted);
+    for (uint i = 0; i < length; ) {
+      res[i] = _totalBallotOf(period, operators[i], isBufferCounted);
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }
@@ -214,14 +214,14 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
       address[] memory allOperators = IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getBridgeOperators();
       uint256[] memory ballots = _getManyTotalBallots(lastSyncPeriod, allOperators);
 
-      uint256 _totalVote = totalVote(lastSyncPeriod);
-      uint256 _totalBallot = totalBallot(lastSyncPeriod);
+      uint256 totalVote = totalVote(lastSyncPeriod);
+      uint256 totalBallot = totalBallot(lastSyncPeriod);
 
       address bridgeSlashContract = getContract(ContractType.BRIDGE_SLASH);
       (bool success, bytes memory returnOrRevertData) = bridgeSlashContract.call(
         abi.encodeCall(
           IBridgeSlash.execSlashBridgeOperators,
-          (allOperators, ballots, _totalBallot, _totalVote, lastSyncPeriod)
+          (allOperators, ballots, totalBallot, totalVote, lastSyncPeriod)
         )
       );
       if (!success) {
@@ -234,7 +234,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
 
       address bridgeRewardContract = getContract(ContractType.BRIDGE_REWARD);
       (success, returnOrRevertData) = bridgeRewardContract.call(
-        abi.encodeCall(IBridgeReward.execSyncReward, (allOperators, ballots, _totalBallot, _totalVote, lastSyncPeriod))
+        abi.encodeCall(IBridgeReward.execSyncReward, (allOperators, ballots, totalBallot, totalVote, lastSyncPeriod))
       );
       if (!success) {
         emit ExternalCallFailed(bridgeRewardContract, IBridgeReward.execSyncReward.selector, returnOrRevertData);
