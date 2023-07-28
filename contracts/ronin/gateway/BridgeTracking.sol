@@ -217,21 +217,28 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
       uint256 _totalVote = totalVote(lastSyncPeriod);
       uint256 _totalBallot = totalBallot(lastSyncPeriod);
 
-      IBridgeSlash(getContract(ContractType.BRIDGE_SLASH)).execSlashBridgeOperators({
-        operators: allOperators,
-        ballots: ballots,
-        totalBallot: _totalBallot,
-        totalVote: _totalVote,
-        period: lastSyncPeriod
-      });
+      address bridgeSlashContract = getContract(ContractType.BRIDGE_SLASH);
+      (bool success, bytes memory returnOrRevertData) = bridgeSlashContract.call(
+        abi.encodeCall(
+          IBridgeSlash.execSlashBridgeOperators,
+          (allOperators, ballots, _totalBallot, _totalVote, lastSyncPeriod)
+        )
+      );
+      if (!success) {
+        emit ExternalCallFailed(
+          bridgeSlashContract,
+          IBridgeSlash.execSlashBridgeOperators.selector,
+          returnOrRevertData
+        );
+      }
 
-      IBridgeReward(getContract(ContractType.BRIDGE_REWARD)).execSyncReward({
-        operators: allOperators,
-        ballots: ballots,
-        totalBallot: _totalBallot,
-        totalVote: _totalVote,
-        period: lastSyncPeriod
-      });
+      address bridgeRewardContract = getContract(ContractType.BRIDGE_REWARD);
+      (success, returnOrRevertData) = bridgeRewardContract.call(
+        abi.encodeCall(IBridgeReward.execSyncReward, (allOperators, ballots, _totalBallot, _totalVote, lastSyncPeriod))
+      );
+      if (!success) {
+        emit ExternalCallFailed(bridgeRewardContract, IBridgeReward.execSyncReward.selector, returnOrRevertData);
+      }
     }
   }
 

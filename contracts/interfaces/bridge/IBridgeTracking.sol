@@ -13,6 +13,8 @@ interface IBridgeTracking {
     MainchainWithdrawal
   }
 
+  event ExternalCallFailed(address indexed to, bytes4 indexed msgSig, bytes reason);
+
   /**
    * @dev Returns the block that allow incomming mutable call.
    */
