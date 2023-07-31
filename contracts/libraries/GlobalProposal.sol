@@ -13,6 +13,7 @@ library GlobalProposal {
     BridgeManager,
     GatewayContract
   }
+  //TODO: add slash and reward contracts into the struct
 
   struct GlobalProposalDetail {
     // Nonce to make sure proposals are executed in order
