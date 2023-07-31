@@ -70,7 +70,8 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
     uint256 latestRewardedPeriod = getLatestRewardedPeriod();
     uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
 
-    if (currentPeriod <= latestRewardedPeriod) return;
+    if (currentPeriod <= latestRewardedPeriod) revert ErrInvalidArguments(msg.sig);
+    if (latestRewardedPeriod + periodLength > currentPeriod) revert ErrInvalidArguments(msg.sig);
 
     LATEST_REWARDED_PERIOD_SLOT.addAssign(periodLength);
 
