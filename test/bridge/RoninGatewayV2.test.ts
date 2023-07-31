@@ -106,9 +106,13 @@ describe('Ronin Gateway V2 test', () => {
       bridgeManagerArguments: {
         numerator: bridgeAdminNumerator,
         denominator: bridgeAdminDenominator,
-        weights: operatorTuples.map(() => 100),
-        operators: operatorTuples.map((_) => _.operator.address),
-        governors: operatorTuples.map((_) => _.governor.address),
+        members: operatorTuples.map((_) => {
+          return {
+            operator: _.operator.address,
+            governor: _.governor.address,
+            weight: 100,
+          };
+        }),
       },
     });
 

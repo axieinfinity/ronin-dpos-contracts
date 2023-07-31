@@ -65,7 +65,7 @@ const operatorNum = 6;
 const bridgeAdminNumerator = 2;
 const bridgeAdminDenominator = 4;
 
-describe('Bridge Admin test', async () => {
+describe('Bridge Manager test', async () => {
   before(async () => {
     [deployer, relayer, ...signers] = await ethers.getSigners();
     trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 21 * 3));
@@ -97,9 +97,13 @@ describe('Bridge Admin test', async () => {
       bridgeManagerArguments: {
         numerator: bridgeAdminNumerator,
         denominator: bridgeAdminDenominator,
-        operators: beforeRelayedOperatorTuples.map((_) => _.operator.address),
-        governors: beforeRelayedOperatorTuples.map((_) => _.governor.address),
-        weights: beforeRelayedOperatorTuples.map((_) => 100),
+        members: beforeRelayedOperatorTuples.map((_) => {
+          return {
+            operator: _.operator.address,
+            governor: _.governor.address,
+            weight: 100,
+          };
+        }),
       },
     });
 
