@@ -1,13 +1,9 @@
 import { ethers, network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { generalRoninConf, roninchainNetworks, mainchainNetworks, generalMainchainConf } from '../configs/config';
-import { Network } from '../utils';
-
-const calculateAddress = (from: string, nonce: number) => ({
-  nonce,
-  address: ethers.utils.getContractAddress({ from, nonce }),
-});
+import { generalRoninConf, roninchainNetworks, mainchainNetworks, generalMainchainConf } from '../../configs/config';
+import { Network } from '../../utils';
+import { calculateAddress } from './helper';
 
 const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
   const { deployer } = await getNamedAccounts();
@@ -16,13 +12,6 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
   if (roninchainNetworks.includes(network.name!)) {
     generalRoninConf[network.name] = {
       ...generalRoninConf[network.name],
-      governanceAdmin: calculateAddress(deployer, nonce++),
-      roninTrustedOrganizationContract: calculateAddress(deployer, nonce++),
-      maintenanceContract: calculateAddress(deployer, nonce++),
-      stakingVestingContract: calculateAddress(deployer, nonce++),
-      slashIndicatorContract: calculateAddress(deployer, nonce++),
-      stakingContract: calculateAddress(deployer, nonce++),
-      validatorContract: calculateAddress(deployer, nonce++),
       bridgeTrackingContract: calculateAddress(deployer, nonce++),
       bridgeSlashContract: calculateAddress(deployer, nonce++),
       bridgeRewardContract: calculateAddress(deployer, nonce++),
@@ -43,19 +32,14 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
   }
 };
 
-deploy.tags = ['CalculateAddresses'];
+deploy.tags = ['_HelperBridgeCalculate'];
 deploy.dependencies = [
-  'MaintenanceLogic',
-  'StakingVestingLogic',
-  'SlashIndicatorLogic',
-  'StakingLogic',
-  'RoninValidatorSetLogic',
-  'RoninTrustedOrganizationLogic',
   'BridgeTrackingLogic',
   'BridgeSlashLogic',
   'BridgeRewardLogic',
   'MainchainGatewayV2Logic',
   'RoninGatewayV2Logic',
+  'RoninValidatorSetProxy',
 ];
 
 export default deploy;

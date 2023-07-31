@@ -32,6 +32,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['BridgeTrackingProxy'];
-deploy.dependencies = ['BridgeTrackingLogic', 'CalculateAddresses', 'RoninValidatorSetProxy'];
+deploy.dependencies = ['BridgeTrackingLogic', '_HelperBridgeCalculate', 'RoninValidatorSetProxy'];
 
 export default deploy;

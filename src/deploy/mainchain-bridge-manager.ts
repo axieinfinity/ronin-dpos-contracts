@@ -39,6 +39,6 @@ deploy.tags = ['MainchainBridgeManager'];
 // Trick: Leaving 'BridgeTrackingProxy', 'RoninBridgeManager' here to make sure mainchain's contracts will be deployed
 // after the ronin's ones on Hardhat network. This will not cause a redundant deployment of Ronin's contract on the
 // mainchain, due to check of network at the beginning of each file.
-deploy.dependencies = ['BridgeTrackingProxy', 'RoninBridgeManager', 'CalculateAddresses'];
+deploy.dependencies = ['BridgeTrackingProxy', 'RoninBridgeManager', '_HelperBridgeCalculate'];
 
 export default deploy;

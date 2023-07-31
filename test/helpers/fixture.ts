@@ -223,14 +223,19 @@ export const initTest = (id: string) =>
     }
 
     await deployments.fixture([
-      'CalculateAddresses',
+      '_HelperDposCalculate',
       'RoninGovernanceAdmin',
       'RoninValidatorSetProxy',
-      'BridgeTrackingProxy',
       'SlashIndicatorProxy',
       'StakingProxy',
       'MaintenanceProxy',
       'StakingVestingProxy',
+      id,
+    ]);
+
+    await deployments.fixture([
+      '_HelperBridgeCalculate',
+      'BridgeTrackingProxy',
       'RoninBridgeManager',
       'MainchainBridgeManager',
       id,

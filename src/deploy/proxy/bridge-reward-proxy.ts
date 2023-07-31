@@ -16,12 +16,13 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deployer } = await getNamedAccounts();
 
   const logicContract = await deployments.get('BridgeRewardLogic');
+  const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
 
   const data = new BridgeReward__factory().interface.encodeFunctionData('initialize', [
     generalRoninConf[network.name]!.bridgeManagerContract?.address,
     generalRoninConf[network.name]!.bridgeTrackingContract?.address,
     generalRoninConf[network.name]!.bridgeSlashContract?.address,
-    generalRoninConf[network.name]!.validatorContract?.address,
+    validatorContractDeployment.address,
     bridgeRewardConf[network.name]!.rewardPerPeriod,
   ]);
 
@@ -37,6 +38,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['BridgeRewardProxy'];
-deploy.dependencies = ['BridgeRewardLogic', 'CalculateAddresses', 'BridgeSlashProxy'];
+deploy.dependencies = ['BridgeRewardLogic', '_HelperBridgeCalculate', 'BridgeSlashProxy'];
 
 export default deploy;
