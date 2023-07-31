@@ -129,7 +129,7 @@ describe('Ronin Gateway V2 test', () => {
     await TransparentUpgradeableProxyV2__factory.connect(gatewayProxy.address, deployer).changeAdmin(
       bridgeManager.address
     );
-    await bridgeAdminInterface.functionDelegateCalls(
+    await bridgeAdminInterface.functionDelegateCallsGlobal(
       [TargetOption.GatewayContract],
       [
         bridgeContract.interface.encodeFunctionData('setContract', [

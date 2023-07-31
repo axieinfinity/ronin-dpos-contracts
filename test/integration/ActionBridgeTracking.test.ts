@@ -178,7 +178,7 @@ describe('[Integration] Bridge Tracking test', () => {
     await TransparentUpgradeableProxyV2__factory.connect(bridgeContract.address, deployer).changeAdmin(
       bridgeManager.address
     );
-    await bridgeAdminInterface.functionDelegateCalls(
+    await bridgeAdminInterface.functionDelegateCallsGlobal(
       [TargetOption.GatewayContract],
       [
         bridgeContract.interface.encodeFunctionData('setContract', [

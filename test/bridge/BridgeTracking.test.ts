@@ -36,6 +36,7 @@ import {
   createManyOperatorTuples,
   createOperatorTuple,
 } from '../helpers/address-set-types/operator-tuple-type';
+import { BridgeManagerInterface } from '../../src/script/bridge-admin-interface';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
@@ -51,6 +52,7 @@ let roninValidatorSet: MockRoninValidatorSetExtended;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 let bridgeManager: RoninBridgeManager;
+let bridgeManagerInterface: BridgeManagerInterface;
 
 let period: BigNumberish;
 
@@ -110,9 +112,13 @@ describe('Bridge Tracking test', () => {
       bridgeManagerArguments: {
         numerator: bridgeAdminNumerator,
         denominator: bridgeAdminDenominator,
-        operators: operatorTuples.map((_) => _.operator.address),
-        governors: operatorTuples.map((_) => _.governor.address),
-        weights: operatorTuples.map((_) => 100),
+        members: operatorTuples.map((_) => {
+          return {
+            operator: _.operator.address,
+            governor: _.governor.address,
+            weight: 100,
+          };
+        }),
       },
     });
 
@@ -127,20 +133,23 @@ describe('Bridge Tracking test', () => {
       undefined,
       ...trustedOrgs.map((_) => _.governor)
     );
+    bridgeManagerInterface = new BridgeManagerInterface(
+      bridgeManager,
+      network.config.chainId!,
+      undefined,
+      ...operatorTuples.map((_) => _.governor)
+    );
 
     mockGateway = await new MockGatewayForTracking__factory(deployer).deploy(bridgeTrackingAddress);
     await mockGateway.deployed();
 
-    await governanceAdminInterface.functionDelegateCalls(
-      [bridgeTracking.address, governanceAdmin.address],
-      [
-        bridgeTracking.interface.encodeFunctionData('setContract', [ContractType.BRIDGE, mockGateway.address]),
-        governanceAdmin.interface.encodeFunctionData('changeProxyAdmin', [
-          bridgeTracking.address,
-          bridgeManager.address,
-        ]),
-      ]
+    let setContractTx = await bridgeManagerInterface.functionDelegateCall(
+      bridgeTracking.address,
+      bridgeTracking.interface.encodeFunctionData('setContract', [ContractType.BRIDGE, mockGateway.address])
     );
+    await expect(setContractTx)
+      .emit(bridgeTracking, 'ContractUpdated')
+      .withArgs(ContractType.BRIDGE, mockGateway.address);
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();

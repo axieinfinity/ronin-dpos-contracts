@@ -39,7 +39,6 @@ deploy.dependencies = [
   'BridgeRewardLogic',
   'MainchainGatewayV2Logic',
   'RoninGatewayV2Logic',
-  'RoninValidatorSetProxy',
 ];
 
 export default deploy;

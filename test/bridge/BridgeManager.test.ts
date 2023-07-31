@@ -153,7 +153,7 @@ describe('Bridge Manager test', async () => {
         ]),
         500_000
       );
-      signatures = await bridgeManagerInterface.generateSignatures(
+      signatures = await bridgeManagerInterface.generateSignaturesGlobal(
         proposal,
         beforeRelayedOperatorTuples.map((_) => _.governor)
       );
@@ -210,7 +210,7 @@ describe('Bridge Manager test', async () => {
         ]),
         500_000
       );
-      signatures = await bridgeManagerInterface.generateSignatures(
+      signatures = await bridgeManagerInterface.generateSignaturesGlobal(
         proposal,
         beforeRelayedOperatorTuples.map((_) => _.governor)
       );

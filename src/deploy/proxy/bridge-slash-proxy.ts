@@ -4,6 +4,8 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { verifyAddress } from '../../script/verify-address';
 import { BridgeSlash__factory } from '../../types';
+import { Address } from 'hardhat-deploy/dist/types';
+import { Network } from '../../utils';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -14,9 +16,16 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deployer } = await getNamedAccounts();
 
   const logicContract = await deployments.get('BridgeSlashLogic');
+  let validatorContractAddress: Address;
+  if (network.name == Network.Hardhat) {
+    validatorContractAddress = generalRoninConf[network.name]!.validatorContract?.address!;
+  } else {
+    const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
+    validatorContractAddress = validatorContractDeployment.address;
+  }
 
   const data = new BridgeSlash__factory().interface.encodeFunctionData('initialize', [
-    generalRoninConf[network.name]!.validatorContract?.address,
+    validatorContractAddress,
     generalRoninConf[network.name]!.bridgeManagerContract?.address,
     generalRoninConf[network.name]!.bridgeTrackingContract?.address,
   ]);
@@ -25,7 +34,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, data],
+    args: [logicContract.address, generalRoninConf[network.name]!.bridgeManagerContract?.address, data],
     nonce: generalRoninConf[network.name].bridgeSlashContract?.nonce,
   });
   verifyAddress(deployment.address, generalRoninConf[network.name].bridgeSlashContract?.address);
