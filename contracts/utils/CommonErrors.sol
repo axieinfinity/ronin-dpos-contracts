@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import { ContractType } from "./ContractType.sol";
 import { RoleAccess } from "./RoleAccess.sol";
 
+error ErrSyncTooFarPeriod(uint256 period, uint256 latestRewardedPeriod);
 /**
  * @dev Error thrown when an address is expected to be an already created externally owned account (EOA).
  * This error indicates that the provided address is invalid for certain contract operations that require already created EOA.

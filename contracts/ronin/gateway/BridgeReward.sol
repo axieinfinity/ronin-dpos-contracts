@@ -13,7 +13,7 @@ import { IBridgeReward } from "../../interfaces/bridge/IBridgeReward.sol";
 import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
 import { Math } from "../../libraries/Math.sol";
 import { TUint256Slot } from "../../types/Types.sol";
-import { ErrInvalidArguments, ErrLengthMismatch, ErrUnauthorizedCall } from "../../utils/CommonErrors.sol";
+import { ErrSyncTooFarPeriod, ErrInvalidArguments, ErrLengthMismatch, ErrUnauthorizedCall } from "../../utils/CommonErrors.sol";
 
 contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONTransferHelper, Initializable {
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeReward.rewardInfo.slot") - 1
@@ -110,10 +110,7 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
     unchecked {
       uint256 latestRewardedPeriod = getLatestRewardedPeriod();
       if (period < latestRewardedPeriod + 1) revert ErrInvalidArguments(msg.sig);
-      else if (period > latestRewardedPeriod + 1) {
-        // Emit event instead of revert since bridge tracking and voting process depends on this.
-        emit BridgeRewardSyncTooFarPeriod(period, latestRewardedPeriod);
-      }
+      else if (period > latestRewardedPeriod + 1) revert ErrSyncTooFarPeriod(period, latestRewardedPeriod);
     }
     LATEST_REWARDED_PERIOD_SLOT.store(period);
 
