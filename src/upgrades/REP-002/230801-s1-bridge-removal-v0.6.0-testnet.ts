@@ -3,7 +3,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyCall, proxyInterface } from '../upgradeUtils';
 import { VoteType } from '../../script/proposal';
-import { RoninGatewayV2__factory } from '../../types';
+import { BridgeTracking__factory, RoninGatewayV2__factory } from '../../types';
 import { generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { network } from 'hardhat';
 
@@ -16,20 +16,41 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   let { governor } = await getNamedAccounts(); // NOTE: Should double check the `governor` account in the `hardhat.config.ts` file
   console.log('Governor:', governor);
 
+  // Common initialization input
+  const bridgeManagerAddr = (await deployments.get('RoninBridgeManager')).address;
+  const bridgeSlashAddr = (await deployments.get('BridgeSlashProxy')).address;
+  const bridgeRewardAddr = (await deployments.get('BridgeRewardProxy')).address;
+
   // Upgrade current gateway to new gateway logic
   const RoninGatewayV2Addr = generalRoninConf[network.name]!.bridgeContract;
   const RoninGatewayV2LogicDepl = await deployments.get('RoninGatewayV2Logic');
-  const initializeV3_SIG = new RoninGatewayV2__factory().interface.encodeFunctionData('initializeV3');
   const RoninGatewayV2Instr = [
-    proxyInterface.encodeFunctionData('upgradeToAndCall', [RoninGatewayV2LogicDepl.address, initializeV3_SIG]),
+    proxyInterface.encodeFunctionData('upgradeToAndCall', [
+      RoninGatewayV2LogicDepl.address,
+      new RoninGatewayV2__factory().interface.encodeFunctionData('initializeV3', [bridgeManagerAddr]),
+    ]),
   ];
 
+  console.info('RoninGatewayV2Instr', RoninGatewayV2Instr);
+
   // Upgrade current bridge tracking
-  const BridgeTrackingAddrProxy = await deployments.get('BridgeTrackingProxy');
-  const BridgeTrackingAddrLogic = await deployments.get('BridgeTrackingLogic');
+  const BridgeTrackingProxy = await deployments.get('BridgeTrackingProxy');
+  const BridgeTrackingLogic = await deployments.get('BridgeTrackingLogic');
   const BridgeTrackingInstr = [
-    proxyInterface.encodeFunctionData('upgradeToAndCall', [BridgeTrackingAddrLogic.address, initializeV3_SIG]),
+    proxyInterface.encodeFunctionData('upgradeToAndCall', [
+      BridgeTrackingLogic.address,
+      new BridgeTracking__factory().interface.encodeFunctionData('initializeV2'),
+    ]),
+    proxyInterface.encodeFunctionData('functionDelegateCall', [
+      new BridgeTracking__factory().interface.encodeFunctionData('initializeV3', [
+        bridgeManagerAddr,
+        bridgeSlashAddr,
+        bridgeRewardAddr,
+      ]),
+    ]),
   ];
+
+  console.info('BridgeTrackingInstr', BridgeTrackingInstr);
 
   // Propose the proposal
   const blockNumBefore = await ethers.provider.getBlockNumber();
@@ -43,7 +64,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     { from: governor, log: true },
     'proposeProposalForCurrentNetwork',
     proposalExpiryTimestamp, // expiryTimestamp
-    [...RoninGatewayV2Instr.map(() => RoninGatewayV2Addr), ...BridgeTrackingInstr.map(() => BridgeTrackingAddrProxy)], // targets
+    [
+      ...RoninGatewayV2Instr.map(() => RoninGatewayV2Addr),
+      ...BridgeTrackingInstr.map(() => BridgeTrackingProxy.address),
+    ], // targets
     [...RoninGatewayV2Instr, ...BridgeTrackingInstr].map(() => 0), // values
     [...RoninGatewayV2Instr, ...BridgeTrackingInstr], // datas
     [...RoninGatewayV2Instr, ...BridgeTrackingInstr].map(() => 1_000_000), // gasAmounts
