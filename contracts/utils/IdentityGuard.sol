@@ -81,10 +81,12 @@ abstract contract IdentityGuard {
   }
 
   /**
-   * @dev Internal function to require that the specified contract supports the given interface.
+   * @dev Internal function to require that the specified contract supports the given interface. This method handle in
+   * both case that the callee is either or not the proxy admin of the caller. If the contract does not support the
+   * interface `interfaceId` or EIP165, a revert with the corresponding error message is triggered.
+   *
    * @param contractAddr The address of the contract to check for interface support.
    * @param interfaceId The interface ID to check for support.
-   * @notice If the contract does not support the interface `interfaceId` or EIP165, a revert with the corresponding error message is triggered.
    */
   function _requireSupportsInterface(address contractAddr, bytes4 interfaceId) internal view {
     bytes memory supportsInterfaceParams = abi.encodeCall(IERC165.supportsInterface, (interfaceId));

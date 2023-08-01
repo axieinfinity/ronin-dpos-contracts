@@ -291,11 +291,11 @@ contract NewBridgeFokrTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
     }
   }
 
-  function _getOperatorPrivateKey(uint256 idx) internal pure returns (uint256) {
+  function _getOperatorPrivateKey(uint256 idx) internal view returns (uint256) {
     return boundPrivateKey(INITIAL_SEED + idx);
   }
 
-  function _getGovernorPrivateKey(uint256 idx) internal pure returns (uint256) {
+  function _getGovernorPrivateKey(uint256 idx) internal view returns (uint256) {
     return boundPrivateKey(~(INITIAL_SEED + idx));
   }
 }
