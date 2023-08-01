@@ -23,8 +23,6 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   console.info('ValidatorSetInstr', ValidatorSetInstr);
 
-  return;
-
   // Propose the proposal
   const blockNumBefore = await ethers.provider.getBlockNumber();
   const blockBefore = await ethers.provider.getBlock(blockNumBefore);
