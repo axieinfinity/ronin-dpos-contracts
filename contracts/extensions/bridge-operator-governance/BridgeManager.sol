@@ -119,7 +119,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * their operator address blank null `address(0)`, consider add authorization check.
    */
   function updateBridgeOperator(address newBridgeOperator) external onlyGovernor {
-    _requireCreatedEOA(newBridgeOperator);
+    _requireNonZeroAddress(newBridgeOperator);
 
     // Queries the previous bridge operator
     mapping(address => BridgeOperatorInfo) storage _gorvernorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
@@ -354,8 +354,8 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
       governor = governors[i];
       bridgeOperator = bridgeOperators[i];
 
-      _requireCreatedEOA(governor);
-      _requireCreatedEOA(bridgeOperator);
+      _requireNonZeroAddress(governor);
+      _requireNonZeroAddress(bridgeOperator);
       if (voteWeights[i] == 0) revert ErrInvalidVoteWeight(msg.sig);
 
       addeds[i] = !(_governorSet.contains(governor) ||
