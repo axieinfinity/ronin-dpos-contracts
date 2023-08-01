@@ -86,12 +86,20 @@ abstract contract GlobalCoreGovernance is CoreGovernance {
     emit GlobalProposalCreated(round_, proposalHash, proposal, globalProposal.hash(), globalProposal, creator);
   }
 
+  /**
+   * @dev Returns corresponding address of target options. Return address(0) on non-existent target.
+   */
   function resolveTargets(
     GlobalProposal.TargetOption[] calldata targetOptions
   ) external view returns (address[] memory targets) {
     return _resolveTargets({ targetOptions: targetOptions, strict: false });
   }
 
+  /**
+   * @dev Internal helper of {resolveTargets}.
+   *
+   * @param strict When the param is set to `true`, revert on non-existent target.
+   */
   function _resolveTargets(
     GlobalProposal.TargetOption[] memory targetOptions,
     bool strict
@@ -109,6 +117,9 @@ abstract contract GlobalCoreGovernance is CoreGovernance {
 
   /**
    * @dev Updates list of `targetOptions to `targets`.
+   *
+   * Requirement:
+   * - Emit a `TargetOptionsUpdated` event.
    */
   function _updateTargetOptions(GlobalProposal.TargetOption[] memory targetOptions, address[] memory targets) internal {
     for (uint256 i; i < targetOptions.length; ) {
