@@ -46,7 +46,7 @@ contract UnattachBridgeForkTest is RoninTest {
     );
   }
 
-  function test_UsePrevImplLogic(address a, uint256 b) external onWhichFork(_roninFork) {
+  function test_Fork_UsePrevImplLogic(address a, uint256 b) external onWhichFork(_roninFork) {
     _upgradeToVersionSwitcher();
 
     // prev logic contains bridge logic `checkBridgeRewardDeprecatedAtPeriod`
@@ -54,7 +54,7 @@ contract UnattachBridgeForkTest is RoninTest {
     RoninValidatorSet(payable(address(RONIN_VALIDATOR_SET_CONTRACT))).currentPeriod();
   }
 
-  function test_UpgradeToNewImpl_WhenPeriodEnded() external onWhichFork(_roninFork) {
+  function test_Fork_UpgradeToNewImpl_WhenPeriodEnded() external onWhichFork(_roninFork) {
     _upgradeToVersionSwitcher();
 
     address coinbase = block.coinbase;

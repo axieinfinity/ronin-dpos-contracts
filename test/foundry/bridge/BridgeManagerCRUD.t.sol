@@ -23,7 +23,7 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
     _label();
   }
 
-  function test_Fail_MaliciousUpdateBridgeOperator() external {
+  function testFail_MaliciousUpdateBridgeOperator() external {
     (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = getValidInputs(
       DEFAULT_R1,
       DEFAULT_R2,
@@ -38,8 +38,8 @@ contract BridgeManagerCRUDTest is BridgeManagerUtils {
 
     for (uint256 i = 1; i < bridgeOperators.length; ++i) {
       lastOperator = bridgeOperators[i];
-      vm.expectRevert(abi.encodeWithSelector(ErrBridgeOperatorUpdateFailed.selector, lastOperator));
       bridgeManager.updateBridgeOperator(lastOperator);
+      vm.expectRevert(abi.encodeWithSelector(ErrBridgeOperatorUpdateFailed.selector, lastOperator));
     }
 
     vm.stopPrank();

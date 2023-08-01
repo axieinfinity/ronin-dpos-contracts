@@ -53,7 +53,7 @@ contract NewBridgeFokrTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
     _setUpOnETH();
   }
 
-  function test_VoteAddBridgeOperators() external onWhichFork(_roninFork) {
+  function test_Fork_VoteAddBridgeOperators() external onWhichFork(_roninFork) {
     uint256 r1 = 0;
     uint256 r2 = 1;
     uint256 r3 = 2;
@@ -140,7 +140,8 @@ contract NewBridgeFokrTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
 
   function _setUpOnETH() internal onWhichFork(_ethFork) {
     address[] memory callbackRegisters;
-
+    address[] memory targets;
+    GlobalProposal.TargetOption[] memory targetOptions;
     // deploy MainchainBridgeManager
     _ethBridgeManagerContract = MainchainBridgeManager(
       payable(
@@ -155,7 +156,9 @@ contract NewBridgeFokrTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
             callbackRegisters,
             _operators,
             _governors,
-            _weights
+            _weights,
+            targets,
+            targetOptions
           ),
           value: ZERO_VALUE
         })
@@ -181,6 +184,8 @@ contract NewBridgeFokrTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
       params: EMPTY_PARAM
     });
 
+    address[] memory targets;
+    GlobalProposal.TargetOption[] memory targetOptions;
     // precompute RoninBridgeManager address
     bytes memory bridgeManagerParams = abi.encode(
       DEFAULT_NUMERATOR,
@@ -191,7 +196,9 @@ contract NewBridgeFokrTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
       callbackRegisters,
       _operators,
       _governors,
-      _weights
+      _weights,
+      targetOptions,
+      targets
     );
     address bridgeManagerContract = _computeAddress({
       contractName: type(RoninBridgeManager).name,
