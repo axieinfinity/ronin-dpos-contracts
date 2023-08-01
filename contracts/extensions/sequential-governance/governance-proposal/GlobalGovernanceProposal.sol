@@ -13,22 +13,20 @@ abstract contract GlobalGovernanceProposal is GlobalCoreGovernance, CommonGovern
    * @dev Proposes and votes by signature.
    */
   function _proposeGlobalProposalStructAndCastVotes(
-    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures,
-    bytes32 _domainSeparator,
-    address _bridgeManagerContract,
-    address _gatewayContract,
-    address _creator
-  ) internal returns (Proposal.ProposalDetail memory _proposal) {
-    _proposal = _proposeGlobalStruct(_globalProposal, _bridgeManagerContract, _gatewayContract, _creator);
-    bytes32 _globalProposalHash = _globalProposal.hash();
+    GlobalProposal.GlobalProposalDetail calldata globalProposal,
+    Ballot.VoteType[] calldata supports_,
+    Signature[] calldata signatures,
+    bytes32 domainSeparator,
+    address creator
+  ) internal returns (Proposal.ProposalDetail memory proposal) {
+    proposal = _proposeGlobalStruct(globalProposal, creator);
+    bytes32 _globalProposalHash = globalProposal.hash();
     _castVotesBySignatures(
-      _proposal,
-      _supports,
-      _signatures,
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.For)),
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.Against))
+      proposal,
+      supports_,
+      signatures,
+      ECDSA.toTypedDataHash(domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.For)),
+      ECDSA.toTypedDataHash(domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.Against))
     );
   }
 
@@ -36,29 +34,26 @@ abstract contract GlobalGovernanceProposal is GlobalCoreGovernance, CommonGovern
    * @dev Proposes a global proposal struct and casts votes by signature.
    */
   function _castGlobalProposalBySignatures(
-    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures,
-    bytes32 _domainSeparator,
-    address _bridgeManagerContract,
-    address _gatewayContract
+    GlobalProposal.GlobalProposalDetail calldata globalProposal,
+    Ballot.VoteType[] calldata supports_,
+    Signature[] calldata signatures,
+    bytes32 domainSeparator
   ) internal {
-    Proposal.ProposalDetail memory _proposal = _globalProposal.intoProposalDetail(
-      _bridgeManagerContract,
-      _gatewayContract
+    Proposal.ProposalDetail memory _proposal = globalProposal.intoProposalDetail(
+      _resolveTargets({ targetOptions: globalProposal.targetOptions, strict: true })
     );
 
-    bytes32 _proposalHash = _proposal.hash();
-    if (vote[0][_proposal.nonce].hash != _proposalHash)
-      revert ErrInvalidProposal(_proposalHash, vote[0][_proposal.nonce].hash);
+    bytes32 proposalHash = _proposal.hash();
+    if (vote[0][_proposal.nonce].hash != proposalHash)
+      revert ErrInvalidProposal(proposalHash, vote[0][_proposal.nonce].hash);
 
-    bytes32 _globalProposalHash = _globalProposal.hash();
+    bytes32 globalProposalHash = globalProposal.hash();
     _castVotesBySignatures(
       _proposal,
-      _supports,
-      _signatures,
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.For)),
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.Against))
+      supports_,
+      signatures,
+      ECDSA.toTypedDataHash(domainSeparator, Ballot.hash(globalProposalHash, Ballot.VoteType.For)),
+      ECDSA.toTypedDataHash(domainSeparator, Ballot.hash(globalProposalHash, Ballot.VoteType.Against))
     );
   }
 
@@ -66,19 +61,15 @@ abstract contract GlobalGovernanceProposal is GlobalCoreGovernance, CommonGovern
    * @dev See {CommonGovernanceProposal-_getProposalSignatures}
    */
   function getGlobalProposalSignatures(
-    uint256 _round
-  )
-    external
-    view
-    returns (address[] memory _voters, Ballot.VoteType[] memory _supports, Signature[] memory _signatures)
-  {
-    return _getProposalSignatures(0, _round);
+    uint256 round_
+  ) external view returns (address[] memory voters, Ballot.VoteType[] memory supports_, Signature[] memory signatures) {
+    return _getProposalSignatures(0, round_);
   }
 
   /**
    * @dev See {CommonGovernanceProposal-_proposalVoted}
    */
-  function globalProposalVoted(uint256 _round, address _voter) external view returns (bool) {
-    return _proposalVoted(0, _round, _voter);
+  function globalProposalVoted(uint256 round_, address voter) external view returns (bool) {
+    return _proposalVoted(0, round_, voter);
   }
 }

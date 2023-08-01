@@ -10,10 +10,11 @@ library GlobalProposal {
   error ErrUnsupportedTarget(bytes32 proposalHash, uint256 targetNumber);
 
   enum TargetOption {
-    BridgeManager,
-    GatewayContract
+    /* 0 */ BridgeManager,
+    /* 1 */ GatewayContract,
+    /* 2 */ BridgeReward,
+    /* 3 */ BridgeSlash
   }
-  //TODO: add slash and reward contracts into the struct
 
   struct GlobalProposalDetail {
     // Nonce to make sure proposals are executed in order
@@ -31,17 +32,17 @@ library GlobalProposal {
   /**
    * @dev Returns struct hash of the proposal.
    */
-  function hash(GlobalProposalDetail memory _proposal) internal pure returns (bytes32 digest_) {
-    uint256[] memory _values = _proposal.values;
-    TargetOption[] memory _targets = _proposal.targetOptions;
-    bytes32[] memory _calldataHashList = new bytes32[](_proposal.calldatas.length);
-    uint256[] memory _gasAmounts = _proposal.gasAmounts;
+  function hash(GlobalProposalDetail memory self) internal pure returns (bytes32 digest_) {
+    uint256[] memory values = self.values;
+    TargetOption[] memory targets = self.targetOptions;
+    bytes32[] memory calldataHashList = new bytes32[](self.calldatas.length);
+    uint256[] memory gasAmounts = self.gasAmounts;
 
-    for (uint256 _i; _i < _calldataHashList.length; ) {
-      _calldataHashList[_i] = keccak256(_proposal.calldatas[_i]);
+    for (uint256 i; i < calldataHashList.length; ) {
+      calldataHashList[i] = keccak256(self.calldatas[i]);
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
 
@@ -62,17 +63,17 @@ library GlobalProposal {
     assembly {
       let ptr := mload(0x40)
       mstore(ptr, TYPE_HASH)
-      mstore(add(ptr, 0x20), mload(_proposal)) // _proposal.nonce
-      mstore(add(ptr, 0x40), mload(add(_proposal, 0x20))) // _proposal.expiryTimestamp
+      mstore(add(ptr, 0x20), mload(self)) // _proposal.nonce
+      mstore(add(ptr, 0x40), mload(add(self, 0x20))) // _proposal.expiryTimestamp
 
       let arrayHashed
-      arrayHashed := keccak256(add(_targets, 32), mul(mload(_targets), 32)) // targetsHash
+      arrayHashed := keccak256(add(targets, 32), mul(mload(targets), 32)) // targetsHash
       mstore(add(ptr, 0x60), arrayHashed)
-      arrayHashed := keccak256(add(_values, 32), mul(mload(_values), 32)) // _valuesHash
+      arrayHashed := keccak256(add(values, 32), mul(mload(values), 32)) // _valuesHash
       mstore(add(ptr, 0x80), arrayHashed)
-      arrayHashed := keccak256(add(_calldataHashList, 32), mul(mload(_calldataHashList), 32)) // _calldatasHash
+      arrayHashed := keccak256(add(calldataHashList, 32), mul(mload(calldataHashList), 32)) // _calldatasHash
       mstore(add(ptr, 0xa0), arrayHashed)
-      arrayHashed := keccak256(add(_gasAmounts, 32), mul(mload(_gasAmounts), 32)) // _gasAmountsHash
+      arrayHashed := keccak256(add(gasAmounts, 32), mul(mload(gasAmounts), 32)) // _gasAmountsHash
       mstore(add(ptr, 0xc0), arrayHashed)
       digest_ := keccak256(ptr, 0xe0)
     }
@@ -82,27 +83,21 @@ library GlobalProposal {
    * @dev Converts into the normal proposal.
    */
   function intoProposalDetail(
-    GlobalProposalDetail memory _proposal,
-    address _bridgeManager,
-    address _gatewayContract
-  ) internal pure returns (Proposal.ProposalDetail memory _detail) {
-    _detail.nonce = _proposal.nonce;
-    _detail.expiryTimestamp = _proposal.expiryTimestamp;
-    _detail.chainId = 0;
-    _detail.targets = new address[](_proposal.targetOptions.length);
-    _detail.values = _proposal.values;
-    _detail.calldatas = _proposal.calldatas;
-    _detail.gasAmounts = _proposal.gasAmounts;
+    GlobalProposalDetail memory self,
+    address[] memory targets
+  ) internal pure returns (Proposal.ProposalDetail memory detail_) {
+    detail_.nonce = self.nonce;
+    detail_.expiryTimestamp = self.expiryTimestamp;
+    detail_.chainId = 0;
+    detail_.targets = new address[](self.targetOptions.length);
+    detail_.values = self.values;
+    detail_.calldatas = self.calldatas;
+    detail_.gasAmounts = self.gasAmounts;
 
-    for (uint256 _i; _i < _proposal.targetOptions.length; ) {
-      if (_proposal.targetOptions[_i] == TargetOption.GatewayContract) {
-        _detail.targets[_i] = _gatewayContract;
-      } else if (_proposal.targetOptions[_i] == TargetOption.BridgeManager) {
-        _detail.targets[_i] = _bridgeManager;
-      } else revert ErrUnsupportedTarget(hash(_proposal), _i);
-
+    for (uint256 i; i < self.targetOptions.length; ) {
+      detail_.targets[i] = targets[i];
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }

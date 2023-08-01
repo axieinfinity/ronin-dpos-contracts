@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { CoreGovernance } from "../extensions/sequential-governance/CoreGovernance.sol";
-import { GlobalGovernanceRelay } from "../extensions/sequential-governance/governance-relay/GlobalGovernanceRelay.sol";
+import { GlobalCoreGovernance, GlobalGovernanceRelay } from "../extensions/sequential-governance/governance-relay/GlobalGovernanceRelay.sol";
 import { GovernanceRelay } from "../extensions/sequential-governance/governance-relay/GovernanceRelay.sol";
 import { ContractType, BridgeManager } from "../extensions/bridge-operator-governance/BridgeManager.sol";
 import { Ballot } from "../libraries/Ballot.sol";
@@ -21,10 +21,13 @@ contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGoverna
     address[] memory callbackRegisters,
     address[] memory bridgeOperators,
     address[] memory governors,
-    uint96[] memory voteWeights
+    uint96[] memory voteWeights,
+    GlobalProposal.TargetOption[] memory targetOptions,
+    address[] memory targets
   )
     payable
     CoreGovernance(DEFAULT_EXPIRY_DURATION)
+    GlobalCoreGovernance(targetOptions, targets)
     BridgeManager(num, denom, roninChainId, bridgeContract, callbackRegisters, bridgeOperators, governors, voteWeights)
   {}
 
@@ -35,11 +38,11 @@ contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGoverna
    * - The method caller is governor.
    */
   function relayProposal(
-    Proposal.ProposalDetail calldata _proposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures
+    Proposal.ProposalDetail calldata proposal,
+    Ballot.VoteType[] calldata supports_,
+    Signature[] calldata signatures
   ) external onlyGovernor {
-    _relayProposal(_proposal, _supports, _signatures, DOMAIN_SEPARATOR, msg.sender);
+    _relayProposal(proposal, supports_, signatures, DOMAIN_SEPARATOR, msg.sender);
   }
 
   /**
@@ -49,18 +52,16 @@ contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGoverna
    * - The method caller is governor.
    */
   function relayGlobalProposal(
-    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures
+    GlobalProposal.GlobalProposalDetail calldata globalProposal,
+    Ballot.VoteType[] calldata supports_,
+    Signature[] calldata signatures
   ) external onlyGovernor {
     _relayGlobalProposal({
-      _globalProposal: _globalProposal,
-      _supports: _supports,
-      _signatures: _signatures,
-      _domainSeparator: DOMAIN_SEPARATOR,
-      _bridgeManager: address(this),
-      _gatewayContract: getContract(ContractType.BRIDGE),
-      _creator: msg.sender
+      globalProposal: globalProposal,
+      supports_: supports_,
+      signatures: signatures,
+      domainSeparator: DOMAIN_SEPARATOR,
+      creator: msg.sender
     });
   }
 

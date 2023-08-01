@@ -2,8 +2,9 @@ import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { generalRoninConf, roninchainNetworks } from '../configs/config';
-import { bridgeManagerConf } from '../configs/bridge-manager';
+import { TargetOptionStruct, bridgeManagerConf } from '../configs/bridge-manager';
 import { verifyAddress } from '../script/verify-address';
+import { TargetOption } from '../script/proposal';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -12,6 +13,25 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
+
+  const targets: TargetOptionStruct[] = [
+    {
+      option: TargetOption.BridgeManager,
+      target: generalRoninConf[network.name].bridgeManagerContract?.address!,
+    },
+    {
+      option: TargetOption.GatewayContract,
+      target: generalRoninConf[network.name].bridgeContract,
+    },
+    {
+      option: TargetOption.BridgeReward,
+      target: generalRoninConf[network.name].bridgeRewardContract?.address!,
+    },
+    {
+      option: TargetOption.BridgeSlash,
+      target: generalRoninConf[network.name].bridgeSlashContract?.address!,
+    },
+  ];
 
   const deployment = await deploy('RoninBridgeManager', {
     from: deployer,
@@ -26,6 +46,8 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
       bridgeManagerConf[network.name]?.members?.map((_) => _.operator),
       bridgeManagerConf[network.name]?.members?.map((_) => _.governor),
       bridgeManagerConf[network.name]?.members?.map((_) => _.weight),
+      targets.map((_) => _.option),
+      targets.map((_) => _.target),
     ],
     nonce: generalRoninConf[network.name].bridgeManagerContract?.nonce,
   });

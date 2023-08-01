@@ -30,6 +30,8 @@ export enum VoteStatus {
 export enum TargetOption {
   BridgeManager = 0,
   GatewayContract = 1,
+  BridgeReward = 2,
+  BridgeSlash = 3,
 }
 
 export const ballotParamTypes = ['bytes32', 'bytes32', 'uint8'];

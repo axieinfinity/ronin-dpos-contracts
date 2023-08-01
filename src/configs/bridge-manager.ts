@@ -1,6 +1,7 @@
 import { BigNumber, BigNumberish } from 'ethers';
 import { LiteralNetwork, Network } from '../utils';
 import { Address } from 'hardhat-deploy/dist/types';
+import { TargetOption } from '../script/proposal';
 
 export type BridgeManagerMemberStruct = {
   governor: Address;
@@ -8,11 +9,17 @@ export type BridgeManagerMemberStruct = {
   weight: BigNumberish;
 };
 
+export type TargetOptionStruct = {
+  option: TargetOption;
+  target: Address;
+};
+
 export interface BridgeManagerArguments {
   numerator?: BigNumberish;
   denominator?: BigNumberish;
   expiryDuration?: BigNumberish;
   members?: BridgeManagerMemberStruct[];
+  targets?: TargetOptionStruct[];
 }
 
 export interface BridgeManagerConfig {
