@@ -17,7 +17,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const targets: TargetOptionStruct[] = [
     {
       option: TargetOption.GatewayContract,
-      target: generalRoninConf[network.name].bridgeContract,
+      target: generalMainchainConf[network.name].bridgeContract,
     },
   ];
 
@@ -27,8 +27,8 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     args: [
       bridgeManagerConf[network.name]?.numerator,
       bridgeManagerConf[network.name]?.denominator,
-      generalRoninConf[network.name].roninChainId,
-      generalRoninConf[network.name].bridgeContract,
+      generalMainchainConf[network.name].roninChainId,
+      generalMainchainConf[network.name].bridgeContract,
       [],
       bridgeManagerConf[network.name]?.members?.map((_) => _.operator),
       bridgeManagerConf[network.name]?.members?.map((_) => _.governor),
