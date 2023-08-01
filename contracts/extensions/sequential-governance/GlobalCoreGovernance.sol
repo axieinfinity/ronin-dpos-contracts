@@ -22,10 +22,11 @@ abstract contract GlobalCoreGovernance is CoreGovernance {
   );
 
   /// @dev Emitted when the target options are updated
-  event TargetOptionsUpdated(GlobalProposal.TargetOption[] indexed targetOptions, address[] indexed addrs);
+  event TargetOptionUpdated(GlobalProposal.TargetOption indexed targetOption, address indexed addr);
 
   constructor(GlobalProposal.TargetOption[] memory targetOptions, address[] memory addrs) {
-    _updateTargetOptions(targetOptions, addrs);
+    _updateTargetOption(GlobalProposal.TargetOption.BridgeManager, address(this));
+    _updateManyTargetOption(targetOptions, addrs);
   }
 
   /**
@@ -117,31 +118,44 @@ abstract contract GlobalCoreGovernance is CoreGovernance {
   }
 
   /**
-   * @dev Updates list of `targetOptions to `targets`.
+   * @dev Updates list of `targetOptions` to `targets`.
    *
    * Requirement:
    * - Only allow self-call through proposal.
    * */
-  function updateTargetOptions(GlobalProposal.TargetOption[] memory targetOptions, address[] memory targets) external {
+  function updateManyTargetOption(
+    GlobalProposal.TargetOption[] memory targetOptions,
+    address[] memory targets
+  ) external {
     // HACK: Cannot reuse the existing library due to too deep stack
     if (msg.sender != address(this)) revert ErrOnlySelfCall(msg.sig);
-    _updateTargetOptions(targetOptions, targets);
+    _updateManyTargetOption(targetOptions, targets);
   }
 
   /**
-   * @dev Updates list of `targetOptions to `targets`.
-   *
-   * Requirement:
-   * - Emit a `TargetOptionsUpdated` event.
+   * @dev Updates list of `targetOptions` to `targets`.
    */
-  function _updateTargetOptions(GlobalProposal.TargetOption[] memory targetOptions, address[] memory targets) internal {
+  function _updateManyTargetOption(
+    GlobalProposal.TargetOption[] memory targetOptions,
+    address[] memory targets
+  ) internal {
     for (uint256 i; i < targetOptions.length; ) {
-      _targetOptionsMap[targetOptions[i]] = targets[i];
+      if (targets[i] == address(this)) revert ErrInvalidArguments(msg.sig);
+      _updateTargetOption(targetOptions[i], targets[i]);
       unchecked {
         ++i;
       }
     }
+  }
 
-    emit TargetOptionsUpdated(targetOptions, targets);
+  /**
+   * @dev Updates `targetOption` to `target`.
+   *
+   * Requirement:
+   * - Emit a `TargetOptionUpdated` event.
+   */
+  function _updateTargetOption(GlobalProposal.TargetOption targetOption, address target) internal {
+    _targetOptionsMap[targetOption] = target;
+    emit TargetOptionUpdated(targetOption, target);
   }
 }
