@@ -119,6 +119,18 @@ abstract contract GlobalCoreGovernance is CoreGovernance {
    * @dev Updates list of `targetOptions to `targets`.
    *
    * Requirement:
+   * - Only allow self-call through proposal.
+   * */
+  function updateTargetOptions(GlobalProposal.TargetOption[] memory targetOptions, address[] memory targets) external {
+    // HACK: Cannot reuse the existing library due to too deep stack
+    if (msg.sender != address(this)) revert ErrOnlySelfCall(msg.sig);
+    _updateTargetOptions(targetOptions, targets);
+  }
+
+  /**
+   * @dev Updates list of `targetOptions to `targets`.
+   *
+   * Requirement:
    * - Emit a `TargetOptionsUpdated` event.
    */
   function _updateTargetOptions(GlobalProposal.TargetOption[] memory targetOptions, address[] memory targets) internal {
