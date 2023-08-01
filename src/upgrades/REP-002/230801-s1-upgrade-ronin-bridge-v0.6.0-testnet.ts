@@ -1,5 +1,3 @@
-/// yarn hardhat deploy --tags 230801_S1_BridgeRemoval_V0_6_0 --network ronin-testnet
-
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyCall, proxyInterface } from '../upgradeUtils';
 import { VoteType } from '../../script/proposal';
@@ -77,6 +75,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   console.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
-deploy.tags = ['230801_S1_BridgeRemoval_V0_6_0'];
+// yarn hardhat deploy --tags 230801_S1_UpgradeRoninBridge_V0_6_0 --network ronin-testnet
+deploy.tags = ['230801_S1_UpgradeRoninBridge_V0_6_0'];
 
 export default deploy;

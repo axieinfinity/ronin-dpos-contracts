@@ -126,6 +126,7 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
+    governor: 0,
     // governor: '0x00000000000000000000000000000000deadbeef',
     // governor: 'trezor://0x0000000000000000000000000000000000000000',
   },
