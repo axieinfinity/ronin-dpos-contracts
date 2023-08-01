@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import { AddressArrayUtils } from "../libraries/AddressArrayUtils.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { TransparentUpgradeableProxyV2 } from "../extensions/TransparentUpgradeableProxyV2.sol";
 import { ErrAddressIsNotCreatedEOA, ErrZeroAddress, ErrOnlySelfCall, ErrZeroCodeContract, ErrUnsupportedInterface } from "./CommonErrors.sol";
 
 abstract contract IdentityGuard {
@@ -86,8 +87,14 @@ abstract contract IdentityGuard {
    * @notice If the contract does not support the interface `interfaceId` or EIP165, a revert with the corresponding error message is triggered.
    */
   function _requireSupportsInterface(address contractAddr, bytes4 interfaceId) internal view {
-    if (!IERC165(contractAddr).supportsInterface(interfaceId)) {
-      revert ErrUnsupportedInterface(interfaceId, contractAddr);
+    bytes memory supportsInterfaceParams = abi.encodeCall(IERC165.supportsInterface, (interfaceId));
+    (bool success, bytes memory returnOrRevertData) = contractAddr.staticcall(supportsInterfaceParams);
+    if (!success) {
+      (success, returnOrRevertData) = contractAddr.staticcall(
+        abi.encodeCall(TransparentUpgradeableProxyV2.functionDelegateCall, (supportsInterfaceParams))
+      );
+      if (!success) revert ErrUnsupportedInterface(interfaceId, contractAddr);
     }
+    if (!abi.decode(returnOrRevertData, (bool))) revert ErrUnsupportedInterface(interfaceId, contractAddr);
   }
 }
