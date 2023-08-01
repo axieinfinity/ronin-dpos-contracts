@@ -270,25 +270,6 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getBridgeOperatorWeights(
-    address[] calldata bridgeOperators
-  ) external view returns (uint256[] memory weights) {
-    uint256 length = bridgeOperators.length;
-    weights = new uint256[](length);
-    mapping(address => address) storage _governorOf = _getGovernorOf();
-    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
-
-    for (uint256 i; i < length; ) {
-      weights[i] = _governorToBridgeOperatorInfo[_governorOf[bridgeOperators[i]]].voteWeight;
-      unchecked {
-        ++i;
-      }
-    }
-  }
-
-  /**
-   * @inheritdoc IBridgeManager
-   */
   function getBridgeOperatorWeight(address bridgeOperator) external view returns (uint256 weight) {
     mapping(address => address) storage _governorOf = _getGovernorOf();
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();

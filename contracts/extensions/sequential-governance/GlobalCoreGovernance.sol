@@ -21,6 +21,7 @@ abstract contract GlobalCoreGovernance is CoreGovernance {
     address creator
   );
 
+  /// @dev Emitted when the target options are updated
   event TargetOptionsUpdated(GlobalProposal.TargetOption[] indexed targetOptions, address[] indexed addrs);
 
   constructor(GlobalProposal.TargetOption[] memory targetOptions, address[] memory addrs) {
@@ -42,7 +43,7 @@ abstract contract GlobalCoreGovernance is CoreGovernance {
     address creator
   ) internal virtual {
     uint256 round_ = _createVotingRound(0);
-    GlobalProposal.GlobalProposalDetail memory _globalProposal = GlobalProposal.GlobalProposalDetail(
+    GlobalProposal.GlobalProposalDetail memory globalProposal = GlobalProposal.GlobalProposalDetail(
       round_,
       expiryTimestamp,
       targetOptions,
@@ -50,14 +51,14 @@ abstract contract GlobalCoreGovernance is CoreGovernance {
       calldatas,
       gasAmounts
     );
-    Proposal.ProposalDetail memory proposal = _globalProposal.intoProposalDetail(
+    Proposal.ProposalDetail memory proposal = globalProposal.intoProposalDetail(
       _resolveTargets({ targetOptions: targetOptions, strict: true })
     );
     proposal.validate(_proposalExpiryDuration);
 
     bytes32 proposalHash = proposal.hash();
     _saveVotingRound(vote[0][round_], proposalHash, expiryTimestamp);
-    emit GlobalProposalCreated(round_, proposalHash, proposal, _globalProposal.hash(), _globalProposal, creator);
+    emit GlobalProposalCreated(round_, proposalHash, proposal, globalProposal.hash(), globalProposal, creator);
   }
 
   /**
