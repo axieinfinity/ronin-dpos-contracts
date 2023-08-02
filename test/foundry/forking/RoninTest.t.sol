@@ -12,7 +12,7 @@ import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.so
 import { RoninGovernanceAdmin } from "@ronin/contracts/ronin/RoninGovernanceAdmin.sol";
 import { RoninValidatorSet } from "@ronin/contracts/ronin/validator/RoninValidatorSet.sol";
 
-import { MainchainGatewayV2 } from "@ronin/contracts/mainchain/MainchainGatewayV2.sol";
+import "@ronin/contracts/mainchain/MainchainGatewayV2.sol";
 
 import "./utils/Consts.sol";
 
@@ -214,6 +214,17 @@ abstract contract RoninTest is Test, ITransparentUpgradeableProxyDeployer {
     vm.makePersistent(addr);
     if (defaultBalance != 0) {
       vm.deal(addr, defaultBalance);
+    }
+  }
+
+  function _createPersistentAccount(
+    string memory label,
+    uint256 defaultBalance
+  ) internal returns (Account memory account) {
+    account = makeAccount(label);
+    vm.makePersistent(account.addr);
+    if (defaultBalance != 0) {
+      vm.deal(account.addr, defaultBalance);
     }
   }
 }
