@@ -1,12 +1,13 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { explorerUrl, proxyCall, proxyInterface } from '../upgradeUtils';
+import { explorerUrl, proxyInterface } from '../upgradeUtils';
 import { VoteType } from '../../script/proposal';
-import { BridgeTracking__factory, MainchainGatewayV2__factory, RoninGatewayV2__factory } from '../../types';
-import { generalMainchainConf, generalRoninConf, mainchainNetworks, roninchainNetworks } from '../../configs/config';
-import { network } from 'hardhat';
+import { MainchainGatewayV2__factory } from '../../types';
+import { generalMainchainConf, roninchainNetworks } from '../../configs/config';
+import { companionNetworks, network } from 'hardhat';
+import { networkMapping } from '../../configs/network';
 
-const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
-  if (!mainchainNetworks.includes(network.name!)) {
+const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks }: HardhatRuntimeEnvironment) => {
+  if (!roninchainNetworks.includes(network.name!)) {
     return;
   }
 
@@ -14,12 +15,16 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   let { governor } = await getNamedAccounts(); // NOTE: Should double check the `governor` account in the `hardhat.config.ts` file
   console.log('Governor:', governor);
 
-  // Common initialization input
-  const bridgeManagerAddr = (await deployments.get('MainchainBridgeManager')).address;
+  const companionNetwork = companionNetworks['mainchain'];
+  const companionNetworkName = networkMapping[network.name];
+  const companionNetworkChainId = await companionNetwork.getChainId();
 
+  // Using companion networks to get info from mainchain's deployments
   // Upgrade current gateway to new gateway logic
-  const MainchainGatewayV2Addr = generalMainchainConf[network.name]!.bridgeContract;
-  const MainchainGatewayV2LogicDepl = await deployments.get('RoninGatewayV2Logic');
+  deployments.log('Using deployments on companion network. ChainId:', companionNetworkChainId);
+  const bridgeManagerAddr = (await companionNetwork.deployments.get('MainchainBridgeManager')).address;
+  const MainchainGatewayV2Addr = generalMainchainConf[companionNetworkName]!.bridgeContract;
+  const MainchainGatewayV2LogicDepl = await companionNetwork.deployments.get('MainchainGatewayV2Logic');
   const MainchainGatewayV2Instr = [
     proxyInterface.encodeFunctionData('upgradeToAndCall', [
       MainchainGatewayV2LogicDepl.address,
@@ -39,19 +44,19 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const tx = await execute(
     'RoninGovernanceAdmin',
     { from: governor, log: true },
-    'proposeProposalForCurrentNetwork',
+    'propose',
+    companionNetworkChainId,
     proposalExpiryTimestamp, // expiryTimestamp
     [...MainchainGatewayV2Instr.map(() => MainchainGatewayV2Addr)], // targets
     [...MainchainGatewayV2Instr].map(() => 0), // values
     [...MainchainGatewayV2Instr], // datas
-    [...MainchainGatewayV2Instr].map(() => 1_000_000), // gasAmounts
-    VoteType.For // ballot type
+    [...MainchainGatewayV2Instr].map(() => 1_000_000) // gasAmounts
   );
 
-  console.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
+  deployments.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
-// yarn hardhat deploy --tags 230801_S2_UpgradeMainchainBridge_V0_6_0 --network goerli
+// yarn hardhat deploy --tags 230801_S2_UpgradeMainchainBridge_V0_6_0 --network ronin-testnet
 deploy.tags = ['230801_S2_UpgradeMainchainBridge_V0_6_0'];
 
 export default deploy;

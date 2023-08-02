@@ -42,7 +42,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     VoteType.For // ballot type
   );
 
-  console.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
+  deployments.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
 // yarn hardhat deploy --tags 230801_S5_ConditionalUpgradeValidatorSet_V0_6_0 --network ronin-testnet
