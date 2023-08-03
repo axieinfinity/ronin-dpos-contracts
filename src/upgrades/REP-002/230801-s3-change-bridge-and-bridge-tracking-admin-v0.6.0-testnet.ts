@@ -1,7 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyInterface } from '../upgradeUtils';
 import { VoteType } from '../../script/proposal';
-import { BridgeTracking__factory, RoninGatewayV2__factory } from '../../types';
 import { generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { network } from 'hardhat';
 
@@ -16,39 +15,16 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   // Common initialization input
   const bridgeManagerAddr = (await deployments.get('RoninBridgeManager')).address;
-  const bridgeSlashAddr = (await deployments.get('BridgeSlashProxy')).address;
-  const bridgeRewardAddr = (await deployments.get('BridgeRewardProxy')).address;
 
-  // Upgrade current gateway to new gateway logic
+  // Change Admin of Bridge to Bridge Manager
   const RoninGatewayV2Addr = generalRoninConf[network.name]!.bridgeContract;
-  const RoninGatewayV2LogicDepl = await deployments.get('RoninGatewayV2Logic');
-  const RoninGatewayV2Instr = [
-    proxyInterface.encodeFunctionData('upgradeToAndCall', [
-      RoninGatewayV2LogicDepl.address,
-      new RoninGatewayV2__factory().interface.encodeFunctionData('initializeV3', [bridgeManagerAddr]),
-    ]),
-  ];
+  const RoninGatewayV2Instr = [proxyInterface.encodeFunctionData('changeAdmin', [bridgeManagerAddr])];
+
+  // Change Admin of Bridge Tracking to Bridge Manager
+  const BridgeTrackingProxy = await deployments.get('BridgeTrackingProxy');
+  const BridgeTrackingInstr = [proxyInterface.encodeFunctionData('changeAdmin', [bridgeManagerAddr])];
 
   console.info('RoninGatewayV2Instr', RoninGatewayV2Instr);
-
-  // Upgrade current bridge tracking
-  const BridgeTrackingProxy = await deployments.get('BridgeTrackingProxy');
-  const BridgeTrackingLogic = await deployments.get('BridgeTrackingLogic');
-  const BridgeTrackingInstr = [
-    proxyInterface.encodeFunctionData('upgradeToAndCall', [
-      BridgeTrackingLogic.address,
-      new BridgeTracking__factory().interface.encodeFunctionData('initializeV2'),
-    ]),
-    proxyInterface.encodeFunctionData('functionDelegateCall', [
-      new BridgeTracking__factory().interface.encodeFunctionData('initializeV3', [
-        bridgeManagerAddr,
-        bridgeSlashAddr,
-        bridgeRewardAddr,
-      ]),
-    ]),
-  ];
-
-  console.info('BridgeTrackingInstr', BridgeTrackingInstr);
 
   // Propose the proposal
   const blockNumBefore = await ethers.provider.getBlockNumber();
@@ -75,7 +51,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   deployments.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
-// yarn hardhat deploy --tags 230801_S1_UpgradeRoninBridge_V0_6_0 --network ronin-testnet
-deploy.tags = ['230801_S1_UpgradeRoninBridge_V0_6_0'];
+// yarn hardhat deploy --tags 230801_S3_ChangeAdminOfBridgeAndBridgeTracking --network ronin-testnet
+deploy.tags = ['230801_S3_ChangeAdminOfBridgeAndBridgeTracking'];
 
 export default deploy;

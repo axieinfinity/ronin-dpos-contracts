@@ -1,6 +1,5 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyInterface } from '../upgradeUtils';
-import { MainchainGatewayV2__factory } from '../../types';
 import { generalMainchainConf, roninchainNetworks } from '../../configs/config';
 import { network } from 'hardhat';
 import { networkMapping } from '../../configs/network';
@@ -14,6 +13,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks
   let { governor } = await getNamedAccounts(); // NOTE: Should double check the `governor` account in the `hardhat.config.ts` file
   console.log('Governor:', governor);
 
+  // Common initialization input
   const companionNetwork = companionNetworks['mainchain'];
   const companionNetworkName = networkMapping[network.name];
   const companionNetworkChainId = await companionNetwork.getChainId();
@@ -23,14 +23,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks
   deployments.log('Using deployments on companion network. ChainId:', companionNetworkChainId);
   const bridgeManagerAddr = (await companionNetwork.deployments.get('MainchainBridgeManager')).address;
   const MainchainGatewayV2Addr = generalMainchainConf[companionNetworkName]!.bridgeContract;
-  const MainchainGatewayV2LogicDepl = await companionNetwork.deployments.get('MainchainGatewayV2Logic');
-  const MainchainGatewayV2Instr = [
-    proxyInterface.encodeFunctionData('upgradeToAndCall', [
-      MainchainGatewayV2LogicDepl.address,
-      new MainchainGatewayV2__factory().interface.encodeFunctionData('initializeV2', [bridgeManagerAddr]),
-    ]),
-  ];
-
+  const MainchainGatewayV2Instr = [proxyInterface.encodeFunctionData('changeAdmin', [bridgeManagerAddr])];
   console.info('MainchainGatewayV2Instr', MainchainGatewayV2Instr);
 
   // Propose the proposal
@@ -65,7 +58,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks
   deployments.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
-// yarn hardhat deploy --tags 230801_S2_UpgradeMainchainBridge_V0_6_0 --network ronin-testnet
-deploy.tags = ['230801_S2_UpgradeMainchainBridge_V0_6_0'];
+// yarn hardhat deploy --tags 230801_S4_ChangeAdminOfBridge --network ronin-testnet
+deploy.tags = ['230801_S4_ChangeAdminOfBridge'];
 
 export default deploy;
