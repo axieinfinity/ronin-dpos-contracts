@@ -3,7 +3,6 @@ import { explorerUrl, proxyInterface } from '../upgradeUtils';
 import { MainchainGatewayV2__factory } from '../../types';
 import { generalMainchainConf, roninchainNetworks } from '../../configs/config';
 import { network } from 'hardhat';
-import { networkMapping } from '../../configs/network';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -15,7 +14,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks
   console.log('Governor:', governor);
 
   const companionNetwork = companionNetworks['mainchain'];
-  const companionNetworkName = networkMapping[network.name];
+  const companionNetworkName = network.companionNetworks['mainchain'];
   const companionNetworkChainId = await companionNetwork.getChainId();
 
   // Using companion networks to get info from mainchain's deployments

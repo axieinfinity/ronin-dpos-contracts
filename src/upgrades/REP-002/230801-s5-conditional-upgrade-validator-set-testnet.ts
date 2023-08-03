@@ -1,10 +1,8 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { explorerUrl, proxyCall, proxyInterface } from '../upgradeUtils';
+import { explorerUrl, proxyInterface } from '../upgradeUtils';
 import { VoteType } from '../../script/proposal';
-import { BridgeTracking__factory, RoninGatewayV2__factory } from '../../types';
-import { generalRoninConf, roninchainNetworks } from '../../configs/config';
+import { roninchainNetworks } from '../../configs/config';
 import { network } from 'hardhat';
-import { Network } from '../../utils';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
