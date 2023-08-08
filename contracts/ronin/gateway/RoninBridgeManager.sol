@@ -4,14 +4,10 @@ pragma solidity ^0.8.0;
 import { ContractType, RoleAccess, ErrUnauthorized, BridgeManager } from "../../extensions/bridge-operator-governance/BridgeManager.sol";
 import { Ballot, GlobalProposal, Proposal, GovernanceProposal } from "../../extensions/sequential-governance/governance-proposal/GovernanceProposal.sol";
 import { CoreGovernance, GlobalCoreGovernance, GlobalGovernanceProposal } from "../../extensions/sequential-governance/governance-proposal/GlobalGovernanceProposal.sol";
-import { IsolatedGovernance } from "../../libraries/IsolatedGovernance.sol";
-import { BridgeOperatorsBallot } from "../../libraries/BridgeOperatorsBallot.sol";
 import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
 import { ErrQueryForEmptyVote } from "../../utils/CommonErrors.sol";
 
 contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernanceProposal {
-  using IsolatedGovernance for IsolatedGovernance.Vote;
-
   constructor(
     uint256 num,
     uint256 denom,
