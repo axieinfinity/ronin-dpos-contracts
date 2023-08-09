@@ -18,7 +18,8 @@
     "plugin:size-contracts": "hardhat size-contracts",
     "plugin:upload-selectors": "hardhat upload-selectors",
     "plugin:storage-layout": "hardhat check > logs/storage.txt && hardhat generate-storage-layout --source logs/storage.txt",
-    "plugin:storage-layout-table": "hardhat check > logs/storage.txt && hardhat generate-storage-layout-table --source logs/storage.txt"
+    "plugin:storage-layout-table": "hardhat check > logs/storage.txt && hardhat generate-storage-layout-table --source logs/storage.txt",
+    "plugin:sourcify": "hardhat sourcify --endpoint https://sourcify.roninchain.com/server"
   },
   "lint-staged": {
     "contracts/**/*.sol": "prettier --write",
