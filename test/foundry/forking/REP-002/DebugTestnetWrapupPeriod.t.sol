@@ -2,7 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "../RoninTest.t.sol";
-
+import { MockPrecompile } from "@ronin/contracts/mocks/MockPrecompile.sol";
+import { ITimingInfo } from "@ronin/contracts/interfaces/validator/info-fragments/ITimingInfo.sol";
 import { ICoinbaseExecution } from "@ronin/contracts/interfaces/validator/ICoinbaseExecution.sol";
 
 contract DebugTx is RoninTest {
@@ -14,12 +15,30 @@ contract DebugTx is RoninTest {
     _roninFork = vm.createSelectFork(RONIN_TEST_RPC);
   }
 
-  function _setUp() internal override {}
+  function _setUp() internal override {
+    address mockPrecompile = deployImmutable(
+      type(MockPrecompile).name,
+      type(MockPrecompile).creationCode,
+      EMPTY_PARAM,
+      ZERO_VALUE
+    );
+    vm.etch(address(0x68), mockPrecompile.code);
+  }
 
   function test_Debug_SingleTransaction() external onWhichFork(_roninFork) {
     address coinbase = block.coinbase;
-    vm.warp(1691625733);
-    vm.roll(19264999);
+    uint256 numberOfBlocksInEpoch = ITimingInfo(address(RONIN_VALIDATOR_SET_CONTRACT)).numberOfBlocksInEpoch();
+
+    uint256 epochEndingBlockNumber = block.number +
+      (numberOfBlocksInEpoch - 1) -
+      (block.number % numberOfBlocksInEpoch);
+    uint256 nextDayTimestamp = block.timestamp + 1 days;
+
+    console.log(_getProxyImplementation(RONIN_VALIDATOR_SET_CONTRACT));
+
+    // fast forward to next day
+    vm.warp(nextDayTimestamp);
+    vm.roll(epochEndingBlockNumber);
     vm.prank(coinbase, coinbase);
     ICoinbaseExecution(address(RONIN_VALIDATOR_SET_CONTRACT)).wrapUpEpoch();
   }
