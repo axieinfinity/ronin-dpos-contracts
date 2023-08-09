@@ -48,10 +48,6 @@ contract MockValidatorSet is
 
   function checkMiningRewardDeprecated(address) external view override returns (bool) {}
 
-  function checkBridgeRewardDeprecatedAtLatestPeriod(
-    address _consensusAddr
-  ) external view override returns (bool _result) {}
-
   function checkBridgeRewardDeprecatedAtPeriod(
     address _consensusAddr,
     uint256 _period
@@ -59,12 +55,7 @@ contract MockValidatorSet is
 
   function epochOf(uint256 _block) external view override returns (uint256) {}
 
-  function getValidators()
-    external
-    view
-    override
-    returns (address[] memory, address[] memory, EnumFlags.ValidatorFlag[] memory)
-  {}
+  function getValidators() external view override returns (address[] memory) {}
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
 
@@ -90,28 +81,9 @@ contract MockValidatorSet is
     returns (uint256 _maximumPrioritizedValidatorNumber)
   {}
 
-  function isValidator(address) external pure override returns (bool) {
-    return true;
-  }
-
   function numberOfBlocksInEpoch() public view override returns (uint256) {
     return _numberOfBlocksInEpoch;
   }
-
-  function getBridgeOperators()
-    external
-    view
-    override
-    returns (address[] memory _bridges, address[] memory _validators)
-  {}
-
-  function getBridgeOperatorsOf(address[] memory _validatorAddrs) external view override returns (address[] memory) {}
-
-  function isBridgeOperator(address) external pure override returns (bool) {
-    return true;
-  }
-
-  function totalBridgeOperators() external view override returns (uint256) {}
 
   function getBlockProducers() external view override returns (address[] memory) {}
 
@@ -145,10 +117,6 @@ contract MockValidatorSet is
   ) external view override returns (bool isJailed_, uint256 blockLeft_, uint256 epochLeft_) {}
 
   function totalDeprecatedReward() external view override returns (uint256) {}
-
-  function _bridgeOperatorOf(address _consensusAddr) internal view override returns (address) {
-    return super._bridgeOperatorOf(_consensusAddr);
-  }
 
   function execReleaseLockedFundForEmergencyExitRequest(
     address _consensusAddr,

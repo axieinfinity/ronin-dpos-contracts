@@ -58,7 +58,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
-    address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external payable override nonReentrant {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
@@ -66,15 +65,14 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
 
     uint256 _amount = msg.value;
     address payable _poolAdmin = payable(msg.sender);
-    _applyValidatorCandidate(
-      _poolAdmin,
-      _candidateAdmin,
-      _consensusAddr,
-      _treasuryAddr,
-      _bridgeOperatorAddr,
-      _commissionRate,
-      _amount
-    );
+    _applyValidatorCandidate({
+      _poolAdmin: _poolAdmin,
+      _candidateAdmin: _candidateAdmin,
+      _consensusAddr: _consensusAddr,
+      _treasuryAddr: _treasuryAddr,
+      _commissionRate: _commissionRate,
+      _amount: _amount
+    });
 
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
     _pool.admin = _poolAdmin;
@@ -121,7 +119,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       uint256 _deductingAmount = _pool.stakingAmount;
       if (_deductingAmount > 0) {
         _deductStakingAmount(_pool, _deductingAmount);
-        if (!_unsafeSendRON(payable(_pool.admin), _deductingAmount, DEFAULT_ADDITION_GAS)) {
+        if (!_unsafeSendRONLimitGas(payable(_pool.admin), _deductingAmount, DEFAULT_ADDITION_GAS)) {
           emit StakingAmountTransferFailed(_pool.addr, _pool.admin, _deductingAmount, address(this).balance);
         }
       }
@@ -129,7 +127,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       // Settle the unclaimed reward and transfer to the pool admin.
       uint256 _lastRewardAmount = _claimReward(_pools[_i], _pool.admin, _newPeriod);
       if (_lastRewardAmount > 0) {
-        _unsafeSendRON(payable(_pool.admin), _lastRewardAmount, DEFAULT_ADDITION_GAS);
+        _unsafeSendRONLimitGas(payable(_pool.admin), _lastRewardAmount, DEFAULT_ADDITION_GAS);
       }
 
       unchecked {
@@ -161,7 +159,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     if (_remainAmount < _minValidatorStakingAmount) revert ErrStakingAmountLeft();
 
     _unstake(_pool, _requester, _amount);
-    if (!_unsafeSendRON(payable(_requester), _amount, DEFAULT_ADDITION_GAS)) revert ErrCannotTransferRON();
+    if (!_unsafeSendRONLimitGas(payable(_requester), _amount, DEFAULT_ADDITION_GAS)) revert ErrCannotTransferRON();
   }
 
   /**
@@ -193,21 +191,20 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
-    address _bridgeOperatorAddr,
     uint256 _commissionRate,
     uint256 _amount
   ) internal {
-    if (!_unsafeSendRON(_poolAdmin, 0, DEFAULT_ADDITION_GAS)) revert ErrCannotInitTransferRON(_poolAdmin, "pool admin");
-    if (!_unsafeSendRON(_treasuryAddr, 0, DEFAULT_ADDITION_GAS))
+    if (!_unsafeSendRONLimitGas(_poolAdmin, 0, DEFAULT_ADDITION_GAS))
+      revert ErrCannotInitTransferRON(_poolAdmin, "pool admin");
+    if (!_unsafeSendRONLimitGas(_treasuryAddr, 0, DEFAULT_ADDITION_GAS))
       revert ErrCannotInitTransferRON(_treasuryAddr, "treasury");
     if (_amount < _minValidatorStakingAmount) revert ErrInsufficientStakingAmount();
     if (_poolAdmin != _candidateAdmin || _candidateAdmin != _treasuryAddr) revert ErrThreeInteractionAddrsNotEqual();
 
     {
-      address[] memory _diffAddrs = new address[](3);
+      address[] memory _diffAddrs = new address[](2);
       _diffAddrs[0] = _poolAdmin;
       _diffAddrs[1] = _consensusAddr;
-      _diffAddrs[2] = _bridgeOperatorAddr;
       if (AddressArrayUtils.hasDuplicate(_diffAddrs)) revert AddressArrayUtils.ErrDuplicated(msg.sig);
     }
 
@@ -215,7 +212,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       _candidateAdmin,
       _consensusAddr,
       _treasuryAddr,
-      _bridgeOperatorAddr,
       _commissionRate
     );
   }

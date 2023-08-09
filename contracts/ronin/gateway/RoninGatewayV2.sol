@@ -8,12 +8,13 @@ import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/MinimumWithdrawal.sol";
 import "../../interfaces/IERC20Mintable.sol";
 import "../../interfaces/IERC721Mintable.sol";
-import "../../interfaces/IBridgeTracking.sol";
+import "../../interfaces/bridge/IBridgeTracking.sol";
 import "../../interfaces/IRoninGatewayV2.sol";
 import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../libraries/IsolatedGovernance.sol";
+import "../../interfaces/bridge/IBridgeManager.sol";
 
 contract RoninGatewayV2 is
   GatewayV2,
@@ -28,7 +29,6 @@ contract RoninGatewayV2 is
   using Transfer for Transfer.Request;
   using Transfer for Transfer.Receipt;
   using IsolatedGovernance for IsolatedGovernance.Vote;
-  using EnumFlags for EnumFlags.ValidatorFlag;
 
   /// @dev Withdrawal unlocker role hash
   bytes32 public constant WITHDRAWAL_MIGRATOR = keccak256("WITHDRAWAL_MIGRATOR");
@@ -79,8 +79,8 @@ contract RoninGatewayV2 is
    * @dev Reverts if the method caller is not bridge operator.
    */
   function _requireBridgeOperator() internal view {
-    if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isBridgeOperator(msg.sender))
-      revert ErrUnauthorized(msg.sig, RoleAccess.BRIDGE_OPERATOR);
+    if (!IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).isBridgeOperator(msg.sender))
+      revert ErrUnauthorized(msg.sig, RoleAccess.__DEPRECATED_BRIDGE_OPERATOR);
   }
 
   /**
@@ -125,6 +125,10 @@ contract RoninGatewayV2 is
     delete ____deprecated0;
     delete ____deprecated1;
     delete ____deprecated2;
+  }
+
+  function initializeV3(address bridgeAdmin) external reinitializer(3) {
+    _setContract(ContractType.BRIDGE_MANAGER, bridgeAdmin);
   }
 
   /**
@@ -188,7 +192,7 @@ contract RoninGatewayV2 is
    */
   function depositFor(Transfer.Receipt calldata _receipt) external whenNotPaused onlyBridgeOperator {
     address _sender = msg.sender;
-    _depositFor(_receipt, _sender, minimumVoteWeight(), minimumTrustedVoteWeight());
+    _depositFor(_receipt, _sender, minimumVoteWeight());
     IBridgeTracking(getContract(ContractType.BRIDGE_TRACKING)).recordVote(
       IBridgeTracking.VoteKind.Deposit,
       _receipt.id,
@@ -204,7 +208,6 @@ contract RoninGatewayV2 is
   ) external onlyBridgeOperator returns (bool[] memory _executedReceipts) {
     address _governor = msg.sender;
     uint256 _minVoteWeight = minimumVoteWeight();
-    uint256 _minTrustedVoteWeight = minimumTrustedVoteWeight();
 
     uint256 _withdrawalId;
     _executedReceipts = new bool[](_withdrawalIds.length);
@@ -218,7 +221,7 @@ contract RoninGatewayV2 is
         IsolatedGovernance.Vote storage _vote = mainchainWithdrewVote[_withdrawalId];
         Transfer.Receipt memory _withdrawal = withdrawal[_withdrawalId];
         bytes32 _hash = _withdrawal.hash();
-        VoteStatus _status = _castIsolatedVote(_vote, _governor, _minVoteWeight, _minTrustedVoteWeight, _hash);
+        VoteStatus _status = _castIsolatedVote(_vote, _governor, _minVoteWeight, _hash);
         if (_status == VoteStatus.Approved) {
           _vote.status = VoteStatus.Executed;
           _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.MainchainWithdrawal, _withdrawalId);
@@ -243,7 +246,6 @@ contract RoninGatewayV2 is
     Transfer.Receipt memory _receipt;
     _executedReceipts = new bool[](_receipts.length);
     uint256 _minVoteWeight = minimumVoteWeight();
-    uint256 _minTrustedVoteWeight = minimumTrustedVoteWeight();
     IBridgeTracking _bridgeTrackingContract = IBridgeTracking(getContract(ContractType.BRIDGE_TRACKING));
     for (uint256 _i; _i < _receipts.length; ) {
       _receipt = _receipts[_i];
@@ -251,7 +253,7 @@ contract RoninGatewayV2 is
       if (depositVote[_receipt.mainchain.chainId][_receipt.id].status == VoteStatus.Executed) {
         _executedReceipts[_i] = true;
       } else {
-        _depositFor(_receipt, _sender, _minVoteWeight, _minTrustedVoteWeight);
+        _depositFor(_receipt, _sender, _minVoteWeight);
       }
 
       unchecked {
@@ -309,7 +311,6 @@ contract RoninGatewayV2 is
     }
 
     uint256 _minVoteWeight = minimumVoteWeight();
-    uint256 _minTrustedVoteWeight = minimumTrustedVoteWeight();
 
     uint256 _id;
     IBridgeTracking _bridgeTrackingContract = IBridgeTracking(getContract(ContractType.BRIDGE_TRACKING));
@@ -319,13 +320,7 @@ contract RoninGatewayV2 is
       _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Withdrawal, _id, _validator);
 
       IsolatedGovernance.Vote storage _proposal = withdrawalStatVote[_id];
-      VoteStatus _status = _castIsolatedVote(
-        _proposal,
-        _validator,
-        _minVoteWeight,
-        _minTrustedVoteWeight,
-        bytes32(_id)
-      );
+      VoteStatus _status = _castIsolatedVote(_proposal, _validator, _minVoteWeight, bytes32(_id));
       if (_status == VoteStatus.Approved) {
         _proposal.status = VoteStatus.Executed;
         _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, _id);
@@ -415,12 +410,7 @@ contract RoninGatewayV2 is
    * Emits the `Deposited` once the assets are released.
    *
    */
-  function _depositFor(
-    Transfer.Receipt memory _receipt,
-    address _validator,
-    uint256 _minVoteWeight,
-    uint256 _minTrustedVoteWeight
-  ) internal {
+  function _depositFor(Transfer.Receipt memory _receipt, address _validator, uint256 _minVoteWeight) internal {
     uint256 _id = _receipt.id;
     _receipt.info.validate();
     if (_receipt.kind != Transfer.Kind.Deposit) revert ErrInvalidReceiptKind();
@@ -435,7 +425,7 @@ contract RoninGatewayV2 is
 
     IsolatedGovernance.Vote storage _proposal = depositVote[_receipt.mainchain.chainId][_id];
     bytes32 _receiptHash = _receipt.hash();
-    VoteStatus _status = _castIsolatedVote(_proposal, _validator, _minVoteWeight, _minTrustedVoteWeight, _receiptHash);
+    VoteStatus _status = _castIsolatedVote(_proposal, _validator, _minVoteWeight, _receiptHash);
     emit DepositVoted(_validator, _id, _receipt.mainchain.chainId, _receiptHash);
     if (_status == VoteStatus.Approved) {
       _proposal.status = VoteStatus.Executed;
@@ -501,14 +491,7 @@ contract RoninGatewayV2 is
    * @inheritdoc GatewayV2
    */
   function _getTotalWeight() internal view virtual override returns (uint256) {
-    return IRoninValidatorSet(getContract(ContractType.VALIDATOR)).totalBridgeOperators();
-  }
-
-  /**
-   * @dev Returns the total trusted weight.
-   */
-  function _getTotalTrustedWeight() internal view virtual returns (uint256) {
-    return IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).countTrustedOrganizations();
+    return IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getTotalWeights();
   }
 
   /**
@@ -523,12 +506,11 @@ contract RoninGatewayV2 is
     IsolatedGovernance.Vote storage _v,
     address _voter,
     uint256 _minVoteWeight,
-    uint256 _minTrustedVoteWeight,
     bytes32 _hash
   ) internal virtual returns (VoteStatus _status) {
     _v.castVote(_voter, _hash);
-    (uint256 _totalWeight, uint256 _trustedWeight) = _getVoteWeight(_v, _hash);
-    return _v.syncVoteStatus(_minVoteWeight, _totalWeight, _minTrustedVoteWeight, _trustedWeight, _hash);
+    uint256 _totalWeight = _getVoteWeight(_v, _hash);
+    return _v.syncVoteStatus(_minVoteWeight, _totalWeight, _hash);
   }
 
   /**
@@ -537,24 +519,15 @@ contract RoninGatewayV2 is
   function _getVoteWeight(
     IsolatedGovernance.Vote storage _v,
     bytes32 _hash
-  ) internal view returns (uint256 _totalWeight, uint256 _trustedWeight) {
-    (
-      address[] memory _consensusList,
-      address[] memory _bridgeOperators,
-      EnumFlags.ValidatorFlag[] memory _flags
-    ) = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
-    uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
-      .getConsensusWeights(_consensusList);
-
+  ) internal view returns (uint256 _totalWeight) {
+    (, address[] memory bridgeOperators, uint256[] memory weights) = IBridgeManager(
+      getContract(ContractType.BRIDGE_MANAGER)
+    ).getFullBridgeOperatorInfos();
+    uint256 length = bridgeOperators.length;
     unchecked {
-      for (uint _i; _i < _bridgeOperators.length; ++_i) {
-        if (
-          _flags[_i].hasFlag(EnumFlags.ValidatorFlag.BridgeOperator) && _v.voteHashOf[_bridgeOperators[_i]] == _hash
-        ) {
-          _totalWeight++;
-          if (_trustedWeights[_i] > 0) {
-            _trustedWeight++;
-          }
+      for (uint _i; _i < length; ++_i) {
+        if (_v.voteHashOf[bridgeOperators[_i]] == _hash) {
+          _totalWeight += weights[_i];
         }
       }
     }
@@ -565,13 +538,6 @@ contract RoninGatewayV2 is
     uint256 _trustedDenominator
   ) external virtual onlyAdmin returns (uint256, uint256) {
     return _setTrustedThreshold(_trustedNumerator, _trustedDenominator);
-  }
-
-  /**
-   * @dev Returns the minimum trusted vote weight to pass the threshold.
-   */
-  function minimumTrustedVoteWeight() public view virtual returns (uint256) {
-    return _minimumTrustedVoteWeight(_getTotalTrustedWeight());
   }
 
   /**

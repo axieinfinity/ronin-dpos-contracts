@@ -25,10 +25,12 @@ import { SlashType } from '../../src/script/slash-indicator';
 import { BlockRewardDeprecatedType } from '../../src/script/ronin-validator-set';
 import {
   createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
   TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
+import {
+  createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types';
+} from '../helpers/address-set-types/validator-candidate-set-type';
 
 let maintenanceContract: Maintenance;
 let slashContract: MockSlashIndicatorExtended;
@@ -222,7 +224,6 @@ describe('Credit score and bail out test', () => {
           validatorCandidates[i].candidateAdmin.address,
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
-          validatorCandidates[i].bridgeOperator.address,
           100_00,
           { value: minValidatorStakingAmount.mul(2).sub(i) }
         );
@@ -233,7 +234,7 @@ describe('Credit score and bail out test', () => {
     localEpochController = new EpochController(minOffsetToStartSchedule, numberOfBlocksInEpoch);
     await localEpochController.mineToBeforeEndOfEpoch(2);
     await validatorContract.connect(coinbase).wrapUpEpoch();
-    expect((await validatorContract.getValidators())[0]).deep.equal(
+    expect(await validatorContract.getValidators()).deep.equal(
       validatorCandidates.slice(0, maxValidatorNumber).map((_) => _.consensusAddr.address)
     );
     expect(await validatorContract.getBlockProducers()).deep.equal(
@@ -298,7 +299,6 @@ describe('Credit score and bail out test', () => {
           validatorCandidates[0].candidateAdmin.address,
           validatorCandidates[0].consensusAddr.address,
           validatorCandidates[0].treasuryAddr.address,
-          validatorCandidates[0].bridgeOperator.address,
           100_00,
           { value: minValidatorStakingAmount.mul(2) }
         );
@@ -503,7 +503,6 @@ describe('Credit score and bail out test', () => {
           await localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
         }
 
-        expect(await validatorContract.isValidator(validatorCandidates[0].consensusAddr.address)).eq(true);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
         await slashValidatorUntilTier(1, 0, SlashType.UNAVAILABILITY_TIER_2);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
@@ -587,7 +586,6 @@ describe('Credit score and bail out test', () => {
           await localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
         }
 
-        expect(await validatorContract.isValidator(validatorCandidates[0].consensusAddr.address)).eq(true);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);
         await slashValidatorUntilTier(1, 0, SlashType.UNAVAILABILITY_TIER_2);
         expect(await validatorContract.isBlockProducer(validatorCandidates[0].consensusAddr.address)).eq(true);

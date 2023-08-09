@@ -12,25 +12,25 @@ abstract contract RONTransferHelper {
    * @dev See `_sendRON`.
    * Reverts if the recipient does not receive RON.
    */
-  function _transferRON(address payable _recipient, uint256 _amount) internal {
-    if (!_sendRON(_recipient, _amount)) revert ErrRecipientRevert(msg.sig);
+  function _transferRON(address payable recipient, uint256 amount) internal {
+    if (!_sendRON(recipient, amount)) revert ErrRecipientRevert(msg.sig);
   }
 
   /**
-   * @dev Send `_amount` RON to the address `_recipient`.
+   * @dev Send `amount` RON to the address `recipient`.
    * Returns whether the recipient receives RON or not.
    * Reverts once the contract balance is insufficient.
    *
    * Note: consider using `ReentrancyGuard` before calling this function.
    *
    */
-  function _sendRON(address payable _recipient, uint256 _amount) internal returns (bool _success) {
-    if (address(this).balance < _amount) revert ErrInsufficientBalance(msg.sig, address(this).balance, _amount);
-    return _unsafeSendRON(_recipient, _amount);
+  function _sendRON(address payable recipient, uint256 amount) internal returns (bool success) {
+    if (address(this).balance < amount) revert ErrInsufficientBalance(msg.sig, address(this).balance, amount);
+    return _unsafeSendRON(recipient, amount);
   }
 
   /**
-   * @dev Unsafe send `_amount` RON to the address `_recipient`. If the sender's balance is insufficient,
+   * @dev Unsafe send `amount` RON to the address `recipient`. If the sender's balance is insufficient,
    * the call does not revert.
    *
    * Note:
@@ -39,14 +39,18 @@ abstract contract RONTransferHelper {
    * - Consider using `ReentrancyGuard` before calling this function.
    *
    */
-  function _unsafeSendRON(address payable _recipient, uint256 _amount) internal returns (bool _success) {
-    (_success, ) = _recipient.call{ value: _amount }("");
+  function _unsafeSendRON(address payable recipient, uint256 amount) internal returns (bool success) {
+    (success, ) = recipient.call{ value: amount }("");
   }
 
   /**
-   * @dev Same purpose with {_unsafeSendRON(address,uin256)} but containing gas limit stipend forwarded in the call.
+   * @dev Same purpose with {_unsafeSendRONLimitGas(address,uin256)} but containing gas limit stipend forwarded in the call.
    */
-  function _unsafeSendRON(address payable _recipient, uint256 _amount, uint256 _gas) internal returns (bool _success) {
-    (_success, ) = _recipient.call{ value: _amount, gas: _gas }("");
+  function _unsafeSendRONLimitGas(
+    address payable recipient,
+    uint256 amount,
+    uint256 gas
+  ) internal returns (bool success) {
+    (success, ) = recipient.call{ value: amount, gas: gas }("");
   }
 }

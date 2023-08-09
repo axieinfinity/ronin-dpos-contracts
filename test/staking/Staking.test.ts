@@ -13,7 +13,10 @@ import {
 import { MockValidatorSet__factory } from '../../src/types/factories/MockValidatorSet__factory';
 import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
-import { createManyValidatorCandidateAddressSets, ValidatorCandidateAddressSet } from '../helpers/address-set-types';
+import {
+  createManyValidatorCandidateAddressSets,
+  ValidatorCandidateAddressSet,
+} from '../helpers/address-set-types/validator-candidate-set-type';
 import { getLastBlockTimestamp } from '../helpers/utils';
 
 let coinbase: SignerWithAddress;
@@ -84,7 +87,7 @@ describe('Staking test', () => {
   describe('Validator candidate test', () => {
     it('Should not be able to propose validator with insufficient amount', async () => {
       await expect(
-        stakingContract.applyValidatorCandidate(userA.address, userA.address, userA.address, userA.address, 1)
+        stakingContract.applyValidatorCandidate(userA.address, userA.address, userA.address, 1)
       ).revertedWithCustomError(stakingContract, 'ErrInsufficientStakingAmount');
     });
 
@@ -96,14 +99,11 @@ describe('Staking test', () => {
         .applyValidatorCandidate(
           candidate.candidateAdmin.address,
           candidate.consensusAddr.address,
-          candidate.treasuryAddr.address,
           candidate.consensusAddr.address,
           1,
           /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
         );
-      await expect(tx)
-        .revertedWithCustomError(stakingContract, 'ErrDuplicated')
-        .withArgs(stakingContract.interface.getSighash('applyValidatorCandidate'));
+      await expect(tx).revertedWithCustomError(stakingContract, 'ErrThreeInteractionAddrsNotEqual');
     });
 
     it('Should be able to propose validator with sufficient amount', async () => {
@@ -115,7 +115,6 @@ describe('Staking test', () => {
             candidate.candidateAdmin.address,
             candidate.consensusAddr.address,
             candidate.treasuryAddr.address,
-            candidate.bridgeOperator.address,
             1,
             /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
           );
@@ -138,7 +137,6 @@ describe('Staking test', () => {
             sparePoolAddrSet.candidateAdmin.address,
             poolAddrSet.consensusAddr.address,
             sparePoolAddrSet.treasuryAddr.address,
-            poolAddrSet.bridgeOperator.address,
             0,
             {
               value: minValidatorStakingAmount,
@@ -345,7 +343,6 @@ describe('Staking test', () => {
           poolAddrSet.candidateAdmin.address,
           poolAddrSet.consensusAddr.address,
           poolAddrSet.treasuryAddr.address,
-          poolAddrSet.bridgeOperator.address,
           1,
           /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
         );
@@ -369,7 +366,6 @@ describe('Staking test', () => {
             poolAddrSet.candidateAdmin.address,
             poolAddrSet.consensusAddr.address,
             poolAddrSet.treasuryAddr.address,
-            poolAddrSet.bridgeOperator.address,
             1,
             /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
           )
@@ -495,7 +491,6 @@ describe('Staking test', () => {
           poolAddrSet.candidateAdmin.address,
           poolAddrSet.consensusAddr.address,
           poolAddrSet.treasuryAddr.address,
-          poolAddrSet.bridgeOperator.address,
           2,
           /* 0.02% */ { value: minValidatorStakingAmount }
         );

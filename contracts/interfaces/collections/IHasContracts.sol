@@ -7,8 +7,6 @@ import { ContractType } from "../../utils/ContractType.sol";
 interface IHasContracts {
   /// @dev Error of invalid role.
   error ErrContractTypeNotFound(ContractType contractType);
-  /// @dev Error of set to non-contract.
-  error ErrZeroCodeContract(address addr);
 
   /// @dev Emitted when a contract is updated.
   event ContractUpdated(ContractType indexed contractType, address indexed addr);

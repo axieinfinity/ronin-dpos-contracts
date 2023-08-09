@@ -178,7 +178,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    * @inheritdoc IMaintenance
    */
   function totalSchedules() public view override returns (uint256 _count) {
-    (address[] memory _validators, , ) = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
+    address[] memory _validators = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
     unchecked {
       for (uint _i = 0; _i < _validators.length; _i++) {
         if (checkScheduled(_validators[_i])) {

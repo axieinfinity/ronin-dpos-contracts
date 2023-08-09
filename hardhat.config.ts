@@ -6,7 +6,6 @@ import '@nomicfoundation/hardhat-chai-matchers';
 import 'hardhat-contract-sizer';
 import '@solidstate/hardhat-4byte-uploader';
 import 'hardhat-storage-layout';
-import '@nomicfoundation/hardhat-foundry';
 
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, NetworkUserConfig, SolcUserConfig } from 'hardhat/types';
@@ -57,6 +56,9 @@ const local: NetworkUserConfig = {
 const devnet: NetworkUserConfig = {
   url: DEVNET_URL || 'http://localhost:8545',
   accounts: DEVNET_PK ? [DEVNET_PK] : { mnemonic: DEFAULT_MNEMONIC },
+  companionNetworks: {
+    mainchain: 'goerli-for-devnet',
+  },
 };
 
 const testnet: NetworkUserConfig = {
@@ -64,6 +66,9 @@ const testnet: NetworkUserConfig = {
   url: TESTNET_URL || 'https://saigon-testnet.roninchain.com/rpc',
   accounts: TESTNET_PK ? [TESTNET_PK] : { mnemonic: DEFAULT_MNEMONIC },
   blockGasLimit: 100000000,
+  companionNetworks: {
+    mainchain: 'goerli',
+  },
 };
 
 const mainnet: NetworkUserConfig = {
@@ -71,18 +76,21 @@ const mainnet: NetworkUserConfig = {
   url: MAINNET_URL || 'https://api.roninchain.com/rpc',
   accounts: MAINNET_PK ? [MAINNET_PK] : { mnemonic: DEFAULT_MNEMONIC },
   blockGasLimit: 100000000,
+  companionNetworks: {
+    mainchain: 'ethereum',
+  },
 };
 
 const goerli: NetworkUserConfig = {
   chainId: 5,
-  url: GOERLI_URL || '',
+  url: GOERLI_URL || 'https://gateway.tenderly.co/public/goerli',
   accounts: GOERLI_PK ? [GOERLI_PK] : { mnemonic: DEFAULT_MNEMONIC },
   blockGasLimit: 100000000,
 };
 
 const ethereum: NetworkUserConfig = {
   chainId: 1,
-  url: ETHEREUM_URL || '',
+  url: ETHEREUM_URL || 'https://gateway.tenderly.co/public/mainnet',
   accounts: ETHEREUM_PK ? [ETHEREUM_PK] : { mnemonic: DEFAULT_MNEMONIC },
   blockGasLimit: 100000000,
 };
@@ -127,6 +135,7 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
+    governor: 0,
     // governor: '0x00000000000000000000000000000000deadbeef',
     // governor: 'trezor://0x0000000000000000000000000000000000000000',
   },

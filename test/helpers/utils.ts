@@ -57,23 +57,22 @@ export const accessControlRevertStr = (addr: Address, role: string): string =>
 export const compareBigNumbers = (firstBigNumbers: BigNumber[], secondBigNumbers: BigNumber[]) =>
   expect(firstBigNumbers.map((_) => _.toHexString())).deep.equal(secondBigNumbers.map((_) => _.toHexString()));
 
-const CONTRACT_TYPES = [
-  'UNKNOWN',
-  'PAUSE_ENFORCER_CONTRACT',
-  'BRIDGE_CONTRACT',
-  'BRIDGE_TRACKING_CONTRACT',
-  'GOVERNANCE_ADMIN_CONTRACT',
-  'MAINTENANCE_CONTRACT',
-  'SLASH_INDICATOR_CONTRACT',
-  'STAKING_VESTING_CONTRACT',
-  'VALIDATOR_CONTRACT',
-  'STAKING_CONTRACT',
-  'RONIN_TRUSTED_ORGANIZATION_CONTRACT',
-];
-
-export const getRoles = (roleName: string): number => {
-  return CONTRACT_TYPES.indexOf(roleName);
-};
+export enum ContractType {
+  /*  0 */ UNKNOWN,
+  /*  1 */ PAUSE_ENFORCER,
+  /*  2 */ BRIDGE,
+  /*  3 */ BRIDGE_TRACKING,
+  /*  4 */ GOVERNANCE_ADMIN,
+  /*  5 */ MAINTENANCE,
+  /*  6 */ SLASH_INDICATOR,
+  /*  7 */ STAKING_VESTING,
+  /*  8 */ VALIDATOR,
+  /*  9 */ STAKING,
+  /* 10 */ RONIN_TRUSTED_ORGANIZATION,
+  /* 11 */ BRIDGE_MANAGER,
+  /* 12 */ BRIDGE_SLASH,
+  /* 13 */ BRIDGE_REWARD,
+}
 
 export const getProxyImplementation = async (proxy: string): Promise<string> =>
   '0x' +
@@ -94,3 +93,9 @@ export const getProxyAdmin = async (proxy: string): Promise<string> =>
       '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103'
     )
   ).slice(-40);
+
+export const checkArraysHaveSameSize = (arrays: Array<any>[]) => {
+  let lengths = arrays.map((_) => _.length);
+  let uniqueLengths = [...new Set(lengths)];
+  return uniqueLengths.length == 1 && uniqueLengths[0] != 0;
+};

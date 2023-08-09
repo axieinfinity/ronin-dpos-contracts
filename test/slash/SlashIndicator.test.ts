@@ -20,10 +20,12 @@ import { IndicatorController } from '../helpers/slash';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import {
   createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
   TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
+import {
+  createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types';
+} from '../helpers/address-set-types/validator-candidate-set-type';
 import { getLastBlockTimestamp } from '../helpers/utils';
 import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
 import { getProposalHash, VoteType } from '../../src/script/proposal';
@@ -126,6 +128,13 @@ describe('Slash indicator test', () => {
         governanceAdminArguments: {
           proposalExpiryDuration,
         },
+        bridgeManagerArguments: {
+          numerator: 70,
+          denominator: 100,
+          weights: [],
+          operators: [],
+          governors: [],
+        },
       });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -155,7 +164,6 @@ describe('Slash indicator test', () => {
           validatorCandidates[i].candidateAdmin.address,
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
-          validatorCandidates[i].bridgeOperator.address,
           1,
           { value: minValidatorStakingAmount.mul(2).add(maxValidatorNumber).sub(i) }
         );
@@ -166,9 +174,7 @@ describe('Slash indicator test', () => {
     localEpochController = new EpochController(minOffsetToStartSchedule, numberOfBlocksInEpoch);
     await localEpochController.mineToBeforeEndOfEpoch(2);
     await validatorContract.connect(coinbase).wrapUpEpoch();
-    expect((await validatorContract.getValidators())[0]).deep.equal(
-      validatorCandidates.map((_) => _.consensusAddr.address)
-    );
+    expect(await validatorContract.getValidators()).deep.equal(validatorCandidates.map((_) => _.consensusAddr.address));
 
     localIndicators = new IndicatorController(validatorCandidates.length);
   });

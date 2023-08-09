@@ -20,10 +20,12 @@ import { EpochController, expects as ValidatorSetExpects } from '../helpers/roni
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import {
   createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
   TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
+import {
+  createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types';
+} from '../helpers/address-set-types/validator-candidate-set-type';
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -124,7 +126,6 @@ describe('Maintenance test', () => {
           validatorCandidates[i].candidateAdmin.address,
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
-          validatorCandidates[i].bridgeOperator.address,
           1,
           { value: minValidatorStakingAmount.add(maxValidatorNumber).sub(i) }
         );
@@ -141,9 +142,7 @@ describe('Maintenance test', () => {
       validatorCandidates.map((_) => _.consensusAddr.address)
     );
 
-    expect((await validatorContract.getValidators())[0]).deep.equal(
-      validatorCandidates.map((_) => _.consensusAddr.address)
-    );
+    expect(await validatorContract.getValidators()).deep.equal(validatorCandidates.map((_) => _.consensusAddr.address));
     expect(await validatorContract.getBlockProducers()).deep.equal(
       validatorCandidates.map((_) => _.consensusAddr.address)
     );

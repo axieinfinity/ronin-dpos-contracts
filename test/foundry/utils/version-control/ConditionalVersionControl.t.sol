@@ -10,6 +10,7 @@ import { AddressArrayUtils } from "@ronin/contracts/libraries/AddressArrayUtils.
 import { ErrOnlySelfCall } from "@ronin/contracts/utils/CommonErrors.sol";
 import { MockActor } from "@ronin/contracts/mocks/utils/version-control/MockActor.sol";
 import { MockConditionalImplementControl, ConditionalImplementControl } from "@ronin/contracts/mocks/utils/version-control/MockConditionalImplementControl.sol";
+import { ErrZeroCodeContract } from "@ronin/contracts/utils/CommonErrors.sol";
 
 contract ConditionalImplementControlTest is Test {
   event Upgraded(address indexed implementation);
@@ -90,7 +91,7 @@ contract ConditionalImplementControlTest is Test {
     address[3] memory inputs = _getTestAddresses();
     delete inputs[nullIdx];
 
-    vm.expectRevert(IConditionalImplementControl.ErrZeroCodeContract.selector);
+    vm.expectRevert(ErrZeroCodeContract.selector);
     _createConditionalImplementControl(inputs);
   }
 
@@ -103,7 +104,7 @@ contract ConditionalImplementControlTest is Test {
     address[3] memory inputs = _getTestAddresses();
     delete inputs[idx];
 
-    vm.expectRevert(IConditionalImplementControl.ErrZeroCodeContract.selector);
+    vm.expectRevert(ErrZeroCodeContract.selector);
     _createConditionalImplementControl(inputs);
   }
 
