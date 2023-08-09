@@ -107,15 +107,15 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
     uint256 length = registers.length;
     if (length == 0) return;
 
-    bool[] memory statuses = new bool[](length);
+    bool[] memory successes = new bool[](length);
     bytes[] memory returnDatas = new bytes[](length);
     bytes memory callData = abi.encodePacked(callbackFnSig, inputs);
     bytes memory proxyCallData = abi.encodeCall(TransparentUpgradeableProxyV2.functionDelegateCall, (callData));
 
     for (uint256 i; i < length; ) {
-      (statuses[i], returnDatas[i]) = registers[i].call(callData);
-      if (statuses[i]) {
-        (statuses[i], returnDatas[i]) = registers[i].call(proxyCallData);
+      (successes[i], returnDatas[i]) = registers[i].call(callData);
+      if (!successes[i]) {
+        (successes[i], returnDatas[i]) = registers[i].call(proxyCallData);
       }
 
       unchecked {
@@ -123,7 +123,7 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
       }
     }
 
-    emit Notified(callData, registers, statuses, returnDatas);
+    emit Notified(callData, registers, successes, returnDatas);
   }
 
   /**
