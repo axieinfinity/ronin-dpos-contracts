@@ -2479,7 +2479,7 @@
   "storageLayout": {
     "storage": [
       {
-        "astId": 1535,
+        "astId": 711,
         "contract": "contracts/mainchain/MainchainGatewayV2.sol:MainchainGatewayV2",
         "label": "_paused",
         "offset": 0,
@@ -2487,7 +2487,7 @@
         "type": "t_bool"
       },
       {
-        "astId": 4326,
+        "astId": 2634,
         "contract": "contracts/mainchain/MainchainGatewayV2.sol:MainchainGatewayV2",
         "label": "_num",
         "offset": 0,
@@ -2495,7 +2495,7 @@
         "type": "t_uint256"
       },
       {
-        "astId": 4328,
+        "astId": 2636,
         "contract": "contracts/mainchain/MainchainGatewayV2.sol:MainchainGatewayV2",
         "label": "_denom",
         "offset": 0,
@@ -2503,7 +2503,7 @@
         "type": "t_uint256"
       },
       {
-        "astId": 4330,
+        "astId": 2638,
         "contract": "contracts/mainchain/MainchainGatewayV2.sol:MainchainGatewayV2",
         "label": "______deprecated",
         "offset": 0,
@@ -2511,7 +2511,7 @@
         "type": "t_address"
       },
       {
-        "astId": 4332,
+        "astId": 2640,
         "contract": "contracts/mainchain/MainchainGatewayV2.sol:MainchainGatewayV2",
         "label": "nonce",
         "offset": 0,
@@ -2607,7 +2607,7 @@
         "type": "t_array(t_uint256)50_storage"
       },
       {
-        "astId": 1373,
+        "astId": 549,
         "contract": "contracts/mainchain/MainchainGatewayV2.sol:MainchainGatewayV2",
         "label": "_initialized",
         "offset": 0,
@@ -2615,7 +2615,7 @@
         "type": "t_uint8"
       },
       {
-        "astId": 1376,
+        "astId": 552,
         "contract": "contracts/mainchain/MainchainGatewayV2.sol:MainchainGatewayV2",
         "label": "_initializing",
         "offset": 1,
@@ -2636,7 +2636,7 @@
         "label": "_roleMembers",
         "offset": 0,
         "slot": "115",
-        "type": "t_mapping(t_bytes32,t_struct(AddressSet)4026_storage)"
+        "type": "t_mapping(t_bytes32,t_struct(AddressSet)2334_storage)"
       },
       {
         "astId": 16919,
@@ -2776,12 +2776,12 @@
         "numberOfBytes": "32",
         "value": "t_uint256"
       },
-      "t_mapping(t_bytes32,t_struct(AddressSet)4026_storage)": {
+      "t_mapping(t_bytes32,t_struct(AddressSet)2334_storage)": {
         "encoding": "mapping",
         "key": "t_bytes32",
         "label": "mapping(bytes32 => struct EnumerableSet.AddressSet)",
         "numberOfBytes": "32",
-        "value": "t_struct(AddressSet)4026_storage"
+        "value": "t_struct(AddressSet)2334_storage"
       },
       "t_mapping(t_bytes32,t_struct(RoleData)19_storage)": {
         "encoding": "mapping",
@@ -2811,17 +2811,17 @@
         "numberOfBytes": "32",
         "value": "t_bytes32"
       },
-      "t_struct(AddressSet)4026_storage": {
+      "t_struct(AddressSet)2334_storage": {
         "encoding": "inplace",
         "label": "struct EnumerableSet.AddressSet",
         "members": [
           {
-            "astId": 4025,
+            "astId": 2333,
             "contract": "contracts/mainchain/MainchainGatewayV2.sol:MainchainGatewayV2",
             "label": "_inner",
             "offset": 0,
             "slot": "0",
-            "type": "t_struct(Set)3725_storage"
+            "type": "t_struct(Set)2033_storage"
           }
         ],
         "numberOfBytes": "64"
@@ -2872,12 +2872,12 @@
         ],
         "numberOfBytes": "64"
       },
-      "t_struct(Set)3725_storage": {
+      "t_struct(Set)2033_storage": {
         "encoding": "inplace",
         "label": "struct EnumerableSet.Set",
         "members": [
           {
-            "astId": 3720,
+            "astId": 2028,
             "contract": "contracts/mainchain/MainchainGatewayV2.sol:MainchainGatewayV2",
             "label": "_values",
             "offset": 0,
@@ -2885,7 +2885,7 @@
             "type": "t_array(t_bytes32)dyn_storage"
           },
           {
-            "astId": 3724,
+            "astId": 2032,
             "contract": "contracts/mainchain/MainchainGatewayV2.sol:MainchainGatewayV2",
             "label": "_indexes",
             "offset": 0,
