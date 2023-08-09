@@ -30,6 +30,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['RoninGovernanceAdmin'];
-deploy.dependencies = ['CalculateAddresses'];
+deploy.dependencies = ['_HelperDposCalculate'];
 
 export default deploy;

@@ -60,6 +60,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['SlashIndicatorProxy'];
-deploy.dependencies = ['SlashIndicatorLogic', 'CalculateAddresses', 'StakingVestingProxy'];
+deploy.dependencies = ['SlashIndicatorLogic', '_HelperDposCalculate', 'StakingVestingProxy'];
 
 export default deploy;

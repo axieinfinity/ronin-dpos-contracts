@@ -13,6 +13,10 @@ import {
   VoteType,
 } from '../../src/script/proposal';
 import {
+  BridgeReward,
+  BridgeReward__factory,
+  BridgeSlash,
+  BridgeSlash__factory,
   IBridge,
   MainchainBridgeManager,
   MainchainBridgeManager__factory,
@@ -26,7 +30,7 @@ import {
 } from '../../src/types';
 import { MockBridge__factory } from '../../src/types/factories/MockBridge__factory';
 import { ProposalDetailStruct, SignatureStruct } from '../../src/types/RoninGovernanceAdmin';
-import { ZERO_BYTES32 } from '../../src/utils';
+import { DEFAULT_ADDRESS, ZERO_BYTES32 } from '../../src/utils';
 import {
   createManyTrustedOrganizationAddressSets,
   TrustedOrganizationAddressSet,
@@ -52,6 +56,9 @@ let roninBridgeManager: RoninBridgeManager;
 let mainchainBridgeManager: MainchainBridgeManager;
 let bridgeManagerInterface: BridgeManagerInterface;
 
+let bridgeRewardContract: BridgeReward;
+let bridgeSlashContract: BridgeSlash;
+
 let proposal: GlobalProposalDetailStruct;
 let supports: VoteType[];
 let signatures: SignatureStruct[] = [];
@@ -65,7 +72,7 @@ const operatorNum = 6;
 const bridgeAdminNumerator = 2;
 const bridgeAdminDenominator = 4;
 
-describe('Bridge Admin test', async () => {
+describe('Bridge Manager test', async () => {
   before(async () => {
     [deployer, relayer, ...signers] = await ethers.getSigners();
     trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 21 * 3));
@@ -97,13 +104,19 @@ describe('Bridge Admin test', async () => {
       bridgeManagerArguments: {
         numerator: bridgeAdminNumerator,
         denominator: bridgeAdminDenominator,
-        operators: beforeRelayedOperatorTuples.map((_) => _.operator.address),
-        governors: beforeRelayedOperatorTuples.map((_) => _.governor.address),
-        weights: beforeRelayedOperatorTuples.map((_) => 100),
+        members: beforeRelayedOperatorTuples.map((_) => {
+          return {
+            operator: _.operator.address,
+            governor: _.governor.address,
+            weight: 100,
+          };
+        }),
       },
     });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
+    bridgeSlashContract = BridgeSlash__factory.connect(bridgeSlashAddress, deployer);
+    bridgeRewardContract = BridgeReward__factory.connect(bridgeRewardAddress, deployer);
     roninBridgeManager = RoninBridgeManager__factory.connect(roninBridgeManagerAddress, deployer);
     mainchainBridgeManager = MainchainBridgeManager__factory.connect(mainchainBridgeManagerAddress, deployer);
     bridgeManagerInterface = new BridgeManagerInterface(
@@ -118,17 +131,47 @@ describe('Bridge Admin test', async () => {
   });
 
   describe('Config test', async () => {
-    it('Should the Ronin bridge manager set config correctly', async () => {
-      expect(await roninBridgeManager.getContract(ContractType.BRIDGE)).eq(bridgeContract.address);
-      expect(await roninBridgeManager.getBridgeOperators()).deep.equal(
-        beforeRelayedOperatorTuples.map((_) => _.operator.address)
-      );
+    describe('Ronin manager', async () => {
+      it('Should the Ronin bridge manager set config correctly', async () => {
+        expect(await roninBridgeManager.getContract(ContractType.BRIDGE)).eq(bridgeContract.address);
+        expect(await roninBridgeManager.getBridgeOperators()).deep.equal(
+          beforeRelayedOperatorTuples.map((_) => _.operator.address)
+        );
+      });
+      it('Should the Ronin bridge manager config the targets correctly', async () => {
+        expect(
+          await roninBridgeManager.resolveTargets([
+            TargetOption.BridgeManager,
+            TargetOption.GatewayContract,
+            TargetOption.BridgeSlash,
+            TargetOption.BridgeReward,
+          ])
+        ).deep.equal([
+          roninBridgeManager.address,
+          bridgeContract.address,
+          bridgeSlashContract.address,
+          bridgeRewardContract.address,
+        ]);
+      });
     });
-    it('Should the mainchain bridge manager set config correctly', async () => {
-      expect(await mainchainBridgeManager.getContract(ContractType.BRIDGE)).eq(bridgeContract.address);
-      expect(await mainchainBridgeManager.getBridgeOperators()).deep.equal(
-        afterRelayedOperatorTuples.map((_) => _.operator.address)
-      );
+
+    describe('Mainchain manager', async () => {
+      it('Should the mainchain bridge manager set config correctly', async () => {
+        expect(await mainchainBridgeManager.getContract(ContractType.BRIDGE)).eq(bridgeContract.address);
+        expect(await mainchainBridgeManager.getBridgeOperators()).deep.equal(
+          afterRelayedOperatorTuples.map((_) => _.operator.address)
+        );
+      });
+      it('Should the mainchain bridge manager config the targets correctly', async () => {
+        expect(
+          await mainchainBridgeManager.resolveTargets([
+            TargetOption.BridgeManager,
+            TargetOption.GatewayContract,
+            TargetOption.BridgeSlash,
+            TargetOption.BridgeReward,
+          ])
+        ).deep.equal([mainchainBridgeManager.address, bridgeContract.address, DEFAULT_ADDRESS, DEFAULT_ADDRESS]);
+      });
     });
   });
 
@@ -149,7 +192,7 @@ describe('Bridge Admin test', async () => {
         ]),
         500_000
       );
-      signatures = await bridgeManagerInterface.generateSignatures(
+      signatures = await bridgeManagerInterface.generateSignaturesGlobal(
         proposal,
         beforeRelayedOperatorTuples.map((_) => _.governor)
       );
@@ -168,7 +211,7 @@ describe('Bridge Admin test', async () => {
       );
     });
 
-    it('Should be able relay vote bridge operators', async () => {
+    it('Should be able relay the vote of bridge operators', async () => {
       expect(await mainchainBridgeManager.globalProposalRelayed(proposal.nonce)).to.false;
       expect(await mainchainBridgeManager.getBridgeOperators()).deep.equal(
         beforeRelayedOperatorTuples.map((_) => _.operator.address)
@@ -206,7 +249,7 @@ describe('Bridge Admin test', async () => {
         ]),
         500_000
       );
-      signatures = await bridgeManagerInterface.generateSignatures(
+      signatures = await bridgeManagerInterface.generateSignaturesGlobal(
         proposal,
         beforeRelayedOperatorTuples.map((_) => _.governor)
       );

@@ -12,6 +12,7 @@ interface ExplorerURLs {
 
 export const explorerUrl: ExplorerURLs = {
   [Network.Hardhat]: undefined,
+  [Network.Goerli]: 'https://goerli.etherscan.io/',
   [Network.Testnet]: 'https://saigon-app.roninchain.com',
   [Network.Mainnet]: 'https://app.roninchain.com',
 };

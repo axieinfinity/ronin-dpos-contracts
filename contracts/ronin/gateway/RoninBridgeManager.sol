@@ -3,15 +3,11 @@ pragma solidity ^0.8.0;
 
 import { ContractType, RoleAccess, ErrUnauthorized, BridgeManager } from "../../extensions/bridge-operator-governance/BridgeManager.sol";
 import { Ballot, GlobalProposal, Proposal, GovernanceProposal } from "../../extensions/sequential-governance/governance-proposal/GovernanceProposal.sol";
-import { CoreGovernance, GlobalGovernanceProposal } from "../../extensions/sequential-governance/governance-proposal/GlobalGovernanceProposal.sol";
-import { IsolatedGovernance } from "../../libraries/IsolatedGovernance.sol";
-import { BridgeOperatorsBallot } from "../../libraries/BridgeOperatorsBallot.sol";
+import { CoreGovernance, GlobalCoreGovernance, GlobalGovernanceProposal } from "../../extensions/sequential-governance/governance-proposal/GlobalGovernanceProposal.sol";
 import { VoteStatusConsumer } from "../../interfaces/consumers/VoteStatusConsumer.sol";
 import { ErrQueryForEmptyVote } from "../../utils/CommonErrors.sol";
 
 contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernanceProposal {
-  using IsolatedGovernance for IsolatedGovernance.Vote;
-
   constructor(
     uint256 num,
     uint256 denom,
@@ -21,10 +17,13 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
     address[] memory callbackRegisters,
     address[] memory bridgeOperators,
     address[] memory governors,
-    uint96[] memory voteWeights
+    uint96[] memory voteWeights,
+    GlobalProposal.TargetOption[] memory targetOptions,
+    address[] memory targets
   )
     payable
     CoreGovernance(expiryDuration)
+    GlobalCoreGovernance(targetOptions, targets)
     BridgeManager(num, denom, roninChainId, bridgeContract, callbackRegisters, bridgeOperators, governors, voteWeights)
   {}
 
@@ -75,24 +74,24 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
    *
    */
   function proposeProposalForCurrentNetwork(
-    uint256 _expiryTimestamp,
-    address[] calldata _targets,
-    uint256[] calldata _values,
-    bytes[] calldata _calldatas,
-    uint256[] calldata _gasAmounts,
-    Ballot.VoteType _support
+    uint256 expiryTimestamp,
+    address[] calldata targets,
+    uint256[] calldata values,
+    bytes[] calldata calldatas,
+    uint256[] calldata gasAmounts,
+    Ballot.VoteType support
   ) external onlyGovernor {
     address _voter = msg.sender;
     Proposal.ProposalDetail memory _proposal = _proposeProposal({
-      _chainId: block.chainid,
-      _expiryTimestamp: _expiryTimestamp,
-      _targets: _targets,
-      _values: _values,
-      _calldatas: _calldatas,
-      _gasAmounts: _gasAmounts,
-      _creator: _voter
+      chainId: block.chainid,
+      expiryTimestamp: expiryTimestamp,
+      targets: targets,
+      values: values,
+      calldatas: calldatas,
+      gasAmounts: gasAmounts,
+      creator: _voter
     });
-    _castProposalVoteForCurrentNetwork(_voter, _proposal, _support);
+    _castProposalVoteForCurrentNetwork(_voter, _proposal, support);
   }
 
   /**
@@ -103,21 +102,21 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
    *
    */
   function castProposalVoteForCurrentNetwork(
-    Proposal.ProposalDetail calldata _proposal,
-    Ballot.VoteType _support
+    Proposal.ProposalDetail calldata proposal,
+    Ballot.VoteType support
   ) external onlyGovernor {
-    _castProposalVoteForCurrentNetwork(msg.sender, _proposal, _support);
+    _castProposalVoteForCurrentNetwork(msg.sender, proposal, support);
   }
 
   /**
    * @dev See `GovernanceProposal-_castProposalBySignatures`.
    */
   function castProposalBySignatures(
-    Proposal.ProposalDetail calldata _proposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures
+    Proposal.ProposalDetail calldata proposal,
+    Ballot.VoteType[] calldata supports_,
+    Signature[] calldata signatures
   ) external {
-    _castProposalBySignatures(_proposal, _supports, _signatures, DOMAIN_SEPARATOR);
+    _castProposalBySignatures(proposal, supports_, signatures, DOMAIN_SEPARATOR);
   }
 
   /**
@@ -132,21 +131,19 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
    *
    */
   function proposeGlobal(
-    uint256 _expiryTimestamp,
-    GlobalProposal.TargetOption[] calldata _targetOptions,
-    uint256[] calldata _values,
-    bytes[] calldata _calldatas,
-    uint256[] calldata _gasAmounts
+    uint256 expiryTimestamp,
+    GlobalProposal.TargetOption[] calldata targetOptions,
+    uint256[] calldata values,
+    bytes[] calldata calldatas,
+    uint256[] calldata gasAmounts
   ) external onlyGovernor {
     _proposeGlobal({
-      _expiryTimestamp: _expiryTimestamp,
-      _targetOptions: _targetOptions,
-      _values: _values,
-      _calldatas: _calldatas,
-      _gasAmounts: _gasAmounts,
-      _bridgeManagerContract: address(this),
-      _gatewayContract: getContract(ContractType.BRIDGE),
-      _creator: msg.sender
+      expiryTimestamp: expiryTimestamp,
+      targetOptions: targetOptions,
+      values: values,
+      calldatas: calldatas,
+      gasAmounts: gasAmounts,
+      creator: msg.sender
     });
   }
 
@@ -158,18 +155,16 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
    *
    */
   function proposeGlobalProposalStructAndCastVotes(
-    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures
+    GlobalProposal.GlobalProposalDetail calldata globalProposal,
+    Ballot.VoteType[] calldata supports_,
+    Signature[] calldata signatures
   ) external onlyGovernor {
     _proposeGlobalProposalStructAndCastVotes({
-      _globalProposal: _globalProposal,
-      _supports: _supports,
-      _signatures: _signatures,
-      _domainSeparator: DOMAIN_SEPARATOR,
-      _bridgeManagerContract: address(this),
-      _gatewayContract: getContract(ContractType.BRIDGE),
-      _creator: msg.sender
+      globalProposal: globalProposal,
+      supports_: supports_,
+      signatures: signatures,
+      domainSeparator: DOMAIN_SEPARATOR,
+      creator: msg.sender
     });
   }
 
@@ -177,17 +172,15 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
    * @dev See `GovernanceProposal-_castGlobalProposalBySignatures`.
    */
   function castGlobalProposalBySignatures(
-    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures
+    GlobalProposal.GlobalProposalDetail calldata globalProposal,
+    Ballot.VoteType[] calldata supports_,
+    Signature[] calldata signatures
   ) external {
     _castGlobalProposalBySignatures({
-      _globalProposal: _globalProposal,
-      _supports: _supports,
-      _signatures: _signatures,
-      _domainSeparator: DOMAIN_SEPARATOR,
-      _bridgeManagerContract: address(this),
-      _gatewayContract: getContract(ContractType.BRIDGE)
+      globalProposal: globalProposal,
+      supports_: supports_,
+      signatures: signatures,
+      domainSeparator: DOMAIN_SEPARATOR
     });
   }
 

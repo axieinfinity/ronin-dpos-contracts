@@ -141,10 +141,8 @@ export const defaultTestConfig: InitTestInput = {
   bridgeManagerArguments: {
     numerator: 70,
     denominator: 100,
-    weights: [],
-    operators: [],
-    governors: [],
     expiryDuration: 60 * 60 * 24 * 14, // 14 days
+    members: [],
   },
 
   bridgeRewardArguments: {
@@ -225,16 +223,13 @@ export const initTest = (id: string) =>
     }
 
     await deployments.fixture([
-      'CalculateAddresses',
+      '_HelperDposCalculate',
       'RoninGovernanceAdmin',
       'RoninValidatorSetProxy',
-      'BridgeTrackingProxy',
       'SlashIndicatorProxy',
       'StakingProxy',
       'MaintenanceProxy',
       'StakingVestingProxy',
-      'RoninBridgeManager',
-      'MainchainBridgeManager',
       id,
     ]);
 
@@ -245,11 +240,20 @@ export const initTest = (id: string) =>
     const stakingContractDeployment = await deployments.get('StakingProxy');
     const stakingVestingContractDeployment = await deployments.get('StakingVestingProxy');
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
+
+    await deployments.fixture([
+      '_HelperBridgeCalculate',
+      'BridgeTrackingProxy',
+      'RoninBridgeManager',
+      'MainchainBridgeManager',
+      id,
+    ]);
     const bridgeTrackingDeployment = await deployments.get('BridgeTrackingProxy');
     const bridgeSlashDeployment = await deployments.get('BridgeSlashProxy');
     const bridgeRewardDeployment = await deployments.get('BridgeRewardProxy');
     const roninBridgeManagerDeployment = await deployments.get('RoninBridgeManager');
     const mainchainBridgeManagerDeployment = await deployments.get('MainchainBridgeManager');
+
     await EpochController.setTimestampToPeriodEnding();
 
     return {

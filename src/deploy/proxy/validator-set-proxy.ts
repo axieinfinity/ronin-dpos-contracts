@@ -4,6 +4,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { roninValidatorSetConf, generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { verifyAddress } from '../../script/verify-address';
 import { RoninValidatorSet__factory } from '../../types';
+import { DEFAULT_ADDRESS } from '../../utils';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -20,7 +21,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     generalRoninConf[network.name]!.stakingVestingContract?.address,
     generalRoninConf[network.name]!.maintenanceContract?.address,
     generalRoninConf[network.name]!.roninTrustedOrganizationContract?.address,
-    generalRoninConf[network.name]!.bridgeTrackingContract?.address,
+    DEFAULT_ADDRESS, // generalRoninConf[network.name]!.bridgeTrackingContract?.address,
     roninValidatorSetConf[network.name]!.maxValidatorNumber,
     roninValidatorSetConf[network.name]!.maxValidatorCandidate,
     roninValidatorSetConf[network.name]!.maxPrioritizedValidatorNumber,
@@ -43,6 +44,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['RoninValidatorSetProxy'];
-deploy.dependencies = ['RoninValidatorSetLogic', 'CalculateAddresses', 'StakingProxy'];
+deploy.dependencies = ['RoninValidatorSetLogic', '_HelperDposCalculate', 'StakingProxy'];
 
 export default deploy;

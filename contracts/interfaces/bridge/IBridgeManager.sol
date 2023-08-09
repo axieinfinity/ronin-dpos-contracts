@@ -95,15 +95,6 @@ interface IBridgeManager is IBridgeManagerEvents {
   function getGovernorWeight(address governor) external view returns (uint256);
 
   /**
-   * @dev External function to retrieve the vote weights of multiple bridge operators.
-   * @param bridgeOperators An array containing the addresses of bridge operators to get the vote weights for.
-   * @return weights An array of vote weights corresponding to the provided bridge operators.
-   */
-  function getBridgeOperatorWeights(
-    address[] calldata bridgeOperators
-  ) external view returns (uint256[] memory weights);
-
-  /**
    * @dev External function to retrieve the vote weight of a specific bridge operator.
    * @param bridgeOperator The address of the bridge operator to get the vote weight for.
    * @return weight The vote weight of the specified bridge operator.

@@ -29,7 +29,6 @@ contract RoninGatewayV2 is
   using Transfer for Transfer.Request;
   using Transfer for Transfer.Receipt;
   using IsolatedGovernance for IsolatedGovernance.Vote;
-  using EnumFlags for EnumFlags.ValidatorFlag;
 
   /// @dev Withdrawal unlocker role hash
   bytes32 public constant WITHDRAWAL_MIGRATOR = keccak256("WITHDRAWAL_MIGRATOR");

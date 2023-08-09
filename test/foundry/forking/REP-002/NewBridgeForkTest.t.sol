@@ -15,9 +15,14 @@ import { Ballot, GlobalProposal, RoninBridgeManager, BridgeManager } from "@roni
 // ETH
 import { MainchainBridgeManager } from "@ronin/contracts/mainchain/MainchainBridgeManager.sol";
 
-contract NewBridgeFokrTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
+contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
   using Sorting for *;
+  using Transfer for Transfer.Receipt;
+  using Transfer for Transfer.Request;
   using GlobalProposal for GlobalProposal.GlobalProposalDetail;
+
+  /// @dev Emitted when the deposit is requested
+  event DepositRequested(bytes32 receiptHash, Transfer.Receipt receipt);
 
   uint256 internal constant DEFAULT_NUMERATOR = 2;
   uint256 internal constant DEFAULT_DENOMINATOR = 4;
@@ -51,6 +56,38 @@ contract NewBridgeFokrTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
 
     _setUpOnRON();
     _setUpOnETH();
+  }
+
+  function test_Fork_DepositToGateway() external {
+    Account memory user = _createPersistentAccount("USER", DEFAULT_BALANCE);
+
+    Transfer.Request memory request = Transfer.Request(
+      user.addr,
+      address(0),
+      Token.Info(Token.Standard.ERC20, 0, 1 ether)
+    );
+    vm.selectFork(_ethFork);
+    address weth = address(MainchainGatewayV2(payable(address(ETH_GATEWAY_CONTRACT))).wrappedNativeToken());
+    MappedTokenConsumer.MappedToken memory token = IMainchainGatewayV2(address(ETH_GATEWAY_CONTRACT)).getRoninToken(
+      weth
+    );
+
+    Transfer.Receipt memory receipt = Transfer.Request(user.addr, weth, request.info).into_deposit_receipt(
+      user.addr,
+      IMainchainGatewayV2(address(ETH_GATEWAY_CONTRACT)).depositCount(),
+      token.tokenAddr,
+      _ronChainId
+    );
+
+    vm.prank(user.addr, user.addr);
+    vm.expectEmit(address(ETH_GATEWAY_CONTRACT));
+    emit DepositRequested(receipt.hash(), receipt);
+    MainchainGatewayV2(payable(address(ETH_GATEWAY_CONTRACT))).requestDepositFor{ value: 1 ether }(request);
+
+    vm.selectFork(_roninFork);
+    address operator = _operators[0];
+    vm.prank(operator, operator);
+    RoninGatewayV2(payable(address(RONIN_GATEWAY_CONTRACT))).depositFor(receipt);
   }
 
   function test_Fork_VoteAddBridgeOperators() external onWhichFork(_roninFork) {

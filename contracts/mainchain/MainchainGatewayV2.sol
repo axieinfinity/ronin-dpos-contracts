@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../extensions/GatewayV2.sol";
 import { IBridgeManager } from "../interfaces/bridge/IBridgeManager.sol";
 import { IBridgeManagerCallback } from "../interfaces/bridge/IBridgeManagerCallback.sol";
 import { HasContracts, ContractType } from "../extensions/collections/HasContracts.sol";

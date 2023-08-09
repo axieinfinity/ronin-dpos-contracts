@@ -138,9 +138,13 @@ describe('[Integration] Bridge Tracking test', () => {
       bridgeManagerArguments: {
         numerator: bridgeAdminNumerator,
         denominator: bridgeAdminDenominator,
-        weights: operatorTuples.map(() => 100),
-        operators: operatorTuples.map((_) => _.operator.address),
-        governors: operatorTuples.map((_) => _.governor.address),
+        members: operatorTuples.map((_) => {
+          return {
+            operator: _.operator.address,
+            governor: _.governor.address,
+            weight: 100,
+          };
+        }),
       },
     });
 
@@ -174,7 +178,7 @@ describe('[Integration] Bridge Tracking test', () => {
     await TransparentUpgradeableProxyV2__factory.connect(bridgeContract.address, deployer).changeAdmin(
       bridgeManager.address
     );
-    await bridgeAdminInterface.functionDelegateCalls(
+    await bridgeAdminInterface.functionDelegateCallsGlobal(
       [TargetOption.GatewayContract],
       [
         bridgeContract.interface.encodeFunctionData('setContract', [
