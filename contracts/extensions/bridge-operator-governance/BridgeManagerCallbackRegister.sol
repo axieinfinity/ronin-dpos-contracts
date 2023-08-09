@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { IBridgeManagerCallbackRegister } from "../../interfaces/bridge/IBridgeManagerCallbackRegister.sol";
 import { IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
-import { IdentityGuard } from "../../utils/IdentityGuard.sol";
+import { TransparentUpgradeableProxyV2, IdentityGuard } from "../../utils/IdentityGuard.sol";
 
 /**
  * @title BridgeManagerCallbackRegister
@@ -110,9 +110,13 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
     bool[] memory statuses = new bool[](length);
     bytes[] memory returnDatas = new bytes[](length);
     bytes memory callData = abi.encodePacked(callbackFnSig, inputs);
+    bytes memory proxyCallData = abi.encodeCall(TransparentUpgradeableProxyV2.functionDelegateCall, (callData));
 
     for (uint256 i; i < length; ) {
       (statuses[i], returnDatas[i]) = registers[i].call(callData);
+      if (statuses[i]) {
+        (statuses[i], returnDatas[i]) = registers[i].call(proxyCallData);
+      }
 
       unchecked {
         ++i;
