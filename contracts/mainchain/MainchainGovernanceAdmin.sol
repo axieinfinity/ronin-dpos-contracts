@@ -22,6 +22,10 @@ contract MainchainGovernanceAdmin is AccessControlEnumerable, GovernanceRelay, G
     address _bridgeContract,
     address[] memory _relayers
   ) GovernanceAdmin(_roninChainId, _roninTrustedOrganizationContract, _bridgeContract, DEFAULT_EXPIRY_DURATION) {
+    round[5] = 1;
+    ProposalVote storage _latestProposalVote = vote[5][1];
+    _latestProposalVote.status = VoteStatus.Expired;
+
     _setupRole(DEFAULT_ADMIN_ROLE, _roleSetter);
     for (uint256 _i; _i < _relayers.length; ) {
       _grantRole(RELAYER_ROLE, _relayers[_i]);
