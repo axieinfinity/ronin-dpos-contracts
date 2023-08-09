@@ -316,6 +316,7 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
 
   /**
    * @inheritdoc IBridgeReward
+   * @notice call with {TransparentUpgradeableProxyV2.functionDelegateCall}
    */
   function setRewardPerPeriod(uint256 rewardPerPeriod) external onlyContract(ContractType.BRIDGE_MANAGER) {
     _setRewardPerPeriod(rewardPerPeriod);
