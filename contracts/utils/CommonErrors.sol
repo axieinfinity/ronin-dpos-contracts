@@ -4,6 +4,47 @@ pragma solidity ^0.8.0;
 import { ContractType } from "./ContractType.sol";
 import { RoleAccess } from "./RoleAccess.sol";
 
+error ErrSyncTooFarPeriod(uint256 period, uint256 latestRewardedPeriod);
+/**
+ * @dev Error thrown when an address is expected to be an already created externally owned account (EOA).
+ * This error indicates that the provided address is invalid for certain contract operations that require already created EOA.
+ */
+error ErrAddressIsNotCreatedEOA(address addr, bytes32 codehash);
+/**
+ * @dev Error raised when a bridge operator update operation fails.
+ * @param bridgeOperator The address of the bridge operator that failed to update.
+ */
+error ErrBridgeOperatorUpdateFailed(address bridgeOperator);
+/**
+ * @dev Error thrown when attempting to add a bridge operator that already exists in the contract.
+ * This error indicates that the provided bridge operator address is already registered as a bridge operator in the contract.
+ */
+error ErrBridgeOperatorAlreadyExisted(address bridgeOperator);
+/**
+ * @dev The error indicating an unsupported interface.
+ * @param interfaceId The bytes4 interface identifier that is not supported.
+ * @param addr The address where the unsupported interface was encountered.
+ */
+error ErrUnsupportedInterface(bytes4 interfaceId, address addr);
+/**
+ * @dev Error thrown when the return data from a callback function is invalid.
+ * @param callbackFnSig The signature of the callback function that returned invalid data.
+ * @param register The address of the register where the callback function was invoked.
+ * @param returnData The invalid return data received from the callback function.
+ */
+error ErrInvalidReturnData(bytes4 callbackFnSig, address register, bytes returnData);
+/**
+ * @dev Error of set to non-contract.
+ */
+error ErrZeroCodeContract(address addr);
+/**
+ * @dev Error indicating that arguments are invalid.
+ */
+error ErrInvalidArguments(bytes4 msgSig);
+/**
+ * @dev Error indicating that given address is null when it should not.
+ */
+error ErrZeroAddress(bytes4 msgSig);
 /**
  * @dev Error indicating that the provided threshold is invalid for a specific function signature.
  * @param msgSig The function signature (bytes4) that the invalid threshold applies to.
@@ -22,6 +63,12 @@ error ErrOnlySelfCall(bytes4 msgSig);
  * @param expectedRole The role required to perform the function.
  */
 error ErrUnauthorized(bytes4 msgSig, RoleAccess expectedRole);
+
+/**
+ * @dev Error indicating that the caller is unauthorized to perform a specific function.
+ * @param msgSig The function signature (bytes4) that the caller is unauthorized to perform.
+ */
+error ErrUnauthorizedCall(bytes4 msgSig);
 
 /**
  * @dev Error indicating that the caller is unauthorized to perform a specific function.
@@ -139,3 +186,33 @@ error ErrInvalidReceiptKind();
  * @dev Error indicating that a receipt is invalid.
  */
 error ErrInvalidReceipt();
+
+/**
+ * @dev Error indicating that an address is not payable.
+ */
+error ErrNonpayableAddress(address);
+
+/**
+ * @dev Error indicating that the period is already processed, i.e. scattered reward.
+ */
+error ErrPeriodAlreadyProcessed(uint256 requestingPeriod, uint256 latestPeriod);
+
+/**
+ * @dev Error thrown when an invalid vote hash is provided.
+ */
+error ErrInvalidVoteHash();
+
+/**
+ * @dev Error thrown when querying for an empty vote.
+ */
+error ErrQueryForEmptyVote();
+
+/**
+ * @dev Error thrown when querying for an expired vote.
+ */
+error ErrQueryForExpiredVote();
+
+/**
+ * @dev Error thrown when querying for a non-existent vote.
+ */
+error ErrQueryForNonExistentVote();

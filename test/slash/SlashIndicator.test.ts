@@ -20,10 +20,12 @@ import { IndicatorController } from '../helpers/slash';
 import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
 import {
   createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
   TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
+import {
+  createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types';
+} from '../helpers/address-set-types/validator-candidate-set-type';
 import { getLastBlockTimestamp } from '../helpers/utils';
 import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
 import { getProposalHash, VoteType } from '../../src/script/proposal';
@@ -125,6 +127,13 @@ describe('Slash indicator test', () => {
         },
         governanceAdminArguments: {
           proposalExpiryDuration,
+        },
+        bridgeManagerArguments: {
+          numerator: 70,
+          denominator: 100,
+          weights: [],
+          operators: [],
+          governors: [],
         },
       });
 

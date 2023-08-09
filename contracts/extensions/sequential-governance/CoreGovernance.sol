@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "../../libraries/Proposal.sol";
 import "../../libraries/GlobalProposal.sol";
 import "../../utils/CommonErrors.sol";
@@ -12,7 +11,6 @@ import "../../interfaces/consumers/VoteStatusConsumer.sol";
 
 abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, ChainTypeConsumer {
   using Proposal for Proposal.ProposalDetail;
-  using GlobalProposal for GlobalProposal.GlobalProposalDetail;
 
   /**
    * @dev Error thrown when attempting to interact with a finalized vote.
@@ -44,15 +42,6 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     Proposal.ProposalDetail proposal,
     address creator
   );
-  /// @dev Emitted when a proposal is created
-  event GlobalProposalCreated(
-    uint256 indexed round,
-    bytes32 indexed proposalHash,
-    Proposal.ProposalDetail proposal,
-    bytes32 globalProposalHash,
-    GlobalProposal.GlobalProposalDetail globalProposal,
-    address creator
-  );
   /// @dev Emitted when the proposal is voted
   event ProposalVoted(bytes32 indexed proposalHash, address indexed voter, Ballot.VoteType support, uint256 weight);
   /// @dev Emitted when the proposal is approved
@@ -63,6 +52,8 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   event ProposalExpired(bytes32 indexed proposalHash);
   /// @dev Emitted when the proposal is executed
   event ProposalExecuted(bytes32 indexed proposalHash, bool[] successCalls, bytes[] returnDatas);
+  /// @dev Emitted when the proposal expiry duration is changed.
+  event ProposalExpiryDurationChanged(uint256 indexed duration);
 
   /// @dev Mapping from chain id => vote round
   /// @notice chain id = 0 for global proposal
@@ -70,7 +61,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   /// @dev Mapping from chain id => vote round => proposal vote
   mapping(uint256 => mapping(uint256 => ProposalVote)) public vote;
 
-  uint256 private _proposalExpiryDuration;
+  uint256 internal _proposalExpiryDuration;
 
   constructor(uint256 _expiryDuration) {
     _setProposalExpiryDuration(_expiryDuration);
@@ -159,68 +150,6 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     _saveVotingRound(vote[_chainId][_round], _proposalHash, _proposal.expiryTimestamp);
     if (_round != _proposal.nonce) revert ErrInvalidProposalNonce(msg.sig);
     emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
-  }
-
-  /**
-   * @dev Proposes for a global proposal.
-   *
-   * Emits the `GlobalProposalCreated` event.
-   *
-   */
-  function _proposeGlobal(
-    uint256 _expiryTimestamp,
-    GlobalProposal.TargetOption[] calldata _targetOptions,
-    uint256[] memory _values,
-    bytes[] memory _calldatas,
-    uint256[] memory _gasAmounts,
-    address _roninTrustedOrganizationContract,
-    address _gatewayContract,
-    address _creator
-  ) internal virtual {
-    uint256 _round = _createVotingRound(0);
-    GlobalProposal.GlobalProposalDetail memory _globalProposal = GlobalProposal.GlobalProposalDetail(
-      _round,
-      _expiryTimestamp,
-      _targetOptions,
-      _values,
-      _calldatas,
-      _gasAmounts
-    );
-    Proposal.ProposalDetail memory _proposal = _globalProposal.into_proposal_detail(
-      _roninTrustedOrganizationContract,
-      _gatewayContract
-    );
-    _proposal.validate(_proposalExpiryDuration);
-
-    bytes32 _proposalHash = _proposal.hash();
-    _saveVotingRound(vote[0][_round], _proposalHash, _expiryTimestamp);
-    emit GlobalProposalCreated(_round, _proposalHash, _proposal, _globalProposal.hash(), _globalProposal, _creator);
-  }
-
-  /**
-   * @dev Proposes global proposal struct.
-   *
-   * Requirements:
-   * - The proposal nonce is equal to the new round.
-   *
-   * Emits the `GlobalProposalCreated` event.
-   *
-   */
-  function _proposeGlobalStruct(
-    GlobalProposal.GlobalProposalDetail memory _globalProposal,
-    address _roninTrustedOrganizationContract,
-    address _gatewayContract,
-    address _creator
-  ) internal virtual returns (Proposal.ProposalDetail memory _proposal) {
-    _proposal = _globalProposal.into_proposal_detail(_roninTrustedOrganizationContract, _gatewayContract);
-    _proposal.validate(_proposalExpiryDuration);
-
-    bytes32 _proposalHash = _proposal.hash();
-    uint256 _round = _createVotingRound(0);
-    _saveVotingRound(vote[0][_round], _proposalHash, _globalProposal.expiryTimestamp);
-
-    if (_round != _proposal.nonce) revert ErrInvalidProposalNonce(msg.sig);
-    emit GlobalProposalCreated(_round, _proposalHash, _proposal, _globalProposal.hash(), _globalProposal, _creator);
   }
 
   /**
@@ -344,13 +273,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
    */
   function _setProposalExpiryDuration(uint256 _expiryDuration) internal {
     _proposalExpiryDuration = _expiryDuration;
-  }
-
-  /**
-   * @dev Returns whether the voter casted for the proposal.
-   */
-  function _voted(ProposalVote storage _vote, address _voter) internal view returns (bool) {
-    return _vote.voted[_voter];
+    emit ProposalExpiryDurationChanged(_expiryDuration);
   }
 
   /**
@@ -358,6 +281,13 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
    */
   function _getProposalExpiryDuration() internal view returns (uint256) {
     return _proposalExpiryDuration;
+  }
+
+  /**
+   * @dev Returns whether the voter casted for the proposal.
+   */
+  function _voted(ProposalVote storage _vote, address _voter) internal view returns (bool) {
+    return _vote.voted[_voter];
   }
 
   /**

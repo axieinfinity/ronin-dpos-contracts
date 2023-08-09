@@ -13,15 +13,22 @@ interface IBridgeTracking {
     MainchainWithdrawal
   }
 
+  event ExternalCallFailed(address indexed to, bytes4 indexed msgSig, bytes reason);
+
+  /**
+   * @dev Returns the block that allow incomming mutable call.
+   */
+  function startedAtBlock() external view returns (uint256);
+
   /**
    * @dev Returns the total number of votes at the specific period `_period`.
    */
-  function totalVotes(uint256 _period) external view returns (uint256);
+  function totalVote(uint256 _period) external view returns (uint256);
 
   /**
    * @dev Returns the total number of ballots at the specific period `_period`.
    */
-  function totalBallots(uint256 _period) external view returns (uint256);
+  function totalBallot(uint256 _period) external view returns (uint256);
 
   /**
    * @dev Returns the total number of ballots of bridge operators at the specific period `_period`.
@@ -34,7 +41,7 @@ interface IBridgeTracking {
   /**
    * @dev Returns the total number of ballots of a bridge operator at the specific period `_period`.
    */
-  function totalBallotsOf(uint256 _period, address _bridgeOperator) external view returns (uint256);
+  function totalBallotOf(uint256 _period, address _bridgeOperator) external view returns (uint256);
 
   /**
    * @dev Handles the request once it is approved.

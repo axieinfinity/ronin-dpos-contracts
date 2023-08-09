@@ -25,10 +25,12 @@ import { SlashType } from '../../src/script/slash-indicator';
 import { BlockRewardDeprecatedType } from '../../src/script/ronin-validator-set';
 import {
   createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
   TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
+import {
+  createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types';
+} from '../helpers/address-set-types/validator-candidate-set-type';
 
 let maintenanceContract: Maintenance;
 let slashContract: MockSlashIndicatorExtended;

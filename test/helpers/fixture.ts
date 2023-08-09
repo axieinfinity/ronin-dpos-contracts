@@ -17,7 +17,6 @@ import {
 } from '../../src/configs/config';
 import {
   RoninGovernanceAdminArguments,
-  MainchainGovernanceAdminArguments,
   MaintenanceArguments,
   Network,
   RoninTrustedOrganizationArguments,
@@ -26,18 +25,26 @@ import {
   StakingArguments,
   StakingVestingArguments,
 } from '../../src/utils';
+import {
+  BridgeManagerArguments,
+  BridgeRewardArguments,
+  bridgeManagerConf,
+  bridgeRewardConf,
+} from '../../src/configs/bridge-manager';
 
 export interface InitTestOutput {
   roninGovernanceAdminAddress: Address;
-  mainchainGovernanceAdminAddress: Address;
   maintenanceContractAddress: Address;
   roninTrustedOrganizationAddress: Address;
-  mainchainRoninTrustedOrganizationAddress: Address;
   slashContractAddress: Address;
   stakingContractAddress: Address;
   stakingVestingContractAddress: Address;
   validatorContractAddress: Address;
   bridgeTrackingAddress: Address;
+  bridgeSlashAddress: Address;
+  bridgeRewardAddress: Address;
+  roninBridgeManagerAddress: Address;
+  mainchainBridgeManagerAddress: Address;
 }
 
 export interface InitTestInput {
@@ -50,8 +57,9 @@ export interface InitTestInput {
   slashIndicatorArguments?: SlashIndicatorArguments;
   roninValidatorSetArguments?: RoninValidatorSetArguments;
   roninTrustedOrganizationArguments?: RoninTrustedOrganizationArguments;
-  mainchainGovernanceAdminArguments?: MainchainGovernanceAdminArguments;
   governanceAdminArguments?: RoninGovernanceAdminArguments;
+  bridgeManagerArguments?: BridgeManagerArguments;
+  bridgeRewardArguments?: BridgeRewardArguments;
 }
 
 export const defaultTestConfig: InitTestInput = {
@@ -126,13 +134,22 @@ export const defaultTestConfig: InitTestInput = {
     denominator: 1,
   },
 
-  mainchainGovernanceAdminArguments: {
-    roleSetter: ethers.constants.AddressZero,
-    relayers: [],
-  },
-
   governanceAdminArguments: {
     proposalExpiryDuration: 60 * 60 * 24 * 14, // 14 days
+  },
+
+  bridgeManagerArguments: {
+    numerator: 70,
+    denominator: 100,
+    weights: [],
+    operators: [],
+    governors: [],
+    expiryDuration: 60 * 60 * 24 * 14, // 14 days
+  },
+
+  bridgeRewardArguments: {
+    rewardPerPeriod: 5_000,
+    topupAmount: BigNumber.from(100_000_000_000),
   },
 };
 
@@ -193,13 +210,17 @@ export const initTest = (id: string) =>
         ...defaultTestConfig?.roninTrustedOrganizationArguments,
         ...options?.roninTrustedOrganizationArguments,
       };
-      mainchainGovernanceAdminConf[network.name] = {
-        ...defaultTestConfig?.mainchainGovernanceAdminArguments,
-        ...options?.mainchainGovernanceAdminArguments,
-      };
       roninGovernanceAdminConf[network.name] = {
         ...defaultTestConfig?.governanceAdminArguments,
         ...options?.governanceAdminArguments,
+      };
+      bridgeManagerConf[network.name] = {
+        ...defaultTestConfig?.bridgeManagerArguments,
+        ...options?.bridgeManagerArguments,
+      };
+      bridgeRewardConf[network.name] = {
+        ...defaultTestConfig?.bridgeRewardArguments,
+        ...options?.bridgeRewardArguments,
       };
     }
 
@@ -212,33 +233,37 @@ export const initTest = (id: string) =>
       'StakingProxy',
       'MaintenanceProxy',
       'StakingVestingProxy',
-      'MainchainGovernanceAdmin',
-      'MainchainRoninTrustedOrganizationProxy',
+      'RoninBridgeManager',
+      'MainchainBridgeManager',
       id,
     ]);
 
     const roninGovernanceAdminDeployment = await deployments.get('RoninGovernanceAdmin');
-    const mainchainGovernanceAdminDeployment = await deployments.get('MainchainGovernanceAdmin');
     const maintenanceContractDeployment = await deployments.get('MaintenanceProxy');
     const roninTrustedOrganizationDeployment = await deployments.get('RoninTrustedOrganizationProxy');
-    const mainchainRoninTrustedOrganizationDeployment = await deployments.get('MainchainRoninTrustedOrganizationProxy');
     const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
     const stakingContractDeployment = await deployments.get('StakingProxy');
     const stakingVestingContractDeployment = await deployments.get('StakingVestingProxy');
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
     const bridgeTrackingDeployment = await deployments.get('BridgeTrackingProxy');
+    const bridgeSlashDeployment = await deployments.get('BridgeSlashProxy');
+    const bridgeRewardDeployment = await deployments.get('BridgeRewardProxy');
+    const roninBridgeManagerDeployment = await deployments.get('RoninBridgeManager');
+    const mainchainBridgeManagerDeployment = await deployments.get('MainchainBridgeManager');
     await EpochController.setTimestampToPeriodEnding();
 
     return {
       roninGovernanceAdminAddress: roninGovernanceAdminDeployment.address,
-      mainchainGovernanceAdminAddress: mainchainGovernanceAdminDeployment.address,
       maintenanceContractAddress: maintenanceContractDeployment.address,
       roninTrustedOrganizationAddress: roninTrustedOrganizationDeployment.address,
-      mainchainRoninTrustedOrganizationAddress: mainchainRoninTrustedOrganizationDeployment.address,
       slashContractAddress: slashContractDeployment.address,
       stakingContractAddress: stakingContractDeployment.address,
       stakingVestingContractAddress: stakingVestingContractDeployment.address,
       validatorContractAddress: validatorContractDeployment.address,
       bridgeTrackingAddress: bridgeTrackingDeployment.address,
+      bridgeSlashAddress: bridgeSlashDeployment.address,
+      bridgeRewardAddress: bridgeRewardDeployment.address,
+      roninBridgeManagerAddress: roninBridgeManagerDeployment.address,
+      mainchainBridgeManagerAddress: mainchainBridgeManagerDeployment.address,
     };
   }, id);

@@ -26,10 +26,12 @@ import { BlockRewardDeprecatedType } from '../../src/script/ronin-validator-set'
 import { Address } from 'hardhat-deploy/dist/types';
 import {
   createManyTrustedOrganizationAddressSets,
-  createManyValidatorCandidateAddressSets,
   TrustedOrganizationAddressSet,
+} from '../helpers/address-set-types/trusted-org-set-type';
+import {
+  createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
-} from '../helpers/address-set-types';
+} from '../helpers/address-set-types/validator-candidate-set-type';
 import { SlashType } from '../../src/script/slash-indicator';
 import { ProposalDetailStruct } from '../../src/types/GovernanceAdmin';
 import { VoteType } from '../../src/script/proposal';

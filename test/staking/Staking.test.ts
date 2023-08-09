@@ -13,7 +13,10 @@ import {
 import { MockValidatorSet__factory } from '../../src/types/factories/MockValidatorSet__factory';
 import { StakingVesting__factory } from '../../src/types/factories/StakingVesting__factory';
 import { MockValidatorSet } from '../../src/types/MockValidatorSet';
-import { createManyValidatorCandidateAddressSets, ValidatorCandidateAddressSet } from '../helpers/address-set-types';
+import {
+  createManyValidatorCandidateAddressSets,
+  ValidatorCandidateAddressSet,
+} from '../helpers/address-set-types/validator-candidate-set-type';
 import { getLastBlockTimestamp } from '../helpers/utils';
 
 let coinbase: SignerWithAddress;
