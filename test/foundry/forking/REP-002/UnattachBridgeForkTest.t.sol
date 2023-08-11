@@ -15,13 +15,15 @@ interface IJailingInfoPrev {
 contract UnattachBridgeForkTest is RoninTest {
   event Upgraded(address indexed implementation);
 
+  uint256 internal constant FORK_HEIGHT = 19231486;
+
   uint256 internal _roninFork;
   address internal _prevImpl;
   address internal _newImpl;
   address internal _versionSwitcher;
 
   function _createFork() internal virtual override {
-    _roninFork = vm.createSelectFork(RONIN_TEST_RPC);
+    _roninFork = vm.createSelectFork(RONIN_TEST_RPC, FORK_HEIGHT);
   }
 
   function _setUp() internal virtual override onWhichFork(_roninFork) {

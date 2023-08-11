@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import { console } from "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
 import { LibArrayUtils } from "../helpers/LibArrayUtils.t.sol";
-import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
 import { MockValidatorContract } from "@ronin/contracts/mocks/ronin/MockValidatorContract.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
@@ -147,6 +147,51 @@ contract BridgeSlashTest is IBridgeSlashEvents, BridgeManagerUtils {
       }
     }
   }
+
+  // function test_bridgeSlash_whenAdminIsBridgeReward_recordEvents_onBridgeOperatorsAdded(
+  //   uint256 r1,
+  //   uint256 r2,
+  //   uint256 r3,
+  //   uint256 numBridgeOperators,
+  //   uint256 period
+  // ) external {
+  //   address[] memory currentOperators = IBridgeManager(_bridgeManagerContract).getBridgeOperators();
+  //   vm.prank(_bridgeManagerContract, _bridgeManagerContract);
+  //   IBridgeManager(_bridgeManagerContract).removeBridgeOperators(currentOperators);
+  //   // Assume the input values are not equal to the default values
+  //   vm.assume(r1 != DEFAULT_R1 && r2 != DEFAULT_R2 && r3 != DEFAULT_R3);
+  //   // Bound the period between 1 and the maximum value of uint64
+  //   period = _bound(period, 1, type(uint64).max);
+
+  //   // Set the current period in the mock validator contract
+  //   MockValidatorContract(payable(_validatorContract)).setCurrentPeriod(period);
+
+  //   // Register the bridge slash contract as a callback
+  //   vm.prank(_bridgeManagerContract, _bridgeManagerContract);
+  //   address[] memory registers = new address[](1);
+  //   registers[0] = _bridgeSlashContract;
+  //   MockBridgeManager(payable(_bridgeManagerContract)).registerCallbacks(registers);
+
+  //   // Generate valid inputs for bridge operators
+  //   (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = getValidInputs(
+  //     r1,
+  //     r2,
+  //     r3,
+  //     numBridgeOperators
+  //   );
+
+  //   _addBridgeOperators(_bridgeManagerContract, _bridgeManagerContract, voteWeights, governors, bridgeOperators);
+
+  //   // Retrieve the added periods for the bridge operators
+  //   uint256[] memory addedPeriods = IBridgeSlash(_bridgeSlashContract).getAddedPeriodOf(bridgeOperators);
+  //   // Check that the added periods match the current period
+  //   for (uint256 i; i < addedPeriods.length; ) {
+  //     assertEq(addedPeriods[i], period);
+  //     unchecked {
+  //       ++i;
+  //     }
+  //   }
+  // }
 
   /*
    * @notice Tests the exclusion of newly added operators during the execution of slashBridgeOperators.
@@ -300,16 +345,16 @@ contract BridgeSlashTest is IBridgeSlashEvents, BridgeManagerUtils {
     _bridgeManagerContract = address(new MockBridgeManager(bridgeOperators, governors, voteWeights));
 
     _gatewayLogic = address(new RoninGatewayV2());
-    _gatewayContract = address(new TransparentUpgradeableProxy(_gatewayLogic, _admin, ""));
+    _gatewayContract = address(new TransparentUpgradeableProxyV2(_gatewayLogic, _admin, ""));
 
     _bridgeTrackingLogic = address(new BridgeTracking());
-    _bridgeTrackingContract = address(new TransparentUpgradeableProxy(_bridgeTrackingLogic, _admin, ""));
+    _bridgeTrackingContract = address(new TransparentUpgradeableProxyV2(_bridgeTrackingLogic, _bridgeManagerContract, ""));
 
     _bridgeSlashLogic = address(new MockBridgeSlash());
     _bridgeSlashContract = address(
-      new TransparentUpgradeableProxy(
+      new TransparentUpgradeableProxyV2(
         _bridgeSlashLogic,
-        _admin,
+        _bridgeManagerContract,
         abi.encodeCall(BridgeSlash.initialize, (_validatorContract, _bridgeManagerContract, _bridgeTrackingContract))
       )
     );
