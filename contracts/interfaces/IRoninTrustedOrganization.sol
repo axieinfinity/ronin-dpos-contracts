@@ -99,7 +99,7 @@ interface IRoninTrustedOrganization is IQuorum {
   /**
    * @dev Returns total weights.
    */
-  function totalWeights() external view returns (uint256);
+  function totalWeight() external view returns (uint256);
 
   /**
    * @dev Returns the weight of a consensus.
@@ -134,17 +134,17 @@ interface IRoninTrustedOrganization is IQuorum {
   /**
    * @dev Returns total weights of the consensus list.
    */
-  function sumConsensusWeights(address[] calldata _list) external view returns (uint256 _res);
+  function sumConsensusWeight(address[] calldata _list) external view returns (uint256 _res);
 
   /**
    * @dev Returns total weights of the governor list.
    */
-  function sumGovernorWeights(address[] calldata _list) external view returns (uint256 _res);
+  function sumGovernorWeight(address[] calldata _list) external view returns (uint256 _res);
 
   /**
    * @dev Returns total weights of the bridge voter list.
    */
-  function sumBridgeVoterWeights(address[] calldata _list) external view returns (uint256 _res);
+  function sumBridgeVoterWeight(address[] calldata _list) external view returns (uint256 _res);
 
   /**
    * @dev Returns the trusted organization at `_index`.

@@ -120,7 +120,7 @@ interface IMaintenance {
   /**
    * @dev Returns the total of current schedules.
    */
-  function totalSchedules() external view returns (uint256 _count);
+  function totalSchedule() external view returns (uint256 _count);
 
   /**
    * @dev Sets the duration restriction, start time restriction, and max allowed for maintenance.
@@ -165,7 +165,7 @@ interface IMaintenance {
   /**
    * @dev Returns the max number of scheduled maintenances.
    */
-  function maxSchedules() external view returns (uint256);
+  function maxSchedule() external view returns (uint256);
 
   /**
    * @dev Schedules for maintenance from `_startedAtBlock` to `_startedAtBlock`.
