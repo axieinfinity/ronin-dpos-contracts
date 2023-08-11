@@ -491,7 +491,7 @@ contract RoninGatewayV2 is
    * @inheritdoc GatewayV2
    */
   function _getTotalWeight() internal view virtual override returns (uint256) {
-    return IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getTotalWeights();
+    return IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getTotalWeight();
   }
 
   /**

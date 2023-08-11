@@ -264,7 +264,7 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEvents {
       _voteWeights := voteWeights
     }
     assertEq(_voteWeights, bridgeManager.getGovernorWeights(governors));
-    assertEq(bridgeOperators.length, bridgeManager.totalBridgeOperators());
+    assertEq(bridgeOperators.length, bridgeManager.totalBridgeOperator());
     // assertEq(_sort(bridgeOperators), _sort(bridgeManager.getBridgeOperatorOf(governors)));
 
     uint256 totalWeight;
@@ -275,6 +275,6 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEvents {
       }
     }
 
-    assertEq(totalWeight, bridgeManager.getTotalWeights());
+    assertEq(totalWeight, bridgeManager.getTotalWeight());
   }
 }

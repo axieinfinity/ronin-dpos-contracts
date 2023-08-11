@@ -293,7 +293,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   /**
    * @dev Returns total weight from validators.
    */
-  function _getTotalWeights() internal view virtual returns (uint256);
+  function _getTotalWeight() internal view virtual returns (uint256);
 
   /**
    * @dev Returns minimum vote to pass a proposal.

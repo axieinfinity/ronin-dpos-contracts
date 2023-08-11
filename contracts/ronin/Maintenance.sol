@@ -93,7 +93,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
       revert ErrUnauthorized(msg.sig, RoleAccess.CANDIDATE_ADMIN);
     if (checkScheduled(_consensusAddr)) revert ErrAlreadyScheduled();
     if (!checkCooldownEnds(_consensusAddr)) revert ErrCooldownTimeNotYetEnded();
-    if (totalSchedules() >= maxSchedules) revert ErrTotalOfSchedulesExceeded();
+    if (totalSchedule() >= maxSchedules) revert ErrTotalOfSchedulesExceeded();
     if (!_startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule)) {
       revert ErrStartBlockOutOfRange();
     }
@@ -177,7 +177,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
   /**
    * @inheritdoc IMaintenance
    */
-  function totalSchedules() public view override returns (uint256 _count) {
+  function totalSchedule() public view override returns (uint256 _count) {
     address[] memory _validators = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
     unchecked {
       for (uint _i = 0; _i < _validators.length; _i++) {

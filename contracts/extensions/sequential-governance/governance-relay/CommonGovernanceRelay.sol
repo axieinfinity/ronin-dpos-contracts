@@ -70,7 +70,7 @@ abstract contract CommonGovernanceRelay is CoreGovernance {
       return;
     }
 
-    uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;
+    uint256 _minimumAgainstVoteWeight = _getTotalWeight() - _minimumForVoteWeight + 1;
     uint256 _totalAgainstVoteWeight = _sumWeights(_againstVoteSigners);
     if (_totalAgainstVoteWeight >= _minimumAgainstVoteWeight) {
       if (_totalAgainstVoteWeight == 0) revert ErrInvalidVoteWeight(msg.sig);
