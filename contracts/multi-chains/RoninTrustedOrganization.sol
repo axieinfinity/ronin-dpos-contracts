@@ -116,7 +116,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function totalWeight() external view virtual returns (uint256) {
+  function totalWeights() external view virtual returns (uint256) {
     return _totalWeight;
   }
 

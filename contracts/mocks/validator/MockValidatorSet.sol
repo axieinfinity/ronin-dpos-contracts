@@ -91,7 +91,7 @@ contract MockValidatorSet is
     return true;
   }
 
-  function totalBlockProducer() external view override returns (uint256) {}
+  function totalBlockProducers() external view override returns (uint256) {}
 
   function tryGetPeriodOfEpoch(uint256) external view returns (bool, uint256) {}
 

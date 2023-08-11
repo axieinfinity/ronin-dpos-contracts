@@ -94,7 +94,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
   /**
    * @inheritdoc IValidatorInfo
    */
-  function totalBlockProducer() external view returns (uint256 _total) {
+  function totalBlockProducers() external view returns (uint256 _total) {
     unchecked {
       for (uint _i; _i < validatorCount; _i++) {
         if (isBlockProducer(_validators[_i])) {
@@ -188,7 +188,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
   /**
    * @inheritdoc IValidatorInfo
    */
-  function totalBridgeOperator() public view returns (uint256 _total) {
+  function totalBridgeOperators() public view returns (uint256 _total) {
     unchecked {
       for (uint _i; _i < validatorCount; _i++) {
         if (isOperatingBridge(_validators[_i])) {

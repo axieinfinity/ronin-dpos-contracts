@@ -99,7 +99,7 @@ interface IRoninTrustedOrganization is IQuorum {
   /**
    * @dev Returns total weights.
    */
-  function totalWeight() external view returns (uint256);
+  function totalWeights() external view returns (uint256);
 
   /**
    * @dev Returns the weight of a consensus.

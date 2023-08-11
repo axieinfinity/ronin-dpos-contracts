@@ -120,7 +120,7 @@ interface IMaintenance {
   /**
    * @dev Returns the total of current schedules.
    */
-  function totalSchedule() external view returns (uint256 _count);
+  function totalSchedules() external view returns (uint256 _count);
 
   /**
    * @dev Sets the duration restriction, start time restriction, and max allowed for maintenance.

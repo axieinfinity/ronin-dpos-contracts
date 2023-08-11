@@ -84,8 +84,8 @@ contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGoverna
    * @dev Internal function to retrieve the total weights of all governors.
    * @return totalWeights The total weights of all governors combined.
    */
-  function _getTotalWeight() internal view override returns (uint256) {
-    return getTotalWeight();
+  function _getTotalWeights() internal view override returns (uint256) {
+    return getTotalWeights();
   }
 
   /**

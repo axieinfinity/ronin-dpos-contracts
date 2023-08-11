@@ -29,7 +29,7 @@ abstract contract CommonGovernanceProposal is CoreGovernance {
     if (!(_supports.length != 0 && _supports.length == _signatures.length)) revert ErrLengthMismatch(msg.sig);
 
     uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
-    uint256 _minimumAgainstVoteWeight = _getTotalWeight() - _minimumForVoteWeight + 1;
+    uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;
 
     address _lastSigner;
     address _signer;

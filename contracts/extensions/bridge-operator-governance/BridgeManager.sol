@@ -75,7 +75,8 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     uint96[] memory voteWeights
   ) payable BridgeManagerCallbackRegister(callbackRegisters) {
     NONCE_SLOT.store(1);
-    _setThreshold(num, denom);
+    NUMERATOR_SLOT.store(num);
+    DENOMINATOR_SLOT.store(denom);
 
     _setContract(ContractType.BRIDGE, bridgeContract);
 
@@ -166,7 +167,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getTotalWeight() public view returns (uint256) {
+  function getTotalWeights() public view returns (uint256) {
     return TOTAL_WEIGHTS_SLOT.load();
   }
 
@@ -196,7 +197,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function totalBridgeOperator() external view returns (uint256) {
+  function totalBridgeOperators() external view returns (uint256) {
     return _getBridgeOperatorSet().length();
   }
 
