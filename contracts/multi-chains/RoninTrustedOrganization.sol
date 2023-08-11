@@ -225,7 +225,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function countTrustedOrganizations() external view override returns (uint256) {
+  function countTrustedOrganization() external view override returns (uint256) {
     return _consensusList.length;
   }
 

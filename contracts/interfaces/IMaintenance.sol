@@ -110,7 +110,7 @@ interface IMaintenance {
   /**
    * @dev Returns whether the validator `_consensusAddr`
    */
-  function checkCooldownEnds(address _consensusAddr) external view returns (bool);
+  function checkCooldownEnded(address _consensusAddr) external view returns (bool);
 
   /**
    * @dev Returns the detailed schedule of the validator `_consensusAddr`.

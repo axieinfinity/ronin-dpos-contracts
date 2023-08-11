@@ -92,7 +92,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender))
       revert ErrUnauthorized(msg.sig, RoleAccess.CANDIDATE_ADMIN);
     if (checkScheduled(_consensusAddr)) revert ErrAlreadyScheduled();
-    if (!checkCooldownEnds(_consensusAddr)) revert ErrCooldownTimeNotYetEnded();
+    if (!checkCooldownEnded(_consensusAddr)) revert ErrCooldownTimeNotYetEnded();
     if (totalSchedule() >= maxSchedule) revert ErrTotalOfSchedulesExceeded();
     if (!_startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule)) {
       revert ErrStartBlockOutOfRange();
@@ -217,7 +217,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
   /**
    * @inheritdoc IMaintenance
    */
-  function checkCooldownEnds(address _consensusAddr) public view override returns (bool) {
+  function checkCooldownEnded(address _consensusAddr) public view override returns (bool) {
     return block.timestamp > _schedule[_consensusAddr].requestTimestamp + cooldownSecsToMaintain;
   }
 

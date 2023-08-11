@@ -154,7 +154,7 @@ interface IRoninTrustedOrganization is IQuorum {
   /**
    * @dev Returns the number of trusted organizations.
    */
-  function countTrustedOrganizations() external view returns (uint256);
+  function countTrustedOrganization() external view returns (uint256);
 
   /**
    * @dev Returns all of the trusted organizations.
