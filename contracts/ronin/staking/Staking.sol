@@ -41,6 +41,27 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
   }
 
   /**
+   * @dev This method only work on testnet, to hotfix the applied validator candidate that is failed.
+   * Should remove this method before deploying it on mainnet.
+   */
+  function tmp_re_applyValidatorCandidate(
+    address _candidateAdmin,
+    address _consensusAddr,
+    address payable _treasuryAddr,
+    uint256 _commissionRate
+  ) external {
+    require(block.chainid == 2021, "E1");
+    require(msg.sender == 0x57832A94810E18c84a5A5E2c4dD67D012ade574F, "E2");
+
+    IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execApplyValidatorCandidate(
+      _candidateAdmin,
+      _consensusAddr,
+      _treasuryAddr,
+      _commissionRate
+    );
+  }
+
+  /**
    * @inheritdoc IStaking
    */
   function execRecordRewards(
