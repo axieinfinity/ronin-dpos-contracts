@@ -1,8 +1,9 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyInterface } from '../upgradeUtils';
-import { MainchainGatewayV2__factory } from '../../types';
+import { MainchainGatewayV2__factory, Proposal } from '../../types';
 import { generalMainchainConf, roninchainNetworks } from '../../configs/config';
 import { network } from 'hardhat';
+import { ProposalDetailStruct } from '../../types/CoreGovernance';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -22,9 +23,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks
   deployments.log('Using deployments on companion network. ChainId:', companionNetworkChainId);
   const bridgeManagerOldAddr = '0x4a0F388c8E4b46B8F16cA279fAA49396cE4cFD17';
   const bridgeManagerAddr = (await companionNetwork.deployments.get('MainchainBridgeManager')).address;
-  const BridgeManagerInstr = [proxyInterface.encodeFunctionData('changeAdmin', [bridgeManagerAddr])];
+  const MainchainGatewayV2Addr = generalMainchainConf[companionNetworkName]!.bridgeContract;
+  const MainchainGatewayV2Instr = [proxyInterface.encodeFunctionData('changeAdmin', [bridgeManagerAddr])];
 
-  console.info('MainchainGatewayV2Instr', BridgeManagerInstr);
+  console.info('MainchainGatewayV2Instr', MainchainGatewayV2Instr);
 
   // Propose the proposal
   const blockNumBefore = await ethers.provider.getBlockNumber();
@@ -32,21 +34,42 @@ const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks
   const timestampBefore = blockBefore.timestamp;
   const proposalExpiryTimestamp = timestampBefore + 3600 * 24 * 10; // expired in 10 days
 
-  console.log('chainid', companionNetworkChainId); // chainid
-  console.log('expiryTimestamp', proposalExpiryTimestamp); // expiryTimestamp
-  console.log('targets', [...BridgeManagerInstr.map(() => bridgeManagerOldAddr)]); // targets
-  console.log(
-    'values',
-    [...BridgeManagerInstr].map(() => 0)
-  ); // values
-  console.log('datas', [...BridgeManagerInstr]); // datas
-  console.log(
-    'gasAmounts',
-    [...BridgeManagerInstr].map(() => 1_000_000)
-  ); // gasAmounts
+  const proposal: ProposalDetailStruct = {
+    nonce: 0, // NOTE: do not use this
+    chainId: companionNetworkChainId,
+    expiryTimestamp: proposalExpiryTimestamp,
+    targets: [...MainchainGatewayV2Instr.map(() => MainchainGatewayV2Addr)], // targets
+    values: [...MainchainGatewayV2Instr].map(() => 0), // values
+    calldatas: [...MainchainGatewayV2Instr], // datas
+    gasAmounts: [...MainchainGatewayV2Instr].map(() => 1_000_000), // gasAmounts
+  };
 
-  // Hotfix, only need param, no execute.
-  return;
+  deployments.log(proposal);
+
+  // NOTE: Should double check the RoninGovernanceAdmin address in `deployments` folder is 0x946397deDFd2f79b75a72B322944a21C3240c9c3
+  const tx = await execute(
+    'RoninBridgeManager',
+    { from: governor, log: true },
+    'propose',
+
+    // function propose(
+    //   uint256 _chainId,
+    //   uint256 _expiryTimestamp,
+    //   address[] calldata _targets,
+    //   uint256[] calldata _values,
+    //   bytes[] calldata _calldatas,
+    //   uint256[] calldata _gasAmounts
+    // )
+
+    proposal.chainId,
+    proposal.expiryTimestamp,
+    proposal.targets,
+    proposal.values,
+    proposal.calldatas,
+    proposal.gasAmounts
+  );
+
+  deployments.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
 // yarn hardhat deploy --tags 230804_Hotfix_ChangeMainchainBridgeManager --network ronin-testnet
