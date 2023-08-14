@@ -75,9 +75,8 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     uint96[] memory voteWeights
   ) payable BridgeManagerCallbackRegister(callbackRegisters) {
     NONCE_SLOT.store(1);
-    NUMERATOR_SLOT.store(num);
-    DENOMINATOR_SLOT.store(denom);
 
+    _setThreshold(num, denom);
     _setContract(ContractType.BRIDGE, bridgeContract);
 
     DOMAIN_SEPARATOR = keccak256(
