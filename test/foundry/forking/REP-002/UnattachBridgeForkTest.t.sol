@@ -4,6 +4,12 @@ pragma solidity ^0.8.0;
 import "../RoninTest.t.sol";
 
 import { RoninValidatorSetTimedMigrator } from "@ronin/contracts/ronin/validator/migrations/RoninValidatorSetTimedMigrator.sol";
+import { ContractType } from "@ronin/contracts/utils/ContractType.sol";
+import { Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
+import { SlashIndicator } from "@ronin/contracts/ronin/slash-indicator/SlashIndicator.sol";
+import { NotifiedMigrator } from "@ronin/contracts/ronin/validator/migrations/NotifiedMigrator.sol";
+import { RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";
+import { IHasContracts } from "@ronin/contracts/interfaces/collections/IHasContracts.sol";
 import { ICoinbaseExecution } from "@ronin/contracts/interfaces/validator/ICoinbaseExecution.sol";
 import { ITimingInfo } from "@ronin/contracts/interfaces/validator/info-fragments/ITimingInfo.sol";
 import { MockPrecompile } from "@ronin/contracts/mocks/MockPrecompile.sol";
@@ -15,13 +21,23 @@ interface IJailingInfoPrev {
 contract UnattachBridgeForkTest is RoninTest {
   event Upgraded(address indexed implementation);
 
+  uint256 internal constant FORK_HEIGHT = 19231486;
+
   uint256 internal _roninFork;
   address internal _prevImpl;
   address internal _newImpl;
   address internal _versionSwitcher;
 
+  TransparentUpgradeableProxyV2 internal _roninTrustedOrgProxy;
+  TransparentUpgradeableProxyV2 internal _stakingProxy;
+  TransparentUpgradeableProxyV2 internal _slashIndicatorProxy;
+
+  address internal _roninTrustedOrgSwitcher;
+  address internal _stakingSwitcher;
+  address internal _slashIndicatorSwitcher;
+
   function _createFork() internal virtual override {
-    _roninFork = vm.createSelectFork(RONIN_TEST_RPC);
+    _roninFork = vm.createSelectFork(RONIN_TEST_RPC, FORK_HEIGHT);
   }
 
   function _setUp() internal virtual override onWhichFork(_roninFork) {
@@ -42,6 +58,53 @@ contract UnattachBridgeForkTest is RoninTest {
       type(RoninValidatorSetTimedMigrator).name,
       type(RoninValidatorSetTimedMigrator).creationCode,
       abi.encode(RONIN_VALIDATOR_SET_CONTRACT, _prevImpl, _newImpl),
+      ZERO_VALUE
+    );
+
+    _roninTrustedOrgProxy = TransparentUpgradeableProxyV2(
+      payable(IHasContracts(address(RONIN_VALIDATOR_SET_CONTRACT)).getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
+    );
+    _stakingProxy = TransparentUpgradeableProxyV2(
+      payable(IHasContracts(address(RONIN_VALIDATOR_SET_CONTRACT)).getContract(ContractType.STAKING))
+    );
+    _slashIndicatorProxy = TransparentUpgradeableProxyV2(
+      payable(IHasContracts(address(RONIN_VALIDATOR_SET_CONTRACT)).getContract(ContractType.SLASH_INDICATOR))
+    );
+
+    address roninTrustedOrgOldLogic = _getProxyImplementation(_roninTrustedOrgProxy);
+    address roninTrustedOrgNewLogic = deployImmutable(
+      type(RoninTrustedOrganization).name,
+      type(RoninTrustedOrganization).creationCode,
+      EMPTY_PARAM,
+      ZERO_VALUE
+    );
+    _roninTrustedOrgSwitcher = deployImmutable(
+      type(NotifiedMigrator).name,
+      type(NotifiedMigrator).creationCode,
+      abi.encode(_roninTrustedOrgProxy, roninTrustedOrgOldLogic, roninTrustedOrgNewLogic, RONIN_VALIDATOR_SET_CONTRACT),
+      ZERO_VALUE
+    );
+
+    address stakingOldLogic = _getProxyImplementation(_stakingProxy);
+    address stakingNewLogic = deployImmutable(type(Staking).name, type(Staking).creationCode, EMPTY_PARAM, ZERO_VALUE);
+    _stakingSwitcher = deployImmutable(
+      type(NotifiedMigrator).name,
+      type(NotifiedMigrator).creationCode,
+      abi.encode(_stakingProxy, stakingOldLogic, stakingNewLogic, RONIN_VALIDATOR_SET_CONTRACT),
+      ZERO_VALUE
+    );
+
+    address slashIndicatorOldLogic = _getProxyImplementation(_slashIndicatorProxy);
+    address slashIndicatorNewLogic = deployImmutable(
+      type(SlashIndicator).name,
+      type(SlashIndicator).creationCode,
+      EMPTY_PARAM,
+      ZERO_VALUE
+    );
+    _slashIndicatorSwitcher = deployImmutable(
+      type(NotifiedMigrator).name,
+      type(NotifiedMigrator).creationCode,
+      abi.encode(_slashIndicatorProxy, slashIndicatorOldLogic, slashIndicatorNewLogic, RONIN_VALIDATOR_SET_CONTRACT),
       ZERO_VALUE
     );
   }
@@ -76,9 +139,21 @@ contract UnattachBridgeForkTest is RoninTest {
     ICoinbaseExecution(address(RONIN_VALIDATOR_SET_CONTRACT)).wrapUpEpoch();
 
     assertEq(_getProxyImplementation(RONIN_VALIDATOR_SET_CONTRACT), _newImpl);
+    assertEq(
+      _getProxyImplementation(_roninTrustedOrgProxy),
+      NotifiedMigrator(payable(_roninTrustedOrgSwitcher)).NEW_IMPL()
+    );
+    assertEq(_getProxyImplementation(_stakingProxy), NotifiedMigrator(payable(_stakingSwitcher)).NEW_IMPL());
+    assertEq(
+      _getProxyImplementation(_slashIndicatorProxy),
+      NotifiedMigrator(payable(_slashIndicatorSwitcher)).NEW_IMPL()
+    );
   }
 
   function _upgradeToVersionSwitcher() internal fromWho(_getProxyAdmin(RONIN_VALIDATOR_SET_CONTRACT)) {
     RONIN_VALIDATOR_SET_CONTRACT.upgradeTo(_versionSwitcher);
+    _roninTrustedOrgProxy.upgradeTo(_roninTrustedOrgSwitcher);
+    _stakingProxy.upgradeTo(_stakingSwitcher);
+    _slashIndicatorProxy.upgradeTo(_slashIndicatorSwitcher);
   }
 }

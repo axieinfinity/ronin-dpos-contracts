@@ -1,7 +1,6 @@
 /// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { ERC1967Upgrade } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
 import { IConditionalImplementControl } from "../../interfaces/version-control/IConditionalImplementControl.sol";
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
@@ -11,9 +10,16 @@ import { ErrOnlySelfCall, IdentityGuard } from "../../utils/IdentityGuard.sol";
  * @title ConditionalImplementControl
  * @dev A contract that allows conditional version control of contract implementations.
  */
-abstract contract ConditionalImplementControl is IConditionalImplementControl, IdentityGuard, ERC1967Upgrade {
+abstract contract ConditionalImplementControl is IConditionalImplementControl, IdentityGuard {
   using ErrorHandler for bool;
   using AddressArrayUtils for address[];
+
+  /**
+   * @dev Storage slot with the address of the current implementation.
+   * This is the keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1, and is
+   * validated in the constructor.
+   */
+  bytes32 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
   /**
    * @dev address of the proxy that delegates to this contract.
@@ -51,25 +57,16 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, I
   }
 
   /**
-   * @dev Modifier that only allows contracts with code.
-   * @param addr The address of the contract to check.
-   */
-  modifier onlyContract(address addr) {
-    _requireHasCode(addr);
-    _;
-  }
-
-  /**
    * @dev Constructs the ConditionalImplementControl contract.
    * @param proxyStorage The address of the proxy that is allowed to delegate to this contract.
    * @param prevImpl The address of the current contract implementation.
    * @param newImpl The address of the new contract implementation.
    */
-  constructor(
-    address proxyStorage,
-    address prevImpl,
-    address newImpl
-  ) onlyContract(proxyStorage) onlyContract(prevImpl) onlyContract(newImpl) {
+  constructor(address proxyStorage, address prevImpl, address newImpl) {
+    _requireHasCode(newImpl);
+    _requireHasCode(prevImpl);
+    _requireHasCode(proxyStorage);
+
     address[] memory addrs = new address[](3);
     addrs[0] = proxyStorage;
     addrs[1] = prevImpl;
@@ -99,8 +96,15 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, I
    * @dev See {IConditionalImplementControl-selfUpgrade}.
    */
 
-  function selfUpgrade() external onlyDelegateFromProxyStorage onlySelfCall {
+  function selfUpgrade() external virtual onlyDelegateFromProxyStorage onlySelfCall {
     _upgradeTo(NEW_IMPL);
+  }
+
+  function _upgradeTo(address newImplementation) internal {
+    assembly ("memory-safe") {
+      sstore(_IMPLEMENTATION_SLOT, newImplementation)
+    }
+    emit Upgraded(newImplementation);
   }
 
   /**
@@ -156,7 +160,7 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, I
    * - The method caller must be this contract.
    *
    */
-  function _requireSelfCall() internal view override {
+  function _requireSelfCall() internal view virtual override {
     if (msg.sender != PROXY_STORAGE) revert ErrOnlySelfCall(msg.sig);
   }
 
