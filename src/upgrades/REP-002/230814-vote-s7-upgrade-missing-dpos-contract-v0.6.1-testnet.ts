@@ -1,8 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyInterface } from '../upgradeUtils';
 import { VoteType } from '../../script/proposal';
-import { RoninTrustedOrganization__factory, RoninGatewayV2__factory } from '../../types';
-import { generalRoninConf, roninchainNetworks } from '../../configs/config';
+import { roninchainNetworks } from '../../configs/config';
 import { network } from 'hardhat';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
@@ -41,35 +40,45 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   console.info('RoninValidatorSetInstr', RoninValidatorSetInstr);
 
   // Propose the proposal
-  const blockNumBefore = await ethers.provider.getBlockNumber();
-  const blockBefore = await ethers.provider.getBlock(blockNumBefore);
-  const timestampBefore = blockBefore.timestamp;
-  const proposalExpiryTimestamp = timestampBefore + 3600 * 24 * 10; // expired in 10 days
 
-  // NOTE: Should double check the RoninGovernanceAdmin address in `deployments` folder is 0x946397deDFd2f79b75a72B322944a21C3240c9c3
+  const proposalExpiryTimestamp = 0x64e848e9;
+
   const tx = await execute(
     'RoninGovernanceAdmin',
     { from: governor, log: true },
-    'proposeProposalForCurrentNetwork',
-    proposalExpiryTimestamp, // expiryTimestamp
+    'castProposalVoteForCurrentNetwork',
+
+    // uint256 nonce;
+    // uint256 chainId;
+    // uint256 expiryTimestamp;
+    // address[] targets;
+    // uint256[] values;
+    // bytes[] calldatas;
+    // uint256[] gasAmounts;
     [
-      ...RoninTrustedOrganizationInstr.map(() => RoninTrustedOrganizationProxy.address),
-      ...SlashIndicatorInstr.map(() => SlashIndicatorProxy.address),
-      ...StakingInstr.map(() => StakingProxy.address),
-      ...RoninValidatorSetInstr.map(() => RoninValidatorSetProxy.address),
-    ], // targets
-    [...RoninTrustedOrganizationInstr, ...SlashIndicatorInstr, ...StakingInstr, ...RoninValidatorSetInstr].map(() => 0), // values
-    [...RoninTrustedOrganizationInstr, ...SlashIndicatorInstr, ...StakingInstr, ...RoninValidatorSetInstr], // datas
-    [...RoninTrustedOrganizationInstr, ...SlashIndicatorInstr, ...StakingInstr, ...RoninValidatorSetInstr].map(
-      () => 1_000_000
-    ), // gasAmounts
+      0xe,
+      2021,
+      proposalExpiryTimestamp, // expiryTimestamp
+      [
+        ...RoninTrustedOrganizationInstr.map(() => RoninTrustedOrganizationProxy.address),
+        ...SlashIndicatorInstr.map(() => SlashIndicatorProxy.address),
+        ...StakingInstr.map(() => StakingProxy.address),
+        ...RoninValidatorSetInstr.map(() => RoninValidatorSetProxy.address),
+      ], // targets
+      [...RoninTrustedOrganizationInstr, ...SlashIndicatorInstr, ...StakingInstr, ...RoninValidatorSetInstr].map(
+        () => 0
+      ), // values
+      [...RoninTrustedOrganizationInstr, ...SlashIndicatorInstr, ...StakingInstr, ...RoninValidatorSetInstr], // datas
+      [...RoninTrustedOrganizationInstr, ...SlashIndicatorInstr, ...StakingInstr, ...RoninValidatorSetInstr].map(
+        () => 1_000_000
+      ), // gasAmounts
+    ],
     VoteType.For // ballot type
   );
-
   deployments.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
-// yarn hardhat deploy --tags 230814_S7_UpgradeMissingDPoSContract_V0_6_1 --network ronin-testnet
-deploy.tags = ['230814_S7_UpgradeMissingDPoSContract_V0_6_1'];
+// yarn hardhat deploy --tags 230814_Vote_S7_UpgradeMissingDPoSContract_V0_6_1 --network ronin-testnet
+deploy.tags = ['230814_Vote_S7_UpgradeMissingDPoSContract_V0_6_1'];
 
 export default deploy;
