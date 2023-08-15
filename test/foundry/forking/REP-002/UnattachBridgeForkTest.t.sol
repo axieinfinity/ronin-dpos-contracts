@@ -20,6 +20,8 @@ interface IJailingInfoPrev {
 
 contract UnattachBridgeForkTest is RoninTest {
   event Upgraded(address indexed implementation);
+  /// @dev Emitted when the epoch is wrapped up.
+  event WrappedUpEpoch(uint256 indexed periodNumber, uint256 indexed epochNumber, bool periodEnding);
 
   // @dev fork height before REP-002 upgrade
   uint256 internal constant FORK_HEIGHT = 19231486;
@@ -127,9 +129,6 @@ contract UnattachBridgeForkTest is RoninTest {
     vm.assume(seed != 0);
     _upgradeToVersionSwitcher();
 
-    vm.expectEmit(address(RONIN_VALIDATOR_SET_CONTRACT));
-    emit Upgraded(_newImpl);
-
     _fastForwardToNextDay();
     _wrapUpEpoch();
 
@@ -147,14 +146,17 @@ contract UnattachBridgeForkTest is RoninTest {
     _updateDuplicatedTrustedOrg(seed);
     _applyValidatorCandidate(seed);
 
-    vm.warp(block.timestamp + 3 seconds);
-    vm.roll(block.number + 1);
+    // vm.warp(block.timestamp + 3 seconds);
+    // vm.roll(block.number + 1);
 
     _fastForwardToNextDay();
     _wrapUpEpoch();
   }
 
   function _fastForwardToNextDay() internal onWhichFork(_roninFork) {
+    vm.warp(block.timestamp + 3 seconds);
+    vm.roll(block.number + 1);
+
     uint256 numberOfBlocksInEpoch = ITimingInfo(address(RONIN_VALIDATOR_SET_CONTRACT)).numberOfBlocksInEpoch();
 
     uint256 epochEndingBlockNumber = block.number +
@@ -167,7 +169,13 @@ contract UnattachBridgeForkTest is RoninTest {
     vm.roll(epochEndingBlockNumber);
   }
 
-  function _wrapUpEpoch() internal onWhichFork(_roninFork) fromWho(block.coinbase) {
+  function _wrapUpEpoch() internal onWhichFork(_roninFork) {
+    uint256 currentPeriod = RoninValidatorSet(payable(RONIN_VALIDATOR_SET_CONTRACT)).currentPeriod();
+    uint256 epoch = RoninValidatorSet(payable(RONIN_VALIDATOR_SET_CONTRACT)).epochOf(block.number);
+    vm.expectEmit(address(RONIN_VALIDATOR_SET_CONTRACT));
+    emit WrappedUpEpoch(currentPeriod, epoch, true);
+
+    vm.prank(block.coinbase, block.coinbase);
     ICoinbaseExecution(address(RONIN_VALIDATOR_SET_CONTRACT)).wrapUpEpoch();
   }
 
