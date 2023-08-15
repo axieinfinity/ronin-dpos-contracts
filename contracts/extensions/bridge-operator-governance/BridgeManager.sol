@@ -75,9 +75,8 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     uint96[] memory voteWeights
   ) payable BridgeManagerCallbackRegister(callbackRegisters) {
     NONCE_SLOT.store(1);
-    NUMERATOR_SLOT.store(num);
-    DENOMINATOR_SLOT.store(denom);
 
+    _setThreshold(num, denom);
     _setContract(ContractType.BRIDGE, bridgeContract);
 
     DOMAIN_SEPARATOR = keccak256(
@@ -486,10 +485,9 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @notice The input array `governors` must contain unique addresses to avoid duplicate calculations.
    */
   function _sumGovernorsWeight(address[] memory governors) internal view nonDuplicate(governors) returns (uint256 sum) {
-    uint256 length = _getBridgeOperatorSet().length();
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
-    for (uint256 i; i < length; ) {
+    for (uint256 i; i < governors.length; ) {
       sum += _governorToBridgeOperatorInfo[governors[i]].voteWeight;
 
       unchecked {
