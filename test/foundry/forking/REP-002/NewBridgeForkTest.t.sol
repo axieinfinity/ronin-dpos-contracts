@@ -30,6 +30,8 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
   uint256 internal constant DEFAULT_REWARD_PER_PERIOD = 1 ether;
   uint256 internal constant DEFAULT_EXPIRY_DURATION = 5 minutes;
   uint256 internal constant DEFAULT_GAS = 500_000;
+
+  // @dev fork height before REP-002 upgrade
   uint256 internal constant FORK_HEIGHT = 19231486;
 
   uint256 internal _ethFork;

@@ -16,6 +16,9 @@ contract NotifiedMigrator is ConditionalImplementControl {
     NOTIFIER = notifier;
   }
 
+  /**
+   * @dev See {IConditionalImplementControl-selfUpgrade}.
+   */
   function selfUpgrade() external override onlyDelegateFromProxyStorage {
     if (msg.sender != NOTIFIER) revert ErrUnauthorizedCall(msg.sig);
     _upgradeTo(NEW_IMPL);

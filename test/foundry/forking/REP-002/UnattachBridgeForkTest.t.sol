@@ -8,7 +8,7 @@ import { ContractType } from "@ronin/contracts/utils/ContractType.sol";
 import { Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
 import { SlashIndicator } from "@ronin/contracts/ronin/slash-indicator/SlashIndicator.sol";
 import { NotifiedMigrator } from "@ronin/contracts/ronin/validator/migrations/NotifiedMigrator.sol";
-import { RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";
+import { IRoninTrustedOrganization, RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";
 import { IHasContracts } from "@ronin/contracts/interfaces/collections/IHasContracts.sol";
 import { ICoinbaseExecution } from "@ronin/contracts/interfaces/validator/ICoinbaseExecution.sol";
 import { ITimingInfo } from "@ronin/contracts/interfaces/validator/info-fragments/ITimingInfo.sol";
@@ -21,6 +21,7 @@ interface IJailingInfoPrev {
 contract UnattachBridgeForkTest is RoninTest {
   event Upgraded(address indexed implementation);
 
+  // @dev fork height before REP-002 upgrade
   uint256 internal constant FORK_HEIGHT = 19231486;
 
   uint256 internal _roninFork;
@@ -73,22 +74,27 @@ contract UnattachBridgeForkTest is RoninTest {
 
     address roninTrustedOrgOldLogic = _getProxyImplementation(_roninTrustedOrgProxy);
     address roninTrustedOrgNewLogic = deployImmutable(
-      type(RoninTrustedOrganization).name,
+      _join("New_", type(RoninTrustedOrganization).name),
       type(RoninTrustedOrganization).creationCode,
       EMPTY_PARAM,
       ZERO_VALUE
     );
     _roninTrustedOrgSwitcher = deployImmutable(
-      type(NotifiedMigrator).name,
+      _join("RoninTrustedOrg_", type(NotifiedMigrator).name),
       type(NotifiedMigrator).creationCode,
       abi.encode(_roninTrustedOrgProxy, roninTrustedOrgOldLogic, roninTrustedOrgNewLogic, RONIN_VALIDATOR_SET_CONTRACT),
       ZERO_VALUE
     );
 
     address stakingOldLogic = _getProxyImplementation(_stakingProxy);
-    address stakingNewLogic = deployImmutable(type(Staking).name, type(Staking).creationCode, EMPTY_PARAM, ZERO_VALUE);
+    address stakingNewLogic = deployImmutable(
+      _join("New_", type(Staking).name),
+      type(Staking).creationCode,
+      EMPTY_PARAM,
+      ZERO_VALUE
+    );
     _stakingSwitcher = deployImmutable(
-      type(NotifiedMigrator).name,
+      _join("Staking_", type(NotifiedMigrator).name),
       type(NotifiedMigrator).creationCode,
       abi.encode(_stakingProxy, stakingOldLogic, stakingNewLogic, RONIN_VALIDATOR_SET_CONTRACT),
       ZERO_VALUE
@@ -96,13 +102,13 @@ contract UnattachBridgeForkTest is RoninTest {
 
     address slashIndicatorOldLogic = _getProxyImplementation(_slashIndicatorProxy);
     address slashIndicatorNewLogic = deployImmutable(
-      type(SlashIndicator).name,
+      _join("New_", type(SlashIndicator).name),
       type(SlashIndicator).creationCode,
       EMPTY_PARAM,
       ZERO_VALUE
     );
     _slashIndicatorSwitcher = deployImmutable(
-      type(NotifiedMigrator).name,
+      _join("SlashIndicator_", type(NotifiedMigrator).name),
       type(NotifiedMigrator).creationCode,
       abi.encode(_slashIndicatorProxy, slashIndicatorOldLogic, slashIndicatorNewLogic, RONIN_VALIDATOR_SET_CONTRACT),
       ZERO_VALUE
@@ -117,26 +123,15 @@ contract UnattachBridgeForkTest is RoninTest {
     RoninValidatorSet(payable(address(RONIN_VALIDATOR_SET_CONTRACT))).currentPeriod();
   }
 
-  function test_Fork_UpgradeToNewImpl_WhenPeriodEnded() external onWhichFork(_roninFork) {
+  function test_Fork_UpgradeToNewImpl_WhenPeriodEnded(uint16 seed) external onWhichFork(_roninFork) {
+    vm.assume(seed != 0);
     _upgradeToVersionSwitcher();
-
-    address coinbase = block.coinbase;
-    uint256 numberOfBlocksInEpoch = ITimingInfo(address(RONIN_VALIDATOR_SET_CONTRACT)).numberOfBlocksInEpoch();
-
-    uint256 epochEndingBlockNumber = block.number +
-      (numberOfBlocksInEpoch - 1) -
-      (block.number % numberOfBlocksInEpoch);
-    uint256 nextDayTimestamp = block.timestamp + 1 days;
-
-    // fast forward to next day
-    vm.warp(nextDayTimestamp);
-    vm.roll(epochEndingBlockNumber);
 
     vm.expectEmit(address(RONIN_VALIDATOR_SET_CONTRACT));
     emit Upgraded(_newImpl);
 
-    vm.prank(coinbase, coinbase);
-    ICoinbaseExecution(address(RONIN_VALIDATOR_SET_CONTRACT)).wrapUpEpoch();
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
 
     assertEq(_getProxyImplementation(RONIN_VALIDATOR_SET_CONTRACT), _newImpl);
     assertEq(
@@ -147,6 +142,77 @@ contract UnattachBridgeForkTest is RoninTest {
     assertEq(
       _getProxyImplementation(_slashIndicatorProxy),
       NotifiedMigrator(payable(_slashIndicatorSwitcher)).NEW_IMPL()
+    );
+
+    _updateDuplicatedTrustedOrg(seed);
+    _applyValidatorCandidate(seed);
+
+    vm.warp(block.timestamp + 3 seconds);
+    vm.roll(block.number + 1);
+
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
+  }
+
+  function _fastForwardToNextDay() internal onWhichFork(_roninFork) {
+    uint256 numberOfBlocksInEpoch = ITimingInfo(address(RONIN_VALIDATOR_SET_CONTRACT)).numberOfBlocksInEpoch();
+
+    uint256 epochEndingBlockNumber = block.number +
+      (numberOfBlocksInEpoch - 1) -
+      (block.number % numberOfBlocksInEpoch);
+    uint256 nextDayTimestamp = block.timestamp + 1 days;
+
+    // fast forward to next day
+    vm.warp(nextDayTimestamp);
+    vm.roll(epochEndingBlockNumber);
+  }
+
+  function _wrapUpEpoch() internal onWhichFork(_roninFork) fromWho(block.coinbase) {
+    ICoinbaseExecution(address(RONIN_VALIDATOR_SET_CONTRACT)).wrapUpEpoch();
+  }
+
+  function _applyValidatorCandidate(uint256 seed) internal onWhichFork(_roninFork) {
+    address candidateAdmin = vm.addr(seed + 1);
+    address consensusAddr = vm.addr(seed + 2);
+
+    (uint256 min, uint256 max) = Staking(payable(_stakingProxy)).getCommissionRateRange();
+    uint256 commissionRate = (min + max) / 2;
+    uint256 amount = Staking(payable(_stakingProxy)).minValidatorStakingAmount();
+
+    vm.deal(candidateAdmin, amount);
+    vm.prank(candidateAdmin, candidateAdmin);
+    Staking(payable(_stakingProxy)).applyValidatorCandidate{ value: amount }(
+      candidateAdmin,
+      consensusAddr,
+      payable(candidateAdmin),
+      commissionRate
+    );
+  }
+
+  function _updateDuplicatedTrustedOrg(uint256 seed) internal onWhichFork(_roninFork) {
+    IRoninTrustedOrganization.TrustedOrganization[] memory allTrustedOrgs = IRoninTrustedOrganization(
+      address(_roninTrustedOrgProxy)
+    ).getAllTrustedOrganizations();
+
+    IRoninTrustedOrganization.TrustedOrganization memory trustedOrgToUpdate = allTrustedOrgs[
+      _bound(seed, 0, allTrustedOrgs.length - 1)
+    ];
+
+    IRoninTrustedOrganization.TrustedOrganization memory trustedOrgToDuplicate = allTrustedOrgs[
+      _bound(~seed, 0, allTrustedOrgs.length - 1)
+    ];
+
+    trustedOrgToUpdate.governor = trustedOrgToDuplicate.governor;
+
+    IRoninTrustedOrganization.TrustedOrganization[] memory list = new IRoninTrustedOrganization.TrustedOrganization[](
+      1
+    );
+    list[0] = trustedOrgToUpdate;
+
+    vm.prank(_getProxyAdmin(_roninTrustedOrgProxy), _getProxyAdmin(_roninTrustedOrgProxy));
+    vm.expectRevert(IRoninTrustedOrganization.ErrQueryForDupplicated.selector);
+    _roninTrustedOrgProxy.functionDelegateCall(
+      abi.encodeCall(RoninTrustedOrganization.updateTrustedOrganizations, (list))
     );
   }
 

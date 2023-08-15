@@ -95,7 +95,6 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, I
   /**
    * @dev See {IConditionalImplementControl-selfUpgrade}.
    */
-
   function selfUpgrade() external virtual onlyDelegateFromProxyStorage onlySelfCall {
     _upgradeTo(NEW_IMPL);
   }
