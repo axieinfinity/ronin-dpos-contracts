@@ -42,7 +42,7 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
 
   /**
    * @dev This method only work on testnet, to hotfix the applied validator candidate that is failed.
-   * Should remove this method before deploying it on mainnet.
+   * TODO: Should remove this method before deploying it on mainnet.
    */
   function tmp_re_applyValidatorCandidate(
     address _candidateAdmin,
