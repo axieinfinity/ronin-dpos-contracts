@@ -166,7 +166,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getTotalWeights() public view returns (uint256) {
+  function getTotalWeight() public view returns (uint256) {
     return TOTAL_WEIGHTS_SLOT.load();
   }
 
@@ -196,7 +196,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function totalBridgeOperators() external view returns (uint256) {
+  function totalBridgeOperator() external view returns (uint256) {
     return _getBridgeOperatorSet().length();
   }
 
