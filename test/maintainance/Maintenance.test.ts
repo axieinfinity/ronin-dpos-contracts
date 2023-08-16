@@ -420,7 +420,7 @@ describe('Maintenance test', () => {
     });
 
     it('Should the admin be able to cancel the schedule', async () => {
-      let _totalSchedules = await maintenanceContract.totalSchedules();
+      let _totalSchedules = await maintenanceContract.totalSchedule();
 
       let tx = await maintenanceContract
         .connect(validatorCandidates[0].candidateAdmin)
@@ -430,7 +430,7 @@ describe('Maintenance test', () => {
         .emit(maintenanceContract, 'MaintenanceScheduleCancelled')
         .withArgs(validatorCandidates[0].consensusAddr.address);
 
-      expect(_totalSchedules.sub(await maintenanceContract.totalSchedules())).eq(1);
+      expect(_totalSchedules.sub(await maintenanceContract.totalSchedule())).eq(1);
       let _cancelledSchedule = await maintenanceContract.getSchedule(validatorCandidates[0].consensusAddr.address);
       expect(_cancelledSchedule.from).eq(0);
       expect(_cancelledSchedule.to).eq(0);

@@ -199,7 +199,7 @@ describe('[Integration] Configuration check', () => {
     expect(await maintenanceContract.maxOffsetToStartSchedule()).eq(
       config.maintenanceArguments!.maxOffsetToStartSchedule
     );
-    expect(await maintenanceContract.maxSchedules()).eq(config.maintenanceArguments!.maxSchedules);
+    expect(await maintenanceContract.maxSchedule()).eq(config.maintenanceArguments!.maxSchedules);
   });
 
   it('Should the RoninTrustedOrganization contract set configs correctly', async () => {
@@ -318,7 +318,7 @@ describe('[Integration] Configuration check', () => {
     expect(await validatorContract.maxPrioritizedValidatorNumber()).to.eq(
       config.roninValidatorSetArguments?.maxPrioritizedValidatorNumber
     );
-    expect(await validatorContract.minEffectiveDaysOnwards()).to.eq(
+    expect(await validatorContract.minEffectiveDaysOnward()).to.eq(
       config.roninValidatorSetArguments?.minEffectiveDaysOnwards
     );
     expect(await validatorContract.numberOfBlocksInEpoch()).to.eq(
