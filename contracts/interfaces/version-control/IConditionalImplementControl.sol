@@ -6,6 +6,11 @@ interface IConditionalImplementControl {
   error ErrDelegateFromUnknownOrigin(address addr);
 
   /**
+   * @dev Emitted when the implementation is upgraded.
+   */
+  event Upgraded(address indexed implementation);
+
+  /**
    * @dev Executes the selfUpgrade function, upgrading to the new contract implementation.
    */
   function selfUpgrade() external;

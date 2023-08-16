@@ -2,11 +2,18 @@
 pragma solidity ^0.8.0;
 
 import { ILogicValidatorSet, MockLogicValidatorSetV1, MockLogicValidatorSetV2 } from "@ronin/contracts/mocks/utils/version-control/MockLogicValidatorSet.sol";
+import { NotifiedMigrator } from "@ronin/contracts/ronin/validator/migrations/NotifiedMigrator.sol";
 import { RoninValidatorSetTimedMigrator } from "@ronin/contracts/ronin/validator/migrations/RoninValidatorSetTimedMigrator.sol";
-import { MockActor, IConditionalImplementControl, AddressArrayUtils, ConditionalImplementControlTest, TransparentUpgradeableProxyV2 } from "./ConditionalVersionControl.t.sol";
+import { MockActor, MockLogicV1, MockLogicV2, IConditionalImplementControl, AddressArrayUtils, ConditionalImplementControlTest, TransparentUpgradeableProxyV2 } from "./ConditionalVersionControl.t.sol";
+import { IHasContracts } from "@ronin/contracts/interfaces/collections/IHasContracts.sol";
+import { ContractType } from "@ronin/contracts/utils/ContractType.sol";
 
 contract RoninValidatorSetTimedMigratorTest is ConditionalImplementControlTest {
   event Received(string version);
+
+  address internal _stakingProxy;
+  address internal _slashIndicatorProxy;
+  address internal _roninTrustedOrgProxy;
 
   function _setUp() internal override {
     _proxyAdmin = vm.addr(1);
@@ -18,6 +25,49 @@ contract RoninValidatorSetTimedMigratorTest is ConditionalImplementControlTest {
     _proxy = payable(address(new TransparentUpgradeableProxyV2(_oldImpl, _proxyAdmin, "")));
     _switcher = payable(address(new RoninValidatorSetTimedMigrator(_proxy, _oldImpl, _newImpl)));
     _contractCaller = new MockActor(_proxy);
+
+    address stakingLogicV1 = address(new MockLogicV1());
+    address stakingLogicV2 = address(new MockLogicV2());
+    _stakingProxy = address(new TransparentUpgradeableProxyV2(stakingLogicV1, _proxyAdmin, ""));
+    address stakingSwitcher = address(new NotifiedMigrator(_stakingProxy, stakingLogicV1, stakingLogicV2, _proxy));
+    vm.prank(_proxyAdmin, _proxyAdmin);
+    TransparentUpgradeableProxyV2(payable(_stakingProxy)).upgradeTo(stakingSwitcher);
+
+    address slashIndicatorLogicV1 = address(new MockLogicV1());
+    address slashIndicatorLogicV2 = address(new MockLogicV2());
+    _slashIndicatorProxy = address(new TransparentUpgradeableProxyV2(slashIndicatorLogicV1, _proxyAdmin, ""));
+    address slashIndicatorSwitcher = address(
+      new NotifiedMigrator(_slashIndicatorProxy, slashIndicatorLogicV1, slashIndicatorLogicV2, _proxy)
+    );
+    vm.prank(_proxyAdmin, _proxyAdmin);
+    TransparentUpgradeableProxyV2(payable(_slashIndicatorProxy)).upgradeTo(slashIndicatorSwitcher);
+
+    address roninTrustedOrgLogicV1 = address(new MockLogicV1());
+    address roninTrustedOrgLogicV2 = address(new MockLogicV2());
+    _roninTrustedOrgProxy = address(new TransparentUpgradeableProxyV2(roninTrustedOrgLogicV1, _proxyAdmin, ""));
+    address roninTrustedOrgSwitcher = address(
+      new NotifiedMigrator(_roninTrustedOrgProxy, roninTrustedOrgLogicV1, roninTrustedOrgLogicV2, _proxy)
+    );
+
+    vm.prank(_proxyAdmin, _proxyAdmin);
+    TransparentUpgradeableProxyV2(payable(_roninTrustedOrgProxy)).upgradeTo(roninTrustedOrgSwitcher);
+  }
+
+  function _manualUpgradeTo(address impl) internal virtual override {
+    super._manualUpgradeTo(impl);
+
+    vm.startPrank(_proxyAdmin, _proxyAdmin);
+    TransparentUpgradeableProxyV2(payable(_proxy)).functionDelegateCall(
+      abi.encodeCall(IHasContracts.setContract, (ContractType.STAKING, _stakingProxy))
+    );
+    TransparentUpgradeableProxyV2(payable(_proxy)).functionDelegateCall(
+      abi.encodeCall(IHasContracts.setContract, (ContractType.SLASH_INDICATOR, _slashIndicatorProxy))
+    );
+    TransparentUpgradeableProxyV2(payable(_proxy)).functionDelegateCall(
+      abi.encodeCall(IHasContracts.setContract, (ContractType.RONIN_TRUSTED_ORGANIZATION, _roninTrustedOrgProxy))
+    );
+
+    vm.stopPrank();
   }
 
   /**
