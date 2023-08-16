@@ -1,8 +1,9 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { generalRoninConf, roninchainNetworks } from '../configs/config';
-import { ethers, network } from 'hardhat';
-import { Address, Deployment } from 'hardhat-deploy/dist/types';
+import { network } from 'hardhat';
+import { Address } from 'hardhat-deploy/dist/types';
 import { DEFAULT_ADDRESS } from '../utils';
+import { ProxyManagementInfo, getAdminOfProxy, isCorrectAdmin } from './dashboard-helper';
 
 const BridgeProxyName = {
   BridgeReward: 'BridgeRewardProxy',
@@ -26,14 +27,6 @@ const ProxyNames = { ...BridgeProxyName, ...DPoSProxyName } as const;
 type ValueOf<T> = T[keyof T];
 type ProxyNamesType = ValueOf<typeof ProxyNames>;
 
-interface ProxyManagementInfo {
-  deployment: Deployment | null;
-  address?: Address;
-  admin?: Address;
-  expectedAdmin?: Address;
-  isCorrect?: Boolean;
-}
-
 interface ProxyManagementInfoComponents {
   [deploymentName: ProxyNamesType | string]: ProxyManagementInfo;
 }
@@ -56,6 +49,7 @@ const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
 
     if (getValueByKey(key as ProxyNamesType) == BridgeProxyName.BridgeContract) {
       address = address ?? generalRoninConf[network.name].bridgeContract;
+      console.info('Loaded BridgeContract from config.');
     }
 
     if (!address) {
@@ -76,12 +70,6 @@ const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
   console.table(components, ['address', 'admin', 'expectedAdmin', 'isCorrect']);
 };
 
-const getAdminOfProxy = async (address: Address): Promise<string> => {
-  const ADMIN_SLOT = '0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103';
-  const slotValue = await ethers.provider.getStorageAt(address, ADMIN_SLOT);
-  return ethers.utils.hexStripZeros(slotValue);
-};
-
 function getValueByKey(key: ProxyNamesType): string {
   const indexOfS = Object.keys(ProxyNames).indexOf(key);
   return Object.values(ProxyNames)[indexOfS];
@@ -93,11 +81,6 @@ function getExpectedAdmin(key: string, bridgeAdmin: Address, governanceAdmin: Ad
     : Object.keys(DPoSProxyName).indexOf(key) != -1
     ? governanceAdmin
     : DEFAULT_ADDRESS;
-}
-
-function isCorrectAdmin(admin: Address, expectedAdmin: Address): boolean {
-  if (expectedAdmin == DEFAULT_ADDRESS) return false;
-  return admin.toLocaleLowerCase() == expectedAdmin.toLocaleLowerCase();
 }
 
 // yarn hardhat deploy --tags QueryProxyAdminRonin --network ronin-testnet
