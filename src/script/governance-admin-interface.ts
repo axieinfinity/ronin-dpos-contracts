@@ -10,8 +10,8 @@ import { RoninGovernanceAdmin, TransparentUpgradeableProxyV2__factory } from '..
 import { ProposalDetailStruct } from '../types/GovernanceAdmin';
 import { SignatureStruct } from '../types/MainchainGovernanceAdmin';
 import { RoninGovernanceAdminArguments } from '../utils';
-import { getLastBlockTimestamp } from '../../test/helpers/utils';
-import { defaultTestConfig } from '../../test/helpers/fixture';
+import { getLastBlockTimestamp } from '../../test/hardhat_test/helpers/utils';
+import { defaultTestConfig } from '../../test/hardhat_test/helpers/fixture';
 
 export const getGovernanceAdminDomain = (roninChainId: BigNumberish): TypedDataDomain => ({
   name: 'GovernanceAdmin',

@@ -132,6 +132,7 @@ const config: HardhatUserConfig = {
   },
   paths: {
     deploy: ['src/deploy', 'src/upgrades'],
+    tests: 'test/hardhat_test',
   },
   namedAccounts: {
     deployer: 0,
