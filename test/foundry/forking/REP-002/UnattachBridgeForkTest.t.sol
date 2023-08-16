@@ -26,8 +26,6 @@ contract UnattachBridgeForkTest is RoninTest {
   // @dev fork height before REP-002 upgrade
   uint256 internal constant FORK_HEIGHT = 19231486;
 
-  uint256 internal constant FORK_HEIGHT = 19231486;
-
   uint256 internal _roninFork;
   address internal _prevImpl;
   address internal _newImpl;
