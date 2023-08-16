@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Test } from "forge-std/Test.sol";
+import { Base_Test } from "../Base.t.sol";
 
-abstract contract Randomizer is Test {
+abstract contract Randomizer is Base_Test {
   function _randomize(uint256 seed, uint256 min, uint256 max) internal pure returns (uint256 r) {
     r = _bound(uint256(keccak256(abi.encode(seed))), min, max);
   }
 
   function _createRandomAddresses(uint256 seed, uint256 amount) internal returns (address[] memory addrs) {
     addrs = new address[](amount);
-    
+
     for (uint256 i; i < amount; ) {
       seed = uint256(keccak256(abi.encode(seed)));
       addrs[i] = vm.addr(seed);

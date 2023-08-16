@@ -203,8 +203,6 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEvents {
   ) internal pure virtual {
     vm.assume(voteWeights.length == governors.length && governors.length == bridgeOperators.length);
 
-    
-
     uint256[] memory uintGovernors;
     uint256[] memory uintVoteWeights;
     uint256[] memory uintBridgeOperators;
@@ -259,11 +257,7 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEvents {
   ) internal virtual {
     assertEq(governors, bridgeManager.getGovernors());
     assertEq(bridgeOperators, bridgeManager.getBridgeOperators());
-    uint256[] memory _voteWeights;
-    assembly {
-      _voteWeights := voteWeights
-    }
-    assertEq(_voteWeights, bridgeManager.getGovernorWeights(governors));
+    assertEq(voteWeights, bridgeManager.getGovernorWeights(governors));
     assertEq(bridgeOperators.length, bridgeManager.totalBridgeOperator());
     // assertEq(_sort(bridgeOperators), _sort(bridgeManager.getBridgeOperatorOf(governors)));
 

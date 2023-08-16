@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { console } from "forge-std/console.sol";
-import { Test } from "forge-std/Test.sol";
+import { Base_Test } from "@ronin/test/Base.t.sol";
 import { LibArrayUtils } from "../helpers/LibArrayUtils.t.sol";
 import { IBridgeRewardEvents } from "@ronin/contracts/interfaces/bridge/events/IBridgeRewardEvents.sol";
 import { IBridgeManager, BridgeManagerUtils } from "./utils/BridgeManagerUtils.t.sol";
@@ -14,7 +14,7 @@ import { RoleAccess, ContractType, AddressArrayUtils, MockBridgeManager } from "
 import { IBridgeSlash, MockBridgeSlash, BridgeSlash } from "@ronin/contracts/mocks/ronin/MockBridgeSlash.sol";
 import { IBridgeReward, MockBridgeReward, BridgeReward } from "@ronin/contracts/mocks/ronin/MockBridgeReward.sol";
 
-contract BridgeRewardTest is Test, IBridgeRewardEvents, BridgeManagerUtils {
+contract BridgeRewardTest is Base_Test, IBridgeRewardEvents, BridgeManagerUtils {
   using LibArrayUtils for uint256[];
 
   uint256 internal constant DEFAULT_REWARD_PER_PERIOD = 1 ether;
