@@ -146,9 +146,6 @@ contract UnattachBridgeForkTest is RoninTest {
     _updateDuplicatedTrustedOrg(seed);
     _applyValidatorCandidate(seed);
 
-    // vm.warp(block.timestamp + 3 seconds);
-    // vm.roll(block.number + 1);
-
     _fastForwardToNextDay();
     _wrapUpEpoch();
   }
@@ -169,13 +166,12 @@ contract UnattachBridgeForkTest is RoninTest {
     vm.roll(epochEndingBlockNumber);
   }
 
-  function _wrapUpEpoch() internal onWhichFork(_roninFork) {
+  function _wrapUpEpoch() internal onWhichFork(_roninFork) fromWho(block.coinbase) {
     uint256 currentPeriod = RoninValidatorSet(payable(RONIN_VALIDATOR_SET_CONTRACT)).currentPeriod();
     uint256 epoch = RoninValidatorSet(payable(RONIN_VALIDATOR_SET_CONTRACT)).epochOf(block.number);
     vm.expectEmit(address(RONIN_VALIDATOR_SET_CONTRACT));
     emit WrappedUpEpoch(currentPeriod, epoch, true);
 
-    vm.prank(block.coinbase, block.coinbase);
     ICoinbaseExecution(address(RONIN_VALIDATOR_SET_CONTRACT)).wrapUpEpoch();
   }
 
