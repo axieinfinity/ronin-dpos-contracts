@@ -43,6 +43,6 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   });
 };
 
-deploy.tags = ['StakingNotifiedMigrator'];
+deploy.tags = ['StakingNotifiedMigrator', 'MigratorBridgeDetachV0_6'];
 
 export default deploy;
