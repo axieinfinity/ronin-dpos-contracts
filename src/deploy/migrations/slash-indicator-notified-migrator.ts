@@ -1,8 +1,8 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { roninchainNetworks } from '../configs/config';
-import { DEFAULT_ADDRESS, Network } from '../utils';
+import { roninchainNetworks } from '../../configs/config';
+import { DEFAULT_ADDRESS, Network, getImplementOfProxy } from '../../utils';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -17,15 +17,13 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  const proxyDepl = await deployments.get('RoninTrustedOrganizationProxy');
-  const newImplDelp = await deployments.get('RoninTrustedOrganizationLogic');
+  const proxyDepl = await deployments.get('SlashIndicatorProxy');
+  const newImplDelp = await deployments.get('SlashIndicatorLogic');
 
-  const IMPLEMENTATION_SLOT = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc';
-  const prevImplRawBytes32 = await ethers.provider.getStorageAt(proxyDepl.address, IMPLEMENTATION_SLOT);
-  const prevImplAddr = '0x' + prevImplRawBytes32.slice(26);
+  const prevImplAddr = await getImplementOfProxy(proxyDepl.address);
   const roninValidatorAddr = await deployments.get('RoninValidatorSetProxy');
 
-  console.info('Deploying RoninTrustedOrganizationNotifiedMigrator...');
+  console.info('Deploying SlashIndicatorNotifiedMigrator...');
   console.info('  proxy    ', proxyDepl.address);
   console.info('  new impl ', newImplDelp.address);
   console.info('  prev impl', prevImplAddr);
@@ -36,13 +34,15 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     return;
   }
 
-  await deploy('NotifiedMigrator', {
+  const deployment = await deploy('SlashIndicatorNotifiedMigrator', {
+    contract: 'NotifiedMigrator',
     from: deployer,
     log: true,
     args: [proxyDepl.address, prevImplAddr, newImplDelp.address, roninValidatorAddr.address],
   });
 };
 
-deploy.tags = ['RoninTrustedOrganizationNotifiedMigrator', 'MigratorBridgeDetachV0_6'];
+deploy.tags = ['SlashIndicatorNotifiedMigrator', 'MigratorBridgeDetachV0_6'];
+deploy.dependencies = ['SlashIndicatorProxy'];
 
 export default deploy;
