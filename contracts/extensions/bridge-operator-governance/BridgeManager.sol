@@ -173,14 +173,14 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getGovernorWeights(address[] calldata governors) external view returns (uint256[] memory weights) {
+  function getGovernorWeights(address[] calldata governors) external view returns (uint96[] memory weights) {
     weights = _getGovernorWeights(governors);
   }
 
   /**
    * @inheritdoc IBridgeManager
    */
-  function getGovernorWeight(address governor) external view returns (uint256 weight) {
+  function getGovernorWeight(address governor) external view returns (uint96 weight) {
     weight = _getGovernorWeight(governor);
   }
 
@@ -259,7 +259,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   function getFullBridgeOperatorInfos()
     external
     view
-    returns (address[] memory governors, address[] memory bridgeOperators, uint256[] memory weights)
+    returns (address[] memory governors, address[] memory bridgeOperators, uint96[] memory weights)
   {
     governors = _getGovernors();
     bridgeOperators = getBridgeOperatorOf(governors);
@@ -269,7 +269,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getBridgeOperatorWeight(address bridgeOperator) external view returns (uint256 weight) {
+  function getBridgeOperatorWeight(address bridgeOperator) external view returns (uint96 weight) {
     mapping(address => address) storage _governorOf = _getGovernorOf();
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
     weight = _governorToBridgeOperatorInfo[_governorOf[bridgeOperator]].voteWeight;
@@ -466,9 +466,9 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @param governors An array containing the addresses of governors.
    * @return weights An array containing the vote weights of the corresponding governors.
    */
-  function _getGovernorWeights(address[] memory governors) internal view returns (uint256[] memory weights) {
+  function _getGovernorWeights(address[] memory governors) internal view returns (uint96[] memory weights) {
     uint256 length = governors.length;
-    weights = new uint256[](length);
+    weights = new uint96[](length);
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
     for (uint256 i; i < length; ) {
       weights[i] = _governorToBridgeOperatorInfo[governors[i]].voteWeight;
@@ -512,7 +512,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @param governor The address of the governor to get the vote weight for.
    * @return voteWeight The vote weight of the specified governor.
    */
-  function _getGovernorWeight(address governor) internal view returns (uint256) {
+  function _getGovernorWeight(address governor) internal view returns (uint96) {
     return _getGovernorToBridgeOperatorInfo()[governor].voteWeight;
   }
 

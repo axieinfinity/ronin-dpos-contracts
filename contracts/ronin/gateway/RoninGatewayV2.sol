@@ -520,7 +520,7 @@ contract RoninGatewayV2 is
     IsolatedGovernance.Vote storage _v,
     bytes32 _hash
   ) internal view returns (uint256 _totalWeight) {
-    (, address[] memory bridgeOperators, uint256[] memory weights) = IBridgeManager(
+    (, address[] memory bridgeOperators, uint96[] memory weights) = IBridgeManager(
       getContract(ContractType.BRIDGE_MANAGER)
     ).getFullBridgeOperatorInfos();
     uint256 length = bridgeOperators.length;
