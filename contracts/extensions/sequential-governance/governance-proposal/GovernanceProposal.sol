@@ -67,7 +67,7 @@ abstract contract GovernanceProposal is CoreGovernance, CommonGovernanceProposal
       revert ErrInvalidProposal(proposalHash, vote[_proposal.chainId][_proposal.nonce].hash);
 
     uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
-    uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;
+    uint256 _minimumAgainstVoteWeight = _getTotalWeight() - _minimumForVoteWeight + 1;
     Signature memory _emptySignature;
     _castVote(
       _proposal,

@@ -77,7 +77,7 @@ interface ICandidateManager {
   /**
    * @dev Returns the minimum number of days to the effective date of commission rate change.
    */
-  function minEffectiveDaysOnwards() external view returns (uint256);
+  function minEffectiveDaysOnward() external view returns (uint256);
 
   /**
    * @dev Sets the maximum number of validator candidate.

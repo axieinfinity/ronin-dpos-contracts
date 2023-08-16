@@ -61,7 +61,7 @@ abstract contract CommonGovernanceRelay is CoreGovernance {
 
     ProposalVote storage _vote = vote[_proposal.chainId][_proposal.nonce];
     uint256 _minimumForVoteWeight = _getMinimumVoteWeight();
-    uint256 _totalForVoteWeight = _sumWeights(_forVoteSigners);
+    uint256 _totalForVoteWeight = _sumWeight(_forVoteSigners);
     if (_totalForVoteWeight >= _minimumForVoteWeight) {
       if (_totalForVoteWeight == 0) revert ErrInvalidVoteWeight(msg.sig);
       _vote.status = VoteStatus.Approved;
@@ -70,8 +70,8 @@ abstract contract CommonGovernanceRelay is CoreGovernance {
       return;
     }
 
-    uint256 _minimumAgainstVoteWeight = _getTotalWeights() - _minimumForVoteWeight + 1;
-    uint256 _totalAgainstVoteWeight = _sumWeights(_againstVoteSigners);
+    uint256 _minimumAgainstVoteWeight = _getTotalWeight() - _minimumForVoteWeight + 1;
+    uint256 _totalAgainstVoteWeight = _sumWeight(_againstVoteSigners);
     if (_totalAgainstVoteWeight >= _minimumAgainstVoteWeight) {
       if (_totalAgainstVoteWeight == 0) revert ErrInvalidVoteWeight(msg.sig);
       _vote.status = VoteStatus.Rejected;
@@ -85,5 +85,5 @@ abstract contract CommonGovernanceRelay is CoreGovernance {
   /**
    * @dev Returns the weight of the governor list.
    */
-  function _sumWeights(address[] memory _governors) internal view virtual returns (uint256);
+  function _sumWeight(address[] memory _governors) internal view virtual returns (uint256);
 }

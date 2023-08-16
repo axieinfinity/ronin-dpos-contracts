@@ -17,7 +17,7 @@ interface IBridgeManager is IBridgeManagerEvents {
    * @dev Returns the total number of bridge operators.
    * @return The total number of bridge operators.
    */
-  function totalBridgeOperators() external view returns (uint256);
+  function totalBridgeOperator() external view returns (uint256);
 
   /**
    * @dev Checks if the given address is a bridge operator.
@@ -64,7 +64,7 @@ interface IBridgeManager is IBridgeManagerEvents {
   /**
    * @dev Returns total weights.
    */
-  function getTotalWeights() external view returns (uint256);
+  function getTotalWeight() external view returns (uint256);
 
   /**
    * @dev Returns an array of all bridge operators.
