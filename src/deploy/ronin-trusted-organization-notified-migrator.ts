@@ -43,6 +43,6 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   });
 };
 
-deploy.tags = ['RoninTrustedOrganizationNotifiedMigrator'];
+deploy.tags = ['RoninTrustedOrganizationNotifiedMigrator', 'MigratorBridgeDetachV0_6'];
 
 export default deploy;
