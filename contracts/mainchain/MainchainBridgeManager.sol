@@ -84,8 +84,8 @@ contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGoverna
    * @dev Internal function to retrieve the total weights of all governors.
    * @return totalWeights The total weights of all governors combined.
    */
-  function _getTotalWeights() internal view override returns (uint256) {
-    return getTotalWeights();
+  function _getTotalWeight() internal view override returns (uint256) {
+    return getTotalWeight();
   }
 
   /**
@@ -93,7 +93,7 @@ contract MainchainBridgeManager is BridgeManager, GovernanceRelay, GlobalGoverna
    * @param governors An array containing the addresses of governors to calculate the sum of weights.
    * @return sumWeights The sum of weights for the provided governors.
    */
-  function _sumWeights(address[] memory governors) internal view override returns (uint256) {
+  function _sumWeight(address[] memory governors) internal view override returns (uint256) {
     return _sumGovernorsWeight(governors);
   }
 
