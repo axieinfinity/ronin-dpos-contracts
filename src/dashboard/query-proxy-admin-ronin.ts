@@ -100,7 +100,7 @@ function isCorrectAdmin(admin: Address, expectedAdmin: Address): boolean {
   return admin.toLocaleLowerCase() == expectedAdmin.toLocaleLowerCase();
 }
 
-// yarn hardhat deploy --tags QueryProxyAdmin --network ronin-testnet
-deploy.tags = ['QueryProxyAdmin'];
+// yarn hardhat deploy --tags QueryProxyAdminRonin --network ronin-testnet
+deploy.tags = ['QueryProxyAdminRonin'];
 
 export default deploy;
