@@ -36,4 +36,14 @@ contract BridgeManager_Unit_Concrete_Test is Base_Test {
 
     _bridgeManager = new MockBridgeManager(bridgeOperators, governors, voteWeights);
   }
+
+  function _getBridgeMembers()
+    internal
+    view
+    returns (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights)
+  {
+    bridgeOperators = _bridgeManager.getBridgeOperators();
+    governors = _bridgeManager.getGovernors();
+    voteWeights = _bridgeManager.getGovernorWeights(governors);
+  }
 }
