@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { Test } from "forge-std/Test.sol";
-import { Randomizer } from "../../helpers/Randomizer.t.sol";
+import { Randomizer } from "@ronin/test/helpers/Randomizer.t.sol";
 import { Sorting } from "@ronin/contracts/mocks/libraries/Sorting.sol";
 import { AddressArrayUtils } from "@ronin/contracts/libraries/AddressArrayUtils.sol";
 import { IBridgeManager } from "@ronin/contracts/interfaces/bridge/IBridgeManager.sol";
@@ -47,11 +47,7 @@ abstract contract BridgeManagerUtils is Randomizer {
     uint256 r2,
     uint256 r3,
     uint256 numBridgeOperators
-  )
-    public
-    virtual
-    returns (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights)
-  {
+  ) public virtual returns (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) {
     // ensure r1, r2, r3 is unique
     vm.assume(!(r1 == r2 || r2 == r3 || r1 == r3));
     numBridgeOperators = _bound(numBridgeOperators, MIN_FUZZ_INPUTS, MAX_FUZZ_INPUTS);

@@ -3,13 +3,13 @@ pragma solidity ^0.8.0;
 
 import { console } from "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
-import { LibArrayUtils } from "../helpers/LibArrayUtils.t.sol";
+import { LibArrayUtils } from "@ronin/test/helpers/LibArrayUtils.t.sol";
 import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
 import { MockValidatorContract } from "@ronin/contracts/mocks/ronin/MockValidatorContract.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
 import { IBridgeSlash, MockBridgeSlash, BridgeSlash } from "@ronin/contracts/mocks/ronin/MockBridgeSlash.sol";
-import { IBridgeManager, BridgeManagerUtils } from "./utils/BridgeManagerUtils.t.sol";
+import { IBridgeManager, BridgeManagerUtils } from "../utils/BridgeManagerUtils.t.sol";
 import { RoninBridgeManager } from "@ronin/contracts/ronin/gateway/RoninBridgeManager.sol";
 import { Math } from "@ronin/contracts/libraries/Math.sol";
 import { RoleAccess, ContractType, AddressArrayUtils, MockBridgeManager } from "@ronin/contracts/mocks/ronin/MockBridgeManager.sol";
@@ -303,7 +303,9 @@ contract BridgeSlashTest is IBridgeSlashEvents, BridgeManagerUtils {
     _gatewayContract = address(new TransparentUpgradeableProxyV2(_gatewayLogic, _admin, ""));
 
     _bridgeTrackingLogic = address(new BridgeTracking());
-    _bridgeTrackingContract = address(new TransparentUpgradeableProxyV2(_bridgeTrackingLogic, _bridgeManagerContract, ""));
+    _bridgeTrackingContract = address(
+      new TransparentUpgradeableProxyV2(_bridgeTrackingLogic, _bridgeManagerContract, "")
+    );
 
     _bridgeSlashLogic = address(new MockBridgeSlash());
     _bridgeSlashContract = address(

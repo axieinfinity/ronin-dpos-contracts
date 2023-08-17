@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { console } from "forge-std/console.sol";
-import { IBridgeManager, BridgeManagerUtils } from "./utils/BridgeManagerUtils.t.sol";
+import { IBridgeManager, BridgeManagerUtils } from "../utils/BridgeManagerUtils.t.sol";
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
 import { RoleAccess, ContractType, AddressArrayUtils, MockBridgeManager } from "@ronin/contracts/mocks/ronin/MockBridgeManager.sol";
 import { ErrBridgeOperatorUpdateFailed, ErrBridgeOperatorAlreadyExisted, ErrUnauthorized, ErrInvalidVoteWeight, ErrZeroAddress, ErrUnexpectedInternalCall } from "@ronin/contracts/utils/CommonErrors.sol";

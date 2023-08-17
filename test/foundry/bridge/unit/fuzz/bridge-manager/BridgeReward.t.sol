@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import { console } from "forge-std/console.sol";
 import { Base_Test } from "@ronin/test/Base.t.sol";
-import { LibArrayUtils } from "../helpers/LibArrayUtils.t.sol";
+import { LibArrayUtils } from "@ronin/test/helpers/LibArrayUtils.t.sol";
 import { IBridgeRewardEvents } from "@ronin/contracts/interfaces/bridge/events/IBridgeRewardEvents.sol";
-import { IBridgeManager, BridgeManagerUtils } from "./utils/BridgeManagerUtils.t.sol";
+import { IBridgeManager, BridgeManagerUtils } from "../utils/BridgeManagerUtils.t.sol";
 import { MockValidatorContract } from "@ronin/contracts/mocks/ronin/MockValidatorContract.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
 import { BridgeReward } from "@ronin/contracts/ronin/gateway/BridgeReward.sol";
