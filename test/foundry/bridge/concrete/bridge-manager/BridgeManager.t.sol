@@ -12,7 +12,7 @@ contract BridgeManager_Unit_Concrete_Test is Base_Test {
   address[] internal _governors;
   uint96[] internal _voteWeights;
 
-  function setUp() external {
+  function setUp() public virtual {
     address[] memory bridgeOperators = new address[](3);
     bridgeOperators[0] = address(0x10000);
     bridgeOperators[1] = address(0x10001);

@@ -3,14 +3,25 @@ pragma solidity >=0.8.17 <0.9.0;
 
 import { console } from "forge-std/console.sol";
 import { IBridgeManager } from "@ronin/contracts/interfaces/bridge/IBridgeManager.sol";
+import { IBridgeManagerEvents } from "@ronin/contracts/interfaces/bridge/events/IBridgeManagerEvents.sol";
 
 import { BridgeManager_Unit_Concrete_Test } from "./BridgeManager.t.sol";
 
 contract Constructor_BridgeManager_Unit_Concrete_Test is BridgeManager_Unit_Concrete_Test {
   function test_Constructor() external {
     // Expect the relevant event to be emitted.
+    // bool[] memory statuses = new bool[](3);
+    // statuses[0] = true;
+    // statuses[1] = true;
+    // statuses[2] = true;
+
     // vm.expectEmit();
-    // emit TransferAdmin({ oldAdmin: address(0), newAdmin: users.admin });
+    // emit IBridgeManagerEvents.BridgeOperatorsAdded({
+    //   statuses: statuses,
+    //   voteWeights: _voteWeights,
+    //   governors: _governors,
+    //   bridgeOperators: _bridgeOperators
+    // });
 
     address[] memory bridgeOperators = _bridgeManager.getBridgeOperators();
     address[] memory governors = _bridgeManager.getGovernors();

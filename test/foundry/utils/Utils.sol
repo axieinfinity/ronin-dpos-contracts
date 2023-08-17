@@ -5,4 +5,6 @@ import { StdUtils } from "forge-std/StdUtils.sol";
 
 import { PRBMathUtils } from "@prb/math/src/test/Utils.sol";
 
-abstract contract Utils is StdUtils, PRBMathUtils {}
+abstract contract Utils is StdUtils, PRBMathUtils {
+  function getEmptyAddressArray() internal pure returns (address[] memory arr) {}
+}

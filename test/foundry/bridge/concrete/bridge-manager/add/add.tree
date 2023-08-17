@@ -1,0 +1,16 @@
+add.t.sol
+├── when not self-called
+│  └── it should revert
+└── when self-called
+   ├── when the three input arrays length mismatch
+   │  └── it should revert
+   ├── when the vote weight or the address is zero
+   │  └── it should revert
+   ├── when duplicated governor
+   │  └── it should revert
+   ├── when duplicated bridge operator
+   │  └── it should revert
+   └── when the info is valid
+        ├── it should add gorvernor to the governor list
+        ├── it should add bridge operator to the operator list
+        └── it should grant the governor the expected weight
