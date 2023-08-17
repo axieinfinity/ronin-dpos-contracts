@@ -36,4 +36,27 @@ contract Constructor_BridgeManager_Unit_Concrete_Test is BridgeManager_Unit_Conc
     assertEq(_bridgeManager.totalBridgeOperator(), 3);
     assertEq(_bridgeManager.getTotalWeight(), _totalWeight);
   }
+
+  function test_GetFullBridgeOperatorInfos() external {
+    (
+      address[] memory expectingBridgeOperators,
+      address[] memory expectingGovernors,
+      uint96[] memory expectingVoteWeights
+    ) = _getBridgeMembers();
+
+    (
+      address[] memory returnedGovernors,
+      address[] memory returnedBridgeOperators,
+      uint96[] memory returnedVoteWeights
+    ) = _bridgeManager.getFullBridgeOperatorInfos();
+
+    _assertBridgeMembers({
+      comparingOperators: returnedBridgeOperators,
+      comparingGovernors: returnedGovernors,
+      comparingWeights: returnedVoteWeights,
+      expectingOperators: expectingBridgeOperators,
+      expectingGovernors: expectingGovernors,
+      expectingWeights: expectingVoteWeights
+    });
+  }
 }

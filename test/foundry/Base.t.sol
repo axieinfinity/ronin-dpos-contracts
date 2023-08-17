@@ -6,4 +6,6 @@ import { StdCheats } from "forge-std/StdCheats.sol";
 import { Assertions } from "./utils/Assertions.sol";
 import { Utils } from "./utils/Utils.sol";
 
-abstract contract Base_Test is Assertions, Utils, StdCheats {}
+import { IBridgeManagerEvents } from "@ronin/contracts/interfaces/bridge/events/IBridgeManagerEvents.sol";
+
+abstract contract Base_Test is Assertions, Utils, StdCheats, IBridgeManagerEvents {}

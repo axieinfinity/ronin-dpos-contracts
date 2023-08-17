@@ -8,7 +8,7 @@ import { AddressArrayUtils } from "@ronin/contracts/libraries/AddressArrayUtils.
 import { IBridgeManager } from "@ronin/contracts/interfaces/bridge/IBridgeManager.sol";
 import { IBridgeManagerEvents } from "@ronin/contracts/interfaces/bridge/events/IBridgeManagerEvents.sol";
 
-abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEvents {
+abstract contract BridgeManagerUtils is Randomizer {
   using Sorting for uint256[];
   using AddressArrayUtils for address[];
 

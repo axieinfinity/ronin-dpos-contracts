@@ -225,27 +225,12 @@ contract Add_Unit_Concrete_Test is BridgeManager_Unit_Concrete_Test {
 
     _assertBridgeMembers({
       comparingOperators: beforeBridgeOperators,
-      expectingOperators: afterBridgeOperators,
       comparingGovernors: beforeGovernors,
-      expectingGovernors: afterGovernors,
       comparingWeights: beforeVoteWeights,
+      expectingOperators: afterBridgeOperators,
+      expectingGovernors: afterGovernors,
       expectingWeights: afterVoteWeights
     });
     assertEq(_bridgeManager.getTotalWeight(), _totalWeight);
-  }
-
-  function _generateNewOperators()
-    internal
-    pure
-    returns (address[] memory operators, address[] memory governors, uint96[] memory weights)
-  {
-    operators = new address[](1);
-    operators[0] = address(0x10003);
-
-    governors = new address[](1);
-    governors[0] = address(0x20003);
-
-    weights = new uint96[](1);
-    weights[0] = 100;
   }
 }
