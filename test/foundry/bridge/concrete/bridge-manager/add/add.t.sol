@@ -15,34 +15,6 @@ contract Add_Unit_Concrete_Test is BridgeManager_Unit_Concrete_Test {
     vm.startPrank({ msgSender: address(_bridgeManager) });
   }
 
-  modifier assertStateNotChange() {
-    // Get before test state
-    (
-      address[] memory beforeBridgeOperators,
-      address[] memory beforeGovernors,
-      uint96[] memory beforeVoteWeights
-    ) = _getBridgeMembers();
-
-    _;
-
-    // Compare after and before state
-    (
-      address[] memory afterBridgeOperators,
-      address[] memory afterGovernors,
-      uint96[] memory afterVoteWeights
-    ) = _getBridgeMembers();
-
-    _assertBridgeMembers({
-      comparingOperators: beforeBridgeOperators,
-      expectingOperators: afterBridgeOperators,
-      comparingGovernors: beforeGovernors,
-      expectingGovernors: afterGovernors,
-      comparingWeights: beforeVoteWeights,
-      expectingWeights: afterVoteWeights
-    });
-    assertEq(_bridgeManager.getTotalWeight(), _totalWeight);
-  }
-
   function test_RevertWhen_NotSelfCall() external {
     // Prepare data
     (

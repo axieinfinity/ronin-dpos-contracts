@@ -12,6 +12,35 @@ contract BridgeManager_Unit_Concrete_Test is Base_Test {
   address[] internal _governors;
   uint96[] internal _voteWeights;
   uint256 internal _totalWeight;
+  uint256 internal _totalOperator;
+
+  modifier assertStateNotChange() {
+    // Get before test state
+    (
+      address[] memory beforeBridgeOperators,
+      address[] memory beforeGovernors,
+      uint96[] memory beforeVoteWeights
+    ) = _getBridgeMembers();
+
+    _;
+
+    // Compare after and before state
+    (
+      address[] memory afterBridgeOperators,
+      address[] memory afterGovernors,
+      uint96[] memory afterVoteWeights
+    ) = _getBridgeMembers();
+
+    _assertBridgeMembers({
+      comparingOperators: beforeBridgeOperators,
+      expectingOperators: afterBridgeOperators,
+      comparingGovernors: beforeGovernors,
+      expectingGovernors: afterGovernors,
+      comparingWeights: beforeVoteWeights,
+      expectingWeights: afterVoteWeights
+    });
+    assertEq(_bridgeManager.getTotalWeight(), _totalWeight);
+  }
 
   function setUp() public virtual {
     address[] memory bridgeOperators = new address[](3);
@@ -36,6 +65,7 @@ contract BridgeManager_Unit_Concrete_Test is Base_Test {
     }
 
     _totalWeight = 300;
+    _totalOperator = 3;
 
     _bridgeManager = new MockBridgeManager(bridgeOperators, governors, voteWeights);
   }
@@ -55,6 +85,46 @@ contract BridgeManager_Unit_Concrete_Test is Base_Test {
     weights[0] = 100;
   }
 
+  function _generateRemovingOperators(
+    uint removingNumber
+  )
+    internal
+    view
+    returns (
+      address[] memory removingOperators,
+      address[] memory removingGovernors,
+      uint96[] memory removingWeights,
+      address[] memory remainingOperators,
+      address[] memory remainingGovernors,
+      uint96[] memory remainingWeights
+    )
+  {
+    if (removingNumber > _totalOperator) {
+      revert();
+    }
+
+    uint remainingNumber = _totalOperator - removingNumber;
+
+    removingOperators = new address[](removingNumber);
+    removingGovernors = new address[](removingNumber);
+    removingWeights = new uint96[](removingNumber);
+    remainingOperators = new address[](remainingNumber);
+    remainingGovernors = new address[](remainingNumber);
+    remainingWeights = new uint96[](remainingNumber);
+
+    for (uint i; i < removingNumber; i++) {
+      removingOperators[i] = _bridgeOperators[i];
+      removingGovernors[i] = _governors[i];
+      removingWeights[i] = _voteWeights[i];
+    }
+
+    for (uint i = removingNumber; i < _totalOperator; i++) {
+      remainingOperators[i - removingNumber] = _bridgeOperators[i];
+      remainingGovernors[i - removingNumber] = _governors[i];
+      remainingWeights[i - removingNumber] = _voteWeights[i];
+    }
+  }
+
   function _generateBridgeOperatorAddressToUpdate() internal pure returns (address) {
     return address(0x10010);
   }
@@ -65,6 +135,15 @@ contract BridgeManager_Unit_Concrete_Test is Base_Test {
     returns (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights)
   {
     governors = _bridgeManager.getGovernors();
+    bridgeOperators = _bridgeManager.getBridgeOperatorOf(governors);
+    voteWeights = _bridgeManager.getGovernorWeights(governors);
+    // (governors, bridgeOperators, voteWeights) = _bridgeManager.getFullBridgeOperatorInfos();
+  }
+
+  function _getBridgeMembers(
+    address[] memory governors
+  ) internal view returns (address[] memory bridgeOperators, address[] memory governors_, uint96[] memory voteWeights) {
+    governors_ = governors;
     bridgeOperators = _bridgeManager.getBridgeOperatorOf(governors);
     voteWeights = _bridgeManager.getGovernorWeights(governors);
     // (governors, bridgeOperators, voteWeights) = _bridgeManager.getFullBridgeOperatorInfos();

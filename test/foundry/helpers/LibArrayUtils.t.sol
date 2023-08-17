@@ -21,4 +21,13 @@ library LibArrayUtils {
       }
     }
   }
+
+  function sum(uint96[] memory arr) internal pure returns (uint256 total) {
+    uint256[] memory arr256;
+    assembly {
+      arr256 := arr
+    }
+
+    return sum(arr256);
+  }
 }
