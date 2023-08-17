@@ -32,17 +32,23 @@ contract Add_Unit_Concrete_Test is BridgeManager_Unit_Concrete_Test {
       uint96[] memory afterVoteWeights
     ) = _getBridgeMembers();
 
-    assertEq(beforeBridgeOperators, afterBridgeOperators, "wrong BridgeOperators");
-    assertEq(beforeGovernors, afterGovernors, "wrong Governors");
-    assertEq(beforeVoteWeights, afterVoteWeights, "wrong VoteWeights");
+    _assertBridgeMembers({
+      comparingOperators: beforeBridgeOperators,
+      expectingOperators: afterBridgeOperators,
+      comparingGovernors: beforeGovernors,
+      expectingGovernors: afterGovernors,
+      comparingWeights: beforeVoteWeights,
+      expectingWeights: afterVoteWeights
+    });
+    assertEq(_bridgeManager.getTotalWeight(), _totalWeight);
   }
 
   function test_RevertWhen_NotSelfCall() external {
     // Prepare data
     (
-      address[] memory bridgeOperators,
-      address[] memory governors,
-      uint96[] memory voteWeights
+      address[] memory addingOperators,
+      address[] memory addingGovernors,
+      uint96[] memory addingWeights
     ) = _generateNewOperators();
 
     // Make the caller not self-call.
@@ -50,88 +56,88 @@ contract Add_Unit_Concrete_Test is BridgeManager_Unit_Concrete_Test {
 
     // Run the test.
     vm.expectRevert(abi.encodeWithSelector(ErrOnlySelfCall.selector, IBridgeManager.addBridgeOperators.selector));
-    _bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    _bridgeManager.addBridgeOperators(addingWeights, addingGovernors, addingOperators);
   }
 
   function test_RevertWhen_ThreeInputArrayLengthMismatch() external {
     // Prepare data
     (
-      address[] memory bridgeOperators,
-      address[] memory governors,
-      uint96[] memory voteWeights
+      address[] memory addingOperators,
+      address[] memory addingGovernors,
+      uint96[] memory addingWeights
     ) = _generateNewOperators();
 
-    uint length = bridgeOperators.length;
+    uint length = addingOperators.length;
 
     assembly {
-      mstore(bridgeOperators, add(length, 1))
+      mstore(addingOperators, add(length, 1))
     }
     vm.expectRevert(abi.encodeWithSelector(ErrLengthMismatch.selector, IBridgeManager.addBridgeOperators.selector));
-    _bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    _bridgeManager.addBridgeOperators(addingWeights, addingGovernors, addingOperators);
 
     assembly {
-      mstore(bridgeOperators, length)
-      mstore(governors, add(length, 1))
+      mstore(addingOperators, length)
+      mstore(addingGovernors, add(length, 1))
     }
     vm.expectRevert(abi.encodeWithSelector(ErrLengthMismatch.selector, IBridgeManager.addBridgeOperators.selector));
-    _bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    _bridgeManager.addBridgeOperators(addingWeights, addingGovernors, addingOperators);
 
     assembly {
-      mstore(governors, length)
-      mstore(voteWeights, add(length, 1))
+      mstore(addingGovernors, length)
+      mstore(addingWeights, add(length, 1))
     }
     vm.expectRevert(abi.encodeWithSelector(ErrLengthMismatch.selector, IBridgeManager.addBridgeOperators.selector));
-    _bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    _bridgeManager.addBridgeOperators(addingWeights, addingGovernors, addingOperators);
   }
 
   function test_RevertWhen_VoteWeightIsZero() external {
     // Prepare data
     (
-      address[] memory bridgeOperators,
-      address[] memory governors,
-      uint96[] memory voteWeights
+      address[] memory addingOperators,
+      address[] memory addingGovernors,
+      uint96[] memory addingWeights
     ) = _generateNewOperators();
 
-    voteWeights[0] = 0;
+    addingWeights[0] = 0;
     vm.expectRevert(abi.encodeWithSelector(ErrInvalidVoteWeight.selector, IBridgeManager.addBridgeOperators.selector));
-    _bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    _bridgeManager.addBridgeOperators(addingWeights, addingGovernors, addingOperators);
   }
 
   function test_RevertWhen_BridgeOperatorAddressIsZero() external {
     // Prepare data
     (
-      address[] memory bridgeOperators,
-      address[] memory governors,
-      uint96[] memory voteWeights
+      address[] memory addingOperators,
+      address[] memory addingGovernors,
+      uint96[] memory addingWeights
     ) = _generateNewOperators();
 
-    bridgeOperators[0] = address(0);
+    addingOperators[0] = address(0);
     vm.expectRevert(abi.encodeWithSelector(ErrZeroAddress.selector, IBridgeManager.addBridgeOperators.selector));
-    _bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    _bridgeManager.addBridgeOperators(addingWeights, addingGovernors, addingOperators);
   }
 
   function test_RevertWhen_GovernorAddressIsZero() external {
     // Prepare data
     (
-      address[] memory bridgeOperators,
-      address[] memory governors,
-      uint96[] memory voteWeights
+      address[] memory addingOperators,
+      address[] memory addingGovernors,
+      uint96[] memory addingWeights
     ) = _generateNewOperators();
 
-    governors[0] = address(0);
+    addingGovernors[0] = address(0);
     vm.expectRevert(abi.encodeWithSelector(ErrZeroAddress.selector, IBridgeManager.addBridgeOperators.selector));
-    _bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    _bridgeManager.addBridgeOperators(addingWeights, addingGovernors, addingOperators);
   }
 
   function test_AddOperators_DuplicatedGovernor() external assertStateNotChange {
     (
-      address[] memory bridgeOperators,
-      address[] memory governors,
-      uint96[] memory voteWeights
+      address[] memory addingOperators,
+      address[] memory addingGovernors,
+      uint96[] memory addingWeights
     ) = _generateNewOperators();
 
-    governors[0] = _governors[0];
-    bool[] memory addeds = _bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    addingGovernors[0] = _governors[0];
+    bool[] memory addeds = _bridgeManager.addBridgeOperators(addingWeights, addingGovernors, addingOperators);
     bool[] memory expectedAddeds = new bool[](1);
     expectedAddeds[0] = false;
     assertEq(addeds, expectedAddeds);
@@ -139,13 +145,13 @@ contract Add_Unit_Concrete_Test is BridgeManager_Unit_Concrete_Test {
 
   function test_AddOperators_DuplicatedBridgeOperator() external assertStateNotChange {
     (
-      address[] memory bridgeOperators,
-      address[] memory governors,
-      uint96[] memory voteWeights
+      address[] memory addingOperators,
+      address[] memory addingGovernors,
+      uint96[] memory addingWeights
     ) = _generateNewOperators();
 
-    bridgeOperators[0] = _bridgeOperators[0];
-    bool[] memory addeds = _bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    addingOperators[0] = _bridgeOperators[0];
+    bool[] memory addeds = _bridgeManager.addBridgeOperators(addingWeights, addingGovernors, addingOperators);
     bool[] memory expectedAddeds = new bool[](1);
     expectedAddeds[0] = false;
     assertEq(addeds, expectedAddeds);
@@ -153,13 +159,13 @@ contract Add_Unit_Concrete_Test is BridgeManager_Unit_Concrete_Test {
 
   function test_AddOperators_DuplicatedGovernorWithExistedBridgeOperator() external assertStateNotChange {
     (
-      address[] memory bridgeOperators,
-      address[] memory governors,
-      uint96[] memory voteWeights
+      address[] memory addingOperators,
+      address[] memory addingGovernors,
+      uint96[] memory addingWeights
     ) = _generateNewOperators();
 
-    governors[0] = _bridgeOperators[0];
-    bool[] memory addeds = _bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    addingGovernors[0] = _bridgeOperators[0];
+    bool[] memory addeds = _bridgeManager.addBridgeOperators(addingWeights, addingGovernors, addingOperators);
     bool[] memory expectedAddeds = new bool[](1);
     expectedAddeds[0] = false;
     assertEq(addeds, expectedAddeds);
@@ -167,13 +173,13 @@ contract Add_Unit_Concrete_Test is BridgeManager_Unit_Concrete_Test {
 
   function test_AddOperators_DuplicatedBridgeOperatorWithExistedGovernor() external assertStateNotChange {
     (
-      address[] memory bridgeOperators,
-      address[] memory governors,
-      uint96[] memory voteWeights
+      address[] memory addingOperators,
+      address[] memory addingGovernors,
+      uint96[] memory addingWeights
     ) = _generateNewOperators();
 
-    bridgeOperators[0] = _governors[0];
-    bool[] memory addeds = _bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    addingOperators[0] = _governors[0];
+    bool[] memory addeds = _bridgeManager.addBridgeOperators(addingWeights, addingGovernors, addingOperators);
     bool[] memory expectedAddeds = new bool[](1);
     expectedAddeds[0] = false;
     assertEq(addeds, expectedAddeds);
@@ -188,12 +194,12 @@ contract Add_Unit_Concrete_Test is BridgeManager_Unit_Concrete_Test {
     ) = _getBridgeMembers();
 
     (
-      address[] memory bridgeOperators,
-      address[] memory governors,
-      uint96[] memory voteWeights
+      address[] memory addingOperators,
+      address[] memory addingGovernors,
+      uint96[] memory addingWeights
     ) = _generateNewOperators();
 
-    bool[] memory addeds = _bridgeManager.addBridgeOperators(voteWeights, governors, bridgeOperators);
+    bool[] memory addeds = _bridgeManager.addBridgeOperators(addingWeights, addingGovernors, addingOperators);
     bool[] memory expectedAddeds = new bool[](1);
     expectedAddeds[0] = true;
     assertEq(addeds, expectedAddeds);
@@ -204,6 +210,7 @@ contract Add_Unit_Concrete_Test is BridgeManager_Unit_Concrete_Test {
       address[] memory afterGovernors,
       uint96[] memory afterVoteWeights
     ) = _getBridgeMembers();
+    _totalWeight += addingWeights[0];
 
     uint extendedLength = beforeBridgeOperators.length + 1;
     assembly {
@@ -212,27 +219,33 @@ contract Add_Unit_Concrete_Test is BridgeManager_Unit_Concrete_Test {
       mstore(beforeVoteWeights, extendedLength)
     }
 
-    beforeBridgeOperators[3] = bridgeOperators[0];
-    beforeGovernors[3] = governors[0];
-    beforeVoteWeights[3] = voteWeights[0];
+    beforeBridgeOperators[3] = addingOperators[0];
+    beforeGovernors[3] = addingGovernors[0];
+    beforeVoteWeights[3] = addingWeights[0];
 
-    assertEq(beforeBridgeOperators, afterBridgeOperators, "wrong BridgeOperators");
-    assertEq(beforeGovernors, afterGovernors, "wrong Governors");
-    assertEq(beforeVoteWeights, afterVoteWeights, "wrong VoteWeights");
+    _assertBridgeMembers({
+      comparingOperators: beforeBridgeOperators,
+      expectingOperators: afterBridgeOperators,
+      comparingGovernors: beforeGovernors,
+      expectingGovernors: afterGovernors,
+      comparingWeights: beforeVoteWeights,
+      expectingWeights: afterVoteWeights
+    });
+    assertEq(_bridgeManager.getTotalWeight(), _totalWeight);
   }
 
   function _generateNewOperators()
     internal
     pure
-    returns (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights)
+    returns (address[] memory operators, address[] memory governors, uint96[] memory weights)
   {
-    bridgeOperators = new address[](1);
-    bridgeOperators[0] = address(0x10003);
+    operators = new address[](1);
+    operators[0] = address(0x10003);
 
     governors = new address[](1);
     governors[0] = address(0x20003);
 
-    voteWeights = new uint96[](1);
-    voteWeights[0] = 100;
+    weights = new uint96[](1);
+    weights[0] = 100;
   }
 }

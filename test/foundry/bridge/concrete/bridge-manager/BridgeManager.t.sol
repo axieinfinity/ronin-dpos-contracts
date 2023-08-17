@@ -11,6 +11,7 @@ contract BridgeManager_Unit_Concrete_Test is Base_Test {
   address[] internal _bridgeOperators;
   address[] internal _governors;
   uint96[] internal _voteWeights;
+  uint256 internal _totalWeight;
 
   function setUp() public virtual {
     address[] memory bridgeOperators = new address[](3);
@@ -34,6 +35,8 @@ contract BridgeManager_Unit_Concrete_Test is Base_Test {
       _voteWeights.push(voteWeights[i]);
     }
 
+    _totalWeight = 300;
+
     _bridgeManager = new MockBridgeManager(bridgeOperators, governors, voteWeights);
   }
 
@@ -45,5 +48,18 @@ contract BridgeManager_Unit_Concrete_Test is Base_Test {
     bridgeOperators = _bridgeManager.getBridgeOperators();
     governors = _bridgeManager.getGovernors();
     voteWeights = _bridgeManager.getGovernorWeights(governors);
+  }
+
+  function _assertBridgeMembers(
+    address[] memory comparingOperators,
+    address[] memory expectingOperators,
+    address[] memory comparingGovernors,
+    address[] memory expectingGovernors,
+    uint96[] memory comparingWeights,
+    uint96[] memory expectingWeights
+  ) internal {
+    assertEq(comparingOperators, expectingOperators, "wrong bridge operators");
+    assertEq(comparingGovernors, expectingGovernors, "wrong governors");
+    assertEq(comparingWeights, expectingWeights, "wrong weights");
   }
 }

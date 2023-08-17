@@ -25,8 +25,15 @@ contract Constructor_BridgeManager_Unit_Concrete_Test is BridgeManager_Unit_Conc
 
     (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = _getBridgeMembers();
 
-    assertEq(_bridgeOperators, bridgeOperators, "wrong bridge operators");
-    assertEq(_governors, governors, "wrong governors");
-    assertEq(_voteWeights, voteWeights, "wrong weights");
+    _assertBridgeMembers({
+      comparingOperators: _bridgeOperators,
+      expectingOperators: bridgeOperators,
+      comparingGovernors: _governors,
+      expectingGovernors: governors,
+      comparingWeights: _voteWeights,
+      expectingWeights: voteWeights
+    });
+    assertEq(_bridgeManager.totalBridgeOperator(), 3);
+    assertEq(_bridgeManager.getTotalWeight(), _totalWeight);
   }
 }
