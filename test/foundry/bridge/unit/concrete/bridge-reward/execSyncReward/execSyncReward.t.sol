@@ -268,7 +268,7 @@ contract Add_Unit_Concrete_Test is
     assertEq(_bridgeReward.getLatestRewardedPeriod(), period);
   }
 
-  function test_execSyncReward_SharePropotionally() external {
+  function test_execSyncReward_SharePropotionally() public {
     (
       address[] memory operators,
       uint256[] memory ballots,
@@ -290,6 +290,26 @@ contract Add_Unit_Concrete_Test is
       period: period
     });
     assertEq(_bridgeReward.getLatestRewardedPeriod(), period);
+  }
+
+  function test_RevertWhen_SharePropotionally_ThenShareAgain() external {
+    test_execSyncReward_SharePropotionally();
+
+    (
+      address[] memory operators,
+      uint256[] memory ballots,
+      uint256 totalBallot,
+      uint256 totalVote
+    ) = _generateInput_execSyncReward();
+    uint256 period = _validatorSetContract.currentPeriod() + 1;
+    vm.expectRevert(abi.encodeWithSelector(ErrInvalidArguments.selector, IBridgeReward.execSyncReward.selector));
+    _bridgeReward.execSyncReward({
+      operators: operators,
+      ballots: ballots,
+      totalBallot: totalBallot,
+      totalVote: totalVote,
+      period: period
+    });
   }
 
   function _generateInput_execSyncReward()
