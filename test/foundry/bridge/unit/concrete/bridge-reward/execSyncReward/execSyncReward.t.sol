@@ -177,6 +177,8 @@ contract Add_Unit_Concrete_Test is
       totalVote: totalVote,
       period: period
     });
+
+    assertEq(_bridgeReward.getLatestRewardedPeriod(), period);
   }
 
   function test_execSyncReward_ShareEqually_WhenDataCorrupts_HaveEnoughFund_OneAbnormalBallot() external {
@@ -204,6 +206,7 @@ contract Add_Unit_Concrete_Test is
       totalVote: totalVote,
       period: period
     });
+    assertEq(_bridgeReward.getLatestRewardedPeriod(), period);
   }
 
   function test_execSyncReward_ShareEqually_WhenDataCorrupts_HaveEnoughFund_AbnormalTotalBallot() external {
@@ -262,6 +265,7 @@ contract Add_Unit_Concrete_Test is
       totalVote: totalVote,
       period: period
     });
+    assertEq(_bridgeReward.getLatestRewardedPeriod(), period);
   }
 
   function test_execSyncReward_SharePropotionally() external {
@@ -285,6 +289,7 @@ contract Add_Unit_Concrete_Test is
       totalVote: totalVote,
       period: period
     });
+    assertEq(_bridgeReward.getLatestRewardedPeriod(), period);
   }
 
   function _generateInput_execSyncReward()
