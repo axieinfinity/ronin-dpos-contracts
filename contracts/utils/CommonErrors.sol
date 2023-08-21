@@ -216,3 +216,8 @@ error ErrQueryForExpiredVote();
  * @dev Error thrown when querying for a non-existent vote.
  */
 error ErrQueryForNonExistentVote();
+
+/**
+ * @dev Error indicating that the method is only called once per block.
+ */
+error ErrOncePerBlock();
