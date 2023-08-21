@@ -13,10 +13,10 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   /// @dev Mapping from consensus address => pending reward from delegating
   mapping(address => uint256) internal _delegatingReward;
 
-  /// @dev The total reward for bridge operators
-  uint256 internal ______deprecatedTotalBridgeReward;
-  /// @dev Mapping from consensus address => pending reward for being bridge operator
-  mapping(address => uint256) internal ______deprecatedBridgeOperatingReward;
+  /// @dev The total reward for fast finality
+  uint256 internal _totalFastFinalityReward;
+  /// @dev Mapping from consensus address => pending reward for fast finality
+  mapping(address => uint256) internal _fastFinalityReward;
 
   /// @dev The deprecated reward that has not been withdrawn by admin
   uint256 internal _totalDeprecatedReward;

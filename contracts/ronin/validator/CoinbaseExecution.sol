@@ -7,6 +7,7 @@ import "../../extensions/RONTransferHelper.sol";
 import "../../interfaces/IStakingVesting.sol";
 import "../../interfaces/IMaintenance.sol";
 import "../../interfaces/IRoninTrustedOrganization.sol";
+import "../..//interfaces/IFastFinalityTracking.sol";
 import "../../interfaces/slash-indicator/ISlashIndicator.sol";
 import "../../interfaces/validator/ICoinbaseExecution.sol";
 import "../../libraries/EnumFlags.sol";
@@ -74,24 +75,32 @@ abstract contract CoinbaseExecution is
 
     emit BlockRewardSubmitted(msg.sender, msg.value, _blockProducerBonus);
 
+    // TODO: remove hardcode
+    uint256 fastFinalityRewardPercentage = 1_00; // 1%
+
     uint256 _period = currentPeriod();
     uint256 _reward = msg.value + _blockProducerBonus;
+    uint256 _rewardFF = (_reward * fastFinalityRewardPercentage) / _MAX_PERCENTAGE; // reward for fast finality
+    uint256 _rewardPB = _reward - _rewardFF; // reward for producing blocks
     uint256 _cutOffReward;
+
+    _totalFastFinalityReward += _rewardFF;
+
     if (_miningRewardBailoutCutOffAtPeriod[msg.sender][_period]) {
       (, , , uint256 _cutOffPercentage) = ISlashIndicator(getContract(ContractType.SLASH_INDICATOR))
         .getCreditScoreConfigs();
-      _cutOffReward = (_reward * _cutOffPercentage) / _MAX_PERCENTAGE;
+      _cutOffReward = (_rewardPB * _cutOffPercentage) / _MAX_PERCENTAGE;
       _totalDeprecatedReward += _cutOffReward;
       emit BlockRewardDeprecated(msg.sender, _cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
     }
 
-    _reward -= _cutOffReward;
+    _rewardPB -= _cutOffReward;
     (uint256 _minRate, uint256 _maxRate) = IStaking(getContract(ContractType.STAKING)).getCommissionRateRange();
     uint256 _rate = Math.max(Math.min(_candidateInfo[msg.sender].commissionRate, _maxRate), _minRate);
-    uint256 _miningAmount = (_rate * _reward) / _MAX_PERCENTAGE;
+    uint256 _miningAmount = (_rate * _rewardPB) / _MAX_PERCENTAGE;
     _miningReward[msg.sender] += _miningAmount;
 
-    uint256 _delegatingAmount = _reward - _miningAmount;
+    uint256 _delegatingAmount = _rewardPB - _miningAmount;
     _delegatingReward[msg.sender] += _delegatingAmount;
   }
 
@@ -107,6 +116,8 @@ abstract contract CoinbaseExecution is
     uint256 _epoch = epochOf(block.number);
     uint256 _nextEpoch = _epoch + 1;
     uint256 _lastPeriod = currentPeriod();
+
+    _calcFastFinalityReward(_epoch, _currentValidators);
 
     if (_periodEnding) {
       (
@@ -128,6 +139,25 @@ abstract contract CoinbaseExecution is
     emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
     _periodOf[_nextEpoch] = _newPeriod;
     _lastUpdatedPeriod = _newPeriod;
+  }
+
+  function _calcFastFinalityReward(uint256 epoch, address[] memory validators) private {
+    uint256[] memory voteCounts = IFastFinalityTracking(getContract(ContractType.FAST_FINALTIY_TRACKING))
+      .getManyFinalityVoteCounts(epoch, validators);
+    uint256 divisor = _numberOfBlocksInEpoch * validators.length;
+    uint256 iReward;
+
+    for (uint i; i < validators.length; ) {
+      iReward = (_totalFastFinalityReward * voteCounts[i]) / divisor;
+      _fastFinalityReward[validators[i]] += iReward;
+      _totalFastFinalityReward -= iReward;
+      unchecked {
+        ++i;
+      }
+    }
+
+    _totalDeprecatedReward += _totalFastFinalityReward;
+    delete _totalFastFinalityReward;
   }
 
   /**
@@ -154,12 +184,17 @@ abstract contract CoinbaseExecution is
         _totalDelegatingReward += _delegatingReward[_consensusAddr];
         _delegatingRewards[_i] = _delegatingReward[_consensusAddr];
         _distributeMiningReward(_consensusAddr, _treasury);
+        _distributeFastFinalityReward(_consensusAddr, _treasury);
       } else {
-        _totalDeprecatedReward += _miningReward[_consensusAddr] + _delegatingReward[_consensusAddr];
+        _totalDeprecatedReward +=
+          _miningReward[_consensusAddr] +
+          _delegatingReward[_consensusAddr] +
+          _fastFinalityReward[_consensusAddr];
       }
 
       delete _delegatingReward[_consensusAddr];
       delete _miningReward[_consensusAddr];
+      delete _fastFinalityReward[_consensusAddr];
 
       unchecked {
         ++_i;
@@ -185,6 +220,18 @@ abstract contract CoinbaseExecution is
       }
 
       emit MiningRewardDistributionFailed(_consensusAddr, _treasury, _amount, address(this).balance);
+    }
+  }
+
+  function _distributeFastFinalityReward(address _consensusAddr, address payable _treasury) private {
+    uint256 _amount = _fastFinalityReward[_consensusAddr];
+    if (_amount > 0) {
+      if (_unsafeSendRONLimitGas(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
+        emit FastFinalityRewardDistributed(_consensusAddr, _treasury, _amount);
+        return;
+      }
+
+      emit FastFinalityRewardDistributionFailed(_consensusAddr, _treasury, _amount, address(this).balance);
     }
   }
 

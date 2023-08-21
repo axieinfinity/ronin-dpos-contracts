@@ -53,6 +53,16 @@ interface ICoinbaseExecution is ISlashingExecution {
     uint256 contractBalance
   );
 
+  /// @dev Emitted when the fast finality reward is distributed.
+  event FastFinalityRewardDistributed(address indexed consensusAddr, address indexed recipient, uint256 amount);
+  /// @dev Emitted when the contract fails when distributing the fast finality reward.
+  event FastFinalityRewardDistributionFailed(
+    address indexed consensusAddr,
+    address indexed recipient,
+    uint256 amount,
+    uint256 contractBalance
+  );
+
   /// @dev Emitted when the amount of RON reward is distributed to staking contract.
   event StakingRewardDistributed(uint256 totalAmount, address[] consensusAddrs, uint256[] amounts);
   /// @dev Emitted when the contracts fails when distributing the amount of RON to the staking contract.
