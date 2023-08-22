@@ -71,6 +71,7 @@ describe('Maintenance test', () => {
       stakingContractAddress,
       validatorContractAddress,
       roninGovernanceAdminAddress,
+      fastFinalityTrackingAddress,
     } = await initTest('Maintenance')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -130,6 +131,7 @@ describe('Maintenance test', () => {
           { value: minValidatorStakingAmount.add(maxValidatorNumber).sub(i) }
         );
     }
+    await validatorContract.initializeV3(fastFinalityTrackingAddress);
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 

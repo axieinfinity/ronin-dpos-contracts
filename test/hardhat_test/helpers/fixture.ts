@@ -261,7 +261,7 @@ export const initTest = (id: string) =>
     return {
       roninGovernanceAdminAddress: roninGovernanceAdminDeployment.address,
       maintenanceContractAddress: maintenanceContractDeployment.address,
-      fastFinalityTrackingContractAddress: fastFinalityTrackingContractDeployment.address,
+      fastFinalityTrackingAddress: fastFinalityTrackingContractDeployment.address,
       roninTrustedOrganizationAddress: roninTrustedOrganizationDeployment.address,
       slashContractAddress: slashContractDeployment.address,
       stakingContractAddress: stakingContractDeployment.address,
