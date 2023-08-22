@@ -15,6 +15,8 @@ abstract contract SlashFastFinality is ISlashFastFinality, HasContracts, PCUVali
   uint256 internal _slashFastFinalityAmount;
   /// @dev The block number that the punished validator will be jailed until, due to malicious fast finality.
   uint256 internal _fastFinalityJailUntilBlock;
+  /// @dev Recording of submitted proof to prevent relay attack.
+  mapping(bytes32 => bool) _processedEvidence;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
@@ -42,6 +44,9 @@ abstract contract SlashFastFinality is ISlashFastFinality, HasContracts, PCUVali
     bytes memory expectingPubKey = (profileContract.getId2Profile(consensusAddr)).pubkey;
     if (keccak256(voterPublicKey) != keccak256(expectingPubKey)) revert ErrInvalidArguments(msg.sig);
 
+    bytes32 evidenceHash = keccak256(abi.encodePacked(consensusAddr, targetBlockNumber));
+    if (_processedEvidence[evidenceHash]) revert ErrEvidenceAlreadySubmitted();
+
     if (
       _pcValidateFastFinalityEvidence(
         voterPublicKey,
@@ -51,6 +56,8 @@ abstract contract SlashFastFinality is ISlashFastFinality, HasContracts, PCUVali
         aggregatedSignature
       )
     ) {
+      _processedEvidence[evidenceHash] = true;
+
       IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
       uint256 period = validatorContract.currentPeriod();
       emit Slashed(consensusAddr, SlashType.FAST_FINALITY, period);
@@ -86,6 +93,9 @@ abstract contract SlashFastFinality is ISlashFastFinality, HasContracts, PCUVali
     emit FastFinalitySlashingConfigsUpdated(slashAmount, jailUntilBlock);
   }
 
+  /**
+   * @dev Get governor, i.e. governing validator's weight, of the `addr`.
+   */
   function _getGovernorWeight(address addr) internal view returns (uint256) {
     return IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).getGovernorWeight(addr);
   }

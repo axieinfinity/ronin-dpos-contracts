@@ -15,6 +15,9 @@ interface IBaseSlash {
     FAST_FINALITY
   }
 
+  /// @dev Error thrown when evidence has already been submitted.
+  error ErrEvidenceAlreadySubmitted();
+
   /// @dev Emitted when the validator is slashed.
   event Slashed(address indexed validator, SlashType slashType, uint256 period);
 }
