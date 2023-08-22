@@ -41,6 +41,11 @@ interface IStakingVesting {
   function bridgeOperatorBlockBonus(uint256 _block) external view returns (uint256);
 
   /**
+   * @dev Returns the percentage of fast finality reward.
+   */
+  function fastFinalityRewardPercentage() external view returns (uint256);
+
+  /**
    * @dev Receives RON from any address.
    */
   function receiveRON() external payable;

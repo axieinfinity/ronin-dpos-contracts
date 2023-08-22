@@ -86,6 +86,7 @@ export const defaultTestConfig: InitTestInput = {
     blockProducerBonusPerBlock: 1_000,
     bridgeOperatorBonusPerBlock: 1_100,
     topupAmount: BigNumber.from(100_000_000_000),
+    fastFinalityRewardPercent: 1_00, // 1%
   },
 
   slashIndicatorArguments: {

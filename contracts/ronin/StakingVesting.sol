@@ -75,6 +75,13 @@ contract StakingVesting is
   /**
    * @inheritdoc IStakingVesting
    */
+  function fastFinalityRewardPercentage() external view override returns (uint256) {
+    return _fastFinalityRewardPercentage;
+  }
+
+  /**
+   * @inheritdoc IStakingVesting
+   */
   function requestBonus(
     bool forBlockProducer,
     bool forBridgeOperator
