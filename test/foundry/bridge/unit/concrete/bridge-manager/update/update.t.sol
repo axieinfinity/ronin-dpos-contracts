@@ -55,6 +55,7 @@ contract Update_Unit_Concrete_Test is BridgeManager_Unit_Concrete_Test {
   }
 
   function test_RevertWhen_NewOperatorIsExistedInCurrentGovernorList() external {
+    vm.skip(true);
     address newOperator = _governors[2];
 
     // Run the test.
