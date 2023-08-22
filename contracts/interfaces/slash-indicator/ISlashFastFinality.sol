@@ -6,11 +6,6 @@ import "./IBaseSlash.sol";
 
 interface ISlashFastFinality is IBaseSlash {
   /**
-   * @dev Error thrown when evidence has already been submitted.
-   */
-  error ErrEvidenceAlreadySubmitted();
-
-  /**
    * @dev Emitted when the configs to slash fast finality is updated. See the method `getFastFinalitySlashingConfigs`
    * for param details.
    */

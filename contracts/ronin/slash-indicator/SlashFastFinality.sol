@@ -8,27 +8,19 @@ import { IProfile } from "../../interfaces/IProfile.sol";
 import { IRoninTrustedOrganization } from "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../precompile-usages/PCUValidateFastFinality.sol";
 import "../../extensions/collections/HasContracts.sol";
-import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 import "../../utils/CommonErrors.sol";
 
-abstract contract SlashFastFinality is
-  ISlashFastFinality,
-  HasContracts,
-  HasValidatorDeprecated,
-  PCUValidateFastFinality
-{
+abstract contract SlashFastFinality is ISlashFastFinality, HasContracts, PCUValidateFastFinality {
   /// @dev The amount of RON to slash fast finality.
   uint256 internal _slashFastFinalityAmount;
   /// @dev The block number that the punished validator will be jailed until, due to malicious fast finality.
   uint256 internal _fastFinalityJailUntilBlock;
-  /// @dev Recording of submitted proof to prevent relay attack.
-  mapping(bytes32 => bool) _submittedEvidence;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[48] private ______gap;
+  uint256[22] private ______gap;
 
   modifier onlyGoverningValidator() {
     if (_getGovernorWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
@@ -97,9 +89,4 @@ abstract contract SlashFastFinality is
   function _getGovernorWeight(address addr) internal view returns (uint256) {
     return IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).getGovernorWeight(addr);
   }
-
-  /**
-   * @dev Returns whether the account `_addr` should be slashed or not.
-   */
-  function _shouldSlash(address _addr) internal view virtual returns (bool);
 }
