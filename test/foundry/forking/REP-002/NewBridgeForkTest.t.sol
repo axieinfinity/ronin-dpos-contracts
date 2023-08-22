@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../RoninTest.t.sol";
 
-import "../../bridge/utils/BridgeManagerUtils.t.sol";
+import "@ronin/test/bridge/unit/fuzz/utils/BridgeManagerUtils.t.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { SignatureConsumer } from "@ronin/contracts/interfaces/consumers/SignatureConsumer.sol";
 // RON

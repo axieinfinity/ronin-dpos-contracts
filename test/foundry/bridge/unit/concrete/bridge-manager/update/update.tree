@@ -1,0 +1,20 @@
+update.t.sol
+├── when not call by the governor whose operator is being updated
+│   └── it should revert
+└── when call by the governor whose operator is being updated
+    ├── when the new operator is zero address
+    │   └── it should revert
+    ├── when the new operator is already existed in the current list of operators
+    │   └── it should revert
+    ├── when the new operator is already existed in the current list of governors
+    │   └── it should revert
+    ├── when the new operator is the same as the previous operator
+    │   └── it should revert
+    └── when the new operator is valid
+        ├── it should modify the current operators list
+        ├── it should remove the old operator
+        ├── it should notify the registers       // TODO
+        ├── it should emit {BridgeOperatorUpdated} event
+        ├── it should then return new operator when query mapping by governor
+        ├── it should then return governor when query mapping by the new operator
+        └── it should then return address zero when query mapping by the old operator
