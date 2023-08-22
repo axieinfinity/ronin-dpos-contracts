@@ -53,7 +53,9 @@ contract FastFinalityTracking is IFastFinalityTracking, Initializable, HasContra
     uint256 epoch,
     address[] calldata addrs
   ) external view override returns (uint256[] memory voteCounts) {
-    for (uint i; i < addrs.length; ) {
+    uint256 length = addrs.length;
+    voteCounts = new uint256[](length);
+    for (uint i; i < length; ) {
       voteCounts[i] = _tracker[epoch][addrs[i]];
       unchecked {
         ++i;
