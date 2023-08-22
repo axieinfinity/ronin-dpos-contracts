@@ -1,0 +1,24 @@
+remove.t.sol
+├── when not self-called
+│   └── it should revert
+└── when self-called
+    ├── when the address contains one address
+    │   ├── when the address is not operator
+    │   │   └── it should revert
+    │   └── when the address is operator
+    │       ├── it should remove the gorvernor to the governor list
+    │       ├── it should remove the bridge operator to the operator list
+    │       ├── it should remove the governor the expected weight
+    │       ├── it should reduce total weight
+    │       ├── it should reduce total operator
+    │       ├── it should notify registers
+    │       ├── it should then return address zero when query by the removed governor
+    │       └── it should then return address zero when query by the removed operator
+    └── when the address contains two address
+        ├── when the address duplicated
+        └── when the address is not duplicated
+            ├── it should remove the gorvernor to the governor list
+            ├── it should remove the bridge operator to the operator list
+            ├── it should remove the governor the expected weight
+            ├── it should reduce total weight
+            └── it should notify registers

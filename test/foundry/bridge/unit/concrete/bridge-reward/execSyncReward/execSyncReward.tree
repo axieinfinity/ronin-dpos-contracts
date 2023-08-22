@@ -1,0 +1,26 @@
+execSyncReward.t.sol
+├── when not called by BridgeTracking
+│   └── it should revert
+└── when call by BridgeTracking
+    ├── when operators length is zero
+    │   └── it should revert
+    ├── when operators and ballots length mismatchs
+    │   └── it should revert
+    ├── when period number is less than {latestRewardedPeriod + 1}
+    │   └── it should revert
+    ├── when period number is greater than {latestRewardedPeriod + 1}
+    │   └── it should revert with too far period
+    └── when input length valid
+        ├── when data corrupts
+        │   ├── when reward contract insufficient funds
+        │   │   ├── should share reward equally
+        │   │   └── should emit fail transfer event
+        │   └── when reward contract have funds
+        │       ├── should share reward equally
+        │       └── should emit success transfer event
+        ├── when there is no vote
+        │   └── should share reward equally
+        └── when data is normal
+            ├── should share reward proportionally
+            └── when call execSyncReward again
+                └── should revert with already rewarded or invalid arguments
