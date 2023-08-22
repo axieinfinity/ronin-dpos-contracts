@@ -11,7 +11,8 @@ interface IBaseSlash {
     BRIDGE_VOTING,
     BRIDGE_OPERATOR_MISSING_VOTE_TIER_1,
     BRIDGE_OPERATOR_MISSING_VOTE_TIER_2,
-    UNAVAILABILITY_TIER_3
+    UNAVAILABILITY_TIER_3,
+    FAST_FINALITY
   }
 
   /// @dev Emitted when the validator is slashed.
