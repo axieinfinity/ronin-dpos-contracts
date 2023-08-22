@@ -22,13 +22,16 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     stakingVestingConfig[network.name]!.bridgeOperatorBonusPerBlock,
   ]);
 
+  const nonce = generalRoninConf[network.name].stakingVestingContract?.nonce;
+  // console.log(`Deploying StakingVestingProxy (nonce: ${nonce})...`);
+
   const deployment = await deploy('StakingVestingProxy', {
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
     args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, data],
     value: BigNumber.from(stakingVestingConfig[network.name]!.topupAmount),
-    nonce: generalRoninConf[network.name].stakingVestingContract?.nonce,
+    nonce,
   });
   verifyAddress(deployment.address, generalRoninConf[network.name].stakingVestingContract?.address);
 };

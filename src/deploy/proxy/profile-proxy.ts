@@ -15,6 +15,9 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const logicContract = await deployments.get('ProfileLogic');
 
+  const nonce = undefined;
+  // console.log(`Deploying ProfileProxy (nonce: ${nonce})...`);
+
   await deploy('ProfileProxy', {
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
