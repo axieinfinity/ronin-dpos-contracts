@@ -763,6 +763,7 @@ StakingVesting:_initializing (storage_slot: 0) (offset: 21) (type: t_bool) (numb
 StakingVesting:_blockProducerBonusPerBlock (storage_slot: 1) (offset: 0) (type: t_uint256) (numberOfBytes: 32)
 StakingVesting:_bridgeOperatorBonusPerBlock (storage_slot: 2) (offset: 0) (type: t_uint256) (numberOfBytes: 32)
 StakingVesting:lastBlockSendingBonus (storage_slot: 3) (offset: 0) (type: t_uint256) (numberOfBytes: 32)
+StakingVesting:_fastFinalityRewardPercentage (storage_slot: 4) (offset: 0) (type: t_uint256) (numberOfBytes: 32)
 TimingStorage:_numberOfBlocksInEpoch (storage_slot: 0) (offset: 0) (type: t_uint256) (numberOfBytes: 32)
 TimingStorage:_lastUpdatedBlock (storage_slot: 1) (offset: 0) (type: t_uint256) (numberOfBytes: 32)
 TimingStorage:_lastUpdatedPeriod (storage_slot: 2) (offset: 0) (type: t_uint256) (numberOfBytes: 32)

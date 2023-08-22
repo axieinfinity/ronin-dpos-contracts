@@ -17,5 +17,5 @@ enum ContractType {
   /* 12 */ BRIDGE_SLASH,
   /* 13 */ BRIDGE_REWARD,
   /* 14 */ FAST_FINALTIY_TRACKING,
-  /* 14 */ PROFILE
+  /* 15 */ PROFILE
 }

@@ -57,51 +57,48 @@ abstract contract CoinbaseExecution is
    * @inheritdoc ICoinbaseExecution
    */
   function submitBlockReward() external payable override onlyCoinbase {
-    bool _requestForBlockProducer = isBlockProducer(msg.sender) &&
+    bool requestForBlockProducer = isBlockProducer(msg.sender) &&
       !_jailed(msg.sender) &&
       !_miningRewardDeprecated(msg.sender, currentPeriod());
 
-    (, uint256 _blockProducerBonus, ) = IStakingVesting(getContract(ContractType.STAKING_VESTING)).requestBonus({
-      _forBlockProducer: _requestForBlockProducer,
-      _forBridgeOperator: false
-    });
+    (, uint256 blockProducerBonus, , uint256 fastFinalityRewardPercentage) = IStakingVesting(
+      getContract(ContractType.STAKING_VESTING)
+    ).requestBonus({ forBlockProducer: requestForBlockProducer, forBridgeOperator: false });
 
     // Deprecates reward for non-validator or slashed validator
-    if (!_requestForBlockProducer) {
+    if (!requestForBlockProducer) {
       _totalDeprecatedReward += msg.value;
       emit BlockRewardDeprecated(msg.sender, msg.value, BlockRewardDeprecatedType.UNAVAILABILITY);
       return;
     }
 
-    emit BlockRewardSubmitted(msg.sender, msg.value, _blockProducerBonus);
+    emit BlockRewardSubmitted(msg.sender, msg.value, blockProducerBonus);
 
-    // TODO: remove hardcode
-    uint256 fastFinalityRewardPercentage = 1_00; // 1%
+    uint256 period = currentPeriod();
+    uint256 reward = msg.value + blockProducerBonus;
+    uint256 rewardFastFinality = (reward * fastFinalityRewardPercentage) / _MAX_PERCENTAGE; // reward for fast finality
+    uint256 rewardProducingBlock = reward - rewardFastFinality; // reward for producing blocks
+    uint256 cutOffReward;
 
-    uint256 _period = currentPeriod();
-    uint256 _reward = msg.value + _blockProducerBonus;
-    uint256 _rewardFF = (_reward * fastFinalityRewardPercentage) / _MAX_PERCENTAGE; // reward for fast finality
-    uint256 _rewardPB = _reward - _rewardFF; // reward for producing blocks
-    uint256 _cutOffReward;
+    // Add fast finality reward to total reward for current epoch, then split it later in the {wrapupEpoch} method.
+    _totalFastFinalityReward += rewardFastFinality;
 
-    _totalFastFinalityReward += _rewardFF;
-
-    if (_miningRewardBailoutCutOffAtPeriod[msg.sender][_period]) {
-      (, , , uint256 _cutOffPercentage) = ISlashIndicator(getContract(ContractType.SLASH_INDICATOR))
+    if (_miningRewardBailoutCutOffAtPeriod[msg.sender][period]) {
+      (, , , uint256 cutOffPercentage) = ISlashIndicator(getContract(ContractType.SLASH_INDICATOR))
         .getCreditScoreConfigs();
-      _cutOffReward = (_rewardPB * _cutOffPercentage) / _MAX_PERCENTAGE;
-      _totalDeprecatedReward += _cutOffReward;
-      emit BlockRewardDeprecated(msg.sender, _cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
+      cutOffReward = (rewardProducingBlock * cutOffPercentage) / _MAX_PERCENTAGE;
+      _totalDeprecatedReward += cutOffReward;
+      emit BlockRewardDeprecated(msg.sender, cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
     }
 
-    _rewardPB -= _cutOffReward;
-    (uint256 _minRate, uint256 _maxRate) = IStaking(getContract(ContractType.STAKING)).getCommissionRateRange();
-    uint256 _rate = Math.max(Math.min(_candidateInfo[msg.sender].commissionRate, _maxRate), _minRate);
-    uint256 _miningAmount = (_rate * _rewardPB) / _MAX_PERCENTAGE;
-    _miningReward[msg.sender] += _miningAmount;
+    rewardProducingBlock -= cutOffReward;
+    (uint256 minRate, uint256 maxRate) = IStaking(getContract(ContractType.STAKING)).getCommissionRateRange();
+    uint256 rate = Math.max(Math.min(_candidateInfo[msg.sender].commissionRate, maxRate), minRate);
+    uint256 miningAmount = (rate * rewardProducingBlock) / _MAX_PERCENTAGE;
+    _miningReward[msg.sender] += miningAmount;
 
-    uint256 _delegatingAmount = _rewardPB - _miningAmount;
-    _delegatingReward[msg.sender] += _delegatingAmount;
+    uint256 delegatingAmount = rewardProducingBlock - miningAmount;
+    _delegatingReward[msg.sender] += delegatingAmount;
   }
 
   /**
