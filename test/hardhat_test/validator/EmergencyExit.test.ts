@@ -127,9 +127,9 @@ describe('Emergency Exit test', () => {
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
-    await mockValidatorLogic.initializeV3(fastFinalityTrackingAddress);
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await roninValidatorSet.initEpoch();
+    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
