@@ -43,8 +43,8 @@ contract FastFinalityTracking is IFastFinalityTracking, Initializable, HasContra
     uint256 currentEpoch = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).epochOf(block.number);
 
     for (uint i; i < voters.length; ) {
-      ++_tracker[currentEpoch][voters[i]];
       unchecked {
+        ++_tracker[currentEpoch][voters[i]];
         ++i;
       }
     }
