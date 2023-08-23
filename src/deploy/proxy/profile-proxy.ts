@@ -22,9 +22,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    // TODO: use this args when on production
-    // args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, []],
-    args: [logicContract.address, deployer, []],
+    args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, []],
   });
 };
 
