@@ -38,7 +38,7 @@ import { SlashType } from '../../../src/script/slash-indicator';
 import { ProposalDetailStruct } from '../../../src/types/GovernanceAdmin';
 import { VoteType } from '../../../src/script/proposal';
 
-let roninValidatorSet: MockRoninValidatorSetExtended;
+let validatorContract: MockRoninValidatorSetExtended;
 let stakingVesting: StakingVesting;
 let stakingContract: Staking;
 let slashIndicator: MockSlashIndicatorExtended;
@@ -46,7 +46,7 @@ let fastFinalityTracking: FastFinalityTracking;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 
-let poolAdmin: SignerWithAddress;
+let coinbase: SignerWithAddress;
 let candidateAdmin: SignerWithAddress;
 let consensusAddr: SignerWithAddress;
 let treasury: SignerWithAddress;
@@ -59,6 +59,8 @@ let validatorCandidates: ValidatorCandidateAddressSet[];
 let currentValidatorSet: string[];
 let lastPeriod: BigNumber;
 let epoch: BigNumber;
+
+let localEpochController: EpochController;
 
 let snapshotId: string;
 
@@ -80,16 +82,11 @@ const proposalExpiryDuration = 60;
 
 describe('Ronin Validator Set: Fast Finality test', () => {
   before(async () => {
-    [poolAdmin, consensusAddr, bridgeOperator, deployer, ...signers] = await ethers.getSigners();
-    candidateAdmin = poolAdmin;
-    treasury = poolAdmin;
-
+    [deployer, coinbase, ...signers] = await ethers.getSigners();
     trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
-    validatorCandidates = createManyValidatorCandidateAddressSets(
-      signers.splice(0, localValidatorCandidatesLength * 3)
-    );
+    validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, maxValidatorNumber * 3));
 
-    await network.provider.send('hardhat_setCoinbase', [consensusAddr.address]);
+    await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
     const {
       slashContractAddress,
@@ -135,7 +132,7 @@ describe('Ronin Validator Set: Fast Finality test', () => {
       },
     });
 
-    roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
+    validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     stakingVesting = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);
     slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -150,15 +147,40 @@ describe('Ronin Validator Set: Fast Finality test', () => {
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
-    await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
-    await roninValidatorSet.initEpoch();
-    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
+    await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await validatorContract.initEpoch();
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
     await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
 
+    await validatorContract.initializeV3(fastFinalityTrackingAddress);
     await stakingVesting.initializeV3(fastFinalityRewardPercent);
+
+    validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
+    for (let i = 0; i < maxValidatorNumber; i++) {
+      await stakingContract
+        .connect(validatorCandidates[i].poolAdmin)
+        .applyValidatorCandidate(
+          validatorCandidates[i].candidateAdmin.address,
+          validatorCandidates[i].consensusAddr.address,
+          validatorCandidates[i].treasuryAddr.address,
+          1,
+          { value: minValidatorStakingAmount.mul(2).add(maxValidatorNumber).sub(i) }
+        );
+    }
+
+    await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
+
+    await EpochController.setTimestampToPeriodEnding();
+    epoch = await validatorContract.epochOf(await ethers.provider.getBlockNumber());
+    lastPeriod = await validatorContract.currentPeriod();
+    await mineBatchTxs(async () => {
+      await validatorContract.endEpoch();
+      await validatorContract.connect(coinbase).wrapUpEpoch();
+    });
+    expect(await validatorContract.getValidators()).deep.equal(validatorCandidates.map((_) => _.consensusAddr.address));
+    await network.provider.send('hardhat_setCoinbase', [validatorCandidates[0].consensusAddr.address]);
   });
 
   after(async () => {
@@ -168,6 +190,97 @@ describe('Ronin Validator Set: Fast Finality test', () => {
   describe('Configuration test', async () => {
     it('Should the Staking Vesting contract config percent of fast finality reward correctly', async () => {
       expect(await stakingVesting.fastFinalityRewardPercentage()).eq(fastFinalityRewardPercent);
+    });
+  });
+
+  describe('Fast Finality tracking', async () => {
+    before(async () => {
+      snapshotId = await network.provider.send('evm_snapshot');
+    });
+    after(async () => {
+      await network.provider.send('evm_revert', [snapshotId]);
+    });
+
+    it('Should record the fast finality in the first block', async () => {
+      epoch = await validatorContract.epochOf(await ethers.provider.getBlockNumber());
+      await fastFinalityTracking.recordFinality(validatorCandidates.map((_) => _.consensusAddr.address));
+    });
+
+    it('Should get correctly the fast finality vote track', async () => {
+      expect(
+        await fastFinalityTracking.getManyFinalityVoteCounts(
+          epoch,
+          validatorCandidates.map((_) => _.consensusAddr.address)
+        )
+      ).deep.equal(validatorCandidates.map((_) => 1));
+    });
+
+    it('Should record the fast finality in the second block', async () => {
+      await fastFinalityTracking.recordFinality([validatorCandidates[0].consensusAddr.address]);
+    });
+
+    it('Should get correctly the fast finality info', async () => {
+      expect(
+        await fastFinalityTracking.getManyFinalityVoteCounts(
+          epoch,
+          validatorCandidates.map((_) => _.consensusAddr.address)
+        )
+      ).deep.equal([2, ...validatorCandidates.slice(1).map((_) => 1)]);
+    });
+
+    it('Should the fast finality is reset in the new epoch', async () => {
+      await mineBatchTxs(async () => {
+        await validatorContract.endEpoch();
+        await validatorContract.connect(validatorCandidates[0].consensusAddr).wrapUpEpoch();
+      });
+
+      // Query for the previous epoch in the new epoch
+      expect(
+        await fastFinalityTracking.getManyFinalityVoteCounts(
+          epoch,
+          validatorCandidates.map((_) => _.consensusAddr.address)
+        )
+      ).deep.equal([2, ...validatorCandidates.slice(1).map((_) => 1)]);
+
+      epoch = await validatorContract.epochOf(await ethers.provider.getBlockNumber());
+      // Query for the new epoch in the new epoch
+      expect(
+        await fastFinalityTracking.getManyFinalityVoteCounts(
+          epoch,
+          validatorCandidates.map((_) => _.consensusAddr.address)
+        )
+      ).deep.equal(validatorCandidates.map((_) => 0));
+    });
+
+    it('Should the fast finality track correctly in the new epoch', async () => {
+      await fastFinalityTracking.recordFinality([0, 1, 2].map((i) => validatorCandidates[i].consensusAddr.address));
+      await fastFinalityTracking.recordFinality([1, 2, 3].map((i) => validatorCandidates[i].consensusAddr.address));
+      await fastFinalityTracking.recordFinality([0, 2, 3].map((i) => validatorCandidates[i].consensusAddr.address));
+      expect(
+        await fastFinalityTracking.getManyFinalityVoteCounts(
+          epoch,
+          validatorCandidates.map((_) => _.consensusAddr.address)
+        )
+      ).deep.equal([2, 2, 3, 2]);
+    });
+
+    it.skip('Should the fast finality track correctly the duplicated inputs', async () => {
+      await mineBatchTxs(async () => {
+        await validatorContract.endEpoch();
+        await validatorContract.connect(validatorCandidates[0].consensusAddr).wrapUpEpoch();
+      });
+
+      await fastFinalityTracking.recordFinality([1, 2, 2].map((i) => validatorCandidates[i].consensusAddr.address));
+      await fastFinalityTracking.recordFinality([2, 2, 1].map((i) => validatorCandidates[i].consensusAddr.address));
+      await fastFinalityTracking.recordFinality(
+        [0, 1, 2, 2, 2, 2, 2].map((i) => validatorCandidates[i].consensusAddr.address)
+      );
+      expect(
+        await fastFinalityTracking.getManyFinalityVoteCounts(
+          epoch,
+          validatorCandidates.map((_) => _.consensusAddr.address)
+        )
+      ).deep.equal([1, 3, 3, 0]);
     });
   });
 });

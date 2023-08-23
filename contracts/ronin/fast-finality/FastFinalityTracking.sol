@@ -27,22 +27,15 @@ contract FastFinalityTracking is IFastFinalityTracking, Initializable, HasContra
     _disableInitializers();
   }
 
-  function initialize(
-    address _validatorContract
-  )
-    external
-    // uint256 _startedAtBlock
-    initializer
-  {
+  function initialize(address _validatorContract) external initializer {
     _setContract(ContractType.VALIDATOR, _validatorContract);
-    // startedAtBlock = _startedAtBlock;
   }
 
   function recordFinality(address[] calldata voters) external override oncePerBlock {
-    uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
+    uint256 currentEpoch = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).epochOf(block.number);
 
     for (uint i; i < voters.length; ) {
-      ++_tracker[currentPeriod][voters[i]];
+      ++_tracker[currentEpoch][voters[i]];
       unchecked {
         ++i;
       }
