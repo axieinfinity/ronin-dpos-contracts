@@ -22,7 +22,7 @@ abstract contract SlashFastFinality is ISlashFastFinality, HasContracts, PCUVali
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[22] private ______gap;
+  uint256[21] private ______gap;
 
   modifier onlyGoverningValidator() {
     if (_getGovernorWeight(msg.sender) == 0) revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
