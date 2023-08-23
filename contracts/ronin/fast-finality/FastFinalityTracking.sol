@@ -32,8 +32,8 @@ contract FastFinalityTracking is IFastFinalityTracking, Initializable, HasContra
     _disableInitializers();
   }
 
-  function initialize(address _validatorContract) external initializer {
-    _setContract(ContractType.VALIDATOR, _validatorContract);
+  function initialize(address validatorContract) external initializer {
+    _setContract(ContractType.VALIDATOR, validatorContract);
   }
 
   /**
