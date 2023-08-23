@@ -8,6 +8,7 @@ interface IFastFinalityTracking {
    *
    * Requirements:
    * - Only called once per block
+   * - Only coinbase can call this method
    */
   function recordFinality(address[] calldata voters) external;
 

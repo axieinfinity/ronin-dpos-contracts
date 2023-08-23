@@ -76,8 +76,6 @@ interface ICoinbaseExecution is ISlashingExecution {
   /// @dev Emitted when the epoch is wrapped up.
   event WrappedUpEpoch(uint256 indexed periodNumber, uint256 indexed epochNumber, bool periodEnding);
 
-  /// @dev Error of method caller must be coinbase
-  error ErrCallerMustBeCoinbase();
   /// @dev Error of only allowed at the end of epoch
   error ErrAtEndOfEpochOnly();
   /// @dev Error of query for already wrapped up epoch

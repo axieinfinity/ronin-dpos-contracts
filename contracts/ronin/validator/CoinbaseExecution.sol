@@ -18,6 +18,7 @@ import "../../precompile-usages/PCUPickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
 import "./CandidateManager.sol";
 import { EmergencyExit } from "./EmergencyExit.sol";
+import { ErrCallerMustBeCoinbase } from "../../utils/CommonErrors.sol";
 
 abstract contract CoinbaseExecution is
   ICoinbaseExecution,

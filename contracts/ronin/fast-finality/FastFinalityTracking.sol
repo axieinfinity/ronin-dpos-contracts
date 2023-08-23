@@ -23,6 +23,11 @@ contract FastFinalityTracking is IFastFinalityTracking, Initializable, HasContra
     _;
   }
 
+  modifier onlyCoinbase() {
+    if (msg.sender != block.coinbase) revert ErrCallerMustBeCoinbase();
+    _;
+  }
+
   constructor() {
     _disableInitializers();
   }
@@ -31,7 +36,10 @@ contract FastFinalityTracking is IFastFinalityTracking, Initializable, HasContra
     _setContract(ContractType.VALIDATOR, _validatorContract);
   }
 
-  function recordFinality(address[] calldata voters) external override oncePerBlock {
+  /**
+   * @inheritdoc IFastFinalityTracking
+   */
+  function recordFinality(address[] calldata voters) external override oncePerBlock onlyCoinbase {
     uint256 currentEpoch = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).epochOf(block.number);
 
     for (uint i; i < voters.length; ) {
@@ -42,6 +50,9 @@ contract FastFinalityTracking is IFastFinalityTracking, Initializable, HasContra
     }
   }
 
+  /**
+   * @inheritdoc IFastFinalityTracking
+   */
   function getManyFinalityVoteCounts(
     uint256 epoch,
     address[] calldata addrs
