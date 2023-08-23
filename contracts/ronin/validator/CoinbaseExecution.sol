@@ -7,7 +7,7 @@ import "../../extensions/RONTransferHelper.sol";
 import "../../interfaces/IStakingVesting.sol";
 import "../../interfaces/IMaintenance.sol";
 import "../../interfaces/IRoninTrustedOrganization.sol";
-import "../..//interfaces/IFastFinalityTracking.sol";
+import "../../interfaces/IFastFinalityTracking.sol";
 import "../../interfaces/slash-indicator/ISlashIndicator.sol";
 import "../../interfaces/validator/ICoinbaseExecution.sol";
 import "../../libraries/EnumFlags.sol";
