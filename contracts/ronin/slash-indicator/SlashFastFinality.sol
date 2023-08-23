@@ -16,7 +16,7 @@ abstract contract SlashFastFinality is ISlashFastFinality, HasContracts, PCUVali
   /// @dev The block number that the punished validator will be jailed until, due to malicious fast finality.
   uint256 internal _fastFinalityJailUntilBlock;
   /// @dev Recording of submitted proof to prevent relay attack.
-  mapping(bytes32 => bool) _processedEvidence;
+  mapping(bytes32 => bool) internal _processedEvidence;
 
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
@@ -61,7 +61,12 @@ abstract contract SlashFastFinality is ISlashFastFinality, HasContracts, PCUVali
       IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
       uint256 period = validatorContract.currentPeriod();
       emit Slashed(consensusAddr, SlashType.FAST_FINALITY, period);
-      validatorContract.execSlash(consensusAddr, _fastFinalityJailUntilBlock, _slashFastFinalityAmount, true);
+      validatorContract.execSlash({
+        validatorAddr: consensusAddr,
+        newJailedUntil: _fastFinalityJailUntilBlock,
+        slashAmount: _slashFastFinalityAmount,
+        cannotBailout: true
+      });
     }
   }
 

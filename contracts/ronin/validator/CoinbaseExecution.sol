@@ -115,7 +115,7 @@ abstract contract CoinbaseExecution is
     uint256 _nextEpoch = _epoch + 1;
     uint256 _lastPeriod = currentPeriod();
 
-    _calcFastFinalityReward(_epoch, _currentValidators);
+    _syncFastFinalityReward(_epoch, _currentValidators);
 
     if (_periodEnding) {
       (
@@ -143,8 +143,11 @@ abstract contract CoinbaseExecution is
    * @dev This method calculate and update reward of each `validators` accordingly thier fast finality voting performance
    * in the `epoch`. The leftover reward is added to the {_totalDeprecatedReward} and is recycled later to the
    * {StakingVesting} contract.
+   *
+   * Requirements:
+   * - This method is only called once each epoch.
    */
-  function _calcFastFinalityReward(uint256 epoch, address[] memory validators) private {
+  function _syncFastFinalityReward(uint256 epoch, address[] memory validators) private {
     uint256[] memory voteCounts = IFastFinalityTracking(getContract(ContractType.FAST_FINALTIY_TRACKING))
       .getManyFinalityVoteCounts(epoch, validators);
     uint256 divisor = _numberOfBlocksInEpoch * validators.length;
