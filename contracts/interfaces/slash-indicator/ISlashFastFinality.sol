@@ -21,11 +21,11 @@ interface ISlashFastFinality is IBaseSlash {
    */
   function slashFastFinality(
     address consensusAddr,
-    bytes memory voterPublicKey,
+    bytes calldata voterPublicKey,
     uint256 targetBlockNumber,
-    bytes32[2] memory targetBlockHash,
-    bytes[][2] memory listOfPublicKey,
-    bytes[2] memory aggregatedSignature
+    bytes32[2] calldata targetBlockHash,
+    bytes[][2] calldata listOfPublicKey,
+    bytes[2] calldata aggregatedSignature
   ) external;
 
   /**
