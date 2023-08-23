@@ -148,17 +148,19 @@ abstract contract CoinbaseExecution is
       .getManyFinalityVoteCounts(epoch, validators);
     uint256 divisor = _numberOfBlocksInEpoch * validators.length;
     uint256 iReward;
+    uint256 totalReward = _totalFastFinalityReward;
+    uint256 totalDispensedReward = 0;
 
     for (uint i; i < validators.length; ) {
-      iReward = (_totalFastFinalityReward * voteCounts[i]) / divisor;
+      iReward = (totalReward * voteCounts[i]) / divisor;
       _fastFinalityReward[validators[i]] += iReward;
-      _totalFastFinalityReward -= iReward;
+      totalDispensedReward += iReward;
       unchecked {
         ++i;
       }
     }
 
-    _totalDeprecatedReward += _totalFastFinalityReward;
+    _totalDeprecatedReward += (totalReward - totalDispensedReward);
     delete _totalFastFinalityReward;
   }
 
@@ -178,6 +180,7 @@ abstract contract CoinbaseExecution is
     address _consensusAddr;
     address payable _treasury;
     _delegatingRewards = new uint256[](_currentValidators.length);
+
     for (uint _i; _i < _currentValidators.length; ) {
       _consensusAddr = _currentValidators[_i];
       _treasury = _candidateInfo[_consensusAddr].treasuryAddr;
