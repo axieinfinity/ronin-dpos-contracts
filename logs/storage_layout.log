@@ -336,6 +336,7 @@ MockPaymentFallbackExpensive:array (storage_slot: 0) (offset: 0) (type: t_array(
 MockPCUPickValidatorSet:_precompileSortValidatorAddress (storage_slot: 0) (offset: 0) (type: t_address) (numberOfBytes: 20)
 MockPCUSortValidators:_precompileSortValidatorAddress (storage_slot: 0) (offset: 0) (type: t_address) (numberOfBytes: 20)
 MockPCUValidateDoubleSign:_precompileValidateDoubleSignAddress (storage_slot: 0) (offset: 0) (type: t_address) (numberOfBytes: 20)
+MockPCUValidateFastFinality:_precompileValidateFastFinalityAddress (storage_slot: 0) (offset: 0) (type: t_address) (numberOfBytes: 20)
 MockRoninBridgeManager:round (storage_slot: 0) (offset: 0) (type: t_mapping(t_uint256t_uint256)) (numberOfBytes: 32)
 MockRoninBridgeManager:vote (storage_slot: 1) (offset: 0) (type: t_mapping(t_uint256t_mapping(t_uint256t_struct(ProposalVote)_storage))) (numberOfBytes: 32)
 MockRoninBridgeManager:_proposalExpiryDuration (storage_slot: 2) (offset: 0) (type: t_uint256) (numberOfBytes: 32)

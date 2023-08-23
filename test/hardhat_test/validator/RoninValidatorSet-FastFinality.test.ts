@@ -119,7 +119,10 @@ describe('Ronin Validator Set: Fast Finality test', () => {
     stakingVesting = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);
     slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
-    fastFinalityTracking = FastFinalityTracking__factory.connect(fastFinalityTrackingAddress, deployer);
+    fastFinalityTracking = FastFinalityTracking__factory.connect(
+      fastFinalityTrackingAddress,
+      validatorCandidates[0].consensusAddr
+    );
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
@@ -157,7 +160,6 @@ describe('Ronin Validator Set: Fast Finality test', () => {
 
     await EpochController.setTimestampToPeriodEnding();
     epoch = await validatorContract.epochOf(await ethers.provider.getBlockNumber());
-    lastPeriod = await validatorContract.currentPeriod();
     await mineBatchTxs(async () => {
       await validatorContract.endEpoch();
       await validatorContract.connect(coinbase).wrapUpEpoch();
@@ -180,8 +182,15 @@ describe('Ronin Validator Set: Fast Finality test', () => {
     before(async () => {
       snapshotId = await network.provider.send('evm_snapshot');
     });
+
     after(async () => {
       await network.provider.send('evm_revert', [snapshotId]);
+    });
+
+    it('Should not coinbase cannot call record vote', async () => {
+      await expect(
+        fastFinalityTracking.connect(coinbase).recordFinality(validatorCandidates.map((_) => _.consensusAddr.address))
+      ).revertedWithCustomError(fastFinalityTracking, 'ErrCallerMustBeCoinbase');
     });
 
     it('Should record the fast finality in the first block', async () => {
@@ -264,6 +273,16 @@ describe('Ronin Validator Set: Fast Finality test', () => {
           validatorCandidates.map((_) => _.consensusAddr.address)
         )
       ).deep.equal([1, 3, 3, 0]);
+    });
+
+    it('Should not record twice in one block', async () => {
+      await mineBatchTxs(async () => {
+        await fastFinalityTracking.recordFinality(validatorCandidates.map((_) => _.consensusAddr.address));
+        let duplicatedRecordTracking = fastFinalityTracking.recordFinality(
+          validatorCandidates.map((_) => _.consensusAddr.address)
+        );
+        await expect(duplicatedRecordTracking).revertedWithCustomError(fastFinalityTracking, 'ErrOncePerBlock');
+      });
     });
   });
 
