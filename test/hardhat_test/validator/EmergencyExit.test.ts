@@ -82,6 +82,7 @@ describe('Emergency Exit test', () => {
       stakingContractAddress,
       roninGovernanceAdminAddress,
       stakingVestingContractAddress,
+      fastFinalityTrackingAddress,
     } = await initTest('EmergencyExit')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
@@ -128,6 +129,7 @@ describe('Emergency Exit test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await roninValidatorSet.initEpoch();
+    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();

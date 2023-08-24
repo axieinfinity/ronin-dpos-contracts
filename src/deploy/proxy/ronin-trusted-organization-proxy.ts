@@ -20,6 +20,9 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     roninTrustedOrganizationConf[network.name]!.denominator,
   ]);
 
+  const nonce = undefined;
+  // console.log(`Deploying RoninTrustedOrganizationProxy (nonce: ${nonce})...`);
+
   const deployment = await deploy('RoninTrustedOrganizationProxy', {
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,

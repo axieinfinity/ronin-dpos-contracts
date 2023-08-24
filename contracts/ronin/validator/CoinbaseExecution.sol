@@ -7,6 +7,7 @@ import "../../extensions/RONTransferHelper.sol";
 import "../../interfaces/IStakingVesting.sol";
 import "../../interfaces/IMaintenance.sol";
 import "../../interfaces/IRoninTrustedOrganization.sol";
+import "../../interfaces/IFastFinalityTracking.sol";
 import "../../interfaces/slash-indicator/ISlashIndicator.sol";
 import "../../interfaces/validator/ICoinbaseExecution.sol";
 import "../../libraries/EnumFlags.sol";
@@ -17,6 +18,7 @@ import "../../precompile-usages/PCUPickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
 import "./CandidateManager.sol";
 import { EmergencyExit } from "./EmergencyExit.sol";
+import { ErrCallerMustBeCoinbase } from "../../utils/CommonErrors.sol";
 
 abstract contract CoinbaseExecution is
   ICoinbaseExecution,
@@ -56,43 +58,48 @@ abstract contract CoinbaseExecution is
    * @inheritdoc ICoinbaseExecution
    */
   function submitBlockReward() external payable override onlyCoinbase {
-    bool _requestForBlockProducer = isBlockProducer(msg.sender) &&
+    bool requestForBlockProducer = isBlockProducer(msg.sender) &&
       !_jailed(msg.sender) &&
       !_miningRewardDeprecated(msg.sender, currentPeriod());
 
-    (, uint256 _blockProducerBonus, ) = IStakingVesting(getContract(ContractType.STAKING_VESTING)).requestBonus({
-      _forBlockProducer: _requestForBlockProducer,
-      _forBridgeOperator: false
-    });
+    (, uint256 blockProducerBonus, , uint256 fastFinalityRewardPercentage) = IStakingVesting(
+      getContract(ContractType.STAKING_VESTING)
+    ).requestBonus({ forBlockProducer: requestForBlockProducer, forBridgeOperator: false });
 
     // Deprecates reward for non-validator or slashed validator
-    if (!_requestForBlockProducer) {
+    if (!requestForBlockProducer) {
       _totalDeprecatedReward += msg.value;
       emit BlockRewardDeprecated(msg.sender, msg.value, BlockRewardDeprecatedType.UNAVAILABILITY);
       return;
     }
 
-    emit BlockRewardSubmitted(msg.sender, msg.value, _blockProducerBonus);
+    emit BlockRewardSubmitted(msg.sender, msg.value, blockProducerBonus);
 
-    uint256 _period = currentPeriod();
-    uint256 _reward = msg.value + _blockProducerBonus;
-    uint256 _cutOffReward;
-    if (_miningRewardBailoutCutOffAtPeriod[msg.sender][_period]) {
-      (, , , uint256 _cutOffPercentage) = ISlashIndicator(getContract(ContractType.SLASH_INDICATOR))
+    uint256 period = currentPeriod();
+    uint256 reward = msg.value + blockProducerBonus;
+    uint256 rewardFastFinality = (reward * fastFinalityRewardPercentage) / _MAX_PERCENTAGE; // reward for fast finality
+    uint256 rewardProducingBlock = reward - rewardFastFinality; // reward for producing blocks
+    uint256 cutOffReward;
+
+    // Add fast finality reward to total reward for current epoch, then split it later in the {wrapupEpoch} method.
+    _totalFastFinalityReward += rewardFastFinality;
+
+    if (_miningRewardBailoutCutOffAtPeriod[msg.sender][period]) {
+      (, , , uint256 cutOffPercentage) = ISlashIndicator(getContract(ContractType.SLASH_INDICATOR))
         .getCreditScoreConfigs();
-      _cutOffReward = (_reward * _cutOffPercentage) / _MAX_PERCENTAGE;
-      _totalDeprecatedReward += _cutOffReward;
-      emit BlockRewardDeprecated(msg.sender, _cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
+      cutOffReward = (rewardProducingBlock * cutOffPercentage) / _MAX_PERCENTAGE;
+      _totalDeprecatedReward += cutOffReward;
+      emit BlockRewardDeprecated(msg.sender, cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
     }
 
-    _reward -= _cutOffReward;
-    (uint256 _minRate, uint256 _maxRate) = IStaking(getContract(ContractType.STAKING)).getCommissionRateRange();
-    uint256 _rate = Math.max(Math.min(_candidateInfo[msg.sender].commissionRate, _maxRate), _minRate);
-    uint256 _miningAmount = (_rate * _reward) / _MAX_PERCENTAGE;
-    _miningReward[msg.sender] += _miningAmount;
+    rewardProducingBlock -= cutOffReward;
+    (uint256 minRate, uint256 maxRate) = IStaking(getContract(ContractType.STAKING)).getCommissionRateRange();
+    uint256 rate = Math.max(Math.min(_candidateInfo[msg.sender].commissionRate, maxRate), minRate);
+    uint256 miningAmount = (rate * rewardProducingBlock) / _MAX_PERCENTAGE;
+    _miningReward[msg.sender] += miningAmount;
 
-    uint256 _delegatingAmount = _reward - _miningAmount;
-    _delegatingReward[msg.sender] += _delegatingAmount;
+    uint256 delegatingAmount = rewardProducingBlock - miningAmount;
+    _delegatingReward[msg.sender] += delegatingAmount;
   }
 
   /**
@@ -107,6 +114,8 @@ abstract contract CoinbaseExecution is
     uint256 _epoch = epochOf(block.number);
     uint256 _nextEpoch = _epoch + 1;
     uint256 _lastPeriod = currentPeriod();
+
+    _syncFastFinalityReward(_epoch, _currentValidators);
 
     if (_periodEnding) {
       (
@@ -131,6 +140,35 @@ abstract contract CoinbaseExecution is
   }
 
   /**
+   * @dev This method calculate and update reward of each `validators` accordingly thier fast finality voting performance
+   * in the `epoch`. The leftover reward is added to the {_totalDeprecatedReward} and is recycled later to the
+   * {StakingVesting} contract.
+   *
+   * Requirements:
+   * - This method is only called once each epoch.
+   */
+  function _syncFastFinalityReward(uint256 epoch, address[] memory validators) private {
+    uint256[] memory voteCounts = IFastFinalityTracking(getContract(ContractType.FAST_FINALTIY_TRACKING))
+      .getManyFinalityVoteCounts(epoch, validators);
+    uint256 divisor = _numberOfBlocksInEpoch * validators.length;
+    uint256 iReward;
+    uint256 totalReward = _totalFastFinalityReward;
+    uint256 totalDispensedReward = 0;
+
+    for (uint i; i < validators.length; ) {
+      iReward = (totalReward * voteCounts[i]) / divisor;
+      _fastFinalityReward[validators[i]] += iReward;
+      totalDispensedReward += iReward;
+      unchecked {
+        ++i;
+      }
+    }
+
+    _totalDeprecatedReward += (totalReward - totalDispensedReward);
+    delete _totalFastFinalityReward;
+  }
+
+  /**
    * @dev This loops over all current validators to:
    * - Update delegating reward for and calculate total delegating rewards to be sent to the staking contract,
    * - Distribute the reward of block producers and bridge operators to their treasury addresses,
@@ -146,6 +184,7 @@ abstract contract CoinbaseExecution is
     address _consensusAddr;
     address payable _treasury;
     _delegatingRewards = new uint256[](_currentValidators.length);
+
     for (uint _i; _i < _currentValidators.length; ) {
       _consensusAddr = _currentValidators[_i];
       _treasury = _candidateInfo[_consensusAddr].treasuryAddr;
@@ -154,12 +193,17 @@ abstract contract CoinbaseExecution is
         _totalDelegatingReward += _delegatingReward[_consensusAddr];
         _delegatingRewards[_i] = _delegatingReward[_consensusAddr];
         _distributeMiningReward(_consensusAddr, _treasury);
+        _distributeFastFinalityReward(_consensusAddr, _treasury);
       } else {
-        _totalDeprecatedReward += _miningReward[_consensusAddr] + _delegatingReward[_consensusAddr];
+        _totalDeprecatedReward +=
+          _miningReward[_consensusAddr] +
+          _delegatingReward[_consensusAddr] +
+          _fastFinalityReward[_consensusAddr];
       }
 
       delete _delegatingReward[_consensusAddr];
       delete _miningReward[_consensusAddr];
+      delete _fastFinalityReward[_consensusAddr];
 
       unchecked {
         ++_i;
@@ -185,6 +229,18 @@ abstract contract CoinbaseExecution is
       }
 
       emit MiningRewardDistributionFailed(_consensusAddr, _treasury, _amount, address(this).balance);
+    }
+  }
+
+  function _distributeFastFinalityReward(address _consensusAddr, address payable _treasury) private {
+    uint256 _amount = _fastFinalityReward[_consensusAddr];
+    if (_amount > 0) {
+      if (_unsafeSendRONLimitGas(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
+        emit FastFinalityRewardDistributed(_consensusAddr, _treasury, _amount);
+        return;
+      }
+
+      emit FastFinalityRewardDistributionFailed(_consensusAddr, _treasury, _amount, address(this).balance);
     }
   }
 

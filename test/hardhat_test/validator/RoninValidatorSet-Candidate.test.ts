@@ -94,6 +94,7 @@ describe('Ronin Validator Set: candidate test', () => {
       stakingContractAddress,
       roninGovernanceAdminAddress,
       stakingVestingContractAddress,
+      fastFinalityTrackingAddress,
     } = await initTest('RoninValidatorSet-Candidate')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
@@ -144,6 +145,7 @@ describe('Ronin Validator Set: candidate test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await roninValidatorSet.initEpoch();
+    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();

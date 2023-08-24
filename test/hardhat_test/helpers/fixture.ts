@@ -7,7 +7,6 @@ import {
   generalMainchainConf,
   generalRoninConf,
   roninGovernanceAdminConf,
-  mainchainGovernanceAdminConf,
   maintenanceConf,
   roninTrustedOrganizationConf,
   roninValidatorSetConf,
@@ -36,6 +35,7 @@ export interface InitTestOutput {
   roninGovernanceAdminAddress: Address;
   maintenanceContractAddress: Address;
   roninTrustedOrganizationAddress: Address;
+  fastFinalityTrackingAddress: Address;
   slashContractAddress: Address;
   stakingContractAddress: Address;
   stakingVestingContractAddress: Address;
@@ -86,6 +86,7 @@ export const defaultTestConfig: InitTestInput = {
     blockProducerBonusPerBlock: 1_000,
     bridgeOperatorBonusPerBlock: 1_100,
     topupAmount: BigNumber.from(100_000_000_000),
+    fastFinalityRewardPercent: 1_00, // 1%
   },
 
   slashIndicatorArguments: {
@@ -225,6 +226,7 @@ export const initTest = (id: string) =>
     await deployments.fixture([
       '_HelperDposCalculate',
       'RoninGovernanceAdmin',
+      'FastFinalityTrackingProxy',
       'RoninValidatorSetProxy',
       'SlashIndicatorProxy',
       'StakingProxy',
@@ -234,6 +236,7 @@ export const initTest = (id: string) =>
     ]);
 
     const roninGovernanceAdminDeployment = await deployments.get('RoninGovernanceAdmin');
+    const fastFinalityTrackingContractDeployment = await deployments.get('FastFinalityTrackingProxy');
     const maintenanceContractDeployment = await deployments.get('MaintenanceProxy');
     const roninTrustedOrganizationDeployment = await deployments.get('RoninTrustedOrganizationProxy');
     const slashContractDeployment = await deployments.get('SlashIndicatorProxy');
@@ -259,6 +262,7 @@ export const initTest = (id: string) =>
     return {
       roninGovernanceAdminAddress: roninGovernanceAdminDeployment.address,
       maintenanceContractAddress: maintenanceContractDeployment.address,
+      fastFinalityTrackingAddress: fastFinalityTrackingContractDeployment.address,
       roninTrustedOrganizationAddress: roninTrustedOrganizationDeployment.address,
       slashContractAddress: slashContractDeployment.address,
       stakingContractAddress: stakingContractDeployment.address,

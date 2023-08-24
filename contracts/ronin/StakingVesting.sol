@@ -5,16 +5,27 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IStakingVesting.sol";
 import "../extensions/collections/HasContracts.sol";
+import "../extensions/consumers/PercentageConsumer.sol";
 import { RONTransferHelper } from "../extensions/RONTransferHelper.sol";
 import { HasValidatorDeprecated } from "../utils/DeprecatedSlots.sol";
+import "../utils/CommonErrors.sol";
 
-contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts, Initializable, RONTransferHelper {
+contract StakingVesting is
+  IStakingVesting,
+  PercentageConsumer,
+  HasValidatorDeprecated,
+  HasContracts,
+  Initializable,
+  RONTransferHelper
+{
   /// @dev The block bonus for the block producer whenever a new block is mined.
   uint256 internal _blockProducerBonusPerBlock;
   /// @dev The block bonus for the bridge operator whenever a new block is mined.
   uint256 internal _bridgeOperatorBonusPerBlock;
   /// @dev The last block number that the staking vesting sent.
   uint256 public lastBlockSendingBonus;
+  /// @dev The percentage that extracted from reward of block producer for fast finality.
+  uint256 internal _fastFinalityRewardPercentage;
 
   constructor() {
     _disableInitializers();
@@ -36,6 +47,10 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
   function initializeV2() external reinitializer(2) {
     _setContract(ContractType.VALIDATOR, ______deprecatedValidator);
     delete ______deprecatedValidator;
+  }
+
+  function initializeV3(uint256 fastFinalityRewardPercent) external reinitializer(3) {
+    _setFastFinalityRewardPercentage(fastFinalityRewardPercent);
   }
 
   /**
@@ -60,41 +75,49 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
   /**
    * @inheritdoc IStakingVesting
    */
+  function fastFinalityRewardPercentage() external view override returns (uint256) {
+    return _fastFinalityRewardPercentage;
+  }
+
+  /**
+   * @inheritdoc IStakingVesting
+   */
   function requestBonus(
-    bool _forBlockProducer,
-    bool _forBridgeOperator
+    bool forBlockProducer,
+    bool forBridgeOperator
   )
     external
     override
     onlyContract(ContractType.VALIDATOR)
-    returns (bool _success, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus)
+    returns (bool success, uint256 blockProducerBonus, uint256 bridgeOperatorBonus, uint256 fastFinalityRewardPercent)
   {
     if (block.number <= lastBlockSendingBonus) revert ErrBonusAlreadySent();
 
     lastBlockSendingBonus = block.number;
 
-    _blockProducerBonus = _forBlockProducer ? blockProducerBlockBonus(block.number) : 0;
-    _bridgeOperatorBonus = _forBridgeOperator ? bridgeOperatorBlockBonus(block.number) : 0;
+    blockProducerBonus = forBlockProducer ? blockProducerBlockBonus(block.number) : 0;
+    bridgeOperatorBonus = forBridgeOperator ? bridgeOperatorBlockBonus(block.number) : 0;
+    fastFinalityRewardPercent = _fastFinalityRewardPercentage;
 
-    uint256 _totalAmount = _blockProducerBonus + _bridgeOperatorBonus;
+    uint256 totalAmount = blockProducerBonus + bridgeOperatorBonus;
 
-    if (_totalAmount > 0) {
-      address payable _validatorContractAddr = payable(msg.sender);
+    if (totalAmount > 0) {
+      address payable validatorContractAddr = payable(msg.sender);
 
-      _success = _unsafeSendRON(_validatorContractAddr, _totalAmount);
+      success = _unsafeSendRON(validatorContractAddr, totalAmount);
 
-      if (!_success) {
+      if (!success) {
         emit BonusTransferFailed(
           block.number,
-          _validatorContractAddr,
-          _blockProducerBonus,
-          _bridgeOperatorBonus,
+          validatorContractAddr,
+          blockProducerBonus,
+          bridgeOperatorBonus,
           address(this).balance
         );
-        return (_success, 0, 0);
+        return (success, 0, 0, 0);
       }
 
-      emit BonusTransferred(block.number, _validatorContractAddr, _blockProducerBonus, _bridgeOperatorBonus);
+      emit BonusTransferred(block.number, validatorContractAddr, blockProducerBonus, bridgeOperatorBonus);
     }
   }
 
@@ -110,6 +133,14 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
    */
   function setBridgeOperatorBonusPerBlock(uint256 _amount) external override onlyAdmin {
     _setBridgeOperatorBonusPerBlock(_amount);
+  }
+
+  /**
+   * @inheritdoc IStakingVesting
+   */
+  function setFastFinalityRewardPercentage(uint256 percent) external override onlyAdmin {
+    if (percent > _MAX_PERCENTAGE) revert ErrInvalidArguments(msg.sig);
+    _setFastFinalityRewardPercentage(percent);
   }
 
   /**
@@ -132,5 +163,16 @@ contract StakingVesting is IStakingVesting, HasValidatorDeprecated, HasContracts
   function _setBridgeOperatorBonusPerBlock(uint256 _amount) internal {
     _bridgeOperatorBonusPerBlock = _amount;
     emit BridgeOperatorBonusPerBlockUpdated(_amount);
+  }
+
+  /**
+   * @dev Sets the percent of fast finality reward.
+   *
+   * Emits the event `FastFinalityRewardPercentageUpdated`.
+   *
+   */
+  function _setFastFinalityRewardPercentage(uint256 percent) internal {
+    _fastFinalityRewardPercentage = percent;
+    emit FastFinalityRewardPercentageUpdated(percent);
   }
 }

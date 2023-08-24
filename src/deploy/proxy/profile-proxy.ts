@@ -15,13 +15,14 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const logicContract = await deployments.get('ProfileLogic');
 
+  const nonce = undefined;
+  // console.log(`Deploying ProfileProxy (nonce: ${nonce})...`);
+
   await deploy('ProfileProxy', {
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    // TODO: use this args when on production
-    // args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, []],
-    args: [logicContract.address, deployer, []],
+    args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, []],
   });
 };
 

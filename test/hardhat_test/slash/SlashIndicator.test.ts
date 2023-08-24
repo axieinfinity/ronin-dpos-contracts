@@ -82,60 +82,63 @@ describe('Slash indicator test', () => {
     trustedOrgs = createManyTrustedOrganizationAddressSets(signers.splice(0, 3));
     validatorCandidates = createManyValidatorCandidateAddressSets(signers.slice(0, maxValidatorNumber * 3));
 
-    const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress } =
-      await initTest('SlashIndicator')({
-        slashIndicatorArguments: {
-          unavailabilitySlashing: {
-            unavailabilityTier1Threshold,
-            unavailabilityTier2Threshold,
-            slashAmountForUnavailabilityTier2Threshold,
-            jailDurationForUnavailabilityTier2Threshold,
-          },
-          doubleSignSlashing: {
-            slashDoubleSignAmount,
-          },
-          bridgeOperatorSlashing: {
-            missingVotesRatioTier1,
-            missingVotesRatioTier2,
-            jailDurationForMissingVotesRatioTier2,
-            skipBridgeOperatorSlashingThreshold,
-          },
-          bridgeVotingSlashing: {
-            bridgeVotingThreshold,
-            bridgeVotingSlashAmount,
-          },
+    const {
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninGovernanceAdminAddress,
+      fastFinalityTrackingAddress,
+    } = await initTest('SlashIndicator')({
+      slashIndicatorArguments: {
+        unavailabilitySlashing: {
+          unavailabilityTier1Threshold,
+          unavailabilityTier2Threshold,
+          slashAmountForUnavailabilityTier2Threshold,
+          jailDurationForUnavailabilityTier2Threshold,
         },
-        stakingArguments: {
-          minValidatorStakingAmount,
+        doubleSignSlashing: {
+          slashDoubleSignAmount,
         },
-        roninValidatorSetArguments: {
-          maxValidatorNumber,
-          numberOfBlocksInEpoch,
-          maxValidatorCandidate,
+        bridgeOperatorSlashing: {
+          missingVotesRatioTier1,
+          missingVotesRatioTier2,
+          jailDurationForMissingVotesRatioTier2,
+          skipBridgeOperatorSlashingThreshold,
         },
-        maintenanceArguments: {
-          minOffsetToStartSchedule,
+        bridgeVotingSlashing: {
+          bridgeVotingThreshold,
+          bridgeVotingSlashAmount,
         },
-        roninTrustedOrganizationArguments: {
-          trustedOrganizations: trustedOrgs.map((v) => ({
-            consensusAddr: v.consensusAddr.address,
-            governor: v.governor.address,
-            bridgeVoter: v.bridgeVoter.address,
-            weight: 100,
-            addedBlock: 0,
-          })),
-        },
-        governanceAdminArguments: {
-          proposalExpiryDuration,
-        },
-        bridgeManagerArguments: {
-          numerator: 70,
-          denominator: 100,
-          weights: [],
-          operators: [],
-          governors: [],
-        },
-      });
+      },
+      stakingArguments: {
+        minValidatorStakingAmount,
+      },
+      roninValidatorSetArguments: {
+        maxValidatorNumber,
+        numberOfBlocksInEpoch,
+        maxValidatorCandidate,
+      },
+      maintenanceArguments: {
+        minOffsetToStartSchedule,
+      },
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: trustedOrgs.map((v) => ({
+          consensusAddr: v.consensusAddr.address,
+          governor: v.governor.address,
+          bridgeVoter: v.bridgeVoter.address,
+          weight: 100,
+          addedBlock: 0,
+        })),
+      },
+      governanceAdminArguments: {
+        proposalExpiryDuration,
+      },
+      bridgeManagerArguments: {
+        numerator: 70,
+        denominator: 100,
+        members: [],
+      },
+    });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetOverridePrecompile__factory.connect(validatorContractAddress, deployer);
@@ -151,6 +154,7 @@ describe('Slash indicator test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetOverridePrecompile__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await validatorContract.initializeV3(fastFinalityTrackingAddress);
 
     mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashLogic.deployed();

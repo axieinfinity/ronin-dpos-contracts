@@ -38,7 +38,7 @@ export class EpochController {
       number = number.add(this.numberOfBlocksInEpoch);
     }
 
-    if (includingEpochsNum! > 1) {
+    if (includingEpochsNum! && BigNumber.from(includingEpochsNum!).gt(1)) {
       number = number.add(BigNumber.from(includingEpochsNum).sub(1).mul(this.numberOfBlocksInEpoch));
     }
 

@@ -114,6 +114,7 @@ describe('[Integration] Bridge Tracking test', () => {
       roninBridgeManagerAddress,
       bridgeSlashAddress,
       bridgeRewardAddress,
+      fastFinalityTrackingAddress,
     } = await initTest('ActionBridgeTracking')({
       bridgeContract: bridgeProxy.address,
       roninTrustedOrganizationArguments: {
@@ -174,6 +175,7 @@ describe('[Integration] Bridge Tracking test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await roninValidatorSet.initEpoch();
+    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     await TransparentUpgradeableProxyV2__factory.connect(bridgeContract.address, deployer).changeAdmin(
       bridgeManager.address

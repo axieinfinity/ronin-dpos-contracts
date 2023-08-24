@@ -158,6 +158,7 @@ describe('Credit score and bail out test', () => {
       validatorContractAddress,
       roninGovernanceAdminAddress,
       maintenanceContractAddress,
+      fastFinalityTrackingAddress
     } = await initTest('CreditScore')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -212,6 +213,7 @@ describe('Credit score and bail out test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetOverridePrecompile__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
+    await validatorContract.initializeV3(fastFinalityTrackingAddress);
 
     mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashLogic.deployed();

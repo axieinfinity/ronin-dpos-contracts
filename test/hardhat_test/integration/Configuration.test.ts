@@ -121,9 +121,7 @@ const config: InitTestInput = {
   bridgeManagerArguments: {
     numerator: 70,
     denominator: 100,
-    weights: [],
-    operators: [],
-    governors: [],
+    members: [],
     expiryDuration: 60 * 60 * 24 * 14, // 14 days
   },
 };

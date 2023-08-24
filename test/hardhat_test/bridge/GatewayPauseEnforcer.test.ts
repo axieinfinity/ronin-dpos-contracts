@@ -135,6 +135,7 @@ describe('Gateway Pause Enforcer test', () => {
       roninTrustedOrganizationAddress,
       validatorContractAddress,
       roninBridgeManagerAddress,
+      fastFinalityTrackingAddress,
     } = await initTest('RoninGatewayV2-PauseEnforcer')({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
@@ -180,6 +181,7 @@ describe('Gateway Pause Enforcer test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await roninValidatorSet.initEpoch();
+    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     await TransparentUpgradeableProxyV2__factory.connect(proxy.address, deployer).changeAdmin(governanceAdmin.address);
     await governanceAdminInterface.functionDelegateCalls(

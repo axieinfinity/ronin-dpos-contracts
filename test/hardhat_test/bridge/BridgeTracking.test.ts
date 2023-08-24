@@ -89,6 +89,7 @@ describe('Bridge Tracking test', () => {
       roninBridgeManagerAddress,
       bridgeSlashAddress,
       bridgeRewardAddress,
+      fastFinalityTrackingAddress,
     } = await initTest('BridgeTracking')({
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
@@ -155,6 +156,7 @@ describe('Bridge Tracking test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await roninValidatorSet.initEpoch();
+    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     // Applies candidates and double check the bridge operators
     for (let i = 0; i < candidates.length; i++) {
