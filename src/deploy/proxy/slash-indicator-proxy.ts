@@ -49,12 +49,15 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     ],
   ]);
 
+  const nonce = generalRoninConf[network.name].slashIndicatorContract?.nonce;
+  // console.log(`Deploying SlashIndicatorProxy (nonce: ${nonce})...`);
+
   const deployment = await deploy('SlashIndicatorProxy', {
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
     args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, data],
-    nonce: generalRoninConf[network.name].slashIndicatorContract?.nonce,
+    nonce,
   });
   verifyAddress(deployment.address, generalRoninConf[network.name].slashIndicatorContract?.address);
 };

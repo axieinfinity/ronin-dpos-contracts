@@ -17,7 +17,7 @@ interface IBridgeManager is IBridgeManagerEvents {
    * @dev Returns the total number of bridge operators.
    * @return The total number of bridge operators.
    */
-  function totalBridgeOperators() external view returns (uint256);
+  function totalBridgeOperator() external view returns (uint256);
 
   /**
    * @dev Checks if the given address is a bridge operator.
@@ -54,7 +54,7 @@ interface IBridgeManager is IBridgeManagerEvents {
   function getFullBridgeOperatorInfos()
     external
     view
-    returns (address[] memory governors, address[] memory bridgeOperators, uint256[] memory weights);
+    returns (address[] memory governors, address[] memory bridgeOperators, uint96[] memory weights);
 
   /**
    * @dev Returns total weights of the governor list.
@@ -64,7 +64,7 @@ interface IBridgeManager is IBridgeManagerEvents {
   /**
    * @dev Returns total weights.
    */
-  function getTotalWeights() external view returns (uint256);
+  function getTotalWeight() external view returns (uint256);
 
   /**
    * @dev Returns an array of all bridge operators.
@@ -92,19 +92,19 @@ interface IBridgeManager is IBridgeManagerEvents {
    * @param governor The address of the governor to get the vote weight for.
    * @return voteWeight The vote weight of the specified governor.
    */
-  function getGovernorWeight(address governor) external view returns (uint256);
+  function getGovernorWeight(address governor) external view returns (uint96);
 
   /**
    * @dev External function to retrieve the vote weight of a specific bridge operator.
    * @param bridgeOperator The address of the bridge operator to get the vote weight for.
    * @return weight The vote weight of the specified bridge operator.
    */
-  function getBridgeOperatorWeight(address bridgeOperator) external view returns (uint256 weight);
+  function getBridgeOperatorWeight(address bridgeOperator) external view returns (uint96 weight);
 
   /**
    * @dev Returns the weights of a list of governor addresses.
    */
-  function getGovernorWeights(address[] calldata governors) external view returns (uint256[] memory weights);
+  function getGovernorWeights(address[] calldata governors) external view returns (uint96[] memory weights);
 
   /**
    * @dev Returns an array of all governors.

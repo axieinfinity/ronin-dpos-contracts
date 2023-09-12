@@ -33,12 +33,15 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     ],
   ]);
 
+  const nonce = generalRoninConf[network.name].validatorContract?.nonce;
+  // console.log(`Deploying RoninValidatorSetProxy (nonce: ${nonce})...`);
+
   const deployment = await deploy('RoninValidatorSetProxy', {
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
     args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, data],
-    nonce: generalRoninConf[network.name].validatorContract?.nonce,
+    nonce,
   });
   verifyAddress(deployment.address, generalRoninConf[network.name].validatorContract?.address);
 };

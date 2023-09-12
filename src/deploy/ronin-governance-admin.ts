@@ -12,7 +12,8 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  let nonce = await ethers.provider.getTransactionCount(deployer);
+  const nonce = generalRoninConf[network.name].governanceAdmin?.nonce;
+  // console.log(`Deploying RoninGovernanceAdmin (nonce: ${nonce})...`);
 
   const deployment = await deploy('RoninGovernanceAdmin', {
     from: deployer,
@@ -23,7 +24,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
       generalRoninConf[network.name].validatorContract?.address,
       roninGovernanceAdminConf[network.name]?.proposalExpiryDuration,
     ],
-    nonce: generalRoninConf[network.name].governanceAdmin?.nonce,
+    nonce,
   });
 
   verifyAddress(deployment.address, generalRoninConf[network.name].governanceAdmin?.address);

@@ -221,8 +221,8 @@ contract RoninBridgeManager is BridgeManager, GovernanceProposal, GlobalGovernan
    * @dev Internal function to get the total weights of all governors.
    * @return The total weights of all governors combined.
    */
-  function _getTotalWeights() internal view virtual override returns (uint256) {
-    return getTotalWeights();
+  function _getTotalWeight() internal view virtual override returns (uint256) {
+    return getTotalWeight();
   }
 
   /**

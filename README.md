@@ -24,6 +24,13 @@ The collections of smart contracts that power the Ronin Delegated Proof of Stake
   $ yarn --frozen-lockfile
   ```
 
+- Install foundry libs
+
+    ```
+    $ git submodule add -b release-v0 https://github.com/PaulRBerg/prb-test lib/prb-test
+    $ git submodule add -b release-v4 https://github.com/PaulRBerg/prb-math lib/prb-math
+    ```
+
 - Compile contracts
 
   ```shell

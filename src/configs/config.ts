@@ -137,6 +137,7 @@ export const stakingVestingConfig: StakingVestingConfig = {
   [Network.Testnet]: {
     ...defaultStakingVestingConf,
     topupAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5)), // 100.000 RON
+    fastFinalityRewardPercent: 50, // 0.5%
   },
   [Network.Mainnet]: {
     ...defaultStakingVestingConf,

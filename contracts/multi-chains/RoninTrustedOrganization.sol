@@ -116,7 +116,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function totalWeights() external view virtual returns (uint256) {
+  function totalWeight() external view virtual returns (uint256) {
     return _totalWeight;
   }
 
@@ -186,7 +186,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function sumConsensusWeights(address[] calldata _list) external view returns (uint256 _res) {
+  function sumConsensusWeight(address[] calldata _list) external view returns (uint256 _res) {
     for (uint _i = 0; _i < _list.length; ) {
       _res += _consensusWeight[_list[_i]];
 
@@ -199,7 +199,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function sumGovernorWeights(address[] calldata _list) external view returns (uint256 _res) {
+  function sumGovernorWeight(address[] calldata _list) external view returns (uint256 _res) {
     for (uint _i = 0; _i < _list.length; ) {
       _res += _governorWeight[_list[_i]];
 
@@ -212,7 +212,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function sumBridgeVoterWeights(address[] calldata _list) external view returns (uint256 _res) {
+  function sumBridgeVoterWeight(address[] calldata _list) external view returns (uint256 _res) {
     for (uint _i = 0; _i < _list.length; ) {
       _res += _bridgeVoterWeight[_list[_i]];
 
@@ -225,7 +225,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function countTrustedOrganizations() external view override returns (uint256) {
+  function countTrustedOrganization() external view override returns (uint256) {
     return _consensusList.length;
   }
 

@@ -21,6 +21,16 @@ contract MockPrecompile {
     return true;
   }
 
+  function validateFinalityVoteProof(
+    bytes calldata,
+    uint256,
+    bytes32[2] calldata,
+    bytes[][2] calldata,
+    bytes[2] calldata
+  ) public pure returns (bool) {
+    return true;
+  }
+
   function pickValidatorSet(
     address[] memory _candidates,
     uint256[] memory _weights,

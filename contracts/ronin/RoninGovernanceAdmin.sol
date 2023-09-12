@@ -208,7 +208,7 @@ contract RoninGovernanceAdmin is
     emit EmergencyExitPollVoted(_hash, _voter);
 
     address[] memory _voters = _v.filterByHash(_hash);
-    VoteStatus _stt = _v.syncVoteStatus(_getMinimumVoteWeight(), _sumGovernorWeights(_voters), _hash);
+    VoteStatus _stt = _v.syncVoteStatus(_getMinimumVoteWeight(), _sumGovernorWeight(_voters), _hash);
     if (_stt == VoteStatus.Approved) {
       _execReleaseLockedFundForEmergencyExitRequest(_consensusAddr, _recipientAfterUnlockedFund);
       emit EmergencyExitPollApproved(_hash);
@@ -237,8 +237,8 @@ contract RoninGovernanceAdmin is
   /**
    * @dev Returns the total weight of a list address of governors.
    */
-  function _sumGovernorWeights(address[] memory _governors) internal view virtual returns (uint256) {
-    bytes4 _selector = IRoninTrustedOrganization.sumGovernorWeights.selector;
+  function _sumGovernorWeight(address[] memory _governors) internal view virtual returns (uint256) {
+    bytes4 _selector = IRoninTrustedOrganization.sumGovernorWeight.selector;
     (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,

@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../RoninTest.t.sol";
 
-import "../../bridge/utils/BridgeManagerUtils.t.sol";
+import "@ronin/test/bridge/unit/fuzz/utils/BridgeManagerUtils.t.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { SignatureConsumer } from "@ronin/contracts/interfaces/consumers/SignatureConsumer.sol";
 // RON
@@ -30,6 +30,10 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
   uint256 internal constant DEFAULT_REWARD_PER_PERIOD = 1 ether;
   uint256 internal constant DEFAULT_EXPIRY_DURATION = 5 minutes;
   uint256 internal constant DEFAULT_GAS = 500_000;
+
+  // @dev fork height before REP-002 upgrade
+  // TODO: must be tested on mainnet
+  uint256 internal constant FORK_HEIGHT = 19231486;
 
   uint256 internal _ethFork;
   uint256 internal _ethChainId;
@@ -171,7 +175,7 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
     _ethFork = vm.createSelectFork(GOERLI_RPC);
     _ethChainId = block.chainid;
 
-    _roninFork = vm.createSelectFork(RONIN_TEST_RPC);
+    _roninFork = vm.createSelectFork(RONIN_TEST_RPC, FORK_HEIGHT);
     _ronChainId = block.chainid;
   }
 

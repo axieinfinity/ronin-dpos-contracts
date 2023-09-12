@@ -69,6 +69,10 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     delete ______deprecatedTrustedOrg;
   }
 
+  function initializeV3(address fastFinalityTrackingContract) external reinitializer(3) {
+    _setContract(ContractType.FAST_FINALTIY_TRACKING, fastFinalityTrackingContract);
+  }
+
   /**
    * @dev Only receives RON from staking vesting contract (for topping up bonus), and from staking contract (for transferring
    * deducting amount on slashing).

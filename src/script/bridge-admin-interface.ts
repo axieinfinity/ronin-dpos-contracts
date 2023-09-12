@@ -8,8 +8,8 @@ import { AbiCoder, Interface, keccak256, _TypedDataEncoder } from 'ethers/lib/ut
 import { BallotTypes, getGlobalProposalHash, getProposalHash, TargetOption, VoteType } from './proposal';
 import { RoninBridgeManager, TransparentUpgradeableProxyV2__factory } from '../types';
 import { GlobalProposalDetailStruct, ProposalDetailStruct, SignatureStruct } from '../types/MainchainBridgeManager';
-import { getLastBlockTimestamp } from '../../test/helpers/utils';
-import { defaultTestConfig } from '../../test/helpers/fixture';
+import { getLastBlockTimestamp } from '../../test/hardhat_test/helpers/utils';
+import { defaultTestConfig } from '../../test/hardhat_test/helpers/fixture';
 import { BridgeManagerArguments } from '../../src/configs/bridge-manager';
 
 export const getBridgeManagerDomain = (roninChainId: BigNumberish): TypedDataDomain => ({
