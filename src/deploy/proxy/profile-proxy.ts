@@ -2,8 +2,7 @@ import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { generalRoninConf, roninchainNetworks } from '../../configs/config';
-import { verifyAddress } from '../../script/verify-address';
-import { BridgeTracking__factory } from '../../types';
+import { Address } from 'hardhat-deploy/dist/types';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -17,12 +16,18 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const nonce = undefined;
   // console.log(`Deploying ProfileProxy (nonce: ${nonce})...`);
+  let governanceAdmin: Address | undefined = generalRoninConf[network.name]!.governanceAdmin?.address;
+
+  if (!governanceAdmin) {
+    const GADepl = await deployments.get('RoninGovernanceAdmin');
+    governanceAdmin = GADepl.address;
+  }
 
   await deploy('ProfileProxy', {
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, []],
+    args: [logicContract.address, governanceAdmin, []],
   });
 };
 

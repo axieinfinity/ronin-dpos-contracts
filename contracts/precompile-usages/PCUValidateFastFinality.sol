@@ -27,7 +27,7 @@ abstract contract PCUValidateFastFinality is PrecompiledUsage {
     bool success = true;
 
     bytes memory payload = abi.encodeWithSignature(
-      "validateFinaltyVoteProof(bytes,uint256,bytes32[2],bytes[][2],bytes[2])",
+      "validateFinalityVoteProof(bytes,uint256,bytes32[2],bytes[][2],bytes[2])",
       voterPublicKey,
       targetBlockNumber,
       targetBlockHash,

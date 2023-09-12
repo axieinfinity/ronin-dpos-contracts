@@ -57,7 +57,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks
   deployments.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
-// yarn hardhat deploy --tags 230801_S4_ChangeAdminOfBridge --network ronin-testnet
-deploy.tags = ['230801_S4_ChangeAdminOfBridge'];
+// yarn hardhat deploy --tags 230801_S4_ChangeAdminOfMainchainBridge --network ronin-testnet
+deploy.tags = ['230801_S4_ChangeAdminOfMainchainBridge'];
 
 export default deploy;
