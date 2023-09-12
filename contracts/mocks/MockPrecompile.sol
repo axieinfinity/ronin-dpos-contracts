@@ -21,7 +21,7 @@ contract MockPrecompile {
     return true;
   }
 
-  function validateFinaltyVoteProof(
+  function validateFinalityVoteProof(
     bytes calldata,
     uint256,
     bytes32[2] calldata,
