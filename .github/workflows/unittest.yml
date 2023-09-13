@@ -2,14 +2,14 @@ name: Run tests
 on:
   push:
     branches:
-      - main
+      - mainnet
       - testnet
-      - dev
+      - 'release/**'
   pull_request:
     branches:
-      - main
+      - mainnet
       - testnet
-      - dev
+      - 'release/**'
 
 permissions:
   packages: read
