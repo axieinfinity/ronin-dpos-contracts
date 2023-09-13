@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./IBridge.sol";
 import "./IWETH.sol";
 import "./consumers/SignatureConsumer.sol";
 import "./consumers/MappedTokenConsumer.sol";
 import "../libraries/Transfer.sol";
 
-interface IMainchainGatewayV2 is SignatureConsumer, MappedTokenConsumer, IBridge {
+interface IMainchainGatewayV2 is SignatureConsumer, MappedTokenConsumer {
   /**
    * @dev Error indicating that a query was made for an approved withdrawal.
    */

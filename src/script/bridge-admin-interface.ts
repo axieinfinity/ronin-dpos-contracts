@@ -7,7 +7,7 @@ import { AbiCoder, Interface, keccak256, _TypedDataEncoder } from 'ethers/lib/ut
 
 import { BallotTypes, getGlobalProposalHash, getProposalHash, TargetOption, VoteType } from './proposal';
 import { RoninBridgeManager, TransparentUpgradeableProxyV2__factory } from '../types';
-import { GlobalProposalDetailStruct, SignatureStruct } from '../types/MainchainBridgeManager';
+import { GlobalProposalDetailStruct, ProposalDetailStruct, SignatureStruct } from '../types/MainchainBridgeManager';
 import { getLastBlockTimestamp } from '../../test/helpers/utils';
 import { defaultTestConfig } from '../../test/helpers/fixture';
 import { BridgeManagerArguments } from '../../src/configs/bridge-manager';
@@ -48,6 +48,26 @@ export class BridgeManagerInterface {
     this.interface = new TransparentUpgradeableProxyV2__factory().interface;
   }
 
+  async createProposal(
+    expiryTimestamp: BigNumberish,
+    target: Address,
+    value: BigNumberish,
+    calldata: BytesLike,
+    gasAmount: BigNumberish,
+    nonce?: BigNumber
+  ) {
+    const proposal: ProposalDetailStruct = {
+      chainId: network.config.chainId!,
+      expiryTimestamp,
+      nonce: nonce ?? (await this.contract.round(network.config.chainId!)).add(1),
+      targets: [target],
+      values: [value],
+      calldatas: [calldata],
+      gasAmounts: [gasAmount],
+    };
+    return proposal;
+  }
+
   async createGlobalProposal(
     expiryTimestamp: BigNumberish,
     targetOption: TargetOption,
@@ -67,7 +87,23 @@ export class BridgeManagerInterface {
     return proposal;
   }
 
-  async generateSignatures(proposal: GlobalProposalDetailStruct, signers?: SignerWithAddress[], support?: VoteType) {
+  async generateSignatures(proposal: ProposalDetailStruct, signers?: SignerWithAddress[], support?: VoteType) {
+    const proposalHash = getProposalHash(proposal);
+    const signatures = await Promise.all(
+      (signers ?? this.signers).map((v) =>
+        v
+          ._signTypedData(this.domain, BallotTypes, { proposalHash, support: support ?? VoteType.For })
+          .then(mapByteSigToSigStruct)
+      )
+    );
+    return signatures;
+  }
+
+  async generateSignaturesGlobal(
+    proposal: GlobalProposalDetailStruct,
+    signers?: SignerWithAddress[],
+    support?: VoteType
+  ) {
     const proposalHash = getGlobalProposalHash(proposal);
     const signatures = await Promise.all(
       (signers ?? this.signers).map((v) =>
@@ -84,7 +120,20 @@ export class BridgeManagerInterface {
     return BigNumber.from(this.args.expiryDuration!).add(latestTimestamp);
   }
 
-  async functionDelegateCall(targetOption: TargetOption, data: BytesLike) {
+  async functionDelegateCall(to: Address, data: BytesLike) {
+    const proposal = await this.createProposal(
+      await this.defaultExpiryTimestamp(),
+      to,
+      0,
+      this.interface.encodeFunctionData('functionDelegateCall', [data]),
+      2_000_000
+    );
+    const signatures = await this.generateSignatures(proposal);
+    const supports = signatures.map(() => VoteType.For);
+    return this.contract.connect(this.signers[0]).proposeProposalStructAndCastVotes(proposal, supports, signatures);
+  }
+
+  async functionDelegateCallGlobal(targetOption: TargetOption, data: BytesLike) {
     const proposal = await this.createGlobalProposal(
       await this.defaultExpiryTimestamp(),
       targetOption,
@@ -92,14 +141,14 @@ export class BridgeManagerInterface {
       this.interface.encodeFunctionData('functionDelegateCall', [data]),
       2_000_000
     );
-    const signatures = await this.generateSignatures(proposal);
+    const signatures = await this.generateSignaturesGlobal(proposal);
     const supports = signatures.map(() => VoteType.For);
     return this.contract
       .connect(this.signers[0])
       .proposeGlobalProposalStructAndCastVotes(proposal, supports, signatures);
   }
 
-  async functionDelegateCalls(targetOptionsList: TargetOption[], dataList: BytesLike[]) {
+  async functionDelegateCallsGlobal(targetOptionsList: TargetOption[], dataList: BytesLike[]) {
     if (targetOptionsList.length != dataList.length || targetOptionsList.length == 0) {
       throw Error('invalid array length');
     }
@@ -113,14 +162,14 @@ export class BridgeManagerInterface {
       gasAmounts: targetOptionsList.map(() => 2_000_000),
     };
 
-    const signatures = await this.generateSignatures(proposal);
+    const signatures = await this.generateSignaturesGlobal(proposal);
     const supports = signatures.map(() => VoteType.For);
     return this.contract
       .connect(this.signers[0])
       .proposeGlobalProposalStructAndCastVotes(proposal, supports, signatures);
   }
 
-  async upgrade(targetOption: TargetOption, to: Address) {
+  async upgradeGlobal(targetOption: TargetOption, to: Address) {
     const proposal = await this.createGlobalProposal(
       await this.defaultExpiryTimestamp(),
       targetOption,
@@ -128,7 +177,7 @@ export class BridgeManagerInterface {
       this.interface.encodeFunctionData('upgradeTo', [to]),
       500_000
     );
-    const signatures = await this.generateSignatures(proposal);
+    const signatures = await this.generateSignaturesGlobal(proposal);
     const supports = signatures.map(() => VoteType.For);
     return this.contract
       .connect(this.signers[0])

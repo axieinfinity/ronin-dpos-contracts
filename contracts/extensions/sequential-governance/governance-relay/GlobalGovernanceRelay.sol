@@ -22,27 +22,20 @@ abstract contract GlobalGovernanceRelay is CommonGovernanceRelay, GlobalCoreGove
    *
    */
   function _relayGlobalProposal(
-    GlobalProposal.GlobalProposalDetail calldata _globalProposal,
-    Ballot.VoteType[] calldata _supports,
-    Signature[] calldata _signatures,
-    bytes32 _domainSeparator,
-    address _bridgeManager,
-    address _gatewayContract,
-    address _creator
+    GlobalProposal.GlobalProposalDetail calldata globalProposal,
+    Ballot.VoteType[] calldata supports_,
+    Signature[] calldata signatures,
+    bytes32 domainSeparator,
+    address creator
   ) internal {
-    Proposal.ProposalDetail memory _proposal = _proposeGlobalStruct(
-      _globalProposal,
-      _bridgeManager,
-      _gatewayContract,
-      _creator
-    );
-    bytes32 _globalProposalHash = _globalProposal.hash();
+    Proposal.ProposalDetail memory _proposal = _proposeGlobalStruct(globalProposal, creator);
+    bytes32 globalProposalHash = globalProposal.hash();
     _relayVotesBySignatures(
       _proposal,
-      _supports,
-      _signatures,
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.For)),
-      ECDSA.toTypedDataHash(_domainSeparator, Ballot.hash(_globalProposalHash, Ballot.VoteType.Against))
+      supports_,
+      signatures,
+      ECDSA.toTypedDataHash(domainSeparator, Ballot.hash(globalProposalHash, Ballot.VoteType.For)),
+      ECDSA.toTypedDataHash(domainSeparator, Ballot.hash(globalProposalHash, Ballot.VoteType.Against))
     );
   }
 }

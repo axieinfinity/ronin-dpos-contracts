@@ -1,51 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import { IBridgeSlashEvents } from "./events/IBridgeSlashEvents.sol";
+
 /**
  * @title IBridgeSlash
  * @dev Interface for the BridgeSlash contract to manage slashing functionality for bridge operators.
  */
-interface IBridgeSlash {
-  /**
-   * @dev Enumeration representing the slashing tiers for bridge operators.
-   */
-  enum Tier {
-    Tier0,
-    Tier1,
-    Tier2
-  }
-
-  /**
-   * @dev Struct representing the status of a bridge operator.
-   */
-  struct BridgeSlashInfo {
-    uint64 slashUntilPeriod;
-    uint192 newlyAddedAtPeriod;
-  }
-
-  /**
-   * @dev Emitted when new bridge operators are added.
-   * @param period The period in which the bridge operators are added.
-   * @param bridgeOperators The array of addresses representing the newly added bridge operators.
-   */
-  event NewBridgeOperatorsAdded(uint256 indexed period, address[] bridgeOperators);
-
-  /**
-   * @dev Event emitted when a bridge operator is slashed.
-   * @param tier The slash tier of the operator.
-   * @param bridgeOperator The address of the slashed bridge operator.
-   * @param period The period in which the operator is slashed.
-   * @param slashUntilPeriod The period until which the operator is penalized.
-   */
-  event Slashed(Tier indexed tier, address indexed bridgeOperator, uint256 indexed period, uint256 slashUntilPeriod);
-
-  /**
-   * @dev Emitted when a removal request is made for a bridge operator.
-   * @param period The period for which the removal request is made.
-   * @param bridgeOperator The address of the bridge operator being requested for removal.
-   */
-  event RemovalRequested(uint256 indexed period, address indexed bridgeOperator);
-
+interface IBridgeSlash is IBridgeSlashEvents {
   /**
    * @dev Slashes the unavailability of bridge operators during a specific period.
    * @param period The period to slash the bridge operators for.
@@ -53,7 +15,8 @@ interface IBridgeSlash {
   function execSlashBridgeOperators(
     address[] calldata operators,
     uint256[] calldata ballots,
-    uint256 totalVotesForPeriod,
+    uint256 totalBallot,
+    uint256 totalVote,
     uint256 period
   ) external returns (bool slashed);
 
@@ -74,10 +37,10 @@ interface IBridgeSlash {
   /**
    * @dev Gets the slash tier based on the given ballot and total ballots.
    * @param ballot The ballot count for a bridge operator.
-   * @param totalVotes The total vote count for the period.
+   * @param totalVote The total vote count for the period.
    * @return tier The slash tier.
    */
-  function getSlashTier(uint256 ballot, uint256 totalVotes) external pure returns (Tier tier);
+  function getSlashTier(uint256 ballot, uint256 totalVote) external pure returns (Tier tier);
 
   /**
    * @dev Retrieve the penalty durations for different slash tiers.
@@ -102,4 +65,10 @@ interface IBridgeSlash {
    * @return The duration in period number that exceeds which a bridge operator will be removed.
    */
   function REMOVE_DURATION_THRESHOLD() external view returns (uint256);
+
+  /**
+   * @dev External function to retrieve the value of the minimum vote threshold to execute slashing rule.
+   * @return minimumVoteThreshold The minimum vote threshold value.
+   */
+  function MINIMUM_VOTE_THRESHOLD() external view returns (uint256);
 }

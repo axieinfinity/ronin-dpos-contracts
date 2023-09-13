@@ -6,9 +6,9 @@ import { Randomizer } from "../../helpers/Randomizer.t.sol";
 import { Sorting } from "@ronin/contracts/mocks/libraries/Sorting.sol";
 import { AddressArrayUtils } from "@ronin/contracts/libraries/AddressArrayUtils.sol";
 import { IBridgeManager } from "@ronin/contracts/interfaces/bridge/IBridgeManager.sol";
-import { IBridgeManagerEventsTest } from "../interfaces/IBridgeManagerEvents.t.sol";
+import { IBridgeManagerEvents } from "@ronin/contracts/interfaces/bridge/events/IBridgeManagerEvents.sol";
 
-abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
+abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEvents {
   using Sorting for uint256[];
   using AddressArrayUtils for address[];
 
@@ -26,7 +26,7 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
   function _addBridgeOperators(
     address caller,
     address bridgeManagerContract,
-    uint256[] memory voteWeights,
+    uint96[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
   ) internal virtual returns (IBridgeManager bridgeManager) {
@@ -50,7 +50,7 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
   )
     public
     virtual
-    returns (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights)
+    returns (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights)
   {
     // ensure r1, r2, r3 is unique
     vm.assume(!(r1 == r2 || r2 == r3 || r1 == r3));
@@ -58,7 +58,10 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
 
     governors = _createRandomAddresses(r1, numBridgeOperators);
     bridgeOperators = _createRandomAddresses(r2, numBridgeOperators);
-    voteWeights = _createRandomNumbers(r3, numBridgeOperators, MIN_VOTE_WEIGHT, MAX_VOTE_WEIGHT);
+    uint256[] memory _voteWeights = _createRandomNumbers(r3, numBridgeOperators, MIN_VOTE_WEIGHT, MAX_VOTE_WEIGHT);
+    assembly {
+      voteWeights := _voteWeights
+    }
 
     _ensureValidAddBridgeOperatorsInputs(voteWeights, governors, bridgeOperators);
   }
@@ -75,7 +78,7 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
       bool nullifyOrDuplicate, // true is nullify, false is duplicate
       uint256 modifyTimes,
       uint256 modifiedInputIdx,
-      uint256[] memory voteWeights,
+      uint96[] memory voteWeights,
       address[] memory governors,
       address[] memory bridgeOperators
     )
@@ -83,8 +86,10 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
     (bridgeOperators, governors, voteWeights) = getValidInputs(r1, r2, r3, numBridgeOperators);
     uint256[] memory uintGovernors;
     uint256[] memory uintBridgeOperators;
+    uint256[] memory uintVoteWeights;
     assembly {
       uintGovernors := governors
+      uintVoteWeights := voteWeights
       uintBridgeOperators := bridgeOperators
     }
 
@@ -102,7 +107,7 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
           seed,
           modifyTimes,
           // 0 = modify voteWeights, 1 = modify governors, 2 = modify bridge operators
-          modifiedInputIdx == 0 ? voteWeights : modifiedInputIdx == 1 ? uintGovernors : uintBridgeOperators
+          modifiedInputIdx == 0 ? uintVoteWeights : modifiedInputIdx == 1 ? uintGovernors : uintBridgeOperators
         )
       );
       (outputs, ) = abi.decode(returnData, (uint256[], uint256[]));
@@ -192,21 +197,24 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
   }
 
   function _ensureValidAddBridgeOperatorsInputs(
-    uint256[] memory voteWeights,
+    uint96[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
   ) internal pure virtual {
     vm.assume(voteWeights.length == governors.length && governors.length == bridgeOperators.length);
 
-    _ensureNonZero(voteWeights);
+
 
     uint256[] memory uintGovernors;
+    uint256[] memory uintVoteWeights;
     uint256[] memory uintBridgeOperators;
     // cast address[] to uint256[]
     assembly {
       uintGovernors := governors
+      uintVoteWeights := voteWeights
       uintBridgeOperators := bridgeOperators
     }
+    _ensureNonZero(uintVoteWeights);
     _ensureNonZero(uintGovernors);
     _ensureNonZero(uintBridgeOperators);
 
@@ -245,13 +253,17 @@ abstract contract BridgeManagerUtils is Randomizer, IBridgeManagerEventsTest {
 
   function _invariantTest(
     IBridgeManager bridgeManager,
-    uint256[] memory voteWeights,
+    uint96[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
   ) internal virtual {
     assertEq(governors, bridgeManager.getGovernors());
     assertEq(bridgeOperators, bridgeManager.getBridgeOperators());
-    assertEq(voteWeights, bridgeManager.getGovernorWeights(governors));
+    uint256[] memory _voteWeights;
+    assembly {
+      _voteWeights := voteWeights
+    }
+    assertEq(_voteWeights, bridgeManager.getGovernorWeights(governors));
     assertEq(bridgeOperators.length, bridgeManager.totalBridgeOperators());
     // assertEq(_sort(bridgeOperators), _sort(bridgeManager.getBridgeOperatorOf(governors)));
 

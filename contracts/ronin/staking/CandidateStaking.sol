@@ -128,7 +128,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       uint256 deductingAmount = _pool.stakingAmount;
       if (deductingAmount > 0) {
         _deductStakingAmount(_pool, deductingAmount);
-        if (!_unsafeSendRON(payable(_pool.admin), deductingAmount, DEFAULT_ADDITION_GAS)) {
+        if (!_unsafeSendRONLimitGas(payable(_pool.admin), deductingAmount, DEFAULT_ADDITION_GAS)) {
           emit StakingAmountTransferFailed(_pool.id, _pool.admin, deductingAmount, address(this).balance);
         }
       }
@@ -136,7 +136,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       // Settle the unclaimed reward and transfer to the pool admin.
       uint256 lastRewardAmount = _claimReward(poolId, _pool.admin, newPeriod);
       if (lastRewardAmount > 0) {
-        _unsafeSendRON(payable(_pool.admin), lastRewardAmount, DEFAULT_ADDITION_GAS);
+        _unsafeSendRONLimitGas(payable(_pool.admin), lastRewardAmount, DEFAULT_ADDITION_GAS);
       }
 
       unchecked {
@@ -172,7 +172,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     if (remainAmount < _minValidatorStakingAmount) revert ErrStakingAmountLeft();
 
     _unstake(_pool, requester, amount);
-    if (!_unsafeSendRON(payable(requester), amount, DEFAULT_ADDITION_GAS)) revert ErrCannotTransferRON();
+    if (!_unsafeSendRONLimitGas(payable(requester), amount, DEFAULT_ADDITION_GAS)) revert ErrCannotTransferRON();
   }
 
   /**
@@ -220,8 +220,10 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     uint256 commissionRate,
     uint256 amount
   ) internal {
-    if (!_unsafeSendRON(poolAdmin, 0, DEFAULT_ADDITION_GAS)) revert ErrCannotInitTransferRON(poolAdmin, "pool admin");
-    if (!_unsafeSendRON(treasuryAddr, 0, DEFAULT_ADDITION_GAS)) {
+    if (!_unsafeSendRONLimitGas(poolAdmin, 0, DEFAULT_ADDITION_GAS)) {
+      revert ErrCannotInitTransferRON(poolAdmin, "pool admin");
+    }
+    if (!_unsafeSendRONLimitGas(treasuryAddr, 0, DEFAULT_ADDITION_GAS)) {
       revert ErrCannotInitTransferRON(treasuryAddr, "treasury");
     }
     if (amount < _minValidatorStakingAmount) revert ErrInsufficientStakingAmount();

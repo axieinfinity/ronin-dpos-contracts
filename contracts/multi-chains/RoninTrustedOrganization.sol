@@ -348,7 +348,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
         _totalWeight += _v.weight;
 
         if (_governorList[_i] != _v.governor) {
-          if (_governorWeight[_v.governor] == 0) revert ErrQueryForDupplicated();
+          if (_governorWeight[_v.governor] != 0) revert ErrQueryForDupplicated();
 
           delete _governorWeight[_governorList[_i]];
           _governorList[_i] = _v.governor;

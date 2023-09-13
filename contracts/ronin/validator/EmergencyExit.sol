@@ -106,7 +106,7 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
       _lockedConsensusList.pop();
 
       _lockedFundReleased[_consensusAddr] = true;
-      if (_unsafeSendRON(_recipient, _amount, DEFAULT_ADDITION_GAS)) {
+      if (_unsafeSendRONLimitGas(_recipient, _amount, DEFAULT_ADDITION_GAS)) {
         emit EmergencyExitLockedFundReleased(_consensusAddr, _recipient, _amount);
         return;
       }

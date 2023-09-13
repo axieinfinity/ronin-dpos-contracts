@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import { BridgeTrackingHelper } from "../../extensions/bridge-operator-governance/BridgeTrackingHelper.sol";
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { IBridgeSlash } from "../../interfaces/bridge/IBridgeSlash.sol";
 import { IERC165, IBridgeManagerCallback } from "../../interfaces/bridge/IBridgeManagerCallback.sol";
@@ -16,11 +17,20 @@ import { ErrLengthMismatch } from "../../utils/CommonErrors.sol";
  * @title BridgeSlash
  * @dev A contract that implements slashing functionality for bridge operators based on their availability.
  */
-contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Initializable, HasContracts {
+contract BridgeSlash is
+  IBridgeSlash,
+  IBridgeManagerCallback,
+  BridgeTrackingHelper,
+  IdentityGuard,
+  Initializable,
+  HasContracts
+{
   /// @inheritdoc IBridgeSlash
   uint256 public constant TIER_1_PENALTY_DURATION = 1;
   /// @inheritdoc IBridgeSlash
   uint256 public constant TIER_2_PENALTY_DURATION = 5;
+  /// @inheritdoc IBridgeSlash
+  uint256 public constant MINIMUM_VOTE_THRESHOLD = 50;
   /// @inheritdoc IBridgeSlash
   uint256 public constant REMOVE_DURATION_THRESHOLD = 30;
 
@@ -30,17 +40,17 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   uint256 private constant TIER_2_THRESHOLD = 30_00;
   /// @dev Max percentage 100%. Values [0; 100_00] reflexes [0; 100%]
   uint256 private constant PERCENTAGE_FRACTION = 100_00;
-  /// @dev This value is set to the maximum value of uint64 to indicate a permanent slash duration.
-  uint256 private constant SLASH_PERMANENT_DURATION = type(uint64).max;
+  /// @dev This value is set to the maximum value of uint128 to indicate a permanent slash duration.
+  uint256 private constant SLASH_PERMANENT_DURATION = type(uint128).max;
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeSlash.bridgeSlashInfos.slot") - 1
   bytes32 private constant BRIDGE_SLASH_INFOS_SLOT = 0xd08d185790a07c7b9b721e2713c8580010a57f31c72c16f6e80b831d0ee45bfe;
 
   /**
-   * @dev The modifier verifies if the `totalVotesForPeriod` is non-zero, indicating the presence of ballots for the period.
-   * @param totalVotesForPeriod The total number of ballots for the period.
+   * @dev The modifier verifies if the `totalVote` is non-zero, indicating the presence of ballots for the period.
+   * @param totalVote The total number of ballots for the period.
    */
-  modifier onlyPeriodHasVotes(uint256 totalVotesForPeriod) {
-    if (totalVotesForPeriod == 0) return;
+  modifier onlyPeriodHasEnoughVotes(uint256 totalVote) {
+    if (totalVote <= MINIMUM_VOTE_THRESHOLD) return;
     _;
   }
 
@@ -59,47 +69,28 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   }
 
   /**
-   * @inheritdoc IHasContracts
-   */
-  function setContract(ContractType contractType, address addr) external override onlySelfCall {
-    _requireHasCode(addr);
-    _setContract(contractType, addr);
-  }
-
-  /**
    * @inheritdoc IBridgeManagerCallback
    */
   function onBridgeOperatorsAdded(
     address[] calldata bridgeOperators,
     bool[] memory addeds
   ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
-    if (bridgeOperators.length != addeds.length) revert ErrLengthMismatch(msg.sig);
-
-    uint256 numAdded;
     uint256 length = bridgeOperators.length;
-    if (length != 0) {
-      address[] memory adddedBridgeOperators = new address[](length);
-      mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
-      uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
+    if (length != addeds.length) revert ErrLengthMismatch(msg.sig);
+    if (length == 0) {
+      return IBridgeManagerCallback.onBridgeOperatorsAdded.selector;
+    }
 
-      for (uint256 i; i < length; ) {
-        unchecked {
-          if (addeds[i]) {
-            _bridgeSlashInfos[bridgeOperators[i]].newlyAddedAtPeriod = uint192(currentPeriod);
-            adddedBridgeOperators[numAdded++] = bridgeOperators[i];
-          }
+    mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
+    uint256 currentPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
 
-          ++i;
+    for (uint256 i; i < length; ) {
+      unchecked {
+        if (addeds[i]) {
+          _bridgeSlashInfos[bridgeOperators[i]].newlyAddedAtPeriod = uint128(currentPeriod);
         }
-      }
 
-      // resize adddedBridgeOperators array
-      assembly {
-        mstore(adddedBridgeOperators, numAdded)
-      }
-
-      if (numAdded != 0) {
-        emit NewBridgeOperatorsAdded(currentPeriod, adddedBridgeOperators);
+        ++i;
       }
     }
 
@@ -111,25 +102,12 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
    */
   function onBridgeOperatorUpdated(
     address currentBridgeOperator,
-    address newBridgeOperator,
-    bool updated
+    address newBridgeOperator
   ) external onlyContract(ContractType.BRIDGE_MANAGER) returns (bytes4) {
-    if (updated) {
-      mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
-      BridgeSlashInfo memory currentSlashInfo = _bridgeSlashInfos[currentBridgeOperator];
-      BridgeSlashInfo memory newSlashInfo = _bridgeSlashInfos[newBridgeOperator];
+    mapping(address => BridgeSlashInfo) storage _bridgeSlashInfos = _getBridgeSlashInfos();
 
-      newSlashInfo.slashUntilPeriod = uint64(
-        Math.max(currentSlashInfo.slashUntilPeriod, newSlashInfo.slashUntilPeriod)
-      );
-      newSlashInfo.newlyAddedAtPeriod = uint192(
-        Math.max(currentSlashInfo.newlyAddedAtPeriod, newSlashInfo.newlyAddedAtPeriod)
-      );
-
-      _bridgeSlashInfos[newBridgeOperator] = newSlashInfo;
-
-      delete _bridgeSlashInfos[currentBridgeOperator];
-    }
+    _bridgeSlashInfos[newBridgeOperator] = _bridgeSlashInfos[currentBridgeOperator];
+    delete _bridgeSlashInfos[currentBridgeOperator];
 
     return IBridgeManagerCallback.onBridgeOperatorUpdated.selector;
   }
@@ -140,13 +118,16 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   function execSlashBridgeOperators(
     address[] memory allBridgeOperators,
     uint256[] memory ballots,
-    uint256 totalVotesForPeriod,
+    uint256 totalBallot,
+    uint256 totalVote,
     uint256 period
-  ) external onlyContract(ContractType.BRIDGE_TRACKING) onlyPeriodHasVotes(totalVotesForPeriod) returns (bool slashed) {
+  ) external onlyContract(ContractType.BRIDGE_TRACKING) onlyPeriodHasEnoughVotes(totalVote) returns (bool slashed) {
     uint256 length = allBridgeOperators.length;
     if (length != ballots.length) revert ErrLengthMismatch(msg.sig);
-    if (length == 0) {
-      return slashed;
+    if (length == 0) return false;
+    if (!_isValidBridgeTrackingResponse(totalBallot, totalVote, ballots)) {
+      emit BridgeTrackingIncorrectlyResponded();
+      return false;
     }
 
     // Get penalty durations for each slash tier.
@@ -168,7 +149,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
       // Bridge operators added in current period will not be slashed.
       if (status.newlyAddedAtPeriod < period) {
         // Determine the slash tier for the bridge operator based on their ballots.
-        tier = _getSlashTier(ballots[i], totalVotesForPeriod);
+        tier = _getSlashTier(ballots[i], totalVote);
 
         slashUntilPeriod = _calcSlashUntilPeriod(tier, period, status.slashUntilPeriod, penaltyDurations);
 
@@ -188,7 +169,7 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
           }
 
           // Store updated slash until period
-          _bridgeSlashInfos[bridgeOperator].slashUntilPeriod = uint64(slashUntilPeriod);
+          _bridgeSlashInfos[bridgeOperator].slashUntilPeriod = uint128(slashUntilPeriod);
         }
       }
 
@@ -259,8 +240,8 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
   /**
    * @inheritdoc IBridgeSlash
    */
-  function getSlashTier(uint256 ballot, uint256 totalVotes) external pure returns (Tier tier) {
-    tier = _getSlashTier(ballot, totalVotes);
+  function getSlashTier(uint256 ballot, uint256 totalVote) external pure returns (Tier tier) {
+    tier = _getSlashTier(ballot, totalVote);
   }
 
   /**
@@ -294,8 +275,15 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
     newSlashUntilPeriod = penaltyDurations[uint8(tier)] + Math.max(period - 1, slashUntilPeriod);
   }
 
-  function _getSlashTier(uint256 ballot, uint256 totalVotes) internal pure virtual returns (Tier tier) {
-    uint256 ratio = ((totalVotes - ballot) * PERCENTAGE_FRACTION) / totalVotes;
+  /**
+   * @dev Internal function to determine the slashing tier based on the given ballot count and total votes.
+   * @param ballot The individual ballot count of a bridge operator.
+   * @param totalVote The total number of votes recorded for the bridge operator.
+   * @return tier The calculated slashing tier for the bridge operator.
+   * @notice The `ratio` is calculated as the percentage of uncast votes (totalVote - ballot) relative to the total votes.
+   */
+  function _getSlashTier(uint256 ballot, uint256 totalVote) internal pure virtual returns (Tier tier) {
+    uint256 ratio = ((totalVote - ballot) * PERCENTAGE_FRACTION) / totalVote;
     tier = ratio > TIER_2_THRESHOLD ? Tier.Tier2 : ratio > TIER_1_THRESHOLD ? Tier.Tier1 : Tier.Tier0;
   }
 
@@ -304,11 +292,15 @@ contract BridgeSlash is IBridgeSlash, IBridgeManagerCallback, IdentityGuard, Ini
    * @return bridgeSlashInfos the mapping from bridge operator => BridgeSlashInfo.
    */
   function _getBridgeSlashInfos() internal pure returns (mapping(address => BridgeSlashInfo) storage bridgeSlashInfos) {
-    assembly {
+    assembly ("memory-safe") {
       bridgeSlashInfos.slot := BRIDGE_SLASH_INFOS_SLOT
     }
   }
 
+  /**
+   * @dev Internal function to retrieve the penalty durations for each slashing tier.
+   * @return penaltyDurations An array containing the penalty durations for Tier0, Tier1, and Tier2 in that order.
+   */
   function _getPenaltyDurations() internal pure virtual returns (uint256[] memory penaltyDurations) {
     // reserve index 0
     penaltyDurations = new uint256[](3);

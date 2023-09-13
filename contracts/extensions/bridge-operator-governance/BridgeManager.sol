@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { IBridgeManagerCallback, EnumerableSet, BridgeManagerCallbackRegister } from "./BridgeManagerCallbackRegister.sol";
 import { IHasContracts, HasContracts } from "../../extensions/collections/HasContracts.sol";
 import { IQuorum } from "../../interfaces/IQuorum.sol";
@@ -13,7 +12,6 @@ import { TUint256Slot } from "../../types/Types.sol";
 import "../../utils/CommonErrors.sol";
 
 abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbackRegister, HasContracts {
-  using SafeCast for uint256;
   using AddressArrayUtils for address[];
   using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -61,6 +59,11 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    */
   bytes32 public immutable DOMAIN_SEPARATOR;
 
+  modifier onlyGovernor() virtual {
+    _requireGovernor(msg.sender);
+    _;
+  }
+
   constructor(
     uint256 num,
     uint256 denom,
@@ -69,7 +72,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     address[] memory callbackRegisters,
     address[] memory bridgeOperators,
     address[] memory governors,
-    uint256[] memory voteWeights
+    uint96[] memory voteWeights
   ) payable BridgeManagerCallbackRegister(callbackRegisters) {
     NONCE_SLOT.store(1);
     NUMERATOR_SLOT.store(num);
@@ -93,7 +96,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @inheritdoc IBridgeManager
    */
   function addBridgeOperators(
-    uint256[] calldata voteWeights,
+    uint96[] calldata voteWeights,
     address[] calldata governors,
     address[] calldata bridgeOperators
   ) external onlySelfCall returns (bool[] memory addeds) {
@@ -106,35 +109,38 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   function removeBridgeOperators(
     address[] calldata bridgeOperators
   ) external onlySelfCall returns (bool[] memory removeds) {
-    return _removeBridgeOperators(bridgeOperators);
+    removeds = _removeBridgeOperators(bridgeOperators);
   }
 
   /**
    * @inheritdoc IBridgeManager
+   * @notice This method checks authorization by querying the corresponding operator of the msg.sender and then
+   * attempts to remove it from the `_bridgeOperatorSet` for gas optimization. In case we allow a governor can leave
+   * their operator address blank null `address(0)`, consider add authorization check.
    */
-  function updateBridgeOperator(address newBridgeOperator) external returns (bool updated) {
-    _requireCreatedEOA(newBridgeOperator);
+  function updateBridgeOperator(address newBridgeOperator) external onlyGovernor {
+    _requireNonZeroAddress(newBridgeOperator);
 
-    mapping(address => address) storage _governorOf = _getGovernorOf();
-    EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
+    // Queries the previous bridge operator
     mapping(address => BridgeOperatorInfo) storage _gorvernorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
     address currentBridgeOperator = _gorvernorToBridgeOperatorInfo[msg.sender].addr;
-
-    // return false if currentBridgeOperator unexists in _bridgeOperatorSet
-    if (!_bridgeOperatorSet.remove(currentBridgeOperator)) {
-      revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
+    if (currentBridgeOperator == newBridgeOperator) {
+      revert ErrBridgeOperatorAlreadyExisted(newBridgeOperator);
     }
-    updated = _bridgeOperatorSet.add(newBridgeOperator);
-    if (!updated) revert ErrBridgeOperatorAlreadyExisted(newBridgeOperator);
 
-    _gorvernorToBridgeOperatorInfo[msg.sender].addr = newBridgeOperator;
-    _governorOf[newBridgeOperator] = msg.sender;
+    // Tries replace the bridge operator
+    EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
+    bool updated = _bridgeOperatorSet.remove(currentBridgeOperator) && _bridgeOperatorSet.add(newBridgeOperator);
+    if (!updated) revert ErrBridgeOperatorUpdateFailed(newBridgeOperator);
 
+    mapping(address => address) storage _governorOf = _getGovernorOf();
     delete _governorOf[currentBridgeOperator];
+    _governorOf[newBridgeOperator] = msg.sender;
+    _gorvernorToBridgeOperatorInfo[msg.sender].addr = newBridgeOperator;
 
     _notifyRegisters(
       IBridgeManagerCallback.onBridgeOperatorUpdated.selector,
-      abi.encode(currentBridgeOperator, newBridgeOperator, updated)
+      abi.encode(currentBridgeOperator, newBridgeOperator)
     );
 
     emit BridgeOperatorUpdated(msg.sender, currentBridgeOperator, newBridgeOperator);
@@ -175,16 +181,17 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function sumGovernorsWeight(address[] memory governors) public view nonDuplicate(governors) returns (uint256 sum) {
-    uint256 length = _getBridgeOperatorSet().length();
-    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
-    for (uint256 i; i < length; ) {
-      sum += _governorToBridgeOperatorInfo[governors[i]].voteWeight;
+  function getGovernorWeight(address governor) external view returns (uint256 weight) {
+    weight = _getGovernorWeight(governor);
+  }
 
-      unchecked {
-        ++i;
-      }
-    }
+  /**
+   * @inheritdoc IBridgeManager
+   */
+  function sumGovernorsWeight(
+    address[] calldata governors
+  ) external view nonDuplicate(governors) returns (uint256 sum) {
+    sum = _sumGovernorsWeight(governors);
   }
 
   /**
@@ -218,19 +225,22 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   /**
    * @inheritdoc IBridgeManager
    */
-  function getBridgeOperatorOf(address[] calldata governors) external view returns (address[] memory bridgeOperators_) {
+  function getBridgeOperatorOf(address[] memory governors) public view returns (address[] memory bridgeOperators) {
     uint256 length = governors.length;
-    bridgeOperators_ = new address[](length);
+    bridgeOperators = new address[](length);
 
     mapping(address => BridgeOperatorInfo) storage _gorvernorToBridgeOperator = _getGovernorToBridgeOperatorInfo();
     for (uint256 i; i < length; ) {
-      bridgeOperators_[i] = _gorvernorToBridgeOperator[governors[i]].addr;
+      bridgeOperators[i] = _gorvernorToBridgeOperator[governors[i]].addr;
       unchecked {
         ++i;
       }
     }
   }
 
+  /**
+   * @inheritdoc IBridgeManager
+   */
   function getGovernorsOf(address[] calldata bridgeOperators) external view returns (address[] memory governors) {
     uint256 length = bridgeOperators.length;
     governors = new address[](length);
@@ -253,8 +263,17 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     returns (address[] memory governors, address[] memory bridgeOperators, uint256[] memory weights)
   {
     governors = _getGovernors();
-    bridgeOperators = _getBridgeOperators();
+    bridgeOperators = getBridgeOperatorOf(governors);
     weights = _getGovernorWeights(governors);
+  }
+
+  /**
+   * @inheritdoc IBridgeManager
+   */
+  function getBridgeOperatorWeight(address bridgeOperator) external view returns (uint256 weight) {
+    mapping(address => address) storage _governorOf = _getGovernorOf();
+    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+    weight = _governorToBridgeOperatorInfo[_governorOf[bridgeOperator]].voteWeight;
   }
 
   /**
@@ -292,7 +311,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
    * @return addeds An array of boolean values indicating whether each bridge operator was successfully added.
    */
   function _addBridgeOperators(
-    uint256[] memory voteWeights,
+    uint96[] memory voteWeights,
     address[] memory governors,
     address[] memory bridgeOperators
   ) internal nonDuplicate(governors.extend(bridgeOperators)) returns (bool[] memory addeds) {
@@ -300,50 +319,42 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     if (!(length == voteWeights.length && length == governors.length)) revert ErrLengthMismatch(msg.sig);
     addeds = new bool[](length);
     // simply skip add operations if inputs are empty.
-    if (length == 0) {
-      return addeds;
-    }
+    if (length == 0) return addeds;
 
     EnumerableSet.AddressSet storage _governorSet = _getGovernorsSet();
     mapping(address => address) storage _governorOf = _getGovernorOf();
     EnumerableSet.AddressSet storage _bridgeOperatorSet = _getBridgeOperatorSet();
     mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
 
-    // get rid of stack too deep
+    address governor;
+    address bridgeOperator;
     uint256 accumulatedWeight;
-    {
-      address governor;
-      address bridgeOperator;
-      BridgeOperatorInfo memory bridgeOperatorInfo;
+    BridgeOperatorInfo memory bridgeOperatorInfo;
 
-      for (uint256 i; i < length; ) {
-        governor = governors[i];
-        bridgeOperator = bridgeOperators[i];
+    for (uint256 i; i < length; ) {
+      governor = governors[i];
+      bridgeOperator = bridgeOperators[i];
 
-        _requireCreatedEOA(governor);
-        _requireCreatedEOA(bridgeOperator);
-        if (voteWeights[i].toUint96() == 0) revert ErrInvalidVoteWeight(msg.sig);
+      _requireNonZeroAddress(governor);
+      _requireNonZeroAddress(bridgeOperator);
+      if (voteWeights[i] == 0) revert ErrInvalidVoteWeight(msg.sig);
 
-        addeds[i] = !(_governorSet.contains(governor) ||
-          _governorSet.contains(bridgeOperator) ||
-          _bridgeOperatorSet.contains(governor) ||
-          _bridgeOperatorSet.contains(bridgeOperator));
+      addeds[i] = !(_governorSet.contains(governor) ||
+        _governorSet.contains(bridgeOperator) ||
+        _bridgeOperatorSet.contains(governor) ||
+        _bridgeOperatorSet.contains(bridgeOperator));
 
-        if (addeds[i]) {
-          _governorSet.add(governor);
-          _bridgeOperatorSet.add(bridgeOperator);
-          _governorOf[bridgeOperator] = governor;
-          // get rid of stack too deep
-          // bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
-          // accumulatedWeight += bridgeOperatorInfo.voteWeight
-          bridgeOperatorInfo.addr = bridgeOperator;
-          accumulatedWeight += bridgeOperatorInfo.voteWeight = voteWeights[i].toUint96();
-          _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
-        }
+      if (addeds[i]) {
+        _governorSet.add(governor);
+        _bridgeOperatorSet.add(bridgeOperator);
+        _governorOf[bridgeOperator] = governor;
+        bridgeOperatorInfo.addr = bridgeOperator;
+        accumulatedWeight += bridgeOperatorInfo.voteWeight = voteWeights[i];
+        _governorToBridgeOperatorInfo[governor] = bridgeOperatorInfo;
+      }
 
-        unchecked {
-          ++i;
-        }
+      unchecked {
+        ++i;
       }
     }
 
@@ -371,9 +382,7 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
     uint256 length = bridgeOperators.length;
     removeds = new bool[](length);
     // simply skip remove operations if inputs are empty.
-    if (length == 0) {
-      return removeds;
-    }
+    if (length == 0) return removeds;
 
     mapping(address => address) storage _governorOf = _getGovernorOf();
     EnumerableSet.AddressSet storage _governorSet = _getGovernorsSet();
@@ -426,25 +435,38 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   function _setThreshold(
     uint256 numerator,
     uint256 denominator
-  ) internal virtual returns (uint256 _previousNum, uint256 _previousDenom) {
+  ) internal virtual returns (uint256 previousNum, uint256 previousDenom) {
     if (numerator > denominator) revert ErrInvalidThreshold(msg.sig);
 
-    _previousNum = NUMERATOR_SLOT.load();
-    _previousDenom = DENOMINATOR_SLOT.load();
+    previousNum = NUMERATOR_SLOT.load();
+    previousDenom = DENOMINATOR_SLOT.load();
     NUMERATOR_SLOT.store(numerator);
     DENOMINATOR_SLOT.store(denominator);
 
-    emit ThresholdUpdated(NONCE_SLOT.postIncrement(), numerator, denominator, _previousNum, _previousDenom);
+    emit ThresholdUpdated(NONCE_SLOT.postIncrement(), numerator, denominator, previousNum, previousDenom);
   }
 
+  /**
+   * @dev Internal function to get all bridge operators.
+   * @return bridgeOperators An array containing all the registered bridge operator addresses.
+   */
   function _getBridgeOperators() internal view returns (address[] memory) {
     return _getBridgeOperatorSet().values();
   }
 
+  /**
+   * @dev Internal function to get all governors.
+   * @return governors An array containing all the registered governor addresses.
+   */
   function _getGovernors() internal view returns (address[] memory) {
     return _getGovernorsSet().values();
   }
 
+  /**
+   * @dev Internal function to get the vote weights of a given array of governors.
+   * @param governors An array containing the addresses of governors.
+   * @return weights An array containing the vote weights of the corresponding governors.
+   */
   function _getGovernorWeights(address[] memory governors) internal view returns (uint256[] memory weights) {
     uint256 length = governors.length;
     weights = new uint256[](length);
@@ -458,46 +480,85 @@ abstract contract BridgeManager is IQuorum, IBridgeManager, BridgeManagerCallbac
   }
 
   /**
+   * @dev Internal function to calculate the sum of vote weights for a given array of governors.
+   * @param governors An array containing the addresses of governors to calculate the sum of vote weights.
+   * @return sum The total sum of vote weights for the provided governors.
+   * @notice The input array `governors` must contain unique addresses to avoid duplicate calculations.
+   */
+  function _sumGovernorsWeight(address[] memory governors) internal view nonDuplicate(governors) returns (uint256 sum) {
+    uint256 length = _getBridgeOperatorSet().length();
+    mapping(address => BridgeOperatorInfo) storage _governorToBridgeOperatorInfo = _getGovernorToBridgeOperatorInfo();
+
+    for (uint256 i; i < length; ) {
+      sum += _governorToBridgeOperatorInfo[governors[i]].voteWeight;
+
+      unchecked {
+        ++i;
+      }
+    }
+  }
+
+  /**
+   * @dev Internal function to require that the caller has governor role access.
+   * @param addr The address to check for governor role access.
+   * @dev If the address does not have governor role access (vote weight is zero), a revert with the corresponding error message is triggered.
+   */
+  function _requireGovernor(address addr) internal view {
+    if (_getGovernorWeight(addr) == 0) {
+      revert ErrUnauthorized(msg.sig, RoleAccess.GOVERNOR);
+    }
+  }
+
+  /**
+   * @dev Internal function to retrieve the vote weight of a specific governor.
+   * @param governor The address of the governor to get the vote weight for.
+   * @return voteWeight The vote weight of the specified governor.
+   */
+  function _getGovernorWeight(address governor) internal view returns (uint256) {
+    return _getGovernorToBridgeOperatorInfo()[governor].voteWeight;
+  }
+
+  /**
    * @dev Internal function to access the address set of bridge operators.
    * @return bridgeOperators the storage address set.
    */
   function _getBridgeOperatorSet() internal pure returns (EnumerableSet.AddressSet storage bridgeOperators) {
-    assembly {
+    assembly ("memory-safe") {
       bridgeOperators.slot := BRIDGE_OPERATOR_SET_SLOT
     }
   }
 
   /**
    * @dev Internal function to access the address set of bridge operators.
-   * @return governors_ the storage address set.
+   * @return governors the storage address set.
    */
-  function _getGovernorsSet() internal pure returns (EnumerableSet.AddressSet storage governors_) {
-    assembly {
-      governors_.slot := GOVERNOR_SET_SLOT
+  function _getGovernorsSet() internal pure returns (EnumerableSet.AddressSet storage governors) {
+    assembly ("memory-safe") {
+      governors.slot := GOVERNOR_SET_SLOT
     }
   }
 
   /**
    * @dev Internal function to access the mapping from governor => BridgeOperatorInfo.
-   * @return governorToBridgeOperatorInfo_ the mapping from governor => BridgeOperatorInfo.
+   * @return governorToBridgeOperatorInfo the mapping from governor => BridgeOperatorInfo.
    */
   function _getGovernorToBridgeOperatorInfo()
     internal
     pure
-    returns (mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo_)
+    returns (mapping(address => BridgeOperatorInfo) storage governorToBridgeOperatorInfo)
   {
-    assembly {
-      governorToBridgeOperatorInfo_.slot := GOVERNOR_TO_BRIDGE_OPERATOR_INFO_SLOT
+    assembly ("memory-safe") {
+      governorToBridgeOperatorInfo.slot := GOVERNOR_TO_BRIDGE_OPERATOR_INFO_SLOT
     }
   }
 
   /**
    * @dev Internal function to access the mapping from bridge operator => governor.
-   * @return govenorOf_ the mapping from bridge operator => governor.
+   * @return governorOf the mapping from bridge operator => governor.
    */
-  function _getGovernorOf() internal pure returns (mapping(address => address) storage govenorOf_) {
-    assembly {
-      govenorOf_.slot := GOVENOR_OF_SLOT
+  function _getGovernorOf() internal pure returns (mapping(address => address) storage governorOf) {
+    assembly ("memory-safe") {
+      governorOf.slot := GOVENOR_OF_SLOT
     }
   }
 }

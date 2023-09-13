@@ -36,6 +36,7 @@ import {
   createManyOperatorTuples,
   createOperatorTuple,
 } from '../helpers/address-set-types/operator-tuple-type';
+import { BridgeManagerInterface } from '../../src/script/bridge-admin-interface';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
@@ -51,6 +52,7 @@ let roninValidatorSet: MockRoninValidatorSetExtended;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 let bridgeManager: RoninBridgeManager;
+let bridgeManagerInterface: BridgeManagerInterface;
 
 let period: BigNumberish;
 
@@ -84,7 +86,6 @@ describe('Bridge Tracking test', () => {
       stakingContractAddress,
       validatorContractAddress,
       bridgeTrackingAddress,
-      profileAddress,
       roninBridgeManagerAddress,
       bridgeSlashAddress,
       bridgeRewardAddress,
@@ -111,9 +112,13 @@ describe('Bridge Tracking test', () => {
       bridgeManagerArguments: {
         numerator: bridgeAdminNumerator,
         denominator: bridgeAdminDenominator,
-        operators: operatorTuples.map((_) => _.operator.address),
-        governors: operatorTuples.map((_) => _.governor.address),
-        weights: operatorTuples.map((_) => 100),
+        members: operatorTuples.map((_) => {
+          return {
+            operator: _.operator.address,
+            governor: _.governor.address,
+            weight: 100,
+          };
+        }),
       },
     });
 
@@ -128,20 +133,23 @@ describe('Bridge Tracking test', () => {
       undefined,
       ...trustedOrgs.map((_) => _.governor)
     );
+    bridgeManagerInterface = new BridgeManagerInterface(
+      bridgeManager,
+      network.config.chainId!,
+      undefined,
+      ...operatorTuples.map((_) => _.governor)
+    );
 
     mockGateway = await new MockGatewayForTracking__factory(deployer).deploy(bridgeTrackingAddress);
     await mockGateway.deployed();
 
-    await governanceAdminInterface.functionDelegateCalls(
-      [bridgeTracking.address, governanceAdmin.address],
-      [
-        bridgeTracking.interface.encodeFunctionData('setContract', [ContractType.BRIDGE, mockGateway.address]),
-        governanceAdmin.interface.encodeFunctionData('changeProxyAdmin', [
-          bridgeTracking.address,
-          bridgeManager.address,
-        ]),
-      ]
+    let setContractTx = await bridgeManagerInterface.functionDelegateCall(
+      bridgeTracking.address,
+      bridgeTracking.interface.encodeFunctionData('setContract', [ContractType.BRIDGE, mockGateway.address])
     );
+    await expect(setContractTx)
+      .emit(bridgeTracking, 'ContractUpdated')
+      .withArgs(ContractType.BRIDGE, mockGateway.address);
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
@@ -213,9 +221,9 @@ describe('Bridge Tracking test', () => {
           [operatorTuples[0], operatorTuples[1]].map((_) => _.operator.address)
         );
 
-        expect(await bridgeTracking.totalVotes(period)).eq(0);
-        expect(await bridgeTracking.totalBallots(period)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(0);
+        expect(await bridgeTracking.totalVote(period)).eq(0);
+        expect(await bridgeTracking.totalBallot(period)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(0);
       });
 
       it('Should be able to approve the receipts', async () => {
@@ -223,9 +231,9 @@ describe('Bridge Tracking test', () => {
       });
 
       it('Should not record the approved receipts once the epoch is not yet wrapped up', async () => {
-        expect(await bridgeTracking.totalVotes(period)).eq(0);
-        expect(await bridgeTracking.totalBallots(period)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(0);
+        expect(await bridgeTracking.totalVote(period)).eq(0);
+        expect(await bridgeTracking.totalBallot(period)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(0);
       });
     });
 
@@ -236,10 +244,10 @@ describe('Bridge Tracking test', () => {
           await roninValidatorSet.connect(coinbase).wrapUpEpoch();
         });
         const expectTotalVotes = 1;
-        expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 2);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalVote(period)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallot(period)).eq(expectTotalVotes * 2);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
       });
       it('Should still be able to record for those who vote lately once the request is approved', async () => {
         await mockGateway.sendBallot(
@@ -252,11 +260,11 @@ describe('Bridge Tracking test', () => {
           await roninValidatorSet.connect(coinbase).wrapUpEpoch();
         });
         const expectTotalVotes = 1;
-        expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 3);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalVote(period)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallot(period)).eq(expectTotalVotes * 3);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
       });
     });
 
@@ -277,20 +285,20 @@ describe('Bridge Tracking test', () => {
         );
 
         let expectTotalVotes = 1;
-        expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 3);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[3].operator.address)).eq(0);
+        expect(await bridgeTracking.totalVote(period)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallot(period)).eq(expectTotalVotes * 3);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[3].operator.address)).eq(0);
 
         period = newPeriod;
-        expect(await bridgeTracking.totalVotes(newPeriod)).eq(0);
-        expect(await bridgeTracking.totalBallots(newPeriod)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(newPeriod, operatorTuples[0].operator.address)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(newPeriod, operatorTuples[1].operator.address)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(newPeriod, operatorTuples[2].operator.address)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(newPeriod, operatorTuples[3].operator.address)).eq(0);
+        expect(await bridgeTracking.totalVote(newPeriod)).eq(0);
+        expect(await bridgeTracking.totalBallot(newPeriod)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(newPeriod, operatorTuples[0].operator.address)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(newPeriod, operatorTuples[1].operator.address)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(newPeriod, operatorTuples[2].operator.address)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(newPeriod, operatorTuples[3].operator.address)).eq(0);
       });
     });
   });
@@ -311,17 +319,17 @@ describe('Bridge Tracking test', () => {
           receipt.id,
           [operatorTuples[0], operatorTuples[1]].map((_) => _.operator.address)
         );
-        expect(await bridgeTracking.totalVotes(period)).eq(0);
-        expect(await bridgeTracking.totalBallots(period)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(0);
+        expect(await bridgeTracking.totalVote(period)).eq(0);
+        expect(await bridgeTracking.totalBallot(period)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(0);
       });
       it('Should not record when approve. Approve in last epoch (e-1).', async () => {
         await mockGateway.sendApprovedVote(receipt.kind, receipt.id);
-        expect(await bridgeTracking.totalVotes(period)).eq(0);
-        expect(await bridgeTracking.totalBallots(period)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(0);
+        expect(await bridgeTracking.totalVote(period)).eq(0);
+        expect(await bridgeTracking.totalBallot(period)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(0);
       });
       it('Should not record even after approved. Vote in last epoch (e-1).', async () => {
         await mockGateway.sendBallot(
@@ -329,11 +337,11 @@ describe('Bridge Tracking test', () => {
           receipt.id,
           [operatorTuples[2]].map((_) => _.operator.address)
         );
-        expect(await bridgeTracking.totalVotes(period)).eq(0);
-        expect(await bridgeTracking.totalBallots(period)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(0);
+        expect(await bridgeTracking.totalVote(period)).eq(0);
+        expect(await bridgeTracking.totalBallot(period)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[2].operator.address)).eq(0);
       });
     });
 
@@ -346,25 +354,25 @@ describe('Bridge Tracking test', () => {
         });
         const newPeriod = await roninValidatorSet.currentPeriod();
         expect(newPeriod).not.eq(period);
-        expect(await bridgeTracking.totalVotes(period)).eq(0);
-        expect(await bridgeTracking.totalBallots(period)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(0);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(0);
+        expect(await bridgeTracking.totalVote(period)).eq(0);
+        expect(await bridgeTracking.totalBallot(period)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(0);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(0);
         period = newPeriod;
         let expectTotalVotes = 1;
-        expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 3);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalVote(period)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallot(period)).eq(expectTotalVotes * 3);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
       });
       it('Should record for the buffer metric when wrapping up period. Query in next epoch (e), for next period (p): return >0 (buffer).', async () => {
         let expectTotalVotes = 1;
-        expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 3);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalVote(period)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallot(period)).eq(expectTotalVotes * 3);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
       });
       it('Should record new ballot for the buffer metric ', async () => {
         await mockGateway.sendBallot(
@@ -373,22 +381,22 @@ describe('Bridge Tracking test', () => {
           [operatorTuples[3]].map((_) => _.operator.address)
         );
         let expectTotalVotes = 1;
-        expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 4);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[3].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalVote(period)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallot(period)).eq(expectTotalVotes * 4);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[3].operator.address)).eq(expectTotalVotes);
         await mineBatchTxs(async () => {
           await roninValidatorSet.endEpoch();
           await roninValidatorSet.connect(coinbase).wrapUpEpoch();
         });
-        expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 4);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[3].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalVote(period)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallot(period)).eq(expectTotalVotes * 4);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[3].operator.address)).eq(expectTotalVotes);
       });
     });
 
@@ -400,25 +408,25 @@ describe('Bridge Tracking test', () => {
           [operatorTuples[4]].map((_) => _.operator.address)
         );
         let expectTotalVotes = 1;
-        expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 5);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[3].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[4].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalVote(period)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallot(period)).eq(expectTotalVotes * 5);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[3].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[4].operator.address)).eq(expectTotalVotes);
         await EpochController.setTimestampToPeriodEnding();
         await mineBatchTxs(async () => {
           await roninValidatorSet.endEpoch();
           await roninValidatorSet.connect(coinbase).wrapUpEpoch();
         });
-        expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 5);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[3].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[4].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalVote(period)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallot(period)).eq(expectTotalVotes * 5);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[3].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[4].operator.address)).eq(expectTotalVotes);
       });
     });
 
@@ -430,14 +438,14 @@ describe('Bridge Tracking test', () => {
           [operatorTuples[5]].map((_) => _.operator.address)
         );
         let expectTotalVotes = 1;
-        expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 5);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[3].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[4].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[5].operator.address)).eq(0);
+        expect(await bridgeTracking.totalVote(period)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallot(period)).eq(expectTotalVotes * 5);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[3].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[4].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[5].operator.address)).eq(0);
         await EpochController.setTimestampToPeriodEnding();
         await mineBatchTxs(async () => {
           await roninValidatorSet.endEpoch();
@@ -449,13 +457,13 @@ describe('Bridge Tracking test', () => {
       });
       it('Should the metric of the new period get reset', async () => {
         let expectTotalVotes = 0;
-        expect(await bridgeTracking.totalVotes(period)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallots(period)).eq(expectTotalVotes * 4);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[3].operator.address)).eq(expectTotalVotes);
-        expect(await bridgeTracking.totalBallotsOf(period, operatorTuples[4].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalVote(period)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallot(period)).eq(expectTotalVotes * 4);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[0].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[1].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[2].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[3].operator.address)).eq(expectTotalVotes);
+        expect(await bridgeTracking.totalBallotOf(period, operatorTuples[4].operator.address)).eq(expectTotalVotes);
       });
     });
   });

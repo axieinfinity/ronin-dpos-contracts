@@ -14,12 +14,12 @@ import { RoninBridgeManager } from "@ronin/contracts/ronin/gateway/RoninBridgeMa
 import { Math } from "@ronin/contracts/libraries/Math.sol";
 import { RoleAccess, ContractType, AddressArrayUtils, MockBridgeManager } from "@ronin/contracts/mocks/ronin/MockBridgeManager.sol";
 import { ErrProxyCallFailed, ErrorHandler } from "@ronin/contracts/libraries/ErrorHandler.sol";
-import { IBridgeSlashEventsTest } from "./interfaces/IBridgeSlashEvents.t.sol";
+import { IBridgeSlashEvents } from "@ronin/contracts/interfaces/bridge/events/IBridgeSlashEvents.sol";
 
-contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
+contract BridgeSlashTest is IBridgeSlashEvents, BridgeManagerUtils {
   using ErrorHandler for bool;
-  using LibArrayUtils for uint256[];
-  using AddressArrayUtils for address[];
+  using LibArrayUtils for *;
+  using AddressArrayUtils for *;
 
   uint256 internal constant MIN_PERIOD_DURATION = 1;
   uint256 internal constant MAX_PERIOD_DURATION = 20;
@@ -47,18 +47,18 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
    * @notice Tests the fuzz slash tier logic by simulating the slash calculation for a given ballot and total ballots.
    * @dev This function is for testing purposes only.
    * @param ballot The number of ballots for the specific bridge operator.
-   * @param totalVotes The total number of votes for the period.
+   * @param totalVote The total number of votes for the period.
    * @param period The current period.
    * @param slashUntilPeriod The slash until period for the bridge operator.
    */
-  function test_Fuzz_SlashTierLogic(uint96 ballot, uint96 totalVotes, uint64 period, uint64 slashUntilPeriod) external {
-    // Assume period is not zero and totalVotes is not zero, and ballot is less than totalVotes
+  function test_Fuzz_SlashTierLogic(uint96 ballot, uint96 totalVote, uint64 period, uint64 slashUntilPeriod) external {
+    // Assume period is not zero and totalVote is not zero, and ballot is less than totalVote
     vm.assume(period != 0);
-    vm.assume(totalVotes != 0 && ballot < totalVotes);
+    vm.assume(totalVote >= IBridgeSlash(_bridgeSlashContract).MINIMUM_VOTE_THRESHOLD() && ballot < totalVote);
 
     // Get the bridge slash contract and determine the slash tier
     IBridgeSlash bridgeSlashContract = IBridgeSlash(_bridgeSlashContract);
-    IBridgeSlash.Tier tier = bridgeSlashContract.getSlashTier(ballot, totalVotes);
+    IBridgeSlash.Tier tier = bridgeSlashContract.getSlashTier(ballot, totalVote);
     // Calculate the new slash until period using the mock bridge slash contract
     uint256 newSlashUntilPeriod = MockBridgeSlash(payable(_bridgeSlashContract)).calcSlashUntilPeriod(
       tier,
@@ -70,14 +70,14 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     console.log("tier", "period", "slashUntilPeriod", "newSlashUntilPeriod");
     console.log(uint8(tier), period, slashUntilPeriod, newSlashUntilPeriod);
 
-    if (tier == IBridgeSlash.Tier.Tier1) {
+    if (tier == Tier.Tier1) {
       // Check the slash duration for Tier 1
       if (period <= slashUntilPeriod) {
         assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + bridgeSlashContract.TIER_1_PENALTY_DURATION());
       } else {
         assertTrue(newSlashUntilPeriod == period + bridgeSlashContract.TIER_1_PENALTY_DURATION() - 1);
       }
-    } else if (tier == IBridgeSlash.Tier.Tier2) {
+    } else if (tier == Tier.Tier2) {
       // Check the slash duration for Tier 2
       if (period <= slashUntilPeriod) {
         assertTrue(newSlashUntilPeriod == uint256(slashUntilPeriod) + bridgeSlashContract.TIER_2_PENALTY_DURATION());
@@ -110,6 +110,9 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     uint256 numBridgeOperators,
     uint256 period
   ) external {
+    address[] memory currentOperators = IBridgeManager(_bridgeManagerContract).getBridgeOperators();
+    vm.prank(_bridgeManagerContract, _bridgeManagerContract);
+    IBridgeManager(_bridgeManagerContract).removeBridgeOperators(currentOperators);
     // Assume the input values are not equal to the default values
     vm.assume(r1 != DEFAULT_R1 && r2 != DEFAULT_R2 && r3 != DEFAULT_R3);
     // Bound the period between 1 and the maximum value of uint64
@@ -125,16 +128,12 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     MockBridgeManager(payable(_bridgeManagerContract)).registerCallbacks(registers);
 
     // Generate valid inputs for bridge operators
-    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = getValidInputs(
       r1,
       r2,
       r3,
       numBridgeOperators
     );
-
-    // Expect the emission of the bridge slash contract
-    vm.expectEmit(_bridgeSlashContract);
-    emit NewBridgeOperatorsAdded(period, bridgeOperators);
 
     _addBridgeOperators(_bridgeManagerContract, _bridgeManagerContract, voteWeights, governors, bridgeOperators);
 
@@ -162,6 +161,8 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
     uint256 duration,
     uint256 newlyAddedSize
   ) external {
+    vm.assume(r1 != 0);
+    vm.assume(r1 != DEFAULT_R1 && r1 != DEFAULT_R2 && r1 != DEFAULT_R3);
     // Bound the period, duration, and newlyAddedSize values
     period = _bound(period, 1, type(uint64).max);
     duration = _bound(duration, MIN_PERIOD_DURATION, MAX_PERIOD_DURATION);
@@ -183,23 +184,23 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
       uint256[] memory newlyAddedAtPeriods;
       address[] memory newlyAddedOperators;
       {
-        vm.assume(r1 != DEFAULT_R1 && ~r1 != DEFAULT_R2 && r1 >> 1 != DEFAULT_R3);
         address[] memory newlyAddedGovernors;
-        uint256[] memory newlyAddedWeights;
+        uint96[] memory newlyAddedWeights;
         (newlyAddedOperators, newlyAddedGovernors, newlyAddedWeights) = getValidInputs(
           r1,
           ~r1,
-          r1 >> 1,
+          r1 << 1,
           newlyAddedSize
         );
 
         // Add the newly added operators using the bridge manager contract
         vm.prank(_bridgeManagerContract, _bridgeManagerContract);
-        IBridgeManager(_bridgeManagerContract).addBridgeOperators(
+        bool[] memory addeds = IBridgeManager(_bridgeManagerContract).addBridgeOperators(
           newlyAddedWeights,
           newlyAddedGovernors,
           newlyAddedOperators
         );
+        vm.assume(addeds.sum() == addeds.length);
         // Retrieve the added periods for the newly added operators
         newlyAddedAtPeriods = IBridgeSlash(_bridgeSlashContract).getAddedPeriodOf(newlyAddedOperators);
       }
@@ -211,6 +212,7 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
       IBridgeSlash(_bridgeSlashContract).execSlashBridgeOperators(
         bridgeOperators.extend(newlyAddedOperators),
         ballots,
+        ballots.sum(),
         ballots.sum(),
         period
       );
@@ -254,19 +256,25 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
 
     vm.startPrank(_bridgeTrackingContract, _bridgeTrackingContract);
     uint256[] memory ballots;
-    uint256 totalBallotsForPeriod;
+    uint256 totalBallotForPeriod;
     IBridgeSlash bridgeSlashContract = IBridgeSlash(_bridgeSlashContract);
     MockValidatorContract validatorContract = MockValidatorContract(payable(_validatorContract));
     for (uint256 i; i < duration; ) {
       // Generate random ballots for bridge operators
       ballots = _createRandomNumbers(r1, bridgeOperators.length, 0, MAX_FUZZ_INPUTS);
-      totalBallotsForPeriod = ballots.sum();
+      totalBallotForPeriod = ballots.sum();
 
       // Set the current period in the mock validator contract
       validatorContract.setCurrentPeriod(period);
 
       // Execute the `execSlashBridgeOperators` function
-      bridgeSlashContract.execSlashBridgeOperators(bridgeOperators, ballots, totalBallotsForPeriod, period);
+      bridgeSlashContract.execSlashBridgeOperators(
+        bridgeOperators,
+        ballots,
+        totalBallotForPeriod,
+        totalBallotForPeriod,
+        period
+      );
 
       // Generate the next random number for r1 using the keccak256 hash function
       r1 = uint256(keccak256(abi.encode(r1)));
@@ -282,7 +290,7 @@ contract BridgeSlashTest is IBridgeSlashEventsTest, BridgeManagerUtils {
   function _setUp() internal virtual {
     _admin = vm.addr(1);
     _validatorContract = address(new MockValidatorContract());
-    (address[] memory bridgeOperators, address[] memory governors, uint256[] memory voteWeights) = getValidInputs(
+    (address[] memory bridgeOperators, address[] memory governors, uint96[] memory voteWeights) = getValidInputs(
       DEFAULT_R1,
       DEFAULT_R2,
       DEFAULT_R3,

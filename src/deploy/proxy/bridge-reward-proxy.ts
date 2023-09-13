@@ -6,6 +6,8 @@ import { verifyAddress } from '../../script/verify-address';
 import { BridgeReward__factory } from '../../types';
 import { bridgeRewardConf } from '../../configs/bridge-manager';
 import { BigNumber } from 'ethers';
+import { Address } from 'hardhat-deploy/dist/types';
+import { Network } from '../../utils';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -16,12 +18,19 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deployer } = await getNamedAccounts();
 
   const logicContract = await deployments.get('BridgeRewardLogic');
+  let validatorContractAddress: Address;
+  if (network.name == Network.Hardhat) {
+    validatorContractAddress = generalRoninConf[network.name]!.validatorContract?.address!;
+  } else {
+    const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
+    validatorContractAddress = validatorContractDeployment.address;
+  }
 
   const data = new BridgeReward__factory().interface.encodeFunctionData('initialize', [
     generalRoninConf[network.name]!.bridgeManagerContract?.address,
     generalRoninConf[network.name]!.bridgeTrackingContract?.address,
     generalRoninConf[network.name]!.bridgeSlashContract?.address,
-    generalRoninConf[network.name]!.validatorContract?.address,
+    validatorContractAddress,
     bridgeRewardConf[network.name]!.rewardPerPeriod,
   ]);
 
@@ -29,7 +38,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
-    args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, data],
+    args: [logicContract.address, generalRoninConf[network.name]!.bridgeManagerContract?.address, data],
     value: BigNumber.from(bridgeRewardConf[network.name]!.topupAmount),
     nonce: generalRoninConf[network.name].bridgeRewardContract?.nonce,
   });
@@ -37,6 +46,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['BridgeRewardProxy'];
-deploy.dependencies = ['BridgeRewardLogic', 'CalculateAddresses', 'BridgeSlashProxy'];
+deploy.dependencies = ['BridgeRewardLogic', '_HelperBridgeCalculate', 'BridgeSlashProxy'];
 
 export default deploy;

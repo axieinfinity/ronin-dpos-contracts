@@ -7,7 +7,7 @@ contract MockBridgeManager is BridgeManager {
   constructor(
     address[] memory bridgeOperators,
     address[] memory governors,
-    uint256[] memory voteWeights
+    uint96[] memory voteWeights
   ) payable BridgeManager(0, 0, 0, address(0), _getEmptyAddressArray(), bridgeOperators, governors, voteWeights) {}
 
   function _requireSelfCall() internal view override {}

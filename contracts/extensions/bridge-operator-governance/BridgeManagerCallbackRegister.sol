@@ -15,7 +15,7 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
 
   /**
    * @dev Storage slot for the address set of callback registers.
-   * @dev Value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin._callbackRegisters.slot") - 1.
+   * @dev Value is equal to keccak256("@ronin.dpos.gateway.BridgeAdmin.callbackRegisters.slot") - 1.
    */
   bytes32 private constant CALLBACK_REGISTERS_SLOT = 0x5da136eb38f8d8e354915fc8a767c0dc81d49de5fb65d5477122a82ddd976240;
 
@@ -39,6 +39,9 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
     unregistereds = _unregisterCallbacks(registers);
   }
 
+  /**
+   * @inheritdoc IBridgeManagerCallbackRegister
+   */
   function getCallbackRegisters() external view returns (address[] memory registers) {
     registers = _getCallbackRegisters().values();
   }
@@ -53,9 +56,7 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
   ) internal nonDuplicate(registers) returns (bool[] memory registereds) {
     uint256 length = registers.length;
     registereds = new bool[](length);
-    if (length == 0) {
-      return registereds;
-    }
+    if (length == 0) return registereds;
 
     EnumerableSet.AddressSet storage _callbackRegisters = _getCallbackRegisters();
     address register;
@@ -102,9 +103,7 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
   function _notifyRegisters(bytes4 callbackFnSig, bytes memory inputs) internal {
     address[] memory registers = _getCallbackRegisters().values();
     uint256 length = registers.length;
-    if (length == 0) {
-      return;
-    }
+    if (length == 0) return;
 
     bool[] memory statuses = new bool[](length);
     bytes[] memory returnDatas = new bytes[](length);
@@ -126,7 +125,7 @@ abstract contract BridgeManagerCallbackRegister is IdentityGuard, IBridgeManager
    * @return callbackRegisters The storage reference to the callback registers.
    */
   function _getCallbackRegisters() internal pure returns (EnumerableSet.AddressSet storage callbackRegisters) {
-    assembly {
+    assembly ("memory-safe") {
       callbackRegisters.slot := CALLBACK_REGISTERS_SLOT
     }
   }

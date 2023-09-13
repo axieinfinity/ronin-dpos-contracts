@@ -2,24 +2,14 @@
 
 pragma solidity ^0.8.9;
 
-interface IBridgeReward {
-  struct BridgeRewardInfo {
-    uint256 claimed;
-    uint256 slashed;
-  }
+import { IBridgeRewardEvents } from "./events/IBridgeRewardEvents.sol";
 
-  /// @dev Event emiited when the bridge tracking contract tracks the invalid data, cause malform in sharing bridge reward.
-  event BridgeTrackingIncorrectlyResponded();
-  /// @dev Event emitted when the reward per period config is updated.
-  event UpdatedRewardPerPeriod(uint256 newRewardPerPeriod);
-  /// @dev Event emitted when the reward of the `operator` is scattered with `amount`.
-  event BridgeRewardScattered(address operator, uint256 amount);
-  /// @dev Event emitted when the reward of the `operator` is slashed with `amount`.
-  event BridgeRewardSlashed(address operator, uint256 amount);
-  /// @dev Event emitted when the reward of the `operator` is scattered with `amount` but failed to transfer.
-  event BridgeRewardScatterFailed(address operator, uint256 amount);
-  /// @dev Event emitted when the requesting period to sync  is too far.
-  event BridgeRewardSyncTooFarPeriod(uint256 requestingPeriod, uint256 latestPeriod);
+interface IBridgeReward is IBridgeRewardEvents {
+  /**
+   * @dev This function allows bridge operators to manually synchronize the reward for a given period length.
+   * @param periodLength The length of the reward period for which synchronization is requested.
+   */
+  function syncReward(uint256 periodLength) external;
 
   /**
    * @dev Receives RON from any address.
@@ -42,9 +32,27 @@ interface IBridgeReward {
   ) external;
 
   /**
+   * @dev Retrieve the total amount of rewards that have been topped up in the contract.
+   * @return totalRewardToppedUp The total rewards topped up value.
+   */
+  function getTotalRewardToppedUp() external view returns (uint256);
+
+  /**
+   * @dev Retrieve the total amount of rewards that have been scattered to bridge operators in the contract.
+   * @return totalRewardScattered The total rewards scattered value.
+   */
+  function getTotalRewardScattered() external view returns (uint256);
+
+  /**
    * @dev Getter for all bridge operators per period.
    */
   function getRewardPerPeriod() external view returns (uint256);
+
+  /**
+   * @dev External function to retrieve the latest rewarded period in the contract.
+   * @return latestRewardedPeriod The latest rewarded period value.
+   */
+  function getLatestRewardedPeriod() external view returns (uint256);
 
   /**
    * @dev Setter for all bridge operators per period.

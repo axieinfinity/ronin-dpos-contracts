@@ -4,22 +4,33 @@ pragma solidity ^0.8.0;
 import { ContractType } from "./ContractType.sol";
 import { RoleAccess } from "./RoleAccess.sol";
 
+error ErrSyncTooFarPeriod(uint256 period, uint256 latestRewardedPeriod);
+
+/**
+ * @dev Error raised when a bridge operator update operation fails.
+ * @param bridgeOperator The address of the bridge operator that failed to update.
+ */
+error ErrBridgeOperatorUpdateFailed(address bridgeOperator);
+
 /**
  * @dev Error thrown when an address is expected to be an already created externally owned account (EOA).
  * This error indicates that the provided address is invalid for certain contract operations that require already created EOA.
  */
 error ErrAddressIsNotCreatedEOA(address addr, bytes32 codehash);
+
 /**
  * @dev Error thrown when attempting to add a bridge operator that already exists in the contract.
  * This error indicates that the provided bridge operator address is already registered as a bridge operator in the contract.
  */
 error ErrBridgeOperatorAlreadyExisted(address bridgeOperator);
+
 /**
  * @dev The error indicating an unsupported interface.
  * @param interfaceId The bytes4 interface identifier that is not supported.
  * @param addr The address where the unsupported interface was encountered.
  */
 error ErrUnsupportedInterface(bytes4 interfaceId, address addr);
+
 /**
  * @dev Error thrown when the return data from a callback function is invalid.
  * @param callbackFnSig The signature of the callback function that returned invalid data.
@@ -27,18 +38,22 @@ error ErrUnsupportedInterface(bytes4 interfaceId, address addr);
  * @param returnData The invalid return data received from the callback function.
  */
 error ErrInvalidReturnData(bytes4 callbackFnSig, address register, bytes returnData);
+
 /**
  * @dev Error of set to non-contract.
  */
 error ErrZeroCodeContract(address addr);
+
 /**
  * @dev Error indicating that arguments are invalid.
  */
 error ErrInvalidArguments(bytes4 msgSig);
+
 /**
  * @dev Error indicating that given address is null when it should not.
  */
 error ErrZeroAddress(bytes4 msgSig);
+
 /**
  * @dev Error indicating that the provided threshold is invalid for a specific function signature.
  * @param msgSig The function signature (bytes4) that the invalid threshold applies to.

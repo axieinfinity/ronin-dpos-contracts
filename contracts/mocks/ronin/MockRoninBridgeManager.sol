@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { RoninBridgeManager } from "../../ronin/gateway/RoninBridgeManager.sol";
+import { GlobalProposal } from "../../extensions/sequential-governance/governance-proposal/GovernanceProposal.sol";
 
 contract MockRoninBridgeManager is RoninBridgeManager {
   constructor(
@@ -13,7 +14,9 @@ contract MockRoninBridgeManager is RoninBridgeManager {
     address[] memory callbackRegisters,
     address[] memory bridgeOperators,
     address[] memory governors,
-    uint256[] memory voteWeights
+    uint96[] memory voteWeights,
+    GlobalProposal.TargetOption[] memory targetOptions,
+    address[] memory targets
   )
     RoninBridgeManager(
       num,
@@ -24,7 +27,9 @@ contract MockRoninBridgeManager is RoninBridgeManager {
       callbackRegisters,
       bridgeOperators,
       governors,
-      voteWeights
+      voteWeights,
+      targetOptions,
+      targets
     )
   {}
 }
