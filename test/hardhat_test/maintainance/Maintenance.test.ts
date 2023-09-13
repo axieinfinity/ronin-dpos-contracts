@@ -120,21 +120,17 @@ describe('Maintenance test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
     await governanceAdminInterface.functionDelegateCalls(
+      [maintenanceContract.address, slashContract.address],
       [
-        stakingContract.address,
-        validatorContract.address,
-        validatorContract.address,
-        maintenanceContract.address,
-        slashContract.address,
-      ],
-      [
-        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        validatorContract.interface.encodeFunctionData('initializeV3', [fastFinalityTrackingAddress]),
-        validatorContract.interface.encodeFunctionData('initializeV4', [profileAddress]),
         maintenanceContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
         slashContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
       ]
     );
+
+    await validatorContract.initializeV3(fastFinalityTrackingAddress);
+
+    await stakingContract.initializeV3(profileAddress);
+    await validatorContract.initializeV4(profileAddress);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {
@@ -148,7 +144,6 @@ describe('Maintenance test', () => {
           { value: minValidatorStakingAmount.add(maxValidatorNumber).sub(i) }
         );
     }
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 

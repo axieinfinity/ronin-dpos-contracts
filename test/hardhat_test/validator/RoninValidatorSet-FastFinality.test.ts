@@ -76,6 +76,7 @@ describe('Ronin Validator Set: Fast Finality test', () => {
       stakingContractAddress,
       roninGovernanceAdminAddress,
       stakingVestingContractAddress,
+      profileAddress,
       fastFinalityTrackingAddress,
     } = await initTest('RoninValidatorSet-FastFinality')({
       slashIndicatorArguments: {
@@ -142,6 +143,9 @@ describe('Ronin Validator Set: Fast Finality test', () => {
 
     await validatorContract.initializeV3(fastFinalityTrackingAddress);
     await stakingVesting.initializeV3(fastFinalityRewardPercent);
+
+    await stakingContract.initializeV3(profileAddress);
+    await validatorContract.initializeV4(profileAddress);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {

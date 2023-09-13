@@ -214,20 +214,16 @@ describe('Credit score and bail out test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetOverridePrecompile__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
-
     mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashLogic.deployed();
     await governanceAdminInterface.upgrade(slashContractAddress, mockSlashLogic.address);
-    await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, validatorContract.address, maintenanceContract.address, slashContract.address],
-      [
-        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        validatorContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        maintenanceContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        slashContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-      ]
-    );
+
+    await validatorContract.initializeV3(fastFinalityTrackingAddress);
+    await slashContract.initializeV3(profileAddress);
+
+    await maintenanceContract.initializeV3(profileAddress);
+    await stakingContract.initializeV3(profileAddress);
+    await validatorContract.initializeV4(profileAddress);
 
     for (let i = 0; i < maxValidatorNumber; i++) {
       await stakingContract

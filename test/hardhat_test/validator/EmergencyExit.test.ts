@@ -130,19 +130,13 @@ describe('Emergency Exit test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await roninValidatorSet.initEpoch();
+    await stakingContract.initializeV3(profileAddress);
     await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
+    await roninValidatorSet.initializeV4(profileAddress);
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
     await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
-
-    await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, roninValidatorSet.address],
-      [
-        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        roninValidatorSet.interface.encodeFunctionData('initializeV3', [profileAddress]),
-      ]
-    );
 
     const stakedAmount = validatorCandidates.map((_, i) =>
       minValidatorStakingAmount.mul(2).add(validatorCandidates.length - i)

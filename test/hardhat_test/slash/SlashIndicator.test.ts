@@ -156,19 +156,14 @@ describe('Slash indicator test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
     await validatorContract.initializeV3(fastFinalityTrackingAddress);
+    await slashContract.initializeV3(profileAddress);
 
     mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashLogic.deployed();
     await governanceAdminInterface.upgrade(slashContractAddress, mockSlashLogic.address);
-    await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, validatorContract.address, validatorContract.address, slashContract.address],
-      [
-        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        validatorContract.interface.encodeFunctionData('initializeV3', [fastFinalityTrackingAddress]),
-        validatorContract.interface.encodeFunctionData('initializeV4', [profileAddress]),
-        slashContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-      ]
-    );
+
+    await stakingContract.initializeV3(profileAddress);
+    await validatorContract.initializeV4(profileAddress);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {

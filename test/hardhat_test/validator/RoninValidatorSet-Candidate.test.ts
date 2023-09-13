@@ -152,13 +152,8 @@ describe('Ronin Validator Set: candidate test', () => {
     await mockSlashIndicator.deployed();
     await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
 
-    await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, roninValidatorSet.address],
-      [
-        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        roninValidatorSet.interface.encodeFunctionData('initializeV3', [profileAddress]),
-      ]
-    );
+    await stakingContract.initializeV3(profileAddress);
+    await roninValidatorSet.initializeV4(profileAddress);
   });
 
   after(async () => {

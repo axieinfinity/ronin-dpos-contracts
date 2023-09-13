@@ -184,7 +184,6 @@ describe('[Integration] Bridge Tracking test', () => {
       ]
     );
     await roninValidatorSet.initEpoch();
-    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     await TransparentUpgradeableProxyV2__factory.connect(bridgeContract.address, deployer).changeAdmin(
       bridgeManager.address

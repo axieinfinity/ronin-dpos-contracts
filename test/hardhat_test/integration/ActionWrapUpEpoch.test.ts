@@ -113,7 +113,6 @@ describe('[Integration] Wrap up epoch', () => {
       ]
     );
     await validatorContract.initEpoch();
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
   });
 
   after(async () => {
