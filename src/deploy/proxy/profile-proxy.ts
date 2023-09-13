@@ -25,10 +25,12 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     from: deployer,
     log: true,
     args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, data],
+    nonce: generalRoninConf[network.name].profileContract?.nonce,
   });
+  verifyAddress(deployment.address, generalRoninConf[network.name].profileContract?.address);
 };
 
 deploy.tags = ['ProfileProxy'];
-deploy.dependencies = ['ProfileLogic'];
+deploy.dependencies = ['ProfileLogic', '_HelperDposCalculate', 'RoninValidatorSetProxy'];
 
 export default deploy;

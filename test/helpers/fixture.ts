@@ -242,6 +242,7 @@ export const initTest = (id: string) =>
     const stakingContractDeployment = await deployments.get('StakingProxy');
     const stakingVestingContractDeployment = await deployments.get('StakingVestingProxy');
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
+    const profileDeployment = await deployments.get('ProfileProxy');
 
     await deployments.fixture([
       '_HelperBridgeCalculate',
@@ -251,7 +252,6 @@ export const initTest = (id: string) =>
       id,
     ]);
     const bridgeTrackingDeployment = await deployments.get('BridgeTrackingProxy');
-    const profileDeployment = await deployments.get('ProfileProxy');
     const bridgeSlashDeployment = await deployments.get('BridgeSlashProxy');
     const bridgeRewardDeployment = await deployments.get('BridgeRewardProxy');
     const roninBridgeManagerDeployment = await deployments.get('RoninBridgeManager');

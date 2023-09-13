@@ -19,6 +19,7 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
       slashIndicatorContract: calculateAddress(deployer, nonce++),
       stakingContract: calculateAddress(deployer, nonce++),
       validatorContract: calculateAddress(deployer, nonce++),
+      profileContract: calculateAddress(deployer, nonce++),
     };
   }
 };
@@ -31,6 +32,7 @@ deploy.dependencies = [
   'StakingLogic',
   'RoninValidatorSetLogic',
   'RoninTrustedOrganizationLogic',
+  'ProfileLogic',
 ];
 
 export default deploy;
