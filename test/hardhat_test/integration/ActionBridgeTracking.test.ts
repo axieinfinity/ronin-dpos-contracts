@@ -176,10 +176,11 @@ describe('[Integration] Bridge Tracking test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, roninValidatorSet.address],
+      [stakingContract.address, roninValidatorSet.address, roninValidatorSet.address],
       [
         stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        roninValidatorSet.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        roninValidatorSet.interface.encodeFunctionData('initializeV3', [fastFinalityTrackingAddress]),
+        roninValidatorSet.interface.encodeFunctionData('initializeV4', [profileAddress]),
       ]
     );
     await roninValidatorSet.initEpoch();

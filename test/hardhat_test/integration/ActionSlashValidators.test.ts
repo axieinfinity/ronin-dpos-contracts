@@ -66,6 +66,7 @@ describe('[Integration] Slash validators', () => {
       validatorContractAddress,
       roninGovernanceAdminAddress,
       profileAddress,
+      fastFinalityTrackingAddress,
     } = await initTest('ActionSlashValidators')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -113,15 +114,15 @@ describe('[Integration] Slash validators', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
     await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, validatorContract.address, slashContract.address],
+      [stakingContract.address, validatorContract.address, validatorContract.address, slashContract.address],
       [
         stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        validatorContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        validatorContract.interface.encodeFunctionData('initializeV3', [fastFinalityTrackingAddress]),
+        validatorContract.interface.encodeFunctionData('initializeV4', [profileAddress]),
         slashContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
       ]
     );
     await validatorContract.initEpoch();
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
 
     await EpochController.setTimestampToPeriodEnding();
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);

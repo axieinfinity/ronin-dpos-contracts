@@ -36,7 +36,7 @@ import {
   TrustedOrganizationAddressSet,
 } from '../helpers/address-set-types/trusted-org-set-type';
 import { ContractType, compareBigNumbers } from '../helpers/utils';
-import { GovernanceAdminInterface } from '../../src/script/governance-admin-interface';
+import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 
 let stakingVestingContract: StakingVesting;
 let maintenanceContract: Maintenance;

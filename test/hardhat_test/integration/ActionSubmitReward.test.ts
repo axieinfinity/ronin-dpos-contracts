@@ -105,15 +105,15 @@ describe('[Integration] Submit Block Reward', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
     await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, validatorContract.address, slashContract.address],
+      [stakingContract.address, validatorContract.address, validatorContract.address, slashContract.address],
       [
         stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        validatorContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        validatorContract.interface.encodeFunctionData('initializeV3', [fastFinalityTrackingAddress]),
+        validatorContract.interface.encodeFunctionData('initializeV4', [profileAddress]),
         slashContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
       ]
     );
     await validatorContract.initEpoch();
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
   });
 
   describe('Configuration check', async () => {
