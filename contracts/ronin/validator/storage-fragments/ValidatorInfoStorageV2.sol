@@ -86,7 +86,7 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
   /**
    * @inheritdoc IValidatorInfoV2
    */
-  function totalBlockProducers() external view returns (uint256 total) {
+  function totalBlockProducer() external view returns (uint256 total) {
     unchecked {
       for (uint i; i < _validatorCount; i++) {
         if (_isBlockProducerById(_validatorIds[i])) {

@@ -124,14 +124,14 @@ interface IMaintenance {
   ) external view returns (bool[] memory);
 
   /**
-   * @dev Returns whether the validator `consensusAddr` has scheduled.
-   */
-  function checkScheduled(TConsensus consensusAddr) external view returns (bool);
-
-  /**
    * @dev Returns whether the validator `consensusAddr` has finished cooldown.
    */
-  function checkCooldownEnds(TConsensus consensusAddr) external view returns (bool);
+  function checkCooldownEnded(TConsensus consensusAddr) external view returns (bool);
+
+  /**
+   * @dev Returns whether the validator `consensusAddr` has schedule.
+   */
+  function checkScheduled(TConsensus consensusAddr) external view returns (bool);
 
   /**
    * @dev Returns the detailed schedule of the validator `consensusAddr`.
@@ -141,7 +141,7 @@ interface IMaintenance {
   /**
    * @dev Returns the total of current schedules.
    */
-  function totalSchedules() external view returns (uint256 count);
+  function totalSchedule() external view returns (uint256 count);
 
   /**
    * @dev Returns the cooldown to maintain in seconds.
@@ -191,7 +191,7 @@ interface IMaintenance {
   /**
    * @dev Returns the max number of scheduled maintenances.
    */
-  function maxSchedules() external view returns (uint256);
+  function maxSchedule() external view returns (uint256);
 
   /**
    * @dev Schedules for maintenance from `startedAtBlock` to `endedAtBlock`.

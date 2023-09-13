@@ -24,7 +24,7 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidato
    * @dev This empty reserved space is put in place to allow future versions to add new
    * variables without shifting down storage in the inheritance chain.
    */
-  uint256[48] private ______gap;
+  uint256[24] private ______gap;
 
   /**
    * @inheritdoc ISlashDoubleSign

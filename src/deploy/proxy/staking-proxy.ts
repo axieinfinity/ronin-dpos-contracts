@@ -23,12 +23,15 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     stakingConfig[network.name]!.waitingSecsToRevoke,
   ]);
 
+  const nonce = generalRoninConf[network.name].stakingContract?.nonce;
+  // console.log(`Deploying StakingProxy (nonce: ${nonce})...`);
+
   const deployment = await deploy('StakingProxy', {
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
     args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, data],
-    nonce: generalRoninConf[network.name].stakingContract?.nonce,
+    nonce,
   });
   verifyAddress(deployment.address, generalRoninConf[network.name].stakingContract?.address);
 };

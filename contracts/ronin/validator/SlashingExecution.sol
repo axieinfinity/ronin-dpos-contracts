@@ -20,58 +20,51 @@ abstract contract SlashingExecution is
    * @inheritdoc ISlashingExecution
    */
   function execSlash(
-    address _validatorAddr,
-    uint256 _newJailedUntil,
-    uint256 _slashAmount,
-    bool _cannotBailout
+    address validatorAddr,
+    uint256 newJailedUntil,
+    uint256 slashAmount,
+    bool cannotBailout
   ) external override onlyContract(ContractType.SLASH_INDICATOR) {
-    uint256 _period = currentPeriod();
-    _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = true;
+    uint256 period = currentPeriod();
+    _miningRewardDeprecatedAtPeriod[validatorAddr][period] = true;
 
-    _totalDeprecatedReward += _miningReward[_validatorAddr] + _delegatingReward[_validatorAddr];
+    _totalDeprecatedReward += _miningReward[validatorAddr] + _delegatingReward[validatorAddr];
 
-    delete _miningReward[_validatorAddr];
-    delete _delegatingReward[_validatorAddr];
+    delete _miningReward[validatorAddr];
+    delete _delegatingReward[validatorAddr];
 
-    _blockProducerJailedBlock[_validatorAddr] = Math.max(_newJailedUntil, _blockProducerJailedBlock[_validatorAddr]);
+    _blockProducerJailedBlock[validatorAddr] = Math.max(newJailedUntil, _blockProducerJailedBlock[validatorAddr]);
 
-    if (_slashAmount > 0) {
+    if (slashAmount > 0) {
       uint256 _actualAmount = IStaking(getContract(ContractType.STAKING)).execDeductStakingAmount(
-        _validatorAddr,
-        _slashAmount
+        validatorAddr,
+        slashAmount
       );
       _totalDeprecatedReward += _actualAmount;
     }
 
-    if (_cannotBailout) {
-      _cannotBailoutUntilBlock[_validatorAddr] = Math.max(_newJailedUntil, _cannotBailoutUntilBlock[_validatorAddr]);
+    if (cannotBailout) {
+      _cannotBailoutUntilBlock[validatorAddr] = Math.max(newJailedUntil, _cannotBailoutUntilBlock[validatorAddr]);
     }
 
-    emit ValidatorPunished(
-      _validatorAddr,
-      _period,
-      _blockProducerJailedBlock[_validatorAddr],
-      _slashAmount,
-      true,
-      false
-    );
+    emit ValidatorPunished(validatorAddr, period, _blockProducerJailedBlock[validatorAddr], slashAmount, true, false);
   }
 
   /**
    * @inheritdoc ISlashingExecution
    */
   function execBailOut(
-    address _validatorAddr,
-    uint256 _period
+    address validatorAddr,
+    uint256 period
   ) external override onlyContract(ContractType.SLASH_INDICATOR) {
-    if (block.number <= _cannotBailoutUntilBlock[_validatorAddr]) revert ErrCannotBailout(_validatorAddr);
+    if (block.number <= _cannotBailoutUntilBlock[validatorAddr]) revert ErrCannotBailout(validatorAddr);
 
     // Note: Removing rewards of validator in `bailOut` function is not needed, since the rewards have been
     // removed previously in the `slash` function.
-    _miningRewardBailoutCutOffAtPeriod[_validatorAddr][_period] = true;
-    _miningRewardDeprecatedAtPeriod[_validatorAddr][_period] = false;
-    _blockProducerJailedBlock[_validatorAddr] = block.number - 1;
+    _miningRewardBailoutCutOffAtPeriod[validatorAddr][period] = true;
+    _miningRewardDeprecatedAtPeriod[validatorAddr][period] = false;
+    _blockProducerJailedBlock[validatorAddr] = block.number - 1;
 
-    emit ValidatorUnjailed(_validatorAddr, _period);
+    emit ValidatorUnjailed(validatorAddr, period);
   }
 }

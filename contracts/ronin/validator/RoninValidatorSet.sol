@@ -69,8 +69,12 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     delete ______deprecatedTrustedOrg;
   }
 
-  function initializeV3(address __profileContract) external reinitializer(3) {
-    _setContract(ContractType.PROFILE, __profileContract);
+  function initializeV3(address fastFinalityTrackingContract) external reinitializer(3) {
+    _setContract(ContractType.FAST_FINALTIY_TRACKING, fastFinalityTrackingContract);
+  }
+
+  function initializeV4(address profileContract) external reinitializer(4) {
+    _setContract(ContractType.PROFILE, profileContract);
   }
 
   /**

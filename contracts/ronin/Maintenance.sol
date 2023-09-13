@@ -18,17 +18,17 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
   mapping(address => Schedule) internal _schedule;
 
   /// @dev The min duration to maintenance in blocks.
-  uint256 public _minMaintenanceDurationInBlock;
+  uint256 internal _minMaintenanceDurationInBlock;
   /// @dev The max duration to maintenance in blocks.
-  uint256 public _maxMaintenanceDurationInBlock;
+  uint256 internal _maxMaintenanceDurationInBlock;
   /// @dev The offset to the min block number that the schedule can start.
-  uint256 public _minOffsetToStartSchedule;
+  uint256 internal _minOffsetToStartSchedule;
   /// @dev The offset to the max block number that the schedule can start.
-  uint256 public _maxOffsetToStartSchedule;
+  uint256 internal _maxOffsetToStartSchedule;
   /// @dev The max number of scheduled maintenances.
-  uint256 public _maxSchedules;
+  uint256 internal _maxSchedule;
   /// @dev The cooldown time to request new schedule.
-  uint256 public _cooldownSecsToMaintain;
+  uint256 internal _cooldownSecsToMaintain;
 
   constructor() {
     _disableInitializers();
@@ -43,7 +43,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     uint256 maxMaintenanceDurationInBlock_,
     uint256 minOffsetToStartSchedule_,
     uint256 maxOffsetToStartSchedule_,
-    uint256 maxSchedules_,
+    uint256 maxSchedule_,
     uint256 cooldownSecsToMaintain_
   ) external initializer {
     _setContract(ContractType.VALIDATOR, validatorContract);
@@ -52,7 +52,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
       maxMaintenanceDurationInBlock_,
       minOffsetToStartSchedule_,
       maxOffsetToStartSchedule_,
-      maxSchedules_,
+      maxSchedule_,
       cooldownSecsToMaintain_
     );
   }
@@ -97,8 +97,8 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
   /**
    * @inheritdoc IMaintenance
    */
-  function maxSchedules() external view returns (uint256) {
-    return _maxSchedules;
+  function maxSchedule() external view returns (uint256) {
+    return _maxSchedule;
   }
 
   /**
@@ -116,7 +116,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     uint256 maxMaintenanceDurationInBlock_,
     uint256 minOffsetToStartSchedule_,
     uint256 maxOffsetToStartSchedule_,
-    uint256 maxSchedules_,
+    uint256 maxSchedule_,
     uint256 cooldownSecsToMaintain_
   ) external onlyAdmin {
     _setMaintenanceConfig(
@@ -124,7 +124,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
       maxMaintenanceDurationInBlock_,
       minOffsetToStartSchedule_,
       maxOffsetToStartSchedule_,
-      maxSchedules_,
+      maxSchedule_,
       cooldownSecsToMaintain_
     );
   }
@@ -140,8 +140,8 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     if (!validatorContract.isCandidateAdmin(consensusAddr, msg.sender))
       revert ErrUnauthorized(msg.sig, RoleAccess.CANDIDATE_ADMIN);
     if (_checkScheduledById(candidateId)) revert ErrAlreadyScheduled();
-    if (!_checkCooldownEndsById(candidateId)) revert ErrCooldownTimeNotYetEnded();
-    if (totalSchedules() >= _maxSchedules) revert ErrTotalOfSchedulesExceeded();
+    if (!_checkCooldownEndedById(candidateId)) revert ErrCooldownTimeNotYetEnded();
+    if (totalSchedule() >= _maxSchedule) revert ErrTotalOfSchedulesExceeded();
     if (!startedAtBlock.inRange(block.number + _minOffsetToStartSchedule, block.number + _maxOffsetToStartSchedule)) {
       revert ErrStartBlockOutOfRange();
     }
@@ -260,7 +260,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
   /**
    * @inheritdoc IMaintenance
    */
-  function totalSchedules() public view override returns (uint256 count) {
+  function totalSchedule() public view override returns (uint256 count) {
     address[] memory validatorIds = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
     unchecked {
       for (uint i = 0; i < validatorIds.length; i++) {
@@ -312,11 +312,11 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
   /**
    * @inheritdoc IMaintenance
    */
-  function checkCooldownEnds(TConsensus consensusAddr) external view override returns (bool) {
-    return _checkCooldownEndsById(_convertC2P(consensusAddr));
+  function checkCooldownEnded(TConsensus consensusAddr) external view override returns (bool) {
+    return _checkCooldownEndedById(_convertC2P(consensusAddr));
   }
 
-  function _checkCooldownEndsById(address candidateId) internal view returns (bool) {
+  function _checkCooldownEndedById(address candidateId) internal view returns (bool) {
     return block.timestamp > _schedule[candidateId].requestTimestamp + _cooldownSecsToMaintain;
   }
 
@@ -334,7 +334,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     uint256 maxMaintenanceDurationInBlock_,
     uint256 minOffsetToStartSchedule_,
     uint256 maxOffsetToStartSchedule_,
-    uint256 maxSchedules_,
+    uint256 maxSchedule_,
     uint256 cooldownSecsToMaintain_
   ) internal {
     if (minMaintenanceDurationInBlock_ >= maxMaintenanceDurationInBlock_) revert ErrInvalidMaintenanceDurationConfig();
@@ -344,14 +344,14 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     _maxMaintenanceDurationInBlock = maxMaintenanceDurationInBlock_;
     _minOffsetToStartSchedule = minOffsetToStartSchedule_;
     _maxOffsetToStartSchedule = maxOffsetToStartSchedule_;
-    _maxSchedules = maxSchedules_;
+    _maxSchedule = maxSchedule_;
     _cooldownSecsToMaintain = cooldownSecsToMaintain_;
     emit MaintenanceConfigUpdated(
       minMaintenanceDurationInBlock_,
       maxMaintenanceDurationInBlock_,
       minOffsetToStartSchedule_,
       maxOffsetToStartSchedule_,
-      maxSchedules_,
+      maxSchedule_,
       cooldownSecsToMaintain_
     );
   }

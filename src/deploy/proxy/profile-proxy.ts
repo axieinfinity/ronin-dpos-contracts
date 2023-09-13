@@ -4,6 +4,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { verifyAddress } from '../../script/verify-address';
 import { Profile__factory } from '../../types';
+import { Address } from 'hardhat-deploy/dist/types';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -15,6 +16,15 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const logicContract = await deployments.get('ProfileLogic');
 
+  const nonce = generalRoninConf[network.name].profileContract?.nonce;
+  // console.log(`Deploying ProfileProxy (nonce: ${nonce})...`);
+  let governanceAdmin: Address | undefined = generalRoninConf[network.name]!.governanceAdmin?.address;
+
+  if (!governanceAdmin) {
+    const GADepl = await deployments.get('RoninGovernanceAdmin');
+    governanceAdmin = GADepl.address;
+  }
+
   const data = new Profile__factory().interface.encodeFunctionData('initialize', [
     generalRoninConf[network.name]!.stakingContract?.address,
     generalRoninConf[network.name]!.validatorContract?.address,
@@ -25,7 +35,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     from: deployer,
     log: true,
     args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, data],
-    nonce: generalRoninConf[network.name].profileContract?.nonce,
+    nonce,
   });
   verifyAddress(deployment.address, generalRoninConf[network.name].profileContract?.address);
 };

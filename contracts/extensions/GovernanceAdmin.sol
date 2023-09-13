@@ -144,8 +144,8 @@ abstract contract GovernanceAdmin is
   /**
    * @dev Override `CoreGovernance-_getTotalWeights`.
    */
-  function _getTotalWeights() internal view virtual override returns (uint256) {
-    bytes4 _selector = IRoninTrustedOrganization.totalWeights.selector;
+  function _getTotalWeight() internal view virtual override returns (uint256) {
+    bytes4 _selector = IRoninTrustedOrganization.totalWeight.selector;
     (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,

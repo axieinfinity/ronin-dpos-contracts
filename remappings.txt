@@ -3,3 +3,6 @@ forge-std/=lib/forge-std/src/
 @openzeppelin/=./node_modules/@openzeppelin/
 hardhat/=./node_modules/hardhat/
 @ronin/contracts/=./contracts/
+@ronin/test/=./test/foundry/
+@prb/test/=lib/prb-test/src/
+@prb/math/=lib/prb-math/

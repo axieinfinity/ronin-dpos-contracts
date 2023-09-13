@@ -27,12 +27,7 @@ interface ISlashingExecution {
    * Emits the event `ValidatorPunished`.
    *
    */
-  function execSlash(
-    address _validatorAddr,
-    uint256 _newJailedUntil,
-    uint256 _slashAmount,
-    bool _cannotBailout
-  ) external;
+  function execSlash(address validatorAddr, uint256 newJailedUntil, uint256 slashAmount, bool cannotBailout) external;
 
   /**
    * @dev Finalize the bailout request from slash indicator contract.

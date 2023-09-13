@@ -41,7 +41,7 @@ interface IValidatorInfoV2 {
   /**
    * @dev Returns total numbers of the block producers.
    */
-  function totalBlockProducers() external view returns (uint256);
+  function totalBlockProducer() external view returns (uint256);
 
   /**
    * @dev Updates the max validator number

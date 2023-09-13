@@ -8,6 +8,7 @@ import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/IMaintenance.sol";
 import "../../interfaces/IProfile.sol";
 import "./SlashDoubleSign.sol";
+import "./SlashFastFinality.sol";
 import "./SlashBridgeVoting.sol";
 import "./SlashBridgeOperator.sol";
 import "./SlashUnavailability.sol";
@@ -16,6 +17,7 @@ import "./CreditScore.sol";
 contract SlashIndicator is
   ISlashIndicator,
   SlashDoubleSign,
+  SlashFastFinality,
   SlashBridgeVoting,
   SlashBridgeOperator,
   SlashUnavailability,
@@ -100,8 +102,9 @@ contract SlashIndicator is
     delete ______deprecatedGovernanceAdmin;
   }
 
-  function initializeV3(address profileContract_) external reinitializer(3) {
-    _setContract(ContractType.PROFILE, profileContract_);
+  function initializeV3(address profileContract) external reinitializer(3) {
+    _setContract(ContractType.PROFILE, profileContract);
+    _setFastFinalitySlashingConfigs(_slashDoubleSignAmount, _doubleSigningJailUntilBlock);
   }
 
   /**

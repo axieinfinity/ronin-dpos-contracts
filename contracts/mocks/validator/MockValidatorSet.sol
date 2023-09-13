@@ -64,10 +64,10 @@ contract MockValidatorSet is
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
 
   function execSlash(
-    address _validatorAddr,
-    uint256 _newJailedUntil,
-    uint256 _slashAmount,
-    bool _cannotBailout
+    address validatorAddr,
+    uint256 newJailedUntil,
+    uint256 slashAmount,
+    bool cannotBailout
   ) external override {}
 
   function execBailOut(address, uint256) external override {}
@@ -95,7 +95,7 @@ contract MockValidatorSet is
     return true;
   }
 
-  function totalBlockProducers() external view override returns (uint256) {}
+  function totalBlockProducer() external view override returns (uint256) {}
 
   function tryGetPeriodOfEpoch(uint256) external view returns (bool, uint256) {}
 

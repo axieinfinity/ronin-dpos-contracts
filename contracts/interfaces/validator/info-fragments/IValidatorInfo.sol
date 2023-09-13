@@ -57,7 +57,7 @@ interface IValidatorInfo {
   /**
    * @dev Returns total numbers of the block producers.
    */
-  function totalBlockProducers() external view returns (uint256);
+  function totalBlockProducer() external view returns (uint256);
 
   /**
    * @dev Returns the current on-working bridge operator list.
@@ -89,7 +89,7 @@ interface IValidatorInfo {
   /**
    * @dev Returns total numbers of the bridge operators.
    */
-  function totalBridgeOperators() external view returns (uint256);
+  function totalBridgeOperator() external view returns (uint256);
 
   /**
    * @dev Updates the max validator number

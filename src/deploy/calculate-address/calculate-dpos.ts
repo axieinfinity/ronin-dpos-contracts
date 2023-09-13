@@ -1,8 +1,7 @@
 import { ethers, network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { generalRoninConf, roninchainNetworks, mainchainNetworks, generalMainchainConf } from '../../configs/config';
-import { Network } from '../../utils';
+import { generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { calculateAddress } from './helper';
 
 const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
@@ -13,6 +12,7 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
     generalRoninConf[network.name] = {
       ...generalRoninConf[network.name],
       governanceAdmin: calculateAddress(deployer, nonce++),
+      fastFinalityTrackingContract: calculateAddress(deployer, nonce++),
       roninTrustedOrganizationContract: calculateAddress(deployer, nonce++),
       maintenanceContract: calculateAddress(deployer, nonce++),
       stakingVestingContract: calculateAddress(deployer, nonce++),
@@ -22,10 +22,14 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
       profileContract: calculateAddress(deployer, nonce++),
     };
   }
+
+  // console.debug('Nonce calculation for deployments...');
+  // console.table(generalRoninConf[network.name]);
 };
 
 deploy.tags = ['_HelperDposCalculate'];
 deploy.dependencies = [
+  'FastFinalityTrackingLogic',
   'MaintenanceLogic',
   'StakingVestingLogic',
   'SlashIndicatorLogic',

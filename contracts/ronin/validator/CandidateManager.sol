@@ -51,7 +51,7 @@ abstract contract CandidateManager is
   /**
    * @inheritdoc ICandidateManager
    */
-  function minEffectiveDaysOnwards() external view override returns (uint256) {
+  function minEffectiveDaysOnward() external view override returns (uint256) {
     return _minEffectiveDaysOnwards;
   }
 

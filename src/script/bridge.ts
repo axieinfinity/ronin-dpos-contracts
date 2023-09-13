@@ -1,5 +1,4 @@
-import { TypedDataDomain } from '@ethersproject/abstract-signer';
-import { AbiCoder, keccak256, solidityKeccak256, _TypedDataEncoder } from 'ethers/lib/utils';
+import { AbiCoder, keccak256, _TypedDataEncoder } from 'ethers/lib/utils';
 
 import { InfoStruct, OwnerStruct, ReceiptStruct } from '../types/IMainchainGatewayV2';
 

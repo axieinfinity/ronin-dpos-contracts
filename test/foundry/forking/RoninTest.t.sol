@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
+
+import { Base_Test } from "@ronin/test/Base.t.sol";
 
 import { ITransparentUpgradeableProxyDeployer, TransparentUpgradeableProxyV3 } from "./extensions/TransparentUpgradeableProxyV3.sol";
 import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
@@ -16,7 +17,7 @@ import "@ronin/contracts/mainchain/MainchainGatewayV2.sol";
 
 import "./utils/Consts.sol";
 
-abstract contract RoninTest is Test, ITransparentUpgradeableProxyDeployer {
+abstract contract RoninTest is Base_Test, ITransparentUpgradeableProxyDeployer {
   error ErrDeployFailed();
 
   struct TransparentUpgradeableProxyParams {

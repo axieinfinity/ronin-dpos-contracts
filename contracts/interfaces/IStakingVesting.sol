@@ -27,6 +27,8 @@ interface IStakingVesting {
   event BlockProducerBonusPerBlockUpdated(uint256);
   /// @dev Emitted when the block bonus for bridge operator is updated
   event BridgeOperatorBonusPerBlockUpdated(uint256);
+  /// @dev Emitted when the percent of fast finality reward is updated
+  event FastFinalityRewardPercentageUpdated(uint256);
 
   /**
    * @dev Returns the bonus amount for the block producer at `blockNum`.
@@ -37,6 +39,11 @@ interface IStakingVesting {
    * @dev Returns the bonus amount for the bridge validator at `blockNum`.
    */
   function bridgeOperatorBlockBonus(uint256 blockNum) external view returns (uint256);
+
+  /**
+   * @dev Returns the percentage of fast finality reward.
+   */
+  function fastFinalityRewardPercentage() external view returns (uint256);
 
   /**
    * @dev Receives RON from any address.
@@ -67,12 +74,20 @@ interface IStakingVesting {
    * @return success Whether the transfer is successfully. This returns false mostly because this contract is out of balance.
    * @return blockProducerBonus The amount of bonus actually sent for the block producer, returns 0 when the transfer is failed.
    * @return bridgeOperatorBonus The amount of bonus actually sent for the bridge operator, returns 0 when the transfer is failed.
+   * @return fastFinalityRewardPercentage The percent of fast finality reward, returns 0 when the transfer is failed.
    *
    */
   function requestBonus(
     bool forBlockProducer,
     bool forBridgeOperator
-  ) external returns (bool success, uint256 blockProducerBonus, uint256 bridgeOperatorBonus);
+  )
+    external
+    returns (
+      bool success,
+      uint256 blockProducerBonus,
+      uint256 bridgeOperatorBonus,
+      uint256 fastFinalityRewardPercentage
+    );
 
   /**
    * @dev Sets the bonus amount per block for block producer.
@@ -94,5 +109,16 @@ interface IStakingVesting {
    * - The method caller is admin.
    *
    */
-  function setBridgeOperatorBonusPerBlock(uint256 amount) external;
+  function setBridgeOperatorBonusPerBlock(uint256 _amount) external;
+
+  /**
+   * @dev Sets the percent of fast finality reward.
+   *
+   * Emits the event `FastFinalityRewardPercentageUpdated`.
+   *
+   * Requirements:
+   * - The method caller is admin.
+   *
+   */
+  function setFastFinalityRewardPercentage(uint256 _percent) external;
 }
