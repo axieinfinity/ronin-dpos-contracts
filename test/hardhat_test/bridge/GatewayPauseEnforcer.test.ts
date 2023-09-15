@@ -34,7 +34,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { createManyOperatorTuples, OperatorTuple } from '../helpers/address-set-types/operator-tuple-type';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { ContractType, mineBatchTxs } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
@@ -137,7 +137,7 @@ describe('Gateway Pause Enforcer test', () => {
       roninBridgeManagerAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('RoninGatewayV2-PauseEnforcer')({
+    } = await deployTestSuite('RoninGatewayV2-PauseEnforcer')({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({

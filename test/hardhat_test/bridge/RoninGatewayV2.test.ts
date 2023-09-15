@@ -24,7 +24,7 @@ import {
 import { ERC20PresetMinterPauser } from '../../../src/types/ERC20PresetMinterPauser';
 import { ReceiptStruct } from '../../../src/types/IRoninGatewayV2';
 import { DEFAULT_ADDRESS } from '../../../src/utils';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { ContractType, mineBatchTxs } from '../helpers/utils';
 import { OperatorTuple, createManyOperatorTuples } from '../helpers/address-set-types/operator-tuple-type';
 import { BridgeManagerInterface } from '../../../src/script/bridge-admin-interface';
@@ -99,7 +99,7 @@ describe('Ronin Gateway V2 test', () => {
       roninBridgeManagerAddress,
       roninTrustedOrganizationAddress,
       profileAddress,
-    } = await initTest('RoninGatewayV2')({
+    } = await deployTestSuite('RoninGatewayV2')({
       bridgeContract: bridgeContract.address,
       stakingArguments: {
         minValidatorStakingAmount,

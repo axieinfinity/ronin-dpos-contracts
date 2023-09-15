@@ -17,7 +17,7 @@ import {
 } from '../../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import { mineBatchTxs } from '../helpers/utils';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { Address } from 'hardhat-deploy/dist/types';
 import {
@@ -84,7 +84,7 @@ describe('Emergency Exit test', () => {
       stakingVestingContractAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('EmergencyExit')({
+    } = await deployTestSuite('EmergencyExit')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
           slashDoubleSignAmount,

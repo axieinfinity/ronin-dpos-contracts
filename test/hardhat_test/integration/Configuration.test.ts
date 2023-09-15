@@ -29,7 +29,7 @@ import {
   BridgeSlash,
   BridgeSlash__factory,
 } from '../../../src/types';
-import { initTest, InitTestInput } from '../helpers/fixture';
+import { deployTestSuite, DeployTestSuiteInput } from '../helpers/fixture';
 import { MAX_UINT255, randomAddress } from '../../../src/utils';
 import {
   createManyTrustedOrganizationAddressSets,
@@ -57,7 +57,7 @@ let deployer: SignerWithAddress;
 let signers: SignerWithAddress[];
 let trustedOrgs: TrustedOrganizationAddressSet[];
 
-const config: InitTestInput = {
+const config: DeployTestSuiteInput = {
   bridgeContract: randomAddress(),
   startedAtBlock: Math.floor(Math.random() * 1_000_000),
 
@@ -157,7 +157,7 @@ describe('[Integration] Configuration check', () => {
       bridgeRewardAddress,
       bridgeSlashAddress,
       roninBridgeManagerAddress,
-    } = await initTest('Configuration')(config);
+    } = await deployTestSuite('Configuration')(config);
 
     roninGovernanceAdminContract = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);

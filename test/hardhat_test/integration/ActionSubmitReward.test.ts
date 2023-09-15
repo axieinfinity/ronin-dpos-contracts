@@ -14,7 +14,7 @@ import {
   RoninGovernanceAdmin__factory,
 } from '../../../src/types';
 import { ContractType, mineBatchTxs } from '../helpers/utils';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { EpochController } from '../helpers/ronin-validator-set';
 import { BlockRewardDeprecatedType } from '../../../src/script/ronin-validator-set';
@@ -63,7 +63,7 @@ describe('[Integration] Submit Block Reward', () => {
       roninGovernanceAdminAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('ActionSubmitReward')({
+    } = await deployTestSuite('ActionSubmitReward')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
           unavailabilityTier2Threshold,

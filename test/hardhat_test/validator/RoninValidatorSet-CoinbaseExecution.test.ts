@@ -22,7 +22,7 @@ import { expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-
 import { expects as CandidateManagerExpects } from '../helpers/candidate-manager';
 import { expects as StakingVestingExpects } from '../helpers/staking-vesting';
 import { ContractType, getLastBlockTimestamp, mineBatchTxs } from '../helpers/utils';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { BlockRewardDeprecatedType } from '../../../src/script/ronin-validator-set';
 import { Address } from 'hardhat-deploy/dist/types';
@@ -98,7 +98,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       stakingVestingContractAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('RoninValidatorSet-Coinbase')({
+    } = await deployTestSuite('RoninValidatorSet-Coinbase')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
           slashDoubleSignAmount,

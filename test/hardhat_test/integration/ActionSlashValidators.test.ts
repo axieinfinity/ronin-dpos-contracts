@@ -19,7 +19,7 @@ import { EpochController, expects as RoninValidatorSetExpects } from '../helpers
 import { expects as CandidateManagerExpects } from '../helpers/candidate-manager';
 import { mineBatchTxs } from '../helpers/utils';
 import { SlashType } from '../../../src/script/slash-indicator';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import {
   createManyTrustedOrganizationAddressSets,
@@ -67,7 +67,7 @@ describe('[Integration] Slash validators', () => {
       roninGovernanceAdminAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('ActionSlashValidators')({
+    } = await deployTestSuite('ActionSlashValidators')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
           unavailabilityTier1Threshold,

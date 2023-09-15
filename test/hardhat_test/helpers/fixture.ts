@@ -31,7 +31,7 @@ import {
   bridgeRewardConf,
 } from '../../../src/configs/bridge-manager';
 
-export interface InitTestOutput {
+export interface DeployTestSuiteOutput {
   roninGovernanceAdminAddress: Address;
   maintenanceContractAddress: Address;
   roninTrustedOrganizationAddress: Address;
@@ -48,7 +48,7 @@ export interface InitTestOutput {
   mainchainBridgeManagerAddress: Address;
 }
 
-export interface InitTestInput {
+export interface DeployTestSuiteInput {
   roninChainId?: BigNumberish;
   bridgeContract?: Address;
   startedAtBlock?: BigNumberish;
@@ -63,7 +63,7 @@ export interface InitTestInput {
   bridgeRewardArguments?: BridgeRewardArguments;
 }
 
-export const defaultTestConfig: InitTestInput = {
+export const defaultTestConfig: DeployTestSuiteInput = {
   bridgeContract: ethers.constants.AddressZero,
   startedAtBlock: 0,
 
@@ -153,8 +153,8 @@ export const defaultTestConfig: InitTestInput = {
   },
 };
 
-export const initTest = (id: string) =>
-  deployments.createFixture<InitTestOutput, InitTestInput>(async ({ deployments }, options) => {
+export const deployTestSuite = (id: string) =>
+  deployments.createFixture<DeployTestSuiteOutput, DeployTestSuiteInput>(async ({ deployments }, options) => {
     if (network.name == Network.Hardhat) {
       generalRoninConf[network.name] = {
         ...generalRoninConf[network.name],

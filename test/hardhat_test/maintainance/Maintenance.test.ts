@@ -15,7 +15,7 @@ import {
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
 } from '../../../src/types';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { EpochController, expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import {
@@ -73,7 +73,7 @@ describe('Maintenance test', () => {
       roninGovernanceAdminAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('Maintenance')({
+    } = await deployTestSuite('Maintenance')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
           unavailabilityTier1Threshold,

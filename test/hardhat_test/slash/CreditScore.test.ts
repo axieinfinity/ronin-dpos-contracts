@@ -16,7 +16,7 @@ import {
   Staking,
   Staking__factory,
 } from '../../../src/types';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { EpochController, expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { expects as CandidateManagerExpects } from '../helpers/candidate-manager';
 import { IndicatorController, ScoreController } from '../helpers/slash';
@@ -31,6 +31,7 @@ import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let maintenanceContract: Maintenance;
 let slashContract: MockSlashIndicatorExtended;
@@ -160,7 +161,7 @@ describe('Credit score and bail out test', () => {
       maintenanceContractAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('CreditScore')({
+    } = await deployTestSuite('CreditScore')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
           unavailabilityTier1Threshold,
@@ -218,12 +219,15 @@ describe('Credit score and bail out test', () => {
     await mockSlashLogic.deployed();
     await governanceAdminInterface.upgrade(slashContractAddress, mockSlashLogic.address);
 
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
-    await slashContract.initializeV3(profileAddress);
-
-    await maintenanceContract.initializeV3(profileAddress);
-    await stakingContract.initializeV3(profileAddress);
-    await validatorContract.initializeV4(profileAddress);
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      maintenanceContractAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+    });
 
     for (let i = 0; i < maxValidatorNumber; i++) {
       await stakingContract

@@ -14,7 +14,7 @@ import {
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
 } from '../../../src/types';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import {
   createManyTrustedOrganizationAddressSets,
@@ -103,7 +103,7 @@ describe('Arrange validators', () => {
       roninTrustedOrganizationAddress,
       roninGovernanceAdminAddress,
       profileAddress,
-    } = await initTest('ArrangeValidators')({
+    } = await deployTestSuite('ArrangeValidators')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
           slashAmountForUnavailabilityTier2Threshold,

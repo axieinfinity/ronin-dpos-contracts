@@ -18,7 +18,7 @@ import {
   FastFinalityTracking,
 } from '../../../src/types';
 import { EpochController } from '../helpers/ronin-validator-set';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import {
   createManyTrustedOrganizationAddressSets,
@@ -78,7 +78,7 @@ describe('Ronin Validator Set: Fast Finality test', () => {
       stakingVestingContractAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('RoninValidatorSet-FastFinality')({
+    } = await deployTestSuite('RoninValidatorSet-FastFinality')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
           slashDoubleSignAmount,

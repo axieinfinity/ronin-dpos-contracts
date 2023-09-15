@@ -14,7 +14,7 @@ import {
   Staking__factory,
 } from '../../../src/types';
 import { SlashType } from '../../../src/script/slash-indicator';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
 import { IndicatorController } from '../helpers/slash';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
@@ -89,7 +89,7 @@ describe('Slash indicator test', () => {
       roninGovernanceAdminAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('SlashIndicator')({
+    } = await deployTestSuite('SlashIndicator')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
           unavailabilityTier1Threshold,

@@ -18,7 +18,7 @@ import {
 } from '../../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
 import { getLastBlockTimestamp, mineBatchTxs } from '../helpers/utils';
-import { defaultTestConfig, initTest } from '../helpers/fixture';
+import { defaultTestConfig, deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { Address } from 'hardhat-deploy/dist/types';
 import {
@@ -96,7 +96,7 @@ describe('Ronin Validator Set: candidate test', () => {
       stakingVestingContractAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('RoninValidatorSet-Candidate')({
+    } = await deployTestSuite('RoninValidatorSet-Candidate')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
           slashDoubleSignAmount,

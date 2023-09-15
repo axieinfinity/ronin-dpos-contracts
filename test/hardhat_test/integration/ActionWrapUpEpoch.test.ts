@@ -16,7 +16,7 @@ import {
 import { expects as StakingExpects } from '../helpers/staking';
 import { EpochController, expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { ContractType, mineBatchTxs } from '../helpers/utils';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { Address } from 'hardhat-deploy/dist/types';
 import {
@@ -63,7 +63,7 @@ describe('[Integration] Wrap up epoch', () => {
       roninGovernanceAdminAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('ActionWrapUpEpoch')({
+    } = await deployTestSuite('ActionWrapUpEpoch')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
           unavailabilityTier2Threshold,

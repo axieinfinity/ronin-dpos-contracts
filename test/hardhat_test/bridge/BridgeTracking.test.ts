@@ -28,7 +28,7 @@ import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
 import { ContractType, mineBatchTxs } from '../helpers/utils';
 import {
@@ -91,7 +91,7 @@ describe('Bridge Tracking test', () => {
       bridgeRewardAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('BridgeTracking')({
+    } = await deployTestSuite('BridgeTracking')({
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
