@@ -138,6 +138,7 @@ describe('Ronin Validator Set: candidate test', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      maintenanceContractAddress: undefined,
     });
 
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);

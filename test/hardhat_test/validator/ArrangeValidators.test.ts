@@ -143,6 +143,7 @@ describe('Arrange validators', () => {
       fastFinalityTrackingAddress,
       slashContractAddress,
       validatorContractAddress,
+      maintenanceContractAddress: undefined,
     });
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();

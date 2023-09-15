@@ -13,14 +13,13 @@ import {
   Staking__factory,
 } from '../../../src/types';
 import { StakingVestingArguments } from '../../../src/utils';
-import { generalRoninConf } from '../../../src/configs/config';
 import { defaultTestConfig } from './fixture';
 
-let maintenanceContract: Maintenance;
-let stakingContract: Staking;
-let validatorContract: RoninValidatorSet;
-let slashContract: SlashIndicator;
-let stakingVestingContract: StakingVesting;
+let maintenanceContract: Maintenance | undefined;
+let stakingContract: Staking | undefined;
+let validatorContract: RoninValidatorSet | undefined;
+let slashContract: SlashIndicator | undefined;
+let stakingVestingContract: StakingVesting | undefined;
 
 export interface InitializeTestSuiteInput {
   deployer: SignerWithAddress;
@@ -51,25 +50,26 @@ interface InitREP3Input {
 }
 
 export const initializeTestSuite = async (input: InitializeTestSuiteInput) => {
-  if (input.maintenanceContractAddress) {
-    maintenanceContract = Maintenance__factory.connect(input.maintenanceContractAddress!, input.deployer);
-  }
+  // Cheat the instance of `input`, since it propagates among tests, and does not get cleared.
+  maintenanceContract = input.maintenanceContractAddress
+    ? Maintenance__factory.connect(input.maintenanceContractAddress!, input.deployer)
+    : undefined;
 
-  if (input.stakingContractAddress) {
-    stakingContract = Staking__factory.connect(input.stakingContractAddress!, input.deployer);
-  }
+  stakingContract = input.stakingContractAddress
+    ? Staking__factory.connect(input.stakingContractAddress!, input.deployer)
+    : undefined;
 
-  if (input.validatorContractAddress) {
-    validatorContract = RoninValidatorSet__factory.connect(input.validatorContractAddress!, input.deployer);
-  }
+  validatorContract = input.validatorContractAddress
+    ? RoninValidatorSet__factory.connect(input.validatorContractAddress!, input.deployer)
+    : undefined;
 
-  if (input.slashContractAddress) {
-    slashContract = SlashIndicator__factory.connect(input.slashContractAddress!, input.deployer);
-  }
+  slashContract = input.slashContractAddress
+    ? SlashIndicator__factory.connect(input.slashContractAddress!, input.deployer)
+    : undefined;
 
-  if (input.stakingVestingAddress) {
-    stakingVestingContract = StakingVesting__factory.connect(input.stakingVestingAddress!, input.deployer);
-  }
+  stakingVestingContract = input.stakingVestingAddress
+    ? StakingVesting__factory.connect(input.stakingVestingAddress!, input.deployer)
+    : undefined;
 
   await upgradeRep2({
     fastFinalityTrackingAddress: input.fastFinalityTrackingAddress,

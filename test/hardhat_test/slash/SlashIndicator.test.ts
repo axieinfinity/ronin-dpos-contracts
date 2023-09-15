@@ -149,6 +149,7 @@ describe('Slash indicator test', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      maintenanceContractAddress: undefined,
     });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);

@@ -142,6 +142,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      maintenanceContractAddress: undefined,
     });
 
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);

@@ -140,6 +140,7 @@ describe('Ronin Validator Set: Fast Finality test', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      maintenanceContractAddress: undefined,
       stakingVestingAddress: stakingVestingContractAddress,
       stakingVestingArgs: {
         fastFinalityRewardPercent,
