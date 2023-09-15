@@ -182,7 +182,10 @@ describe('[Integration] Configuration check', () => {
       ...trustedOrgs.map((_) => _.governor)
     );
 
+    await slashContract.initializeV3(profileAddress);
+
     await stakingContract.initializeV3(profileAddress);
+    await validatorContract.initializeV4(profileAddress);
   });
 
   it('Should the RoninGovernanceAdmin contract set configs correctly', async () => {
@@ -246,6 +249,7 @@ describe('[Integration] Configuration check', () => {
   it('Should the SlashIndicatorContract contract set configs correctly', async () => {
     expect(await slashContract.getContract(ContractType.VALIDATOR)).to.eq(validatorContract.address);
     expect(await slashContract.getContract(ContractType.MAINTENANCE)).to.eq(maintenanceContract.address);
+    expect(await slashContract.getContract(ContractType.PROFILE)).to.eq(profileContract.address);
     expect(await slashContract.getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).to.eq(
       roninTrustedOrganizationContract.address
     );
@@ -326,6 +330,7 @@ describe('[Integration] Configuration check', () => {
     expect(await validatorContract.getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).to.eq(
       roninTrustedOrganizationContract.address
     );
+    expect(await validatorContract.getContract(ContractType.PROFILE)).to.eq(profileContract.address);
     expect(await validatorContract.maxValidatorNumber()).to.eq(config.roninValidatorSetArguments?.maxValidatorNumber);
     expect(await validatorContract.maxValidatorCandidate()).to.eq(
       config.roninValidatorSetArguments?.maxValidatorCandidate
