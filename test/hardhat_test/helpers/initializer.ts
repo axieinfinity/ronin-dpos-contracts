@@ -8,22 +8,30 @@ import {
   SlashIndicator,
   SlashIndicator__factory,
   Staking,
+  StakingVesting,
+  StakingVesting__factory,
   Staking__factory,
 } from '../../../src/types';
+import { StakingVestingArguments } from '../../../src/utils';
+import { generalRoninConf } from '../../../src/configs/config';
+import { defaultTestConfig } from './fixture';
 
 let maintenanceContract: Maintenance;
 let stakingContract: Staking;
 let validatorContract: RoninValidatorSet;
 let slashContract: SlashIndicator;
+let stakingVestingContract: StakingVesting;
 
 export interface InitializeTestSuiteInput {
   deployer: SignerWithAddress;
   fastFinalityTrackingAddress: Address;
+  stakingVestingArgs?: StakingVestingArguments;
   profileAddress: Address;
   maintenanceContractAddress?: Address;
   slashContractAddress?: Address;
   stakingContractAddress?: Address;
   validatorContractAddress?: Address;
+  stakingVestingAddress?: Address;
 }
 
 interface InitREP2Input {
@@ -31,6 +39,8 @@ interface InitREP2Input {
   profileAddress: Address;
   validatorContract?: RoninValidatorSet;
   slashContract?: SlashIndicator;
+  stakingVestingContract?: StakingVesting;
+  stakingVestingArgs?: StakingVestingArguments;
 }
 
 interface InitREP3Input {
@@ -57,11 +67,17 @@ export const initializeTestSuite = async (input: InitializeTestSuiteInput) => {
     slashContract = SlashIndicator__factory.connect(input.slashContractAddress!, input.deployer);
   }
 
+  if (input.stakingVestingAddress) {
+    stakingVestingContract = StakingVesting__factory.connect(input.stakingVestingAddress!, input.deployer);
+  }
+
   await upgradeRep2({
     fastFinalityTrackingAddress: input.fastFinalityTrackingAddress,
     profileAddress: input.profileAddress,
     validatorContract,
     slashContract,
+    stakingVestingArgs: input.stakingVestingArgs,
+    stakingVestingContract,
   });
   await upgradeRep3({
     profileAddress: input.profileAddress,
@@ -74,6 +90,13 @@ export const initializeTestSuite = async (input: InitializeTestSuiteInput) => {
 const upgradeRep2 = async (input: InitREP2Input) => {
   if (input.validatorContract) {
     await input.validatorContract.initializeV3(input.fastFinalityTrackingAddress);
+  }
+
+  if (input.stakingVestingContract) {
+    await input.stakingVestingContract.initializeV3(
+      input.stakingVestingArgs!.fastFinalityRewardPercent ??
+        defaultTestConfig.stakingVestingArguments?.fastFinalityRewardPercent!
+    );
   }
 
   if (input.slashContract) {

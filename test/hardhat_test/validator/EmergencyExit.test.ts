@@ -115,6 +115,15 @@ describe('Emergency Exit test', () => {
       },
     });
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+    });
+
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     stakingVesting = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);
     slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
@@ -126,15 +135,6 @@ describe('Emergency Exit test', () => {
       undefined,
       ...trustedOrgs.map((_) => _.governor)
     );
-
-    await initializeTestSuite({
-      deployer,
-      fastFinalityTrackingAddress,
-      profileAddress,
-      slashContractAddress,
-      stakingContractAddress,
-      validatorContractAddress,
-    });
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();

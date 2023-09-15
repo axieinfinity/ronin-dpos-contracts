@@ -140,6 +140,10 @@ describe('Ronin Validator Set: Fast Finality test', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      stakingVestingAddress: stakingVestingContractAddress,
+      stakingVestingArgs: {
+        fastFinalityRewardPercent,
+      },
     });
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
