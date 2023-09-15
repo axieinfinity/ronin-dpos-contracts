@@ -37,6 +37,7 @@ import {
 import { SlashType } from '../../../src/script/slash-indicator';
 import { ProposalDetailStruct } from '../../../src/types/GovernanceAdmin';
 import { VoteType } from '../../../src/script/proposal';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let stakingVesting: StakingVesting;
@@ -134,6 +135,15 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       },
     });
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+    });
+
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     stakingVesting = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);
     slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
@@ -150,16 +160,11 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
-    await slashIndicator.initializeV3(profileAddress);
     await roninValidatorSet.initEpoch();
-    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
     await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
-
-    await stakingContract.initializeV3(profileAddress);
-    await roninValidatorSet.initializeV4(profileAddress);
   });
 
   after(async () => {

@@ -31,6 +31,7 @@ import { ProposalDetailStruct } from '../../../src/types/GovernanceAdmin';
 import { getProposalHash, VoteType } from '../../../src/script/proposal';
 import { expects as GovernanceAdminExpects } from '../helpers/governance-admin';
 import { Encoder } from '../helpers/encoder';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let slashContract: MockSlashIndicatorExtended;
 let mockSlashLogic: MockSlashIndicatorExtended;
@@ -141,6 +142,15 @@ describe('Slash indicator test', () => {
       },
     });
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+    });
+
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetOverridePrecompile__factory.connect(validatorContractAddress, deployer);
     slashContract = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
@@ -155,15 +165,10 @@ describe('Slash indicator test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetOverridePrecompile__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
-    await slashContract.initializeV3(profileAddress);
 
     mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashLogic.deployed();
     await governanceAdminInterface.upgrade(slashContractAddress, mockSlashLogic.address);
-
-    await stakingContract.initializeV3(profileAddress);
-    await validatorContract.initializeV4(profileAddress);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {

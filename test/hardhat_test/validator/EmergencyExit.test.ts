@@ -29,6 +29,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { getEmergencyExitBallotHash } from '../../../src/script/proposal';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let stakingVesting: StakingVesting;
@@ -126,13 +127,19 @@ describe('Emergency Exit test', () => {
       ...trustedOrgs.map((_) => _.governor)
     );
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+    });
+
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await roninValidatorSet.initEpoch();
-    await stakingContract.initializeV3(profileAddress);
-    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
-    await roninValidatorSet.initializeV4(profileAddress);
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();

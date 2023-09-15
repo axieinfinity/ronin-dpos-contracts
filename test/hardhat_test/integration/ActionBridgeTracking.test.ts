@@ -37,6 +37,7 @@ import { ContractType, mineBatchTxs } from '../helpers/utils';
 import { BridgeManagerInterface } from '../../../src/script/bridge-admin-interface';
 import { TargetOption } from '../../../src/script/proposal';
 import { OperatorTuple, createManyOperatorTuples } from '../helpers/address-set-types/operator-tuple-type';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
@@ -172,17 +173,17 @@ describe('[Integration] Bridge Tracking test', () => {
       ...trustedOrgs.map((_) => _.governor)
     );
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+    });
+
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
-    await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, roninValidatorSet.address, roninValidatorSet.address],
-      [
-        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        roninValidatorSet.interface.encodeFunctionData('initializeV3', [fastFinalityTrackingAddress]),
-        roninValidatorSet.interface.encodeFunctionData('initializeV4', [profileAddress]),
-      ]
-    );
     await roninValidatorSet.initEpoch();
 
     await TransparentUpgradeableProxyV2__factory.connect(bridgeContract.address, deployer).changeAdmin(

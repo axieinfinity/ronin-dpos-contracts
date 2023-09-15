@@ -37,6 +37,7 @@ import {
 } from '../helpers/address-set-types/trusted-org-set-type';
 import { ContractType, compareBigNumbers } from '../helpers/utils';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let stakingVestingContract: StakingVesting;
 let maintenanceContract: Maintenance;
@@ -157,6 +158,7 @@ describe('[Integration] Configuration check', () => {
       bridgeRewardAddress,
       bridgeSlashAddress,
       roninBridgeManagerAddress,
+      fastFinalityTrackingAddress,
     } = await deployTestSuite('Configuration')(config);
 
     roninGovernanceAdminContract = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
@@ -182,10 +184,15 @@ describe('[Integration] Configuration check', () => {
       ...trustedOrgs.map((_) => _.governor)
     );
 
-    await slashContract.initializeV3(profileAddress);
-
-    await stakingContract.initializeV3(profileAddress);
-    await validatorContract.initializeV4(profileAddress);
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      maintenanceContractAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+    });
   });
 
   it('Should the RoninGovernanceAdmin contract set configs correctly', async () => {

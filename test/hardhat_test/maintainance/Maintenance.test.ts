@@ -26,6 +26,7 @@ import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -116,21 +117,19 @@ describe('Maintenance test', () => {
       ...trustedOrgs.map((_) => _.governor)
     );
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      maintenanceContractAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+    });
+
     const mockValidatorLogic = await new MockRoninValidatorSetOverridePrecompile__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
-    await governanceAdminInterface.functionDelegateCalls(
-      [maintenanceContract.address, slashContract.address],
-      [
-        maintenanceContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        slashContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-      ]
-    );
-
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
-
-    await stakingContract.initializeV3(profileAddress);
-    await validatorContract.initializeV4(profileAddress);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {

@@ -35,6 +35,7 @@ import {
   WhitelistedCandidateAddressSet,
   mergeToManyWhitelistedCandidateAddressSets,
 } from '../helpers/address-set-types/whitelisted-candidate-set-type';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let stakingVesting: StakingVesting;
@@ -130,6 +131,15 @@ describe('Ronin Validator Set: candidate test', () => {
       },
     });
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+    });
+
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     stakingVesting = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);
     slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
@@ -146,14 +156,10 @@ describe('Ronin Validator Set: candidate test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await roninValidatorSet.initEpoch();
-    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
     await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
-
-    await stakingContract.initializeV3(profileAddress);
-    await roninValidatorSet.initializeV4(profileAddress);
   });
 
   after(async () => {

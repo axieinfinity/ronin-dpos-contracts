@@ -30,6 +30,7 @@ import {
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { mineBatchTxs } from '../helpers/utils';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let validatorContract: MockRoninValidatorSetExtended;
 let stakingVesting: StakingVesting;
@@ -132,6 +133,15 @@ describe('Ronin Validator Set: Fast Finality test', () => {
       ...trustedOrgs.map((_) => _.governor)
     );
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+    });
+
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
@@ -140,12 +150,6 @@ describe('Ronin Validator Set: Fast Finality test', () => {
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
     await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
-
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
-    await stakingVesting.initializeV3(fastFinalityRewardPercent);
-
-    await stakingContract.initializeV3(profileAddress);
-    await validatorContract.initializeV4(profileAddress);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {

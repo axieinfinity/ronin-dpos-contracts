@@ -30,6 +30,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { DEFAULT_ADDRESS } from '../../../src/utils';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
@@ -110,18 +111,18 @@ describe('[Integration] Slash validators', () => {
       trustedOrgs[0].governor
     );
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+    });
+
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
-    await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, validatorContract.address, validatorContract.address, slashContract.address],
-      [
-        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-        validatorContract.interface.encodeFunctionData('initializeV3', [fastFinalityTrackingAddress]),
-        validatorContract.interface.encodeFunctionData('initializeV4', [profileAddress]),
-        slashContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
-      ]
-    );
     await validatorContract.initEpoch();
 
     await EpochController.setTimestampToPeriodEnding();

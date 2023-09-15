@@ -20,6 +20,7 @@ import {
   createManyTrustedOrganizationAddressSets,
   TrustedOrganizationAddressSet,
 } from '../helpers/address-set-types/trusted-org-set-type';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let validatorContract: MockRoninValidatorSetExtended;
 let slashIndicator: MockSlashIndicatorExtended;
@@ -102,6 +103,7 @@ describe('Arrange validators', () => {
       validatorContractAddress,
       roninTrustedOrganizationAddress,
       roninGovernanceAdminAddress,
+      fastFinalityTrackingAddress,
       profileAddress,
     } = await deployTestSuite('ArrangeValidators')({
       slashIndicatorArguments: {
@@ -135,6 +137,14 @@ describe('Arrange validators', () => {
       ...trustedOrgs.map((_) => _.governor)
     );
 
+    await initializeTestSuite({
+      deployer,
+      profileAddress,
+      fastFinalityTrackingAddress,
+      slashContractAddress,
+      validatorContractAddress,
+    });
+
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
@@ -143,11 +153,6 @@ describe('Arrange validators', () => {
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
     await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
-
-    await governanceAdminInterface.functionDelegateCalls(
-      [validatorContract.address],
-      [validatorContract.interface.encodeFunctionData('initializeV3', [profileAddress])]
-    );
   });
 
   describe('Update priority list', async () => {
