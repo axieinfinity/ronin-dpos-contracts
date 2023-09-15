@@ -181,10 +181,8 @@ describe('[Integration] Configuration check', () => {
       undefined,
       ...trustedOrgs.map((_) => _.governor)
     );
-    await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address],
-      [stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress])]
-    );
+
+    await stakingContract.initializeV3(profileAddress);
   });
 
   it('Should the RoninGovernanceAdmin contract set configs correctly', async () => {
