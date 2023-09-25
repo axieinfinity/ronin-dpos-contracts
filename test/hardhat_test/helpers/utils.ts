@@ -72,7 +72,7 @@ export enum ContractType {
   /* 11 */ BRIDGE_MANAGER,
   /* 12 */ BRIDGE_SLASH,
   /* 13 */ BRIDGE_REWARD,
-  /* 14 */ FAST_FINALTIY_TRACKING,
+  /* 14 */ FAST_FINALITY_TRACKING,
   /* 15 */ PROFILE,
 }
 

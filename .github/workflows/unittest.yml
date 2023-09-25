@@ -4,12 +4,12 @@ on:
     branches:
       - mainnet
       - testnet
-      - 'release/**'
+      - "release/**"
   pull_request:
     branches:
       - mainnet
       - testnet
-      - 'release/**'
+      - "release/**"
 
 permissions:
   packages: read

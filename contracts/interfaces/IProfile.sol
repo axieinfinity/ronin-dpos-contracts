@@ -77,4 +77,13 @@ interface IProfile {
    * Emit an {ProfileAddressChanged}.
    */
   function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external;
+
+  /**
+   * @notice The candidate admin registers a new profile.
+   *
+   * @dev Requirements:
+   * - The profile must not be existent before.
+   * - Only user with candidate admin role can call this method.
+   */
+  function registerProfile(CandidateProfile memory profile) external;
 }

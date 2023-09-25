@@ -150,7 +150,7 @@ abstract contract CoinbaseExecution is
    * - This method is only called once each epoch.
    */
   function _syncFastFinalityReward(uint256 epoch, address[] memory validators) private {
-    uint256[] memory voteCounts = IFastFinalityTracking(getContract(ContractType.FAST_FINALTIY_TRACKING))
+    uint256[] memory voteCounts = IFastFinalityTracking(getContract(ContractType.FAST_FINALITY_TRACKING))
       .getManyFinalityVoteCounts(epoch, validators);
     uint256 divisor = _numberOfBlocksInEpoch * validators.length;
     uint256 iReward;

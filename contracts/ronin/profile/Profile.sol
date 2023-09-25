@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/staking/IStaking.sol";
 import "../../interfaces/IProfile.sol";
 import "./ProfileXComponents.sol";
+import { ErrUnauthorized, RoleAccess } from "../../utils/CommonErrors.sol";
 import "./ProfileStorage.sol";
 
 pragma solidity ^0.8.9;
@@ -11,6 +13,10 @@ pragma solidity ^0.8.9;
 contract Profile is IProfile, ProfileStorage, ProfileXComponents, Initializable {
   constructor() {
     _disableInitializers();
+  }
+
+  function initialize(address validatorContract) external initializer {
+    _setContract(ContractType.VALIDATOR, validatorContract);
   }
 
   /**
@@ -96,5 +102,19 @@ contract Profile is IProfile, ProfileStorage, ProfileXComponents, Initializable 
     _profile.consensus = newConsensusAddr;
 
     emit ProfileAddressChanged(id, RoleAccess.CONSENSUS);
+  }
+
+  /**
+   * @inheritdoc IProfile
+   */
+  function registerProfile(CandidateProfile memory profile) external {
+    CandidateProfile storage _profile = _id2Profile[profile.id];
+    if (_profile.id != address(0)) revert ErrExistentProfile();
+    if (
+      msg.sender != profile.admin ||
+      !IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isCandidateAdmin(profile.consensus, profile.admin)
+    ) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
+
+    _addNewProfile(_profile, profile);
   }
 }
