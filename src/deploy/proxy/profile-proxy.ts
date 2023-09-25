@@ -33,11 +33,7 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     validatorContractAddress = validatorContractDeployment.address;
   }
 
-  const data = new Profile__factory().interface.encodeFunctionData('initialize', [
-    generalRoninConf[network.name]!.bridgeContract,
-    validatorContractAddress,
-    generalRoninConf[network.name]!.startedAtBlock,
-  ]);
+  const data = new Profile__factory().interface.encodeFunctionData('initialize', [validatorContractAddress]);
 
   await deploy('ProfileProxy', {
     contract: 'TransparentUpgradeableProxyV2',
