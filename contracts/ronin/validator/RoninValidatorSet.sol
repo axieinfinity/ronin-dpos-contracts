@@ -70,7 +70,7 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
   }
 
   function initializeV3(address fastFinalityTrackingContract) external reinitializer(3) {
-    _setContract(ContractType.FAST_FINALTIY_TRACKING, fastFinalityTrackingContract);
+    _setContract(ContractType.FAST_FINALITY_TRACKING, fastFinalityTrackingContract);
   }
 
   /**
