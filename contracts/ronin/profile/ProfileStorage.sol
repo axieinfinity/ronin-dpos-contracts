@@ -45,21 +45,41 @@ abstract contract ProfileStorage is IProfile, HasContracts {
   /**
    * @dev Checks each element in the new profile and reverts if there is duplication with any existing profile.
    */
-  function _checkDuplicatedInRegistry(CandidateProfile memory profile) internal {
-    if (_registry[uint256(uint160(profile.consensus))]) {
-      revert ErrDuplicatedInfo("consensus", uint256(uint160(profile.consensus)));
+  function _checkDuplicatedInRegistry(CandidateProfile memory profile) internal view {
+    _checkDuplicatedConsensus(profile.consensus);
+    _checkDuplicatedAdmin(profile.admin);
+    _checkDuplicatedTreasury(profile.treasury);
+    _checkDuplicatedGovernor(profile.governor);
+    _checkDuplicatedPubkey(profile.pubkey);
+  }
+
+  function _checkDuplicatedConsensus(address consensus) internal view {
+    if (_registry[uint256(uint160(consensus))]) {
+      revert ErrDuplicatedInfo("consensus", uint256(uint160(consensus)));
     }
-    if (_registry[uint256(uint160(profile.admin))]) {
-      revert ErrDuplicatedInfo("admin", uint256(uint160(profile.admin)));
+  }
+
+  function _checkDuplicatedAdmin(address admin) internal view {
+    if (_registry[uint256(uint160(admin))]) {
+      revert ErrDuplicatedInfo("admin", uint256(uint160(admin)));
     }
-    if (_registry[uint256(uint160(address(profile.treasury)))]) {
-      revert ErrDuplicatedInfo("treasury", uint256(uint160(address(profile.treasury))));
+  }
+
+  function _checkDuplicatedTreasury(address treasury) internal view {
+    if (_registry[uint256(uint160(treasury))]) {
+      revert ErrDuplicatedInfo("treasury", uint256(uint160(treasury)));
     }
-    if (_registry[uint256(uint160(profile.governor))]) {
-      revert ErrDuplicatedInfo("governor", uint256(uint160(profile.governor)));
+  }
+
+  function _checkDuplicatedGovernor(address governor) internal view {
+    if (_registry[uint256(uint160(governor))]) {
+      revert ErrDuplicatedInfo("governor", uint256(uint160(governor)));
     }
-    if (_registry[_hashPubkey(profile.pubkey)]) {
-      revert ErrDuplicatedInfo("pubkey", _hashPubkey(profile.pubkey));
+  }
+
+  function _checkDuplicatedPubkey(bytes memory pubkey) internal view {
+    if (_registry[_hashPubkey(pubkey)]) {
+      revert ErrDuplicatedInfo("pubkey", _hashPubkey(pubkey));
     }
   }
 

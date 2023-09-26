@@ -48,4 +48,20 @@ contract Profile is IProfile, ProfileStorage, Initializable {
 
     _addNewProfile(_profile, profile);
   }
+
+  /**
+   * @inheritdoc IProfile
+   */
+  function changePubkey(address id, bytes memory pubkey) external {
+    CandidateProfile storage _profile = _getId2ProfileHelper(id);
+    if (msg.sender != _profile.admin) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
+    _checkDuplicatedPubkey(pubkey);
+
+    _registry[_hashPubkey(_profile.pubkey)] = false;
+
+    _profile.pubkey = pubkey;
+    _registry[_hashPubkey(_profile.pubkey)] = true;
+
+    emit PubkeyChanged(id);
+  }
 }
