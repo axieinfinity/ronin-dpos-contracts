@@ -11,7 +11,7 @@ abstract contract ProfileStorage is IProfile, HasContracts {
   /// @dev Mapping from any address or keccak256(pubkey) => whether it is already registered.
   mapping(uint256 => bool) internal _registry;
   /// @dev Upgradeable gap.
-  bytes32[50] __gap;
+  bytes32[49] __gap;
 
   /**
    * @dev Add a profile from memory to storage.
@@ -35,7 +35,7 @@ abstract contract ProfileStorage is IProfile, HasContracts {
   }
 
   /**
-   * @dev Get an existed profile struct from id. Revert if the profile does not exists.
+   * @dev Get an existed profile struct from `id`. Revert if the profile does not exists.
    */
   function _getId2ProfileHelper(address id) internal view returns (CandidateProfile storage _profile) {
     _profile = _id2Profile[id];
@@ -43,7 +43,7 @@ abstract contract ProfileStorage is IProfile, HasContracts {
   }
 
   /**
-   * @dev Checks each element in the candidate profile and reverts if there is duplication with any existing profile.
+   * @dev Checks each element in the new profile and reverts if there is duplication with any existing profile.
    */
   function _checkDuplicatedInRegistry(CandidateProfile memory profile) internal {
     if (_registry[uint256(uint160(profile.consensus))]) {
