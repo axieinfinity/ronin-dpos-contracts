@@ -38,6 +38,7 @@ contract Profile is IProfile, ProfileStorage, Initializable {
    */
   function registerProfile(CandidateProfile memory profile) external {
     CandidateProfile storage _profile = _id2Profile[profile.id];
+    if (_profile.id != _profile.consensus) revert ErrIdAndConsensusDiffer();
     if (_profile.id != address(0)) revert ErrExistentProfile();
     if (
       msg.sender != profile.admin ||
