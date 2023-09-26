@@ -35,6 +35,11 @@ interface IProfile {
   error ErrExistentProfile();
   /// @dev Error of non existed profile.
   error ErrNonExistentProfile();
+  /**
+   * @dev Error when there is a duplicated info of `value`, which is uin256-padding value of any address or hash of public key,
+   * and with value type of `infoType`.
+   */
+  error ErrDuplicatedInfo(string infoType, uint256 value);
 
   /// @dev Getter to query full `profile` from `id` address.
   function getId2Profile(address id) external view returns (CandidateProfile memory profile);

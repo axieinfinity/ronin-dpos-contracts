@@ -43,6 +43,7 @@ contract Profile is IProfile, ProfileStorage, Initializable {
       msg.sender != profile.admin ||
       !IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isCandidateAdmin(profile.consensus, profile.admin)
     ) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
+    _checkDuplicatedInRegistry(profile);
 
     _addNewProfile(_profile, profile);
   }
