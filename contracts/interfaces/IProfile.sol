@@ -30,6 +30,7 @@ interface IProfile {
   event ProfileAdded(address indexed id);
   /// @dev Event emitted when a address in a profile is changed.
   event ProfileAddressChanged(address indexed id, RoleAccess indexed addressType);
+  /// @dev Event emitted when the pubkey of the `id` is changed.
   event PubkeyChanged(address indexed id);
 
   /// @dev Error of already existed profile.
