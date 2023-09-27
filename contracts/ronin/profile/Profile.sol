@@ -60,7 +60,7 @@ contract Profile is IProfile, ProfileStorage, Initializable {
     _registry[_hashPubkey(_profile.pubkey)] = false;
 
     _profile.pubkey = pubkey;
-    _registry[_hashPubkey(_profile.pubkey)] = true;
+    _registry[_hashPubkey(pubkey)] = true;
 
     emit PubkeyChanged(id);
   }
