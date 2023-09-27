@@ -37,8 +37,9 @@ contract Profile is IProfile, ProfileStorage, Initializable {
    * @inheritdoc IProfile
    */
   function registerProfile(CandidateProfile memory profile) external {
+    if (profile.id != profile.consensus) revert ErrIdAndConsensusDiffer();
+
     CandidateProfile storage _profile = _id2Profile[profile.id];
-    if (_profile.id != _profile.consensus) revert ErrIdAndConsensusDiffer();
     if (_profile.id != address(0)) revert ErrExistentProfile();
     if (
       msg.sender != profile.admin ||
