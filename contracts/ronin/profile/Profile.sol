@@ -57,11 +57,9 @@ contract Profile is IProfile, ProfileStorage, Initializable {
     if (msg.sender != _profile.admin) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
     _checkDuplicatedPubkey(pubkey);
 
-    _registry[_hashPubkey(_profile.pubkey)] = false;
-
     _profile.pubkey = pubkey;
     _registry[_hashPubkey(pubkey)] = true;
 
-    emit PubkeyChanged(id);
+    emit PubkeyChanged(id, pubkey);
   }
 }
