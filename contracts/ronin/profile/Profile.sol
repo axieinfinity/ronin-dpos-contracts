@@ -37,13 +37,30 @@ contract Profile is IProfile, ProfileStorage, Initializable {
    * @inheritdoc IProfile
    */
   function registerProfile(CandidateProfile memory profile) external {
+    if (profile.id != profile.consensus) revert ErrIdAndConsensusDiffer();
+
     CandidateProfile storage _profile = _id2Profile[profile.id];
     if (_profile.id != address(0)) revert ErrExistentProfile();
     if (
       msg.sender != profile.admin ||
       !IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isCandidateAdmin(profile.consensus, profile.admin)
     ) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
+    _checkDuplicatedInRegistry(profile);
 
     _addNewProfile(_profile, profile);
+  }
+
+  /**
+   * @inheritdoc IProfile
+   */
+  function changePubkey(address id, bytes memory pubkey) external {
+    CandidateProfile storage _profile = _getId2ProfileHelper(id);
+    if (msg.sender != _profile.admin) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
+    _checkDuplicatedPubkey(pubkey);
+
+    _profile.pubkey = pubkey;
+    _registry[_hashPubkey(pubkey)] = true;
+
+    emit PubkeyChanged(id, pubkey);
   }
 }

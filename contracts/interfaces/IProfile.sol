@@ -30,11 +30,20 @@ interface IProfile {
   event ProfileAdded(address indexed id);
   /// @dev Event emitted when a address in a profile is changed.
   event ProfileAddressChanged(address indexed id, RoleAccess indexed addressType);
+  /// @dev Event emitted when the pubkey of the `id` is changed.
+  event PubkeyChanged(address indexed id, bytes pubkey);
 
   /// @dev Error of already existed profile.
   error ErrExistentProfile();
   /// @dev Error of non existed profile.
   error ErrNonExistentProfile();
+  /// @dev Error when create a new profile whose id and consensus are not identical.
+  error ErrIdAndConsensusDiffer();
+  /**
+   * @dev Error when there is a duplicated info of `value`, which is uin256-padding value of any address or hash of public key,
+   * and with value type of `infoType`.
+   */
+  error ErrDuplicatedInfo(string infoType, uint256 value);
 
   /// @dev Getter to query full `profile` from `id` address.
   function getId2Profile(address id) external view returns (CandidateProfile memory profile);
@@ -57,4 +66,15 @@ interface IProfile {
    */
 
   function registerProfile(CandidateProfile memory profile) external;
+
+  /**
+   * @notice The candidate admin changes the public key.
+   *
+   * @dev Requirements:
+   * - The profile must be existed.
+   * - Only user with candidate admin role can call this method.
+   * - New public key must not be duplicated.
+   */
+
+  function changePubkey(address id, bytes memory pubkey) external;
 }
