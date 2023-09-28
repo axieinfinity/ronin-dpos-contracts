@@ -4,11 +4,12 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/IProfile.sol";
 import { ErrUnauthorized, RoleAccess } from "../../utils/CommonErrors.sol";
-import "./ProfileStorage.sol";
+import { ContractType } from "../../utils/ContractType.sol";
+import "./ProfileHandler.sol";
 
 pragma solidity ^0.8.9;
 
-contract Profile is IProfile, ProfileStorage, Initializable {
+contract Profile is IProfile, ProfileHandler, Initializable {
   constructor() {
     _disableInitializers();
   }
@@ -56,10 +57,8 @@ contract Profile is IProfile, ProfileStorage, Initializable {
   function changePubkey(address id, bytes memory pubkey) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
     if (msg.sender != _profile.admin) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
-    _checkDuplicatedPubkey(pubkey);
-
-    _profile.pubkey = pubkey;
-    _registry[_hashPubkey(pubkey)] = true;
+    _checkNonDuplicatedPubkey(pubkey);
+    _setPubkey(_profile, pubkey);
 
     emit PubkeyChanged(id, pubkey);
   }

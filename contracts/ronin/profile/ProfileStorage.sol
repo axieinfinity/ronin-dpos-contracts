@@ -22,20 +22,44 @@ abstract contract ProfileStorage is IProfile, HasContracts {
    */
   function _addNewProfile(CandidateProfile storage _profile, CandidateProfile memory newProfile) internal {
     _profile.id = newProfile.id;
-    _profile.consensus = newProfile.consensus;
-    _profile.admin = newProfile.admin;
-    _profile.treasury = newProfile.treasury;
-    _profile.governor = newProfile.governor;
-    _profile.pubkey = newProfile.pubkey;
 
-    _registry[uint256(uint160(newProfile.id))] = true;
-    _registry[uint256(uint160(newProfile.consensus))] = true;
-    _registry[uint256(uint160(newProfile.admin))] = true;
-    _registry[uint256(uint160(address(newProfile.treasury)))] = true;
-    _registry[uint256(uint160(newProfile.governor))] = true;
-    _registry[_hashPubkey(newProfile.pubkey)] = true;
+    _setConsensus(_profile, newProfile.consensus);
+    _setAdmin(_profile, newProfile.admin);
+    _setTreasury(_profile, newProfile.treasury);
+    _setGovernor(_profile, newProfile.governor);
+    _setPubkey(_profile, newProfile.pubkey);
 
     emit ProfileAdded(newProfile.id);
+  }
+
+  function _setConsensus(CandidateProfile storage _profile, address consensus) internal {
+    _profile.consensus = consensus;
+    _registry[uint256(uint160(consensus))] = true;
+  }
+
+  function _setAdmin(CandidateProfile storage _profile, address admin) internal {
+    _profile.admin = admin;
+    _registry[uint256(uint160(admin))] = true;
+  }
+
+  function _setTreasury(CandidateProfile storage _profile, address payable treasury) internal {
+    _profile.treasury = treasury;
+    _registry[uint256(uint160(address(treasury)))] = true;
+  }
+
+  /**
+   * @dev Allow to registry a profile without governor address since not all validators are governing validators.
+   */
+  function _setGovernor(CandidateProfile storage _profile, address governor) internal {
+    _profile.governor = governor;
+    if (governor != address(0)) {
+      _registry[uint256(uint160(governor))] = true;
+    }
+  }
+
+  function _setPubkey(CandidateProfile storage _profile, bytes memory pubkey) internal {
+    _profile.pubkey = pubkey;
+    _registry[_hashPubkey(pubkey)] = true;
   }
 
   /**
@@ -44,47 +68,6 @@ abstract contract ProfileStorage is IProfile, HasContracts {
   function _getId2ProfileHelper(address id) internal view returns (CandidateProfile storage _profile) {
     _profile = _id2Profile[id];
     if (_profile.id == address(0)) revert ErrNonExistentProfile();
-  }
-
-  /**
-   * @dev Checks each element in the new profile and reverts if there is duplication with any existing profile.
-   */
-  function _checkDuplicatedInRegistry(CandidateProfile memory profile) internal view {
-    _checkDuplicatedConsensus(profile.consensus);
-    _checkDuplicatedAdmin(profile.admin);
-    _checkDuplicatedTreasury(profile.treasury);
-    _checkDuplicatedGovernor(profile.governor);
-    _checkDuplicatedPubkey(profile.pubkey);
-  }
-
-  function _checkDuplicatedConsensus(address consensus) internal view {
-    if (_registry[uint256(uint160(consensus))]) {
-      revert ErrDuplicatedInfo("consensus", uint256(uint160(consensus)));
-    }
-  }
-
-  function _checkDuplicatedAdmin(address admin) internal view {
-    if (_registry[uint256(uint160(admin))]) {
-      revert ErrDuplicatedInfo("admin", uint256(uint160(admin)));
-    }
-  }
-
-  function _checkDuplicatedTreasury(address treasury) internal view {
-    if (_registry[uint256(uint160(treasury))]) {
-      revert ErrDuplicatedInfo("treasury", uint256(uint160(treasury)));
-    }
-  }
-
-  function _checkDuplicatedGovernor(address governor) internal view {
-    if (_registry[uint256(uint160(governor))]) {
-      revert ErrDuplicatedInfo("governor", uint256(uint160(governor)));
-    }
-  }
-
-  function _checkDuplicatedPubkey(bytes memory pubkey) internal view {
-    if (_registry[_hashPubkey(pubkey)]) {
-      revert ErrDuplicatedInfo("pubkey", _hashPubkey(pubkey));
-    }
   }
 
   /**
