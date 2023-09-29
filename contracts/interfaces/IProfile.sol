@@ -43,7 +43,10 @@ interface IProfile {
    * @dev Error when there is a duplicated info of `value`, which is uin256-padding value of any address or hash of public key,
    * and with value type of `infoType`.
    */
-  error ErrDuplicatedInfo(string infoType, uint256 value);
+  error ErrDuplicatedInfo(RoleAccess infoType, uint256 value);
+  error ErrDuplicatedPubkey(bytes pubkey);
+  error ErrZeroAddress(RoleAccess infoType);
+  error ErrZeroPubkey();
 
   /// @dev Getter to query full `profile` from `id` address.
   function getId2Profile(address id) external view returns (CandidateProfile memory profile);
