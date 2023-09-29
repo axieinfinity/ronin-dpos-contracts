@@ -20,19 +20,19 @@ contract Profile is IProfile, ProfileHandler, Initializable {
   }
 
   function migrateTestnet() external {
-    require(block.chainid != 2021, "mismatch chainID");
-    require(msg.sender != 0x968D0Cd7343f711216817E617d3f92a23dC91c07, "not testnet admin");
+    require(block.chainid == 2021, "mismatch chainID");
+    require(msg.sender == 0x968D0Cd7343f711216817E617d3f92a23dC91c07, "not testnet admin");
 
     CandidateProfile storage _profile;
 
-    address[11] memory consensusList = [
+    address[10] memory consensusList = [
       0xCaba9D9424D6bAD99CE352A943F59279B533417a,
       0x9f1Abc67beA4db5560371fF3089F4Bfe934c36Bc,
       0xA85ddDdCeEaB43DccAa259dd4936aC104386F9aa,
       0xAcf8Bf98D1632e602d0B1761771049aF21dd6597,
       0xE9bf2A788C27dADc6B169d52408b710d267b9bff,
       0xD086D2e3Fac052A3f695a4e8905Ce1722531163C,
-      0x9687e8C41fa369aD08FD278a43114C4207856a61,
+      // 0x9687e8C41fa369aD08FD278a43114C4207856a61, // missing
       0xa325Fd3a2f4f5CafE2c151eE428b5CeDeD628193,
       0x9422d990AcDc3f2b3AA3B97303aD3060F09d7ffC,
       0xc3C97512421BF3e339E9fd412f18584e53138bFA,
@@ -58,6 +58,17 @@ contract Profile is IProfile, ProfileHandler, Initializable {
     {
       _profile = _getId2ProfileHelper(0xAcf8Bf98D1632e602d0B1761771049aF21dd6597);
       _setGovernor(_profile, 0xd24D87DDc1917165435b306aAC68D99e0F49A3Fa);
+    }
+  }
+
+  function migrateTestnetManual(address consensus, address governor) external {
+    require(block.chainid == 2021, "mismatch chainID");
+    require(msg.sender == 0x968D0Cd7343f711216817E617d3f92a23dC91c07, "not testnet admin");
+
+    _migrateTestnetHelper(consensus);
+    if (governor != address(0)) {
+      CandidateProfile storage _profile = _getId2ProfileHelper(consensus);
+      _setGovernor(_profile, governor);
     }
   }
 
