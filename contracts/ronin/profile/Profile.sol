@@ -20,59 +20,45 @@ contract Profile is IProfile, ProfileHandler, Initializable {
   }
 
   function migrateTestnet() external {
-    require(block.chainid == 2021, "mismatch chainID");
-    require(msg.sender == 0x968D0Cd7343f711216817E617d3f92a23dC91c07, "not testnet admin");
+    require(block.chainid == 2020, "mismatch chainID");
+    require(msg.sender == 0x4d58Ea7231c394d5804e8B06B1365915f906E27F, "not mainnet deployer");
 
     CandidateProfile storage _profile;
 
-    address[10] memory consensusList = [
-      0xCaba9D9424D6bAD99CE352A943F59279B533417a,
-      0x9f1Abc67beA4db5560371fF3089F4Bfe934c36Bc,
-      0xA85ddDdCeEaB43DccAa259dd4936aC104386F9aa,
-      0xAcf8Bf98D1632e602d0B1761771049aF21dd6597,
-      0xE9bf2A788C27dADc6B169d52408b710d267b9bff,
-      0xD086D2e3Fac052A3f695a4e8905Ce1722531163C,
-      // 0x9687e8C41fa369aD08FD278a43114C4207856a61, // missing
-      0xa325Fd3a2f4f5CafE2c151eE428b5CeDeD628193,
-      0x9422d990AcDc3f2b3AA3B97303aD3060F09d7ffC,
-      0xc3C97512421BF3e339E9fd412f18584e53138bFA,
-      0x78fD38faa30ea66702cc39383D2E84f9a4A56fA6
+    address[25] memory consensusList = [
+      0x52C0dcd83aa1999BA6c3b0324C8299E30207373C,
+      0xf41Af21F0A800dc4d86efB14ad46cfb9884FDf38,
+      0xE07D7e56588a6FD860c5073c70a099658C060F3D,
+      0x52349003240770727900b06a3B3a90f5c0219ADe,
+      0x2bdDcaAE1C6cCd53E436179B3fc07307ee6f3eF8,
+      0xeC702628F44C31aCc56C3A59555be47e1f16eB1e,
+      0xbD4bf317Da1928CC2f9f4DA9006401f3944A0Ab5,
+      0xd11D9842baBd5209b9B1155e46f5878c989125b7,
+      0x61089875fF9e506ae78C7FE9f7c388416520E386,
+      0xD7fEf73d95ccEdb26483fd3C6C48393e50708159,
+      0x47cfcb64f8EA44d6Ea7FAB32f13EFa2f8E65Eec1,
+      0x8Eec4F1c0878F73E8e09C1be78aC1465Cc16544D,
+      0x9B959D27840a31988410Ee69991BCF0110D61F02,
+      0xEE11d2016e9f2faE606b2F12986811F4abbe6215,
+      0xca54a1700e0403Dcb531f8dB4aE3847758b90B01,
+      0x4E7EA047EC7E95c7a02CB117128B94CCDd8356bf,
+      0x6E46924371d0e910769aaBE0d867590deAC20684,
+      0xae53daAC1BF3c4633d4921B8C3F8d579e757F5Bc,
+      0x05ad3Ded6fcc510324Af8e2631717af6dA5C8B5B,
+      0x32D619Dc6188409CebbC52f921Ab306F07DB085b,
+      0x210744C64Eea863Cf0f972e5AEBC683b98fB1984,
+      0xedCafC4Ad8097c2012980A2a7087d74B86bDDAf9,
+      0xFc3e31519B551bd594235dd0eF014375a87C4e21,
+      0x6aaABf51C5F6D2D93212Cf7DAD73D67AFa0148d0,
+      0x22C23429e46e7944D2918F2B368b799b11C417C1
     ];
 
     for (uint i; i < consensusList.length; i++) {
-      _migrateTestnetHelper(consensusList[i]);
-    }
-
-    {
-      _profile = _getId2ProfileHelper(0xCaba9D9424D6bAD99CE352A943F59279B533417a);
-      _setGovernor(_profile, 0xb033ba62EC622dC54D0ABFE0254e79692147CA26);
-    }
-    {
-      _profile = _getId2ProfileHelper(0x9f1Abc67beA4db5560371fF3089F4Bfe934c36Bc);
-      _setGovernor(_profile, 0x087D08e3ba42e64E3948962dd1371F906D1278b9);
-    }
-    {
-      _profile = _getId2ProfileHelper(0xA85ddDdCeEaB43DccAa259dd4936aC104386F9aa);
-      _setGovernor(_profile, 0x52ec2e6BBcE45AfFF8955Da6410bb13812F4289F);
-    }
-    {
-      _profile = _getId2ProfileHelper(0xAcf8Bf98D1632e602d0B1761771049aF21dd6597);
-      _setGovernor(_profile, 0xd24D87DDc1917165435b306aAC68D99e0F49A3Fa);
+      _migrateMainnetHelper(consensusList[i]);
     }
   }
 
-  function migrateTestnetManual(address consensus, address governor) external {
-    require(block.chainid == 2021, "mismatch chainID");
-    require(msg.sender == 0x968D0Cd7343f711216817E617d3f92a23dC91c07, "not testnet admin");
-
-    _migrateTestnetHelper(consensus);
-    if (governor != address(0)) {
-      CandidateProfile storage _profile = _getId2ProfileHelper(consensus);
-      _setGovernor(_profile, governor);
-    }
-  }
-
-  function _migrateTestnetHelper(address consensus) internal {
+  function _migrateMainnetHelper(address consensus) internal {
     CandidateProfile storage _profile = _getId2ProfileHelper(consensus);
     ICandidateManager.ValidatorCandidate memory info = IRoninValidatorSet(getContract(ContractType.VALIDATOR))
       .getCandidateInfo(consensus);
