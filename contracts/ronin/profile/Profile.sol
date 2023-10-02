@@ -19,13 +19,11 @@ contract Profile is IProfile, ProfileHandler, Initializable {
     _setContract(ContractType.VALIDATOR, validatorContract);
   }
 
-  function migrateTestnet() external {
+  function migrateMainnetV2() external {
     require(block.chainid == 2020, "mismatch chainID");
     require(msg.sender == 0x4d58Ea7231c394d5804e8B06B1365915f906E27F, "not mainnet deployer");
 
-    CandidateProfile storage _profile;
-
-    address[25] memory consensusList = [
+    address[29] memory consensusList = [
       0x52C0dcd83aa1999BA6c3b0324C8299E30207373C,
       0xf41Af21F0A800dc4d86efB14ad46cfb9884FDf38,
       0xE07D7e56588a6FD860c5073c70a099658C060F3D,
@@ -50,21 +48,18 @@ contract Profile is IProfile, ProfileHandler, Initializable {
       0xedCafC4Ad8097c2012980A2a7087d74B86bDDAf9,
       0xFc3e31519B551bd594235dd0eF014375a87C4e21,
       0x6aaABf51C5F6D2D93212Cf7DAD73D67AFa0148d0,
-      0x22C23429e46e7944D2918F2B368b799b11C417C1
+      0x22C23429e46e7944D2918F2B368b799b11C417C1,
+      0x03A7B98C226225e330d11D1B9177891391Fa4f80,
+      0x20238eB5643d4D7b7Ab3C30f3bf7B8E2B85cA1e7,
+      0x07d28F88D677C4056EA6722aa35d92903b2a63da,
+      0x262B9fcfe8CFA900aF4D1f5c20396E969B9655DD
     ];
 
+    CandidateProfile storage _profile;
     for (uint i; i < consensusList.length; i++) {
-      _migrateMainnetHelper(consensusList[i]);
+      _profile = _id2Profile[consensusList[i]];
+      _profile.id = consensusList[i];
     }
-  }
-
-  function _migrateMainnetHelper(address consensus) internal {
-    CandidateProfile storage _profile = _getId2ProfileHelper(consensus);
-    ICandidateManager.ValidatorCandidate memory info = IRoninValidatorSet(getContract(ContractType.VALIDATOR))
-      .getCandidateInfo(consensus);
-    _setConsensus(_profile, consensus);
-    _setAdmin(_profile, info.admin);
-    _setTreasury(_profile, payable(info.treasuryAddr));
   }
 
   /**
