@@ -9,9 +9,6 @@ libs = [
   'lib',
   'node_modules/@openzeppelin',
   'node_modules/hardhat',
-  'contracts/extensions',
-  'contracts/interfaces',
-  'contracts/utils'
 ]
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
