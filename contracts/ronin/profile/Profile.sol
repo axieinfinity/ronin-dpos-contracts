@@ -23,8 +23,6 @@ contract Profile is IProfile, ProfileHandler, Initializable {
     require(block.chainid == 2020, "mismatch chainID");
     require(msg.sender == 0x4d58Ea7231c394d5804e8B06B1365915f906E27F, "not mainnet deployer");
 
-    CandidateProfile storage _profile;
-
     address[25] memory consensusList = [
       0x52C0dcd83aa1999BA6c3b0324C8299E30207373C,
       0xf41Af21F0A800dc4d86efB14ad46cfb9884FDf38,
