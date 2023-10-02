@@ -50,14 +50,25 @@ contract Profile is IProfile, ProfileHandler, Initializable {
       0x6aaABf51C5F6D2D93212Cf7DAD73D67AFa0148d0,
       0x22C23429e46e7944D2918F2B368b799b11C417C1
     ];
-
     for (uint i; i < consensusList.length; i++) {
       _migrateMainnetHelper(consensusList[i]);
+    }
+
+    address[4] memory renouncedList = [
+      0x03A7B98C226225e330d11D1B9177891391Fa4f80,
+      0x20238eB5643d4D7b7Ab3C30f3bf7B8E2B85cA1e7,
+      0x07d28F88D677C4056EA6722aa35d92903b2a63da,
+      0x262B9fcfe8CFA900aF4D1f5c20396E969B9655DD
+    ];
+    CandidateProfile storage _profile;
+    for (uint i; i < renouncedList.length; i++) {
+      _profile = _id2Profile[renouncedList[i]];
+      _setConsensus(_profile, renouncedList[i]);
     }
   }
 
   function _migrateMainnetHelper(address consensus) internal {
-    CandidateProfile storage _profile = _getId2ProfileHelper(consensus);
+    CandidateProfile storage _profile = _id2Profile[consensus];
     ICandidateManager.ValidatorCandidate memory info = IRoninValidatorSet(getContract(ContractType.VALIDATOR))
       .getCandidateInfo(consensus);
     _setConsensus(_profile, consensus);
