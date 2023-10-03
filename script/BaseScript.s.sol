@@ -43,7 +43,11 @@ abstract contract BaseScript is Script, IScript {
       GENERAL_CONFIG_SALT,
       hashInitCode(abi.encodePacked(type(GeneralConfig).creationCode), abi.encode(vm))
     );
+
+    // allow existing on different chain
+    vm.makePersistent(cfgAddr);
     vm.allowCheatcodes(cfgAddr);
+
     // skip if general config already deployed
     if (cfgAddr.code.length == 0) {
       vm.prank(CREATE2_FACTORY);

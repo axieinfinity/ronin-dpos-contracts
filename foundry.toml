@@ -45,6 +45,8 @@ runs = 1_000
 runs = 1_000
 
 [rpc_endpoints]
-ronin-mainnet = "https://api.roninchain.com/rpc"
+ethereum = "https://eth.llamarpc.com"
+goerli = "https://gateway.tenderly.co/public/goerli"
+ronin-mainnet = "https://api-partner.roninchain.com/rpc"
 ronin-testnet = "https://saigon-archive.roninchain.com/rpc"
 localhost = "http://localhost:8545"

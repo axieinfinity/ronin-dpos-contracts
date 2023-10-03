@@ -1,6 +1,7 @@
 /// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import { HasContracts } from "../collections/HasContracts.sol";
 import { IConditionalImplementControl } from "../../interfaces/version-control/IConditionalImplementControl.sol";
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
@@ -10,7 +11,7 @@ import { ErrOnlySelfCall, IdentityGuard } from "../../utils/IdentityGuard.sol";
  * @title ConditionalImplementControl
  * @dev A contract that allows conditional version control of contract implementations.
  */
-abstract contract ConditionalImplementControl is IConditionalImplementControl, IdentityGuard {
+abstract contract ConditionalImplementControl is IConditionalImplementControl, IdentityGuard, HasContracts {
   using ErrorHandler for bool;
   using AddressArrayUtils for address[];
 
@@ -105,7 +106,7 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, I
   /**
    * @dev See {IConditionalImplementControl-setCallDatas}.
    */
-  function setCallDatas(bytes[] calldata args) external onlyDelegateFromProxyStorage {
+  function setCallDatas(bytes[] calldata args) external onlyAdmin onlyDelegateFromProxyStorage {
     bytes[] storage callDatas = _callDatas();
     uint256 length = args.length;
     for (uint256 i; i < length; ) {

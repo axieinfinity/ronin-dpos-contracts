@@ -11,6 +11,7 @@ enum ContractKey {
   Profile,
   MockPrecompile,
   NotifiedMigrator,
+  MainchainGatewayV2,
   FastFinalityTracking,
   RoninTrustedOrganization,
   RoninValidatorSetTimedMigrator
@@ -25,7 +26,6 @@ abstract contract ContractConfig {
     _contractNameMap[ContractKey.GovernanceAdmin] = "GovernanceAdmin";
     _contractNameMap[ContractKey.RoninValidatorSet] = "RoninValidatorSet";
     _contractNameMap[ContractKey.BridgeTracking] = "BridgeTracking";
-    _contractNameMap[ContractKey.RoninGatewayV2] = "RoninGatewayV2";
     _contractNameMap[ContractKey.Staking] = "Staking";
     _contractNameMap[ContractKey.NotifiedMigrator] = "NotifiedMigrator";
     _contractNameMap[ContractKey.RoninTrustedOrganization] = "RoninTrustedOrganization";
@@ -34,8 +34,8 @@ abstract contract ContractConfig {
     _contractNameMap[ContractKey.MockPrecompile] = "MockPrecompile";
     _contractNameMap[ContractKey.FastFinalityTracking] = "FastFinalityTracking";
     _contractNameMap[ContractKey.Profile] = "Profile";
-    // _contractNameMap[ContractKey.LandStakingManager] = "LandStakingManager";
-    // _contractNameMap[ContractKey.StablePriceOracle] = "MockStablePriceOracle";
+    _contractNameMap[ContractKey.MainchainGatewayV2] = "MainchainGatewayV2";
+    _contractNameMap[ContractKey.RoninGatewayV2] = "RoninGatewayV2";
     // _contractNameMap[ContractKey.RONRegistrarController] = "RONRegistrarController";
   }
 

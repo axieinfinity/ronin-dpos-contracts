@@ -15,11 +15,8 @@ contract RoninValidatorSetTimedMigratorUpgrade is BaseDeploy {
     address payable proxy = _config.getAddressFromCurrentNetwork(ContractKey.RoninValidatorSet);
     address proxyAdmin = _getProxyAdmin(proxy);
     address prevImpl = _getProxyImplementation(proxy);
-    address newImpl = _deployImmutable(ContractKey.RoninValidatorSet, EMPTY_ARGS);
-    address switcher = _deployImmutable(
-      ContractKey.RoninValidatorSetTimedMigrator,
-      abi.encode(proxy, prevImpl, newImpl)
-    );
+    address newImpl = _deployLogic(ContractKey.RoninValidatorSet, EMPTY_ARGS);
+    address switcher = _deployLogic(ContractKey.RoninValidatorSetTimedMigrator, abi.encode(proxy, prevImpl, newImpl));
 
     bytes[] memory callDatas = new bytes[](2);
     callDatas[0] = abi.encodeCall(RoninValidatorSet.initializeV2, ());
@@ -29,12 +26,7 @@ contract RoninValidatorSetTimedMigratorUpgrade is BaseDeploy {
     );
     return
       RoninValidatorSet(
-        _upgradeRaw(
-          proxyAdmin,
-          proxy,
-          switcher,
-          abi.encodeCall(ConditionalImplementControl.setCallDatas, (callDatas))
-        )
+        _upgradeRaw(proxyAdmin, proxy, switcher, abi.encodeCall(ConditionalImplementControl.setCallDatas, (callDatas)))
       );
   }
 }

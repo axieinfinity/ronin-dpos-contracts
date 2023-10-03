@@ -106,6 +106,22 @@ abstract contract BaseDeploy is BaseScript {
     return payable(address(uint160(uint256(vm.load(address(proxy), IMPLEMENTATION_SLOT)))));
   }
 
+  function _deployLogic(ContractKey contractKey, bytes memory args) internal returns (address payable logic) {
+    string memory contractName = _config.getContractName(contractKey);
+    string memory contractFilename = _config.getContractFileName(contractKey);
+
+    uint256 logicNonce;
+    (logic, logicNonce) = _deployRaw(contractFilename, args);
+    _logger.generateDeploymentArtifact(
+      _sender,
+      logic,
+      contractName,
+      string.concat(contractName, "Logic"),
+      EMPTY_ARGS,
+      logicNonce
+    );
+  }
+
   function _deployProxy(ContractKey contractKey, bytes memory args) internal returns (address payable deployed) {
     string memory contractName = _config.getContractName(contractKey);
     string memory contractFilename = _config.getContractFileName(contractKey);
