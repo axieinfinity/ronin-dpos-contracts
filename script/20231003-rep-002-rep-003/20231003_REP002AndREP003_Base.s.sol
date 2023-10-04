@@ -8,6 +8,8 @@ import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.so
 import { SlashIndicator } from "@ronin/contracts/ronin/slash-indicator/SlashIndicator.sol";
 import { RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";
 import { Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
+import { StakingVesting } from "@ronin/contracts/ronin/StakingVesting.sol";
+import { FastFinalityTracking } from "@ronin/contracts/ronin/fast-finality/FastFinalityTracking.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
 import { MockPrecompile } from "@ronin/contracts/mocks/MockPrecompile.sol";
 import { MappedTokenConsumer } from "@ronin/contracts/interfaces/consumers/MappedTokenConsumer.sol";
@@ -26,6 +28,8 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
   SlashIndicator internal _slashIndicator;
   RoninValidatorSet internal _validatorSet;
   RoninTrustedOrganization internal _trustedOrgs;
+  StakingVesting internal _stakingVesting;
+  FastFinalityTracking internal _fastFinalityTracking;
 
   function _injectDependencies() internal virtual override {
     _setDependencyDeployScript(ContractKey.Profile, new ProfileDeploy());

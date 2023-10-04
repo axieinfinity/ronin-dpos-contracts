@@ -14,7 +14,8 @@ enum ContractKey {
   MainchainGatewayV2,
   FastFinalityTracking,
   RoninTrustedOrganization,
-  RoninValidatorSetTimedMigrator
+  RoninValidatorSetTimedMigrator,
+  StakingVesting
 }
 
 abstract contract ContractConfig {
@@ -27,6 +28,7 @@ abstract contract ContractConfig {
     _contractNameMap[ContractKey.RoninValidatorSet] = "RoninValidatorSet";
     _contractNameMap[ContractKey.BridgeTracking] = "BridgeTracking";
     _contractNameMap[ContractKey.Staking] = "Staking";
+    _contractNameMap[ContractKey.StakingVesting] = "StakingVesting";
     _contractNameMap[ContractKey.NotifiedMigrator] = "NotifiedMigrator";
     _contractNameMap[ContractKey.RoninTrustedOrganization] = "RoninTrustedOrganization";
     _contractNameMap[ContractKey.SlashIndicator] = "SlashIndicator";
