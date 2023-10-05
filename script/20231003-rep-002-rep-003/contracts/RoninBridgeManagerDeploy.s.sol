@@ -10,11 +10,11 @@ contract RoninBridgeManagerDeploy is BaseDeploy {
     _setDependencyDeployScript(ContractKey.BridgeSlash, new BridgeSlashDeploy());
   }
 
-  function _defaultArguments() internal view override returns (bytes memory args) {
+  function _defaultArguments() internal override returns (bytes memory args) {
     // register BridgeSlash as callback receiver
     address[] memory callbackRegisters = new address[](1);
     // load BridgeSlash address
-    callbackRegisters[0] = _config.getAddressFromCurrentNetwork(ContractKey.BridgeSlash);
+    callbackRegisters[0] = loadContractOrDeploy(ContractKey.BridgeSlash);
 
     address[] memory operators;
     address[] memory governors;

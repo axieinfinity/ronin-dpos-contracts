@@ -5,8 +5,6 @@ import { BaseDeploy, ContractKey } from "script/BaseDeploy.s.sol";
 import { BridgeReward } from "@ronin/contracts/ronin/gateway/BridgeReward.sol";
 
 contract BridgeRewardDeploy is BaseDeploy {
-  function _defaultArguments() internal view override returns (bytes memory args) {}
-
   function run() public virtual trySetUp returns (BridgeReward) {
     return BridgeReward(_deployProxy(ContractKey.BridgeReward, arguments()));
   }

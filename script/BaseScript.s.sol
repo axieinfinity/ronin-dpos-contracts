@@ -3,13 +3,14 @@ pragma solidity ^0.8.0;
 
 import { ErrorHandler } from "@ronin/contracts/libraries/ErrorHandler.sol";
 import { StdStyle } from "forge-std/StdStyle.sol";
+import { StdAssertions } from "forge-std/StdAssertions.sol";
 import { Script, console2 } from "forge-std/Script.sol";
 import "./GeneralConfig.s.sol";
 import { IScript } from "./interfaces/IScript.sol";
 import { IDeployScript } from "./interfaces/IDeployScript.sol";
 import { RuntimeConfig } from "./configs/RuntimeConfig.sol";
 
-abstract contract BaseScript is Script, IScript {
+abstract contract BaseScript is Script, IScript, StdAssertions {
   using LibString for string;
   using StdStyle for string;
   using ErrorHandler for bool;
@@ -92,5 +93,10 @@ abstract contract BaseScript is Script, IScript {
         }
       }
     }
+  }
+
+  function fail() internal override {
+    super.fail();
+    revert("Got failed assertion");
   }
 }

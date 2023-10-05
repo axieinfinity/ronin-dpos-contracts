@@ -56,37 +56,40 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
   function _deployGatewayContracts() internal {
     console2.log("> ", StdStyle.blue("_deployGatewayContracts"), "...");
 
-    {
-      _setDependencyDeployScript(ContractKey.BridgeReward, new BridgeRewardDeploy());
-      _setDependencyDeployScript(ContractKey.BridgeSlash, new BridgeSlashDeploy());
+    uint256 bridgeManagerNonce = vm.getNonce(_sender) + 4;
+    address expectedRoninBridgeManager = computeCreateAddress(_sender, bridgeManagerNonce);
 
-      _bridgeReward = BridgeReward(loadContractOrDeploy(ContractKey.BridgeReward));
-      _bridgeSlash = BridgeSlash(loadContractOrDeploy(ContractKey.BridgeSlash));
+    new BridgeSlashDeploy()
+      .setArgs(
+        abi.encodeCall(
+          BridgeSlash.initialize,
+          (
+            _config.getAddressFromCurrentNetwork(ContractKey.RoninValidatorSet),
+            expectedRoninBridgeManager,
+            _config.getAddressFromCurrentNetwork(ContractKey.BridgeTracking)
+          )
+        )
+      )
+      .run();
 
-      _setDependencyDeployScript(ContractKey.RoninBridgeManager, new RoninBridgeManagerDeploy());
-      _roninBridgeManager = RoninBridgeManager(loadContractOrDeploy(ContractKey.RoninBridgeManager));
+    new BridgeRewardDeploy()
+      .setArgs(
+        abi.encodeCall(
+          BridgeReward.initialize,
+          (
+            expectedRoninBridgeManager,
+            _config.getAddressFromCurrentNetwork(ContractKey.BridgeTracking),
+            _config.getAddressFromCurrentNetwork(ContractKey.BridgeSlash),
+            _config.getAddressFromCurrentNetwork(ContractKey.RoninValidatorSet),
+            _config.getAddressFromCurrentNetwork(ContractKey.GovernanceAdmin),
+            1337_133
+          )
+        )
+      )
+      .run();
 
-      _bridgeTracking = BridgeTracking(loadContractOrDeploy(ContractKey.BridgeTracking));
-      _validatorSet = RoninValidatorSet(loadContractOrDeploy(ContractKey.RoninValidatorSet));
-      _roninGovernanceAdmin = RoninGovernanceAdmin(loadContractOrDeploy(ContractKey.GovernanceAdmin));
-    }
-
-    {
-      _bridgeReward.initialize({
-        bridgeManagerContract: address(_roninBridgeManager),
-        bridgeTrackingContract: address(_bridgeTracking),
-        bridgeSlashContract: address(_bridgeSlash),
-        validatorSetContract: address(_validatorSet),
-        dposGA: address(_roninGovernanceAdmin),
-        rewardPerPeriod: 1337_133
-      });
-
-      _bridgeSlash.initialize({
-        validatorContract: address(_validatorSet),
-        bridgeManagerContract: address(_roninBridgeManager),
-        bridgeTrackingContract: address(_bridgeTracking)
-      });
-    }
+    RoninBridgeManager actualRoninBridgeManager = new RoninBridgeManagerDeploy().run();
+    assertEq(address(actualRoninBridgeManager), expectedRoninBridgeManager);
   }
 
   /**

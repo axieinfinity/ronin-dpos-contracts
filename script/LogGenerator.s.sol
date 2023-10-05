@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { Vm } from "forge-std/Vm.sol";
 import { StdStyle } from "forge-std/StdStyle.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -9,6 +10,7 @@ import { GeneralConfig } from "./GeneralConfig.s.sol";
 import { JSONParserLib } from "solady/utils/JSONParserLib.sol";
 
 contract LogGenerator {
+  using Strings for *;
   using StdStyle for *;
   using stdJson for string;
   using JSONParserLib for *;
@@ -29,6 +31,10 @@ contract LogGenerator {
     bytes memory args,
     uint256 nonce
   ) external {
+    console2.log(
+      string.concat(fileName, " deployed at: ", contractAddr.toHexString()).green(),
+      string.concat("(nonce: ", nonce.toString(), ")")
+    );
     if (!_config.getRuntimeConfig().log) {
       console2.log("Skipping artifact generation for:", fileName.yellow());
       return;
@@ -42,7 +48,7 @@ contract LogGenerator {
     string memory json;
     uint256 numDeployments = 1;
 
-    if ( _vm.exists(filePath)) {
+    if (_vm.exists(filePath)) {
       string memory existedJson = _vm.readFile(filePath);
       if (_vm.keyExists(existedJson, ".numDeployments")) {
         numDeployments = _vm.parseJsonUint(_vm.readFile(filePath), ".numDeployments");
@@ -74,7 +80,5 @@ contract LogGenerator {
     json = json.serialize("metadata", item.at('"rawMetadata"').value());
 
     json.write(filePath);
-
-    console2.log(string.concat(fileName, " deployed at:").green(), contractAddr.green());
   }
 }
