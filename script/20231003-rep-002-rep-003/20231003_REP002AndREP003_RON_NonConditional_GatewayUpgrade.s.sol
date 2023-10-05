@@ -60,7 +60,7 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     address expectedRoninBridgeManager = computeCreateAddress(_sender, bridgeManagerNonce);
 
     new BridgeSlashDeploy()
-      .setArgs(
+      .overrideArgs(
         abi.encodeCall(
           BridgeSlash.initialize,
           (
@@ -73,7 +73,7 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
       .run();
 
     new BridgeRewardDeploy()
-      .setArgs(
+      .overrideArgs(
         abi.encodeCall(
           BridgeReward.initialize,
           (

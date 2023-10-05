@@ -7,5 +7,5 @@ import { ContractKey } from "../configs/ContractConfig.sol";
 interface IDeployScript is IScript {
   function run() external returns (address payable);
 
-  function setArgs(bytes calldata args) external returns (IDeployScript);
+  function overrideArgs(bytes calldata args) external returns (IDeployScript);
 }

@@ -54,7 +54,7 @@ abstract contract BaseDeploy is BaseScript {
     }
   }
 
-  function setArgs(bytes memory args) public returns (IDeployScript) {
+  function overrideArgs(bytes memory args) public returns (IDeployScript) {
     _overriddenArgs = args;
     return IDeployScript(address(this));
   }

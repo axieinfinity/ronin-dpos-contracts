@@ -82,7 +82,7 @@ abstract contract NetworkConfig {
 
   function switchTo(Network network) public {
     vm.createSelectFork(vm.rpcUrl(_networkDataMap[network].chainAlias));
-    // require(_networkDataMap[network].chainId == block.chainid, "NetworkConfig: Switch chain failed");
+    require(_networkDataMap[network].chainId == block.chainid, "NetworkConfig: Switch chain failed");
   }
 
   function getPrivateKeyEnvLabelFromCurrentNetwork() public view returns (string memory privatekeyEnvLabel) {
