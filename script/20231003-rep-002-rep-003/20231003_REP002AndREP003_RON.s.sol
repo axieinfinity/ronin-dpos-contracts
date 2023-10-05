@@ -7,6 +7,24 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON is Simulation__20231003
   function run() public virtual override trySetUp {
     super.run();
 
+    _upgradeDPoSContracts();
+
+    // test `RoninGatewayV2` functionality
+    _depositFor("before-upgrade-user");
+
+    // trigger conditional migration
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
+
+    // // test `RoninValidatorSet` functionality
+    // _fastForwardToNextDay();
+    // _wrapUpEpoch();
+
+    // // test `RoninGatewayV2` functionality
+    // _depositFor("after-upgrade-user");
+  }
+
+  function _upgradeDPoSContracts() internal {
     {
       // upgrade `RoninValidatorSet` to `RoninValidatorSetTimedMigrator`
       // bump `RoninValidatorSet` to V2, V3
@@ -52,19 +70,5 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON is Simulation__20231003
         new NotifiedMigratorUpgrade().run(ContractKey.BridgeTracking, bridgeTrackingDatas)
       );
     }
-
-    // // test `RoninGatewayV2` functionality
-    // _depositFor("before-upgrade-user");
-
-    // trigger conditional migration
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
-
-    // // test `RoninValidatorSet` functionality
-    // _fastForwardToNextDay();
-    // _wrapUpEpoch();
-
-    // // test `RoninGatewayV2` functionality
-    // _depositFor("after-upgrade-user");
   }
 }

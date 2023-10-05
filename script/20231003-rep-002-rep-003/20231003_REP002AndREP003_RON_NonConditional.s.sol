@@ -9,6 +9,24 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON_NonConditional is
   function run() public virtual override trySetUp {
     super.run();
 
+    _upgradeDPoSContracts();
+
+    // // test `RoninGatewayV2` functionality
+    // _depositFor("before-upgrade-user");
+
+    // trigger conditional migration
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
+
+    // // test `RoninValidatorSet` functionality
+    // _fastForwardToNextDay();
+    // _wrapUpEpoch();
+
+    // // test `RoninGatewayV2` functionality
+    // _depositFor("after-upgrade-user");
+  }
+
+  function _upgradeDPoSContracts() internal {
     {
       // upgrade `RoninValidatorSet`
       _validatorSet = RoninValidatorSet(
@@ -52,19 +70,20 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON_NonConditional is
       );
     }
 
-    // // test `RoninGatewayV2` functionality
-    // _depositFor("before-upgrade-user");
+    {
+      // upgrade `StakingVesting`
+      // bump `StakingVesting` to V2, V3
+      _stakingVesting = StakingVesting(
+        _upgradeProxy(ContractKey.StakingVesting, abi.encodeCall(StakingVesting.initializeV2, ()))
+      );
+      _stakingVesting.initializeV3(50); // 5%
+    }
 
-    // trigger conditional migration
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
-
-    // // test `RoninValidatorSet` functionality
-    // _fastForwardToNextDay();
-    // _wrapUpEpoch();
-
-    // // test `RoninGatewayV2` functionality
-    // _depositFor("after-upgrade-user");
+    {
+      _fastFinalityTracking = FastFinalityTracking(
+        _config.getAddressFromCurrentNetwork(ContractKey.FastFinalityTracking)
+      );
+    }
   }
 
   function _fastForwardToNextEpoch() internal {
