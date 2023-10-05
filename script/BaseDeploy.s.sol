@@ -18,7 +18,7 @@ abstract contract BaseDeploy is BaseScript {
   bytes32 constant ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
   bool internal _alreadySetUp;
-  bytes internal _overridenArgs;
+  bytes internal _overriddenArgs;
   LogGenerator internal _logger;
   mapping(ContractKey contractKey => IDeployScript deployScript) internal _deployScript;
 
@@ -55,12 +55,12 @@ abstract contract BaseDeploy is BaseScript {
   }
 
   function setArgs(bytes memory args) public returns (IDeployScript) {
-    _overridenArgs = args;
+    _overriddenArgs = args;
     return IDeployScript(address(this));
   }
 
   function arguments() public returns (bytes memory args) {
-    args = _overridenArgs.length == 0 ? _defaultArguments() : _overridenArgs;
+    args = _overriddenArgs.length == 0 ? _defaultArguments() : _overriddenArgs;
   }
 
   function _defaultArguments() internal virtual returns (bytes memory args) {}

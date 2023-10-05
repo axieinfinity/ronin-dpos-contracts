@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import { StdStyle } from "forge-std/StdStyle.sol";
+
 import "./20231003_REP002AndREP003_Base.s.sol";
 
 contract Simulation__20231003_UpgradeREP002AndREP003_RON_NonConditional is
@@ -27,6 +29,8 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON_NonConditional is
   }
 
   function _upgradeDPoSContracts() internal {
+    console2.log("> ", StdStyle.blue("_upgradeDPoSContracts"), "...");
+
     {
       // upgrade `RoninValidatorSet`
       _validatorSet = RoninValidatorSet(

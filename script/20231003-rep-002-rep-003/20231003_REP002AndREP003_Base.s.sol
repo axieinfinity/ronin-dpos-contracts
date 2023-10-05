@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import { RoninGovernanceAdmin } from "@ronin/contracts/ronin/RoninGovernanceAdmin.sol";
 import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
 import { MainchainGatewayV2 } from "@ronin/contracts/mainchain/MainchainGatewayV2.sol";
 import { Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
@@ -11,6 +12,9 @@ import { Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
 import { StakingVesting } from "@ronin/contracts/ronin/StakingVesting.sol";
 import { FastFinalityTracking } from "@ronin/contracts/ronin/fast-finality/FastFinalityTracking.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
+import { BridgeReward } from "@ronin/contracts/ronin/gateway/BridgeReward.sol";
+import { BridgeSlash } from "@ronin/contracts/ronin/gateway/BridgeSlash.sol";
+import { RoninBridgeManager } from "@ronin/contracts/ronin/gateway/RoninBridgeManager.sol";
 import { MockPrecompile } from "@ronin/contracts/mocks/MockPrecompile.sol";
 import { MappedTokenConsumer } from "@ronin/contracts/interfaces/consumers/MappedTokenConsumer.sol";
 import { Token } from "@ronin/contracts/libraries/Token.sol";
@@ -30,6 +34,12 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
   RoninTrustedOrganization internal _trustedOrgs;
   StakingVesting internal _stakingVesting;
   FastFinalityTracking internal _fastFinalityTracking;
+  RoninGovernanceAdmin internal _roninGovernanceAdmin;
+
+  BridgeReward internal _bridgeReward;
+  BridgeSlash internal _bridgeSlash;
+  RoninBridgeManager internal _roninBridgeManager;
+  RoninGatewayV2 internal _roninGateway;
 
   function _injectDependencies() internal virtual override {
     _setDependencyDeployScript(ContractKey.Profile, new ProfileDeploy());
