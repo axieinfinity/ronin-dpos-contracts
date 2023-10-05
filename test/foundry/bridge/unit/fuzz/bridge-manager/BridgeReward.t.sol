@@ -249,6 +249,7 @@ contract BridgeRewardTest is Base_Test, IBridgeRewardEvents, BridgeManagerUtils 
             _bridgeTrackingContract,
             _bridgeSlashContract,
             _validatorContract,
+            address(0),
             DEFAULT_REWARD_PER_PERIOD
           )
         )

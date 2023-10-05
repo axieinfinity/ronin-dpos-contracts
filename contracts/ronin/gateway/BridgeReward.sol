@@ -43,15 +43,26 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
     address bridgeTrackingContract,
     address bridgeSlashContract,
     address validatorSetContract,
+    address dposGA,
     uint256 rewardPerPeriod
   ) external payable initializer {
     _setContract(ContractType.BRIDGE_MANAGER, bridgeManagerContract);
     _setContract(ContractType.BRIDGE_TRACKING, bridgeTrackingContract);
     _setContract(ContractType.BRIDGE_SLASH, bridgeSlashContract);
     _setContract(ContractType.VALIDATOR, validatorSetContract);
+    _setContract(ContractType.GOVERNANCE_ADMIN, dposGA);
     _setRewardPerPeriod(rewardPerPeriod);
-    _syncLatestRewardedPeriod();
     _receiveRON();
+  }
+
+  /**
+   * @dev Helper for running upgrade script, required to only revoked once by the DPoS's governance admin.
+   * The following must be assured after initializing REP2: `_lastSyncPeriod` == `{BridgeReward}.latestRewardedPeriod` == `currentPeriod()`
+   */
+  function initializeREP2() external onlyContract(ContractType.GOVERNANCE_ADMIN) {
+    require(getLatestRewardedPeriod() == type(uint256).max, "already init rep 2");
+    _syncLatestRewardedPeriod();
+    _setContract(ContractType.GOVERNANCE_ADMIN, address(0));
   }
 
   /**

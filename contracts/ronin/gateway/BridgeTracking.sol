@@ -86,11 +86,27 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
     delete ______deprecatedValidator;
   }
 
-  function initializeV3(address bridgeManager, address bridgeSlash, address bridgeReward) external reinitializer(3) {
+  function initializeV3(
+    address bridgeManager,
+    address bridgeSlash,
+    address bridgeReward,
+    address dposGA
+  ) external reinitializer(3) {
     _setContract(ContractType.BRIDGE_MANAGER, bridgeManager);
     _setContract(ContractType.BRIDGE_SLASH, bridgeSlash);
     _setContract(ContractType.BRIDGE_REWARD, bridgeReward);
-    _lastSyncPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod() - 1;
+    _setContract(ContractType.GOVERNANCE_ADMIN, dposGA);
+    _lastSyncPeriod = type(uint256).max;
+  }
+
+  /**
+   * @dev Helper for running upgrade script, required to only revoked once by the DPoS's governance admin.
+   * The following must be assured after initializing REP2: `_lastSyncPeriod` == `{BridgeReward}.latestRewardedPeriod` == `currentPeriod()`
+   */
+  function initializeREP2() external onlyContract(ContractType.GOVERNANCE_ADMIN) {
+    require(_lastSyncPeriod == type(uint256).max, "already init rep 2");
+    _lastSyncPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
+    _setContract(ContractType.GOVERNANCE_ADMIN, address(0));
   }
 
   /**

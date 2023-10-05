@@ -272,6 +272,7 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
           address(RONIN_BRIDGE_TRACKING_CONTRACT),
           address(_ronBridgeSlashProxy),
           address(RONIN_VALIDATOR_SET_CONTRACT),
+          address(0),
           DEFAULT_REWARD_PER_PERIOD
         )
       )
@@ -309,7 +310,7 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
     RONIN_BRIDGE_TRACKING_CONTRACT.functionDelegateCall(
       abi.encodeCall(
         BridgeTracking.initializeV3,
-        (address(_ronBridgeManagerContract), address(_ronBridgeSlashProxy), address(_ronBridgeRewardProxy))
+        (address(_ronBridgeManagerContract), address(_ronBridgeSlashProxy), address(_ronBridgeRewardProxy), address(0))
       )
     );
     vm.stopPrank();

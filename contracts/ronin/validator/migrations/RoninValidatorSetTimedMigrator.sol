@@ -48,6 +48,7 @@ contract RoninValidatorSetTimedMigrator is ConditionalImplementControl {
     IConditionalImplementControl(getContract(ContractType.STAKING)).selfUpgrade();
     IConditionalImplementControl(getContract(ContractType.SLASH_INDICATOR)).selfUpgrade();
     IConditionalImplementControl(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).selfUpgrade();
+    IConditionalImplementControl(getContract(ContractType.BRIDGE_TRACKING)).selfUpgrade();
   }
 
   /**
