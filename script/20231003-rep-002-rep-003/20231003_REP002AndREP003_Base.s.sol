@@ -28,18 +28,19 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
   using Transfer for *;
 
   Staking internal _staking;
+  RoninGatewayV2 internal _roninGateway;
   BridgeTracking internal _bridgeTracking;
   SlashIndicator internal _slashIndicator;
   RoninValidatorSet internal _validatorSet;
-  RoninTrustedOrganization internal _trustedOrgs;
   StakingVesting internal _stakingVesting;
+  RoninTrustedOrganization internal _trustedOrgs;
   FastFinalityTracking internal _fastFinalityTracking;
   RoninGovernanceAdmin internal _roninGovernanceAdmin;
 
-  BridgeReward internal _bridgeReward;
+  // new contracts
   BridgeSlash internal _bridgeSlash;
+  BridgeReward internal _bridgeReward;
   RoninBridgeManager internal _roninBridgeManager;
-  RoninGatewayV2 internal _roninGateway;
 
   function _injectDependencies() internal virtual override {
     _setDependencyDeployScript(ContractKey.Profile, new ProfileDeploy());
@@ -47,10 +48,22 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
 
   function run() public virtual trySetUp {
     {
-      address mockPrecompile = _deployImmutable(ContractKey.MockPrecompile, EMPTY_ARGS);
+      address mockPrecompile = _deployLogic(ContractKey.MockPrecompile);
       vm.etch(address(0x68), mockPrecompile.code);
       vm.makePersistent(address(0x68));
     }
+
+    _staking = Staking(_config.getAddressFromCurrentNetwork(ContractKey.Staking));
+    _roninGateway = RoninGatewayV2(_config.getAddressFromCurrentNetwork(ContractKey.RoninGatewayV2));
+    _bridgeTracking = BridgeTracking(_config.getAddressFromCurrentNetwork(ContractKey.BridgeTracking));
+    _slashIndicator = SlashIndicator(_config.getAddressFromCurrentNetwork(ContractKey.SlashIndicator));
+    _stakingVesting = StakingVesting(_config.getAddressFromCurrentNetwork(ContractKey.StakingVesting));
+    _validatorSet = RoninValidatorSet(_config.getAddressFromCurrentNetwork(ContractKey.RoninValidatorSet));
+    _trustedOrgs = RoninTrustedOrganization(_config.getAddressFromCurrentNetwork(ContractKey.RoninTrustedOrganization));
+    _fastFinalityTracking = FastFinalityTracking(
+      _config.getAddressFromCurrentNetwork(ContractKey.FastFinalityTracking)
+    );
+    _roninGovernanceAdmin = RoninGovernanceAdmin(_config.getAddressFromCurrentNetwork(ContractKey.GovernanceAdmin));
   }
 
   function _depositFor(string memory userName) internal {

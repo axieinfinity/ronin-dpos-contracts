@@ -6,6 +6,6 @@ import { BridgeReward } from "@ronin/contracts/ronin/gateway/BridgeReward.sol";
 
 contract BridgeRewardDeploy is BaseDeploy {
   function run() public virtual trySetUp returns (BridgeReward) {
-    return BridgeReward(_deployProxy(ContractKey.BridgeReward, arguments()));
+    return BridgeReward(_deployProxy(ContractKey.BridgeReward));
   }
 }

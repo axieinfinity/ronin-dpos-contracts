@@ -65,9 +65,10 @@ abstract contract BaseDeploy is BaseScript {
 
   function _defaultArguments() internal virtual returns (bytes memory args) {}
 
-  function _deployImmutable(ContractKey contractKey, bytes memory args) internal returns (address payable deployed) {
+  function _deployImmutable(ContractKey contractKey) internal returns (address payable deployed) {
     string memory contractName = _config.getContractName(contractKey);
     string memory contractFilename = _config.getContractFileName(contractKey);
+    bytes memory args = arguments();
     uint256 nonce;
     (deployed, nonce) = _deployRaw(contractFilename, args);
     vm.label(deployed, contractName);
@@ -106,12 +107,12 @@ abstract contract BaseDeploy is BaseScript {
     return payable(address(uint160(uint256(vm.load(address(proxy), IMPLEMENTATION_SLOT)))));
   }
 
-  function _deployLogic(ContractKey contractKey, bytes memory args) internal returns (address payable logic) {
+  function _deployLogic(ContractKey contractKey) internal returns (address payable logic) {
     string memory contractName = _config.getContractName(contractKey);
     string memory contractFilename = _config.getContractFileName(contractKey);
 
     uint256 logicNonce;
-    (logic, logicNonce) = _deployRaw(contractFilename, args);
+    (logic, logicNonce) = _deployRaw(contractFilename, EMPTY_ARGS);
     _logger.generateDeploymentArtifact(
       _sender,
       logic,
@@ -122,11 +123,11 @@ abstract contract BaseDeploy is BaseScript {
     );
   }
 
-  function _deployProxy(ContractKey contractKey, bytes memory args) internal returns (address payable deployed) {
+  function _deployProxy(ContractKey contractKey) internal returns (address payable deployed) {
     string memory contractName = _config.getContractName(contractKey);
     string memory contractFilename = _config.getContractFileName(contractKey);
+    bytes memory args = arguments();
     (address logic, uint256 logicNonce) = _deployRaw(contractFilename, EMPTY_ARGS);
-
     uint256 proxyNonce;
     (deployed, proxyNonce) = _deployRaw(
       "TransparentUpgradeableProxyV2.sol:TransparentUpgradeableProxyV2",

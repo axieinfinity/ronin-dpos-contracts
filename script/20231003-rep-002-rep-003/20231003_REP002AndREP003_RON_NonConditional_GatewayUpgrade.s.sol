@@ -24,15 +24,15 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     _deployGatewayContracts();
 
     // Day #2 (execute proposal on ronin)
-    // _fastForwardToNextDay();
-    // _wrapUpEpoch();
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
 
     vm.warp(block.timestamp + 3 seconds);
     vm.roll(block.number + 1);
 
-    // _upgradeDPoSContracts();
+    _upgradeDPoSContracts();
     _upgradeGatewayContracts();
-    // _callInitREP2InGatewayContracts();
+    _callInitREP2InGatewayContracts();
     // _changeAdminOfGatewayContracts();
 
     // -- done execute proposal
@@ -59,37 +59,38 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     uint256 bridgeManagerNonce = vm.getNonce(_sender) + 4;
     address expectedRoninBridgeManager = computeCreateAddress(_sender, bridgeManagerNonce);
 
-    new BridgeSlashDeploy()
-      .overrideArgs(
-        abi.encodeCall(
-          BridgeSlash.initialize,
-          (
-            _config.getAddressFromCurrentNetwork(ContractKey.RoninValidatorSet),
-            expectedRoninBridgeManager,
-            _config.getAddressFromCurrentNetwork(ContractKey.BridgeTracking)
+    _bridgeSlash = BridgeSlash(
+      new BridgeSlashDeploy()
+        .overrideArgs(
+          abi.encodeCall(
+            BridgeSlash.initialize,
+            (address(_validatorSet), expectedRoninBridgeManager, address(_bridgeTracking))
           )
         )
-      )
-      .run();
+        .run()
+    );
 
-    new BridgeRewardDeploy()
-      .overrideArgs(
-        abi.encodeCall(
-          BridgeReward.initialize,
-          (
-            expectedRoninBridgeManager,
-            _config.getAddressFromCurrentNetwork(ContractKey.BridgeTracking),
-            _config.getAddressFromCurrentNetwork(ContractKey.BridgeSlash),
-            _config.getAddressFromCurrentNetwork(ContractKey.RoninValidatorSet),
-            _config.getAddressFromCurrentNetwork(ContractKey.GovernanceAdmin),
-            1337_133
+    _bridgeReward = BridgeReward(
+      new BridgeRewardDeploy()
+        .overrideArgs(
+          abi.encodeCall(
+            BridgeReward.initialize,
+            (
+              expectedRoninBridgeManager,
+              address(_bridgeTracking),
+              address(_bridgeSlash),
+              address(_validatorSet),
+              address(_roninGovernanceAdmin),
+              1337_133
+            )
           )
         )
-      )
-      .run();
+        .run()
+    );
 
     RoninBridgeManager actualRoninBridgeManager = new RoninBridgeManagerDeploy().run();
     assertEq(address(actualRoninBridgeManager), expectedRoninBridgeManager);
+    _roninBridgeManager = actualRoninBridgeManager;
   }
 
   /**
@@ -101,22 +102,25 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     console2.log("> ", StdStyle.blue("_upgradeGatewayContracts"), "...");
 
     {
-      _roninGateway = RoninGatewayV2(
-        _upgradeProxy(ContractKey.RoninGatewayV2, abi.encodeCall(RoninGatewayV2.initializeV2, ()))
-      );
-      // _roninGateway.initializeV3(address(_roninBridgeManager));
+      _upgradeProxy(ContractKey.RoninGatewayV2, abi.encodeCall(RoninGatewayV2.initializeV2, ()));
+      _roninGateway.initializeV3(address(_roninBridgeManager));
     }
 
     {
-      // _bridgeTracking = BridgeTracking(
-      //   _upgradeProxy(ContractKey.BridgeTracking, abi.encodeCall(BridgeTracking.initializeV2, ()))
-      // );
-      // _bridgeTracking.initializeV3({
-      //   bridgeManager: address(_roninBridgeManager),
-      //   bridgeSlash: address(_bridgeSlash),
-      //   bridgeReward: address(_bridgeReward),
-      //   dposGA: address(_roninGovernanceAdmin)
-      // });
+      _upgradeProxy(ContractKey.BridgeTracking, abi.encodeCall(BridgeTracking.initializeV2, ()));
+      _bridgeTracking.initializeV3({
+        bridgeManager: address(_roninBridgeManager),
+        bridgeSlash: address(_bridgeSlash),
+        bridgeReward: address(_bridgeReward),
+        dposGA: address(_roninGovernanceAdmin)
+      });
     }
+  }
+
+  function _callInitREP2InGatewayContracts() internal {
+    vm.startPrank(address(_roninGovernanceAdmin));
+    _bridgeReward.initializeREP2();
+    _bridgeTracking.initializeREP2();
+    vm.stopPrank();
   }
 }

@@ -28,7 +28,7 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON is Simulation__20231003
     {
       // upgrade `RoninValidatorSet` to `RoninValidatorSetTimedMigrator`
       // bump `RoninValidatorSet` to V2, V3
-      _validatorSet = new RoninValidatorSetTimedMigratorUpgrade().run();
+      new RoninValidatorSetTimedMigratorUpgrade().run();
     }
 
     {
@@ -36,7 +36,7 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON is Simulation__20231003
       // bump `Staking` to V2
       bytes[] memory stakingCallDatas = new bytes[](1);
       stakingCallDatas[0] = abi.encodeCall(Staking.initializeV2, ());
-      _staking = Staking(new NotifiedMigratorUpgrade().run(ContractKey.Staking, stakingCallDatas));
+      Staking(new NotifiedMigratorUpgrade().run(ContractKey.Staking, stakingCallDatas));
     }
 
     {
@@ -48,17 +48,13 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON is Simulation__20231003
         (_config.getAddressFromCurrentNetwork(ContractKey.GovernanceAdmin))
       );
       slashIndicatorDatas[1] = abi.encodeCall(SlashIndicator.initializeV3, (loadContractOrDeploy(ContractKey.Profile)));
-      _slashIndicator = SlashIndicator(
-        new NotifiedMigratorUpgrade().run(ContractKey.SlashIndicator, slashIndicatorDatas)
-      );
+      new NotifiedMigratorUpgrade().run(ContractKey.SlashIndicator, slashIndicatorDatas);
     }
 
     {
       // upgrade `RoninTrustedOrganization`
       bytes[] memory emptyCallDatas;
-      _trustedOrgs = RoninTrustedOrganization(
-        new NotifiedMigratorUpgrade().run(ContractKey.RoninTrustedOrganization, emptyCallDatas)
-      );
+      new NotifiedMigratorUpgrade().run(ContractKey.RoninTrustedOrganization, emptyCallDatas);
     }
 
     {

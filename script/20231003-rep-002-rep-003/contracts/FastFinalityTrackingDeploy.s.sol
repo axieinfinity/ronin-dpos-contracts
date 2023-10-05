@@ -13,6 +13,6 @@ contract FastFinalityTrackingDeploy is BaseDeploy {
   }
 
   function run() public virtual trySetUp returns (FastFinalityTracking) {
-    return FastFinalityTracking(_deployProxy(ContractKey.FastFinalityTracking, arguments()));
+    return FastFinalityTracking(_deployProxy(ContractKey.FastFinalityTracking));
   }
 }

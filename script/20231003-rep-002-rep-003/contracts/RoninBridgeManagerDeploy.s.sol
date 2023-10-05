@@ -39,6 +39,6 @@ contract RoninBridgeManagerDeploy is BaseDeploy {
   }
 
   function run() public virtual trySetUp returns (RoninBridgeManager) {
-    return RoninBridgeManager(_deployImmutable(ContractKey.RoninBridgeManager, arguments()));
+    return RoninBridgeManager(_deployImmutable(ContractKey.RoninBridgeManager));
   }
 }

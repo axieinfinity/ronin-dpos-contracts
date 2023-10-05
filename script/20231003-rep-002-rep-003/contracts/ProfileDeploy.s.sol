@@ -10,6 +10,6 @@ contract ProfileDeploy is BaseDeploy {
   }
 
   function run() public virtual trySetUp returns (Profile) {
-    return Profile(_deployProxy(ContractKey.Profile, arguments()));
+    return Profile(_deployProxy(ContractKey.Profile));
   }
 }
