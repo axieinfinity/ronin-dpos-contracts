@@ -13,6 +13,7 @@ import { BridgeReward } from "@ronin/contracts/ronin/gateway/BridgeReward.sol";
 import { BridgeSlash } from "@ronin/contracts/ronin/gateway/BridgeSlash.sol";
 import { RoninBridgeManager } from "@ronin/contracts/ronin/gateway/RoninBridgeManager.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
+import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 
 contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade is
   Simulation__20231003_UpgradeREP002AndREP003_RON_NonConditional_Wrapup2Periods
@@ -107,7 +108,6 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     }
 
     {
-      _upgradeProxy(ContractKey.BridgeTracking, abi.encodeCall(BridgeTracking.initializeV2, ()));
       _bridgeTracking.initializeV3({
         bridgeManager: address(_roninBridgeManager),
         bridgeSlash: address(_bridgeSlash),
@@ -119,8 +119,12 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
 
   function _callInitREP2InGatewayContracts() internal {
     vm.startPrank(address(_roninGovernanceAdmin));
-    _bridgeReward.initializeREP2();
-    _bridgeTracking.initializeREP2();
+    TransparentUpgradeableProxyV2(payable(address(_bridgeReward))).functionDelegateCall(
+      abi.encodeCall(BridgeReward.initializeREP2, ())
+    );
+    TransparentUpgradeableProxyV2(payable(address(_bridgeTracking))).functionDelegateCall(
+      abi.encodeCall(BridgeReward.initializeREP2, ())
+    );
     vm.stopPrank();
   }
 }

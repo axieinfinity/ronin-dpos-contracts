@@ -51,6 +51,7 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
     _setContract(ContractType.BRIDGE_SLASH, bridgeSlashContract);
     _setContract(ContractType.VALIDATOR, validatorSetContract);
     _setContract(ContractType.GOVERNANCE_ADMIN, dposGA);
+    LATEST_REWARDED_PERIOD_SLOT.store(type(uint256).max);
     _setRewardPerPeriod(rewardPerPeriod);
     _receiveRON();
   }
