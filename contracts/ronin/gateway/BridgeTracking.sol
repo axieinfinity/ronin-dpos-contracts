@@ -101,7 +101,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
 
   /**
    * @dev Helper for running upgrade script, required to only revoked once by the DPoS's governance admin.
-   * The following must be assured after initializing REP2: `_lastSyncPeriod` == `{BridgeReward}.latestRewardedPeriod` == `currentPeriod()`
+   * The following must be assured after initializing REP2: `_lastSyncPeriod` == `{BridgeReward}.latestRewardedPeriod + 1` == `currentPeriod()`
    */
   function initializeREP2() external onlyContract(ContractType.GOVERNANCE_ADMIN) {
     require(_lastSyncPeriod == type(uint256).max, "already init rep 2");
