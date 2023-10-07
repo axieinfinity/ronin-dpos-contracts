@@ -107,6 +107,44 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
     roninGateway.depositFor(receipt);
   }
 
+  function _depositForOnlyOnRonin(string memory userName, uint256 depositCount) internal {
+    Account memory user = makeAccount(userName);
+    vm.makePersistent(user.addr);
+    vm.deal(user.addr, 1000 ether);
+
+    Transfer.Request memory request = Transfer.Request(
+      user.addr,
+      address(0),
+      Token.Info(Token.Standard.ERC20, 0, 1 ether)
+    );
+
+// depositFor((42127 [4.212e4], 0, (0x649A8a51E60D6bf06c4876E3398749aCfad2A33a, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 1), (0x649A8a51E60D6bf06c4876E3398749aCfad2A33a, 0xc99a6A985eD2Cac1ef41640596C5A5f9F4E19Ef5, 2020), (0, 0, 1000000000000000000 [1e18])))
+// depositFor((42127 [4.212e4], 0, (0x649A8a51E60D6bf06c4876E3398749aCfad2A33a, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 2020), (0x649A8a51E60D6bf06c4876E3398749aCfad2A33a, 0xc99a6A985eD2Cac1ef41640596C5A5f9F4E19Ef5, 2020), (0, 0, 1000000000000000000 [1e18]))) [delegatecall]
+
+
+    address weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    // uint256 depositCount = 42127;
+    address roninToken = 0xc99a6A985eD2Cac1ef41640596C5A5f9F4E19Ef5;
+    Transfer.Receipt memory receipt = Transfer.Request(user.addr, weth, request.info).into_deposit_receipt(
+      user.addr,
+      depositCount,
+      roninToken,
+      2020 // ronin-mainnet chainId
+    );
+    receipt.mainchain.chainId = 1;
+
+    // address operator = 0x4b3844A29CFA5824F53e2137Edb6dc2b54501BeA;
+    // vm.label(operator, "bridge-operator");
+    // vm.prank(operator);
+    vm.prank(makeAccount("detach-operator-1").addr);
+    _roninGateway.depositFor(receipt);
+  }
+
+  function _dummySwitchNetworks() internal {
+    _config.switchTo(Network.EthMainnet);
+    _config.switchTo(Network.RoninMainnet);
+  }
+
   function _wrapUpEpoch() internal {
     vm.prank(block.coinbase);
     _validatorSet.wrapUpEpoch();
@@ -115,6 +153,8 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
   function _fastForwardToNextDay() internal {
     vm.warp(block.timestamp + 3 seconds);
     vm.roll(block.number + 1);
+
+    console2.log("validatorSet", address(_validatorSet));
 
     uint256 numberOfBlocksInEpoch = _validatorSet.numberOfBlocksInEpoch();
 

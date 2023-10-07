@@ -21,10 +21,10 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
   function run() public virtual override trySetUp {
     Simulation__20231003_UpgradeREP002AndREP003_Base.run();
 
-    // Day #1
+    // --- Day #1
     _deployGatewayContracts();
 
-    // Day #2 (execute proposal on ronin)
+    // --- Day #2 (execute proposal on ronin)
     _fastForwardToNextDay();
     _wrapUpEpoch();
 
@@ -38,14 +38,35 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
 
     // -- done execute proposal
 
-    // // Deposit for
+    // Deposit for
+    vm.warp(block.timestamp + 3 seconds);
+    vm.roll(block.number + 1);
+    // _depositFor("after-upgrade-REP2");
+    // _dummySwitchNetworks();
+    uint256 depositCount = 42127;
+    _depositForOnlyOnRonin("after-upgrade-REP2", depositCount);
 
-    // End of Day #2
+    // --- End of Day #2
+
     // - wrap up period
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
+
+    vm.warp(block.timestamp + 3 seconds);
+    vm.roll(block.number + 1);
+    _depositForOnlyOnRonin("after-wrapup-Day2", ++depositCount);
+    // _depositFor("after-DAY2");
+
     // - deposit for
 
-    // End of Day #2
+    // --- End of Day #3
     // - wrap up period
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
+
+    vm.warp(block.timestamp + 3 seconds);
+    vm.roll(block.number + 1);
+    _depositForOnlyOnRonin("after-wrapup-Day3", ++depositCount);
   }
 
   /**
@@ -53,6 +74,7 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
    * - Deploy BridgeReward
    * - Deploy BridgeSlash
    * - Deploy RoninBridgeManager
+   * - Top up for BridgeReward
    */
   function _deployGatewayContracts() internal {
     console2.log("> ", StdStyle.blue("_deployGatewayContracts"), "...");
@@ -92,6 +114,8 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     RoninBridgeManager actualRoninBridgeManager = new RoninBridgeManagerDeploy().run();
     assertEq(address(actualRoninBridgeManager), expectedRoninBridgeManager);
     _roninBridgeManager = actualRoninBridgeManager;
+
+    _bridgeReward.receiveRON{ value: 100 ether }();
   }
 
   /**

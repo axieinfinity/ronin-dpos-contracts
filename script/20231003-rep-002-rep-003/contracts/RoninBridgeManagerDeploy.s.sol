@@ -16,9 +16,15 @@ contract RoninBridgeManagerDeploy is BaseDeploy {
     // load BridgeSlash address
     callbackRegisters[0] = loadContractOrDeploy(ContractKey.BridgeSlash);
 
-    address[] memory operators;
-    address[] memory governors;
-    uint96[] memory weights;
+    address[] memory operators = new address[](1);
+    operators[0] = makeAccount("detach-operator-1").addr;
+
+    address[] memory governors = new address[](1);
+    governors[0] = makeAccount("detach-governor-1").addr;
+
+    uint96[] memory weights = new uint96[](1);
+    weights[0] = 100;
+
     GlobalProposal.TargetOption[] memory targetOptions;
     address[] memory targets;
 
