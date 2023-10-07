@@ -154,8 +154,6 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
     vm.warp(block.timestamp + 3 seconds);
     vm.roll(block.number + 1);
 
-    console2.log("validatorSet", address(_validatorSet));
-
     uint256 numberOfBlocksInEpoch = _validatorSet.numberOfBlocksInEpoch();
 
     uint256 epochEndingBlockNumber = block.number +
