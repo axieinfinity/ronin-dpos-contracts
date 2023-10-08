@@ -21,10 +21,10 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
   function run() public virtual override trySetUp {
     Simulation__20231003_UpgradeREP002AndREP003_Base.run();
 
-    // --- Day #1
+    // -------------- Day #1 --------------------
     _deployGatewayContracts();
 
-    // --- Day #2 (execute proposal on ronin)
+    // -------------- Day #2 (execute proposal on ronin) --------------------
     _fastForwardToNextDay();
     _wrapUpEpoch();
 
@@ -46,7 +46,17 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     uint256 depositCount = 42127;
     _depositForOnlyOnRonin("after-upgrade-REP2", depositCount);
 
-    // --- End of Day #2
+    _fastForwardToNextEpoch();
+    vm.warp(block.timestamp + 3 seconds);
+    vm.roll(block.number + 1);
+    _depositForOnlyOnRonin("after-upgrade-REP2_a", ++depositCount);
+
+    _fastForwardToNextEpoch();
+    vm.warp(block.timestamp + 3 seconds);
+    vm.roll(block.number + 1);
+    _depositForOnlyOnRonin("after-upgrade-REP2_b", ++depositCount);
+
+    // -------------- End of Day #2 --------------------
 
     // - wrap up period
     _fastForwardToNextDay();
@@ -57,9 +67,14 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     _depositForOnlyOnRonin("after-wrapup-Day2", ++depositCount);
     // _depositFor("after-DAY2");
 
+    _fastForwardToNextEpoch();
+    vm.warp(block.timestamp + 3 seconds);
+    vm.roll(block.number + 1);
+    _depositForOnlyOnRonin("after-wrapup-Day2_a", ++depositCount);
+
     // - deposit for
 
-    // --- End of Day #3
+    // -------------- End of Day #3 --------------------
     // - wrap up period
     _fastForwardToNextDay();
     _wrapUpEpoch();

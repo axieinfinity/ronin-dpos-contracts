@@ -118,10 +118,6 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
       Token.Info(Token.Standard.ERC20, 0, 1 ether)
     );
 
-// depositFor((42127 [4.212e4], 0, (0x649A8a51E60D6bf06c4876E3398749aCfad2A33a, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 1), (0x649A8a51E60D6bf06c4876E3398749aCfad2A33a, 0xc99a6A985eD2Cac1ef41640596C5A5f9F4E19Ef5, 2020), (0, 0, 1000000000000000000 [1e18])))
-// depositFor((42127 [4.212e4], 0, (0x649A8a51E60D6bf06c4876E3398749aCfad2A33a, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 2020), (0x649A8a51E60D6bf06c4876E3398749aCfad2A33a, 0xc99a6A985eD2Cac1ef41640596C5A5f9F4E19Ef5, 2020), (0, 0, 1000000000000000000 [1e18]))) [delegatecall]
-
-
     address weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     // uint256 depositCount = 42127;
     address roninToken = 0xc99a6A985eD2Cac1ef41640596C5A5f9F4E19Ef5;
@@ -163,6 +159,20 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
 
     // fast forward to next day
     vm.warp(nextDayTimestamp);
+    vm.roll(epochEndingBlockNumber);
+  }
+
+  function _fastForwardToNextEpoch() internal {
+    vm.warp(block.timestamp + 3 seconds);
+    vm.roll(block.number + 1);
+
+    uint256 numberOfBlocksInEpoch = _validatorSet.numberOfBlocksInEpoch();
+
+    uint256 epochEndingBlockNumber = block.number +
+      (numberOfBlocksInEpoch - 1) -
+      (block.number % numberOfBlocksInEpoch);
+
+    // fast forward to next day
     vm.roll(epochEndingBlockNumber);
   }
 }

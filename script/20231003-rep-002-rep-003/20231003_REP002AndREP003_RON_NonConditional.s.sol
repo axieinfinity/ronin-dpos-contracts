@@ -74,17 +74,5 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON_NonConditional is
     }
   }
 
-  function _fastForwardToNextEpoch() internal {
-    vm.warp(block.timestamp + 3 seconds);
-    vm.roll(block.number + 1);
 
-    uint256 numberOfBlocksInEpoch = _validatorSet.numberOfBlocksInEpoch();
-
-    uint256 epochEndingBlockNumber = block.number +
-      (numberOfBlocksInEpoch - 1) -
-      (block.number % numberOfBlocksInEpoch);
-
-    // fast forward to next day
-    vm.roll(epochEndingBlockNumber);
-  }
 }
