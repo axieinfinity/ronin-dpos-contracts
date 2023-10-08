@@ -206,7 +206,7 @@ abstract contract RoninTest is Base_Test, ITransparentUpgradeableProxyDeployer {
     return address(uint160(uint256(vm.load(address(proxy), IMPLEMENTATION_SLOT))));
   }
 
-  function _getDefaultAdminPrivateKey() internal view returns (uint256) {
+  function _getDefaultAdminPrivateKey() internal pure returns (uint256) {
     return boundPrivateKey(ADMIN_PK);
   }
 

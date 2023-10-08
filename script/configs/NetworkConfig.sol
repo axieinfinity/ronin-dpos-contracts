@@ -2,6 +2,8 @@
 pragma solidity ^0.8.19;
 
 import { Vm } from "forge-std/Vm.sol";
+import { StdStyle } from "forge-std/StdStyle.sol";
+import { console2 } from "forge-std/console2.sol";
 
 enum Network {
   Local,
@@ -21,12 +23,14 @@ library ChainId {
 
 abstract contract NetworkConfig {
   struct NetworkData {
+    uint256 forkId;
     uint256 chainId;
     string privateKeyEnvLabel;
     string deploymentDir;
     string chainAlias;
   }
 
+  uint256 private constant NULL_FORK_ID = uint256(keccak256("NULL_FORK_ID"));
   Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
   string public constant LOCAL_ALIAS = "localhost";
@@ -50,10 +54,17 @@ abstract contract NetworkConfig {
 
   constructor() payable {
     _networkMap[ChainId.GOERLI] = Network.Goerli;
-    _networkDataMap[Network.Goerli] = NetworkData(ChainId.GOERLI, TESTNET_ENV_LABEL, GOERLI_DIR, GOERLI_ALIAS);
+    _networkDataMap[Network.Goerli] = NetworkData(
+      tryCreateFork(GOERLI_ALIAS),
+      ChainId.GOERLI,
+      TESTNET_ENV_LABEL,
+      GOERLI_DIR,
+      GOERLI_ALIAS
+    );
 
     _networkMap[ChainId.ETH_MAINNET] = Network.EthMainnet;
     _networkDataMap[Network.EthMainnet] = NetworkData(
+      tryCreateFork(ETH_MAINNET_ALIAS),
       ChainId.ETH_MAINNET,
       MAINNET_ENV_LABEL,
       ETH_MAINNET_DIR,
@@ -61,10 +72,17 @@ abstract contract NetworkConfig {
     );
 
     _networkMap[ChainId.LOCAL] = Network.Local;
-    _networkDataMap[Network.Local] = NetworkData(ChainId.LOCAL, LOCAL_ENV_LABEL, LOCAL_DIR, LOCAL_ALIAS);
+    _networkDataMap[Network.Local] = NetworkData(
+      tryCreateFork(LOCAL_ALIAS),
+      ChainId.LOCAL,
+      LOCAL_ENV_LABEL,
+      LOCAL_DIR,
+      LOCAL_ALIAS
+    );
 
     _networkMap[ChainId.RONIN_TESTNET] = Network.RoninTestnet;
     _networkDataMap[Network.RoninTestnet] = NetworkData(
+      tryCreateFork(RONIN_TESTNET_ALIAS),
       ChainId.RONIN_TESTNET,
       TESTNET_ENV_LABEL,
       RONIN_TESTNET_DIR,
@@ -73,6 +91,7 @@ abstract contract NetworkConfig {
 
     _networkMap[ChainId.RONIN_MAINNET] = Network.RoninMainnet;
     _networkDataMap[Network.RoninMainnet] = NetworkData(
+      tryCreateFork(RONIN_MAINNET_ALIAS),
       ChainId.RONIN_MAINNET,
       MAINNET_ENV_LABEL,
       RONIN_MAINNET_DIR,
@@ -80,8 +99,19 @@ abstract contract NetworkConfig {
     );
   }
 
+  function tryCreateFork(string memory chainAlias) public returns (uint256) {
+    try vm.createFork(vm.rpcUrl(chainAlias)) returns (uint256 forkId) {
+      return forkId;
+    } catch {
+      console2.log(StdStyle.red("NetworkConfig: Cannot create fork with url:"), vm.rpcUrl(chainAlias));
+      return NULL_FORK_ID;
+    }
+  }
+
   function switchTo(Network network) public {
-    vm.createSelectFork(vm.rpcUrl(_networkDataMap[network].chainAlias));
+    uint256 forkId = _networkDataMap[network].forkId;
+    require(forkId != NULL_FORK_ID, "Network Config: Unexists fork!");
+    vm.selectFork(forkId);
     require(_networkDataMap[network].chainId == block.chainid, "NetworkConfig: Switch chain failed");
   }
 
@@ -91,7 +121,7 @@ abstract contract NetworkConfig {
 
   function getPrivateKeyEnvLabel(Network network) public view returns (string memory privateKeyEnvLabel) {
     privateKeyEnvLabel = _networkDataMap[network].privateKeyEnvLabel;
-    require(bytes(privateKeyEnvLabel).length != 0, "ENV label not found");
+    require(bytes(privateKeyEnvLabel).length != 0, "Network Config: ENV label not found");
   }
 
   function getCurrentNetwork() public view returns (Network network) {
