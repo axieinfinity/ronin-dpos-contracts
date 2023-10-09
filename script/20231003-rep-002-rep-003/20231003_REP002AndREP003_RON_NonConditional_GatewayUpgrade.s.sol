@@ -25,8 +25,8 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     _deployGatewayContracts();
 
     // -------------- Day #2 (execute proposal on ronin) --------------------
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
+    // _fastForwardToNextDay();
+    // _wrapUpEpoch();
 
     vm.warp(block.timestamp + 3 seconds);
     vm.roll(block.number + 1);
@@ -43,18 +43,17 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     vm.roll(block.number + 1);
     // _depositFor("after-upgrade-REP2");
     // _dummySwitchNetworks();
-    uint256 depositCount = 42127;
-    _depositForOnlyOnRonin("after-upgrade-REP2", depositCount);
+    _depositForOnlyOnRonin("after-upgrade-REP2");
 
     _fastForwardToNextEpoch();
     vm.warp(block.timestamp + 3 seconds);
     vm.roll(block.number + 1);
-    _depositForOnlyOnRonin("after-upgrade-REP2_a", ++depositCount);
+    _depositForOnlyOnRonin("after-upgrade-REP2_a");
 
     _fastForwardToNextEpoch();
     vm.warp(block.timestamp + 3 seconds);
     vm.roll(block.number + 1);
-    _depositForOnlyOnRonin("after-upgrade-REP2_b", ++depositCount);
+    _depositForOnlyOnRonin("after-upgrade-REP2_b");
 
     // -------------- End of Day #2 --------------------
 
@@ -64,13 +63,13 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
 
     vm.warp(block.timestamp + 3 seconds);
     vm.roll(block.number + 1);
-    _depositForOnlyOnRonin("after-wrapup-Day2", ++depositCount);
+    _depositForOnlyOnRonin("after-wrapup-Day2"); // share bridge reward here
     // _depositFor("after-DAY2");
 
     _fastForwardToNextEpoch();
     vm.warp(block.timestamp + 3 seconds);
     vm.roll(block.number + 1);
-    _depositForOnlyOnRonin("after-wrapup-Day2_a", ++depositCount);
+    _depositForOnlyOnRonin("after-wrapup-Day2_a");
 
     // - deposit for
 
@@ -81,7 +80,7 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
 
     vm.warp(block.timestamp + 3 seconds);
     vm.roll(block.number + 1);
-    _depositForOnlyOnRonin("after-wrapup-Day3", ++depositCount);
+    _depositForOnlyOnRonin("after-wrapup-Day3"); // share bridge reward here
   }
 
   /**
@@ -102,7 +101,12 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
         .overrideArgs(
           abi.encodeCall(
             BridgeSlash.initialize,
-            (address(_validatorSet), expectedRoninBridgeManager, address(_bridgeTracking))
+            (
+              address(_validatorSet),
+              expectedRoninBridgeManager,
+              address(_bridgeTracking),
+              address(_roninGovernanceAdmin)
+            )
           )
         )
         .run()
@@ -162,6 +166,9 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
       abi.encodeCall(BridgeReward.initializeREP2, ())
     );
     TransparentUpgradeableProxyV2(payable(address(_bridgeTracking))).functionDelegateCall(
+      abi.encodeCall(BridgeReward.initializeREP2, ())
+    );
+    TransparentUpgradeableProxyV2(payable(address(_bridgeSlash))).functionDelegateCall(
       abi.encodeCall(BridgeReward.initializeREP2, ())
     );
     vm.stopPrank();

@@ -66,7 +66,7 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
     _roninGovernanceAdmin = RoninGovernanceAdmin(_config.getAddressFromCurrentNetwork(ContractKey.GovernanceAdmin));
   }
 
-  function _depositFor(string memory userName) internal {
+  function _depositForOnBothChain(string memory userName) internal {
     Account memory user = makeAccount(userName);
     vm.makePersistent(user.addr);
     vm.deal(user.addr, 1000 ether);
@@ -80,7 +80,6 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
     MainchainGatewayV2 mainchainGateway = MainchainGatewayV2(
       _config.getAddress(Network.EthMainnet, ContractKey.MainchainGatewayV2)
     );
-    RoninGatewayV2 roninGateway = RoninGatewayV2(_config.getAddressFromCurrentNetwork(ContractKey.RoninGatewayV2));
 
     // switch rpc to eth mainnet
     _config.switchTo(Network.EthMainnet);
@@ -104,10 +103,12 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
     address operator = 0x4b3844A29CFA5824F53e2137Edb6dc2b54501BeA;
     vm.label(operator, "bridge-operator");
     vm.prank(operator);
-    roninGateway.depositFor(receipt);
+    _roninGateway.depositFor(receipt);
   }
 
-  function _depositForOnlyOnRonin(string memory userName, uint256 depositCount) internal {
+  // uint256 _depositCount = 42127; // fork-block-number 28139075
+  uint256 _depositCount = 42213; // fork-block-number 28327195
+  function _depositForOnlyOnRonin(string memory userName) internal {
     Account memory user = makeAccount(userName);
     vm.makePersistent(user.addr);
     vm.deal(user.addr, 1000 ether);
@@ -119,11 +120,10 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
     );
 
     address weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    // uint256 depositCount = 42127;
     address roninToken = 0xc99a6A985eD2Cac1ef41640596C5A5f9F4E19Ef5;
     Transfer.Receipt memory receipt = Transfer.Request(user.addr, weth, request.info).into_deposit_receipt(
       user.addr,
-      depositCount,
+      _depositCount++,
       roninToken,
       2020 // ronin-mainnet chainId
     );
