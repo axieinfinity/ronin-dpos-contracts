@@ -62,7 +62,7 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
    */
   function initializeREP2() external onlyContract(ContractType.GOVERNANCE_ADMIN) {
     require(getLatestRewardedPeriod() == type(uint256).max, "already init rep 2");
-    _syncLatestRewardedPeriod();
+    LATEST_REWARDED_PERIOD_SLOT.store(IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod() - 1);
     _setContract(ContractType.GOVERNANCE_ADMIN, address(0));
   }
 
@@ -207,16 +207,6 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
     }
 
     TOTAL_REWARDS_SCATTERED_SLOT.addAssign(sumRewards);
-  }
-
-  /**
-   * @dev Internal function to synchronize the latest rewarded period based on the current period of the validator set contract.
-   * @notice This function is used internally to synchronize the latest rewarded period with the current period of the validator set contract.
-   * @notice The `currentPeriod` of the validator set contract is retrieved and stored in the `LATEST_REWARDED_PERIOD_SLOT`.
-   * @notice This function ensures that the latest rewarded period is updated to reflect the current period in the validator set contract.
-   */
-  function _syncLatestRewardedPeriod() internal {
-    LATEST_REWARDED_PERIOD_SLOT.store(IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod() - 1);
   }
 
   /**

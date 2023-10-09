@@ -233,7 +233,7 @@ contract BridgeRewardTest is Base_Test, IBridgeRewardEvents, BridgeManagerUtils 
       new TransparentUpgradeableProxy(
         _bridgeSlashLogic,
         _admin,
-        abi.encodeCall(BridgeSlash.initialize, (_validatorContract, _bridgeManagerContract, _bridgeTrackingContract))
+        abi.encodeCall(BridgeSlash.initialize, (_validatorContract, _bridgeManagerContract, _bridgeTrackingContract, address(0)))
       )
     );
 

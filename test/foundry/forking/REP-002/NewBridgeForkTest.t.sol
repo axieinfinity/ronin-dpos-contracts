@@ -255,7 +255,12 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
       value: ZERO_VALUE,
       callData: abi.encodeCall(
         BridgeSlash.initialize,
-        (address(RONIN_VALIDATOR_SET_CONTRACT), bridgeManagerContract, address(RONIN_BRIDGE_TRACKING_CONTRACT))
+        (
+          address(RONIN_VALIDATOR_SET_CONTRACT),
+          bridgeManagerContract,
+          address(RONIN_BRIDGE_TRACKING_CONTRACT),
+          address(0)
+        )
       )
     });
 
