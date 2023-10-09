@@ -18,3 +18,5 @@ logs/storage_layout_table.log
 cache_foundry
 out
 .DS_Store
+
+dry-run/
