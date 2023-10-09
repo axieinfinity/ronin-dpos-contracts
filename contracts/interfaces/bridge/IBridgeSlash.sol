@@ -18,7 +18,7 @@ interface IBridgeSlash is IBridgeSlashEvents {
     uint256 totalBallot,
     uint256 totalVote,
     uint256 period
-  ) external returns (bool slashed);
+  ) external;
 
   /**
    * @dev Returns the penalize durations for the specified bridge operators.

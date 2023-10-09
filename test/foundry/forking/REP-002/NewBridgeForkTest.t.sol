@@ -255,7 +255,12 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
       value: ZERO_VALUE,
       callData: abi.encodeCall(
         BridgeSlash.initialize,
-        (address(RONIN_VALIDATOR_SET_CONTRACT), bridgeManagerContract, address(RONIN_BRIDGE_TRACKING_CONTRACT))
+        (
+          address(RONIN_VALIDATOR_SET_CONTRACT),
+          bridgeManagerContract,
+          address(RONIN_BRIDGE_TRACKING_CONTRACT),
+          address(0)
+        )
       )
     });
 
@@ -272,6 +277,7 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
           address(RONIN_BRIDGE_TRACKING_CONTRACT),
           address(_ronBridgeSlashProxy),
           address(RONIN_VALIDATOR_SET_CONTRACT),
+          address(0),
           DEFAULT_REWARD_PER_PERIOD
         )
       )
@@ -309,7 +315,7 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
     RONIN_BRIDGE_TRACKING_CONTRACT.functionDelegateCall(
       abi.encodeCall(
         BridgeTracking.initializeV3,
-        (address(_ronBridgeManagerContract), address(_ronBridgeSlashProxy), address(_ronBridgeRewardProxy))
+        (address(_ronBridgeManagerContract), address(_ronBridgeSlashProxy), address(_ronBridgeRewardProxy), address(0))
       )
     );
     vm.stopPrank();
@@ -339,11 +345,11 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
     }
   }
 
-  function _getOperatorPrivateKey(uint256 idx) internal view returns (uint256) {
+  function _getOperatorPrivateKey(uint256 idx) internal pure returns (uint256) {
     return boundPrivateKey(INITIAL_SEED + idx);
   }
 
-  function _getGovernorPrivateKey(uint256 idx) internal view returns (uint256) {
+  function _getGovernorPrivateKey(uint256 idx) internal pure returns (uint256) {
     return boundPrivateKey(~(INITIAL_SEED + idx));
   }
 }

@@ -312,7 +312,7 @@ contract BridgeSlashTest is IBridgeSlashEvents, BridgeManagerUtils {
       new TransparentUpgradeableProxyV2(
         _bridgeSlashLogic,
         _bridgeManagerContract,
-        abi.encodeCall(BridgeSlash.initialize, (_validatorContract, _bridgeManagerContract, _bridgeTrackingContract))
+        abi.encodeCall(BridgeSlash.initialize, (_validatorContract, _bridgeManagerContract, _bridgeTrackingContract, address(0)))
       )
     );
   }

@@ -20,7 +20,7 @@ contract MockBridgeSlash is IBridgeSlash {
     uint256 totalBallot,
     uint256 totalVote,
     uint256 period
-  ) external returns (bool slashed) {}
+  ) external {}
 
   function getAddedPeriodOf(address[] calldata bridgeOperators) external view returns (uint256[] memory addedPeriods) {}
 

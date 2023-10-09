@@ -17,3 +17,4 @@ remix-compiler.config.js
 logs/storage_layout_table.log
 cache_foundry
 out
+.DS_Store

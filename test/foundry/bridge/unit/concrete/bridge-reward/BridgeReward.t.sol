@@ -57,6 +57,7 @@ contract BridgeReward_Unit_Concrete_Test is Base_Test {
       bridgeTrackingContract: address(_bridgeTracking),
       bridgeSlashContract: address(_bridgeSlash),
       validatorSetContract: address(_validatorSetContract),
+      dposGA: address(0),
       rewardPerPeriod: _rewardPerPeriod
     });
 
