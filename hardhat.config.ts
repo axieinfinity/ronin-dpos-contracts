@@ -132,13 +132,6 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 10,
           },
-          /// @dev see: https://github.com/Uniswap/v3-core/blob/main/hardhat.config.ts
-          metadata: {
-            // do not include the metadata hash, since this is machine dependent
-            // and we want all generated code to be deterministic
-            // https://docs.soliditylang.org/en/v0.8.17/metadata.html
-            bytecodeHash: 'none',
-          },
         },
       },
     },
