@@ -34,10 +34,10 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
 
 deploy.tags = ['_HelperBridgeCalculate'];
 deploy.dependencies = [
-  // 'BridgeTrackingLogic',
+  'BridgeTrackingLogic',
   'BridgeSlashLogic',
   'BridgeRewardLogic',
-  // 'MainchainGatewayV2Logic',
+  'MainchainGatewayV2Logic',
   'RoninGatewayV2Logic',
 ];
 

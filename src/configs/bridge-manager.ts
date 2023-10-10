@@ -113,7 +113,11 @@ export const bridgeRewardConf: BridgeRewardConfig = {
   [Network.Local]: defaultBridgeRewardConf,
   [Network.Devnet]: defaultBridgeRewardConf,
   [Network.Testnet]: {
-    rewardPerPeriod: BigNumber.from(10).pow(18), // 1 RON per block,
+    rewardPerPeriod: BigNumber.from(10).pow(18), // 1 RON per period,
     topupAmount: BigNumber.from(10).pow(18).mul(1_000_000), // 1M RON
+  },
+  [Network.Mainnet]: {
+    rewardPerPeriod: BigNumber.from('2739726027397260273972'), // (1M/365) ~ 2739.7260 RON per period,
+    topupAmount: 0,
   },
 };
