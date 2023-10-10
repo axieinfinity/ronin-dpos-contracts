@@ -19,16 +19,21 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const logicContract = await deployments.get('BridgeRewardLogic');
   let validatorContractAddress: Address;
+  let bridgeTrackingContractAddress: Address;
   if (network.name == Network.Hardhat) {
     validatorContractAddress = generalRoninConf[network.name]!.validatorContract?.address!;
+    bridgeTrackingContractAddress = generalRoninConf[network.name]!.bridgeTrackingContract?.address!;
   } else {
     const validatorContractDeployment = await deployments.get('RoninValidatorSetProxy');
     validatorContractAddress = validatorContractDeployment.address;
+
+    const bridgeTrackingContractDeployment = await deployments.get('BridgeTrackingProxy');
+    bridgeTrackingContractAddress = bridgeTrackingContractDeployment.address;
   }
 
   const data = new BridgeReward__factory().interface.encodeFunctionData('initialize', [
     generalRoninConf[network.name]!.bridgeManagerContract?.address,
-    generalRoninConf[network.name]!.bridgeTrackingContract?.address,
+    bridgeTrackingContractAddress,
     generalRoninConf[network.name]!.bridgeSlashContract?.address,
     validatorContractAddress,
     bridgeRewardConf[network.name]!.rewardPerPeriod,
