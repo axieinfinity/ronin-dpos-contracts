@@ -94,6 +94,18 @@ export const bridgeManagerConf: BridgeManagerConfig = {
       },
     ],
   },
+  [Network.Ethereum]: {
+    numerator: 70,
+    denominator: 100,
+    expiryDuration: 14 * 86400, // 14 days
+    members: [
+      {
+        governor: '0x3200A8eb56767c3760e108Aa27C65bfFF036d8E6', // Bao's temp address
+        operator: '0x32015E8B982c61bc8a593816FdBf03A603EEC823', // Bao's temp address
+        weight: 100,
+      },
+    ],
+  },
 };
 
 export interface BridgeRewardArguments {
