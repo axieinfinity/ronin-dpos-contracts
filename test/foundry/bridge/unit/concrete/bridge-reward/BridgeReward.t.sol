@@ -57,9 +57,12 @@ contract BridgeReward_Unit_Concrete_Test is Base_Test {
       bridgeTrackingContract: address(_bridgeTracking),
       bridgeSlashContract: address(_bridgeSlash),
       validatorSetContract: address(_validatorSetContract),
-      dposGA: address(0),
+      dposGA: makeAccount("dposGA").addr,
       rewardPerPeriod: _rewardPerPeriod
     });
+
+    vm.prank(makeAccount("dposGA").addr);
+    _bridgeReward.initializeREP2();
 
     // Label the base test contracts.
     vm.label({ account: address(_bridgeReward), newLabel: "Bridge Reward" });
