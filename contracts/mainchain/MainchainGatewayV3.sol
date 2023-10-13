@@ -399,7 +399,7 @@ contract MainchainGatewayV3 is
      * _domainSeparator = keccak256(
      *   abi.encode(
      *     keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-     *     keccak256("MainchainGatewayV3"),
+     *     keccak256("MainchainGatewayV2"),
      *     keccak256("2"),
      *     block.chainid,
      *     address(this)
@@ -410,7 +410,7 @@ contract MainchainGatewayV3 is
       let ptr := mload(0x40)
       // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
       mstore(ptr, 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f)
-      // keccak256("MainchainGatewayV3")
+      // keccak256("MainchainGatewayV2")
       mstore(add(ptr, 0x20), 0x159f52c1e3a2b6a6aad3950adf713516211484e0516dad685ea662a094b7c43b)
       // keccak256("2")
       mstore(add(ptr, 0x40), 0xad7c5bef027816a800da1736444fb58a807ef4c9603b7848673f7e3a68eb14a5)
