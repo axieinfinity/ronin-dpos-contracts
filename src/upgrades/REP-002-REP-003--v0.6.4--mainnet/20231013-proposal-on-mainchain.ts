@@ -6,6 +6,7 @@ import { MainchainGatewayV3__factory } from '../../types';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
+    console.log("Not on Ronin chain. Abort!")
     return;
   }
 
@@ -77,7 +78,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   deployments.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
-// yarn hardhat deploy --tags 230231013__ProposalOnMainchain --network ronin-mainnet
+// yarn hardhat deploy --tags 230231013__ProposalOnMainchain__V0_6_4 --network ronin-mainnet
 deploy.tags = ['230231013__ProposalOnMainchain__V0_6_4'];
 
 export default deploy;
