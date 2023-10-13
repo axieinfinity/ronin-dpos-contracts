@@ -146,11 +146,14 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     console2.log("> ", StdStyle.blue("_upgradeGatewayContracts"), "...");
 
     {
+      // upgrade `RoninGatewayV2` and bump to V2
       _upgradeProxy(ContractKey.RoninGatewayV2, abi.encodeCall(RoninGatewayV2.initializeV2, ()));
+      // bump `RoninGatewayV2` to V3
       _roninGateway.initializeV3(address(_roninBridgeManager));
     }
 
     {
+      // bump `BridgeTracking` to V3
       _bridgeTracking.initializeV3({
         bridgeManager: address(_roninBridgeManager),
         bridgeSlash: address(_bridgeSlash),
