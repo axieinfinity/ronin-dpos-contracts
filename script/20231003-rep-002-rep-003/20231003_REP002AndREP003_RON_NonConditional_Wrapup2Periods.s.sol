@@ -28,7 +28,7 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON_NonConditional_Wrapup2P
     // _fastForwardToNextDay();
     // _wrapUpEpoch();
 
-    // // test `RoninGatewayV2` functionality
+    // // test `RoninGatewayV3` functionality
     // _depositFor("after-upgrade-user");
   }
 }

@@ -2,8 +2,8 @@
 pragma solidity ^0.8.19;
 
 import { RoninGovernanceAdmin } from "@ronin/contracts/ronin/RoninGovernanceAdmin.sol";
-import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
-import { MainchainGatewayV2 } from "@ronin/contracts/mainchain/MainchainGatewayV2.sol";
+import { RoninGatewayV3 } from "@ronin/contracts/ronin/gateway/RoninGatewayV3.sol";
+import { MainchainGatewayV3 } from "@ronin/contracts/mainchain/MainchainGatewayV3.sol";
 import { Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
 import { SlashIndicator } from "@ronin/contracts/ronin/slash-indicator/SlashIndicator.sol";
@@ -28,7 +28,7 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
   using Transfer for *;
 
   Staking internal _staking;
-  RoninGatewayV2 internal _roninGateway;
+  RoninGatewayV3 internal _roninGateway;
   BridgeTracking internal _bridgeTracking;
   SlashIndicator internal _slashIndicator;
   RoninValidatorSet internal _validatorSet;
@@ -54,7 +54,7 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
     }
 
     _staking = Staking(_config.getAddressFromCurrentNetwork(ContractKey.Staking));
-    _roninGateway = RoninGatewayV2(_config.getAddressFromCurrentNetwork(ContractKey.RoninGatewayV2));
+    _roninGateway = RoninGatewayV3(_config.getAddressFromCurrentNetwork(ContractKey.RoninGatewayV3));
     _bridgeTracking = BridgeTracking(_config.getAddressFromCurrentNetwork(ContractKey.BridgeTracking));
     _slashIndicator = SlashIndicator(_config.getAddressFromCurrentNetwork(ContractKey.SlashIndicator));
     _stakingVesting = StakingVesting(_config.getAddressFromCurrentNetwork(ContractKey.StakingVesting));
@@ -77,8 +77,8 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
       Token.Info(Token.Standard.ERC20, 0, 1 ether)
     );
 
-    MainchainGatewayV2 mainchainGateway = MainchainGatewayV2(
-      _config.getAddress(Network.EthMainnet, ContractKey.MainchainGatewayV2)
+    MainchainGatewayV3 mainchainGateway = MainchainGatewayV3(
+      _config.getAddress(Network.EthMainnet, ContractKey.MainchainGatewayV3)
     );
 
     // switch rpc to eth mainnet
