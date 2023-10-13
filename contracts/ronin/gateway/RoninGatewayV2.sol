@@ -30,11 +30,8 @@ contract RoninGatewayV2 is
   using Transfer for Transfer.Receipt;
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
-  /// @dev Withdrawal unlocker role hash
-  bytes32 public constant WITHDRAWAL_MIGRATOR = keccak256("WITHDRAWAL_MIGRATOR");
-
-  /// @dev Flag indicating whether the withdrawal migrate progress is done
-  bool public withdrawalMigrated;
+  /// @custom:deprecated Previously `withdrawalMigrated` (non-zero value)
+  bool private ___deprecated4;
   /// @dev Total withdrawal
   uint256 public withdrawalCount;
   /// @dev Mapping from chain id => deposit id => deposit vote
@@ -108,14 +105,6 @@ contract RoninGatewayV2 is
       _mapTokens(_packedAddresses[0], _packedAddresses[1], _packedNumbers[0], _standards);
       _setMinimumThresholds(_packedAddresses[0], _packedNumbers[1]);
     }
-
-    for (uint256 _i; _i < _withdrawalMigrators.length; ) {
-      _grantRole(WITHDRAWAL_MIGRATOR, _withdrawalMigrators[_i]);
-
-      unchecked {
-        ++_i;
-      }
-    }
   }
 
   function initializeV2() external reinitializer(2) {
@@ -129,45 +118,6 @@ contract RoninGatewayV2 is
 
   function initializeV3(address bridgeAdmin) external reinitializer(3) {
     _setContract(ContractType.BRIDGE_MANAGER, bridgeAdmin);
-  }
-
-  /**
-   * @dev Migrates withdrawals.
-   *
-   * Requirements:
-   * - The method caller is the migrator.
-   * - The arrays have the same length and its length larger than 0.
-   *
-   */
-  function migrateWithdrawals(
-    Transfer.Request[] calldata _requests,
-    address[] calldata _requesters
-  ) external onlyRole(WITHDRAWAL_MIGRATOR) {
-    if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
-    if (!(_requesters.length == _requests.length && _requests.length > 0)) revert ErrLengthMismatch(msg.sig);
-
-    for (uint256 _i; _i < _requests.length; ) {
-      MappedToken memory _token = getMainchainToken(_requests[_i].tokenAddr, 1);
-      if (_requests[_i].info.erc != _token.erc) revert ErrInvalidTokenStandard();
-
-      _storeAsReceipt(_requests[_i], 1, _requesters[_i], _token.tokenAddr);
-
-      unchecked {
-        ++_i;
-      }
-    }
-  }
-
-  /**
-   * @dev Mark the migration as done.
-   */
-  function markWithdrawalMigrated() external {
-    if (!(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(WITHDRAWAL_MIGRATOR, msg.sender))) {
-      revert ErrUnauthorized(msg.sig, RoleAccess.WITHDRAWAL_MIGRATOR);
-    }
-    if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
-
-    withdrawalMigrated = true;
   }
 
   /**
