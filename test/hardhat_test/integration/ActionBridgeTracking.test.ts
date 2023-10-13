@@ -226,7 +226,12 @@ describe('[Integration] Bridge Tracking test', () => {
     expect(period).gt(0);
 
     // InitV3 after the period 0
-    await bridgeTracking.initializeV3(bridgeManager.address, bridgeSlashAddress, bridgeRewardAddress);
+    await bridgeTracking.initializeV3(
+      bridgeManager.address,
+      bridgeSlashAddress,
+      bridgeRewardAddress,
+      governanceAdmin.address
+    );
   });
 
   after(async () => {
