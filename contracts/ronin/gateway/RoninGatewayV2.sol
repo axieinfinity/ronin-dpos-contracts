@@ -124,12 +124,12 @@ contract RoninGatewayV2 is
    * @inheritdoc IRoninGatewayV2
    */
   function getWithdrawalSignatures(
-    uint256 _withdrawalId,
-    address[] calldata _validators
+    uint256 withdrawalId,
+    address[] calldata operators
   ) external view returns (bytes[] memory _signatures) {
-    _signatures = new bytes[](_validators.length);
-    for (uint256 _i = 0; _i < _validators.length; ) {
-      _signatures[_i] = _withdrawalSig[_withdrawalId][_validators[_i]];
+    _signatures = new bytes[](operators.length);
+    for (uint256 _i = 0; _i < operators.length; ) {
+      _signatures[_i] = _withdrawalSig[withdrawalId][operators[_i]];
 
       unchecked {
         ++_i;
@@ -251,29 +251,29 @@ contract RoninGatewayV2 is
    * @inheritdoc IRoninGatewayV2
    */
   function bulkSubmitWithdrawalSignatures(
-    uint256[] calldata _withdrawals,
-    bytes[] calldata _signatures
+    uint256[] calldata withdrawals,
+    bytes[] calldata signatures
   ) external whenNotPaused onlyBridgeOperator {
-    address _validator = msg.sender;
+    address operator = msg.sender;
 
-    if (!(_withdrawals.length > 0 && _withdrawals.length == _signatures.length)) {
+    if (!(withdrawals.length > 0 && withdrawals.length == signatures.length)) {
       revert ErrLengthMismatch(msg.sig);
     }
 
     uint256 _minVoteWeight = minimumVoteWeight();
 
-    uint256 _id;
+    uint256 id;
     IBridgeTracking _bridgeTrackingContract = IBridgeTracking(getContract(ContractType.BRIDGE_TRACKING));
-    for (uint256 _i; _i < _withdrawals.length; ) {
-      _id = _withdrawals[_i];
-      _withdrawalSig[_id][_validator] = _signatures[_i];
-      _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Withdrawal, _id, _validator);
+    for (uint256 _i; _i < withdrawals.length; ) {
+      id = withdrawals[_i];
+      _withdrawalSig[id][operator] = signatures[_i];
+      _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Withdrawal, id, operator);
 
-      IsolatedGovernance.Vote storage _proposal = withdrawalStatVote[_id];
-      VoteStatus _status = _castIsolatedVote(_proposal, _validator, _minVoteWeight, bytes32(_id));
+      IsolatedGovernance.Vote storage _proposal = withdrawalStatVote[id];
+      VoteStatus _status = _castIsolatedVote(_proposal, operator, _minVoteWeight, bytes32(id));
       if (_status == VoteStatus.Approved) {
         _proposal.status = VoteStatus.Executed;
-        _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, _id);
+        _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, id);
       }
 
       unchecked {
@@ -360,31 +360,30 @@ contract RoninGatewayV2 is
    * Emits the `Deposited` once the assets are released.
    *
    */
-  function _depositFor(Transfer.Receipt memory _receipt, address _validator, uint256 _minVoteWeight) internal {
-    uint256 _id = _receipt.id;
-    _receipt.info.validate();
-    if (_receipt.kind != Transfer.Kind.Deposit) revert ErrInvalidReceiptKind();
+  function _depositFor(Transfer.Receipt memory receipt, address operator, uint256 minVoteWeight) internal {
+    uint256 id = receipt.id;
+    receipt.info.validate();
+    if (receipt.kind != Transfer.Kind.Deposit) revert ErrInvalidReceiptKind();
 
-    if (_receipt.ronin.chainId != block.chainid)
-      revert ErrInvalidChainId(msg.sig, _receipt.ronin.chainId, block.chainid);
+    if (receipt.ronin.chainId != block.chainid) revert ErrInvalidChainId(msg.sig, receipt.ronin.chainId, block.chainid);
 
-    MappedToken memory _token = getMainchainToken(_receipt.ronin.tokenAddr, _receipt.mainchain.chainId);
+    MappedToken memory _token = getMainchainToken(receipt.ronin.tokenAddr, receipt.mainchain.chainId);
 
-    if (!(_token.erc == _receipt.info.erc && _token.tokenAddr == _receipt.mainchain.tokenAddr))
+    if (!(_token.erc == receipt.info.erc && _token.tokenAddr == receipt.mainchain.tokenAddr))
       revert ErrInvalidReceipt();
 
-    IsolatedGovernance.Vote storage _proposal = depositVote[_receipt.mainchain.chainId][_id];
-    bytes32 _receiptHash = _receipt.hash();
-    VoteStatus _status = _castIsolatedVote(_proposal, _validator, _minVoteWeight, _receiptHash);
-    emit DepositVoted(_validator, _id, _receipt.mainchain.chainId, _receiptHash);
+    IsolatedGovernance.Vote storage _proposal = depositVote[receipt.mainchain.chainId][id];
+    bytes32 _receiptHash = receipt.hash();
+    VoteStatus _status = _castIsolatedVote(_proposal, operator, minVoteWeight, _receiptHash);
+    emit DepositVoted(operator, id, receipt.mainchain.chainId, _receiptHash);
     if (_status == VoteStatus.Approved) {
       _proposal.status = VoteStatus.Executed;
-      _receipt.info.handleAssetTransfer(payable(_receipt.ronin.addr), _receipt.ronin.tokenAddr, IWETH(address(0)));
+      receipt.info.handleAssetTransfer(payable(receipt.ronin.addr), receipt.ronin.tokenAddr, IWETH(address(0)));
       IBridgeTracking(getContract(ContractType.BRIDGE_TRACKING)).handleVoteApproved(
         IBridgeTracking.VoteKind.Deposit,
-        _receipt.id
+        receipt.id
       );
-      emit Deposited(_receiptHash, _receipt);
+      emit Deposited(_receiptHash, receipt);
     }
   }
 
