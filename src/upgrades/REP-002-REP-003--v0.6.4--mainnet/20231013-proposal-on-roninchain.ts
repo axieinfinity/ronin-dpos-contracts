@@ -1,10 +1,9 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { explorerUrl, proxyInterface } from '../upgradeUtils';
+import { ProposalSegmentArguments, defaultSegment, explorerUrl, proxyInterface } from '../upgradeUtils';
 import { VoteType } from '../../script/proposal';
 import { roninchainNetworks, stakingVestingConfig } from '../../configs/config';
 import { network } from 'hardhat';
-import { Address, Deployment } from 'hardhat-deploy/dist/types';
-import { BigNumberish, BytesLike } from 'ethers';
+import { Deployment } from 'hardhat-deploy/dist/types';
 import {
   BridgeReward__factory,
   BridgeSlash__factory,
@@ -15,13 +14,6 @@ import {
   StakingVesting__factory,
   Staking__factory,
 } from '../../types';
-
-interface ProposalSegmentArguments {
-  target?: Address;
-  value: BigNumberish;
-  data?: BytesLike;
-  gasAmount: BigNumberish;
-}
 
 interface Instance {
   RoninGovernanceAdmin: Deployment;
@@ -48,11 +40,6 @@ interface Instance {
   FastFinalityTrackingLogic: Deployment;
   RoninGatewayV3Logic: Deployment;
 }
-
-const defaultSegment: ProposalSegmentArguments = {
-  gasAmount: 1_000_000,
-  value: 0,
-};
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -97,8 +84,9 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   //      See `script/20231003-rep-002-rep-003/20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade.s.sol`
   let proposalPart2 = await upgradeGatewayContractSetProposalPart(allDeployments);
   let proposalPart3 = await initREP2GatewayContractSetProposalPart(allDeployments);
+  let proposalPart4 = await changeAdminGatewayContractsProposalPart(allDeployments);
 
-  let proposal = [...proposalPart1, ...proposalPart2, ...proposalPart3];
+  let proposal = [...proposalPart1, ...proposalPart2, ...proposalPart3, ...proposalPart4];
 
   console.log(proposal);
   return;
@@ -277,6 +265,19 @@ async function initREP2GatewayContractSetProposalPart(instance: Instance): Promi
     ...defaultSegment,
     target: instance.BridgeSlashProxy.address,
     data: new BridgeSlash__factory().interface.encodeFunctionData('initializeREP2'),
+  });
+
+  return gatewaySetSegments;
+}
+
+async function changeAdminGatewayContractsProposalPart(instance: Instance): Promise<ProposalSegmentArguments[]> {
+  let gatewaySetSegments: ProposalSegmentArguments[] = [];
+
+  // change admin of ronin gateway
+  gatewaySetSegments.push({
+    ...defaultSegment,
+    target: instance.RoninGatewayV3Proxy.address,
+    data: proxyInterface.encodeFunctionData('changeAdmin', [instance.RoninBridgeManager.address]),
   });
 
   return gatewaySetSegments;
