@@ -2,14 +2,14 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyInterface } from '../upgradeUtils';
 import { VoteType } from '../../script/proposal';
 import { roninchainNetworks, stakingVestingConfig } from '../../configs/config';
-import { deployments, network } from 'hardhat';
+import { network } from 'hardhat';
 import { Address, Deployment } from 'hardhat-deploy/dist/types';
 import { BigNumberish, BytesLike } from 'ethers';
 import {
   BridgeReward__factory,
   BridgeSlash__factory,
   BridgeTracking__factory,
-  RoninGatewayV2__factory,
+  RoninGatewayV3__factory,
   RoninValidatorSet__factory,
   SlashIndicator__factory,
   StakingVesting__factory,
@@ -34,7 +34,7 @@ interface Instance {
   StakingVestingProxy: Deployment;
   FastFinalityTrackingProxy: Deployment;
   RoninBridgeManager: Deployment;
-  RoninGatewayV2Proxy: Deployment;
+  RoninGatewayV3Proxy: Deployment;
   BridgeSlashProxy: Deployment;
   BridgeRewardProxy: Deployment;
 
@@ -46,7 +46,7 @@ interface Instance {
   BridgeTrackingLogic: Deployment;
   StakingVestingLogic: Deployment;
   FastFinalityTrackingLogic: Deployment;
-  RoninGatewayV2Logic: Deployment;
+  RoninGatewayV3Logic: Deployment;
 }
 
 const defaultSegment: ProposalSegmentArguments = {
@@ -74,7 +74,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     StakingVestingProxy: await deployments.get('StakingVestingProxy'),
     FastFinalityTrackingProxy: await deployments.get('FastFinalityTrackingProxy'),
     RoninBridgeManager: await deployments.get('RoninBridgeManager'),
-    RoninGatewayV2Proxy: await deployments.get('RoninGatewayV2Proxy'),
+    RoninGatewayV3Proxy: await deployments.get('RoninGatewayV3Proxy'),
     BridgeSlashProxy: await deployments.get('BridgeSlashProxy'),
     BridgeRewardProxy: await deployments.get('BridgeRewardProxy'),
 
@@ -86,7 +86,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     BridgeTrackingLogic: await deployments.get('BridgeTrackingLogic'),
     StakingVestingLogic: await deployments.get('StakingVestingLogic'),
     FastFinalityTrackingLogic: await deployments.get('FastFinalityTrackingLogic'),
-    RoninGatewayV2Logic: await deployments.get('RoninGatewayV2Logic'),
+    RoninGatewayV3Logic: await deployments.get('RoninGatewayV3Logic'),
   };
 
   //      Upgrade DPoS Contracts
@@ -218,21 +218,21 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
 async function upgradeGatewayContractSetProposalPart(instance: Instance): Promise<ProposalSegmentArguments[]> {
   let gatewaySetSegments: ProposalSegmentArguments[] = [];
 
-  // upgrade `RoninGatewayV2` and bump to V2
+  // upgrade `RoninGatewayV3` and bump to V2
   gatewaySetSegments.push({
     ...defaultSegment,
-    target: instance.RoninGatewayV2Proxy.address,
+    target: instance.RoninGatewayV3Proxy.address,
     data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
-      instance.RoninGatewayV2Logic.address,
-      new RoninGatewayV2__factory().interface.encodeFunctionData('initializeV2'),
+      instance.RoninGatewayV3Logic.address,
+      new RoninGatewayV3__factory().interface.encodeFunctionData('initializeV2'),
     ]),
   });
 
-  // bump `RoninGatewayV2` to V3
+  // bump `RoninGatewayV3` to V3
   gatewaySetSegments.push({
     ...defaultSegment,
-    target: instance.RoninGatewayV2Proxy.address,
-    data: new RoninGatewayV2__factory().interface.encodeFunctionData('initializeV3', [
+    target: instance.RoninGatewayV3Proxy.address,
+    data: new RoninGatewayV3__factory().interface.encodeFunctionData('initializeV3', [
       instance.RoninBridgeManager.address,
     ]),
   });
