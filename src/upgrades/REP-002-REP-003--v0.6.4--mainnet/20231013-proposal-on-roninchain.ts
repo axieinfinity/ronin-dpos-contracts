@@ -89,7 +89,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   let proposal = [...proposalPart1, ...proposalPart2, ...proposalPart3, ...proposalPart4];
 
   console.log(proposal);
-  return;
+  return; // TODO: remove when actual run
 
   //////////////////////////////////////////
   //          Propose the proposal
