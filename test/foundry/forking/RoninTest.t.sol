@@ -9,11 +9,11 @@ import { ITransparentUpgradeableProxyDeployer, TransparentUpgradeableProxyV3 } f
 import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
-import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
+import { RoninGatewayV3 } from "@ronin/contracts/ronin/gateway/RoninGatewayV3.sol";
 import { RoninGovernanceAdmin } from "@ronin/contracts/ronin/RoninGovernanceAdmin.sol";
 import { RoninValidatorSet } from "@ronin/contracts/ronin/validator/RoninValidatorSet.sol";
 
-import "@ronin/contracts/mainchain/MainchainGatewayV2.sol";
+import "@ronin/contracts/mainchain/MainchainGatewayV3.sol";
 
 import "./utils/Consts.sol";
 
@@ -73,8 +73,8 @@ abstract contract RoninTest is Base_Test, ITransparentUpgradeableProxyDeployer {
 
   function setUp() external {
     vm.label(address(RONIN_GOVERNANCE_ADMIN_CONTRACT), type(RoninGovernanceAdmin).name);
-    vm.label(address(RONIN_GATEWAY_CONTRACT), _getProxyLabel(type(RoninGatewayV2).name));
-    vm.label(address(ETH_GATEWAY_CONTRACT), _getProxyLabel(type(MainchainGatewayV2).name));
+    vm.label(address(RONIN_GATEWAY_CONTRACT), _getProxyLabel(type(RoninGatewayV3).name));
+    vm.label(address(ETH_GATEWAY_CONTRACT), _getProxyLabel(type(MainchainGatewayV3).name));
     vm.label(address(RONIN_BRIDGE_TRACKING_CONTRACT), _getProxyLabel(type(BridgeTracking).name));
     vm.label(address(RONIN_VALIDATOR_SET_CONTRACT), _getProxyLabel(type(RoninValidatorSet).name));
 

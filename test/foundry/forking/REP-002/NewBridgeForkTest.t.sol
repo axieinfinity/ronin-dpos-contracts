@@ -71,14 +71,14 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
       Token.Info(Token.Standard.ERC20, 0, 1 ether)
     );
     vm.selectFork(_ethFork);
-    address weth = address(MainchainGatewayV2(payable(address(ETH_GATEWAY_CONTRACT))).wrappedNativeToken());
-    MappedTokenConsumer.MappedToken memory token = IMainchainGatewayV2(address(ETH_GATEWAY_CONTRACT)).getRoninToken(
+    address weth = address(MainchainGatewayV3(payable(address(ETH_GATEWAY_CONTRACT))).wrappedNativeToken());
+    MappedTokenConsumer.MappedToken memory token = IMainchainGatewayV3(address(ETH_GATEWAY_CONTRACT)).getRoninToken(
       weth
     );
 
     Transfer.Receipt memory receipt = Transfer.Request(user.addr, weth, request.info).into_deposit_receipt(
       user.addr,
-      IMainchainGatewayV2(address(ETH_GATEWAY_CONTRACT)).depositCount(),
+      IMainchainGatewayV3(address(ETH_GATEWAY_CONTRACT)).depositCount(),
       token.tokenAddr,
       _ronChainId
     );
@@ -86,12 +86,12 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
     vm.prank(user.addr, user.addr);
     vm.expectEmit(address(ETH_GATEWAY_CONTRACT));
     emit DepositRequested(receipt.hash(), receipt);
-    MainchainGatewayV2(payable(address(ETH_GATEWAY_CONTRACT))).requestDepositFor{ value: 1 ether }(request);
+    MainchainGatewayV3(payable(address(ETH_GATEWAY_CONTRACT))).requestDepositFor{ value: 1 ether }(request);
 
     vm.selectFork(_roninFork);
     address operator = _operators[0];
     vm.prank(operator, operator);
-    RoninGatewayV2(payable(address(RONIN_GATEWAY_CONTRACT))).depositFor(receipt);
+    RoninGatewayV3(payable(address(RONIN_GATEWAY_CONTRACT))).depositFor(receipt);
   }
 
   function test_Fork_VoteAddBridgeOperators() external onWhichFork(_roninFork) {
@@ -206,12 +206,12 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
       )
     );
 
-    // upgrade MainchainGatewayV2
+    // upgrade MainchainGatewayV3
     upgradeToAndCall({
       proxy: ETH_GATEWAY_CONTRACT,
-      contractName: type(MainchainGatewayV2).name,
-      logicCode: type(MainchainGatewayV2).creationCode,
-      callData: abi.encodeCall(MainchainGatewayV2.initializeV2, (address(_ethBridgeManagerContract)))
+      contractName: type(MainchainGatewayV3).name,
+      logicCode: type(MainchainGatewayV3).creationCode,
+      callData: abi.encodeCall(MainchainGatewayV3.initializeV2, (address(_ethBridgeManagerContract)))
     });
   }
 
@@ -295,12 +295,12 @@ contract NewBridgeForkTest is RoninTest, BridgeManagerUtils, SignatureConsumer {
       )
     );
 
-    // upgrade RoninGatewayV2
+    // upgrade RoninGatewayV3
     upgradeToAndCall({
       proxy: RONIN_GATEWAY_CONTRACT,
-      contractName: type(RoninGatewayV2).name,
-      logicCode: type(RoninGatewayV2).creationCode,
-      callData: abi.encodeCall(RoninGatewayV2.initializeV3, (address(_ronBridgeManagerContract)))
+      contractName: type(RoninGatewayV3).name,
+      logicCode: type(RoninGatewayV3).creationCode,
+      callData: abi.encodeCall(RoninGatewayV3.initializeV3, (address(_ronBridgeManagerContract)))
     });
 
     // upgrade BridgeTracking

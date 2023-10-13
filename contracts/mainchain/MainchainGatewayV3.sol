@@ -8,13 +8,13 @@ import { IBridgeManagerCallback } from "../interfaces/bridge/IBridgeManagerCallb
 import { HasContracts, ContractType } from "../extensions/collections/HasContracts.sol";
 import "../extensions/WithdrawalLimitation.sol";
 import "../libraries/Transfer.sol";
-import "../interfaces/IMainchainGatewayV2.sol";
+import "../interfaces/IMainchainGatewayV3.sol";
 
-contract MainchainGatewayV2 is
+contract MainchainGatewayV3 is
   WithdrawalLimitation,
   Initializable,
   AccessControlEnumerable,
-  IMainchainGatewayV2,
+  IMainchainGatewayV3,
   HasContracts
 {
   using Token for Token.Info;
@@ -112,28 +112,28 @@ contract MainchainGatewayV2 is
   function receiveEther() external payable {}
 
   /**
-   * @inheritdoc IMainchainGatewayV2
+   * @inheritdoc IMainchainGatewayV3
    */
   function DOMAIN_SEPARATOR() external view virtual returns (bytes32) {
     return _domainSeparator;
   }
 
   /**
-   * @inheritdoc IMainchainGatewayV2
+   * @inheritdoc IMainchainGatewayV3
    */
   function setWrappedNativeTokenContract(IWETH _wrappedToken) external virtual onlyAdmin {
     _setWrappedNativeTokenContract(_wrappedToken);
   }
 
   /**
-   * @inheritdoc IMainchainGatewayV2
+   * @inheritdoc IMainchainGatewayV3
    */
   function requestDepositFor(Transfer.Request calldata _request) external payable virtual whenNotPaused {
     _requestDepositFor(_request, msg.sender);
   }
 
   /**
-   * @inheritdoc IMainchainGatewayV2
+   * @inheritdoc IMainchainGatewayV3
    */
   function submitWithdrawal(
     Transfer.Receipt calldata _receipt,
@@ -143,7 +143,7 @@ contract MainchainGatewayV2 is
   }
 
   /**
-   * @inheritdoc IMainchainGatewayV2
+   * @inheritdoc IMainchainGatewayV3
    */
   function unlockWithdrawal(Transfer.Receipt calldata _receipt) external onlyRole(WITHDRAWAL_UNLOCKER_ROLE) {
     bytes32 _receiptHash = _receipt.hash();
@@ -173,7 +173,7 @@ contract MainchainGatewayV2 is
   }
 
   /**
-   * @inheritdoc IMainchainGatewayV2
+   * @inheritdoc IMainchainGatewayV3
    */
   function mapTokens(
     address[] calldata _mainchainTokens,
@@ -185,7 +185,7 @@ contract MainchainGatewayV2 is
   }
 
   /**
-   * @inheritdoc IMainchainGatewayV2
+   * @inheritdoc IMainchainGatewayV3
    */
   function mapTokensAndThresholds(
     address[] calldata _mainchainTokens,
@@ -206,7 +206,7 @@ contract MainchainGatewayV2 is
   }
 
   /**
-   * @inheritdoc IMainchainGatewayV2
+   * @inheritdoc IMainchainGatewayV3
    */
   function getRoninToken(address _mainchainToken) public view returns (MappedToken memory _token) {
     _token = _roninToken[_mainchainToken];
@@ -399,7 +399,7 @@ contract MainchainGatewayV2 is
      * _domainSeparator = keccak256(
      *   abi.encode(
      *     keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-     *     keccak256("MainchainGatewayV2"),
+     *     keccak256("MainchainGatewayV3"),
      *     keccak256("2"),
      *     block.chainid,
      *     address(this)
@@ -410,7 +410,7 @@ contract MainchainGatewayV2 is
       let ptr := mload(0x40)
       // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
       mstore(ptr, 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f)
-      // keccak256("MainchainGatewayV2")
+      // keccak256("MainchainGatewayV3")
       mstore(add(ptr, 0x20), 0x159f52c1e3a2b6a6aad3950adf713516211484e0516dad685ea662a094b7c43b)
       // keccak256("2")
       mstore(add(ptr, 0x40), 0xad7c5bef027816a800da1736444fb58a807ef4c9603b7848673f7e3a68eb14a5)
@@ -444,7 +444,7 @@ contract MainchainGatewayV2 is
   }
 
   /**
-   * @inheritdoc GatewayV2
+   * @inheritdoc GatewayV3
    */
   function _getTotalWeight() internal view override returns (uint256) {
     return IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getTotalWeight();

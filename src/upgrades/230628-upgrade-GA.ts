@@ -33,7 +33,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const SlashIndicatorProxy = await deployments.get('SlashIndicatorProxy');
   const StakingProxy = await deployments.get('StakingProxy');
   const StakingVestingProxy = await deployments.get('StakingVestingProxy');
-  const RoninGatewayV2Addr = generalRoninConf[network.name]!.bridgeContract;
+  const RoninGatewayV3Addr = generalRoninConf[network.name]!.bridgeContract;
 
   const GAInstr = [
     proxyInterface.encodeFunctionData('changeProxyAdmin', [BridgeTrackingProxy.address, newGAAddr]),
@@ -44,7 +44,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     proxyInterface.encodeFunctionData('changeProxyAdmin', [SlashIndicatorProxy.address, newGAAddr]),
     proxyInterface.encodeFunctionData('changeProxyAdmin', [StakingProxy.address, newGAAddr]),
     proxyInterface.encodeFunctionData('changeProxyAdmin', [StakingVestingProxy.address, newGAAddr]),
-    proxyInterface.encodeFunctionData('changeProxyAdmin', [RoninGatewayV2Addr, newGAAddr]),
+    proxyInterface.encodeFunctionData('changeProxyAdmin', [RoninGatewayV3Addr, newGAAddr]),
   ];
 
   const blockNumBefore = await ethers.provider.getBlockNumber();

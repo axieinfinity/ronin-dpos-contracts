@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyInterface } from '../upgradeUtils';
 import { VoteType } from '../../script/proposal';
-import { BridgeTracking__factory, RoninGatewayV2__factory } from '../../types';
+import { BridgeTracking__factory, RoninGatewayV3__factory } from '../../types';
 import { generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { network } from 'hardhat';
 import { BigNumber } from 'ethers';
@@ -16,7 +16,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   console.log('Governor:', governor);
 
   // Upgrade current bridge tracking
-  const bridgeInterface = new RoninGatewayV2__factory().interface;
+  const bridgeInterface = new RoninGatewayV3__factory().interface;
   const bridgeContractAddr = generalRoninConf[network.name]!.bridgeContract;
   const instr = [
     proxyInterface.encodeFunctionData('functionDelegateCall', [

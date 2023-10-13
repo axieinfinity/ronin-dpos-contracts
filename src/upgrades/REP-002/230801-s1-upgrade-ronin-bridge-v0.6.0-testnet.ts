@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyInterface } from '../upgradeUtils';
 import { VoteType } from '../../script/proposal';
-import { BridgeTracking__factory, RoninGatewayV2__factory } from '../../types';
+import { BridgeTracking__factory, RoninGatewayV3__factory } from '../../types';
 import { generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { network } from 'hardhat';
 
@@ -20,16 +20,16 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const bridgeRewardAddr = (await deployments.get('BridgeRewardProxy')).address;
 
   // Upgrade current gateway to new gateway logic
-  const RoninGatewayV2Addr = generalRoninConf[network.name]!.bridgeContract;
-  const RoninGatewayV2LogicDepl = await deployments.get('RoninGatewayV2Logic');
-  const RoninGatewayV2Instr = [
+  const RoninGatewayV3Addr = generalRoninConf[network.name]!.bridgeContract;
+  const RoninGatewayV3LogicDepl = await deployments.get('RoninGatewayV3Logic');
+  const RoninGatewayV3Instr = [
     proxyInterface.encodeFunctionData('upgradeToAndCall', [
-      RoninGatewayV2LogicDepl.address,
-      new RoninGatewayV2__factory().interface.encodeFunctionData('initializeV3', [bridgeManagerAddr]),
+      RoninGatewayV3LogicDepl.address,
+      new RoninGatewayV3__factory().interface.encodeFunctionData('initializeV3', [bridgeManagerAddr]),
     ]),
   ];
 
-  console.info('RoninGatewayV2Instr', RoninGatewayV2Instr);
+  console.info('RoninGatewayV3Instr', RoninGatewayV3Instr);
 
   // Upgrade current bridge tracking
   const BridgeTrackingProxy = await deployments.get('BridgeTrackingProxy');
@@ -63,12 +63,12 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     'proposeProposalForCurrentNetwork',
     proposalExpiryTimestamp, // expiryTimestamp
     [
-      ...RoninGatewayV2Instr.map(() => RoninGatewayV2Addr),
+      ...RoninGatewayV3Instr.map(() => RoninGatewayV3Addr),
       ...BridgeTrackingInstr.map(() => BridgeTrackingProxy.address),
     ], // targets
-    [...RoninGatewayV2Instr, ...BridgeTrackingInstr].map(() => 0), // values
-    [...RoninGatewayV2Instr, ...BridgeTrackingInstr], // datas
-    [...RoninGatewayV2Instr, ...BridgeTrackingInstr].map(() => 1_000_000), // gasAmounts
+    [...RoninGatewayV3Instr, ...BridgeTrackingInstr].map(() => 0), // values
+    [...RoninGatewayV3Instr, ...BridgeTrackingInstr], // datas
+    [...RoninGatewayV3Instr, ...BridgeTrackingInstr].map(() => 1_000_000), // gasAmounts
     VoteType.For // ballot type
   );
 
