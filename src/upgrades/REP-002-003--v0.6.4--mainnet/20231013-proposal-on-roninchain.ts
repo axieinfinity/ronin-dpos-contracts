@@ -6,8 +6,10 @@ import { deployments, network } from 'hardhat';
 import { Address, Deployment } from 'hardhat-deploy/dist/types';
 import { BigNumberish, BytesLike } from 'ethers';
 import {
+  BridgeReward__factory,
+  BridgeSlash__factory,
   BridgeTracking__factory,
-  RoninTrustedOrganization__factory,
+  RoninGatewayV2__factory,
   RoninValidatorSet__factory,
   SlashIndicator__factory,
   StakingVesting__factory,
@@ -16,9 +18,9 @@ import {
 
 interface ProposalSegmentArguments {
   target?: Address;
-  values: BigNumberish;
+  value: BigNumberish;
   data?: BytesLike;
-  gasAmounts: BigNumberish;
+  gasAmount: BigNumberish;
 }
 
 interface Instance {
@@ -31,6 +33,11 @@ interface Instance {
   BridgeTrackingProxy: Deployment;
   StakingVestingProxy: Deployment;
   FastFinalityTrackingProxy: Deployment;
+  RoninBridgeManager: Deployment;
+  RoninGatewayV2Proxy: Deployment;
+  BridgeSlashProxy: Deployment;
+  BridgeRewardProxy: Deployment;
+
   RoninValidatorSetLogic: Deployment;
   ProfileLogic: Deployment;
   StakingLogic: Deployment;
@@ -39,11 +46,12 @@ interface Instance {
   BridgeTrackingLogic: Deployment;
   StakingVestingLogic: Deployment;
   FastFinalityTrackingLogic: Deployment;
+  RoninGatewayV2Logic: Deployment;
 }
 
 const defaultSegment: ProposalSegmentArguments = {
-  gasAmounts: 1_000_000,
-  values: 0,
+  gasAmount: 1_000_000,
+  value: 0,
 };
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
@@ -65,6 +73,11 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     BridgeTrackingProxy: await deployments.get('BridgeTrackingProxy'),
     StakingVestingProxy: await deployments.get('StakingVestingProxy'),
     FastFinalityTrackingProxy: await deployments.get('FastFinalityTrackingProxy'),
+    RoninBridgeManager: await deployments.get('RoninBridgeManager'),
+    RoninGatewayV2Proxy: await deployments.get('RoninGatewayV2Proxy'),
+    BridgeSlashProxy: await deployments.get('BridgeSlashProxy'),
+    BridgeRewardProxy: await deployments.get('BridgeRewardProxy'),
+
     RoninValidatorSetLogic: await deployments.get('RoninValidatorSetLogic'),
     ProfileLogic: await deployments.get('ProfileLogic'),
     StakingLogic: await deployments.get('StakingLogic'),
@@ -73,15 +86,22 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     BridgeTrackingLogic: await deployments.get('BridgeTrackingLogic'),
     StakingVestingLogic: await deployments.get('StakingVestingLogic'),
     FastFinalityTrackingLogic: await deployments.get('FastFinalityTrackingLogic'),
+    RoninGatewayV2Logic: await deployments.get('RoninGatewayV2Logic'),
   };
 
   //      Upgrade DPoS Contracts
   //      See `script/20231003-rep-002-rep-003/20231003_REP002AndREP003_RON_NonConditional.s.sol`
   let proposalPart1 = await upgradeDPoSContractSetProposalPart(allDeployments);
 
-  //      Upgrade Gateway Contracts
-  //      See `script/20231003-rep-002-rep-003/20231003_REP002AndREP003_RON_NonConditional.s.sol`
+  //      Upgrade Gateway Contracts & Init REP2 Contracts
+  //      See `script/20231003-rep-002-rep-003/20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade.s.sol`
   let proposalPart2 = await upgradeGatewayContractSetProposalPart(allDeployments);
+  let proposalPart3 = await initREP2GatewayContractSetProposalPart(allDeployments);
+
+  let proposal = [...proposalPart1, ...proposalPart2, ...proposalPart3];
+
+  console.log(proposal);
+  return;
 
   //////////////////////////////////////////
   //          Propose the proposal
@@ -96,19 +116,14 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     { from: governor, log: true },
     'proposeProposalForCurrentNetwork',
     proposalExpiryTimestamp, // expiryTimestamp
-    // [...ProfileInstr.map(() => ProfileProxy.address)], // targets
-    // [...ProfileInstr].map(() => 0), // values
-    // [...ProfileInstr], // datas
-    // [...ProfileInstr].map(() => 1_000_000), // gasAmounts
+    [proposal.map((_) => _.target)], // targets
+    [proposal.map((_) => _.value)], // values
+    [proposal.map((_) => _.data)], // datas
+    [proposal.map((_) => _.gasAmount)], // gasAmounts
     VoteType.For // ballot type
   );
   deployments.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
-
-// yarn hardhat deploy --tags 230231013__ProposalOnRoninChain__V0_6_4 --network ronin-mainnet
-deploy.tags = ['230231013__ProposalOnRoninChain__V0_6_4'];
-
-export default deploy;
 
 async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<ProposalSegmentArguments[]> {
   let segments: ProposalSegmentArguments[] = [];
@@ -148,7 +163,9 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
     target: instance.SlashIndicatorProxy.address,
     data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
       instance.SlashIndicatorLogic.address,
-      new SlashIndicator__factory().interface.encodeFunctionData('initializeV2', [RoninGovernanceAdmin.address]),
+      new SlashIndicator__factory().interface.encodeFunctionData('initializeV2', [
+        instance.RoninGovernanceAdmin.address,
+      ]),
     ]),
   });
 
@@ -156,7 +173,7 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   segments.push({
     ...defaultSegment,
     target: instance.SlashIndicatorProxy.address,
-    data: new SlashIndicator__factory().interface.encodeFunctionData('initializeV3', [ProfileProxy.address]),
+    data: new SlashIndicator__factory().interface.encodeFunctionData('initializeV3', [instance.ProfileProxy.address]),
   });
 
   // upgrade `RoninTrustedOrganization`
@@ -198,4 +215,74 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   return segments;
 }
 
-async function upgradeGatewayContractSetProposalPart(instance: Instance): Promise<ProposalSegmentArguments[]> {}
+async function upgradeGatewayContractSetProposalPart(instance: Instance): Promise<ProposalSegmentArguments[]> {
+  let gatewaySetSegments: ProposalSegmentArguments[] = [];
+
+  // upgrade `RoninGatewayV2` and bump to V2
+  gatewaySetSegments.push({
+    ...defaultSegment,
+    target: instance.RoninGatewayV2Proxy.address,
+    data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
+      instance.RoninGatewayV2Logic.address,
+      new RoninGatewayV2__factory().interface.encodeFunctionData('initializeV2'),
+    ]),
+  });
+
+  // bump `RoninGatewayV2` to V3
+  gatewaySetSegments.push({
+    ...defaultSegment,
+    target: instance.RoninGatewayV2Proxy.address,
+    data: new RoninGatewayV2__factory().interface.encodeFunctionData('initializeV3', [
+      instance.RoninBridgeManager.address,
+    ]),
+  });
+
+  // upgrade `BridgeTracking` and bump to V2
+  gatewaySetSegments.push({
+    ...defaultSegment,
+    target: instance.BridgeTrackingProxy.address,
+    data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
+      instance.BridgeTrackingLogic.address,
+      new BridgeTracking__factory().interface.encodeFunctionData('initializeV3', [
+        instance.RoninBridgeManager.address,
+        instance.BridgeSlashProxy.address,
+        instance.BridgeRewardProxy.address,
+        instance.RoninGovernanceAdmin.address,
+      ]),
+    ]),
+  });
+
+  return gatewaySetSegments;
+}
+
+async function initREP2GatewayContractSetProposalPart(instance: Instance): Promise<ProposalSegmentArguments[]> {
+  let gatewaySetSegments: ProposalSegmentArguments[] = [];
+
+  // initREP2 `BridgeReward` and bump to V2
+  gatewaySetSegments.push({
+    ...defaultSegment,
+    target: instance.BridgeRewardProxy.address,
+    data: new BridgeReward__factory().interface.encodeFunctionData('initializeREP2'),
+  });
+
+  // initREP2 `BridgeTracking` and bump to V2
+  gatewaySetSegments.push({
+    ...defaultSegment,
+    target: instance.BridgeTrackingProxy.address,
+    data: new BridgeTracking__factory().interface.encodeFunctionData('initializeREP2'),
+  });
+
+  // initREP2 `BridgeSlash` and bump to V2
+  gatewaySetSegments.push({
+    ...defaultSegment,
+    target: instance.BridgeSlashProxy.address,
+    data: new BridgeSlash__factory().interface.encodeFunctionData('initializeREP2'),
+  });
+
+  return gatewaySetSegments;
+}
+
+// yarn hardhat deploy --tags 230231013__ProposalOnRoninChain__V0_6_4 --network ronin-mainnet
+deploy.tags = ['230231013__ProposalOnRoninChain__V0_6_4'];
+
+export default deploy;
