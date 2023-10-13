@@ -225,18 +225,15 @@ async function upgradeGatewayContractSetProposalPart(instance: Instance): Promis
     ]),
   });
 
-  // upgrade `BridgeTracking` and bump to V2
+  // bump `BridgeTracking` to V3
   gatewaySetSegments.push({
     ...defaultSegment,
     target: instance.BridgeTrackingProxy.address,
-    data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
-      instance.BridgeTrackingLogic.address,
-      new BridgeTracking__factory().interface.encodeFunctionData('initializeV3', [
-        instance.RoninBridgeManager.address,
-        instance.BridgeSlashProxy.address,
-        instance.BridgeRewardProxy.address,
-        instance.RoninGovernanceAdmin.address,
-      ]),
+    data: new BridgeTracking__factory().interface.encodeFunctionData('initializeV3', [
+      instance.RoninBridgeManager.address,
+      instance.BridgeSlashProxy.address,
+      instance.BridgeRewardProxy.address,
+      instance.RoninGovernanceAdmin.address,
     ]),
   });
 
