@@ -8,7 +8,7 @@ import { BridgeRewardDeploy } from "./contracts/BridgeRewardDeploy.s.sol";
 import { BridgeSlashDeploy } from "./contracts/BridgeSlashDeploy.s.sol";
 import { RoninBridgeManagerDeploy } from "./contracts/RoninBridgeManagerDeploy.s.sol";
 
-import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
+import { RoninGatewayV3 } from "@ronin/contracts/ronin/gateway/RoninGatewayV3.sol";
 import { BridgeReward } from "@ronin/contracts/ronin/gateway/BridgeReward.sol";
 import { BridgeSlash } from "@ronin/contracts/ronin/gateway/BridgeSlash.sol";
 import { RoninBridgeManager } from "@ronin/contracts/ronin/gateway/RoninBridgeManager.sol";
@@ -139,14 +139,14 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
 
   /**
    * @dev Tasks:
-   * - Upgrade RoninGatewayV2
+   * - Upgrade RoninGatewayV3
    * - Upgrade BridgeTracking
    */
   function _upgradeGatewayContracts() internal {
     console2.log("> ", StdStyle.blue("_upgradeGatewayContracts"), "...");
 
     {
-      _upgradeProxy(ContractKey.RoninGatewayV2, abi.encodeCall(RoninGatewayV2.initializeV2, ()));
+      _upgradeProxy(ContractKey.RoninGatewayV3, abi.encodeCall(RoninGatewayV3.initializeV2, ()));
       _roninGateway.initializeV3(address(_roninBridgeManager));
     }
 

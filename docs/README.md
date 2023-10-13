@@ -153,7 +153,7 @@ When a deposit event happens on mainchain, the Bridge component in each validato
 
 ### Deposits
 
-Users can deposit ETH, ERC20, and ERC721 (NFTs) by sending transactions to `MainchainGatewayV2` and waiting for the deposit to be verified on Ronin. The validator will listen to the event on mainchain and then acknowledge the deposit on Ronin. The gateway should have a mapping between token contracts on Ethereum and on Ronin before the deposit can take place.
+Users can deposit ETH, ERC20, and ERC721 (NFTs) by sending transactions to `MainchainGatewayV3` and waiting for the deposit to be verified on Ronin. The validator will listen to the event on mainchain and then acknowledge the deposit on Ronin. The gateway should have a mapping between token contracts on Ethereum and on Ronin before the deposit can take place.
 
 For deposit there is no restriction on how large a deposit can be.
 ![image](./assets/Deposit.png)

@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "../interfaces/IQuorum.sol";
 import "./collections/HasProxyAdmin.sol";
 
-abstract contract GatewayV2 is HasProxyAdmin, Pausable, IQuorum {
+abstract contract GatewayV3 is HasProxyAdmin, Pausable, IQuorum {
   uint256 internal _num;
   uint256 internal _denom;
 

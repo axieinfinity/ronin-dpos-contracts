@@ -881,7 +881,7 @@ Traces:
     │   │   │   │   │   ├─ [0] [32mNotifiedMigrator[0m::[32mselfUpgrade[0m() [33m[delegatecall][0m
     │   │   │   │   │   │   ├─ emit [36mUpgraded[0m(implementation: BridgeTracking: [0x6901F7206A34E441Ac5020b5fB53598A65547A23])
     │   │   │   │   │   │   ├─ [0] [32mBridgeTracking[0m::[32minitializeV2[0m() [33m[delegatecall][0m
-    │   │   │   │   │   │   │   ├─ emit [36mContractUpdated[0m(contractType: 2, addr: ronin-mainnet.RoninGatewayV2: [0x0CF8fF40a508bdBc39fBe1Bb679dCBa64E65C7Df])
+    │   │   │   │   │   │   │   ├─ emit [36mContractUpdated[0m(contractType: 2, addr: ronin-mainnet.RoninGatewayV3: [0x0CF8fF40a508bdBc39fBe1Bb679dCBa64E65C7Df])
     │   │   │   │   │   │   │   ├─ emit [36mContractUpdated[0m(contractType: 8, addr: ronin-mainnet.RoninValidatorSet: [0x617c5d73662282EA7FfD231E020eCa6D2B0D552f])
     │   │   │   │   │   │   │   ├─ emit [36mInitialized[0m(version: 2)
     │   │   │   │   │   │   │   └─ [32m← [0m()

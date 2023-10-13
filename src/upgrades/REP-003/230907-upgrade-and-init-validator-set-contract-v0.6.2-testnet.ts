@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyInterface } from '../upgradeUtils';
 import { VoteType } from '../../script/proposal';
-import { RoninTrustedOrganization__factory, RoninGatewayV2__factory, RoninValidatorSet__factory } from '../../types';
+import { RoninTrustedOrganization__factory, RoninGatewayV3__factory, RoninValidatorSet__factory } from '../../types';
 import { generalRoninConf, roninchainNetworks } from '../../configs/config';
 import { network } from 'hardhat';
 

@@ -34,7 +34,7 @@ contract RoninBridgeManagerDeploy is BaseDeploy {
         4, //DEFAULT_DENOMINATOR,
         block.chainid,
         5 minutes, // DEFAULT_EXPIRY_DURATION,
-        _config.getAddressFromCurrentNetwork(ContractKey.RoninGatewayV2),
+        _config.getAddressFromCurrentNetwork(ContractKey.RoninGatewayV3),
         callbackRegisters,
         operators,
         governors,

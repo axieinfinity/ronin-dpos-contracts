@@ -247,7 +247,7 @@ Traces:
     ├─ [59673] [32mronin-mainnet.BridgeTracking[0m::[32mupgradeToAndCall[0m(BridgeTracking: [0x29b2440db4A256B0c1E6d3B4CDcaA68E2440A08f], 0x5cd8a76b) [33m[0m
     │   ├─ emit [36mUpgraded[0m(param0: BridgeTracking: [0x29b2440db4A256B0c1E6d3B4CDcaA68E2440A08f])
     │   ├─ [48032] [32mBridgeTracking[0m::[32minitializeV2[0m() [33m[delegatecall][0m
-    │   │   ├─ emit [36mContractUpdated[0m(contractType: 2, addr: ronin-mainnet.RoninGatewayV2: [0x0CF8fF40a508bdBc39fBe1Bb679dCBa64E65C7Df])
+    │   │   ├─ emit [36mContractUpdated[0m(contractType: 2, addr: ronin-mainnet.RoninGatewayV3: [0x0CF8fF40a508bdBc39fBe1Bb679dCBa64E65C7Df])
     │   │   ├─ emit [36mContractUpdated[0m(contractType: 8, addr: ronin-mainnet.RoninValidatorSet: [0x617c5d73662282EA7FfD231E020eCa6D2B0D552f])
     │   │   ├─ emit [36mInitialized[0m(version: 2)
     │   │   └─ [32m← [0m()
@@ -692,7 +692,7 @@ Simulated On-chain Traces:
   [91756] [32mronin-mainnet.BridgeTracking[0m::[32mupgradeToAndCall[0m(BridgeTracking: [0x29b2440db4A256B0c1E6d3B4CDcaA68E2440A08f], 0x5cd8a76b) [33m[0m
     ├─ emit [36mUpgraded[0m(param0: BridgeTracking: [0x29b2440db4A256B0c1E6d3B4CDcaA68E2440A08f])
     ├─ [48032] [32mBridgeTracking[0m::[32minitializeV2[0m() [33m[delegatecall][0m
-    │   ├─ emit [36mContractUpdated[0m(contractType: 2, addr: ronin-mainnet.RoninGatewayV2: [0x0CF8fF40a508bdBc39fBe1Bb679dCBa64E65C7Df])
+    │   ├─ emit [36mContractUpdated[0m(contractType: 2, addr: ronin-mainnet.RoninGatewayV3: [0x0CF8fF40a508bdBc39fBe1Bb679dCBa64E65C7Df])
     │   ├─ emit [36mContractUpdated[0m(contractType: 8, addr: ronin-mainnet.RoninValidatorSet: [0x617c5d73662282EA7FfD231E020eCa6D2B0D552f])
     │   ├─ emit [36mInitialized[0m(version: 2)
     │   └─ [32m← [0m()

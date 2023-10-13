@@ -56,11 +56,11 @@ This repo contains source code of contracts that will be either deployed on the 
 
 - On mainchains:
   - Governance contract: `MainchainGovernanceAdmin`
-  - Bridge contract: `MainchainGatewayV2`
+  - Bridge contract: `MainchainGatewayV3`
   - Trusted orgs contract: `RoninTrustedOrganization`
 - On Ronin chain:
   - Governance contract: `RoninGovernanceAdmin`
-  - Bridge operation: `RoninGatewayV2`
+  - Bridge operation: `RoninGatewayV3`
   - Trusted orgs contract: `RoninTrustedOrganization`
   - DPoS contracts
 

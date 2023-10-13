@@ -5,7 +5,7 @@ import { console } from "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
 import { LibArrayUtils } from "@ronin/test/helpers/LibArrayUtils.t.sol";
 import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
-import { RoninGatewayV2 } from "@ronin/contracts/ronin/gateway/RoninGatewayV2.sol";
+import { RoninGatewayV3 } from "@ronin/contracts/ronin/gateway/RoninGatewayV3.sol";
 import { MockValidatorContract } from "@ronin/contracts/mocks/ronin/MockValidatorContract.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
 import { IBridgeSlash, MockBridgeSlash, BridgeSlash } from "@ronin/contracts/mocks/ronin/MockBridgeSlash.sol";
@@ -299,7 +299,7 @@ contract BridgeSlashTest is IBridgeSlashEvents, BridgeManagerUtils {
     _defaultBridgeManagerInputs = abi.encode(bridgeOperators, governors, voteWeights);
     _bridgeManagerContract = address(new MockBridgeManager(bridgeOperators, governors, voteWeights));
 
-    _gatewayLogic = address(new RoninGatewayV2());
+    _gatewayLogic = address(new RoninGatewayV3());
     _gatewayContract = address(new TransparentUpgradeableProxyV2(_gatewayLogic, _admin, ""));
 
     _bridgeTrackingLogic = address(new BridgeTracking());

@@ -3,26 +3,26 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../../extensions/GatewayV2.sol";
+import "../../extensions/GatewayV3.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/MinimumWithdrawal.sol";
 import "../../interfaces/IERC20Mintable.sol";
 import "../../interfaces/IERC721Mintable.sol";
 import "../../interfaces/bridge/IBridgeTracking.sol";
-import "../../interfaces/IRoninGatewayV2.sol";
+import "../../interfaces/IRoninGatewayV3.sol";
 import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../libraries/IsolatedGovernance.sol";
 import "../../interfaces/bridge/IBridgeManager.sol";
 
-contract RoninGatewayV2 is
-  GatewayV2,
+contract RoninGatewayV3 is
+  GatewayV3,
   Initializable,
   MinimumWithdrawal,
   AccessControlEnumerable,
   VoteStatusConsumer,
-  IRoninGatewayV2,
+  IRoninGatewayV3,
   HasContracts
 {
   using Token for Token.Info;
@@ -89,7 +89,7 @@ contract RoninGatewayV2 is
     uint256 _denominator,
     uint256 _trustedNumerator,
     uint256 _trustedDenominator,
-    address[] calldata _withdrawalMigrators,
+    address[] calldata /* _withdrawalMigrators */,
     // _packedAddresses[0]: roninTokens
     // _packedAddresses[1]: mainchainTokens
     address[][2] calldata _packedAddresses,
@@ -121,7 +121,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function getWithdrawalSignatures(
     uint256 withdrawalId,
@@ -138,7 +138,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function depositFor(Transfer.Receipt calldata _receipt) external whenNotPaused onlyBridgeOperator {
     address _sender = msg.sender;
@@ -151,7 +151,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function tryBulkAcknowledgeMainchainWithdrew(
     uint256[] calldata _withdrawalIds
@@ -186,7 +186,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function tryBulkDepositFor(
     Transfer.Receipt[] calldata _receipts
@@ -213,14 +213,14 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function requestWithdrawalFor(Transfer.Request calldata _request, uint256 _chainId) external whenNotPaused {
     _requestWithdrawalFor(_request, msg.sender, _chainId);
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function bulkRequestWithdrawalFor(Transfer.Request[] calldata _requests, uint256 _chainId) external whenNotPaused {
     if (_requests.length == 0) revert ErrEmptyArray();
@@ -234,7 +234,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function requestWithdrawalSignatures(uint256 _withdrawalId) external whenNotPaused {
     if (mainchainWithdrew(_withdrawalId)) revert ErrWithdrawnOnMainchainAlready();
@@ -248,7 +248,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function bulkSubmitWithdrawalSignatures(
     uint256[] calldata withdrawals,
@@ -283,7 +283,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function mapTokens(
     address[] calldata _roninTokens,
@@ -296,28 +296,28 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function depositVoted(uint256 _chainId, uint256 _depositId, address _voter) external view returns (bool) {
     return depositVote[_chainId][_depositId].voted(_voter);
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function mainchainWithdrewVoted(uint256 _withdrawalId, address _voter) external view returns (bool) {
     return mainchainWithdrewVote[_withdrawalId].voted(_voter);
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function mainchainWithdrew(uint256 _withdrawalId) public view returns (bool) {
     return mainchainWithdrewVote[_withdrawalId].status == VoteStatus.Executed;
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function getMainchainToken(address _roninToken, uint256 _chainId) public view returns (MappedToken memory _token) {
     _token = _mainchainToken[_roninToken][_chainId];
@@ -437,7 +437,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc GatewayV2
+   * @inheritdoc GatewayV3
    */
   function _getTotalWeight() internal view virtual override returns (uint256) {
     return IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getTotalWeight();

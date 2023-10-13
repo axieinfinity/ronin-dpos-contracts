@@ -9,7 +9,7 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON is Simulation__20231003
 
     _upgradeDPoSContracts();
 
-    // test `RoninGatewayV2` functionality
+    // test `RoninGatewayV3` functionality
     _depositForOnBothChain("before-upgrade-user");
 
     // trigger conditional migration
@@ -20,7 +20,7 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON is Simulation__20231003
     // _fastForwardToNextDay();
     // _wrapUpEpoch();
 
-    // // test `RoninGatewayV2` functionality
+    // // test `RoninGatewayV3` functionality
     // _depositForOnBothChain("after-upgrade-user");
   }
 
