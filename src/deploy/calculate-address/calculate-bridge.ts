@@ -12,7 +12,7 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
   if (roninchainNetworks.includes(network.name!)) {
     generalRoninConf[network.name] = {
       ...generalRoninConf[network.name],
-      // bridgeTrackingContract: calculateAddress(deployer, nonce++),
+      bridgeTrackingContract: calculateAddress(deployer, nonce++),
       bridgeSlashContract: calculateAddress(deployer, nonce++),
       bridgeRewardContract: calculateAddress(deployer, nonce++),
       bridgeManagerContract: calculateAddress(deployer, nonce++),
