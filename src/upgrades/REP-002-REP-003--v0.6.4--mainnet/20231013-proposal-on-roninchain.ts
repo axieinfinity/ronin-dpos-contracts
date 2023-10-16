@@ -92,7 +92,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   console.log(proposalSegments);
 
-  const blockFork = await ethers.provider.getBlock(28539478);
+  const blockFork = await ethers.provider.getBlock(28540134);
   const timestampFork = blockFork.timestamp;
   const proposalExpiry = timestampFork + 3600 * 24 * 10; // expired in 10 days
 
@@ -304,21 +304,23 @@ async function initREP2GatewayContractSetProposalPart(instance: Instance): Promi
   gatewaySetSegments.push({
     ...defaultSegment,
     target: instance.BridgeRewardProxy.address,
-    data: new BridgeReward__factory().interface.encodeFunctionData('initializeREP2'),
+    data: new BridgeReward__factory().interface.encodeFunctionData('initializeREP2'), // Do not transfer admin role to GA when calling without functionDelegateCall
   });
 
   // initREP2 `BridgeTracking` and bump to V2
   gatewaySetSegments.push({
     ...defaultSegment,
     target: instance.BridgeTrackingProxy.address,
-    data: new BridgeTracking__factory().interface.encodeFunctionData('initializeREP2'),
+    data: proxyInterface.encodeFunctionData('functionDelegateCall', [
+      new BridgeTracking__factory().interface.encodeFunctionData('initializeREP2'),
+    ]),
   });
 
   // initREP2 `BridgeSlash` and bump to V2
   gatewaySetSegments.push({
     ...defaultSegment,
     target: instance.BridgeSlashProxy.address,
-    data: new BridgeSlash__factory().interface.encodeFunctionData('initializeREP2'),
+    data: new BridgeSlash__factory().interface.encodeFunctionData('initializeREP2'), // Do not transfer admin role to GA when calling without functionDelegateCall
   });
 
   return gatewaySetSegments;

@@ -186,4 +186,8 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     TransparentUpgradeableProxyV2(payable(address(_roninGateway))).changeAdmin(address(_roninBridgeManager));
     vm.stopPrank();
   }
+
+  function _hookSetDepositCount() internal pure override returns (uint256) {
+    return 42213; // fork-block-number 28327195
+  }
 }
