@@ -92,7 +92,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   console.log(proposalSegments);
 
-  const blockFork = await ethers.provider.getBlock(28327195);
+  const blockFork = await ethers.provider.getBlock(28539478);
   const timestampFork = blockFork.timestamp;
   const proposalExpiry = timestampFork + 3600 * 24 * 10; // expired in 10 days
 
@@ -119,7 +119,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   // }
   const proposalRaw: ProposalDetailStruct = {
     chainId: 2020,
-    nonce: 1,
+    nonce: 4,
     expiryTimestamp: proposalExpiry,
     targets: [...proposalSegments.map((_) => _.target!)], // targets
     values: [...proposalSegments.map((_) => _.value)], // values
