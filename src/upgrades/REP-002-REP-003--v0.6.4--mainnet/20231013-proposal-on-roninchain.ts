@@ -1,9 +1,8 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { ProposalSegmentArguments, defaultSegment, explorerUrl, proxyInterface } from '../upgradeUtils';
+import { Instance, ProposalSegmentArguments, defaultSegment, explorerUrl, proxyInterface } from '../upgradeUtils';
 import { VoteType } from '../../script/proposal';
 import { roninchainNetworks, stakingVestingConfig } from '../../configs/config';
 import { network } from 'hardhat';
-import { Deployment } from 'hardhat-deploy/dist/types';
 import {
   BridgeReward__factory,
   BridgeSlash__factory,
@@ -16,32 +15,6 @@ import {
   Staking__factory,
 } from '../../types';
 import { ProposalDetailStruct } from '../../types/GovernanceAdmin';
-
-interface Instance {
-  RoninGovernanceAdmin: Deployment;
-  RoninValidatorSetProxy: Deployment;
-  ProfileProxy: Deployment;
-  StakingProxy: Deployment;
-  SlashIndicatorProxy: Deployment;
-  RoninTrustedOrganizationProxy: Deployment;
-  BridgeTrackingProxy: Deployment;
-  StakingVestingProxy: Deployment;
-  FastFinalityTrackingProxy: Deployment;
-  RoninBridgeManager: Deployment;
-  RoninGatewayV3Proxy: Deployment;
-  BridgeSlashProxy: Deployment;
-  BridgeRewardProxy: Deployment;
-
-  RoninValidatorSetLogic: Deployment;
-  ProfileLogic: Deployment;
-  StakingLogic: Deployment;
-  SlashIndicatorLogic: Deployment;
-  RoninTrustedOrganizationLogic: Deployment;
-  BridgeTrackingLogic: Deployment;
-  StakingVestingLogic: Deployment;
-  FastFinalityTrackingLogic: Deployment;
-  RoninGatewayV3Logic: Deployment;
-}
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -168,9 +141,9 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   // upgrade `RoninValidatorSet` and bump to V2
   segments.push({
     ...defaultSegment,
-    target: instance.RoninValidatorSetProxy.address,
+    target: instance.RoninValidatorSetProxy!.address,
     data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
-      instance.RoninValidatorSetLogic.address,
+      instance.RoninValidatorSetLogic!.address,
       new RoninValidatorSet__factory().interface.encodeFunctionData('initializeV2'),
     ]),
   });
@@ -178,10 +151,10 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   // bump `RoninValidatorSet` to V3
   segments.push({
     ...defaultSegment,
-    target: instance.RoninValidatorSetProxy.address,
+    target: instance.RoninValidatorSetProxy!.address,
     data: proxyInterface.encodeFunctionData('functionDelegateCall', [
       new RoninValidatorSet__factory().interface.encodeFunctionData('initializeV3', [
-        instance.FastFinalityTrackingProxy.address,
+        instance.FastFinalityTrackingProxy!.address,
       ]),
     ]),
   });
@@ -189,9 +162,9 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   // upgrade `Staking` and bump to V2
   segments.push({
     ...defaultSegment,
-    target: instance.StakingProxy.address,
+    target: instance.StakingProxy!.address,
     data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
-      instance.StakingLogic.address,
+      instance.StakingLogic!.address,
       new Staking__factory().interface.encodeFunctionData('initializeV2'),
     ]),
   });
@@ -199,11 +172,11 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   // upgrade `SlashIndicator` and bump to V2
   segments.push({
     ...defaultSegment,
-    target: instance.SlashIndicatorProxy.address,
+    target: instance.SlashIndicatorProxy!.address,
     data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
-      instance.SlashIndicatorLogic.address,
+      instance.SlashIndicatorLogic!.address,
       new SlashIndicator__factory().interface.encodeFunctionData('initializeV2', [
-        instance.RoninGovernanceAdmin.address,
+        instance.RoninGovernanceAdmin!.address,
       ]),
     ]),
   });
@@ -211,25 +184,25 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   // bump `SlashIndicator` to V3
   segments.push({
     ...defaultSegment,
-    target: instance.SlashIndicatorProxy.address,
+    target: instance.SlashIndicatorProxy!.address,
     data: proxyInterface.encodeFunctionData('functionDelegateCall', [
-      new SlashIndicator__factory().interface.encodeFunctionData('initializeV3', [instance.ProfileProxy.address]),
+      new SlashIndicator__factory().interface.encodeFunctionData('initializeV3', [instance.ProfileProxy!.address]),
     ]),
   });
 
   // upgrade `RoninTrustedOrganization`
   segments.push({
     ...defaultSegment,
-    target: instance.RoninTrustedOrganizationProxy.address,
-    data: proxyInterface.encodeFunctionData('upgradeTo', [instance.RoninTrustedOrganizationLogic.address]),
+    target: instance.RoninTrustedOrganizationProxy!.address,
+    data: proxyInterface.encodeFunctionData('upgradeTo', [instance.RoninTrustedOrganizationLogic!.address]),
   });
 
   // upgrade `BridgeTracking` and bump to V2
   segments.push({
     ...defaultSegment,
-    target: instance.BridgeTrackingProxy.address,
+    target: instance.BridgeTrackingProxy!.address,
     data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
-      instance.BridgeTrackingLogic.address,
+      instance.BridgeTrackingLogic!.address,
       new BridgeTracking__factory().interface.encodeFunctionData('initializeV2'),
     ]),
   });
@@ -237,9 +210,9 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   // upgrade `StakingVesting` and bump to V2
   segments.push({
     ...defaultSegment,
-    target: instance.StakingVestingProxy.address,
+    target: instance.StakingVestingProxy!.address,
     data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
-      instance.StakingVestingLogic.address,
+      instance.StakingVestingLogic!.address,
       new StakingVesting__factory().interface.encodeFunctionData('initializeV2'),
     ]),
   });
@@ -247,7 +220,7 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   // bump `StakingVesting` to V3
   segments.push({
     ...defaultSegment,
-    target: instance.StakingVestingProxy.address,
+    target: instance.StakingVestingProxy!.address,
     data: proxyInterface.encodeFunctionData('functionDelegateCall', [
       new StakingVesting__factory().interface.encodeFunctionData('initializeV3', [
         stakingVestingConfig[network.name]?.fastFinalityRewardPercent!,
@@ -264,9 +237,9 @@ async function upgradeGatewayContractSetProposalPart(instance: Instance): Promis
   // upgrade `RoninGatewayV3` and bump to V2
   gatewaySetSegments.push({
     ...defaultSegment,
-    target: instance.RoninGatewayV3Proxy.address,
+    target: instance.RoninGatewayV3Proxy!.address,
     data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
-      instance.RoninGatewayV3Logic.address,
+      instance.RoninGatewayV3Logic!.address,
       new RoninGatewayV3__factory().interface.encodeFunctionData('initializeV2'),
     ]),
   });
@@ -274,22 +247,24 @@ async function upgradeGatewayContractSetProposalPart(instance: Instance): Promis
   // bump `RoninGatewayV3` to V3
   gatewaySetSegments.push({
     ...defaultSegment,
-    target: instance.RoninGatewayV3Proxy.address,
+    target: instance.RoninGatewayV3Proxy!.address,
     data: proxyInterface.encodeFunctionData('functionDelegateCall', [
-      new RoninGatewayV3__factory().interface.encodeFunctionData('initializeV3', [instance.RoninBridgeManager.address]),
+      new RoninGatewayV3__factory().interface.encodeFunctionData('initializeV3', [
+        instance.RoninBridgeManager!.address,
+      ]),
     ]),
   });
 
   // bump `BridgeTracking` to V3
   gatewaySetSegments.push({
     ...defaultSegment,
-    target: instance.BridgeTrackingProxy.address,
+    target: instance.BridgeTrackingProxy!.address,
     data: proxyInterface.encodeFunctionData('functionDelegateCall', [
       new BridgeTracking__factory().interface.encodeFunctionData('initializeV3', [
-        instance.RoninBridgeManager.address,
-        instance.BridgeSlashProxy.address,
-        instance.BridgeRewardProxy.address,
-        instance.RoninGovernanceAdmin.address,
+        instance.RoninBridgeManager!.address,
+        instance.BridgeSlashProxy!.address,
+        instance.BridgeRewardProxy!.address,
+        instance.RoninGovernanceAdmin!.address,
       ]),
     ]),
   });
@@ -303,14 +278,14 @@ async function initREP2GatewayContractSetProposalPart(instance: Instance): Promi
   // initREP2 `BridgeReward` and bump to V2
   gatewaySetSegments.push({
     ...defaultSegment,
-    target: instance.BridgeRewardProxy.address,
+    target: instance.BridgeRewardProxy!.address,
     data: new BridgeReward__factory().interface.encodeFunctionData('initializeREP2'), // Do not transfer admin role to GA when calling without functionDelegateCall
   });
 
   // initREP2 `BridgeTracking` and bump to V2
   gatewaySetSegments.push({
     ...defaultSegment,
-    target: instance.BridgeTrackingProxy.address,
+    target: instance.BridgeTrackingProxy!.address,
     data: proxyInterface.encodeFunctionData('functionDelegateCall', [
       new BridgeTracking__factory().interface.encodeFunctionData('initializeREP2'),
     ]),
@@ -319,7 +294,7 @@ async function initREP2GatewayContractSetProposalPart(instance: Instance): Promi
   // initREP2 `BridgeSlash` and bump to V2
   gatewaySetSegments.push({
     ...defaultSegment,
-    target: instance.BridgeSlashProxy.address,
+    target: instance.BridgeSlashProxy!.address,
     data: new BridgeSlash__factory().interface.encodeFunctionData('initializeREP2'), // Do not transfer admin role to GA when calling without functionDelegateCall
   });
 
@@ -332,8 +307,8 @@ async function changeAdminGatewayContractsProposalPart(instance: Instance): Prom
   // change admin of ronin gateway
   gatewaySetSegments.push({
     ...defaultSegment,
-    target: instance.RoninGatewayV3Proxy.address,
-    data: proxyInterface.encodeFunctionData('changeAdmin', [instance.RoninBridgeManager.address]),
+    target: instance.RoninGatewayV3Proxy!.address,
+    data: proxyInterface.encodeFunctionData('changeAdmin', [instance.RoninBridgeManager!.address]),
   });
 
   return gatewaySetSegments;
