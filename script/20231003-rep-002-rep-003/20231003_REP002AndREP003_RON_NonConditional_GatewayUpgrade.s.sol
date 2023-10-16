@@ -18,6 +18,10 @@ import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/Trans
 contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade is
   Simulation__20231003_UpgradeREP002AndREP003_RON_NonConditional_Wrapup2Periods
 {
+  function _hookSetDepositCount() internal pure override returns (uint256) {
+    return 42213; // fork-block-number 28327195
+  }
+
   function run() public virtual override trySetUp {
     Simulation__20231003_UpgradeREP002AndREP003_Base.run();
 
@@ -185,9 +189,5 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     vm.startPrank(address(_roninGovernanceAdmin));
     TransparentUpgradeableProxyV2(payable(address(_roninGateway))).changeAdmin(address(_roninBridgeManager));
     vm.stopPrank();
-  }
-
-  function _hookSetDepositCount() internal pure override returns (uint256) {
-    return 42213; // fork-block-number 28327195
   }
 }
