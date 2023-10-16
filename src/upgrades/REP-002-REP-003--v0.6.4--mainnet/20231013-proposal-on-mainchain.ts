@@ -70,10 +70,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
     companionNetworkChainId,
     proposalExpiryTimestamp, // expiryTimestamp
-    [proposalSegments.map((_) => _.target)], // targets
-    [proposalSegments.map((_) => _.value)], // values
-    [proposalSegments.map((_) => _.data)], // datas
-    [proposalSegments.map((_) => _.gasAmount)] // gasAmounts
+    [...proposalSegments.map((_) => _.target)], // targets
+    [...proposalSegments.map((_) => _.value)], // values
+    [...proposalSegments.map((_) => _.data)], // datas
+    [...proposalSegments.map((_) => _.gasAmount)] // gasAmounts
   );
   deployments.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };

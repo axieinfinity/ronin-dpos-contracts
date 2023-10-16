@@ -9,11 +9,13 @@ import {
   BridgeSlash__factory,
   BridgeTracking__factory,
   RoninGatewayV3__factory,
+  RoninGovernanceAdmin__factory,
   RoninValidatorSet__factory,
   SlashIndicator__factory,
   StakingVesting__factory,
   Staking__factory,
 } from '../../types';
+import { ProposalDetailStruct } from '../../types/GovernanceAdmin';
 
 interface Instance {
   RoninGovernanceAdmin: Deployment;
@@ -86,9 +88,56 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   let proposalPart3 = await initREP2GatewayContractSetProposalPart(allDeployments);
   let proposalPart4 = await changeAdminGatewayContractsProposalPart(allDeployments);
 
-  let proposal = [...proposalPart1, ...proposalPart2, ...proposalPart3, ...proposalPart4];
+  let proposalSegments = [...proposalPart1, ...proposalPart2, ...proposalPart3, ...proposalPart4];
 
-  console.log(proposal);
+  console.log(proposalSegments);
+
+  const blockFork = await ethers.provider.getBlock(28327195);
+  const timestampFork = blockFork.timestamp;
+  const proposalExpiry = timestampFork + 3600 * 24 * 10; // expired in 10 days
+
+  const proposeProposalRaw = new RoninGovernanceAdmin__factory().interface.encodeFunctionData(
+    'proposeProposalForCurrentNetwork',
+    [
+      proposalExpiry,
+      [...proposalSegments.map((_) => _.target)], // targets
+      [...proposalSegments.map((_) => _.value)], // values
+      [...proposalSegments.map((_) => _.data)], // datas
+      [...proposalSegments.map((_) => _.gasAmount)], // gasAmounts
+      VoteType.For, // ballot type
+    ]
+  );
+
+  console.log('proposeProposalRaw');
+  console.log(proposeProposalRaw);
+
+  // function castProposalVoteForCurrentNetwork(
+  //   Proposal.ProposalDetail calldata _proposal,
+  //   Ballot.VoteType _support
+  // ) external onlyGovernor {
+  //   _castProposalVoteForCurrentNetwork(msg.sender, _proposal, _support);
+  // }
+  const proposalRaw: ProposalDetailStruct = {
+    chainId: 2020,
+    nonce: 1,
+    expiryTimestamp: proposalExpiry,
+    targets: [...proposalSegments.map((_) => _.target!)], // targets
+    values: [...proposalSegments.map((_) => _.value)], // values
+    calldatas: [...proposalSegments.map((_) => _.data!)], // datas
+    gasAmounts: [...proposalSegments.map((_) => _.gasAmount)], // gasAmounts
+  };
+
+  const castVoteProposalRaw = new RoninGovernanceAdmin__factory().interface.encodeFunctionData(
+    'castProposalVoteForCurrentNetwork',
+    [
+      proposalRaw,
+      VoteType.For, // ballot type
+    ]
+  );
+
+  console.log('castVoteProposalRaw');
+  console.log(castVoteProposalRaw);
+
   return; // TODO: remove when actual run
 
   //////////////////////////////////////////
@@ -104,10 +153,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     { from: governor, log: true },
     'proposeProposalForCurrentNetwork',
     proposalExpiryTimestamp, // expiryTimestamp
-    [proposal.map((_) => _.target)], // targets
-    [proposal.map((_) => _.value)], // values
-    [proposal.map((_) => _.data)], // datas
-    [proposal.map((_) => _.gasAmount)], // gasAmounts
+    [...proposalSegments.map((_) => _.target)], // targets
+    [...proposalSegments.map((_) => _.value)], // values
+    [...proposalSegments.map((_) => _.data)], // datas
+    [...proposalSegments.map((_) => _.gasAmount)], // gasAmounts
     VoteType.For // ballot type
   );
   deployments.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
@@ -130,8 +179,10 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   segments.push({
     ...defaultSegment,
     target: instance.RoninValidatorSetProxy.address,
-    data: new RoninValidatorSet__factory().interface.encodeFunctionData('initializeV3', [
-      instance.FastFinalityTrackingProxy.address,
+    data: proxyInterface.encodeFunctionData('functionDelegateCall', [
+      new RoninValidatorSet__factory().interface.encodeFunctionData('initializeV3', [
+        instance.FastFinalityTrackingProxy.address,
+      ]),
     ]),
   });
 
@@ -161,7 +212,9 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   segments.push({
     ...defaultSegment,
     target: instance.SlashIndicatorProxy.address,
-    data: new SlashIndicator__factory().interface.encodeFunctionData('initializeV3', [instance.ProfileProxy.address]),
+    data: proxyInterface.encodeFunctionData('functionDelegateCall', [
+      new SlashIndicator__factory().interface.encodeFunctionData('initializeV3', [instance.ProfileProxy.address]),
+    ]),
   });
 
   // upgrade `RoninTrustedOrganization`
@@ -195,8 +248,10 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   segments.push({
     ...defaultSegment,
     target: instance.StakingVestingProxy.address,
-    data: new StakingVesting__factory().interface.encodeFunctionData('initializeV3', [
-      stakingVestingConfig[network.name]?.fastFinalityRewardPercent!,
+    data: proxyInterface.encodeFunctionData('functionDelegateCall', [
+      new StakingVesting__factory().interface.encodeFunctionData('initializeV3', [
+        stakingVestingConfig[network.name]?.fastFinalityRewardPercent!,
+      ]),
     ]),
   });
 
@@ -220,8 +275,8 @@ async function upgradeGatewayContractSetProposalPart(instance: Instance): Promis
   gatewaySetSegments.push({
     ...defaultSegment,
     target: instance.RoninGatewayV3Proxy.address,
-    data: new RoninGatewayV3__factory().interface.encodeFunctionData('initializeV3', [
-      instance.RoninBridgeManager.address,
+    data: proxyInterface.encodeFunctionData('functionDelegateCall', [
+      new RoninGatewayV3__factory().interface.encodeFunctionData('initializeV3', [instance.RoninBridgeManager.address]),
     ]),
   });
 
@@ -229,11 +284,13 @@ async function upgradeGatewayContractSetProposalPart(instance: Instance): Promis
   gatewaySetSegments.push({
     ...defaultSegment,
     target: instance.BridgeTrackingProxy.address,
-    data: new BridgeTracking__factory().interface.encodeFunctionData('initializeV3', [
-      instance.RoninBridgeManager.address,
-      instance.BridgeSlashProxy.address,
-      instance.BridgeRewardProxy.address,
-      instance.RoninGovernanceAdmin.address,
+    data: proxyInterface.encodeFunctionData('functionDelegateCall', [
+      new BridgeTracking__factory().interface.encodeFunctionData('initializeV3', [
+        instance.RoninBridgeManager.address,
+        instance.BridgeSlashProxy.address,
+        instance.BridgeRewardProxy.address,
+        instance.RoninGovernanceAdmin.address,
+      ]),
     ]),
   });
 
