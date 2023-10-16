@@ -266,11 +266,6 @@ contract RoninGatewayV3 is
     IBridgeTracking _bridgeTrackingContract = IBridgeTracking(getContract(ContractType.BRIDGE_TRACKING));
     for (uint256 _i; _i < withdrawals.length; ) {
       id = withdrawals[_i];
-
-      if (id == 0 || id > withdrawalCount) {
-        revert ErrInvalidRequest();
-      }
-
       _withdrawalSig[id][operator] = signatures[_i];
       _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Withdrawal, id, operator);
 
