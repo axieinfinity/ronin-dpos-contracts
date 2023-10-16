@@ -164,20 +164,24 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
   }
 
   function _callInitREP2InGatewayContracts() internal {
+    console2.log("> ", StdStyle.blue("_callInitREP2InGatewayContracts"), "...");
+
     vm.startPrank(address(_roninGovernanceAdmin));
     TransparentUpgradeableProxyV2(payable(address(_bridgeReward))).functionDelegateCall(
       abi.encodeCall(BridgeReward.initializeREP2, ())
     );
     TransparentUpgradeableProxyV2(payable(address(_bridgeTracking))).functionDelegateCall(
-      abi.encodeCall(BridgeReward.initializeREP2, ())
+      abi.encodeCall(BridgeTracking.initializeREP2, ())
     );
     TransparentUpgradeableProxyV2(payable(address(_bridgeSlash))).functionDelegateCall(
-      abi.encodeCall(BridgeReward.initializeREP2, ())
+      abi.encodeCall(BridgeSlash.initializeREP2, ())
     );
     vm.stopPrank();
   }
 
   function _changeAdminOfGatewayContracts() internal {
+    console2.log("> ", StdStyle.blue("_changeAdminOfGatewayContracts"), "...");
+
     vm.startPrank(address(_roninGovernanceAdmin));
     TransparentUpgradeableProxyV2(payable(address(_roninGateway))).changeAdmin(address(_roninBridgeManager));
     vm.stopPrank();
