@@ -74,6 +74,7 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
       _config.getAddressFromCurrentNetwork(ContractKey.FastFinalityTracking)
     );
     _roninGovernanceAdmin = RoninGovernanceAdmin(_config.getAddressFromCurrentNetwork(ContractKey.GovernanceAdmin));
+    _roninBridgeManager = RoninBridgeManager(_config.getAddressFromCurrentNetwork(ContractKey.RoninBridgeManager));
 
     _depositCount = _hookSetDepositCount();
   }

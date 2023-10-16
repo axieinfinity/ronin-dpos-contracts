@@ -18,6 +18,14 @@ import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/Trans
 contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade_ActualProposal is
   Simulation__20231003_UpgradeREP002AndREP003_RON_NonConditional_Wrapup2Periods
 {
+  function _hookSetDepositCount() internal pure override returns (uint256) {
+    return 42587; // fork-block-number 28540134
+  }
+
+  function _hookPrankOperator() internal pure override returns (address) {
+    return 0x32015E8B982c61bc8a593816FdBf03A603EEC823;
+  }
+
   function run() public virtual override trySetUp {
     Simulation__20231003_UpgradeREP002AndREP003_Base.run();
 
@@ -102,13 +110,5 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade_A
     vm.warp(block.timestamp + 3 seconds);
     vm.roll(block.number + 1);
     _depositForOnlyOnRonin("after-wrapup-Day3"); // share bridge reward here
-  }
-
-  function _hookSetDepositCount() internal pure override returns (uint256) {
-    return 42587; // fork-block-number 28540134
-  }
-
-  function _hookPrankOperator() internal pure override returns (address) {
-    return 0x32015E8B982c61bc8a593816FdBf03A603EEC823;
   }
 }
