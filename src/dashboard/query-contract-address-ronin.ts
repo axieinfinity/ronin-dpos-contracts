@@ -65,22 +65,22 @@ const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
   let components: ContractManagementInfoComponents = {};
 
   for (const proxyName of Object.keys(ProxyNames)) {
+    const deployment = await deployments.getOrNull(getValueByKey(proxyName as ProxyNamesType, ProxyNames));
+    let address = deployment?.address;
+    console.log(`Loading contracts for ${proxyName}(${address})...`);
+    if (
+      getValueByKey(proxyName as ProxyNamesType, ProxyNames).toLocaleLowerCase() ==
+      BridgeProxyName.BridgeContract.toLocaleLowerCase()
+    ) {
+      address = address ?? generalRoninConf[network.name].bridgeContract;
+      console.info('Loaded BridgeContract from config.');
+    }
+
+    if (!address) {
+      continue;
+    }
     for (const contractTypeKey of Object.keys(AllContractTypes)) {
       const key: CombineProxyAndContractType | string = `${proxyName}:${contractTypeKey}`;
-      const deployment = await deployments.getOrNull(getValueByKey(proxyName as ProxyNamesType, ProxyNames));
-      let address = deployment?.address;
-
-      if (
-        getValueByKey(proxyName as ProxyNamesType, ProxyNames).toLocaleLowerCase() ==
-        BridgeProxyName.BridgeContract.toLocaleLowerCase()
-      ) {
-        address = address ?? generalRoninConf[network.name].bridgeContract;
-        console.info('Loaded BridgeContract from config.');
-      }
-
-      if (!address) {
-        continue;
-      }
       const contract = await getContractAddress(
         address,
         getValueByKey(contractTypeKey as ContractNameType, AllContractTypes)
@@ -91,8 +91,6 @@ const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
         proxyName,
         contractType: contractTypeKey,
         contractAddr: contract,
-        //   admin,
-        //   expectedAdmin,
         //   isCorrect: isCorrectAdmin(admin, expectedAdmin),
       };
     }
