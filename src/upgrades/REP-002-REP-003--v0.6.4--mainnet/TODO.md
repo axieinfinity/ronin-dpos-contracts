@@ -1,4 +1,5 @@
 - [ ] Deploy MainchainGatewayV3Logic
+- [ ] Config operators and governors for BridgeManager
 - [ ] Top-up for BridgeReward
 - [ ] Execute `20231013-proposal-on-roninchain.ts --network ronin-mainnet`
 - [ ] Execute `20231013-proposal-on-mainchain.ts --network ronin-mainnet`
