@@ -140,7 +140,7 @@ const config: HardhatUserConfig = {
     outDir: 'src/types',
   },
   paths: {
-    deploy: ['src/deploy', 'src/upgrades'],
+    deploy: ['src/deploy', 'src/upgrades', 'src/dashboard'],
     tests: 'test/hardhat_test',
   },
   namedAccounts: {
