@@ -5,6 +5,7 @@ import { RoninGovernanceAdmin } from "@ronin/contracts/ronin/RoninGovernanceAdmi
 import { RoninGatewayV3 } from "@ronin/contracts/ronin/gateway/RoninGatewayV3.sol";
 import { MainchainGatewayV3 } from "@ronin/contracts/mainchain/MainchainGatewayV3.sol";
 import { Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
+import { Maintenance } from "@ronin/contracts/ronin/Maintenance.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
 import { SlashIndicator } from "@ronin/contracts/ronin/slash-indicator/SlashIndicator.sol";
 import { RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";

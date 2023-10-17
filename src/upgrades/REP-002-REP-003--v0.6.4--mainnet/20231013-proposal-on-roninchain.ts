@@ -7,6 +7,7 @@ import {
   BridgeReward__factory,
   BridgeSlash__factory,
   BridgeTracking__factory,
+  Maintenance__factory,
   RoninGatewayV3__factory,
   RoninGovernanceAdmin__factory,
   RoninValidatorSet__factory,
@@ -31,6 +32,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     ProfileProxy: await deployments.get('ProfileProxy'),
     StakingProxy: await deployments.get('StakingProxy'),
     SlashIndicatorProxy: await deployments.get('SlashIndicatorProxy'),
+    MaintenanceProxy: await deployments.get('MaintenanceProxy'),
     RoninTrustedOrganizationProxy: await deployments.get('RoninTrustedOrganizationProxy'),
     BridgeTrackingProxy: await deployments.get('BridgeTrackingProxy'),
     StakingVestingProxy: await deployments.get('StakingVestingProxy'),
@@ -44,6 +46,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     ProfileLogic: await deployments.get('ProfileLogic'),
     StakingLogic: await deployments.get('StakingLogic'),
     SlashIndicatorLogic: await deployments.get('SlashIndicatorLogic'),
+    MaintenanceLogic: await deployments.get('MaintenanceLogic'),
     RoninTrustedOrganizationLogic: await deployments.get('RoninTrustedOrganizationLogic'),
     BridgeTrackingLogic: await deployments.get('BridgeTrackingLogic'),
     StakingVestingLogic: await deployments.get('StakingVestingLogic'),
@@ -225,6 +228,16 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
       new StakingVesting__factory().interface.encodeFunctionData('initializeV3', [
         stakingVestingConfig[network.name]?.fastFinalityRewardPercent!,
       ]),
+    ]),
+  });
+
+  // upgrade `Maintenance` and bump to V2
+  segments.push({
+    ...defaultSegment,
+    target: instance.MaintenanceProxy!.address,
+    data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
+      instance.MaintenanceLogic!.address,
+      new Maintenance__factory().interface.encodeFunctionData('initializeV2'),
     ]),
   });
 

@@ -17,6 +17,7 @@ export interface Instance {
   ProfileProxy?: Deployment;
   StakingProxy?: Deployment;
   SlashIndicatorProxy?: Deployment;
+  MaintenanceProxy?: Deployment;
   RoninTrustedOrganizationProxy?: Deployment;
   BridgeTrackingProxy?: Deployment;
   StakingVestingProxy?: Deployment;
@@ -30,6 +31,7 @@ export interface Instance {
   ProfileLogic?: Deployment;
   StakingLogic?: Deployment;
   SlashIndicatorLogic?: Deployment;
+  MaintenanceLogic?: Deployment;
   RoninTrustedOrganizationLogic?: Deployment;
   BridgeTrackingLogic?: Deployment;
   StakingVestingLogic?: Deployment;

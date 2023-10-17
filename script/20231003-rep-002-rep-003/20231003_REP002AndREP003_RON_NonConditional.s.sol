@@ -72,7 +72,11 @@ contract Simulation__20231003_UpgradeREP002AndREP003_RON_NonConditional is
       _upgradeProxy(ContractKey.StakingVesting, abi.encodeCall(StakingVesting.initializeV2, ()));
       _stakingVesting.initializeV3(50); // 5%
     }
+
+    {
+      // upgrade `Maintenance`
+      // bump `Maintenance` to V2
+      _upgradeProxy(ContractKey.Maintenance, abi.encodeCall(Maintenance.initializeV2, ()));
+    }
   }
-
-
 }
