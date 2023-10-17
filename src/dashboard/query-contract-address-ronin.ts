@@ -39,7 +39,7 @@ const AllContractTypes = {
   FAST_FINALITY_TRACKING: 14,
   PROFILE: 15,
 } as const;
-const ProxyNames = { ...DPoSProxyName } as const;
+const ProxyNames = { ...DPoSProxyName, ...BridgeProxyName } as const;
 
 type KeyOf<T> = keyof T;
 type ValueOf<T> = T[KeyOf<T>];
@@ -64,7 +64,6 @@ const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
 
   let components: ContractManagementInfoComponents = {};
 
-  console.log({ AllContractTypes });
   for (const proxyName of Object.keys(ProxyNames)) {
     for (const contractTypeKey of Object.keys(AllContractTypes)) {
       const key: CombineProxyAndContractType | string = `${proxyName}:${contractTypeKey}`;
@@ -105,6 +104,7 @@ const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
       'expectContractAddr',
       'isCorrect',
     ]);
+    components = {};
   }
 };
 
