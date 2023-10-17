@@ -34,13 +34,3 @@ export interface ProxyManagementInfo {
   expectedAdmin?: Address;
   isCorrect?: Boolean;
 }
-
-export interface ContractManagementInfo {
-  deployment: Deployment | null;
-  address?: Address;
-  proxyName?: string;
-  contractType?: string;
-  contractAddr?: Address;
-  expectedContractAddr?: Address;
-  isCorrect?: Boolean;
-}

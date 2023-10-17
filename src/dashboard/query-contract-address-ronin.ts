@@ -3,13 +3,14 @@ import { generalRoninConf, roninchainNetworks } from '../configs/config';
 import { network } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
 import { DEFAULT_ADDRESS } from '../utils';
-import { ContractManagementInfo, getContractAddress } from './dashboard-helper';
+import { getContractAddress, isCorrectContract } from './dashboard-helper';
 
 const BridgeProxyName = {
   BridgeReward: 'BridgeRewardProxy',
   BridgeSlash: 'BridgeSlashProxy',
   BridgeTracking: 'BridgeTrackingProxy',
   BridgeContract: 'RoninGatewayProxyV2',
+  BridgeManager: 'RoninBridgeManager',
 } as const;
 
 const DPoSProxyName = {
@@ -20,58 +21,118 @@ const DPoSProxyName = {
   SlashIndicator: 'SlashIndicatorProxy',
   Staking: 'StakingProxy',
   StakingVesting: 'StakingVestingProxy',
+  GovernanceAdmin: 'RoninGovernanceAdmin',
+  FastFinalityTracking: 'FastFinalityTrackingProxy',
 } as const;
-const AllContractTypes = {
-  UNKNOWN: 0,
-  PAUSE_ENFORCER: 1,
-  BRIDGE: 2,
-  BRIDGE_TRACKING: 3,
-  GOVERNANCE_ADMIN: 4,
-  MAINTENANCE: 5,
-  SLASH_INDICATOR: 6,
-  STAKING_VESTING: 7,
-  VALIDATOR: 8,
-  STAKING: 9,
-  RONIN_TRUSTED_ORGANIZATION: 10,
-  BRIDGE_MANAGER: 11,
-  BRIDGE_SLASH: 12,
-  BRIDGE_REWARD: 13,
-  FAST_FINALITY_TRACKING: 14,
-  PROFILE: 15,
+
+const AllContractTypes: MappingFromContractTypeToProxyName = {
+  UNKNOWN: {
+    value: 0,
+  },
+  PAUSE_ENFORCER: {
+    value: 1,
+  },
+  BRIDGE: {
+    value: 2,
+    proxyName: 'BridgeContract',
+  },
+  BRIDGE_TRACKING: {
+    value: 3,
+    proxyName: 'BridgeTracking',
+  },
+  GOVERNANCE_ADMIN: {
+    value: 4,
+    proxyName: 'GovernanceAdmin',
+  },
+  MAINTENANCE: {
+    value: 5,
+    proxyName: 'Maintenance',
+  },
+  SLASH_INDICATOR: {
+    value: 6,
+    proxyName: 'SlashIndicator',
+  },
+  STAKING_VESTING: {
+    value: 7,
+    proxyName: 'StakingVesting',
+  },
+  VALIDATOR: {
+    value: 8,
+    proxyName: 'RoninValidatorSet',
+  },
+  STAKING: {
+    value: 9,
+    proxyName: 'Staking',
+  },
+  RONIN_TRUSTED_ORGANIZATION: {
+    value: 10,
+    proxyName: 'RoninTrustedOrganization',
+  },
+  BRIDGE_MANAGER: {
+    value: 11,
+    proxyName: 'BridgeManager',
+  },
+  BRIDGE_SLASH: {
+    value: 12,
+    proxyName: 'BridgeSlash',
+  },
+  BRIDGE_REWARD: {
+    value: 13,
+    proxyName: 'BridgeReward',
+  },
+  FAST_FINALITY_TRACKING: {
+    value: 14,
+    proxyName: 'FastFinalityTracking',
+  },
+  PROFILE: {
+    value: 15,
+  },
 } as const;
 const ProxyNames = { ...DPoSProxyName, ...BridgeProxyName } as const;
 
 type KeyOf<T> = keyof T;
-type ValueOf<T> = T[KeyOf<T>];
-type ProxyNamesType = KeyOf<typeof ProxyNames>;
-type ContractNameType = KeyOf<typeof AllContractTypes>;
-type CombineProxyAndContractType = `${ProxyNamesType}:${ContractNameType}`;
+type ProxyNamesKey = KeyOf<typeof ProxyNames>;
+type ContractTypeKey = KeyOf<typeof AllContractTypes>;
+type CombineProxyAndContractType = `${ProxyNamesKey}:${ContractTypeKey}`;
+
+export interface ContractManagementInfo {
+  address?: Address;
+  proxyName?: ProxyNamesKey;
+  contractType?: ContractTypeKey;
+  contractAddr?: Address;
+  expectedContractAddr?: Address;
+  isCorrect?: Boolean;
+}
 
 interface ContractManagementInfoComponents {
   [deploymentName: CombineProxyAndContractType | string]: ContractManagementInfo;
+}
+
+interface MappingFromContractTypeToProxyName {
+  [contractType: string]: {
+    proxyName?: ProxyNamesKey;
+    value: number;
+  };
+}
+interface MappingFromProxyNameToAddress {
+  [proxyName: ProxyNamesKey | string]: Address;
 }
 
 const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
     return;
   }
+  const allContractTypeKeys = Object.keys(AllContractTypes).map((key) => key as ContractTypeKey);
+  const allProxyNameKeys = Object.keys(ProxyNames).map((key) => key as ProxyNamesKey);
 
-  const BridgeManagerDeployment = await deployments.get('RoninBridgeManager');
-  const GovernanceAdminDeployment = await deployments.get('RoninGovernanceAdmin');
-
-  console.log('BridgeManager', BridgeManagerDeployment.address);
-  console.log('GovernanceAdmin', GovernanceAdminDeployment.address);
-
+  const preLoadContractAddresses: MappingFromProxyNameToAddress = {};
   let components: ContractManagementInfoComponents = {};
 
-  for (const proxyName of Object.keys(ProxyNames)) {
-    const deployment = await deployments.getOrNull(getValueByKey(proxyName as ProxyNamesType, ProxyNames));
+  // load all addresses
+  for (const proxyNameKey of allProxyNameKeys) {
+    const deployment = await deployments.getOrNull(ProxyNames[proxyNameKey]);
     let address = deployment?.address;
-    console.log(`Loading contracts for ${proxyName}(${address})...`);
-    if (
-      getValueByKey(proxyName as ProxyNamesType, ProxyNames).toLocaleLowerCase() ==
-      BridgeProxyName.BridgeContract.toLocaleLowerCase()
-    ) {
+    if (ProxyNames[proxyNameKey] == BridgeProxyName.BridgeContract) {
       address = address ?? generalRoninConf[network.name].bridgeContract;
       console.info('Loaded BridgeContract from config.');
     }
@@ -79,19 +140,23 @@ const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
     if (!address) {
       continue;
     }
-    for (const contractTypeKey of Object.keys(AllContractTypes)) {
-      const key: CombineProxyAndContractType | string = `${proxyName}:${contractTypeKey}`;
-      const contract = await getContractAddress(
-        address,
-        getValueByKey(contractTypeKey as ContractNameType, AllContractTypes)
-      );
+    preLoadContractAddresses[proxyNameKey] = address;
+  }
+
+  for (const proxyNameKey of allProxyNameKeys) {
+    const address = preLoadContractAddresses[proxyNameKey];
+    for (const contractTypeKey of allContractTypeKeys) {
+      const key = `${proxyNameKey}:${contractTypeKey}` as CombineProxyAndContractType;
+      const data = AllContractTypes[contractTypeKey.toString()];
+      const contractAddr = await getContractAddress(address, data.value);
+      const expectedContractAddr = data.proxyName ? preLoadContractAddresses[data.proxyName] : DEFAULT_ADDRESS;
       components[key] = {
-        deployment,
-        address,
-        proxyName,
+        address: address,
+        proxyName: proxyNameKey,
         contractType: contractTypeKey,
-        contractAddr: contract,
-        //   isCorrect: isCorrectAdmin(admin, expectedAdmin),
+        contractAddr,
+        expectedContractAddr,
+        isCorrect: isCorrectContract(contractAddr, expectedContractAddr),
       };
     }
     console.table(components, [
@@ -99,16 +164,12 @@ const deploy = async ({ deployments }: HardhatRuntimeEnvironment) => {
       'proxyName',
       'contractType',
       'contractAddr',
-      'expectContractAddr',
+      'expectedContractAddr',
       'isCorrect',
     ]);
     components = {};
   }
 };
-
-function getValueByKey<T extends Object>(key: KeyOf<T>, object: T): ValueOf<T> {
-  return object[key];
-}
 
 // yarn hardhat deploy --tags QueryHasAddressRonin --network ronin-testnet
 deploy.tags = ['QueryHasAddressRonin'];
