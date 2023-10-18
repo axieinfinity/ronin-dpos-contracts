@@ -57,7 +57,6 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 };
 
 deploy.tags = ['BridgeRewardProxy'];
-// deploy.dependencies = ['BridgeRewardLogic', '_HelperBridgeCalculate', 'BridgeSlashProxy'];
-deploy.dependencies = ['_HelperBridgeCalculate', 'BridgeSlashProxy'];
+deploy.dependencies = ['BridgeRewardLogic', '_HelperBridgeCalculate', 'BridgeSlashProxy'];
 
 export default deploy;
