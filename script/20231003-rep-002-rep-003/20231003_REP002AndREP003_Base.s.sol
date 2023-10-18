@@ -57,6 +57,8 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
     return makeAccount("detach-operator-1").addr;
   }
 
+  function _afterDepositForOnlyOnRonin(Transfer.Receipt memory) internal virtual {}
+
   function run() public virtual trySetUp {
     {
       address mockPrecompile = _deployLogic(ContractKey.MockPrecompile);
@@ -143,6 +145,8 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
 
     vm.prank(_hookPrankOperator());
     _roninGateway.depositFor(receipt);
+
+    _afterDepositForOnlyOnRonin(receipt);
   }
 
   function _dummySwitchNetworks() internal {
