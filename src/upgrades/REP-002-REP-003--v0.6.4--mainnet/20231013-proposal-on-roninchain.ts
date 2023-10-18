@@ -16,6 +16,7 @@ import {
   Staking__factory,
 } from '../../types';
 import { ProposalDetailStruct } from '../../types/GovernanceAdmin';
+import { Address } from 'hardhat-deploy/dist/types';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -97,7 +98,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     chainId: 2020,
     nonce: 4,
     expiryTimestamp: proposalExpiry,
-    targets: [...proposalSegments.map((_) => _.target!)], // targets
+    targets: [...proposalSegments.map((_) => (_.target as Address)!)], // targets
     values: [...proposalSegments.map((_) => _.value)], // values
     calldatas: [...proposalSegments.map((_) => _.data!)], // datas
     gasAmounts: [...proposalSegments.map((_) => _.gasAmount)], // gasAmounts

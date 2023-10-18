@@ -2,6 +2,7 @@ import { BigNumberish, BytesLike } from 'ethers';
 import { TransparentUpgradeableProxyV2__factory } from '../types';
 import { LiteralNetwork, Network } from '../utils';
 import { Address, Deployment } from 'hardhat-deploy/dist/types';
+import { TargetOption } from '../script/proposal';
 
 export const proxyInterface = new TransparentUpgradeableProxyV2__factory().interface;
 
@@ -40,7 +41,7 @@ export interface Instance {
 }
 
 export interface ProposalSegmentArguments {
-  target?: Address;
+  target?: Address | TargetOption;
   value: BigNumberish;
   data?: BytesLike;
   gasAmount: BigNumberish;
