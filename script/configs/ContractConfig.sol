@@ -19,7 +19,9 @@ enum ContractKey {
   StakingVesting,
   BridgeReward,
   BridgeSlash,
-  RoninBridgeManager
+  RoninBridgeManager,
+  MainchainBridgeManager,
+  MainchainGovernanceAdmin
 }
 
 abstract contract ContractConfig {
@@ -47,6 +49,8 @@ abstract contract ContractConfig {
     _contractNameMap[ContractKey.BridgeReward] = "BridgeReward";
     _contractNameMap[ContractKey.BridgeSlash] = "BridgeSlash";
     _contractNameMap[ContractKey.RoninBridgeManager] = "RoninBridgeManager";
+    _contractNameMap[ContractKey.MainchainBridgeManager] = "MainchainBridgeManager";
+    // _contractNameMap[ContractKey.MainchainGovernanceAdmin] = "GovernanceAdmin";
     // _contractNameMap[ContractKey.RONRegistrarController] = "RONRegistrarController";
   }
 

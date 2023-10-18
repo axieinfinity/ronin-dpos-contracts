@@ -6,7 +6,7 @@ import { MainchainGatewayV3__factory } from '../../types';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
-    console.log("Not on Ronin chain. Abort!")
+    console.log('Not on Ronin chain. Abort!');
     return;
   }
 
