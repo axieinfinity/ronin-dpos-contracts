@@ -69,7 +69,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   console.log(proposalSegments);
 
-  const blockFork = await ethers.provider.getBlock(28540134);
+  const blockFork = await ethers.provider.getBlock(28595746);
   const timestampFork = blockFork.timestamp;
   const proposalExpiry = timestampFork + 3600 * 24 * 10; // expired in 10 days
 

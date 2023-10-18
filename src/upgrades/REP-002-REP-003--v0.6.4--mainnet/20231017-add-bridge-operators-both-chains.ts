@@ -28,9 +28,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   let proposalSegments: ProposalSegmentArguments[] = [];
   proposalSegments.push({
-    ...defaultSegment,
-    // target: TargetOption.BridgeManager,
-    target: allDeployments.RoninBridgeManager?.address,
+    value: 0,
+    gasAmount: 8_000_000,
+    target: TargetOption.BridgeManager,
+    // target: allDeployments.RoninBridgeManager?.address, // TODO: remove me
     data: new RoninBridgeManager__factory().interface.encodeFunctionData('addBridgeOperators', [
       bridgeManagerConf[network.name]!.members?.map((_) => _.weight),
       bridgeManagerConf[network.name]!.members?.map((_) => _.governor),
@@ -40,33 +41,33 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   proposalSegments.push({
     ...defaultSegment,
-    // target: TargetOption.BridgeManager,
-    target: allDeployments.RoninBridgeManager?.address,
+    target: TargetOption.BridgeManager,
+    // target: allDeployments.RoninBridgeManager?.address, // TODO: remove me
     data: new RoninBridgeManager__factory().interface.encodeFunctionData('removeBridgeOperators', [
       ['0x32015e8b982c61bc8a593816fdbf03a603eec823'],
     ]),
   });
 
-  const blockFork = await ethers.provider.getBlock(28565843);
-  const timestampFork = blockFork.timestamp;
-  const proposalExpiry = timestampFork + 3600 * 24 * 10; // expired in 10 days
+  // const blockFork = await ethers.provider.getBlock(28595746);
+  // const timestampFork = blockFork.timestamp;
+  // const proposalExpiry = timestampFork + 3600 * 24 * 10; // expired in 10 days
 
-  const proposeProposalRaw = new RoninBridgeManager__factory().interface.encodeFunctionData(
-    'proposeProposalForCurrentNetwork',
-    [
-      proposalExpiry,
-      [...proposalSegments.map((_) => _.target)], // targets
-      [...proposalSegments.map((_) => _.value)], // values
-      [...proposalSegments.map((_) => _.data)], // datas
-      [...proposalSegments.map((_) => _.gasAmount)], // gasAmounts
-      VoteType.For,
-    ]
-  );
+  // const proposeProposalRaw = new RoninBridgeManager__factory().interface.encodeFunctionData(
+  //   'proposeProposalForCurrentNetwork',
+  //   [
+  //     proposalExpiry,
+  //     [...proposalSegments.map((_) => _.target)], // targets
+  //     [...proposalSegments.map((_) => _.value)], // values
+  //     [...proposalSegments.map((_) => _.data)], // datas
+  //     [...proposalSegments.map((_) => _.gasAmount)], // gasAmounts
+  //     VoteType.For,
+  //   ]
+  // );
 
-  console.log('proposeProposalRaw');
-  console.log(proposeProposalRaw);
+  // console.log('proposeProposalRaw');
+  // console.log(proposeProposalRaw);
 
-  return;
+  // return;
 
   // Propose the proposal
   const blockNumBefore = await ethers.provider.getBlockNumber();

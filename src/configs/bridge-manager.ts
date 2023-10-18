@@ -26,6 +26,13 @@ export interface BridgeManagerConfig {
   [network: LiteralNetwork]: undefined | BridgeManagerArguments;
 }
 
+const rep2MemberMainnetTemp: BridgeManagerMemberStruct[] = [
+  {
+    operator: '0x32015E8B982c61bc8a593816FdBf03A603EEC823',
+    governor: '0x3200A8eb56767c3760e108Aa27C65bfFF036d8E6',
+    weight: 100,
+  },
+];
 const rep2MembersMainnet: BridgeManagerMemberStruct[] = [
   {
     operator: '0x4b3844A29CFA5824F53e2137Edb6dc2b54501BeA',
@@ -180,12 +187,14 @@ export const bridgeManagerConf: BridgeManagerConfig = {
     denominator: 100,
     expiryDuration: 14 * 86400, // 14 days
     members: rep2MembersMainnet,
+    // members: rep2MemberMainnetTemp,
   },
   [Network.Ethereum]: {
     numerator: 70,
     denominator: 100,
     expiryDuration: 14 * 86400, // 14 days
     members: rep2MembersMainnet,
+    // members: rep2MemberMainnetTemp,
   },
 };
 

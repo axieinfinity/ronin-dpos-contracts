@@ -12,7 +12,7 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
   if (roninchainNetworks.includes(network.name!)) {
     generalRoninConf[network.name] = {
       ...generalRoninConf[network.name],
-      bridgeTrackingContract: calculateAddress(deployer, nonce++),
+      // bridgeTrackingContract: calculateAddress(deployer, nonce++),
       bridgeSlashContract: calculateAddress(deployer, nonce++),
       bridgeRewardContract: calculateAddress(deployer, nonce++),
       bridgeManagerContract: calculateAddress(deployer, nonce++),
@@ -33,12 +33,12 @@ const deploy = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
 };
 
 deploy.tags = ['_HelperBridgeCalculate'];
-deploy.dependencies = [
-  'BridgeTrackingLogic',
-  'BridgeSlashLogic',
-  'BridgeRewardLogic',
-  'MainchainGatewayV3Logic',
-  'RoninGatewayV3Logic',
-];
+// deploy.dependencies = [
+//   'BridgeTrackingLogic',
+//   'BridgeSlashLogic',
+//   'BridgeRewardLogic',
+//   'MainchainGatewayV3Logic',
+//   'RoninGatewayV3Logic',
+// ];
 
 export default deploy;
