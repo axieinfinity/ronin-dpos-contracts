@@ -5,6 +5,7 @@ enum ContractKey {
   GovernanceAdmin,
   RoninValidatorSet,
   BridgeTracking,
+  Maintenance,
   RoninGatewayV3,
   SlashIndicator,
   Staking,
@@ -18,7 +19,9 @@ enum ContractKey {
   StakingVesting,
   BridgeReward,
   BridgeSlash,
-  RoninBridgeManager
+  RoninBridgeManager,
+  MainchainBridgeManager,
+  MainchainGovernanceAdmin
 }
 
 abstract contract ContractConfig {
@@ -34,6 +37,7 @@ abstract contract ContractConfig {
     _contractNameMap[ContractKey.NotifiedMigrator] = "NotifiedMigrator";
     _contractNameMap[ContractKey.RoninTrustedOrganization] = "RoninTrustedOrganization";
     _contractNameMap[ContractKey.SlashIndicator] = "SlashIndicator";
+    _contractNameMap[ContractKey.Maintenance] = "Maintenance";
     _contractNameMap[ContractKey.RoninValidatorSetTimedMigrator] = "RoninValidatorSetTimedMigrator";
     _contractNameMap[ContractKey.MockPrecompile] = "MockPrecompile";
     _contractNameMap[ContractKey.FastFinalityTracking] = "FastFinalityTracking";
@@ -45,6 +49,8 @@ abstract contract ContractConfig {
     _contractNameMap[ContractKey.BridgeReward] = "BridgeReward";
     _contractNameMap[ContractKey.BridgeSlash] = "BridgeSlash";
     _contractNameMap[ContractKey.RoninBridgeManager] = "RoninBridgeManager";
+    _contractNameMap[ContractKey.MainchainBridgeManager] = "MainchainBridgeManager";
+    // _contractNameMap[ContractKey.MainchainGovernanceAdmin] = "GovernanceAdmin";
     // _contractNameMap[ContractKey.RONRegistrarController] = "RONRegistrarController";
   }
 

@@ -18,6 +18,10 @@ import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/Trans
 contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade is
   Simulation__20231003_UpgradeREP002AndREP003_RON_NonConditional_Wrapup2Periods
 {
+  function _hookSetDepositCount() internal pure override returns (uint256) {
+    return 42213; // fork-block-number 28327195
+  }
+
   function run() public virtual override trySetUp {
     Simulation__20231003_UpgradeREP002AndREP003_Base.run();
 
@@ -34,7 +38,7 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     _upgradeDPoSContracts();
     _upgradeGatewayContracts();
     _callInitREP2InGatewayContracts();
-    // _changeAdminOfGatewayContracts();
+    _changeAdminOfGatewayContracts();
 
     // -- done execute proposal
 
@@ -146,11 +150,14 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
     console2.log("> ", StdStyle.blue("_upgradeGatewayContracts"), "...");
 
     {
+      // upgrade `RoninGatewayV3` and bump to V2
       _upgradeProxy(ContractKey.RoninGatewayV3, abi.encodeCall(RoninGatewayV3.initializeV2, ()));
+      // bump `RoninGatewayV3` to V3
       _roninGateway.initializeV3(address(_roninBridgeManager));
     }
 
     {
+      // bump `BridgeTracking` to V3
       _bridgeTracking.initializeV3({
         bridgeManager: address(_roninBridgeManager),
         bridgeSlash: address(_bridgeSlash),
@@ -161,16 +168,26 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
   }
 
   function _callInitREP2InGatewayContracts() internal {
+    console2.log("> ", StdStyle.blue("_callInitREP2InGatewayContracts"), "...");
+
     vm.startPrank(address(_roninGovernanceAdmin));
     TransparentUpgradeableProxyV2(payable(address(_bridgeReward))).functionDelegateCall(
       abi.encodeCall(BridgeReward.initializeREP2, ())
     );
     TransparentUpgradeableProxyV2(payable(address(_bridgeTracking))).functionDelegateCall(
-      abi.encodeCall(BridgeReward.initializeREP2, ())
+      abi.encodeCall(BridgeTracking.initializeREP2, ())
     );
     TransparentUpgradeableProxyV2(payable(address(_bridgeSlash))).functionDelegateCall(
-      abi.encodeCall(BridgeReward.initializeREP2, ())
+      abi.encodeCall(BridgeSlash.initializeREP2, ())
     );
+    vm.stopPrank();
+  }
+
+  function _changeAdminOfGatewayContracts() internal {
+    console2.log("> ", StdStyle.blue("_changeAdminOfGatewayContracts"), "...");
+
+    vm.startPrank(address(_roninGovernanceAdmin));
+    TransparentUpgradeableProxyV2(payable(address(_roninGateway))).changeAdmin(address(_roninBridgeManager));
     vm.stopPrank();
   }
 }

@@ -5,6 +5,7 @@ import { RoninGovernanceAdmin } from "@ronin/contracts/ronin/RoninGovernanceAdmi
 import { RoninGatewayV3 } from "@ronin/contracts/ronin/gateway/RoninGatewayV3.sol";
 import { MainchainGatewayV3 } from "@ronin/contracts/mainchain/MainchainGatewayV3.sol";
 import { Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
+import { Maintenance } from "@ronin/contracts/ronin/Maintenance.sol";
 import { BridgeTracking } from "@ronin/contracts/ronin/gateway/BridgeTracking.sol";
 import { SlashIndicator } from "@ronin/contracts/ronin/slash-indicator/SlashIndicator.sol";
 import { RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";
@@ -42,9 +43,21 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
   BridgeReward internal _bridgeReward;
   RoninBridgeManager internal _roninBridgeManager;
 
+  uint256 _depositCount;
+
   function _injectDependencies() internal virtual override {
     _setDependencyDeployScript(ContractKey.Profile, new ProfileDeploy());
   }
+
+  function _hookSetDepositCount() internal pure virtual returns (uint256) {
+    return 42127; // fork-block-number 28139075
+  }
+
+  function _hookPrankOperator() internal virtual returns (address) {
+    return makeAccount("detach-operator-1").addr;
+  }
+
+  function _afterDepositForOnlyOnRonin(Transfer.Receipt memory) internal virtual {}
 
   function run() public virtual trySetUp {
     {
@@ -64,6 +77,9 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
       _config.getAddressFromCurrentNetwork(ContractKey.FastFinalityTracking)
     );
     _roninGovernanceAdmin = RoninGovernanceAdmin(_config.getAddressFromCurrentNetwork(ContractKey.GovernanceAdmin));
+    _roninBridgeManager = RoninBridgeManager(_config.getAddressFromCurrentNetwork(ContractKey.RoninBridgeManager));
+
+    _depositCount = _hookSetDepositCount();
   }
 
   function _depositForOnBothChain(string memory userName) internal {
@@ -100,14 +116,12 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
     // switch rpc to ronin mainnet
     _config.switchTo(Network.RoninMainnet);
 
-    address operator = 0x4b3844A29CFA5824F53e2137Edb6dc2b54501BeA;
+    address operator = _hookPrankOperator();
     vm.label(operator, "bridge-operator");
     vm.prank(operator);
     _roninGateway.depositFor(receipt);
   }
 
-  // uint256 _depositCount = 42127; // fork-block-number 28139075
-  uint256 _depositCount = 42213; // fork-block-number 28327195
   function _depositForOnlyOnRonin(string memory userName) internal {
     Account memory user = makeAccount(userName);
     vm.makePersistent(user.addr);
@@ -129,11 +143,10 @@ contract Simulation__20231003_UpgradeREP002AndREP003_Base is BaseDeploy, MappedT
     );
     receipt.mainchain.chainId = 1;
 
-    // address operator = 0x4b3844A29CFA5824F53e2137Edb6dc2b54501BeA;
-    // vm.label(operator, "bridge-operator");
-    // vm.prank(operator);
-    vm.prank(makeAccount("detach-operator-1").addr);
+    vm.prank(_hookPrankOperator());
     _roninGateway.depositFor(receipt);
+
+    _afterDepositForOnlyOnRonin(receipt);
   }
 
   function _dummySwitchNetworks() internal {
