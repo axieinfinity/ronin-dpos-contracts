@@ -18,6 +18,7 @@ abstract contract BaseScript is Script, IScript, StdAssertions {
   string public constant TREZOR_PREFIX = "trezor://";
   bytes32 public constant GENERAL_CONFIG_SALT = keccak256(bytes(type(GeneralConfig).name));
 
+  uint256 internal _pk;
   address internal _sender;
   Network internal _network;
   GeneralConfig internal _config;
@@ -59,7 +60,7 @@ abstract contract BaseScript is Script, IScript, StdAssertions {
     _network = _config.getCurrentNetwork();
   }
 
-  function run(string calldata command) external {
+  function run(string calldata command) public virtual {
     RuntimeConfig.Options memory options = _parseRuntimeConfig(command);
     _config.setRuntimeConfig(options);
 
@@ -68,8 +69,8 @@ abstract contract BaseScript is Script, IScript, StdAssertions {
       _sender = vm.parseAddress(str.replace(TREZOR_PREFIX, ""));
       console2.log(StdStyle.blue("Trezor Account:"), _sender);
     } else {
-      uint256 pk = vm.envUint(_config.getPrivateKeyEnvLabel(_network));
-      _sender = vm.rememberKey(pk);
+      _pk = vm.envUint(_config.getPrivateKeyEnvLabel(_network));
+      _sender = vm.rememberKey(_pk);
       console2.log(StdStyle.blue(".ENV Account:"), _sender);
     }
     vm.label(_sender, "sender");
@@ -78,7 +79,9 @@ abstract contract BaseScript is Script, IScript, StdAssertions {
     success.handleRevert(IDeployScript.run.selector, returnOrRevertData);
   }
 
-  function _parseRuntimeConfig(string memory command) private pure returns (RuntimeConfig.Options memory options) {
+  function _parseRuntimeConfig(
+    string memory command
+  ) internal pure virtual returns (RuntimeConfig.Options memory options) {
     if (bytes(command).length != 0) {
       string[] memory args = command.split(" ");
       uint256 length = args.length;

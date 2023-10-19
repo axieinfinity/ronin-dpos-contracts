@@ -169,7 +169,6 @@ contract Simulation_20231003_REP002AndREP003_RON_NonConditional_GatewayUpgrade i
 
   function _callInitREP2InGatewayContracts() internal {
     console2.log("> ", StdStyle.blue("_callInitREP2InGatewayContracts"), "...");
-
     vm.startPrank(address(_roninGovernanceAdmin));
     TransparentUpgradeableProxyV2(payable(address(_bridgeReward))).functionDelegateCall(
       abi.encodeCall(BridgeReward.initializeREP2, ())

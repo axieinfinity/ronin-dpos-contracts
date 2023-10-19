@@ -83,7 +83,7 @@ const mainnet: NetworkUserConfig = {
 
 const goerli: NetworkUserConfig = {
   chainId: 5,
-  url: GOERLI_URL || 'https://gateway.tenderly.co/public/goerli',
+  url: GOERLI_URL || 'https://rpc.ankr.com/eth_goerli',
   accounts: GOERLI_PK ? [GOERLI_PK] : { mnemonic: DEFAULT_MNEMONIC },
   blockGasLimit: 100000000,
 };
@@ -148,7 +148,7 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
-    governor: 0,
+    governor: 'privatekey://0xe3c1c8220c4ee4a6532d633296c3301db5397cff8a89a920da28f8bec97fcfb6'
     // governor: '0x00000000000000000000000000000000deadbeef',
     // governor: 'privatekey://0x00000000000000000000000000000000deadbeef000000000000000000sample',
     // governor: 'trezor://0x0000000000000000000000000000000000000000',

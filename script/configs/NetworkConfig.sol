@@ -55,7 +55,7 @@ abstract contract NetworkConfig {
   constructor() payable {
     _networkMap[ChainId.GOERLI] = Network.Goerli;
     _networkDataMap[Network.Goerli] = NetworkData(
-      tryCreateFork(GOERLI_ALIAS),
+      tryCreateFork(GOERLI_ALIAS, ChainId.GOERLI),
       ChainId.GOERLI,
       TESTNET_ENV_LABEL,
       GOERLI_DIR,
@@ -64,7 +64,7 @@ abstract contract NetworkConfig {
 
     _networkMap[ChainId.ETH_MAINNET] = Network.EthMainnet;
     _networkDataMap[Network.EthMainnet] = NetworkData(
-      tryCreateFork(ETH_MAINNET_ALIAS),
+      tryCreateFork(ETH_MAINNET_ALIAS, ChainId.ETH_MAINNET),
       ChainId.ETH_MAINNET,
       MAINNET_ENV_LABEL,
       ETH_MAINNET_DIR,
@@ -73,7 +73,7 @@ abstract contract NetworkConfig {
 
     _networkMap[ChainId.LOCAL] = Network.Local;
     _networkDataMap[Network.Local] = NetworkData(
-      tryCreateFork(LOCAL_ALIAS),
+      tryCreateFork(LOCAL_ALIAS, ChainId.LOCAL),
       ChainId.LOCAL,
       LOCAL_ENV_LABEL,
       LOCAL_DIR,
@@ -82,7 +82,7 @@ abstract contract NetworkConfig {
 
     _networkMap[ChainId.RONIN_TESTNET] = Network.RoninTestnet;
     _networkDataMap[Network.RoninTestnet] = NetworkData(
-      tryCreateFork(RONIN_TESTNET_ALIAS),
+      tryCreateFork(RONIN_TESTNET_ALIAS, ChainId.RONIN_TESTNET),
       ChainId.RONIN_TESTNET,
       TESTNET_ENV_LABEL,
       RONIN_TESTNET_DIR,
@@ -91,7 +91,7 @@ abstract contract NetworkConfig {
 
     _networkMap[ChainId.RONIN_MAINNET] = Network.RoninMainnet;
     _networkDataMap[Network.RoninMainnet] = NetworkData(
-      tryCreateFork(RONIN_MAINNET_ALIAS),
+      tryCreateFork(RONIN_MAINNET_ALIAS, ChainId.RONIN_MAINNET),
       ChainId.RONIN_MAINNET,
       MAINNET_ENV_LABEL,
       RONIN_MAINNET_DIR,
@@ -99,8 +99,9 @@ abstract contract NetworkConfig {
     );
   }
 
-  function tryCreateFork(string memory chainAlias) public returns (uint256) {
+  function tryCreateFork(string memory chainAlias, uint256 chainId) public returns (uint256) {
     try vm.createFork(vm.rpcUrl(chainAlias)) returns (uint256 forkId) {
+      console2.log(StdStyle.blue(string.concat("NetworkConfig: ", chainAlias, " fork created with forkId:")), forkId);
       return forkId;
     } catch {
       console2.log(StdStyle.red("NetworkConfig: Cannot create fork with url:"), vm.rpcUrl(chainAlias));
