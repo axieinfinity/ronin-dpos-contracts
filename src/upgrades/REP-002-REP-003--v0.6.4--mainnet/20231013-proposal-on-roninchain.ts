@@ -69,53 +69,30 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   console.log(proposalSegments);
 
-  const blockFork = await ethers.provider.getBlock(28595746);
-  const timestampFork = blockFork.timestamp;
-  const proposalExpiry = timestampFork + 3600 * 24 * 10; // expired in 10 days
+              // const proposalExpiry = 1698486923; // expired in 10 day
 
-  const proposeProposalRaw = new RoninGovernanceAdmin__factory().interface.encodeFunctionData(
-    'proposeProposalForCurrentNetwork',
-    [
-      proposalExpiry,
-      [...proposalSegments.map((_) => _.target)], // targets
-      [...proposalSegments.map((_) => _.value)], // values
-      [...proposalSegments.map((_) => _.data)], // datas
-      [...proposalSegments.map((_) => _.gasAmount)], // gasAmounts
-      VoteType.For, // ballot type
-    ]
-  );
+              // const proposalRaw: ProposalDetailStruct = {
+              //   chainId: 2020,
+              //   nonce: 4,
+              //   expiryTimestamp: proposalExpiry,
+              //   targets: [...proposalSegments.map((_) => (_.target as Address)!)], // targets
+              //   values: [...proposalSegments.map((_) => _.value)], // values
+              //   calldatas: [...proposalSegments.map((_) => _.data!)], // datas
+              //   gasAmounts: [...proposalSegments.map((_) => _.gasAmount)], // gasAmounts
+              // };
 
-  console.log('proposeProposalRaw');
-  console.log(proposeProposalRaw);
+              // const castVoteProposalRaw = new RoninGovernanceAdmin__factory().interface.encodeFunctionData(
+              //   'castProposalVoteForCurrentNetwork',
+              //   [
+              //     proposalRaw,
+              //     VoteType.For, // ballot type
+              //   ]
+              // );
 
-  // function castProposalVoteForCurrentNetwork(
-  //   Proposal.ProposalDetail calldata _proposal,
-  //   Ballot.VoteType _support
-  // ) external onlyGovernor {
-  //   _castProposalVoteForCurrentNetwork(msg.sender, _proposal, _support);
-  // }
-  const proposalRaw: ProposalDetailStruct = {
-    chainId: 2020,
-    nonce: 4,
-    expiryTimestamp: proposalExpiry,
-    targets: [...proposalSegments.map((_) => (_.target as Address)!)], // targets
-    values: [...proposalSegments.map((_) => _.value)], // values
-    calldatas: [...proposalSegments.map((_) => _.data!)], // datas
-    gasAmounts: [...proposalSegments.map((_) => _.gasAmount)], // gasAmounts
-  };
+              // console.log('castVoteProposalRaw');
+              // console.log(castVoteProposalRaw);
 
-  const castVoteProposalRaw = new RoninGovernanceAdmin__factory().interface.encodeFunctionData(
-    'castProposalVoteForCurrentNetwork',
-    [
-      proposalRaw,
-      VoteType.For, // ballot type
-    ]
-  );
-
-  console.log('castVoteProposalRaw');
-  console.log(castVoteProposalRaw);
-
-  return; // TODO: remove when actual run
+              // return; // TODO: remove when actual run
 
   //////////////////////////////////////////
   //          Propose the proposal

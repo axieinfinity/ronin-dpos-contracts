@@ -44,7 +44,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   ];
 
   console.log(proposalSegments);
-  return; // TODO: remove when actual run
+            // return; // TODO: remove when actual run
 
   //////////////////////////////////////////
   //          Propose the proposal
