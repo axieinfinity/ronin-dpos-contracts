@@ -8,7 +8,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyCall, proxyInterface } from './upgradeUtils';
 import { VoteType } from '../script/proposal';
-import { RoninGatewayV2__factory, SlashIndicator__factory } from '../types';
+import { RoninGatewayV3__factory, SlashIndicator__factory } from '../types';
 import { generalRoninConf, roninchainNetworks } from '../configs/config';
 import { network } from 'hardhat';
 
@@ -25,7 +25,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   const BridgeTrackingLogicDepl = await deployments.get('BridgeTrackingLogic');
   const MaintenanceLogicDepl = await deployments.get('MaintenanceLogic');
-  const RoninGatewayV2LogicDepl = await deployments.get('RoninGatewayV2Logic');
+  const RoninGatewayV3LogicDepl = await deployments.get('RoninGatewayV3Logic');
   const RoninValidatorSetLogicDepl = await deployments.get('RoninValidatorSetLogic');
   const SlashIndicatorLogicDepl = await deployments.get('SlashIndicatorLogic');
   const StakingLogicDepl = await deployments.get('StakingLogic');
@@ -39,9 +39,9 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const StakingProxy = await deployments.get('StakingProxy');
   const StakingVestingProxy = await deployments.get('StakingVestingProxy');
   const RoninGatewayPauseEnforcerProxy = await deployments.get('RoninGatewayPauseEnforcerProxy');
-  const RoninGatewayV2Addr = generalRoninConf[network.name]!.bridgeContract;
+  const RoninGatewayV3Addr = generalRoninConf[network.name]!.bridgeContract;
 
-  const initializeV2_SIG = new RoninGatewayV2__factory().interface.encodeFunctionData('initializeV2');
+  const initializeV2_SIG = new RoninGatewayV3__factory().interface.encodeFunctionData('initializeV2');
 
   const BridgeTrackingInstr = [
     proxyInterface.encodeFunctionData('upgradeToAndCall', [BridgeTrackingLogicDepl.address, initializeV2_SIG]),
@@ -49,10 +49,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const MaintenanceInstr = [
     proxyInterface.encodeFunctionData('upgradeToAndCall', [MaintenanceLogicDepl.address, initializeV2_SIG]),
   ];
-  const RoninGatewayV2Instr = [
-    proxyInterface.encodeFunctionData('upgradeToAndCall', [RoninGatewayV2LogicDepl.address, initializeV2_SIG]),
+  const RoninGatewayV3Instr = [
+    proxyInterface.encodeFunctionData('upgradeToAndCall', [RoninGatewayV3LogicDepl.address, initializeV2_SIG]),
     proxyCall(
-      new RoninGatewayV2__factory().interface.encodeFunctionData('setEmergencyPauser', [
+      new RoninGatewayV3__factory().interface.encodeFunctionData('setEmergencyPauser', [
         RoninGatewayPauseEnforcerProxy.address,
       ])
     ),
@@ -87,7 +87,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     [
       ...BridgeTrackingInstr.map(() => BridgeTrackingProxy.address),
       ...MaintenanceInstr.map(() => MaintenanceProxy.address),
-      ...RoninGatewayV2Instr.map(() => RoninGatewayV2Addr),
+      ...RoninGatewayV3Instr.map(() => RoninGatewayV3Addr),
       ...RoninValidatorSetInstr.map(() => RoninValidatorSetProxy.address),
       ...SlashIndicatorInstr.map(() => SlashIndicatorProxy.address),
       ...StakingInstr.map(() => StakingProxy.address),
@@ -96,7 +96,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     [
       ...BridgeTrackingInstr,
       ...MaintenanceInstr,
-      ...RoninGatewayV2Instr,
+      ...RoninGatewayV3Instr,
       ...RoninValidatorSetInstr,
       ...SlashIndicatorInstr,
       ...StakingInstr,
@@ -105,7 +105,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     [
       ...BridgeTrackingInstr,
       ...MaintenanceInstr,
-      ...RoninGatewayV2Instr,
+      ...RoninGatewayV3Instr,
       ...RoninValidatorSetInstr,
       ...SlashIndicatorInstr,
       ...StakingInstr,
@@ -114,7 +114,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     [
       ...BridgeTrackingInstr,
       ...MaintenanceInstr,
-      ...RoninGatewayV2Instr,
+      ...RoninGatewayV3Instr,
       ...RoninValidatorSetInstr,
       ...SlashIndicatorInstr,
       ...StakingInstr,

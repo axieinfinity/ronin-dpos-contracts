@@ -49,15 +49,15 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   /// @dev The latest period that get synced with bridge's slashing and rewarding contract
   uint256 internal _lastSyncPeriod;
 
-  modifier skipOnUnstarted() {
-    _skipOnUnstarted();
+  modifier skipOnNotStarted() {
+    _skipOnNotStarted();
     _;
   }
 
   /**
    * @dev Returns the whole transaction in case the current block is less than start block.
    */
-  function _skipOnUnstarted() private view {
+  function _skipOnNotStarted() private view {
     if (block.number < _startedAtBlock) {
       assembly {
         return(0, 0)
@@ -86,11 +86,31 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
     delete ______deprecatedValidator;
   }
 
-  function initializeV3(address bridgeManager, address bridgeSlash, address bridgeReward) external reinitializer(3) {
+  function initializeV3(
+    address bridgeManager,
+    address bridgeSlash,
+    address bridgeReward,
+    address dposGA
+  ) external reinitializer(3) {
     _setContract(ContractType.BRIDGE_MANAGER, bridgeManager);
     _setContract(ContractType.BRIDGE_SLASH, bridgeSlash);
     _setContract(ContractType.BRIDGE_REWARD, bridgeReward);
-    _lastSyncPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod() - 1;
+    _setContract(ContractType.GOVERNANCE_ADMIN, dposGA);
+    _lastSyncPeriod = type(uint256).max;
+  }
+
+  /**
+   * @dev Helper for running upgrade script, required to only revoked once by the DPoS's governance admin.
+   * The following must be assured after initializing REP2:
+   * `_lastSyncPeriod`
+   *    == `{BridgeReward}.latestRewardedPeriod + 1`
+   *    == `{BridgeSlash}._startedAtPeriod - 1`
+   *    == `currentPeriod()`
+   */
+  function initializeREP2() external onlyContract(ContractType.GOVERNANCE_ADMIN) {
+    require(_lastSyncPeriod == type(uint256).max, "already init rep 2");
+    _lastSyncPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
+    _setContract(ContractType.GOVERNANCE_ADMIN, address(0));
   }
 
   /**
@@ -159,7 +179,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
   function handleVoteApproved(
     VoteKind kind,
     uint256 requestId
-  ) external override onlyContract(ContractType.BRIDGE) skipOnUnstarted {
+  ) external override onlyContract(ContractType.BRIDGE) skipOnNotStarted {
     ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[kind][requestId];
 
     // Only records for the receipt which not approved
@@ -192,7 +212,7 @@ contract BridgeTracking is HasBridgeDeprecated, HasValidatorDeprecated, HasContr
     VoteKind kind,
     uint256 requestId,
     address operator
-  ) external override onlyContract(ContractType.BRIDGE) skipOnUnstarted {
+  ) external override onlyContract(ContractType.BRIDGE) skipOnNotStarted {
     uint256 period = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod();
     _trySyncBuffer();
     ReceiptTrackingInfo storage _receiptInfo = _receiptTrackingInfo[kind][requestId];

@@ -117,7 +117,7 @@ contract Add_Unit_Concrete_Test is
       uint256 totalBallot,
       uint256 totalVote
     ) = _generateInput_execSyncReward();
-    uint256 period = _validatorSetContract.currentPeriod();
+    uint256 period = _validatorSetContract.currentPeriod() - 1;
 
     vm.expectRevert(abi.encodeWithSelector(ErrInvalidArguments.selector, IBridgeReward.execSyncReward.selector));
     _bridgeReward.execSyncReward({
@@ -136,7 +136,7 @@ contract Add_Unit_Concrete_Test is
       uint256 totalBallot,
       uint256 totalVote
     ) = _generateInput_execSyncReward();
-    uint256 latestPeriod = _validatorSetContract.currentPeriod();
+    uint256 latestPeriod = _validatorSetContract.currentPeriod() - 1;
     uint256 requestingPeriod = latestPeriod + 10;
 
     vm.expectRevert(abi.encodeWithSelector(ErrSyncTooFarPeriod.selector, requestingPeriod, latestPeriod));
@@ -156,7 +156,7 @@ contract Add_Unit_Concrete_Test is
       uint256 totalBallot,
       uint256 totalVote
     ) = _generateInput_execSyncReward();
-    uint256 period = _validatorSetContract.currentPeriod() + 1;
+    uint256 period = _validatorSetContract.currentPeriod();
 
     ballots[0] = 100_000;
 
@@ -188,7 +188,7 @@ contract Add_Unit_Concrete_Test is
       uint256 totalBallot,
       uint256 totalVote
     ) = _generateInput_execSyncReward();
-    uint256 period = _validatorSetContract.currentPeriod() + 1;
+    uint256 period = _validatorSetContract.currentPeriod();
 
     ballots[0] = 100_000;
 
@@ -216,7 +216,7 @@ contract Add_Unit_Concrete_Test is
       uint256 totalBallot,
       uint256 totalVote
     ) = _generateInput_execSyncReward();
-    uint256 period = _validatorSetContract.currentPeriod() + 1;
+    uint256 period = _validatorSetContract.currentPeriod();
 
     // Reduce number of total ballot
     totalBallot -= 1;
@@ -244,7 +244,7 @@ contract Add_Unit_Concrete_Test is
       uint256 totalBallot,
       uint256 totalVote
     ) = _generateInput_execSyncReward();
-    uint256 period = _validatorSetContract.currentPeriod() + 1;
+    uint256 period = _validatorSetContract.currentPeriod();
 
     ballots[0] = 0;
     ballots[1] = 0;
@@ -275,7 +275,7 @@ contract Add_Unit_Concrete_Test is
       uint256 totalBallot,
       uint256 totalVote
     ) = _generateInput_execSyncReward();
-    uint256 period = _validatorSetContract.currentPeriod() + 1;
+    uint256 period = _validatorSetContract.currentPeriod();
 
     for (uint i; i < operators.length; i++) {
       vm.expectEmit({ emitter: address(_bridgeReward) });
@@ -301,7 +301,7 @@ contract Add_Unit_Concrete_Test is
       uint256 totalBallot,
       uint256 totalVote
     ) = _generateInput_execSyncReward();
-    uint256 period = _validatorSetContract.currentPeriod() + 1;
+    uint256 period = _validatorSetContract.currentPeriod();
     vm.expectRevert(abi.encodeWithSelector(ErrInvalidArguments.selector, IBridgeReward.execSyncReward.selector));
     _bridgeReward.execSyncReward({
       operators: operators,

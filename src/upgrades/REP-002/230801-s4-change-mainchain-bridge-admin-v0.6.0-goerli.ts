@@ -21,9 +21,9 @@ const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks
   // Upgrade current gateway to new gateway logic
   deployments.log('Using deployments on companion network. ChainId:', companionNetworkChainId);
   const bridgeManagerAddr = (await companionNetwork.deployments.get('MainchainBridgeManager')).address;
-  const MainchainGatewayV2Addr = generalMainchainConf[companionNetworkName]!.bridgeContract;
-  const MainchainGatewayV2Instr = [proxyInterface.encodeFunctionData('changeAdmin', [bridgeManagerAddr])];
-  console.info('MainchainGatewayV2Instr', MainchainGatewayV2Instr);
+  const MainchainGatewayV3Addr = generalMainchainConf[companionNetworkName]!.bridgeContract;
+  const MainchainGatewayV3Instr = [proxyInterface.encodeFunctionData('changeAdmin', [bridgeManagerAddr])];
+  console.info('MainchainGatewayV3Instr', MainchainGatewayV3Instr);
 
   // Propose the proposal
   const blockNumBefore = await ethers.provider.getBlockNumber();
@@ -48,10 +48,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks
 
     companionNetworkChainId,
     proposalExpiryTimestamp, // expiryTimestamp
-    [...MainchainGatewayV2Instr.map(() => MainchainGatewayV2Addr)], // targets
-    [...MainchainGatewayV2Instr].map(() => 0), // values
-    [...MainchainGatewayV2Instr], // datas
-    [...MainchainGatewayV2Instr].map(() => 1_000_000) // gasAmounts
+    [...MainchainGatewayV3Instr.map(() => MainchainGatewayV3Addr)], // targets
+    [...MainchainGatewayV3Instr].map(() => 0), // values
+    [...MainchainGatewayV3Instr], // datas
+    [...MainchainGatewayV3Instr].map(() => 1_000_000) // gasAmounts
   );
 
   deployments.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);

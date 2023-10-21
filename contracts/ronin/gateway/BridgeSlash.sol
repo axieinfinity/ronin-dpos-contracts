@@ -45,12 +45,20 @@ contract BridgeSlash is
   /// @dev value is equal to keccak256("@ronin.dpos.gateway.BridgeSlash.bridgeSlashInfos.slot") - 1
   bytes32 private constant BRIDGE_SLASH_INFOS_SLOT = 0xd08d185790a07c7b9b721e2713c8580010a57f31c72c16f6e80b831d0ee45bfe;
 
+  /// @dev The period that the contract allows slashing.
+  uint256 internal _startedAtPeriod;
+
   /**
    * @dev The modifier verifies if the `totalVote` is non-zero, indicating the presence of ballots for the period.
    * @param totalVote The total number of ballots for the period.
    */
   modifier onlyPeriodHasEnoughVotes(uint256 totalVote) {
     if (totalVote <= MINIMUM_VOTE_THRESHOLD) return;
+    _;
+  }
+
+  modifier skipOnNotStarted(uint256 period) {
+    if (period < _startedAtPeriod) return;
     _;
   }
 
@@ -61,11 +69,23 @@ contract BridgeSlash is
   function initialize(
     address validatorContract,
     address bridgeManagerContract,
-    address bridgeTrackingContract
+    address bridgeTrackingContract,
+    address dposGA
   ) external initializer {
     _setContract(ContractType.VALIDATOR, validatorContract);
     _setContract(ContractType.BRIDGE_MANAGER, bridgeManagerContract);
     _setContract(ContractType.BRIDGE_TRACKING, bridgeTrackingContract);
+    _setContract(ContractType.GOVERNANCE_ADMIN, dposGA);
+    _startedAtPeriod = type(uint256).max;
+  }
+
+  /**
+   * @dev Helper for running upgrade script, required to only revoked once by the DPoS's governance admin.
+   */
+  function initializeREP2() external onlyContract(ContractType.GOVERNANCE_ADMIN) {
+    require(_startedAtPeriod == type(uint256).max, "already init rep 2");
+    _startedAtPeriod = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod() + 1;
+    _setContract(ContractType.GOVERNANCE_ADMIN, address(0));
   }
 
   /**
@@ -116,18 +136,17 @@ contract BridgeSlash is
    * @inheritdoc IBridgeSlash
    */
   function execSlashBridgeOperators(
-    address[] memory allBridgeOperators,
+    address[] memory operators,
     uint256[] memory ballots,
     uint256 totalBallot,
     uint256 totalVote,
     uint256 period
-  ) external onlyContract(ContractType.BRIDGE_TRACKING) onlyPeriodHasEnoughVotes(totalVote) returns (bool slashed) {
-    uint256 length = allBridgeOperators.length;
-    if (length != ballots.length) revert ErrLengthMismatch(msg.sig);
-    if (length == 0) return false;
+  ) external onlyContract(ContractType.BRIDGE_TRACKING) skipOnNotStarted(period) onlyPeriodHasEnoughVotes(totalVote) {
+    if (operators.length != ballots.length) revert ErrLengthMismatch(msg.sig);
+    if (operators.length == 0) return;
     if (!_isValidBridgeTrackingResponse(totalBallot, totalVote, ballots)) {
       emit BridgeTrackingIncorrectlyResponded();
-      return false;
+      return;
     }
 
     // Get penalty durations for each slash tier.
@@ -141,8 +160,8 @@ contract BridgeSlash is
     address bridgeOperator;
     Tier tier;
 
-    for (uint256 i; i < length; ) {
-      bridgeOperator = allBridgeOperators[i];
+    for (uint256 i; i < operators.length; ) {
+      bridgeOperator = operators[i];
       status = _bridgeSlashInfos[bridgeOperator];
 
       // Check if the bridge operator was added before the current period.
@@ -162,8 +181,6 @@ contract BridgeSlash is
         // Emit the Slashed event if the tier is not Tier 0 and bridge operator will not be removed.
         // Update the slash until period number for the bridge operator if the tier is not Tier 0.
         if (tier != Tier.Tier0) {
-          slashed = true;
-
           if (slashUntilPeriod != SLASH_PERMANENT_DURATION) {
             emit Slashed(tier, bridgeOperator, period, slashUntilPeriod);
           }

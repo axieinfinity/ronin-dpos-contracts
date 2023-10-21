@@ -17,14 +17,14 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   const bridgeManagerAddr = (await deployments.get('RoninBridgeManager')).address;
 
   // Change Admin of Bridge to Bridge Manager
-  const RoninGatewayV2Addr = generalRoninConf[network.name]!.bridgeContract;
-  const RoninGatewayV2Instr = [proxyInterface.encodeFunctionData('changeAdmin', [bridgeManagerAddr])];
+  const RoninGatewayV3Addr = generalRoninConf[network.name]!.bridgeContract;
+  const RoninGatewayV3Instr = [proxyInterface.encodeFunctionData('changeAdmin', [bridgeManagerAddr])];
 
   // Change Admin of Bridge Tracking to Bridge Manager
   const BridgeTrackingProxy = await deployments.get('BridgeTrackingProxy');
   const BridgeTrackingInstr = [proxyInterface.encodeFunctionData('changeAdmin', [bridgeManagerAddr])];
 
-  console.info('RoninGatewayV2Instr', RoninGatewayV2Instr);
+  console.info('RoninGatewayV3Instr', RoninGatewayV3Instr);
 
   // Propose the proposal
   const blockNumBefore = await ethers.provider.getBlockNumber();
@@ -39,12 +39,12 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     'proposeProposalForCurrentNetwork',
     proposalExpiryTimestamp, // expiryTimestamp
     [
-      ...RoninGatewayV2Instr.map(() => RoninGatewayV2Addr),
+      ...RoninGatewayV3Instr.map(() => RoninGatewayV3Addr),
       ...BridgeTrackingInstr.map(() => BridgeTrackingProxy.address),
     ], // targets
-    [...RoninGatewayV2Instr, ...BridgeTrackingInstr].map(() => 0), // values
-    [...RoninGatewayV2Instr, ...BridgeTrackingInstr], // datas
-    [...RoninGatewayV2Instr, ...BridgeTrackingInstr].map(() => 1_000_000), // gasAmounts
+    [...RoninGatewayV3Instr, ...BridgeTrackingInstr].map(() => 0), // values
+    [...RoninGatewayV3Instr, ...BridgeTrackingInstr], // datas
+    [...RoninGatewayV3Instr, ...BridgeTrackingInstr].map(() => 1_000_000), // gasAmounts
     VoteType.For // ballot type
   );
 

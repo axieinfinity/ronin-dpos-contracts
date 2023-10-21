@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyInterface } from '../upgradeUtils';
-import { MainchainGatewayV2__factory, Proposal } from '../../types';
+import { MainchainGatewayV3__factory, Proposal } from '../../types';
 import { generalMainchainConf, roninchainNetworks } from '../../configs/config';
 import { network } from 'hardhat';
 import { ProposalDetailStruct } from '../../types/CoreGovernance';
@@ -23,10 +23,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks
   deployments.log('Using deployments on companion network. ChainId:', companionNetworkChainId);
   const bridgeManagerOldAddr = '0x4a0F388c8E4b46B8F16cA279fAA49396cE4cFD17';
   const bridgeManagerAddr = (await companionNetwork.deployments.get('MainchainBridgeManager')).address;
-  const MainchainGatewayV2Addr = generalMainchainConf[companionNetworkName]!.bridgeContract;
-  const MainchainGatewayV2Instr = [proxyInterface.encodeFunctionData('changeAdmin', [bridgeManagerAddr])];
+  const MainchainGatewayV3Addr = generalMainchainConf[companionNetworkName]!.bridgeContract;
+  const MainchainGatewayV3Instr = [proxyInterface.encodeFunctionData('changeAdmin', [bridgeManagerAddr])];
 
-  console.info('MainchainGatewayV2Instr', MainchainGatewayV2Instr);
+  console.info('MainchainGatewayV3Instr', MainchainGatewayV3Instr);
 
   // Propose the proposal
   const blockNumBefore = await ethers.provider.getBlockNumber();
@@ -38,10 +38,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers, companionNetworks
     nonce: 0, // NOTE: do not use this
     chainId: companionNetworkChainId,
     expiryTimestamp: proposalExpiryTimestamp,
-    targets: [...MainchainGatewayV2Instr.map(() => MainchainGatewayV2Addr)], // targets
-    values: [...MainchainGatewayV2Instr].map(() => 0), // values
-    calldatas: [...MainchainGatewayV2Instr], // datas
-    gasAmounts: [...MainchainGatewayV2Instr].map(() => 1_000_000), // gasAmounts
+    targets: [...MainchainGatewayV3Instr.map(() => MainchainGatewayV3Addr)], // targets
+    values: [...MainchainGatewayV3Instr].map(() => 0), // values
+    calldatas: [...MainchainGatewayV3Instr], // datas
+    gasAmounts: [...MainchainGatewayV3Instr].map(() => 1_000_000), // gasAmounts
   };
 
   deployments.log(proposal);

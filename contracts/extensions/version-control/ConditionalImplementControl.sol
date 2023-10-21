@@ -1,6 +1,7 @@
 /// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import { HasContracts } from "../collections/HasContracts.sol";
 import { IConditionalImplementControl } from "../../interfaces/version-control/IConditionalImplementControl.sol";
 import { ErrorHandler } from "../../libraries/ErrorHandler.sol";
 import { AddressArrayUtils } from "../../libraries/AddressArrayUtils.sol";
@@ -10,7 +11,7 @@ import { ErrOnlySelfCall, IdentityGuard } from "../../utils/IdentityGuard.sol";
  * @title ConditionalImplementControl
  * @dev A contract that allows conditional version control of contract implementations.
  */
-abstract contract ConditionalImplementControl is IConditionalImplementControl, IdentityGuard {
+abstract contract ConditionalImplementControl is IConditionalImplementControl, IdentityGuard, HasContracts {
   using ErrorHandler for bool;
   using AddressArrayUtils for address[];
 
@@ -20,6 +21,9 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, I
    * validated in the constructor.
    */
   bytes32 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+
+  /// @dev value is equal to keccak256("@ronin.extensions.version-control.ConditionalImplementControl.calldatas.slot") - 1
+  bytes32 internal constant CALLDATAS_SLOT = 0x330d87be17f5b23d41285647e0e9b0e7124a778feb3f952590ed6a023ae02633;
 
   /**
    * @dev address of the proxy that delegates to this contract.
@@ -99,11 +103,49 @@ abstract contract ConditionalImplementControl is IConditionalImplementControl, I
     _upgradeTo(NEW_IMPL);
   }
 
+  /**
+   * @dev See {IConditionalImplementControl-setCallDatas}.
+   */
+  function setCallDatas(bytes[] calldata args) external onlyAdmin onlyDelegateFromProxyStorage {
+    bytes[] storage callDatas = _callDatas();
+    uint256 length = args.length;
+    for (uint256 i; i < length; ) {
+      callDatas.push(args[i]);
+
+      unchecked {
+        ++i;
+      }
+    }
+  }
+
+  /**
+   * @dev Internal function to access the array of calldatas.
+   * @return callDatas the storage array of calldatas.
+   */
+  function _callDatas() internal pure returns (bytes[] storage callDatas) {
+    assembly ("memory-safe") {
+      callDatas.slot := CALLDATAS_SLOT
+    }
+  }
+
   function _upgradeTo(address newImplementation) internal {
     assembly ("memory-safe") {
       sstore(_IMPLEMENTATION_SLOT, newImplementation)
     }
     emit Upgraded(newImplementation);
+
+    bytes[] storage callDatas = _callDatas();
+    uint256 length = callDatas.length;
+    bool success;
+    bytes memory returnOrRevertData;
+    for (uint256 i; i < length; ) {
+      (success, returnOrRevertData) = newImplementation.delegatecall(callDatas[i]);
+      success.handleRevert(bytes4(callDatas[i]), returnOrRevertData);
+
+      unchecked {
+        ++i;
+      }
+    }
   }
 
   /**

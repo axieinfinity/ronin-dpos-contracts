@@ -1,6 +1,6 @@
 import { AbiCoder, keccak256, _TypedDataEncoder } from 'ethers/lib/utils';
 
-import { InfoStruct, OwnerStruct, ReceiptStruct } from '../types/IMainchainGatewayV2';
+import { InfoStruct, OwnerStruct, ReceiptStruct } from '../types/IMainchainGatewayV3';
 
 // keccak256("TokenInfo(uint8 erc,uint256 id,uint256 quantity)");
 const tokenInfoTypeHash = '0x1e2b74b2a792d5c0f0b6e59b037fa9d43d84fbb759337f0112fcc15ca414fc8d';

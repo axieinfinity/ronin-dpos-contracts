@@ -8,7 +8,7 @@
 import { BigNumber } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { VoteType } from '../script/proposal';
-import { GatewayV2__factory, Staking__factory } from '../types';
+import { GatewayV3__factory, Staking__factory } from '../types';
 import { StakingArguments } from '../utils';
 import { explorerUrl, proxyCall, proxyInterface } from './upgradeUtils';
 import { network } from 'hardhat';
@@ -52,7 +52,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   ];
 
   /// Set new enforcer for gateway
-  const GatewayInterface = GatewayV2__factory.createInterface();
+  const GatewayInterface = GatewayV3__factory.createInterface();
   const gatewayInstructions = [
     proxyCall(GatewayInterface.encodeFunctionData('setEmergencyPauser', [newRoninPauseEnforcerLogic])),
   ];
