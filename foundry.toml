@@ -1,0 +1,52 @@
+[profile.default]
+src = 'contracts'
+test = 'test/foundry/'
+out = 'out'
+optimizer = true
+optimizer_runs = 1_000
+
+libs = [
+  'lib',
+  'node_modules/@openzeppelin',
+  'node_modules/hardhat',
+]
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config
+
+solc = '0.8.21'
+extra_output = ["devdoc", "userdoc", "storagelayout"]
+evm_version = 'istanbul'
+cache_path = 'cache_foundry'
+fs_permissions = [{ access = "read-write", path = "./" }]
+
+[fmt]
+line_length = 120
+tab_width = 2
+
+[profile.ci]
+verbosity = 4
+
+[profile.default.fuzz]
+runs = 256
+
+[profile.intense.fuzz]
+runs = 5_000
+
+[profile.via-ir.fuzz]
+runs = 1_000
+
+[profile.min-solc]
+solc_version = "0.8.4"
+
+[profile.min-solc.fuzz]
+runs = 1_000
+
+[profile.min-solc-via-ir.fuzz]
+runs = 1_000
+
+[rpc_endpoints]
+ethereum = "https://eth.llamarpc.com"
+goerli = "https://ethereum-goerli.publicnode.com"
+ronin-mainnet = "https://api-partner.roninchain.com/rpc"
+ronin-testnet = "https://saigon-archive.roninchain.com/rpc"
+localhost = "http://localhost:8545"

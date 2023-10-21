@@ -3,10 +3,13 @@
 pragma solidity ^0.8.9;
 
 import "./CreditScore.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/slash-indicator/ISlashUnavailability.sol";
-import "../../extensions/collections/HasValidatorContract.sol";
+import "../../extensions/collections/HasContracts.sol";
+import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
+import { ErrInvalidThreshold } from "../../utils/CommonErrors.sol";
 
-abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContract {
+abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, HasValidatorDeprecated {
   /// @dev The last block that a validator is slashed for unavailability.
   uint256 public lastUnavailabilitySlashedBlock;
   /// @dev Mapping from validator address => period index => unavailability indicator.
@@ -37,10 +40,10 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
   uint256[50] private ______gap;
 
   modifier oncePerBlock() {
-    require(
-      block.number > lastUnavailabilitySlashedBlock,
-      "SlashIndicator: cannot slash a validator twice or slash more than one validator in one block"
-    );
+    if (block.number <= lastUnavailabilitySlashedBlock) {
+      revert ErrCannotSlashAValidatorTwiceOrSlashMoreThanOneValidatorInOneBlock();
+    }
+
     lastUnavailabilitySlashedBlock = block.number;
     _;
   }
@@ -49,14 +52,19 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
    * @inheritdoc ISlashUnavailability
    */
   function slashUnavailability(address _validatorAddr) external override oncePerBlock {
-    require(msg.sender == block.coinbase, "SlashUnavailability: method caller must be coinbase");
+    if (msg.sender != block.coinbase) revert ErrUnauthorized(msg.sig, RoleAccess.COINBASE);
+
     if (!_shouldSlash(_validatorAddr)) {
       // Should return instead of throwing error since this is a part of system transaction.
       return;
     }
 
+    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     uint256 _period = _validatorContract.currentPeriod();
-    uint256 _count = ++_unavailabilityIndicator[_validatorAddr][_period];
+    uint256 _count;
+    unchecked {
+      _count = ++_unavailabilityIndicator[_validatorAddr][_period];
+    }
     uint256 _newJailedUntilBlock = Math.addIfNonZero(block.number, _jailDurationForUnavailabilityTier2Threshold);
 
     if (_count == _unavailabilityTier2Threshold) {
@@ -128,30 +136,24 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
    * @inheritdoc ISlashUnavailability
    */
   function currentUnavailabilityIndicator(address _validator) external view override returns (uint256) {
-    return getUnavailabilityIndicator(_validator, _validatorContract.currentPeriod());
+    return
+      getUnavailabilityIndicator(_validator, IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod());
   }
 
   /**
    * @inheritdoc ISlashUnavailability
    */
-  function getUnavailabilityIndicator(address _validator, uint256 _period)
-    public
-    view
-    virtual
-    override
-    returns (uint256)
-  {
+  function getUnavailabilityIndicator(
+    address _validator,
+    uint256 _period
+  ) public view virtual override returns (uint256) {
     return _unavailabilityIndicator[_validator][_period];
   }
 
   /**
    * @dev Sets the unavailability indicator of the `_validator` at `_period`.
    */
-  function _setUnavailabilityIndicator(
-    address _validator,
-    uint256 _period,
-    uint256 _indicator
-  ) internal virtual {
+  function _setUnavailabilityIndicator(address _validator, uint256 _period, uint256 _indicator) internal virtual {
     _unavailabilityIndicator[_validator][_period] = _indicator;
   }
 
@@ -164,7 +166,8 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasValidatorContr
     uint256 _slashAmountForTier2Threshold,
     uint256 _jailDurationForTier2Threshold
   ) internal {
-    require(_unavailabilityTier1Threshold <= _unavailabilityTier2Threshold, "SlashUnavailability: invalid threshold");
+    if (_unavailabilityTier1Threshold > _unavailabilityTier2Threshold) revert ErrInvalidThreshold(msg.sig);
+
     _unavailabilityTier1Threshold = _tier1Threshold;
     _unavailabilityTier2Threshold = _tier2Threshold;
     _slashAmountForUnavailabilityTier2Threshold = _slashAmountForTier2Threshold;

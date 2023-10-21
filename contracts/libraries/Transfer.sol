@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "./Token.sol";
 
 library Transfer {
@@ -80,18 +79,34 @@ library Transfer {
   /**
    * @dev Returns token info struct hash.
    */
-  function hash(Receipt memory _receipt) internal pure returns (bytes32) {
-    return
-      keccak256(
-        abi.encode(
-          TYPE_HASH,
-          _receipt.id,
-          _receipt.kind,
-          Token.hash(_receipt.mainchain),
-          Token.hash(_receipt.ronin),
-          Token.hash(_receipt.info)
-        )
-      );
+  function hash(Receipt memory _receipt) internal pure returns (bytes32 digest) {
+    bytes32 hashedReceiptMainchain = Token.hash(_receipt.mainchain);
+    bytes32 hashedReceiptRonin = Token.hash(_receipt.ronin);
+    bytes32 hashedReceiptInfo = Token.hash(_receipt.info);
+
+    /*
+     * return
+     *   keccak256(
+     *     abi.encode(
+     *       TYPE_HASH,
+     *       _receipt.id,
+     *       _receipt.kind,
+     *       Token.hash(_receipt.mainchain),
+     *       Token.hash(_receipt.ronin),
+     *       Token.hash(_receipt.info)
+     *     )
+     *   );
+     */
+    assembly {
+      let ptr := mload(0x40)
+      mstore(ptr, TYPE_HASH)
+      mstore(add(ptr, 0x20), mload(_receipt)) // _receipt.id
+      mstore(add(ptr, 0x40), mload(add(_receipt, 0x20))) // _receipt.kind
+      mstore(add(ptr, 0x60), hashedReceiptMainchain)
+      mstore(add(ptr, 0x80), hashedReceiptRonin)
+      mstore(add(ptr, 0xa0), hashedReceiptInfo)
+      digest := keccak256(ptr, 0xc0)
+    }
   }
 
   /**

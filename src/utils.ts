@@ -3,6 +3,7 @@ import { ethers } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
 
 import { TrustedOrganizationStruct } from './types/IRoninTrustedOrganization';
+import { BridgeRewardArguments } from './configs/bridge-manager';
 
 export const DEFAULT_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const DEFAULT_ADMIN_ROLE = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -39,6 +40,12 @@ export const randomAddress = () => {
   return new ethers.Wallet(ethers.utils.randomBytes(32)).address;
 };
 
+export const getImplementOfProxy = async (address: Address): Promise<string> => {
+  const IMPLEMENTATION_SLOT = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc';
+  const implRawBytes32 = await ethers.provider.getStorageAt(address, IMPLEMENTATION_SLOT);
+  return '0x' + implRawBytes32.slice(-40);
+};
+
 export const randomBigNumber = () => {
   const hexString = Array.from(Array(64))
     .map(() => Math.round(Math.random() * 0xf).toString(16))
@@ -56,12 +63,16 @@ export interface GeneralConfig {
     roninChainId?: BigNumberish;
     governanceAdmin?: AddressExtended;
     maintenanceContract?: AddressExtended;
+    fastFinalityTrackingContract?: AddressExtended;
     stakingVestingContract?: AddressExtended;
     slashIndicatorContract?: AddressExtended;
     stakingContract?: AddressExtended;
     validatorContract?: AddressExtended;
     roninTrustedOrganizationContract?: AddressExtended;
     bridgeTrackingContract?: AddressExtended;
+    bridgeManagerContract?: AddressExtended;
+    bridgeSlashContract?: AddressExtended;
+    bridgeRewardContract?: AddressExtended;
     startedAtBlock?: BigNumberish;
     bridgeContract: Address;
   };
@@ -106,6 +117,7 @@ export interface StakingVestingArguments {
   blockProducerBonusPerBlock?: BigNumberish;
   bridgeOperatorBonusPerBlock?: BigNumberish;
   topupAmount?: BigNumberish;
+  fastFinalityRewardPercent?: BigNumberish;
 }
 
 export interface StakingVestingConfig {

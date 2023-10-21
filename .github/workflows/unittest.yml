@@ -2,12 +2,14 @@ name: Run tests
 on:
   push:
     branches:
-      - main
-      - dev
+      - mainnet
+      - testnet
+      - "release/**"
   pull_request:
     branches:
       - main
-      - dev
+      - testnet
+      - "release/**"
 
 permissions:
   packages: read
@@ -15,18 +17,20 @@ permissions:
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
-    
+
 jobs:
   nodejs:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout Repo"
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 #v3.0.2
+        with:
+          submodules: recursive
 
       - name: "Setup Node"
         uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 #v3.4.1
         with:
-          node-version: v14.18.1
+          node-version: v16.16.0
 
       - name: Github private package token in npmrc
         run: |
@@ -38,6 +42,9 @@ jobs:
         with:
           cmd: install
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@cb603ca0abb544f301eaed59ac0baf579aa6aecf #v1.0.10
+
       - name: "Run Compile"
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
         with:
@@ -46,4 +53,4 @@ jobs:
       - name: "Run Test"
         uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b #v4.2.0
         with:
-          cmd: test
+          cmd: test:ci

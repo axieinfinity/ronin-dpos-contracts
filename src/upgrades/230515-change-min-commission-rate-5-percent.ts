@@ -8,9 +8,10 @@
 import { BigNumber } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { VoteType } from '../script/proposal';
-import { GatewayV2__factory, Staking__factory } from '../types';
+import { GatewayV3__factory, Staking__factory } from '../types';
 import { StakingArguments } from '../utils';
-import { EXPLORER_URL, proxyCall, proxyInterface } from './upgradeUtils';
+import { explorerUrl, proxyCall, proxyInterface } from './upgradeUtils';
+import { network } from 'hardhat';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   const { execute } = deployments;
@@ -51,7 +52,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   ];
 
   /// Set new enforcer for gateway
-  const GatewayInterface = GatewayV2__factory.createInterface();
+  const GatewayInterface = GatewayV3__factory.createInterface();
   const gatewayInstructions = [
     proxyCall(GatewayInterface.encodeFunctionData('setEmergencyPauser', [newRoninPauseEnforcerLogic])),
   ];
@@ -83,7 +84,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     VoteType.For // ballot type
   );
 
-  console.log(`${EXPLORER_URL}/tx/${tx.transactionHash}`);
+  console.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
 deploy.tags = ['230515ChangeMinCommissionRate5Percent'];

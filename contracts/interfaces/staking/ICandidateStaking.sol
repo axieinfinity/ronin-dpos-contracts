@@ -38,8 +38,6 @@ interface ICandidateStaking is IRewardPool {
   error ErrCannotInitTransferRON(address addr, string extraInfo);
   /// @dev Error of three interaction addresses must be of the same in applying for validator candidate.
   error ErrThreeInteractionAddrsNotEqual();
-  /// @dev Error of three operation addresses must be distinct in applying for validator candidate.
-  error ErrThreeOperationAddrsNotDistinct();
   /// @dev Error of unstaking zero amount.
   error ErrUnstakeZeroAmount();
   /// @dev Error of invalid staking amount left after deducted.
@@ -101,7 +99,6 @@ interface ICandidateStaking is IRewardPool {
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
-    address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external payable;
 

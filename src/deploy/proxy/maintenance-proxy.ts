@@ -25,17 +25,20 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     maintenanceConf[network.name]!.cooldownSecsToMaintain,
   ]);
 
+  const nonce = generalRoninConf[network.name].maintenanceContract?.nonce;
+  // console.log(`Deploying MaintenanceProxy (nonce: ${nonce})...`);
+
   const deployment = await deploy('MaintenanceProxy', {
     contract: 'TransparentUpgradeableProxyV2',
     from: deployer,
     log: true,
     args: [logicContract.address, generalRoninConf[network.name]!.governanceAdmin?.address, data],
-    nonce: generalRoninConf[network.name].maintenanceContract?.nonce,
+    nonce,
   });
   verifyAddress(deployment.address, generalRoninConf[network.name].maintenanceContract?.address);
 };
 
 deploy.tags = ['MaintenanceProxy'];
-deploy.dependencies = ['MaintenanceLogic', 'CalculateAddresses', 'RoninTrustedOrganizationProxy'];
+deploy.dependencies = ['MaintenanceLogic', '_HelperDposCalculate', 'RoninTrustedOrganizationProxy'];
 
 export default deploy;

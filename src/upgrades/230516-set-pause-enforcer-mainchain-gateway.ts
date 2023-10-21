@@ -6,8 +6,9 @@
 /// Governor who proposes this proposal must manually vote it after running this script.
 
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { GatewayV2__factory } from '../types';
-import { EXPLORER_URL, proxyCall } from './upgradeUtils';
+import { GatewayV3__factory } from '../types';
+import { explorerUrl, proxyCall } from './upgradeUtils';
+import { network } from 'hardhat';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   const { execute } = deployments;
@@ -23,7 +24,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   }
 
   /// Set new enforcer for gateway
-  const GatewayInterface = GatewayV2__factory.createInterface();
+  const GatewayInterface = GatewayV3__factory.createInterface();
   const gatewayInstructions = [
     proxyCall(GatewayInterface.encodeFunctionData('setEmergencyPauser', [newMainchainPauseEnforcerLogic])),
   ];
@@ -57,7 +58,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     gatewayInstructions.map(() => 1_000_000) // gasAmounts
   );
 
-  console.log(`${EXPLORER_URL}/tx/${tx.transactionHash}`);
+  console.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
 deploy.tags = ['230516SetNewEnforcerMainchainGateway'];

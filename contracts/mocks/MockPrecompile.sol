@@ -6,19 +6,28 @@ import "./libraries/Sorting.sol";
 import "../libraries/Math.sol";
 
 contract MockPrecompile {
-  function sortValidators(address[] memory _validators, uint256[] memory _weights)
-    public
-    pure
-    returns (address[] memory)
-  {
+  function sortValidators(
+    address[] memory _validators,
+    uint256[] memory _weights
+  ) public pure returns (address[] memory) {
     return Sorting.sort(_validators, _weights);
   }
 
   function validatingDoubleSignProof(
-    address, /*consensusAddr*/
-    bytes calldata, /*_header1*/
+    address /*consensusAddr*/,
+    bytes calldata /*_header1*/,
     bytes calldata /*_header2*/
   ) public pure returns (bool _validEvidence) {
+    return true;
+  }
+
+  function validateFinalityVoteProof(
+    bytes calldata,
+    uint256,
+    bytes32[2] calldata,
+    bytes[][2] calldata,
+    bytes[2] calldata
+  ) public pure returns (bool) {
     return true;
   }
 

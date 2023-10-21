@@ -71,7 +71,7 @@ export const generalMainchainConf: GeneralConfig = {
   [Network.Goerli]: {
     roninChainId: 2021,
     startedAtBlock: 0,
-    bridgeContract: '0xFc4319Ae9e6134C708b88D5Ad5Da1A4a83372502',
+    bridgeContract: '0x9e359F42cDDc84A386a2Ef1D9Ae06623f3970D1D',
   },
   [Network.GoerliForDevnet]: {
     ...defaultGeneralConf,
@@ -137,12 +137,14 @@ export const stakingVestingConfig: StakingVestingConfig = {
   [Network.Testnet]: {
     ...defaultStakingVestingConf,
     topupAmount: BigNumber.from(10).pow(18).mul(BigNumber.from(10).pow(5)), // 100.000 RON
+    fastFinalityRewardPercent: 50, // 0.5%
   },
   [Network.Mainnet]: {
     ...defaultStakingVestingConf,
     blockProducerBonusPerBlock: BigNumber.from('2853881278540000000'), // 2.85388127854 RON per block
     bridgeOperatorBonusPerBlock: BigNumber.from('95129375950000000'), // 0.09512937595 RON per block
     topupAmount: 0,
+    fastFinalityRewardPercent: 50, // 0.5%
   },
 };
 

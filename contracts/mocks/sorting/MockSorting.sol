@@ -25,11 +25,10 @@ contract MockSorting {
     return (data, data.length);
   }
 
-  function sortAddressesAndValues(address[] calldata _addrs, uint256[] calldata _values)
-    public
-    pure
-    returns (address[] memory)
-  {
+  function sortAddressesAndValues(
+    address[] calldata _addrs,
+    uint256[] calldata _values
+  ) public pure returns (address[] memory) {
     return Sorting.sort(_addrs, _values);
   }
 }

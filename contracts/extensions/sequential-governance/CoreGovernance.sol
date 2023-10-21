@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "../../libraries/Proposal.sol";
 import "../../libraries/GlobalProposal.sol";
+import "../../utils/CommonErrors.sol";
 import "../../libraries/Ballot.sol";
 import "../../interfaces/consumers/ChainTypeConsumer.sol";
 import "../../interfaces/consumers/SignatureConsumer.sol";
@@ -11,7 +11,16 @@ import "../../interfaces/consumers/VoteStatusConsumer.sol";
 
 abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, ChainTypeConsumer {
   using Proposal for Proposal.ProposalDetail;
-  using GlobalProposal for GlobalProposal.GlobalProposalDetail;
+
+  /**
+   * @dev Error thrown when attempting to interact with a finalized vote.
+   */
+  error ErrVoteIsFinalized();
+
+  /**
+   * @dev Error thrown when the current proposal is not completed.
+   */
+  error ErrCurrentProposalIsNotCompleted();
 
   struct ProposalVote {
     VoteStatus status;
@@ -33,15 +42,6 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
     Proposal.ProposalDetail proposal,
     address creator
   );
-  /// @dev Emitted when a proposal is created
-  event GlobalProposalCreated(
-    uint256 indexed round,
-    bytes32 indexed proposalHash,
-    Proposal.ProposalDetail proposal,
-    bytes32 globalProposalHash,
-    GlobalProposal.GlobalProposalDetail globalProposal,
-    address creator
-  );
   /// @dev Emitted when the proposal is voted
   event ProposalVoted(bytes32 indexed proposalHash, address indexed voter, Ballot.VoteType support, uint256 weight);
   /// @dev Emitted when the proposal is approved
@@ -52,6 +52,8 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   event ProposalExpired(bytes32 indexed proposalHash);
   /// @dev Emitted when the proposal is executed
   event ProposalExecuted(bytes32 indexed proposalHash, bool[] successCalls, bytes[] returnDatas);
+  /// @dev Emitted when the proposal expiry duration is changed.
+  event ProposalExpiryDurationChanged(uint256 indexed duration);
 
   /// @dev Mapping from chain id => vote round
   /// @notice chain id = 0 for global proposal
@@ -59,7 +61,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   /// @dev Mapping from chain id => vote round => proposal vote
   mapping(uint256 => mapping(uint256 => ProposalVote)) public vote;
 
-  uint256 private _proposalExpiryDuration;
+  uint256 internal _proposalExpiryDuration;
 
   constructor(uint256 _expiryDuration) {
     _setProposalExpiryDuration(_expiryDuration);
@@ -80,8 +82,10 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
       bool _isExpired = _tryDeleteExpiredVotingRound(_latestProposalVote);
       // Skip increasing round number if the latest round is expired, allow the vote to be overridden
       if (!_isExpired) {
-        require(_latestProposalVote.status != VoteStatus.Pending, "CoreGovernance: current proposal is not completed");
-        _round = ++round[_chainId];
+        if (_latestProposalVote.status == VoteStatus.Pending) revert ErrCurrentProposalIsNotCompleted();
+        unchecked {
+          _round = ++round[_chainId];
+        }
       }
     }
   }
@@ -89,11 +93,7 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   /**
    * @dev Saves new round voting for the proposal `_proposalHash` of chain `_chainId`.
    */
-  function _saveVotingRound(
-    ProposalVote storage _vote,
-    bytes32 _proposalHash,
-    uint256 _expiryTimestamp
-  ) internal {
+  function _saveVotingRound(ProposalVote storage _vote, bytes32 _proposalHash, uint256 _expiryTimestamp) internal {
     _vote.hash = _proposalHash;
     _vote.expiryTimestamp = _expiryTimestamp;
   }
@@ -108,23 +108,23 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
    *
    */
   function _proposeProposal(
-    uint256 _chainId,
-    uint256 _expiryTimestamp,
-    address[] memory _targets,
-    uint256[] memory _values,
-    bytes[] memory _calldatas,
-    uint256[] memory _gasAmounts,
-    address _creator
-  ) internal virtual returns (Proposal.ProposalDetail memory _proposal) {
-    require(_chainId != 0, "CoreGovernance: invalid chain id");
-    uint256 _round = _createVotingRound(_chainId);
+    uint256 chainId,
+    uint256 expiryTimestamp,
+    address[] memory targets,
+    uint256[] memory values,
+    bytes[] memory calldatas,
+    uint256[] memory gasAmounts,
+    address creator
+  ) internal virtual returns (Proposal.ProposalDetail memory proposal) {
+    if (chainId == 0) revert ErrInvalidChainId(msg.sig, 0, block.chainid);
+    uint256 round_ = _createVotingRound(chainId);
 
-    _proposal = Proposal.ProposalDetail(_round, _chainId, _expiryTimestamp, _targets, _values, _calldatas, _gasAmounts);
-    _proposal.validate(_proposalExpiryDuration);
+    proposal = Proposal.ProposalDetail(round_, chainId, expiryTimestamp, targets, values, calldatas, gasAmounts);
+    proposal.validate(_proposalExpiryDuration);
 
-    bytes32 _proposalHash = _proposal.hash();
-    _saveVotingRound(vote[_chainId][_round], _proposalHash, _expiryTimestamp);
-    emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
+    bytes32 proposalHash = proposal.hash();
+    _saveVotingRound(vote[chainId][round_], proposalHash, expiryTimestamp);
+    emit ProposalCreated(chainId, round_, proposalHash, proposal, creator);
   }
 
   /**
@@ -137,81 +137,19 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
    * Emits the `ProposalCreated` event.
    *
    */
-  function _proposeProposalStruct(Proposal.ProposalDetail memory _proposal, address _creator)
-    internal
-    virtual
-    returns (uint256 _round)
-  {
-    uint256 _chainId = _proposal.chainId;
-    require(_chainId != 0, "CoreGovernance: invalid chain id");
-    _proposal.validate(_proposalExpiryDuration);
+  function _proposeProposalStruct(
+    Proposal.ProposalDetail memory proposal,
+    address creator
+  ) internal virtual returns (uint256 round_) {
+    uint256 chainId = proposal.chainId;
+    if (chainId == 0) revert ErrInvalidChainId(msg.sig, 0, block.chainid);
+    proposal.validate(_proposalExpiryDuration);
 
-    bytes32 _proposalHash = _proposal.hash();
-    _round = _createVotingRound(_chainId);
-    _saveVotingRound(vote[_chainId][_round], _proposalHash, _proposal.expiryTimestamp);
-    require(_round == _proposal.nonce, "CoreGovernance: invalid proposal nonce");
-    emit ProposalCreated(_chainId, _round, _proposalHash, _proposal, _creator);
-  }
-
-  /**
-   * @dev Proposes for a global proposal.
-   *
-   * Emits the `GlobalProposalCreated` event.
-   *
-   */
-  function _proposeGlobal(
-    uint256 _expiryTimestamp,
-    GlobalProposal.TargetOption[] calldata _targetOptions,
-    uint256[] memory _values,
-    bytes[] memory _calldatas,
-    uint256[] memory _gasAmounts,
-    address _roninTrustedOrganizationContract,
-    address _gatewayContract,
-    address _creator
-  ) internal virtual {
-    uint256 _round = _createVotingRound(0);
-    GlobalProposal.GlobalProposalDetail memory _globalProposal = GlobalProposal.GlobalProposalDetail(
-      _round,
-      _expiryTimestamp,
-      _targetOptions,
-      _values,
-      _calldatas,
-      _gasAmounts
-    );
-    Proposal.ProposalDetail memory _proposal = _globalProposal.into_proposal_detail(
-      _roninTrustedOrganizationContract,
-      _gatewayContract
-    );
-    _proposal.validate(_proposalExpiryDuration);
-
-    bytes32 _proposalHash = _proposal.hash();
-    _saveVotingRound(vote[0][_round], _proposalHash, _expiryTimestamp);
-    emit GlobalProposalCreated(_round, _proposalHash, _proposal, _globalProposal.hash(), _globalProposal, _creator);
-  }
-
-  /**
-   * @dev Proposes global proposal struct.
-   *
-   * Requirements:
-   * - The proposal nonce is equal to the new round.
-   *
-   * Emits the `GlobalProposalCreated` event.
-   *
-   */
-  function _proposeGlobalStruct(
-    GlobalProposal.GlobalProposalDetail memory _globalProposal,
-    address _roninTrustedOrganizationContract,
-    address _gatewayContract,
-    address _creator
-  ) internal virtual returns (Proposal.ProposalDetail memory _proposal) {
-    _proposal = _globalProposal.into_proposal_detail(_roninTrustedOrganizationContract, _gatewayContract);
-    _proposal.validate(_proposalExpiryDuration);
-
-    bytes32 _proposalHash = _proposal.hash();
-    uint256 _round = _createVotingRound(0);
-    _saveVotingRound(vote[0][_round], _proposalHash, _globalProposal.expiryTimestamp);
-    require(_round == _proposal.nonce, "CoreGovernance: invalid proposal nonce");
-    emit GlobalProposalCreated(_round, _proposalHash, _proposal, _globalProposal.hash(), _globalProposal, _creator);
+    bytes32 proposalHash = proposal.hash();
+    round_ = _createVotingRound(chainId);
+    _saveVotingRound(vote[chainId][round_], proposalHash, proposal.expiryTimestamp);
+    if (round_ != proposal.nonce) revert ErrInvalidProposalNonce(msg.sig);
+    emit ProposalCreated(chainId, round_, proposalHash, proposal, creator);
   }
 
   /**
@@ -227,54 +165,50 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
    *
    */
   function _castVote(
-    Proposal.ProposalDetail memory _proposal,
-    Ballot.VoteType _support,
-    uint256 _minimumForVoteWeight,
-    uint256 _minimumAgainstVoteWeight,
-    address _voter,
-    Signature memory _signature,
-    uint256 _voterWeight
-  ) internal virtual returns (bool _done) {
-    uint256 _chainId = _proposal.chainId;
-    uint256 _round = _proposal.nonce;
-    ProposalVote storage _vote = vote[_chainId][_round];
+    Proposal.ProposalDetail memory proposal,
+    Ballot.VoteType support,
+    uint256 minimumForVoteWeight,
+    uint256 minimumAgainstVoteWeight,
+    address voter,
+    Signature memory signature,
+    uint256 voterWeight
+  ) internal virtual returns (bool done) {
+    uint256 chainId = proposal.chainId;
+    uint256 round_ = proposal.nonce;
+    ProposalVote storage _vote = vote[chainId][round_];
 
     if (_tryDeleteExpiredVotingRound(_vote)) {
       return true;
     }
 
-    require(round[_proposal.chainId] == _round, "CoreGovernance: query for invalid proposal nonce");
-    require(_vote.status == VoteStatus.Pending, "CoreGovernance: the vote is finalized");
-    if (_voted(_vote, _voter)) {
-      revert(string(abi.encodePacked("CoreGovernance: ", Strings.toHexString(uint160(_voter), 20), " already voted")));
-    }
+    if (round[proposal.chainId] != round_) revert ErrInvalidProposalNonce(msg.sig);
+    if (_vote.status != VoteStatus.Pending) revert ErrVoteIsFinalized();
+    if (_voted(_vote, voter)) revert ErrAlreadyVoted(voter);
 
-    _vote.voted[_voter] = true;
+    _vote.voted[voter] = true;
     // Stores the signature if it is not empty
-    if (_signature.r > 0 || _signature.s > 0 || _signature.v > 0) {
-      _vote.sig[_voter] = _signature;
+    if (signature.r > 0 || signature.s > 0 || signature.v > 0) {
+      _vote.sig[voter] = signature;
     }
-    emit ProposalVoted(_vote.hash, _voter, _support, _voterWeight);
+    emit ProposalVoted(_vote.hash, voter, support, voterWeight);
 
     uint256 _forVoteWeight;
     uint256 _againstVoteWeight;
-    if (_support == Ballot.VoteType.For) {
-      _vote.forVoteds.push(_voter);
-      _forVoteWeight = _vote.forVoteWeight += _voterWeight;
-    } else if (_support == Ballot.VoteType.Against) {
-      _vote.againstVoteds.push(_voter);
-      _againstVoteWeight = _vote.againstVoteWeight += _voterWeight;
-    } else {
-      revert("CoreGovernance: unsupported vote type");
-    }
+    if (support == Ballot.VoteType.For) {
+      _vote.forVoteds.push(voter);
+      _forVoteWeight = _vote.forVoteWeight += voterWeight;
+    } else if (support == Ballot.VoteType.Against) {
+      _vote.againstVoteds.push(voter);
+      _againstVoteWeight = _vote.againstVoteWeight += voterWeight;
+    } else revert ErrUnsupportedVoteType(msg.sig);
 
-    if (_forVoteWeight >= _minimumForVoteWeight) {
-      _done = true;
+    if (_forVoteWeight >= minimumForVoteWeight) {
+      done = true;
       _vote.status = VoteStatus.Approved;
       emit ProposalApproved(_vote.hash);
-      _tryExecute(_vote, _proposal);
-    } else if (_againstVoteWeight >= _minimumAgainstVoteWeight) {
-      _done = true;
+      _tryExecute(_vote, proposal);
+    } else if (_againstVoteWeight >= minimumAgainstVoteWeight) {
+      done = true;
       _vote.status = VoteStatus.Rejected;
       emit ProposalRejected(_vote.hash);
     }
@@ -288,56 +222,58 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
    * Note: This function assumes the vote `_proposalVote` is already created, consider verifying the vote's existence
    * before or it will emit an unexpected event of `ProposalExpired`.
    */
-  function _tryDeleteExpiredVotingRound(ProposalVote storage _proposalVote) internal returns (bool _isExpired) {
-    _isExpired =
+  function _tryDeleteExpiredVotingRound(ProposalVote storage proposalVote) internal returns (bool isExpired) {
+    isExpired =
       _getChainType() == ChainType.RoninChain &&
-      _proposalVote.status == VoteStatus.Pending &&
-      _proposalVote.expiryTimestamp <= block.timestamp;
+      proposalVote.status == VoteStatus.Pending &&
+      proposalVote.expiryTimestamp <= block.timestamp;
 
-    if (_isExpired) {
-      emit ProposalExpired(_proposalVote.hash);
+    if (isExpired) {
+      emit ProposalExpired(proposalVote.hash);
 
-      for (uint256 _i; _i < _proposalVote.forVoteds.length; _i++) {
-        delete _proposalVote.voted[_proposalVote.forVoteds[_i]];
-        delete _proposalVote.sig[_proposalVote.forVoteds[_i]];
+      for (uint256 _i; _i < proposalVote.forVoteds.length; ) {
+        delete proposalVote.voted[proposalVote.forVoteds[_i]];
+        delete proposalVote.sig[proposalVote.forVoteds[_i]];
+
+        unchecked {
+          ++_i;
+        }
       }
-      for (uint256 _i; _i < _proposalVote.againstVoteds.length; _i++) {
-        delete _proposalVote.voted[_proposalVote.againstVoteds[_i]];
-        delete _proposalVote.sig[_proposalVote.againstVoteds[_i]];
+      for (uint256 _i; _i < proposalVote.againstVoteds.length; ) {
+        delete proposalVote.voted[proposalVote.againstVoteds[_i]];
+        delete proposalVote.sig[proposalVote.againstVoteds[_i]];
+
+        unchecked {
+          ++_i;
+        }
       }
-      delete _proposalVote.status;
-      delete _proposalVote.hash;
-      delete _proposalVote.againstVoteWeight;
-      delete _proposalVote.forVoteWeight;
-      delete _proposalVote.forVoteds;
-      delete _proposalVote.againstVoteds;
-      delete _proposalVote.expiryTimestamp;
+      delete proposalVote.status;
+      delete proposalVote.hash;
+      delete proposalVote.againstVoteWeight;
+      delete proposalVote.forVoteWeight;
+      delete proposalVote.forVoteds;
+      delete proposalVote.againstVoteds;
+      delete proposalVote.expiryTimestamp;
     }
   }
 
   /**
    * @dev Executes the proposal and update the vote status once the proposal is executable.
    */
-  function _tryExecute(ProposalVote storage _vote, Proposal.ProposalDetail memory _proposal) internal {
-    if (_proposal.executable()) {
-      _vote.status = VoteStatus.Executed;
-      (bool[] memory _successCalls, bytes[] memory _returnDatas) = _proposal.execute();
-      emit ProposalExecuted(_vote.hash, _successCalls, _returnDatas);
+  function _tryExecute(ProposalVote storage vote_, Proposal.ProposalDetail memory proposal) internal {
+    if (proposal.executable()) {
+      vote_.status = VoteStatus.Executed;
+      (bool[] memory _successCalls, bytes[] memory _returnDatas) = proposal.execute();
+      emit ProposalExecuted(vote_.hash, _successCalls, _returnDatas);
     }
   }
 
   /**
    * @dev Sets the expiry duration for a new proposal.
    */
-  function _setProposalExpiryDuration(uint256 _expiryDuration) internal {
-    _proposalExpiryDuration = _expiryDuration;
-  }
-
-  /**
-   * @dev Returns whether the voter casted for the proposal.
-   */
-  function _voted(ProposalVote storage _vote, address _voter) internal view returns (bool) {
-    return _vote.voted[_voter];
+  function _setProposalExpiryDuration(uint256 expiryDuration) internal {
+    _proposalExpiryDuration = expiryDuration;
+    emit ProposalExpiryDurationChanged(expiryDuration);
   }
 
   /**
@@ -348,9 +284,16 @@ abstract contract CoreGovernance is SignatureConsumer, VoteStatusConsumer, Chain
   }
 
   /**
+   * @dev Returns whether the voter casted for the proposal.
+   */
+  function _voted(ProposalVote storage vote_, address voter) internal view returns (bool) {
+    return vote_.voted[voter];
+  }
+
+  /**
    * @dev Returns total weight from validators.
    */
-  function _getTotalWeights() internal view virtual returns (uint256);
+  function _getTotalWeight() internal view virtual returns (uint256);
 
   /**
    * @dev Returns minimum vote to pass a proposal.

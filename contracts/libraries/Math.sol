@@ -20,34 +20,21 @@ library Math {
   /**
    * @dev Returns whether the number `c` is in range of [a; b].
    */
-  function inRange(
-    uint256 c,
-    uint256 a,
-    uint256 b
-  ) internal pure returns (bool) {
+  function inRange(uint256 c, uint256 a, uint256 b) internal pure returns (bool) {
     return a <= c && c <= b;
   }
 
   /**
    * @dev Returns whether two inclusive ranges [x1;x2] and [y1;y2] overlap.
    */
-  function twoRangeOverlap(
-    uint256 x1,
-    uint256 x2,
-    uint256 y1,
-    uint256 y2
-  ) internal pure returns (bool) {
+  function twoRangeOverlap(uint256 x1, uint256 x2, uint256 y1, uint256 y2) internal pure returns (bool) {
     return x1 <= y2 && y1 <= x2;
   }
 
   /**
    * @dev Returns value of a + b; in case result is larger than upperbound, upperbound is returned.
    */
-  function addWithUpperbound(
-    uint256 a,
-    uint256 b,
-    uint256 upperbound
-  ) internal pure returns (uint256) {
+  function addWithUpperbound(uint256 a, uint256 b, uint256 upperbound) internal pure returns (uint256) {
     return min(a + b, upperbound);
   }
 

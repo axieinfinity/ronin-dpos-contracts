@@ -2,35 +2,40 @@
 
 pragma solidity ^0.8.9;
 
-import "../../extensions/collections/HasBridgeTrackingContract.sol";
-import "../../extensions/collections/HasMaintenanceContract.sol";
-import "../../extensions/collections/HasSlashIndicatorContract.sol";
-import "../../extensions/collections/HasStakingVestingContract.sol";
+import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/RONTransferHelper.sol";
+import "../../interfaces/IStakingVesting.sol";
+import "../../interfaces/IMaintenance.sol";
+import "../../interfaces/IRoninTrustedOrganization.sol";
+import "../../interfaces/IFastFinalityTracking.sol";
+import "../../interfaces/slash-indicator/ISlashIndicator.sol";
 import "../../interfaces/validator/ICoinbaseExecution.sol";
 import "../../libraries/EnumFlags.sol";
 import "../../libraries/Math.sol";
+import { HasStakingVestingDeprecated, HasBridgeTrackingDeprecated, HasMaintenanceDeprecated, HasSlashIndicatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 import "../../precompile-usages/PCUSortValidators.sol";
 import "../../precompile-usages/PCUPickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
 import "./CandidateManager.sol";
-import "./EmergencyExit.sol";
+import { EmergencyExit } from "./EmergencyExit.sol";
+import { ErrCallerMustBeCoinbase } from "../../utils/CommonErrors.sol";
 
 abstract contract CoinbaseExecution is
   ICoinbaseExecution,
   RONTransferHelper,
   PCUSortValidators,
   PCUPickValidatorSet,
-  HasStakingVestingContract,
-  HasBridgeTrackingContract,
-  HasMaintenanceContract,
-  HasSlashIndicatorContract,
+  HasContracts,
+  HasStakingVestingDeprecated,
+  HasBridgeTrackingDeprecated,
+  HasMaintenanceDeprecated,
+  HasSlashIndicatorDeprecated,
   EmergencyExit
 {
   using EnumFlags for EnumFlags.ValidatorFlag;
 
   modifier onlyCoinbase() {
-    if (msg.sender != block.coinbase) revert ErrCallerMustBeCoinbase();
+    _requireCoinbase();
     _;
   }
 
@@ -45,48 +50,56 @@ abstract contract CoinbaseExecution is
     _;
   }
 
+  function _requireCoinbase() private view {
+    if (msg.sender != block.coinbase) revert ErrCallerMustBeCoinbase();
+  }
+
   /**
    * @inheritdoc ICoinbaseExecution
    */
   function submitBlockReward() external payable override onlyCoinbase {
-    bool _requestForBlockProducer = isBlockProducer(msg.sender) &&
+    bool requestForBlockProducer = isBlockProducer(msg.sender) &&
       !_jailed(msg.sender) &&
       !_miningRewardDeprecated(msg.sender, currentPeriod());
 
-    (, uint256 _blockProducerBonus, uint256 _bridgeOperatorBonus) = _stakingVestingContract.requestBonus(
-      _requestForBlockProducer,
-      true // _requestForBridgeOperator
-    );
-
-    _totalBridgeReward += _bridgeOperatorBonus;
+    (, uint256 blockProducerBonus, , uint256 fastFinalityRewardPercentage) = IStakingVesting(
+      getContract(ContractType.STAKING_VESTING)
+    ).requestBonus({ forBlockProducer: requestForBlockProducer, forBridgeOperator: false });
 
     // Deprecates reward for non-validator or slashed validator
-    if (!_requestForBlockProducer) {
+    if (!requestForBlockProducer) {
       _totalDeprecatedReward += msg.value;
       emit BlockRewardDeprecated(msg.sender, msg.value, BlockRewardDeprecatedType.UNAVAILABILITY);
       return;
     }
 
-    emit BlockRewardSubmitted(msg.sender, msg.value, _blockProducerBonus);
+    emit BlockRewardSubmitted(msg.sender, msg.value, blockProducerBonus);
 
-    uint256 _period = currentPeriod();
-    uint256 _reward = msg.value + _blockProducerBonus;
-    uint256 _cutOffReward;
-    if (_miningRewardBailoutCutOffAtPeriod[msg.sender][_period]) {
-      (, , , uint256 _cutOffPercentage) = _slashIndicatorContract.getCreditScoreConfigs();
-      _cutOffReward = (_reward * _cutOffPercentage) / _MAX_PERCENTAGE;
-      _totalDeprecatedReward += _cutOffReward;
-      emit BlockRewardDeprecated(msg.sender, _cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
+    uint256 period = currentPeriod();
+    uint256 reward = msg.value + blockProducerBonus;
+    uint256 rewardFastFinality = (reward * fastFinalityRewardPercentage) / _MAX_PERCENTAGE; // reward for fast finality
+    uint256 rewardProducingBlock = reward - rewardFastFinality; // reward for producing blocks
+    uint256 cutOffReward;
+
+    // Add fast finality reward to total reward for current epoch, then split it later in the {wrapupEpoch} method.
+    _totalFastFinalityReward += rewardFastFinality;
+
+    if (_miningRewardBailoutCutOffAtPeriod[msg.sender][period]) {
+      (, , , uint256 cutOffPercentage) = ISlashIndicator(getContract(ContractType.SLASH_INDICATOR))
+        .getCreditScoreConfigs();
+      cutOffReward = (rewardProducingBlock * cutOffPercentage) / _MAX_PERCENTAGE;
+      _totalDeprecatedReward += cutOffReward;
+      emit BlockRewardDeprecated(msg.sender, cutOffReward, BlockRewardDeprecatedType.AFTER_BAILOUT);
     }
 
-    _reward -= _cutOffReward;
-    (uint256 _minRate, uint256 _maxRate) = _stakingContract.getCommissionRateRange();
-    uint256 _rate = Math.max(Math.min(_candidateInfo[msg.sender].commissionRate, _maxRate), _minRate);
-    uint256 _miningAmount = (_rate * _reward) / _MAX_PERCENTAGE;
-    _miningReward[msg.sender] += _miningAmount;
+    rewardProducingBlock -= cutOffReward;
+    (uint256 minRate, uint256 maxRate) = IStaking(getContract(ContractType.STAKING)).getCommissionRateRange();
+    uint256 rate = Math.max(Math.min(_candidateInfo[msg.sender].commissionRate, maxRate), minRate);
+    uint256 miningAmount = (rate * rewardProducingBlock) / _MAX_PERCENTAGE;
+    _miningReward[msg.sender] += miningAmount;
 
-    uint256 _delegatingAmount = _reward - _miningAmount;
-    _delegatingReward[msg.sender] += _delegatingAmount;
+    uint256 delegatingAmount = rewardProducingBlock - miningAmount;
+    _delegatingReward[msg.sender] += delegatingAmount;
   }
 
   /**
@@ -96,14 +109,15 @@ abstract contract CoinbaseExecution is
     uint256 _newPeriod = _computePeriod(block.timestamp);
     bool _periodEnding = _isPeriodEnding(_newPeriod);
 
-    (address[] memory _currentValidators, , ) = getValidators();
+    address[] memory _currentValidators = getValidators();
     address[] memory _revokedCandidates;
     uint256 _epoch = epochOf(block.number);
     uint256 _nextEpoch = _epoch + 1;
     uint256 _lastPeriod = currentPeriod();
 
+    _syncFastFinalityReward(_epoch, _currentValidators);
+
     if (_periodEnding) {
-      _syncBridgeOperatingReward(_lastPeriod, _currentValidators);
       (
         uint256 _totalDelegatingReward,
         uint256[] memory _delegatingRewards
@@ -111,6 +125,7 @@ abstract contract CoinbaseExecution is
       _settleAndTransferDelegatingRewards(_lastPeriod, _currentValidators, _totalDelegatingReward, _delegatingRewards);
       _tryRecycleLockedFundsFromEmergencyExits();
       _recycleDeprecatedRewards();
+      ISlashIndicator _slashIndicatorContract = ISlashIndicator(getContract(ContractType.SLASH_INDICATOR));
       _slashIndicatorContract.updateCreditScores(_currentValidators, _lastPeriod);
       (_currentValidators, _revokedCandidates) = _syncValidatorSet(_newPeriod);
       if (_revokedCandidates.length > 0) {
@@ -125,105 +140,32 @@ abstract contract CoinbaseExecution is
   }
 
   /**
-   * @dev This loop over the all current validators to sync the bridge operating reward.
+   * @dev This method calculate and update reward of each `validators` accordingly thier fast finality voting performance
+   * in the `epoch`. The leftover reward is added to the {_totalDeprecatedReward} and is recycled later to the
+   * {StakingVesting} contract.
    *
-   * Note: This method should be called once in the end of each period.
-   *
+   * Requirements:
+   * - This method is only called once each epoch.
    */
-  function _syncBridgeOperatingReward(uint256 _lastPeriod, address[] memory _currentValidators) internal {
-    uint256 _totalBridgeBallots = _bridgeTrackingContract.totalBallots(_lastPeriod);
-    uint256 _totalBridgeVotes = _bridgeTrackingContract.totalVotes(_lastPeriod);
-    uint256[] memory _bridgeBallots = _bridgeTrackingContract.getManyTotalBallots(
-      _lastPeriod,
-      getBridgeOperatorsOf(_currentValidators)
-    );
+  function _syncFastFinalityReward(uint256 epoch, address[] memory validators) private {
+    uint256[] memory voteCounts = IFastFinalityTracking(getContract(ContractType.FAST_FINALITY_TRACKING))
+      .getManyFinalityVoteCounts(epoch, validators);
+    uint256 divisor = _numberOfBlocksInEpoch * validators.length;
+    uint256 iReward;
+    uint256 totalReward = _totalFastFinalityReward;
+    uint256 totalDispensedReward = 0;
 
-    if (
-      !_validateBridgeTrackingResponse(_totalBridgeBallots, _totalBridgeVotes, _bridgeBallots) || _totalBridgeVotes == 0
-    ) {
-      // Shares equally in case the bridge has nothing to vote or bridge tracking response is incorrect
-      for (uint256 _i; _i < _currentValidators.length; _i++) {
-        _bridgeOperatingReward[_currentValidators[_i]] = _totalBridgeReward / _currentValidators.length;
-      }
-      return;
-    }
-
-    (
-      uint256 _missingVotesRatioTier1,
-      uint256 _missingVotesRatioTier2,
-      uint256 _jailDurationForMissingVotesRatioTier2,
-      uint256 _skipBridgeOperatorSlashingThreshold
-    ) = _slashIndicatorContract.getBridgeOperatorSlashingConfigs();
-
-    // Slashes the bridge reward if the total of votes exceeds the slashing threshold.
-    bool _shouldSlash = _totalBridgeVotes > _skipBridgeOperatorSlashingThreshold;
-    for (uint256 _i; _i < _currentValidators.length; _i++) {
-      // Shares the bridge operators reward proportionally.
-      _bridgeOperatingReward[_currentValidators[_i]] = (_totalBridgeReward * _bridgeBallots[_i]) / _totalBridgeBallots;
-      if (_shouldSlash) {
-        _slashBridgeOperatorBasedOnPerformance(
-          _lastPeriod,
-          _currentValidators[_i],
-          _MAX_PERCENTAGE - (_bridgeBallots[_i] * _MAX_PERCENTAGE) / _totalBridgeVotes,
-          _jailDurationForMissingVotesRatioTier2,
-          _missingVotesRatioTier1,
-          _missingVotesRatioTier2
-        );
+    for (uint i; i < validators.length; ) {
+      iReward = (totalReward * voteCounts[i]) / divisor;
+      _fastFinalityReward[validators[i]] += iReward;
+      totalDispensedReward += iReward;
+      unchecked {
+        ++i;
       }
     }
-  }
 
-  /**
-   * @dev Returns whether the responses from bridge tracking are correct.
-   */
-  function _validateBridgeTrackingResponse(
-    uint256 _totalBridgeBallots,
-    uint256 _totalBridgeVotes,
-    uint256[] memory _bridgeBallots
-  ) private returns (bool _valid) {
-    _valid = true;
-    uint256 _sumBallots;
-    for (uint _i; _i < _bridgeBallots.length; _i++) {
-      if (_bridgeBallots[_i] > _totalBridgeVotes) {
-        _valid = false;
-        break;
-      }
-      _sumBallots += _bridgeBallots[_i];
-    }
-    _valid = _valid && (_sumBallots <= _totalBridgeBallots);
-    if (!_valid) {
-      emit BridgeTrackingIncorrectlyResponded();
-    }
-  }
-
-  /**
-   * @dev Slashes the validator on the corresponding bridge operator performance. Updates the status of the deprecated reward. Not update the reward amount.
-   *
-   * Consider validating the bridge tracking response by using the method `_validateBridgeTrackingResponse` before calling this function.
-   */
-  function _slashBridgeOperatorBasedOnPerformance(
-    uint256 _period,
-    address _validator,
-    uint256 _missedRatio,
-    uint256 _jailDurationTier2,
-    uint256 _ratioTier1,
-    uint256 _ratioTier2
-  ) internal {
-    if (_missedRatio >= _ratioTier2) {
-      _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
-      _miningRewardDeprecatedAtPeriod[_validator][_period] = true;
-
-      uint256 _newJailUntilBlock = Math.addIfNonZero(block.number, _jailDurationTier2);
-      _blockProducerJailedBlock[_validator] = Math.max(_newJailUntilBlock, _blockProducerJailedBlock[_validator]);
-      _cannotBailoutUntilBlock[_validator] = Math.max(_newJailUntilBlock, _cannotBailoutUntilBlock[_validator]);
-
-      _slashIndicatorContract.execSlashBridgeOperator(_validator, 2, _period);
-      emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, true, true);
-    } else if (_missedRatio >= _ratioTier1) {
-      _bridgeRewardDeprecatedAtPeriod[_validator][_period] = true;
-      _slashIndicatorContract.execSlashBridgeOperator(_validator, 1, _period);
-      emit ValidatorPunished(_validator, _period, _blockProducerJailedBlock[_validator], 0, false, true);
-    }
+    _totalDeprecatedReward += (totalReward - totalDispensedReward);
+    delete _totalFastFinalityReward;
   }
 
   /**
@@ -242,29 +184,31 @@ abstract contract CoinbaseExecution is
     address _consensusAddr;
     address payable _treasury;
     _delegatingRewards = new uint256[](_currentValidators.length);
-    for (uint _i; _i < _currentValidators.length; _i++) {
+
+    for (uint _i; _i < _currentValidators.length; ) {
       _consensusAddr = _currentValidators[_i];
       _treasury = _candidateInfo[_consensusAddr].treasuryAddr;
-
-      if (!_bridgeRewardDeprecated(_consensusAddr, _lastPeriod)) {
-        _distributeBridgeOperatingReward(_consensusAddr, _candidateInfo[_consensusAddr].bridgeOperatorAddr, _treasury);
-      } else {
-        _totalDeprecatedReward += _bridgeOperatingReward[_consensusAddr];
-      }
 
       if (!_jailed(_consensusAddr) && !_miningRewardDeprecated(_consensusAddr, _lastPeriod)) {
         _totalDelegatingReward += _delegatingReward[_consensusAddr];
         _delegatingRewards[_i] = _delegatingReward[_consensusAddr];
         _distributeMiningReward(_consensusAddr, _treasury);
+        _distributeFastFinalityReward(_consensusAddr, _treasury);
       } else {
-        _totalDeprecatedReward += _miningReward[_consensusAddr] + _delegatingReward[_consensusAddr];
+        _totalDeprecatedReward +=
+          _miningReward[_consensusAddr] +
+          _delegatingReward[_consensusAddr] +
+          _fastFinalityReward[_consensusAddr];
       }
 
       delete _delegatingReward[_consensusAddr];
       delete _miningReward[_consensusAddr];
-      delete _bridgeOperatingReward[_consensusAddr];
+      delete _fastFinalityReward[_consensusAddr];
+
+      unchecked {
+        ++_i;
+      }
     }
-    delete _totalBridgeReward;
   }
 
   /**
@@ -279,7 +223,7 @@ abstract contract CoinbaseExecution is
   function _distributeMiningReward(address _consensusAddr, address payable _treasury) private {
     uint256 _amount = _miningReward[_consensusAddr];
     if (_amount > 0) {
-      if (_unsafeSendRON(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
+      if (_unsafeSendRONLimitGas(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
         emit MiningRewardDistributed(_consensusAddr, _treasury, _amount);
         return;
       }
@@ -288,34 +232,15 @@ abstract contract CoinbaseExecution is
     }
   }
 
-  /**
-   * @dev Distribute bonus of staking vesting for the bridge operator.
-   *
-   * Emits the `BridgeOperatorRewardDistributed` once the reward is distributed successfully.
-   * Emits the `BridgeOperatorRewardDistributionFailed` once the contract fails to distribute reward.
-   *
-   * Note: This method should be called once in the end of each period.
-   *
-   */
-  function _distributeBridgeOperatingReward(
-    address _consensusAddr,
-    address _bridgeOperator,
-    address payable _treasury
-  ) private {
-    uint256 _amount = _bridgeOperatingReward[_consensusAddr];
+  function _distributeFastFinalityReward(address _consensusAddr, address payable _treasury) private {
+    uint256 _amount = _fastFinalityReward[_consensusAddr];
     if (_amount > 0) {
-      if (_unsafeSendRON(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
-        emit BridgeOperatorRewardDistributed(_consensusAddr, _bridgeOperator, _treasury, _amount);
+      if (_unsafeSendRONLimitGas(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
+        emit FastFinalityRewardDistributed(_consensusAddr, _treasury, _amount);
         return;
       }
 
-      emit BridgeOperatorRewardDistributionFailed(
-        _consensusAddr,
-        _bridgeOperator,
-        _treasury,
-        _amount,
-        address(this).balance
-      );
+      emit FastFinalityRewardDistributionFailed(_consensusAddr, _treasury, _amount, address(this).balance);
     }
   }
 
@@ -335,7 +260,7 @@ abstract contract CoinbaseExecution is
     uint256 _totalDelegatingReward,
     uint256[] memory _delegatingRewards
   ) private {
-    IStaking _staking = _stakingContract;
+    IStaking _staking = IStaking(getContract(ContractType.STAKING));
     if (_totalDelegatingReward > 0) {
       if (_unsafeSendRON(payable(address(_staking)), _totalDelegatingReward)) {
         _staking.execRecordRewards(_currentValidators, _delegatingRewards, _period);
@@ -362,7 +287,7 @@ abstract contract CoinbaseExecution is
     uint256 _withdrawAmount = _totalDeprecatedReward;
 
     if (_withdrawAmount != 0) {
-      address _withdrawTarget = stakingVestingContract();
+      address _withdrawTarget = getContract(ContractType.STAKING_VESTING);
 
       delete _totalDeprecatedReward;
 
@@ -386,13 +311,13 @@ abstract contract CoinbaseExecution is
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _syncValidatorSet(uint256 _newPeriod)
-    private
-    returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates)
-  {
+  function _syncValidatorSet(
+    uint256 _newPeriod
+  ) private returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates) {
     _unsastifiedCandidates = _syncCandidateSet(_newPeriod);
-    uint256[] memory _weights = _stakingContract.getManyStakingTotals(_candidates);
-    uint256[] memory _trustedWeights = _roninTrustedOrganizationContract.getConsensusWeights(_candidates);
+    uint256[] memory _weights = IStaking(getContract(ContractType.STAKING)).getManyStakingTotals(_candidates);
+    uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
+      .getConsensusWeights(_candidates);
     uint256 _newValidatorCount;
     (_newValidators, _newValidatorCount) = _pcPickValidatorSet(
       _candidates,
@@ -418,21 +343,33 @@ abstract contract CoinbaseExecution is
     uint256 _newPeriod
   ) private {
     // Remove exceeding validators in the current set
-    for (uint256 _i = _newValidatorCount; _i < validatorCount; _i++) {
+    for (uint256 _i = _newValidatorCount; _i < validatorCount; ) {
       delete _validatorMap[_validators[_i]];
       delete _validators[_i];
+
+      unchecked {
+        ++_i;
+      }
     }
 
     // Remove flag for all validator in the current set
-    for (uint _i; _i < _newValidatorCount; _i++) {
+    for (uint _i; _i < _newValidatorCount; ) {
       delete _validatorMap[_validators[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
 
     // Update new validator set and set flag correspondingly.
-    for (uint256 _i; _i < _newValidatorCount; _i++) {
+    for (uint256 _i; _i < _newValidatorCount; ) {
       address _newValidator = _newValidators[_i];
       _validatorMap[_newValidator] = EnumFlags.ValidatorFlag.Both;
       _validators[_i] = _newValidator;
+
+      unchecked {
+        ++_i;
+      }
     }
 
     validatorCount = _newValidatorCount;
@@ -449,14 +386,13 @@ abstract contract CoinbaseExecution is
    * Emits the `BridgeOperatorSetUpdated` event.
    *
    */
-  function _revampRoles(
-    uint256 _newPeriod,
-    uint256 _nextEpoch,
-    address[] memory _currentValidators
-  ) private {
-    bool[] memory _maintainedList = _maintenanceContract.checkManyMaintained(_currentValidators, block.number + 1);
+  function _revampRoles(uint256 _newPeriod, uint256 _nextEpoch, address[] memory _currentValidators) private {
+    bool[] memory _maintainedList = IMaintenance(getContract(ContractType.MAINTENANCE)).checkManyMaintained(
+      _currentValidators,
+      block.number + 1
+    );
 
-    for (uint _i; _i < _currentValidators.length; _i++) {
+    for (uint _i; _i < _currentValidators.length; ) {
       address _validator = _currentValidators[_i];
       bool _emergencyExitRequested = block.timestamp <= _emergencyExitJailedTimestamp[_validator];
       bool _isProducerBefore = isBlockProducer(_validator);
@@ -470,23 +406,20 @@ abstract contract CoinbaseExecution is
         _validatorMap[_validator] = _validatorMap[_validator].removeFlag(EnumFlags.ValidatorFlag.BlockProducer);
       }
 
-      bool _isBridgeOperatorBefore = isOperatingBridge(_validator);
-      bool _isBridgeOperatorAfter = !_emergencyExitRequested;
-      if (!_isBridgeOperatorBefore && _isBridgeOperatorAfter) {
-        _validatorMap[_validator] = _validatorMap[_validator].addFlag(EnumFlags.ValidatorFlag.BridgeOperator);
-      } else if (_isBridgeOperatorBefore && !_isBridgeOperatorAfter) {
-        _validatorMap[_validator] = _validatorMap[_validator].removeFlag(EnumFlags.ValidatorFlag.BridgeOperator);
+      unchecked {
+        ++_i;
       }
     }
-
     emit BlockProducerSetUpdated(_newPeriod, _nextEpoch, getBlockProducers());
-    emit BridgeOperatorSetUpdated(_newPeriod, _nextEpoch, getBridgeOperators());
   }
 
   /**
    * @dev Override `CandidateManager-_isTrustedOrg`.
    */
   function _isTrustedOrg(address _consensusAddr) internal view override returns (bool) {
-    return _roninTrustedOrganizationContract.getConsensusWeight(_consensusAddr) > 0;
+    return
+      IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).getConsensusWeight(
+        _consensusAddr
+      ) > 0;
   }
 }

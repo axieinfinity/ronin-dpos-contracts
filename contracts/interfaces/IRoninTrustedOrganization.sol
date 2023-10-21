@@ -5,6 +5,40 @@ pragma solidity ^0.8.9;
 import "./IQuorum.sol";
 
 interface IRoninTrustedOrganization is IQuorum {
+  /**
+   * @dev Error indicating that a query for a duplicate entry was made.
+   */
+  error ErrQueryForDupplicated();
+
+  /**
+   * @dev Error indicating that a query was made for a non-existent consensus address.
+   */
+  error ErrQueryForNonExistentConsensusAddress();
+
+  /**
+   * @dev Error indicating that a bridge voter has already been added.
+   * @param voter The address of the bridge voter that is already added.
+   */
+  error ErrBridgeVoterIsAlreadyAdded(address voter);
+
+  /**
+   * @dev Error indicating that a governor address has already been added.
+   * @param addr The address of the governor that is already added.
+   */
+  error ErrGovernorAddressIsAlreadyAdded(address addr);
+
+  /**
+   * @dev Error indicating that a consensus address is not added.
+   * @param addr The address of the consensus contract that is not added.
+   */
+  error ErrConsensusAddressIsNotAdded(address addr);
+
+  /**
+   * @dev Error indicating that a consensus address is already added.
+   * @param addr The address of the consensus contract that is already added.
+   */
+  error ErrConsensusAddressIsAlreadyAdded(address addr);
+
   struct TrustedOrganization {
     // Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
     address consensusAddr;
@@ -65,7 +99,7 @@ interface IRoninTrustedOrganization is IQuorum {
   /**
    * @dev Returns total weights.
    */
-  function totalWeights() external view returns (uint256);
+  function totalWeight() external view returns (uint256);
 
   /**
    * @dev Returns the weight of a consensus.
@@ -100,17 +134,17 @@ interface IRoninTrustedOrganization is IQuorum {
   /**
    * @dev Returns total weights of the consensus list.
    */
-  function sumConsensusWeights(address[] calldata _list) external view returns (uint256 _res);
+  function sumConsensusWeight(address[] calldata _list) external view returns (uint256 _res);
 
   /**
    * @dev Returns total weights of the governor list.
    */
-  function sumGovernorWeights(address[] calldata _list) external view returns (uint256 _res);
+  function sumGovernorWeight(address[] calldata _list) external view returns (uint256 _res);
 
   /**
    * @dev Returns total weights of the bridge voter list.
    */
-  function sumBridgeVoterWeights(address[] calldata _list) external view returns (uint256 _res);
+  function sumBridgeVoterWeight(address[] calldata _list) external view returns (uint256 _res);
 
   /**
    * @dev Returns the trusted organization at `_index`.
@@ -120,7 +154,7 @@ interface IRoninTrustedOrganization is IQuorum {
   /**
    * @dev Returns the number of trusted organizations.
    */
-  function countTrustedOrganizations() external view returns (uint256);
+  function countTrustedOrganization() external view returns (uint256);
 
   /**
    * @dev Returns all of the trusted organizations.

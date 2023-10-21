@@ -32,12 +32,8 @@ contract MockTransfer is RONTransferHelper {
 
   constructor() payable {}
 
-  function fooTransfer(
-    address payable _recipient,
-    uint256 _amount,
-    uint256 _gas
-  ) external {
-    if (_unsafeSendRON(_recipient, _amount, _gas)) {
+  function fooTransfer(address payable _recipient, uint256 _amount, uint256 _gas) external {
+    if (_unsafeSendRONLimitGas(_recipient, _amount, _gas)) {
       track++;
     }
   }

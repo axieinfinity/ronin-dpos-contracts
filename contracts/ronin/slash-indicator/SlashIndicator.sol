@@ -4,7 +4,10 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/slash-indicator/ISlashIndicator.sol";
+import "../../interfaces/validator/IRoninValidatorSet.sol";
+import "../../interfaces/IMaintenance.sol";
 import "./SlashDoubleSign.sol";
+import "./SlashFastFinality.sol";
 import "./SlashBridgeVoting.sol";
 import "./SlashBridgeOperator.sol";
 import "./SlashUnavailability.sol";
@@ -13,6 +16,7 @@ import "./CreditScore.sol";
 contract SlashIndicator is
   ISlashIndicator,
   SlashDoubleSign,
+  SlashFastFinality,
   SlashBridgeVoting,
   SlashBridgeOperator,
   SlashUnavailability,
@@ -54,10 +58,11 @@ contract SlashIndicator is
     // _creditScoreConfigs[3]: _cutOffPercentageAfterBailout
     uint256[4] calldata _creditScoreConfigs
   ) external initializer {
-    _setValidatorContract(__validatorContract);
-    _setMaintenanceContract(__maintenanceContract);
-    _setRoninTrustedOrganizationContract(__roninTrustedOrganizationContract);
-    _setRoninGovernanceAdminContract(__roninGovernanceAdminContract);
+    _setContract(ContractType.VALIDATOR, __validatorContract);
+    _setContract(ContractType.MAINTENANCE, __maintenanceContract);
+    _setContract(ContractType.GOVERNANCE_ADMIN, __roninGovernanceAdminContract);
+    _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, __roninTrustedOrganizationContract);
+
     _setBridgeOperatorSlashingConfigs(
       _bridgeOperatorSlashingConfigs[0],
       _bridgeOperatorSlashingConfigs[1],
@@ -84,6 +89,23 @@ contract SlashIndicator is
     );
   }
 
+  function initializeV2(address roninGovernanceAdminContract) external reinitializer(2) {
+    _setContract(ContractType.VALIDATOR, ______deprecatedValidator);
+    _setContract(ContractType.MAINTENANCE, ______deprecatedMaintenance);
+    _setContract(ContractType.GOVERNANCE_ADMIN, roninGovernanceAdminContract);
+    _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, ______deprecatedTrustedOrg);
+
+    delete ______deprecatedValidator;
+    delete ______deprecatedMaintenance;
+    delete ______deprecatedTrustedOrg;
+    delete ______deprecatedGovernanceAdmin;
+  }
+
+  function initializeV3(address profileContract) external reinitializer(3) {
+    _setContract(ContractType.PROFILE, profileContract);
+    _setFastFinalitySlashingConfigs(_slashDoubleSignAmount, _doubleSigningJailUntilBlock);
+  }
+
   /**
    * @dev Helper for CreditScore contract to reset the indicator of the validator after bailing out.
    */
@@ -98,24 +120,20 @@ contract SlashIndicator is
   /**
    * @dev Helper for CreditScore contract to query indicator of the validator.
    */
-  function getUnavailabilityIndicator(address _validator, uint256 _period)
-    public
-    view
-    override(CreditScore, ISlashUnavailability, SlashUnavailability)
-    returns (uint256)
-  {
+  function getUnavailabilityIndicator(
+    address _validator,
+    uint256 _period
+  ) public view override(CreditScore, ISlashUnavailability, SlashUnavailability) returns (uint256) {
     return SlashUnavailability.getUnavailabilityIndicator(_validator, _period);
   }
 
   /**
    * @inheritdoc ICreditScore
    */
-  function checkBailedOutAtPeriod(address _validator, uint256 _period)
-    public
-    view
-    override(CreditScore, ICreditScore, SlashUnavailability)
-    returns (bool)
-  {
+  function checkBailedOutAtPeriod(
+    address _validator,
+    uint256 _period
+  ) public view override(CreditScore, ICreditScore, SlashUnavailability) returns (bool) {
     return CreditScore.checkBailedOutAtPeriod(_validator, _period);
   }
 
@@ -125,7 +143,7 @@ contract SlashIndicator is
   function _shouldSlash(address _addr) internal view override(SlashDoubleSign, SlashUnavailability) returns (bool) {
     return
       (msg.sender != _addr) &&
-      _validatorContract.isBlockProducer(_addr) &&
-      !_maintenanceContract.checkMaintained(_addr, block.number);
+      IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isBlockProducer(_addr) &&
+      !IMaintenance(getContract(ContractType.MAINTENANCE)).checkMaintained(_addr, block.number);
   }
 }

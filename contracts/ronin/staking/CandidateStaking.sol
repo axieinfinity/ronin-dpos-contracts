@@ -58,7 +58,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
-    address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external payable override nonReentrant {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
@@ -66,15 +65,14 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
 
     uint256 _amount = msg.value;
     address payable _poolAdmin = payable(msg.sender);
-    _applyValidatorCandidate(
-      _poolAdmin,
-      _candidateAdmin,
-      _consensusAddr,
-      _treasuryAddr,
-      _bridgeOperatorAddr,
-      _commissionRate,
-      _amount
-    );
+    _applyValidatorCandidate({
+      _poolAdmin: _poolAdmin,
+      _candidateAdmin: _candidateAdmin,
+      _consensusAddr: _consensusAddr,
+      _treasuryAddr: _treasuryAddr,
+      _commissionRate: _commissionRate,
+      _amount: _amount
+    });
 
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
     _pool.admin = _poolAdmin;
@@ -94,18 +92,25 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     uint256 _commissionRate
   ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
     if (_commissionRate > _maxCommissionRate || _commissionRate < _minCommissionRate) revert ErrInvalidCommissionRate();
-    _validatorContract.execRequestUpdateCommissionRate(_consensusAddr, _effectiveDaysOnwards, _commissionRate);
+    IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execRequestUpdateCommissionRate(
+      _consensusAddr,
+      _effectiveDaysOnwards,
+      _commissionRate
+    );
   }
 
   /**
    * @inheritdoc ICandidateStaking
    */
-  function execDeprecatePools(address[] calldata _pools, uint256 _newPeriod) external override onlyValidatorContract {
+  function execDeprecatePools(
+    address[] calldata _pools,
+    uint256 _newPeriod
+  ) external override onlyContract(ContractType.VALIDATOR) {
     if (_pools.length == 0) {
       return;
     }
 
-    for (uint _i = 0; _i < _pools.length; _i++) {
+    for (uint _i = 0; _i < _pools.length; ) {
       PoolDetail storage _pool = _stakingPool[_pools[_i]];
       // Deactivate the pool admin in the active mapping.
       delete _adminOfActivePoolMapping[_pool.admin];
@@ -114,7 +119,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       uint256 _deductingAmount = _pool.stakingAmount;
       if (_deductingAmount > 0) {
         _deductStakingAmount(_pool, _deductingAmount);
-        if (!_unsafeSendRON(payable(_pool.admin), _deductingAmount, DEFAULT_ADDITION_GAS)) {
+        if (!_unsafeSendRONLimitGas(payable(_pool.admin), _deductingAmount, DEFAULT_ADDITION_GAS)) {
           emit StakingAmountTransferFailed(_pool.addr, _pool.admin, _deductingAmount, address(this).balance);
         }
       }
@@ -122,7 +127,11 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       // Settle the unclaimed reward and transfer to the pool admin.
       uint256 _lastRewardAmount = _claimReward(_pools[_i], _pool.admin, _newPeriod);
       if (_lastRewardAmount > 0) {
-        _unsafeSendRON(payable(_pool.admin), _lastRewardAmount, DEFAULT_ADDITION_GAS);
+        _unsafeSendRONLimitGas(payable(_pool.admin), _lastRewardAmount, DEFAULT_ADDITION_GAS);
+      }
+
+      unchecked {
+        ++_i;
       }
     }
 
@@ -139,12 +148,10 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   /**
    * @inheritdoc ICandidateStaking
    */
-  function unstake(address _consensusAddr, uint256 _amount)
-    external
-    override
-    nonReentrant
-    poolIsActive(_consensusAddr)
-  {
+  function unstake(
+    address _consensusAddr,
+    uint256 _amount
+  ) external override nonReentrant poolIsActive(_consensusAddr) {
     if (_amount == 0) revert ErrUnstakeZeroAmount();
     address _requester = msg.sender;
     PoolDetail storage _pool = _stakingPool[_consensusAddr];
@@ -152,31 +159,28 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     if (_remainAmount < _minValidatorStakingAmount) revert ErrStakingAmountLeft();
 
     _unstake(_pool, _requester, _amount);
-    if (!_unsafeSendRON(payable(_requester), _amount, DEFAULT_ADDITION_GAS)) revert ErrCannotTransferRON();
+    if (!_unsafeSendRONLimitGas(payable(_requester), _amount, DEFAULT_ADDITION_GAS)) revert ErrCannotTransferRON();
   }
 
   /**
    * @inheritdoc ICandidateStaking
    */
-  function requestRenounce(address _consensusAddr)
-    external
-    override
-    poolIsActive(_consensusAddr)
-    onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
-  {
-    _validatorContract.execRequestRenounceCandidate(_consensusAddr, _waitingSecsToRevoke);
+  function requestRenounce(
+    address _consensusAddr
+  ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
+    IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execRequestRenounceCandidate(
+      _consensusAddr,
+      _waitingSecsToRevoke
+    );
   }
 
   /**
    * @inheritdoc ICandidateStaking
    */
-  function requestEmergencyExit(address _consensusAddr)
-    external
-    override
-    poolIsActive(_consensusAddr)
-    onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender)
-  {
-    _validatorContract.execEmergencyExit(_consensusAddr, _waitingSecsToRevoke);
+  function requestEmergencyExit(
+    address _consensusAddr
+  ) external override poolIsActive(_consensusAddr) onlyPoolAdmin(_stakingPool[_consensusAddr], msg.sender) {
+    IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execEmergencyExit(_consensusAddr, _waitingSecsToRevoke);
   }
 
   /**
@@ -187,26 +191,27 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
-    address _bridgeOperatorAddr,
     uint256 _commissionRate,
     uint256 _amount
   ) internal {
-    if (!_unsafeSendRON(_poolAdmin, 0)) revert ErrCannotInitTransferRON(_poolAdmin, "pool admin");
-    if (!_unsafeSendRON(_treasuryAddr, 0)) revert ErrCannotInitTransferRON(_treasuryAddr, "treasury");
+    if (!_unsafeSendRONLimitGas(_poolAdmin, 0, DEFAULT_ADDITION_GAS))
+      revert ErrCannotInitTransferRON(_poolAdmin, "pool admin");
+    if (!_unsafeSendRONLimitGas(_treasuryAddr, 0, DEFAULT_ADDITION_GAS))
+      revert ErrCannotInitTransferRON(_treasuryAddr, "treasury");
     if (_amount < _minValidatorStakingAmount) revert ErrInsufficientStakingAmount();
     if (_poolAdmin != _candidateAdmin || _candidateAdmin != _treasuryAddr) revert ErrThreeInteractionAddrsNotEqual();
 
-    address[] memory _diffAddrs = new address[](3);
-    _diffAddrs[0] = _poolAdmin;
-    _diffAddrs[1] = _consensusAddr;
-    _diffAddrs[2] = _bridgeOperatorAddr;
-    if (AddressArrayUtils.hasDuplicate(_diffAddrs)) revert ErrThreeOperationAddrsNotDistinct();
+    {
+      address[] memory _diffAddrs = new address[](2);
+      _diffAddrs[0] = _poolAdmin;
+      _diffAddrs[1] = _consensusAddr;
+      if (AddressArrayUtils.hasDuplicate(_diffAddrs)) revert AddressArrayUtils.ErrDuplicated(msg.sig);
+    }
 
-    _validatorContract.execApplyValidatorCandidate(
+    IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execApplyValidatorCandidate(
       _candidateAdmin,
       _consensusAddr,
       _treasuryAddr,
-      _bridgeOperatorAddr,
       _commissionRate
     );
   }

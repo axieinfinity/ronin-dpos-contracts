@@ -11,7 +11,7 @@ abstract contract JailingStorage is IJailingInfo {
   /// @dev Mapping from consensus address => period number => whether the block producer get cut off reward, due to bailout.
   mapping(address => mapping(uint256 => bool)) internal _miningRewardBailoutCutOffAtPeriod;
   /// @dev Mapping from consensus address => period number => block operator has no pending reward.
-  mapping(address => mapping(uint256 => bool)) internal _bridgeRewardDeprecatedAtPeriod;
+  mapping(address => mapping(uint256 => bool)) internal ______deprecatedBridgeRewardDeprecatedAtPeriod;
 
   /// @dev Mapping from consensus address => the last block that the block producer is jailed.
   mapping(address => uint256) internal _blockProducerJailedBlock;
@@ -36,16 +36,9 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @inheritdoc IJailingInfo
    */
-  function getJailedTimeLeft(address _addr)
-    external
-    view
-    override
-    returns (
-      bool isJailed_,
-      uint256 blockLeft_,
-      uint256 epochLeft_
-    )
-  {
+  function getJailedTimeLeft(
+    address _addr
+  ) external view override returns (bool isJailed_, uint256 blockLeft_, uint256 epochLeft_) {
     return getJailedTimeLeftAtBlock(_addr, block.number);
   }
 
@@ -59,16 +52,10 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @inheritdoc IJailingInfo
    */
-  function getJailedTimeLeftAtBlock(address _addr, uint256 _blockNum)
-    public
-    view
-    override
-    returns (
-      bool isJailed_,
-      uint256 blockLeft_,
-      uint256 epochLeft_
-    )
-  {
+  function getJailedTimeLeftAtBlock(
+    address _addr,
+    uint256 _blockNum
+  ) public view override returns (bool isJailed_, uint256 blockLeft_, uint256 epochLeft_) {
     uint256 _jailedBlock = _blockProducerJailedBlock[_addr];
     if (_jailedBlock < _blockNum) {
       return (false, 0, 0);
@@ -84,8 +71,12 @@ abstract contract JailingStorage is IJailingInfo {
    */
   function checkManyJailed(address[] calldata _addrList) external view override returns (bool[] memory _result) {
     _result = new bool[](_addrList.length);
-    for (uint256 _i; _i < _addrList.length; _i++) {
+    for (uint256 _i; _i < _addrList.length; ) {
       _result[_i] = _jailed(_addrList[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -100,41 +91,11 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @inheritdoc IJailingInfo
    */
-  function checkMiningRewardDeprecatedAtPeriod(address _blockProducer, uint256 _period)
-    external
-    view
-    override
-    returns (bool _result)
-  {
+  function checkMiningRewardDeprecatedAtPeriod(
+    address _blockProducer,
+    uint256 _period
+  ) external view override returns (bool _result) {
     return _miningRewardDeprecated(_blockProducer, _period);
-  }
-
-  /**
-   * @inheritdoc IJailingInfo
-   *
-   * @dev Because the information of deprecating bridge reward of a period is only determined at the end of that period, this
-   * method will return the deprecating info of the latest period. A method for querying that info of current period is no need.
-   */
-  function checkBridgeRewardDeprecatedAtLatestPeriod(address _consensusAddr)
-    external
-    view
-    override
-    returns (bool _result)
-  {
-    uint256 _period = currentPeriod() - 1;
-    return _bridgeRewardDeprecated(_consensusAddr, _period);
-  }
-
-  /**
-   * @inheritdoc IJailingInfo
-   */
-  function checkBridgeRewardDeprecatedAtPeriod(address _consensusAddr, uint256 _period)
-    external
-    view
-    override
-    returns (bool _result)
-  {
-    return _bridgeRewardDeprecated(_consensusAddr, _period);
   }
 
   /**
@@ -166,12 +127,5 @@ abstract contract JailingStorage is IJailingInfo {
    */
   function _miningRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
     return _miningRewardDeprecatedAtPeriod[_validatorAddr][_period];
-  }
-
-  /**
-   * @dev Returns whether the bridge operator has no pending reward in the period.
-   */
-  function _bridgeRewardDeprecated(address _validatorAddr, uint256 _period) internal view returns (bool) {
-    return _bridgeRewardDeprecatedAtPeriod[_validatorAddr][_period];
   }
 }
