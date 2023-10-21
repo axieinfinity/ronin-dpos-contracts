@@ -7,8 +7,8 @@ import "./IRewardPool.sol";
 interface ICandidateStaking is IRewardPool {
   /// @dev Emitted when the minimum staking amount for being a validator is updated.
   event MinValidatorStakingAmountUpdated(uint256 threshold);
-  /// @dev Emitted when the max commission rate is updated.
-  event MaxCommissionRateUpdated(uint256 maxRate);
+  /// @dev Emitted when the commission rate range is updated.
+  event CommissionRateRangeUpdated(uint256 minRate, uint256 maxRate);
 
   /// @dev Emitted when the pool admin staked for themself.
   event Staked(address indexed consensuAddr, uint256 amount);
@@ -38,8 +38,6 @@ interface ICandidateStaking is IRewardPool {
   error ErrCannotInitTransferRON(address addr, string extraInfo);
   /// @dev Error of three interaction addresses must be of the same in applying for validator candidate.
   error ErrThreeInteractionAddrsNotEqual();
-  /// @dev Error of three operation addresses must be distinct in applying for validator candidate.
-  error ErrThreeOperationAddrsNotDistinct();
   /// @dev Error of unstaking zero amount.
   error ErrUnstakeZeroAmount();
   /// @dev Error of invalid staking amount left after deducted.
@@ -57,9 +55,9 @@ interface ICandidateStaking is IRewardPool {
   function minValidatorStakingAmount() external view returns (uint256);
 
   /**
-   * @dev Returns the max commission rate that the candidate can set.
+   * @dev Returns the commission rate range that the candidate can set.
    */
-  function maxCommissionRate() external view returns (uint256);
+  function getCommissionRateRange() external view returns (uint256 _minRange, uint256 _maxRange);
 
   /**
    * @dev Sets the minimum threshold for being a validator candidate.
@@ -73,15 +71,15 @@ interface ICandidateStaking is IRewardPool {
   function setMinValidatorStakingAmount(uint256) external;
 
   /**
-   * @dev Sets the max commission rate that a candidate can set.
+   * @dev Sets the commission rate range that a candidate can set.
    *
    * Requirements:
    * - The method caller is admin.
    *
-   * Emits the `MaxCommissionRateUpdated` event.
+   * Emits the `CommissionRateRangeUpdated` event.
    *
    */
-  function setMaxCommissionRate(uint256 _maxRate) external;
+  function setCommissionRateRange(uint256 _minRate, uint256 _maxRate) external;
 
   /**
    * @dev Proposes a candidate to become a validator.
@@ -101,7 +99,6 @@ interface ICandidateStaking is IRewardPool {
     address _candidateAdmin,
     address _consensusAddr,
     address payable _treasuryAddr,
-    address _bridgeOperatorAddr,
     uint256 _commissionRate
   ) external payable;
 

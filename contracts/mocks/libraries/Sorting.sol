@@ -22,11 +22,7 @@ library Sorting {
     return _quickSort(data, int(0), int(data.length - 1));
   }
 
-  function _quickSort(
-    uint[] memory arr,
-    int left,
-    int right
-  ) private pure returns (uint[] memory) {
+  function _quickSort(uint[] memory arr, int left, int right) private pure returns (uint[] memory) {
     int i = left;
     int j = right;
     if (i == j) return arr;
@@ -69,15 +65,30 @@ library Sorting {
     return _keys;
   }
 
+  function sort(uint256[] memory keys, uint256[] memory values) internal pure returns (uint256[] memory) {
+    require(values.length == keys.length, "Sorting: invalid array length");
+    if (keys.length == 0) {
+      return keys;
+    }
+
+    Node[] memory _nodes = new Node[](keys.length);
+    for (uint256 _i; _i < _nodes.length; _i++) {
+      _nodes[_i] = Node(keys[_i], values[_i]);
+    }
+    _quickSortNodes(_nodes, int(0), int(_nodes.length - 1));
+
+    for (uint256 _i; _i < _nodes.length; _i++) {
+      keys[_i] = _nodes[_i].key; // Casting?
+    }
+
+    return keys;
+  }
+
   function sortNodes(Node[] memory nodes) internal pure returns (Node[] memory) {
     return _quickSortNodes(nodes, int(0), int(nodes.length - 1));
   }
 
-  function _quickSortNodes(
-    Node[] memory nodes,
-    int left,
-    int right
-  ) private pure returns (Node[] memory) {
+  function _quickSortNodes(Node[] memory nodes, int left, int right) private pure returns (Node[] memory) {
     int i = left;
     int j = right;
     if (i == j) return nodes;
@@ -146,11 +157,7 @@ library Sorting {
     return _quickSortNode3s(nodes, int(0), int(nodes.length - 1));
   }
 
-  function _quickSortNode3s(
-    Node3[] memory nodes,
-    int left,
-    int right
-  ) private pure returns (Node3[] memory) {
+  function _quickSortNode3s(Node3[] memory nodes, int left, int right) private pure returns (Node3[] memory) {
     int i = left;
     int j = right;
     if (i == j) return nodes;

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "../interfaces/consumers/VoteStatusConsumer.sol";
+import "../utils/CommonErrors.sol";
 
 library IsolatedGovernance {
   struct Vote {
@@ -25,20 +25,12 @@ library IsolatedGovernance {
    * - The voter has not voted for the round.
    *
    */
-  function castVote(
-    Vote storage _v,
-    address _voter,
-    bytes32 _hash
-  ) internal {
+  function castVote(Vote storage _v, address _voter, bytes32 _hash) internal {
     if (_v.expiredAt > 0 && _v.expiredAt <= block.timestamp) {
       _v.status = VoteStatusConsumer.VoteStatus.Expired;
     }
 
-    if (voted(_v, _voter)) {
-      revert(
-        string(abi.encodePacked("IsolatedGovernance: ", Strings.toHexString(uint160(_voter), 20), " already voted"))
-      );
-    }
+    if (voted(_v, _voter)) revert ErrAlreadyVoted(_voter);
 
     _v.voteHashOf[_voter] = _hash;
     _v.voters.push(_voter);
@@ -51,15 +43,9 @@ library IsolatedGovernance {
     Vote storage _v,
     uint256 _minimumVoteWeight,
     uint256 _votedWeightForHash,
-    uint256 _minimumTrustedVoteWeight,
-    uint256 _trustedVotedWeightForHash,
     bytes32 _hash
   ) internal returns (VoteStatusConsumer.VoteStatus _status) {
-    if (
-      _votedWeightForHash >= _minimumVoteWeight &&
-      _trustedVotedWeightForHash >= _minimumTrustedVoteWeight &&
-      _v.status == VoteStatusConsumer.VoteStatus.Pending
-    ) {
+    if (_votedWeightForHash >= _minimumVoteWeight && _v.status == VoteStatusConsumer.VoteStatus.Pending) {
       _v.status = VoteStatusConsumer.VoteStatus.Approved;
       _v.finalHash = _hash;
     }
@@ -74,10 +60,12 @@ library IsolatedGovernance {
     uint256 _count;
     _voters = new address[](_v.voters.length);
 
-    for (uint _i; _i < _voters.length; _i++) {
-      address _voter = _v.voters[_i];
-      if (_v.voteHashOf[_voter] == _hash) {
-        _voters[_count++] = _voter;
+    unchecked {
+      for (uint _i; _i < _voters.length; ++_i) {
+        address _voter = _v.voters[_i];
+        if (_v.voteHashOf[_voter] == _hash) {
+          _voters[_count++] = _voter;
+        }
       }
     }
 

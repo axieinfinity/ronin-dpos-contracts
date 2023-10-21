@@ -19,11 +19,10 @@ contract MockPCUSortValidators is PCUSortValidators {
     return _precompileSortValidatorAddress;
   }
 
-  function callPrecompile(address[] calldata _validators, uint256[] calldata _weights)
-    public
-    view
-    returns (address[] memory _result)
-  {
+  function callPrecompile(
+    address[] calldata _validators,
+    uint256[] calldata _weights
+  ) public view returns (address[] memory _result) {
     return _pcSortCandidates(_validators, _weights);
   }
 }

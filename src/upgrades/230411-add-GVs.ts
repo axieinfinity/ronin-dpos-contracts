@@ -3,7 +3,8 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { VoteType } from '../script/proposal';
 import { RoninTrustedOrganization__factory } from '../types';
-import { proxyCall } from './upgradeUtils';
+import { explorerUrl, proxyCall } from './upgradeUtils';
+import { network } from 'hardhat';
 
 const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeEnvironment) => {
   const { execute } = deployments;
@@ -124,7 +125,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     trustedOrgInstructions.map(() => 2_000_000) // gasAmounts
   );
 
-  console.log(`https://explorer.roninchain.com/tx/${tx.transactionHash}`);
+  console.log(`${explorerUrl[network.name!]}/tx/${tx.transactionHash}`);
 };
 
 deploy.tags = ['230411AddGVs'];

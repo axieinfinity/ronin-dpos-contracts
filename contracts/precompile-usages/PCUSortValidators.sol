@@ -15,12 +15,10 @@ abstract contract PCUSortValidators is PrecompiledUsage {
    *
    * Note: This function is marked as virtual for being wrapping in mock contract for testing purpose.
    */
-  function _pcSortCandidates(address[] memory _candidates, uint256[] memory _weights)
-    internal
-    view
-    virtual
-    returns (address[] memory _result)
-  {
+  function _pcSortCandidates(
+    address[] memory _candidates,
+    uint256[] memory _weights
+  ) internal view virtual returns (address[] memory _result) {
     address _smc = precompileSortValidatorsAddress();
     bool _success = true;
 

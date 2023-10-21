@@ -51,14 +51,7 @@ interface IBaseStaking {
   /**
    * @dev Returns the staking pool detail.
    */
-  function getPoolDetail(address)
-    external
-    view
-    returns (
-      address _admin,
-      uint256 _stakingAmount,
-      uint256 _stakingTotal
-    );
+  function getPoolDetail(address) external view returns (address _admin, uint256 _stakingAmount, uint256 _stakingTotal);
 
   /**
    * @dev Returns the self-staking amounts of the pools.

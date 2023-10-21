@@ -1,6 +1,6 @@
 import { BigNumberish } from 'ethers';
 import { AbiCoder, keccak256, solidityKeccak256 } from 'ethers/lib/utils';
-import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
+import { Address } from 'hardhat-deploy/dist/types';
 
 import { GlobalProposalDetailStruct, ProposalDetailStruct } from '../types/GovernanceAdmin';
 
@@ -25,6 +25,14 @@ export enum VoteStatus {
   Approved = 1,
   Executed = 2,
   Rejected = 3,
+}
+
+export enum TargetOption {
+  BridgeManager = 0,
+  GatewayContract = 1,
+  BridgeReward = 2,
+  BridgeSlash = 3,
+  BridgeTracking = 4,
 }
 
 export const ballotParamTypes = ['bytes32', 'bytes32', 'uint8'];

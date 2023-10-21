@@ -1,5 +1,5 @@
 import { network } from 'hardhat';
-import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
+import { Address } from 'hardhat-deploy/dist/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { roninchainNetworks, vaultForwarderConf } from '../configs/config';

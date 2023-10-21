@@ -29,7 +29,7 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     address __stakingVestingContract,
     address __maintenanceContract,
     address __roninTrustedOrganizationContract,
-    address __bridgeTrackingContract,
+    address /* __bridgeTrackingContract */,
     uint256 __maxValidatorNumber,
     uint256 __maxValidatorCandidate,
     uint256 __maxPrioritizedValidatorNumber,
@@ -39,12 +39,12 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     // __emergencyExitConfigs[1]: emergencyExpiryDuration
     uint256[2] calldata __emergencyExitConfigs
   ) external initializer {
-    _setSlashIndicatorContract(__slashIndicatorContract);
-    _setStakingContract(__stakingContract);
-    _setStakingVestingContract(__stakingVestingContract);
-    _setMaintenanceContract(__maintenanceContract);
-    _setBridgeTrackingContract(__bridgeTrackingContract);
-    _setRoninTrustedOrganizationContract(__roninTrustedOrganizationContract);
+    _setContract(ContractType.SLASH_INDICATOR, __slashIndicatorContract);
+    _setContract(ContractType.STAKING, __stakingContract);
+    _setContract(ContractType.STAKING_VESTING, __stakingVestingContract);
+    _setContract(ContractType.MAINTENANCE, __maintenanceContract);
+    _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, __roninTrustedOrganizationContract);
+
     _setMaxValidatorNumber(__maxValidatorNumber);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _setMaxPrioritizedValidatorNumber(__maxPrioritizedValidatorNumber);
@@ -54,23 +54,32 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
   }
 
+  function initializeV2() external reinitializer(2) {
+    _setContract(ContractType.STAKING, ______deprecatedStakingContract);
+    _setContract(ContractType.MAINTENANCE, ______deprecatedMaintenance);
+    _setContract(ContractType.SLASH_INDICATOR, ______deprecatedSlashIndicator);
+    _setContract(ContractType.STAKING_VESTING, ______deprecatedStakingVesting);
+    _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, ______deprecatedTrustedOrg);
+
+    delete ______deprecatedStakingContract;
+    delete ______deprecatedMaintenance;
+    delete ______deprecatedSlashIndicator;
+    delete ______deprecatedStakingVesting;
+    delete ______deprecatedBridgeTracking;
+    delete ______deprecatedTrustedOrg;
+  }
+
+  function initializeV3(address fastFinalityTrackingContract) external reinitializer(3) {
+    _setContract(ContractType.FAST_FINALITY_TRACKING, fastFinalityTrackingContract);
+  }
+
   /**
    * @dev Only receives RON from staking vesting contract (for topping up bonus), and from staking contract (for transferring
    * deducting amount on slashing).
    */
   function _fallback() internal view {
-    if (msg.sender != stakingVestingContract() && msg.sender != stakingContract()) revert ErrUnauthorizedReceiveRON();
-  }
-
-  /**
-   * @dev Override `ValidatorInfoStorage-_bridgeOperatorOf`.
-   */
-  function _bridgeOperatorOf(address _consensusAddr)
-    internal
-    view
-    override(EmergencyExit, ValidatorInfoStorage)
-    returns (address)
-  {
-    return super._bridgeOperatorOf(_consensusAddr);
+    if (msg.sender != getContract(ContractType.STAKING_VESTING) && msg.sender != getContract(ContractType.STAKING)) {
+      revert ErrUnauthorizedReceiveRON();
+    }
   }
 }

@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../libraries/AddressArrayUtils.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
@@ -69,12 +68,10 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   /**
    * @inheritdoc IQuorum
    */
-  function setThreshold(uint256 _numerator, uint256 _denominator)
-    external
-    override
-    onlyAdmin
-    returns (uint256, uint256)
-  {
+  function setThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) external override onlyAdmin returns (uint256, uint256) {
     return _setThreshold(_numerator, _denominator);
   }
 
@@ -89,9 +86,13 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * @inheritdoc IRoninTrustedOrganization
    */
   function updateTrustedOrganizations(TrustedOrganization[] calldata _list) external override onlyAdmin {
-    require(_list.length > 0, "RoninTrustedOrganization: invalid array length");
-    for (uint256 _i; _i < _list.length; _i++) {
+    if (_list.length == 0) revert ErrEmptyArray();
+    for (uint256 _i; _i < _list.length; ) {
       _updateTrustedOrganization(_list[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
     emit TrustedOrganizationsUpdated(_list);
   }
@@ -100,9 +101,14 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * @inheritdoc IRoninTrustedOrganization
    */
   function removeTrustedOrganizations(address[] calldata _list) external override onlyAdmin {
-    require(_list.length > 0, "RoninTrustedOrganization: invalid array length");
-    for (uint _i = 0; _i < _list.length; _i++) {
+    if (_list.length == 0) revert ErrEmptyArray();
+
+    for (uint _i = 0; _i < _list.length; ) {
       _removeTrustedOrganization(_list[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
     emit TrustedOrganizationsRemoved(_list);
   }
@@ -110,7 +116,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function totalWeights() external view virtual returns (uint256) {
+  function totalWeight() external view virtual returns (uint256) {
     return _totalWeight;
   }
 
@@ -140,8 +146,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function getConsensusWeights(address[] calldata _list) external view returns (uint256[] memory _res) {
     _res = new uint256[](_list.length);
-    for (uint _i = 0; _i < _res.length; _i++) {
+    for (uint _i = 0; _i < _res.length; ) {
       _res[_i] = _consensusWeight[_list[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -150,8 +160,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function getGovernorWeights(address[] calldata _list) external view returns (uint256[] memory _res) {
     _res = new uint256[](_list.length);
-    for (uint _i = 0; _i < _res.length; _i++) {
+    for (uint _i = 0; _i < _res.length; ) {
       _res[_i] = _governorWeight[_list[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -160,42 +174,58 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function getBridgeVoterWeights(address[] calldata _list) external view returns (uint256[] memory _res) {
     _res = new uint256[](_list.length);
-    for (uint _i = 0; _i < _res.length; _i++) {
+    for (uint _i = 0; _i < _res.length; ) {
       _res[_i] = _bridgeVoterWeight[_list[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function sumConsensusWeights(address[] calldata _list) external view returns (uint256 _res) {
-    for (uint _i = 0; _i < _list.length; _i++) {
+  function sumConsensusWeight(address[] calldata _list) external view returns (uint256 _res) {
+    for (uint _i = 0; _i < _list.length; ) {
       _res += _consensusWeight[_list[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function sumGovernorWeights(address[] calldata _list) external view returns (uint256 _res) {
-    for (uint _i = 0; _i < _list.length; _i++) {
+  function sumGovernorWeight(address[] calldata _list) external view returns (uint256 _res) {
+    for (uint _i = 0; _i < _list.length; ) {
       _res += _governorWeight[_list[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function sumBridgeVoterWeights(address[] calldata _list) external view returns (uint256 _res) {
-    for (uint _i = 0; _i < _list.length; _i++) {
+  function sumBridgeVoterWeight(address[] calldata _list) external view returns (uint256 _res) {
+    for (uint _i = 0; _i < _list.length; ) {
       _res += _bridgeVoterWeight[_list[_i]];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function countTrustedOrganizations() external view override returns (uint256) {
+  function countTrustedOrganization() external view override returns (uint256) {
     return _consensusList.length;
   }
 
@@ -205,12 +235,16 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   function getAllTrustedOrganizations() external view override returns (TrustedOrganization[] memory _list) {
     _list = new TrustedOrganization[](_consensusList.length);
     address _addr;
-    for (uint256 _i; _i < _list.length; _i++) {
+    for (uint256 _i; _i < _list.length; ) {
       _addr = _consensusList[_i];
       _list[_i].consensusAddr = _addr;
       _list[_i].governor = _governorList[_i];
       _list[_i].bridgeVoter = _bridgeVoterList[_i];
       _list[_i].weight = _consensusWeight[_addr];
+
+      unchecked {
+        ++_i;
+      }
     }
   }
 
@@ -218,12 +252,16 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * @inheritdoc IRoninTrustedOrganization
    */
   function getTrustedOrganization(address _consensusAddr) external view returns (TrustedOrganization memory) {
-    for (uint _i = 0; _i < _consensusList.length; _i++) {
+    for (uint _i = 0; _i < _consensusList.length; ) {
       if (_consensusList[_i] == _consensusAddr) {
         return getTrustedOrganizationAt(_i);
       }
+
+      unchecked {
+        ++_i;
+      }
     }
-    revert("RoninTrustedOrganization: query for non-existent consensus address");
+    revert ErrQueryForNonExistentConsensusAddress();
   }
 
   /**
@@ -245,8 +283,12 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * @dev Adds a list of trusted organizations.
    */
   function _addTrustedOrganizations(TrustedOrganization[] calldata _list) internal virtual {
-    for (uint256 _i; _i < _list.length; _i++) {
+    for (uint256 _i; _i < _list.length; ) {
       _addTrustedOrganization(_list[_i]);
+
+      unchecked {
+        ++_i;
+      }
     }
     emit TrustedOrganizationsAdded(_list);
   }
@@ -262,44 +304,14 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    *
    */
   function _addTrustedOrganization(TrustedOrganization memory _v) internal virtual {
-    require(_v.addedBlock == 0, "RoninTrustedOrganization: invalid request");
+    if (_v.addedBlock != 0) revert ErrInvalidRequest();
     _sanityCheckTrustedOrganizationData(_v);
 
-    if (_consensusWeight[_v.consensusAddr] > 0) {
-      revert(
-        string(
-          abi.encodePacked(
-            "RoninTrustedOrganization: consensus address ",
-            Strings.toHexString(uint160(_v.consensusAddr), 20),
-            " is added already"
-          )
-        )
-      );
-    }
+    if (_consensusWeight[_v.consensusAddr] > 0) revert ErrConsensusAddressIsAlreadyAdded(_v.consensusAddr);
 
-    if (_governorWeight[_v.governor] > 0) {
-      revert(
-        string(
-          abi.encodePacked(
-            "RoninTrustedOrganization: govenor address ",
-            Strings.toHexString(uint160(_v.governor), 20),
-            " is added already"
-          )
-        )
-      );
-    }
+    if (_governorWeight[_v.governor] > 0) revert ErrGovernorAddressIsAlreadyAdded(_v.governor);
 
-    if (_bridgeVoterWeight[_v.bridgeVoter] > 0) {
-      revert(
-        string(
-          abi.encodePacked(
-            "RoninTrustedOrganization: bridge voter address ",
-            Strings.toHexString(uint160(_v.bridgeVoter), 20),
-            " is added already"
-          )
-        )
-      );
-    }
+    if (_bridgeVoterWeight[_v.bridgeVoter] > 0) revert ErrBridgeVoterIsAlreadyAdded(_v.bridgeVoter);
 
     _consensusList.push(_v.consensusAddr);
     _consensusWeight[_v.consensusAddr] = _v.weight;
@@ -327,35 +339,24 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
     _sanityCheckTrustedOrganizationData(_v);
 
     uint256 _weight = _consensusWeight[_v.consensusAddr];
-    if (_weight == 0) {
-      revert(
-        string(
-          abi.encodePacked(
-            "RoninTrustedOrganization: consensus address ",
-            Strings.toHexString(uint160(_v.consensusAddr), 20),
-            " is not added"
-          )
-        )
-      );
-    }
+    if (_weight == 0) revert ErrConsensusAddressIsNotAdded(_v.consensusAddr);
 
     uint256 _count = _consensusList.length;
-    for (uint256 _i = 0; _i < _count; _i++) {
+    for (uint256 _i = 0; _i < _count; ) {
       if (_consensusList[_i] == _v.consensusAddr) {
         _totalWeight -= _weight;
         _totalWeight += _v.weight;
 
         if (_governorList[_i] != _v.governor) {
-          require(_governorWeight[_v.governor] == 0, "RoninTrustedOrganization: query for duplicated governor");
+          if (_governorWeight[_v.governor] != 0) revert ErrQueryForDupplicated();
+
           delete _governorWeight[_governorList[_i]];
           _governorList[_i] = _v.governor;
         }
 
         if (_bridgeVoterList[_i] != _v.bridgeVoter) {
-          require(
-            _bridgeVoterWeight[_v.bridgeVoter] == 0,
-            "RoninTrustedOrganization: query for duplicated bridge voter"
-          );
+          if (_bridgeVoterWeight[_v.bridgeVoter] != 0) revert ErrQueryForDupplicated();
+
           delete _bridgeVoterWeight[_bridgeVoterList[_i]];
           _bridgeVoterList[_i] = _v.bridgeVoter;
         }
@@ -364,6 +365,10 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
         _governorWeight[_v.governor] = _v.weight;
         _bridgeVoterWeight[_v.bridgeVoter] = _v.weight;
         return;
+      }
+
+      unchecked {
+        ++_i;
       }
     }
   }
@@ -377,24 +382,18 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    */
   function _removeTrustedOrganization(address _addr) internal virtual {
     uint256 _weight = _consensusWeight[_addr];
-    if (_weight == 0) {
-      revert(
-        string(
-          abi.encodePacked(
-            "RoninTrustedOrganization: consensus address ",
-            Strings.toHexString(uint160(_addr), 20),
-            " is not added"
-          )
-        )
-      );
-    }
+    if (_weight == 0) revert ErrConsensusAddressIsNotAdded(_addr);
 
     uint256 _index;
     uint256 _count = _consensusList.length;
-    for (uint256 _i = 0; _i < _count; _i++) {
+    for (uint256 _i = 0; _i < _count; ) {
       if (_consensusList[_i] == _addr) {
         _index = _i;
         break;
+      }
+
+      unchecked {
+        ++_i;
       }
     }
 
@@ -420,17 +419,19 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * Emits the `ThresholdUpdated` event.
    *
    */
-  function _setThreshold(uint256 _numerator, uint256 _denominator)
-    internal
-    virtual
-    returns (uint256 _previousNum, uint256 _previousDenom)
-  {
-    require(_numerator <= _denominator, "RoninTrustedOrganization: invalid threshold");
+  function _setThreshold(
+    uint256 _numerator,
+    uint256 _denominator
+  ) internal virtual returns (uint256 _previousNum, uint256 _previousDenom) {
+    if (_numerator > _denominator) revert ErrInvalidThreshold(msg.sig);
+
     _previousNum = _num;
     _previousDenom = _denom;
     _num = _numerator;
     _denom = _denominator;
-    emit ThresholdUpdated(_nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    unchecked {
+      emit ThresholdUpdated(_nonce++, _numerator, _denominator, _previousNum, _previousDenom);
+    }
   }
 
   /**
@@ -441,12 +442,13 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * - The consensus address, governor address, and bridge voter address are different.
    */
   function _sanityCheckTrustedOrganizationData(TrustedOrganization memory _v) private pure {
-    require(_v.weight > 0, "RoninTrustedOrganization: invalid weight");
+    if (_v.weight == 0) revert ErrInvalidVoteWeight(msg.sig);
 
     address[] memory _addresses = new address[](3);
     _addresses[0] = _v.consensusAddr;
     _addresses[1] = _v.governor;
     _addresses[2] = _v.bridgeVoter;
-    require(!AddressArrayUtils.hasDuplicate(_addresses), "RoninTrustedOrganization: three addresses must be distinct");
+
+    if (AddressArrayUtils.hasDuplicate(_addresses)) revert AddressArrayUtils.ErrDuplicated(msg.sig);
   }
 }

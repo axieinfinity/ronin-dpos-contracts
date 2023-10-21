@@ -53,6 +53,16 @@ interface ICoinbaseExecution is ISlashingExecution {
     uint256 contractBalance
   );
 
+  /// @dev Emitted when the fast finality reward is distributed.
+  event FastFinalityRewardDistributed(address indexed consensusAddr, address indexed recipient, uint256 amount);
+  /// @dev Emitted when the contract fails when distributing the fast finality reward.
+  event FastFinalityRewardDistributionFailed(
+    address indexed consensusAddr,
+    address indexed recipient,
+    uint256 amount,
+    uint256 contractBalance
+  );
+
   /// @dev Emitted when the amount of RON reward is distributed to staking contract.
   event StakingRewardDistributed(uint256 totalAmount, address[] consensusAddrs, uint256[] amounts);
   /// @dev Emitted when the contracts fails when distributing the amount of RON to the staking contract.
@@ -65,11 +75,7 @@ interface ICoinbaseExecution is ISlashingExecution {
 
   /// @dev Emitted when the epoch is wrapped up.
   event WrappedUpEpoch(uint256 indexed periodNumber, uint256 indexed epochNumber, bool periodEnding);
-  /// @dev Emitted when the bridge tracking contract's response is incorrect
-  event BridgeTrackingIncorrectlyResponded();
 
-  /// @dev Error of method caller must be coinbase
-  error ErrCallerMustBeCoinbase();
   /// @dev Error of only allowed at the end of epoch
   error ErrAtEndOfEpochOnly();
   /// @dev Error of query for already wrapped up epoch

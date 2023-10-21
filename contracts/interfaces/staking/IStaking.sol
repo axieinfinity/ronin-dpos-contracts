@@ -35,7 +35,8 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
    * Emits the event `Unstaked`.
    *
    */
-  function execDeductStakingAmount(address _consensusAddr, uint256 _amount)
-    external
-    returns (uint256 _actualDeductingAmount);
+  function execDeductStakingAmount(
+    address _consensusAddr,
+    uint256 _amount
+  ) external returns (uint256 _actualDeductingAmount);
 }

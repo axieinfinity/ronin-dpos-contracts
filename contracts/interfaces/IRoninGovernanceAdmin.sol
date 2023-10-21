@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../libraries/BridgeOperatorsBallot.sol";
+import "../utils/CommonErrors.sol";
 
 interface IRoninGovernanceAdmin {
-  /// @dev Emitted when the bridge operators are approved.
-  event BridgeOperatorsApproved(uint256 _period, uint256 _epoch, address[] _operators);
   /// @dev Emitted when an emergency exit poll is created.
   event EmergencyExitPollCreated(
     bytes32 _voteHash,
@@ -18,19 +16,8 @@ interface IRoninGovernanceAdmin {
   event EmergencyExitPollApproved(bytes32 _voteHash);
   /// @dev Emitted when an emergency exit poll is expired.
   event EmergencyExitPollExpired(bytes32 _voteHash);
-
-  /**
-   * @dev Returns the last voted block of the bridge voter.
-   */
-  function lastVotedBlock(address _bridgeVoter) external view returns (uint256);
-
-  /**
-   * @dev Returns the synced bridge operator set info.
-   */
-  function lastSyncedBridgeOperatorSetInfo()
-    external
-    view
-    returns (BridgeOperatorsBallot.BridgeOperatorSet memory _bridgeOperatorSetInfo);
+  /// @dev Emitted when an emergency exit poll is voted.
+  event EmergencyExitPollVoted(bytes32 indexed _voteHash, address indexed _voter);
 
   /**
    * @dev Create a vote to agree that an emergency exit is valid and should return the locked funds back.a

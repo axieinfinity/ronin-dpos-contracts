@@ -12,14 +12,17 @@ export const gatewayAccountSet: AccountSet = {
     [Network.Hardhat]: undefined,
     [Network.Devnet]: ['0x968D0Cd7343f711216817E617d3f92a23dC91c07'],
     [Network.GoerliForDevnet]: ['0x968D0Cd7343f711216817E617d3f92a23dC91c07'],
+    [Network.Goerli]: ['0x968D0Cd7343f711216817E617d3f92a23dC91c07'],
   },
   withdrawalUnlockers: {
     [Network.Hardhat]: undefined,
     [Network.GoerliForDevnet]: ['0x968D0Cd7343f711216817E617d3f92a23dC91c07'],
+    [Network.Goerli]: ['0x968D0Cd7343f711216817E617d3f92a23dC91c07'],
   },
   withdrawalMigrators: {
     [Network.Hardhat]: undefined,
     [Network.Devnet]: ['0x968D0Cd7343f711216817E617d3f92a23dC91c07'],
+    [Network.Goerli]: ['0x968D0Cd7343f711216817E617d3f92a23dC91c07'],
   },
 };
 
@@ -108,24 +111,35 @@ const trustedOrgGoerliForDevnetConfig: TrustedOrganizationStruct[] = [
 ];
 
 const testnetTrustedOrgConfig: TrustedOrganizationStruct[] = [
-  '0xAcf8Bf98D1632e602d0B1761771049aF21dd6597',
-  '0xCaba9D9424D6bAD99CE352A943F59279B533417a',
-  '0x9f1Abc67beA4db5560371fF3089F4Bfe934c36Bc',
-  '0xD086D2e3Fac052A3f695a4e8905Ce1722531163C',
-  '0xA85ddDdCeEaB43DccAa259dd4936aC104386F9aa',
-  '0x42c535deCcc071D9039b177Cb3AbF30411531b05',
-  '0x9422d990AcDc3f2b3AA3B97303aD3060F09d7ffC',
-  '0x877eFEfFE7A23E42C39e2C99b977e4AA4BEC7517',
-  '0x95908d03bA55c2a44688330b59E746Fdb2f17E3E',
-  '0x771DEc03db66a566a1DfE3fd635B3f8D404b9291',
-  '0xb212F24D850a0Ed90F2889dee31870E7FF3fED6c',
-].map((addr) => ({
-  consensusAddr: addr,
-  governor: addr,
-  bridgeVoter: addr,
-  weight: 100,
-  addedBlock: 0,
-}));
+  {
+    consensusAddr: '0xAcf8Bf98D1632e602d0B1761771049aF21dd6597',
+    bridgeVoter: '0x2295EdAA6BD5c07fB3227628c62Af12248106667',
+    governor: '0xd24D87DDc1917165435b306aAC68D99e0F49A3Fa',
+    weight: 100,
+    addedBlock: 0,
+  },
+  {
+    consensusAddr: '0xCaba9D9424D6bAD99CE352A943F59279B533417a',
+    bridgeVoter: '0xb9e7cb842e24E92F49BF6dbAA1f2184C742cEb64',
+    governor: '0xb033ba62EC622dC54D0ABFE0254e79692147CA26',
+    weight: 100,
+    addedBlock: 0,
+  },
+  {
+    consensusAddr: '0x9f1Abc67beA4db5560371fF3089F4Bfe934c36Bc',
+    bridgeVoter: '0x7D1dA6CE4f3B908b8440889e6CeAcfD61839E8aC',
+    governor: '0x087D08e3ba42e64E3948962dd1371F906D1278b9',
+    weight: 100,
+    addedBlock: 0,
+  },
+  {
+    consensusAddr: '0xA85ddDdCeEaB43DccAa259dd4936aC104386F9aa',
+    bridgeVoter: '0xcE6958090E8C57BB91A03dFc85D724Fb3903eEbf',
+    governor: '0x52ec2e6BBcE45AfFF8955Da6410bb13812F4289F',
+    weight: 100,
+    addedBlock: 0,
+  },
+];
 
 const mainnetTrustedOrgConfig: TrustedOrganizationStruct[] = [
   {
@@ -159,10 +173,12 @@ export const namedAddresses: ContractAddress = {
     [Network.Hardhat]: undefined,
     [Network.Devnet]: '0x29C6F8349A028E1bdfC68BFa08BDee7bC5D47E16',
     [Network.GoerliForDevnet]: '0xfe63586e65ECcAF7A41b1B6D05384a9CA1B246a8',
+    [Network.Goerli]: '0xfe63586e65ECcAF7A41b1B6D05384a9CA1B246a8',
   },
   gatewayRoleSetter: {
     [Network.Hardhat]: undefined,
     [Network.Devnet]: '0x968D0Cd7343f711216817E617d3f92a23dC91c07',
     [Network.GoerliForDevnet]: '0x968D0Cd7343f711216817E617d3f92a23dC91c07',
+    [Network.Goerli]: '0x968D0Cd7343f711216817E617d3f92a23dC91c07',
   },
 };

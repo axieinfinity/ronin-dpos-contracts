@@ -5,18 +5,18 @@ pragma solidity ^0.8.9;
 import "../../../interfaces/validator/info-fragments/ICommonInfo.sol";
 import "./JailingStorage.sol";
 import "./TimingStorage.sol";
-import "./ValidatorInfoStorage.sol";
+import "./ValidatorInfoStorageV2.sol";
 
-abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, ValidatorInfoStorage {
+abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, ValidatorInfoStorageV2 {
   /// @dev Mapping from consensus address => pending reward from producing block
   mapping(address => uint256) internal _miningReward;
   /// @dev Mapping from consensus address => pending reward from delegating
   mapping(address => uint256) internal _delegatingReward;
 
-  /// @dev The total reward for bridge operators
-  uint256 internal _totalBridgeReward;
-  /// @dev Mapping from consensus address => pending reward for being bridge operator
-  mapping(address => uint256) internal _bridgeOperatingReward;
+  /// @dev The total reward for fast finality
+  uint256 internal _totalFastFinalityReward;
+  /// @dev Mapping from consensus address => pending reward for fast finality
+  mapping(address => uint256) internal _fastFinalityReward;
 
   /// @dev The deprecated reward that has not been withdrawn by admin
   uint256 internal _totalDeprecatedReward;
@@ -41,12 +41,9 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   /**
    * @inheritdoc ICommonInfo
    */
-  function getEmergencyExitInfo(address _consensusAddr)
-    external
-    view
-    override
-    returns (EmergencyExitInfo memory _info)
-  {
+  function getEmergencyExitInfo(
+    address _consensusAddr
+  ) external view override returns (EmergencyExitInfo memory _info) {
     _info = _exitInfo[_consensusAddr];
     if (_info.recyclingAt == 0) revert NonExistentRecyclingInfo();
   }
@@ -61,13 +58,9 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   /**
    * @inheritdoc ITimingInfo
    */
-  function epochOf(uint256 _block)
-    public
-    view
-    virtual
-    override(ITimingInfo, JailingStorage, TimingStorage)
-    returns (uint256)
-  {
+  function epochOf(
+    uint256 _block
+  ) public view virtual override(ITimingInfo, JailingStorage, TimingStorage) returns (uint256) {
     return TimingStorage.epochOf(_block);
   }
 

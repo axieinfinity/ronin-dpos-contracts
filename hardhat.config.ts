@@ -1,16 +1,15 @@
 import '@typechain/hardhat';
-import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
-import '@axieinfinity/hardhat-deploy';
+import 'hardhat-deploy';
 import 'hardhat-gas-reporter';
 import '@nomicfoundation/hardhat-chai-matchers';
 import 'hardhat-contract-sizer';
-import '@axieinfinity/hardhat-4byte-uploader';
+import '@solidstate/hardhat-4byte-uploader';
 import 'hardhat-storage-layout';
 
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, NetworkUserConfig, SolcUserConfig } from 'hardhat/types';
-
+import './src/tasks/generate-storage-layout';
 dotenv.config();
 
 const DEFAULT_MNEMONIC = 'title spike pink garlic hamster sorry few damage silver mushroom clever window';
@@ -57,6 +56,9 @@ const local: NetworkUserConfig = {
 const devnet: NetworkUserConfig = {
   url: DEVNET_URL || 'http://localhost:8545',
   accounts: DEVNET_PK ? [DEVNET_PK] : { mnemonic: DEFAULT_MNEMONIC },
+  companionNetworks: {
+    mainchain: 'goerli-for-devnet',
+  },
 };
 
 const testnet: NetworkUserConfig = {
@@ -64,6 +66,9 @@ const testnet: NetworkUserConfig = {
   url: TESTNET_URL || 'https://saigon-testnet.roninchain.com/rpc',
   accounts: TESTNET_PK ? [TESTNET_PK] : { mnemonic: DEFAULT_MNEMONIC },
   blockGasLimit: 100000000,
+  companionNetworks: {
+    mainchain: 'goerli',
+  },
 };
 
 const mainnet: NetworkUserConfig = {
@@ -71,18 +76,21 @@ const mainnet: NetworkUserConfig = {
   url: MAINNET_URL || 'https://api.roninchain.com/rpc',
   accounts: MAINNET_PK ? [MAINNET_PK] : { mnemonic: DEFAULT_MNEMONIC },
   blockGasLimit: 100000000,
+  companionNetworks: {
+    mainchain: 'ethereum',
+  },
 };
 
 const goerli: NetworkUserConfig = {
   chainId: 5,
-  url: GOERLI_URL || '',
+  url: GOERLI_URL || 'https://gateway.tenderly.co/public/goerli',
   accounts: GOERLI_PK ? [GOERLI_PK] : { mnemonic: DEFAULT_MNEMONIC },
   blockGasLimit: 100000000,
 };
 
 const ethereum: NetworkUserConfig = {
   chainId: 1,
-  url: ETHEREUM_URL || '',
+  url: ETHEREUM_URL || 'https://gateway.tenderly.co/public/mainnet',
   accounts: ETHEREUM_PK ? [ETHEREUM_PK] : { mnemonic: DEFAULT_MNEMONIC },
   blockGasLimit: 100000000,
 };
@@ -92,7 +100,7 @@ const compilerConfig: SolcUserConfig = {
   settings: {
     optimizer: {
       enabled: true,
-      runs: 10,
+      runs: 200,
     },
   },
 };
@@ -100,16 +108,49 @@ const compilerConfig: SolcUserConfig = {
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [compilerConfig],
+    overrides: {
+      'contracts/ronin/validator/RoninValidatorSet.sol': {
+        version: '0.8.17',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10,
+          },
+          /// @dev see: https://github.com/Uniswap/v3-core/blob/main/hardhat.config.ts
+          metadata: {
+            // do not include the metadata hash, since this is machine dependent
+            // and we want all generated code to be deterministic
+            // https://docs.soliditylang.org/en/v0.8.17/metadata.html
+            bytecodeHash: 'none',
+          },
+        },
+      },
+      'contracts/ronin/gateway/RoninBridgeManager.sol': {
+        version: '0.8.17',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10,
+          },
+          metadata: {
+            useLiteralContent: true,
+          },
+        },
+      },
+    },
   },
   typechain: {
     outDir: 'src/types',
   },
   paths: {
-    deploy: ['src/deploy', 'src/upgrades'],
+    deploy: ['src/deploy', 'src/upgrades', 'src/dashboard'],
+    tests: 'test/hardhat_test',
   },
   namedAccounts: {
     deployer: 0,
+    governor: 0,
     // governor: '0x00000000000000000000000000000000deadbeef',
+    // governor: 'privatekey://0x00000000000000000000000000000000deadbeef000000000000000000sample',
     // governor: 'trezor://0x0000000000000000000000000000000000000000',
   },
   networks: {
@@ -139,6 +180,13 @@ const config: HardhatUserConfig = {
   // },
   mocha: {
     timeout: 100000, // 100s
+  },
+
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    outputFile: './logs/contract_code_sizes.log',
   },
 };
 

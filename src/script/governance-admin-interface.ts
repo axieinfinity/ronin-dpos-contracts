@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, BigNumberish, BytesLike } from 'ethers';
 import { ethers, network } from 'hardhat';
-import { Address } from '@axieinfinity/hardhat-deploy/dist/types';
+import { Address } from 'hardhat-deploy/dist/types';
 import { TypedDataDomain } from '@ethersproject/abstract-signer';
 import { AbiCoder, Interface, keccak256, _TypedDataEncoder } from 'ethers/lib/utils';
 
@@ -10,12 +10,12 @@ import { RoninGovernanceAdmin, TransparentUpgradeableProxyV2__factory } from '..
 import { ProposalDetailStruct } from '../types/GovernanceAdmin';
 import { SignatureStruct } from '../types/MainchainGovernanceAdmin';
 import { RoninGovernanceAdminArguments } from '../utils';
-import { getLastBlockTimestamp } from '../../test/helpers/utils';
-import { defaultTestConfig } from '../../test/helpers/fixture';
+import { getLastBlockTimestamp } from '../../test/hardhat_test/helpers/utils';
+import { defaultTestConfig } from '../../test/hardhat_test/helpers/fixture';
 
 export const getGovernanceAdminDomain = (roninChainId: BigNumberish): TypedDataDomain => ({
   name: 'GovernanceAdmin',
-  version: '2',
+  version: '3',
   salt: keccak256(AbiCoder.prototype.encode(['string', 'uint256'], ['RONIN_GOVERNANCE_ADMIN', roninChainId])),
 });
 

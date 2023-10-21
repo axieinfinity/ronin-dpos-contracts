@@ -24,6 +24,13 @@ The collections of smart contracts that power the Ronin Delegated Proof of Stake
   $ yarn --frozen-lockfile
   ```
 
+- Install foundry libs
+
+    ```
+    $ git submodule add -b release-v0 https://github.com/PaulRBerg/prb-test lib/prb-test
+    $ git submodule add -b release-v4 https://github.com/PaulRBerg/prb-math lib/prb-math
+    ```
+
 - Compile contracts
 
   ```shell
@@ -36,17 +43,24 @@ The collections of smart contracts that power the Ronin Delegated Proof of Stake
   $ yarn test
   ```
 
+- Extract storage layout
+  ```shell
+  $ yarn plugin:storage-layout [--destination <output-path>] [--override <true|false>]
+  ```
+  - `<output-path>` (optional): The path to store generated storage layout file. If not provided, the default path is `layout/storage.txt`.
+  - `--override` (optional): Indicates whether to override the destination file at `<output-path>` if it already exists. By default, it is set to `false`.
+
 ### Target chain to deploy
 
 This repo contains source code of contracts that will be either deployed on the mainchains, or on Ronin chain.
 
 - On mainchains:
   - Governance contract: `MainchainGovernanceAdmin`
-  - Bridge contract: `MainchainGatewayV2`
+  - Bridge contract: `MainchainGatewayV3`
   - Trusted orgs contract: `RoninTrustedOrganization`
 - On Ronin chain:
   - Governance contract: `RoninGovernanceAdmin`
-  - Bridge operation: `RoninGatewayV2`
+  - Bridge operation: `RoninGatewayV3`
   - Trusted orgs contract: `RoninTrustedOrganization`
   - DPoS contracts
 
