@@ -11,8 +11,8 @@ import {
   ERC20PresetMinterPauser__factory,
   MockRoninValidatorSetExtended,
   MockRoninValidatorSetExtended__factory,
-  MockRoninGatewayV2Extended,
-  MockRoninGatewayV2Extended__factory,
+  MockRoninGatewayV3Extended,
+  MockRoninGatewayV3Extended__factory,
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
   Staking,
@@ -22,7 +22,7 @@ import {
   RoninBridgeManager,
 } from '../../../src/types';
 import { ERC20PresetMinterPauser } from '../../../src/types/ERC20PresetMinterPauser';
-import { ReceiptStruct } from '../../../src/types/IRoninGatewayV2';
+import { ReceiptStruct } from '../../../src/types/IRoninGatewayV3';
 import { DEFAULT_ADDRESS } from '../../../src/utils';
 import { deployTestSuite } from '../helpers/fixture';
 import { ContractType, mineBatchTxs } from '../helpers/utils';
@@ -34,7 +34,7 @@ let coinbase: SignerWithAddress;
 let operatorTuples: OperatorTuple[];
 let signers: SignerWithAddress[];
 
-let bridgeContract: MockRoninGatewayV2Extended;
+let bridgeContract: MockRoninGatewayV3Extended;
 let bridgeTracking: BridgeTracking;
 let stakingContract: Staking;
 let roninValidatorSet: MockRoninValidatorSetExtended;
@@ -72,7 +72,7 @@ describe('Ronin Gateway V2 test', () => {
 
     // Deploys bridge contracts
     token = await new ERC20PresetMinterPauser__factory(deployer).deploy('ERC20', 'ERC20');
-    const gatewayLogic = await new MockRoninGatewayV2Extended__factory(deployer).deploy();
+    const gatewayLogic = await new MockRoninGatewayV3Extended__factory(deployer).deploy();
     const gatewayProxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       gatewayLogic.address,
       deployer.address,
@@ -88,7 +88,7 @@ describe('Ronin Gateway V2 test', () => {
         [0],
       ])
     );
-    bridgeContract = MockRoninGatewayV2Extended__factory.connect(gatewayProxy.address, deployer);
+    bridgeContract = MockRoninGatewayV3Extended__factory.connect(gatewayProxy.address, deployer);
     await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
     // Deploys DPoS contracts
@@ -98,8 +98,7 @@ describe('Ronin Gateway V2 test', () => {
       bridgeTrackingAddress,
       roninBridgeManagerAddress,
       roninTrustedOrganizationAddress,
-      profileAddress,
-    } = await deployTestSuite('RoninGatewayV2')({
+    } = await initTest('RoninGatewayV3')({
       bridgeContract: bridgeContract.address,
       stakingArguments: {
         minValidatorStakingAmount,

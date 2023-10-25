@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../libraries/Transfer.sol";
 import "./consumers/MappedTokenConsumer.sol";
 
-interface IRoninGatewayV2 is MappedTokenConsumer {
+interface IRoninGatewayV3 is MappedTokenConsumer {
   /**
    * @dev Error thrown when attempting to withdraw funds that have already been migrated.
    */

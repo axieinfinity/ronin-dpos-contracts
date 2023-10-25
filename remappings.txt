@@ -6,3 +6,4 @@ hardhat/=./node_modules/hardhat/
 @ronin/test/=./test/foundry/
 @prb/test/=lib/prb-test/src/
 @prb/math/=lib/prb-math/
+solady/=lib/solady/src

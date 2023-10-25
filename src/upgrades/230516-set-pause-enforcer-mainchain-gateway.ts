@@ -6,7 +6,7 @@
 /// Governor who proposes this proposal must manually vote it after running this script.
 
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { GatewayV2__factory } from '../types';
+import { GatewayV3__factory } from '../types';
 import { explorerUrl, proxyCall } from './upgradeUtils';
 import { network } from 'hardhat';
 
@@ -24,7 +24,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
   }
 
   /// Set new enforcer for gateway
-  const GatewayInterface = GatewayV2__factory.createInterface();
+  const GatewayInterface = GatewayV3__factory.createInterface();
   const gatewayInstructions = [
     proxyCall(GatewayInterface.encodeFunctionData('setEmergencyPauser', [newMainchainPauseEnforcerLogic])),
   ];

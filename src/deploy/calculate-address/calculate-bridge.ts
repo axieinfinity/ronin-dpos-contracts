@@ -37,8 +37,8 @@ deploy.dependencies = [
   'BridgeTrackingLogic',
   'BridgeSlashLogic',
   'BridgeRewardLogic',
-  'MainchainGatewayV2Logic',
-  'RoninGatewayV2Logic',
+  'MainchainGatewayV3Logic',
+  'RoninGatewayV3Logic',
 ];
 
 export default deploy;

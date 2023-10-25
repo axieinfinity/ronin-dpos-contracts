@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../../ronin/gateway/RoninGatewayV2.sol";
+import "../../ronin/gateway/RoninGatewayV3.sol";
 
-contract MockRoninGatewayV2Extended is RoninGatewayV2 {
+contract MockRoninGatewayV3Extended is RoninGatewayV3 {
   /*
    * @dev Returns the vote weight for a deposit based on its corressponding hash.
    */

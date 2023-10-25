@@ -5,6 +5,8 @@ import { generalRoninConf, roninchainNetworks } from '../configs/config';
 import { TargetOptionStruct, bridgeManagerConf } from '../configs/bridge-manager';
 import { verifyAddress } from '../script/verify-address';
 import { TargetOption } from '../script/proposal';
+import { Network } from '../utils';
+import { Address } from 'hardhat-deploy/dist/types';
 
 const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironment) => {
   if (!roninchainNetworks.includes(network.name!)) {
@@ -13,6 +15,14 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
+
+  let bridgeTrackingContractAddress: Address;
+  if (network.name == Network.Hardhat) {
+    bridgeTrackingContractAddress = generalRoninConf[network.name]!.bridgeTrackingContract?.address!;
+  } else {
+    const bridgeTrackingContractDeployment = await deployments.get('BridgeTrackingProxy');
+    bridgeTrackingContractAddress = bridgeTrackingContractDeployment.address;
+  }
 
   const targets: TargetOptionStruct[] = [
     {
@@ -26,6 +36,10 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
     {
       option: TargetOption.BridgeSlash,
       target: generalRoninConf[network.name].bridgeSlashContract?.address!,
+    },
+    {
+      option: TargetOption.BridgeTracking,
+      target: bridgeTrackingContractAddress,
     },
   ];
 

@@ -11,13 +11,13 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  await deploy('MainchainGatewayV2Logic', {
-    contract: 'MainchainGatewayV2',
+  await deploy('MainchainGatewayV3Logic', {
+    contract: 'MainchainGatewayV3',
     from: deployer,
     log: true,
   });
 };
 
-deploy.tags = ['MainchainGatewayV2Logic'];
+deploy.tags = ['MainchainGatewayV3Logic'];
 
 export default deploy;
