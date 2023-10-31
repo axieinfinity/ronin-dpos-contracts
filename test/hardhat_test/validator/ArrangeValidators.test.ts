@@ -105,6 +105,7 @@ describe('Arrange validators', () => {
       roninGovernanceAdminAddress,
       fastFinalityTrackingAddress,
       profileAddress,
+      stakingContractAddress,
     } = await deployTestSuite('ArrangeValidators')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -143,6 +144,7 @@ describe('Arrange validators', () => {
       fastFinalityTrackingAddress,
       slashContractAddress,
       validatorContractAddress,
+      stakingContractAddress,
       maintenanceContractAddress: undefined,
     });
 

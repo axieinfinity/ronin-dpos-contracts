@@ -65,7 +65,7 @@ describe('Staking test', () => {
     const profileContractProxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       profileLogicContract.address,
       proxyAdmin.address,
-      profileLogicContract.interface.encodeFunctionData('initialize', [stakingContractAddr, validatorContractAddr])
+      profileLogicContract.interface.encodeFunctionData('initialize', [validatorContractAddr])
     );
     profileContract = Profile__factory.connect(profileContractProxy.address, deployer);
 
@@ -98,6 +98,8 @@ describe('Staking test', () => {
     await stakingProxyContract
       .connect(proxyAdmin)
       .functionDelegateCall(logicContract.interface.encodeFunctionData('initializeV3', [profileContract.address]));
+
+    await profileContract.initializeV2(stakingContractAddr);
 
     stakingContract = Staking__factory.connect(stakingProxyContract.address, deployer);
     expect(validatorContractAddr.toLowerCase()).eq(
@@ -528,8 +530,9 @@ describe('Staking test', () => {
           poolAddrSet.candidateAdmin.address,
           poolAddrSet.consensusAddr.address,
           poolAddrSet.treasuryAddr.address,
-          2, /* 0.02% */
-          generateSamplePubkey(),{ value: minValidatorStakingAmount }
+          2 /* 0.02% */,
+          generateSamplePubkey(),
+          { value: minValidatorStakingAmount }
         );
       expect(await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address)).deep.equal([
         poolAddrSet.poolAdmin.address,

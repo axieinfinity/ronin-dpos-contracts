@@ -20,8 +20,8 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     _setContract(ContractType.VALIDATOR, validatorContract);
   }
 
-  function initializeV2(address __stakingContract) external reinitializer(2) {
-    _setContract(ContractType.STAKING, __stakingContract);
+  function initializeV2(address stakingContract) external reinitializer(2) {
+    _setContract(ContractType.STAKING, stakingContract);
   }
 
   /**

@@ -314,6 +314,7 @@ describe('Credit score and bail out test', () => {
           validatorCandidates[0].consensusAddr.address,
           validatorCandidates[0].treasuryAddr.address,
           100_00,
+          generateSamplePubkey(),
           { value: minValidatorStakingAmount.mul(2) }
         );
 
