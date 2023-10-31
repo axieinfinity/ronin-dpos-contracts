@@ -6,6 +6,6 @@ set -ex
 yarn lint-staged
 yarn clean
 yarn compile
-yarn plugin:storage-layout --override true
+yarn plugin:storage-layout
 git add logs/storage_layout.log
 git add logs/contract_code_sizes.log

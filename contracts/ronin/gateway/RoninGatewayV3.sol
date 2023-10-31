@@ -3,26 +3,26 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "../../extensions/GatewayV2.sol";
+import "../../extensions/GatewayV3.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/MinimumWithdrawal.sol";
 import "../../interfaces/IERC20Mintable.sol";
 import "../../interfaces/IERC721Mintable.sol";
 import "../../interfaces/bridge/IBridgeTracking.sol";
-import "../../interfaces/IRoninGatewayV2.sol";
+import "../../interfaces/IRoninGatewayV3.sol";
 import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/consumers/VoteStatusConsumer.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../libraries/IsolatedGovernance.sol";
 import "../../interfaces/bridge/IBridgeManager.sol";
 
-contract RoninGatewayV2 is
-  GatewayV2,
+contract RoninGatewayV3 is
+  GatewayV3,
   Initializable,
   MinimumWithdrawal,
   AccessControlEnumerable,
   VoteStatusConsumer,
-  IRoninGatewayV2,
+  IRoninGatewayV3,
   HasContracts
 {
   using Token for Token.Info;
@@ -30,11 +30,8 @@ contract RoninGatewayV2 is
   using Transfer for Transfer.Receipt;
   using IsolatedGovernance for IsolatedGovernance.Vote;
 
-  /// @dev Withdrawal unlocker role hash
-  bytes32 public constant WITHDRAWAL_MIGRATOR = keccak256("WITHDRAWAL_MIGRATOR");
-
-  /// @dev Flag indicating whether the withdrawal migrate progress is done
-  bool public withdrawalMigrated;
+  /// @custom:deprecated Previously `withdrawalMigrated` (non-zero value)
+  bool private ___deprecated4;
   /// @dev Total withdrawal
   uint256 public withdrawalCount;
   /// @dev Mapping from chain id => deposit id => deposit vote
@@ -92,7 +89,7 @@ contract RoninGatewayV2 is
     uint256 _denominator,
     uint256 _trustedNumerator,
     uint256 _trustedDenominator,
-    address[] calldata _withdrawalMigrators,
+    address[] calldata /* _withdrawalMigrators */,
     // _packedAddresses[0]: roninTokens
     // _packedAddresses[1]: mainchainTokens
     address[][2] calldata _packedAddresses,
@@ -107,14 +104,6 @@ contract RoninGatewayV2 is
     if (_packedAddresses[0].length > 0) {
       _mapTokens(_packedAddresses[0], _packedAddresses[1], _packedNumbers[0], _standards);
       _setMinimumThresholds(_packedAddresses[0], _packedNumbers[1]);
-    }
-
-    for (uint256 _i; _i < _withdrawalMigrators.length; ) {
-      _grantRole(WITHDRAWAL_MIGRATOR, _withdrawalMigrators[_i]);
-
-      unchecked {
-        ++_i;
-      }
     }
   }
 
@@ -132,54 +121,15 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @dev Migrates withdrawals.
-   *
-   * Requirements:
-   * - The method caller is the migrator.
-   * - The arrays have the same length and its length larger than 0.
-   *
-   */
-  function migrateWithdrawals(
-    Transfer.Request[] calldata _requests,
-    address[] calldata _requesters
-  ) external onlyRole(WITHDRAWAL_MIGRATOR) {
-    if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
-    if (!(_requesters.length == _requests.length && _requests.length > 0)) revert ErrLengthMismatch(msg.sig);
-
-    for (uint256 _i; _i < _requests.length; ) {
-      MappedToken memory _token = getMainchainToken(_requests[_i].tokenAddr, 1);
-      if (_requests[_i].info.erc != _token.erc) revert ErrInvalidTokenStandard();
-
-      _storeAsReceipt(_requests[_i], 1, _requesters[_i], _token.tokenAddr);
-
-      unchecked {
-        ++_i;
-      }
-    }
-  }
-
-  /**
-   * @dev Mark the migration as done.
-   */
-  function markWithdrawalMigrated() external {
-    if (!(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(WITHDRAWAL_MIGRATOR, msg.sender))) {
-      revert ErrUnauthorized(msg.sig, RoleAccess.WITHDRAWAL_MIGRATOR);
-    }
-    if (withdrawalMigrated) revert ErrWithdrawalsMigrated();
-
-    withdrawalMigrated = true;
-  }
-
-  /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function getWithdrawalSignatures(
-    uint256 _withdrawalId,
-    address[] calldata _validators
+    uint256 withdrawalId,
+    address[] calldata operators
   ) external view returns (bytes[] memory _signatures) {
-    _signatures = new bytes[](_validators.length);
-    for (uint256 _i = 0; _i < _validators.length; ) {
-      _signatures[_i] = _withdrawalSig[_withdrawalId][_validators[_i]];
+    _signatures = new bytes[](operators.length);
+    for (uint256 _i = 0; _i < operators.length; ) {
+      _signatures[_i] = _withdrawalSig[withdrawalId][operators[_i]];
 
       unchecked {
         ++_i;
@@ -188,7 +138,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function depositFor(Transfer.Receipt calldata _receipt) external whenNotPaused onlyBridgeOperator {
     address _sender = msg.sender;
@@ -201,7 +151,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function tryBulkAcknowledgeMainchainWithdrew(
     uint256[] calldata _withdrawalIds
@@ -236,7 +186,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function tryBulkDepositFor(
     Transfer.Receipt[] calldata _receipts
@@ -263,14 +213,14 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function requestWithdrawalFor(Transfer.Request calldata _request, uint256 _chainId) external whenNotPaused {
     _requestWithdrawalFor(_request, msg.sender, _chainId);
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function bulkRequestWithdrawalFor(Transfer.Request[] calldata _requests, uint256 _chainId) external whenNotPaused {
     if (_requests.length == 0) revert ErrEmptyArray();
@@ -284,7 +234,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function requestWithdrawalSignatures(uint256 _withdrawalId) external whenNotPaused {
     if (mainchainWithdrew(_withdrawalId)) revert ErrWithdrawnOnMainchainAlready();
@@ -298,32 +248,32 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function bulkSubmitWithdrawalSignatures(
-    uint256[] calldata _withdrawals,
-    bytes[] calldata _signatures
+    uint256[] calldata withdrawals,
+    bytes[] calldata signatures
   ) external whenNotPaused onlyBridgeOperator {
-    address _validator = msg.sender;
+    address operator = msg.sender;
 
-    if (!(_withdrawals.length > 0 && _withdrawals.length == _signatures.length)) {
+    if (!(withdrawals.length > 0 && withdrawals.length == signatures.length)) {
       revert ErrLengthMismatch(msg.sig);
     }
 
     uint256 _minVoteWeight = minimumVoteWeight();
 
-    uint256 _id;
+    uint256 id;
     IBridgeTracking _bridgeTrackingContract = IBridgeTracking(getContract(ContractType.BRIDGE_TRACKING));
-    for (uint256 _i; _i < _withdrawals.length; ) {
-      _id = _withdrawals[_i];
-      _withdrawalSig[_id][_validator] = _signatures[_i];
-      _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Withdrawal, _id, _validator);
+    for (uint256 _i; _i < withdrawals.length; ) {
+      id = withdrawals[_i];
+      _withdrawalSig[id][operator] = signatures[_i];
+      _bridgeTrackingContract.recordVote(IBridgeTracking.VoteKind.Withdrawal, id, operator);
 
-      IsolatedGovernance.Vote storage _proposal = withdrawalStatVote[_id];
-      VoteStatus _status = _castIsolatedVote(_proposal, _validator, _minVoteWeight, bytes32(_id));
+      IsolatedGovernance.Vote storage _proposal = withdrawalStatVote[id];
+      VoteStatus _status = _castIsolatedVote(_proposal, operator, _minVoteWeight, bytes32(id));
       if (_status == VoteStatus.Approved) {
         _proposal.status = VoteStatus.Executed;
-        _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, _id);
+        _bridgeTrackingContract.handleVoteApproved(IBridgeTracking.VoteKind.Withdrawal, id);
       }
 
       unchecked {
@@ -333,7 +283,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function mapTokens(
     address[] calldata _roninTokens,
@@ -346,28 +296,28 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function depositVoted(uint256 _chainId, uint256 _depositId, address _voter) external view returns (bool) {
     return depositVote[_chainId][_depositId].voted(_voter);
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function mainchainWithdrewVoted(uint256 _withdrawalId, address _voter) external view returns (bool) {
     return mainchainWithdrewVote[_withdrawalId].voted(_voter);
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function mainchainWithdrew(uint256 _withdrawalId) public view returns (bool) {
     return mainchainWithdrewVote[_withdrawalId].status == VoteStatus.Executed;
   }
 
   /**
-   * @inheritdoc IRoninGatewayV2
+   * @inheritdoc IRoninGatewayV3
    */
   function getMainchainToken(address _roninToken, uint256 _chainId) public view returns (MappedToken memory _token) {
     _token = _mainchainToken[_roninToken][_chainId];
@@ -410,31 +360,30 @@ contract RoninGatewayV2 is
    * Emits the `Deposited` once the assets are released.
    *
    */
-  function _depositFor(Transfer.Receipt memory _receipt, address _validator, uint256 _minVoteWeight) internal {
-    uint256 _id = _receipt.id;
-    _receipt.info.validate();
-    if (_receipt.kind != Transfer.Kind.Deposit) revert ErrInvalidReceiptKind();
+  function _depositFor(Transfer.Receipt memory receipt, address operator, uint256 minVoteWeight) internal {
+    uint256 id = receipt.id;
+    receipt.info.validate();
+    if (receipt.kind != Transfer.Kind.Deposit) revert ErrInvalidReceiptKind();
 
-    if (_receipt.ronin.chainId != block.chainid)
-      revert ErrInvalidChainId(msg.sig, _receipt.ronin.chainId, block.chainid);
+    if (receipt.ronin.chainId != block.chainid) revert ErrInvalidChainId(msg.sig, receipt.ronin.chainId, block.chainid);
 
-    MappedToken memory _token = getMainchainToken(_receipt.ronin.tokenAddr, _receipt.mainchain.chainId);
+    MappedToken memory _token = getMainchainToken(receipt.ronin.tokenAddr, receipt.mainchain.chainId);
 
-    if (!(_token.erc == _receipt.info.erc && _token.tokenAddr == _receipt.mainchain.tokenAddr))
+    if (!(_token.erc == receipt.info.erc && _token.tokenAddr == receipt.mainchain.tokenAddr))
       revert ErrInvalidReceipt();
 
-    IsolatedGovernance.Vote storage _proposal = depositVote[_receipt.mainchain.chainId][_id];
-    bytes32 _receiptHash = _receipt.hash();
-    VoteStatus _status = _castIsolatedVote(_proposal, _validator, _minVoteWeight, _receiptHash);
-    emit DepositVoted(_validator, _id, _receipt.mainchain.chainId, _receiptHash);
+    IsolatedGovernance.Vote storage _proposal = depositVote[receipt.mainchain.chainId][id];
+    bytes32 _receiptHash = receipt.hash();
+    VoteStatus _status = _castIsolatedVote(_proposal, operator, minVoteWeight, _receiptHash);
+    emit DepositVoted(operator, id, receipt.mainchain.chainId, _receiptHash);
     if (_status == VoteStatus.Approved) {
       _proposal.status = VoteStatus.Executed;
-      _receipt.info.handleAssetTransfer(payable(_receipt.ronin.addr), _receipt.ronin.tokenAddr, IWETH(address(0)));
+      receipt.info.handleAssetTransfer(payable(receipt.ronin.addr), receipt.ronin.tokenAddr, IWETH(address(0)));
       IBridgeTracking(getContract(ContractType.BRIDGE_TRACKING)).handleVoteApproved(
         IBridgeTracking.VoteKind.Deposit,
-        _receipt.id
+        receipt.id
       );
-      emit Deposited(_receiptHash, _receipt);
+      emit Deposited(_receiptHash, receipt);
     }
   }
 
@@ -488,7 +437,7 @@ contract RoninGatewayV2 is
   }
 
   /**
-   * @inheritdoc GatewayV2
+   * @inheritdoc GatewayV3
    */
   function _getTotalWeight() internal view virtual override returns (uint256) {
     return IBridgeManager(getContract(ContractType.BRIDGE_MANAGER)).getTotalWeight();

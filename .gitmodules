@@ -9,3 +9,6 @@
 	path = lib/prb-math
 	url = https://github.com/PaulRBerg/prb-math
 	branch = release-v4
+[submodule "lib/solady"]
+	path = lib/solady
+	url = https://github.com/vectorized/solady

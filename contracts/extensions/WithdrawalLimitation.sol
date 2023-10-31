@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./GatewayV2.sol";
+import "./GatewayV3.sol";
 
-abstract contract WithdrawalLimitation is GatewayV2 {
+abstract contract WithdrawalLimitation is GatewayV3 {
   /// @dev Error of invalid percentage.
   error ErrInvalidPercentage();
 
@@ -50,7 +50,7 @@ abstract contract WithdrawalLimitation is GatewayV2 {
   uint256[50] private ______gap;
 
   /**
-   * @dev Override `GatewayV2-setThreshold`.
+   * @dev Override `GatewayV3-setThreshold`.
    *
    * Requirements:
    * - The high-tier vote weight threshold must equal to or larger than the normal threshold.

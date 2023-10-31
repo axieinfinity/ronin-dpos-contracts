@@ -13,13 +13,13 @@ const deploy = async ({ getNamedAccounts, deployments }: HardhatRuntimeEnvironme
 
   let nonce = await ethers.provider.getTransactionCount(deployer);
 
-  await deploy('RoninGatewayV2Logic', {
-    contract: 'RoninGatewayV2',
+  await deploy('RoninGatewayV3Logic', {
+    contract: 'RoninGatewayV3',
     from: deployer,
     log: true,
   });
 };
 
-deploy.tags = ['RoninGatewayV2Logic'];
+deploy.tags = ['RoninGatewayV3Logic'];
 
 export default deploy;

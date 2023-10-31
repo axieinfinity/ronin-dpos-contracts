@@ -43,15 +43,27 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
     address bridgeTrackingContract,
     address bridgeSlashContract,
     address validatorSetContract,
+    address dposGA,
     uint256 rewardPerPeriod
   ) external payable initializer {
     _setContract(ContractType.BRIDGE_MANAGER, bridgeManagerContract);
     _setContract(ContractType.BRIDGE_TRACKING, bridgeTrackingContract);
     _setContract(ContractType.BRIDGE_SLASH, bridgeSlashContract);
     _setContract(ContractType.VALIDATOR, validatorSetContract);
+    _setContract(ContractType.GOVERNANCE_ADMIN, dposGA);
+    LATEST_REWARDED_PERIOD_SLOT.store(type(uint256).max);
     _setRewardPerPeriod(rewardPerPeriod);
-    _syncLatestRewardedPeriod();
     _receiveRON();
+  }
+
+  /**
+   * @dev Helper for running upgrade script, required to only revoked once by the DPoS's governance admin.
+   * The following must be assured after initializing REP2: `_lastSyncPeriod` == `{BridgeReward}.latestRewardedPeriod` == `currentPeriod()`
+   */
+  function initializeREP2() external onlyContract(ContractType.GOVERNANCE_ADMIN) {
+    require(getLatestRewardedPeriod() == type(uint256).max, "already init rep 2");
+    LATEST_REWARDED_PERIOD_SLOT.store(IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod() - 1);
+    _setContract(ContractType.GOVERNANCE_ADMIN, address(0));
   }
 
   /**
@@ -95,6 +107,8 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
 
   /**
    * @inheritdoc IBridgeReward
+   *
+   * @dev The `period` a.k.a. `latestSyncedPeriod` must equal to `latestRewardedPeriod` + 1.
    */
   function execSyncReward(
     address[] calldata operators,
@@ -106,7 +120,7 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
     if (operators.length != ballots.length) revert ErrLengthMismatch(msg.sig);
     if (operators.length == 0) return;
 
-    // Only sync the period that is after the latest rewarded period.
+    // Only sync the period that is after the latest rewarded period, i.e. `latestSyncedPeriod == latestRewardedPeriod + 1`.
     unchecked {
       uint256 latestRewardedPeriod = getLatestRewardedPeriod();
       if (period < latestRewardedPeriod + 1) revert ErrInvalidArguments(msg.sig);
@@ -193,16 +207,6 @@ contract BridgeReward is IBridgeReward, BridgeTrackingHelper, HasContracts, RONT
     }
 
     TOTAL_REWARDS_SCATTERED_SLOT.addAssign(sumRewards);
-  }
-
-  /**
-   * @dev Internal function to synchronize the latest rewarded period based on the current period of the validator set contract.
-   * @notice This function is used internally to synchronize the latest rewarded period with the current period of the validator set contract.
-   * @notice The `currentPeriod` of the validator set contract is retrieved and stored in the `LATEST_REWARDED_PERIOD_SLOT`.
-   * @notice This function ensures that the latest rewarded period is updated to reflect the current period in the validator set contract.
-   */
-  function _syncLatestRewardedPeriod() internal {
-    LATEST_REWARDED_PERIOD_SLOT.store(IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod());
   }
 
   /**

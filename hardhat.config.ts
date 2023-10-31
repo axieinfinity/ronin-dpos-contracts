@@ -3,9 +3,9 @@ import '@nomiclabs/hardhat-ethers';
 import 'hardhat-deploy';
 import 'hardhat-gas-reporter';
 import '@nomicfoundation/hardhat-chai-matchers';
-import 'hardhat-contract-sizer';
 import '@solidstate/hardhat-4byte-uploader';
-import 'hardhat-storage-layout';
+import '@bahuy3103/hardhat-storage-layout';
+import '@bahuy3103/hardhat-contract-sizer';
 
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, NetworkUserConfig, SolcUserConfig } from 'hardhat/types';
@@ -125,19 +125,32 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      'contracts/ronin/gateway/RoninBridgeManager.sol': {
+        version: '0.8.17',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10,
+          },
+          metadata: {
+            useLiteralContent: true,
+          },
+        },
+      },
     },
   },
   typechain: {
     outDir: 'src/types',
   },
   paths: {
-    deploy: ['src/deploy', 'src/upgrades'],
+    deploy: ['src/deploy', 'src/upgrades', 'src/dashboard'],
     tests: 'test/hardhat_test',
   },
   namedAccounts: {
     deployer: 0,
     governor: 0,
     // governor: '0x00000000000000000000000000000000deadbeef',
+    // governor: 'privatekey://0x00000000000000000000000000000000deadbeef000000000000000000sample',
     // governor: 'trezor://0x0000000000000000000000000000000000000000',
   },
   networks: {

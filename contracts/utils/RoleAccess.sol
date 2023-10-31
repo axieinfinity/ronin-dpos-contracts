@@ -11,5 +11,6 @@ enum RoleAccess {
   /* 6 */ __DEPRECATED_BRIDGE_OPERATOR,
   /* 7 */ BLOCK_PRODUCER,
   /* 8 */ VALIDATOR_CANDIDATE,
-  /* 9 */ CONSENSUS
+  /* 9 */ CONSENSUS,
+  /* 10 */ TREASURY
 }
