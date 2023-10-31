@@ -27,7 +27,7 @@
     "hardhat.config.{js,ts}": "prettier --write"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "4.7.3"
+    "@openzeppelin/contracts": "4.9.3"
   },
   "devDependencies": {
     "@bahuy3103/hardhat-contract-sizer": "2.10.3",
