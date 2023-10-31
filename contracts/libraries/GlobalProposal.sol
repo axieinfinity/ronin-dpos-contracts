@@ -13,7 +13,8 @@ library GlobalProposal {
     /* 0 */ BridgeManager,
     /* 1 */ GatewayContract,
     /* 2 */ BridgeReward,
-    /* 3 */ BridgeSlash
+    /* 3 */ BridgeSlash,
+    /* 4 */ BridgeTracking
   }
 
   struct GlobalProposalDetail {

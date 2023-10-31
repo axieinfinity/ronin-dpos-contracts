@@ -12,8 +12,8 @@ import {
   MockRoninValidatorSetExtended__factory,
   RoninBridgeManager,
   RoninBridgeManager__factory,
-  RoninGatewayV2,
-  RoninGatewayV2__factory,
+  RoninGatewayV3,
+  RoninGatewayV3__factory,
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
   Staking,
@@ -21,7 +21,7 @@ import {
   TransparentUpgradeableProxyV2__factory,
 } from '../../../src/types';
 import { ERC20PresetMinterPauser } from '../../../src/types/ERC20PresetMinterPauser';
-import { ReceiptStruct } from '../../../src/types/IRoninGatewayV2';
+import { ReceiptStruct } from '../../../src/types/IRoninGatewayV3';
 import { DEFAULT_ADDRESS } from '../../../src/utils';
 import {
   createManyTrustedOrganizationAddressSets,
@@ -45,7 +45,7 @@ let candidates: ValidatorCandidateAddressSet[];
 let operatorTuples: OperatorTuple[];
 let signers: SignerWithAddress[];
 
-let bridgeContract: RoninGatewayV2;
+let bridgeContract: RoninGatewayV3;
 let bridgeTracking: BridgeTracking;
 let stakingContract: Staking;
 let roninValidatorSet: MockRoninValidatorSetExtended;
@@ -88,7 +88,7 @@ describe('[Integration] Bridge Tracking test', () => {
 
     // Deploys bridge contracts
     token = await new ERC20PresetMinterPauser__factory(deployer).deploy('ERC20', 'ERC20');
-    const bridgeLogic = await new RoninGatewayV2__factory(deployer).deploy();
+    const bridgeLogic = await new RoninGatewayV3__factory(deployer).deploy();
     const bridgeProxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       bridgeLogic.address,
       deployer.address,
@@ -149,7 +149,7 @@ describe('[Integration] Bridge Tracking test', () => {
       },
     });
 
-    bridgeContract = RoninGatewayV2__factory.connect(bridgeProxy.address, deployer);
+    bridgeContract = RoninGatewayV3__factory.connect(bridgeProxy.address, deployer);
     await token.grantRole(await token.MINTER_ROLE(), bridgeContract.address);
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -226,7 +226,12 @@ describe('[Integration] Bridge Tracking test', () => {
     expect(period).gt(0);
 
     // InitV3 after the period 0
-    await bridgeTracking.initializeV3(bridgeManager.address, bridgeSlashAddress, bridgeRewardAddress);
+    await bridgeTracking.initializeV3(
+      bridgeManager.address,
+      bridgeSlashAddress,
+      bridgeRewardAddress,
+      governanceAdmin.address
+    );
   });
 
   after(async () => {

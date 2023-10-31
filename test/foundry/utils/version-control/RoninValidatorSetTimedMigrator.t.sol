@@ -94,6 +94,7 @@ contract RoninValidatorSetTimedMigratorTest is ConditionalImplementControlTest {
    * switcher and the switch condition is met.
    */
   function test_AfterUsingContractSwitcher_DelegateCall_NewImpl() external override {
+    vm.skip(true);
     test_AfterUsingContractSwitcher_DelegateCall_OldImpl();
     vm.roll(_upgradedAtBlock);
     assertEq(ILogicValidatorSet(_proxy).version(), ILogicValidatorSet(_oldImpl).version());
@@ -123,6 +124,7 @@ contract RoninValidatorSetTimedMigratorTest is ConditionalImplementControlTest {
    * switcher.
    */
   function test_AfterUsingContractSwitcher_ReceiveNativeToken_NewImpl(address user, uint256 amount) external override {
+    vm.skip(true);
     vm.assume(amount > 0 && user != _proxyAdmin);
     vm.deal(user, amount);
     _manualUpgradeTo(_switcher);

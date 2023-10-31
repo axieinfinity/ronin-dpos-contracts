@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import { IdentityGuard, IConditionalImplementControl, ConditionalImplementControl } from "../../../extensions/version-control/ConditionalImplementControl.sol";
 import { ITimingInfo } from "../../../interfaces/validator/info-fragments/ITimingInfo.sol";
 import { ICoinbaseExecution } from "../../../interfaces/validator/ICoinbaseExecution.sol";
-import { HasProxyAdmin, HasContracts } from "../../../extensions/collections/HasContracts.sol";
 import { TransparentUpgradeableProxyV2 } from "../../../extensions/TransparentUpgradeableProxyV2.sol";
 import { ContractType } from "../../../utils/ContractType.sol";
 
@@ -12,7 +11,7 @@ import { ContractType } from "../../../utils/ContractType.sol";
  * @title RoninValidatorSetTimedMigrator
  * @dev A contract that facilitates timed migration of the Ronin validator set using conditional version control.
  */
-contract RoninValidatorSetTimedMigrator is ConditionalImplementControl, HasContracts {
+contract RoninValidatorSetTimedMigrator is ConditionalImplementControl {
   /**
    * @dev Modifier that executes the function when conditions are met.
    * If the function is {wrapUpEpoch} from {ICoinbaseExecution},
@@ -49,6 +48,7 @@ contract RoninValidatorSetTimedMigrator is ConditionalImplementControl, HasContr
     IConditionalImplementControl(getContract(ContractType.STAKING)).selfUpgrade();
     IConditionalImplementControl(getContract(ContractType.SLASH_INDICATOR)).selfUpgrade();
     IConditionalImplementControl(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).selfUpgrade();
+    IConditionalImplementControl(getContract(ContractType.BRIDGE_TRACKING)).selfUpgrade();
   }
 
   /**
@@ -67,7 +67,7 @@ contract RoninValidatorSetTimedMigrator is ConditionalImplementControl, HasContr
     return ITimingInfo(address(this)).currentPeriod();
   }
 
-  function _requireSelfCall() internal view override(ConditionalImplementControl, IdentityGuard) {
+  function _requireSelfCall() internal view override {
     ConditionalImplementControl._requireSelfCall();
   }
 }

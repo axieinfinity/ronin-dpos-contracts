@@ -5,7 +5,7 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { explorerUrl, proxyCall, proxyInterface } from './upgradeUtils';
 import { VoteType } from '../script/proposal';
-import { RoninGatewayV2__factory } from '../types';
+import { RoninGatewayV3__factory } from '../types';
 import { generalRoninConf, roninchainNetworks } from '../configs/config';
 import { network } from 'hardhat';
 import { ProposalDetailStruct } from '../types/GovernanceAdmin';
@@ -21,16 +21,16 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   /// Upgrade contracts
 
-  const RoninGatewayV2LogicDepl = await deployments.get('RoninGatewayV2Logic');
-  const RoninGatewayV2Addr = generalRoninConf[network.name]!.bridgeContract;
+  const RoninGatewayV3LogicDepl = await deployments.get('RoninGatewayV3Logic');
+  const RoninGatewayV3Addr = generalRoninConf[network.name]!.bridgeContract;
 
   const RoninGatewayPauseEnforcerProxy = await deployments.get('RoninGatewayPauseEnforcerProxy');
-  const initializeV2_SIG = new RoninGatewayV2__factory().interface.encodeFunctionData('initializeV2');
+  const initializeV2_SIG = new RoninGatewayV3__factory().interface.encodeFunctionData('initializeV2');
 
-  const RoninGatewayV2Instr = [
-    proxyInterface.encodeFunctionData('upgradeToAndCall', [RoninGatewayV2LogicDepl.address, initializeV2_SIG]),
+  const RoninGatewayV3Instr = [
+    proxyInterface.encodeFunctionData('upgradeToAndCall', [RoninGatewayV3LogicDepl.address, initializeV2_SIG]),
     proxyCall(
-      new RoninGatewayV2__factory().interface.encodeFunctionData('setEmergencyPauser', [
+      new RoninGatewayV3__factory().interface.encodeFunctionData('setEmergencyPauser', [
         RoninGatewayPauseEnforcerProxy.address,
       ])
     ),
@@ -51,10 +51,10 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     chainId: network.config.chainId!,
     expiryTimestamp: proposalExpiryTimestamp,
     nonce,
-    targets: [...RoninGatewayV2Instr.map(() => RoninGatewayV2Addr)], // targets
-    values: [...RoninGatewayV2Instr].map(() => 0), // values
-    calldatas: [...RoninGatewayV2Instr], // datas
-    gasAmounts: [...RoninGatewayV2Instr].map(() => 1_000_000), // gasAmounts
+    targets: [...RoninGatewayV3Instr.map(() => RoninGatewayV3Addr)], // targets
+    values: [...RoninGatewayV3Instr].map(() => 0), // values
+    calldatas: [...RoninGatewayV3Instr], // datas
+    gasAmounts: [...RoninGatewayV3Instr].map(() => 1_000_000), // gasAmounts
   };
 
   const tx = await execute(
