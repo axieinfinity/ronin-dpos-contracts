@@ -10,9 +10,6 @@ abstract contract ProfileStorage is IProfile, HasContracts {
   /// @dev Mapping from id address => candidate profile.
   mapping(address => CandidateProfile) internal _id2Profile;
 
-  /// @dev Mapping from consensus address => id address.
-  mapping(TConsensus => address) internal _consensus2Id;
-
   /**
    * @dev Mapping from any address or keccak256(pubkey) => whether it is already registered.
    * This registry can only be toggled to `true` and NOT vice versa. All registered values
@@ -20,8 +17,11 @@ abstract contract ProfileStorage is IProfile, HasContracts {
    */
   mapping(uint256 => bool) internal _registry;
 
+  /// @dev Mapping from consensus address => id address.
+  mapping(TConsensus => address) internal _consensus2Id;
+
   /// @dev Upgradeable gap.
-  bytes32[49] __gap;
+  bytes32[48] __gap;
 
   /**
    * @dev Add a profile from memory to storage.
@@ -40,9 +40,9 @@ abstract contract ProfileStorage is IProfile, HasContracts {
     emit ProfileAdded(newProfile.id);
   }
 
-  function _setConsensus(CandidateProfile storage _profile, address consensus) internal {
+  function _setConsensus(CandidateProfile storage _profile, TConsensus consensus) internal {
     _profile.consensus = consensus;
-    _registry[uint256(uint160(consensus))] = true;
+    _registry[uint256(uint160(TConsensus.unwrap(consensus)))] = true;
   }
 
   function _setAdmin(CandidateProfile storage _profile, address admin) internal {

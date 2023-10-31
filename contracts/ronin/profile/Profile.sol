@@ -5,6 +5,7 @@ import "../../interfaces/validator/ICandidateManager.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/staking/IStaking.sol";
 import "../../interfaces/IProfile.sol";
+import "./ProfileHandler.sol";
 import "./ProfileXComponents.sol";
 import { ErrUnauthorized, RoleAccess } from "../../utils/CommonErrors.sol";
 import { ContractType } from "../../utils/ContractType.sol";
@@ -12,13 +13,17 @@ import "./ProfileHandler.sol";
 
 pragma solidity ^0.8.9;
 
-contract Profile is IProfile, ProfileStorage, ProfileXComponents, Initializable {
+contract Profile is IProfile, ProfileStorage, ProfileHandler, ProfileXComponents, Initializable {
   constructor() {
     _disableInitializers();
   }
 
   function initialize(address validatorContract) external initializer {
     _setContract(ContractType.VALIDATOR, validatorContract);
+  }
+
+  function initializeV2(address __stakingContract) external reinitializer(2) {
+    _setContract(ContractType.STAKING, __stakingContract);
   }
 
   function migrateMainnetV2() external {
@@ -62,14 +67,6 @@ contract Profile is IProfile, ProfileStorage, ProfileXComponents, Initializable 
       _profile = _id2Profile[consensusList[i]];
       _profile.id = consensusList[i];
     }
-  }
-
-  /**
-   * @dev Initializes the contract storage.
-   */
-  function initialize(address __stakingContract, address __validatorContract) external initializer {
-    _setContract(ContractType.STAKING, __stakingContract);
-    _setContract(ContractType.VALIDATOR, __validatorContract);
   }
 
   /**
@@ -153,7 +150,7 @@ contract Profile is IProfile, ProfileStorage, ProfileXComponents, Initializable 
    * @inheritdoc IProfile
    */
   function registerProfile(CandidateProfile memory profile) external {
-    if (profile.id != profile.consensus) revert ErrIdAndConsensusDiffer();
+    if (profile.id != TConsensus.unwrap(profile.consensus)) revert ErrIdAndConsensusDiffer();
 
     CandidateProfile storage _profile = _id2Profile[profile.id];
     if (_profile.id != address(0)) revert ErrExistentProfile();
