@@ -3,9 +3,9 @@ import '@nomiclabs/hardhat-ethers';
 import 'hardhat-deploy';
 import 'hardhat-gas-reporter';
 import '@nomicfoundation/hardhat-chai-matchers';
-import 'hardhat-contract-sizer';
 import '@solidstate/hardhat-4byte-uploader';
-import 'hardhat-storage-layout';
+import '@bahuy3103/hardhat-storage-layout';
+import '@bahuy3103/hardhat-contract-sizer';
 
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, NetworkUserConfig, SolcUserConfig } from 'hardhat/types';
