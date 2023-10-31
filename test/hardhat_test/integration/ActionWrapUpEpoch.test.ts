@@ -163,6 +163,7 @@ describe('[Integration] Wrap up epoch', () => {
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount.mul(2).add(i),
             }
@@ -271,6 +272,7 @@ describe('[Integration] Wrap up epoch', () => {
             validators[i].consensusAddr.address,
             validators[i].treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount.mul(3).add(i),
             }

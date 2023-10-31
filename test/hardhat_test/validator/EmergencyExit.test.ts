@@ -16,7 +16,7 @@ import {
   StakingVesting,
 } from '../../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
-import { mineBatchTxs } from '../helpers/utils';
+import { generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
 import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { Address } from 'hardhat-deploy/dist/types';
@@ -157,6 +157,7 @@ describe('Emergency Exit test', () => {
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
           2_00,
+          generateSamplePubkey(),
           {
             value: stakedAmount[i],
           }

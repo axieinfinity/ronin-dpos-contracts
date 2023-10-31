@@ -17,7 +17,7 @@ import {
 
 import { EpochController, expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { expects as CandidateManagerExpects } from '../helpers/candidate-manager';
-import { mineBatchTxs } from '../helpers/utils';
+import { generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
 import { SlashType } from '../../../src/script/slash-indicator';
 import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
@@ -156,6 +156,7 @@ describe('[Integration] Slash validators', () => {
           slashee.consensusAddr.address,
           slashee.treasuryAddr.address,
           2_00,
+          generateSamplePubkey(),
           {
             value: slasheeInitStakingAmount,
           }
@@ -210,6 +211,7 @@ describe('[Integration] Slash validators', () => {
             slashee.consensusAddr.address,
             slashee.treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: slasheeInitStakingAmount,
             }
@@ -358,6 +360,7 @@ describe('[Integration] Slash validators', () => {
               slashees[i].consensusAddr.address,
               slashees[i].treasuryAddr.address,
               2_00,
+              generateSamplePubkey(),
               {
                 value: slasheeInitStakingAmount.add(slashees.length - i),
               }
@@ -595,6 +598,7 @@ describe('[Integration] Slash validators', () => {
                 slashee.consensusAddr.address,
                 slashee.treasuryAddr.address,
                 2_00,
+                generateSamplePubkey(),
                 {
                   value: slasheeInitStakingAmount,
                 }

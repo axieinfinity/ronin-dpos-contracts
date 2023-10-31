@@ -21,7 +21,7 @@ import { EpochController } from '../helpers/ronin-validator-set';
 import { expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { expects as CandidateManagerExpects } from '../helpers/candidate-manager';
 import { expects as StakingVestingExpects } from '../helpers/staking-vesting';
-import { ContractType, getLastBlockTimestamp, mineBatchTxs } from '../helpers/utils';
+import { ContractType, generateSamplePubkey, getLastBlockTimestamp, mineBatchTxs } from '../helpers/utils';
 import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { BlockRewardDeprecatedType } from '../../../src/script/ronin-validator-set';
@@ -231,6 +231,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount.add(i * dummyStakingMultiplier),
             }
@@ -290,9 +291,16 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
     it('Should be able to wrap up epoch at the end of period and pick top `maxValidatorNumber` to be validators', async () => {
       await stakingContract
         .connect(poolAdmin)
-        .applyValidatorCandidate(candidateAdmin.address, consensusAddr.address, treasury.address, 1_00 /* 1% */, {
-          value: minValidatorStakingAmount.mul(100),
-        });
+        .applyValidatorCandidate(
+          candidateAdmin.address,
+          consensusAddr.address,
+          treasury.address,
+          1_00 /* 1% */,
+          generateSamplePubkey(),
+          {
+            value: minValidatorStakingAmount.mul(100),
+          }
+        );
       for (let i = 4; i < localValidatorCandidatesLength; i++) {
         await stakingContract
           .connect(validatorCandidates[i].poolAdmin)
@@ -301,6 +309,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount.add(i * dummyStakingMultiplier),
             }

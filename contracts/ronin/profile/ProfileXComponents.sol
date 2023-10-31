@@ -13,7 +13,8 @@ abstract contract ProfileXComponents is IProfile, ProfileHandler {
   function execApplyValidatorCandidate(
     address admin,
     address id,
-    address treasury
+    address treasury,
+    bytes calldata pubkey
   ) external override onlyContract(ContractType.STAKING) {
     // Check existent profile
     CandidateProfile storage _profile = _id2Profile[id];
@@ -26,7 +27,7 @@ abstract contract ProfileXComponents is IProfile, ProfileHandler {
       admin: admin,
       treasury: payable(treasury),
       governor: address(0),
-      pubkey: "" // TODO: Handle add pubkey
+      pubkey: pubkey
     });
     _checkDuplicatedInRegistry(profile);
     _addNewProfile(_profile, profile);

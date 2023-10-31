@@ -152,6 +152,7 @@ describe('[Integration] Submit Block Reward', () => {
           validator.consensusAddr.address,
           validator.treasuryAddr.address,
           2_00,
+          generateSamplePubkey(),
           {
             value: initStakingAmount,
           }
@@ -203,6 +204,7 @@ describe('[Integration] Submit Block Reward', () => {
           validator.consensusAddr.address,
           validator.treasuryAddr.address,
           2_00,
+          generateSamplePubkey(),
           {
             value: initStakingAmount,
           }

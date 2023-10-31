@@ -74,7 +74,7 @@ interface IProfile {
    * Requirements:
    * - Only `stakingContract` can call this method.
    */
-  function execApplyValidatorCandidate(address admin, address id, address treasury) external;
+  function execApplyValidatorCandidate(address admin, address id, address treasury, bytes calldata pubkey) external;
 
   /**
    * @dev Updated immediately without waiting time.

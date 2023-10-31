@@ -26,7 +26,7 @@ import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
-import { getLastBlockTimestamp } from '../helpers/utils';
+import { generateSamplePubkey, getLastBlockTimestamp } from '../helpers/utils';
 import { ProposalDetailStruct } from '../../../src/types/GovernanceAdmin';
 import { getProposalHash, VoteType } from '../../../src/script/proposal';
 import { expects as GovernanceAdminExpects } from '../helpers/governance-admin';
@@ -180,6 +180,7 @@ describe('Slash indicator test', () => {
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
           1,
+          generateSamplePubkey(),
           { value: minValidatorStakingAmount.mul(2).add(maxValidatorNumber).sub(i) }
         );
     }
