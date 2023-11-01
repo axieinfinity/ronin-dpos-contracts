@@ -5,13 +5,13 @@ import { ethers, network } from 'hardhat';
 
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import {
-  BridgeManager__factory,
   BridgeTracking,
   BridgeTracking__factory,
   MockGatewayForTracking,
   MockGatewayForTracking__factory,
   MockRoninValidatorSetExtended,
   MockRoninValidatorSetExtended__factory,
+  Profile__factory,
   RoninBridgeManager,
   RoninBridgeManager__factory,
   RoninGovernanceAdmin,
@@ -30,13 +30,14 @@ import {
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { deployTestSuite } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
-import { ContractType, mineBatchTxs } from '../helpers/utils';
+import { ContractType, generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
 import {
   OperatorTuple,
   createManyOperatorTuples,
   createOperatorTuple,
 } from '../helpers/address-set-types/operator-tuple-type';
 import { BridgeManagerInterface } from '../../../src/script/bridge-admin-interface';
+import { keccak256 } from 'ethers/lib/utils';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
@@ -157,11 +158,12 @@ describe('Bridge Tracking test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, roninValidatorSet.address, roninValidatorSet.address],
+      [stakingContract.address, roninValidatorSet.address, roninValidatorSet.address, profileAddress],
       [
         stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
         roninValidatorSet.interface.encodeFunctionData('initializeV3', [fastFinalityTrackingAddress]),
         roninValidatorSet.interface.encodeFunctionData('initializeV4', [profileAddress]),
+        new Profile__factory().interface.encodeFunctionData('initializeV2', [stakingContractAddress]),
       ]
     );
 
@@ -176,6 +178,7 @@ describe('Bridge Tracking test', () => {
           candidates[i].consensusAddr.address,
           candidates[i].treasuryAddr.address,
           1,
+          generateSamplePubkey(candidates[i].consensusAddr.address, candidates[i].candidateAdmin.address),
           { value: minValidatorStakingAmount + candidates.length - i }
         );
     }

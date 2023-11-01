@@ -27,6 +27,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { initializeTestSuite } from '../helpers/initializer';
+import { generateSamplePubkey } from '../helpers/utils';
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -140,6 +141,7 @@ describe('Maintenance test', () => {
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
           1,
+          generateSamplePubkey(),
           { value: minValidatorStakingAmount.add(maxValidatorNumber).sub(i) }
         );
     }

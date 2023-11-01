@@ -29,7 +29,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { mineBatchTxs } from '../helpers/utils';
+import { generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
 import { initializeTestSuite } from '../helpers/initializer';
 
 let validatorContract: MockRoninValidatorSetExtended;
@@ -165,6 +165,7 @@ describe('Ronin Validator Set: Fast Finality test', () => {
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
           100_00,
+          generateSamplePubkey(),
           { value: minValidatorStakingAmount.mul(2).add(maxValidatorNumber).sub(i) }
         );
     }

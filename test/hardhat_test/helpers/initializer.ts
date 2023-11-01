@@ -11,6 +11,8 @@ import {
   StakingVesting,
   StakingVesting__factory,
   Staking__factory,
+  Profile,
+  Profile__factory,
 } from '../../../src/types';
 import { StakingVestingArguments } from '../../../src/utils';
 import { defaultTestConfig } from './fixture';
@@ -20,6 +22,7 @@ let stakingContract: Staking | undefined;
 let validatorContract: RoninValidatorSet | undefined;
 let slashContract: SlashIndicator | undefined;
 let stakingVestingContract: StakingVesting | undefined;
+let profileContract: Profile | undefined;
 
 export interface InitializeTestSuiteInput {
   deployer: SignerWithAddress;
@@ -49,6 +52,11 @@ interface InitREP3Input {
   validatorContract?: RoninValidatorSet;
 }
 
+interface InitREP4Input {
+  profileContract?: Profile;
+  stakingContract?: Staking;
+}
+
 export const initializeTestSuite = async (input: InitializeTestSuiteInput) => {
   // Cheat the instance of `input`, since it propagates among tests, and does not get cleared.
   maintenanceContract = input.maintenanceContractAddress
@@ -71,6 +79,8 @@ export const initializeTestSuite = async (input: InitializeTestSuiteInput) => {
     ? StakingVesting__factory.connect(input.stakingVestingAddress!, input.deployer)
     : undefined;
 
+  profileContract = input.profileAddress ? Profile__factory.connect(input.profileAddress!, input.deployer) : undefined;
+
   await upgradeRep2({
     fastFinalityTrackingAddress: input.fastFinalityTrackingAddress,
     profileAddress: input.profileAddress,
@@ -79,11 +89,17 @@ export const initializeTestSuite = async (input: InitializeTestSuiteInput) => {
     stakingVestingArgs: input.stakingVestingArgs,
     stakingVestingContract,
   });
+
   await upgradeRep3({
     profileAddress: input.profileAddress,
     maintenanceContract,
     stakingContract,
     validatorContract,
+  });
+
+  await upgradeRep4({
+    profileContract,
+    stakingContract,
   });
 };
 
@@ -115,5 +131,11 @@ const upgradeRep3 = async (input: InitREP3Input) => {
 
   if (input.validatorContract) {
     await input.validatorContract.initializeV4(input.profileAddress);
+  }
+};
+
+const upgradeRep4 = async (input: InitREP4Input) => {
+  if (input.profileContract) {
+    await input.profileContract.initializeV2(input.stakingContract?.address!);
   }
 };

@@ -18,7 +18,7 @@ import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
-import { getLastBlockTimestamp } from '../helpers/utils';
+import { generateSamplePubkey, getLastBlockTimestamp } from '../helpers/utils';
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -65,7 +65,7 @@ describe('Staking test', () => {
     const profileContractProxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       profileLogicContract.address,
       proxyAdmin.address,
-      profileLogicContract.interface.encodeFunctionData('initialize', [stakingContractAddr, validatorContractAddr])
+      profileLogicContract.interface.encodeFunctionData('initialize', [validatorContractAddr])
     );
     profileContract = Profile__factory.connect(profileContractProxy.address, deployer);
 
@@ -99,6 +99,8 @@ describe('Staking test', () => {
       .connect(proxyAdmin)
       .functionDelegateCall(logicContract.interface.encodeFunctionData('initializeV3', [profileContract.address]));
 
+    await profileContract.initializeV2(stakingContractAddr);
+
     stakingContract = Staking__factory.connect(stakingProxyContract.address, deployer);
     expect(validatorContractAddr.toLowerCase()).eq(
       validatorContract.address.toLowerCase(),
@@ -113,7 +115,13 @@ describe('Staking test', () => {
   describe('Validator candidate test', () => {
     it('Should not be able to propose validator with insufficient amount', async () => {
       await expect(
-        stakingContract.applyValidatorCandidate(userA.address, userA.address, userA.address, 1)
+        stakingContract.applyValidatorCandidate(
+          userA.address,
+          userA.address,
+          userA.address,
+          1,
+          generateSamplePubkey(userA.address, userA.address)
+        )
       ).revertedWithCustomError(stakingContract, 'ErrInsufficientStakingAmount');
     });
 
@@ -126,8 +134,9 @@ describe('Staking test', () => {
           candidate.candidateAdmin.address,
           candidate.consensusAddr.address,
           candidate.consensusAddr.address,
-          1,
-          /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
+          1 /* 0.01% */,
+          generateSamplePubkey(),
+          { value: minValidatorStakingAmount.mul(2) }
         );
       await expect(tx).revertedWithCustomError(stakingContract, 'ErrThreeInteractionAddrsNotEqual');
     });
@@ -141,8 +150,9 @@ describe('Staking test', () => {
             candidate.candidateAdmin.address,
             candidate.consensusAddr.address,
             candidate.treasuryAddr.address,
-            1,
-            /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
+            1 /* 0.01% */,
+            generateSamplePubkey(),
+            { value: minValidatorStakingAmount.mul(2) }
           );
         await expect(tx)
           .emit(stakingContract, 'PoolApproved')
@@ -164,6 +174,7 @@ describe('Staking test', () => {
             poolAddrSet.consensusAddr.address,
             sparePoolAddrSet.treasuryAddr.address,
             0,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount,
             }
@@ -369,8 +380,9 @@ describe('Staking test', () => {
           poolAddrSet.candidateAdmin.address,
           poolAddrSet.consensusAddr.address,
           poolAddrSet.treasuryAddr.address,
-          1,
-          /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
+          1 /* 0.01% */,
+          generateSamplePubkey(),
+          { value: minValidatorStakingAmount.mul(2) }
         );
       await expect(tx)
         .emit(stakingContract, 'PoolApproved')
@@ -392,8 +404,9 @@ describe('Staking test', () => {
             poolAddrSet.candidateAdmin.address,
             poolAddrSet.consensusAddr.address,
             poolAddrSet.treasuryAddr.address,
-            1,
-            /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
+            1 /* 0.01% */,
+            generateSamplePubkey(),
+            { value: minValidatorStakingAmount.mul(2) }
           )
       )
         .revertedWithCustomError(stakingContract, 'ErrAdminOfAnyActivePoolForbidden')
@@ -517,8 +530,9 @@ describe('Staking test', () => {
           poolAddrSet.candidateAdmin.address,
           poolAddrSet.consensusAddr.address,
           poolAddrSet.treasuryAddr.address,
-          2,
-          /* 0.02% */ { value: minValidatorStakingAmount }
+          2 /* 0.02% */,
+          generateSamplePubkey(),
+          { value: minValidatorStakingAmount }
         );
       expect(await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address)).deep.equal([
         poolAddrSet.poolAdmin.address,

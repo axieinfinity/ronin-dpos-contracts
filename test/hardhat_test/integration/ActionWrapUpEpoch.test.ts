@@ -15,7 +15,7 @@ import {
 } from '../../../src/types';
 import { expects as StakingExpects } from '../helpers/staking';
 import { EpochController, expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
-import { ContractType, mineBatchTxs } from '../helpers/utils';
+import { ContractType, generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
 import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { Address } from 'hardhat-deploy/dist/types';
@@ -163,6 +163,7 @@ describe('[Integration] Wrap up epoch', () => {
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount.mul(2).add(i),
             }
@@ -271,6 +272,7 @@ describe('[Integration] Wrap up epoch', () => {
             validators[i].consensusAddr.address,
             validators[i].treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount.mul(3).add(i),
             }

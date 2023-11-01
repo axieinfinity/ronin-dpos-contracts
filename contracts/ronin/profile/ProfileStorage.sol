@@ -15,8 +15,12 @@ abstract contract ProfileStorage is IProfile, HasContracts {
    * cannot be reused.
    */
   mapping(uint256 => bool) internal _registry;
+
+  /// @dev Mapping from consensus address => id address.
+  mapping(TConsensus => address) internal _consensus2Id;
+
   /// @dev Upgradeable gap.
-  bytes32[49] __gap;
+  bytes32[48] __gap;
 
   /**
    * @dev Add a profile from memory to storage.
@@ -35,9 +39,9 @@ abstract contract ProfileStorage is IProfile, HasContracts {
     emit ProfileAdded(newProfile.id);
   }
 
-  function _setConsensus(CandidateProfile storage _profile, address consensus) internal {
+  function _setConsensus(CandidateProfile storage _profile, TConsensus consensus) internal {
     _profile.consensus = consensus;
-    _registry[uint256(uint160(consensus))] = true;
+    _registry[uint256(uint160(TConsensus.unwrap(consensus)))] = true;
   }
 
   function _setAdmin(CandidateProfile storage _profile, address admin) internal {

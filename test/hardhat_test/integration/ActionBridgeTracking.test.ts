@@ -33,7 +33,7 @@ import {
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { deployTestSuite } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
-import { ContractType, mineBatchTxs } from '../helpers/utils';
+import { ContractType, generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
 import { BridgeManagerInterface } from '../../../src/script/bridge-admin-interface';
 import { TargetOption } from '../../../src/script/proposal';
 import { OperatorTuple, createManyOperatorTuples } from '../helpers/address-set-types/operator-tuple-type';
@@ -222,6 +222,7 @@ describe('[Integration] Bridge Tracking test', () => {
           candidates[i].consensusAddr.address,
           candidates[i].treasuryAddr.address,
           1,
+          generateSamplePubkey(),
           { value: minValidatorStakingAmount + candidates.length - i }
         );
     }

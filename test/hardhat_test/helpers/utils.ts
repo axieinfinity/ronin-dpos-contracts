@@ -3,6 +3,7 @@ import { BigNumber, ContractTransaction } from 'ethers';
 import { Interface, LogDescription } from 'ethers/lib/utils';
 import { ethers, network } from 'hardhat';
 import { Address } from 'hardhat-deploy/dist/types';
+import { randomAddress } from '../../../src/utils';
 
 export const expectEvent = async (
   contractInterface: Interface,
@@ -100,4 +101,10 @@ export const checkArraysHaveSameSize = (arrays: Array<any>[]) => {
   let lengths = arrays.map((_) => _.length);
   let uniqueLengths = [...new Set(lengths)];
   return uniqueLengths.length == 1 && uniqueLengths[0] != 0;
+};
+
+export const generateSamplePubkey = (consensusAddr?: Address, candidateAdminAddr?: Address): Uint8Array => {
+  consensusAddr ??= randomAddress();
+  candidateAdminAddr ??= randomAddress();
+  return ethers.utils.toUtf8Bytes(consensusAddr + '-' + candidateAdminAddr);
 };

@@ -13,7 +13,7 @@ import {
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
 } from '../../../src/types';
-import { ContractType, mineBatchTxs } from '../helpers/utils';
+import { ContractType, generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
 import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { EpochController } from '../helpers/ronin-validator-set';
@@ -152,6 +152,7 @@ describe('[Integration] Submit Block Reward', () => {
           validator.consensusAddr.address,
           validator.treasuryAddr.address,
           2_00,
+          generateSamplePubkey(),
           {
             value: initStakingAmount,
           }
@@ -203,6 +204,7 @@ describe('[Integration] Submit Block Reward', () => {
           validator.consensusAddr.address,
           validator.treasuryAddr.address,
           2_00,
+          generateSamplePubkey(),
           {
             value: initStakingAmount,
           }

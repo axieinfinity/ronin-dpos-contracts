@@ -137,7 +137,7 @@ describe('Gateway Pause Enforcer test', () => {
       roninBridgeManagerAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('RoninGatewayV3-PauseEnforcer')({
+    } = await deployTestSuite('RoninGatewayV3-PauseEnforcer')({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({

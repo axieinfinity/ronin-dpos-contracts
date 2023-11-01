@@ -32,6 +32,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { initializeTestSuite } from '../helpers/initializer';
+import { generateSamplePubkey } from '../helpers/utils';
 
 let maintenanceContract: Maintenance;
 let slashContract: MockSlashIndicatorExtended;
@@ -237,6 +238,7 @@ describe('Credit score and bail out test', () => {
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
           100_00,
+          generateSamplePubkey(),
           { value: minValidatorStakingAmount.mul(2).sub(i) }
         );
     }
@@ -312,6 +314,7 @@ describe('Credit score and bail out test', () => {
           validatorCandidates[0].consensusAddr.address,
           validatorCandidates[0].treasuryAddr.address,
           100_00,
+          generateSamplePubkey(),
           { value: minValidatorStakingAmount.mul(2) }
         );
 

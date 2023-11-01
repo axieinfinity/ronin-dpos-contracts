@@ -17,7 +17,7 @@ import {
   TransparentUpgradeableProxyV2__factory,
 } from '../../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
-import { getLastBlockTimestamp, mineBatchTxs } from '../helpers/utils';
+import { generateSamplePubkey, getLastBlockTimestamp, mineBatchTxs } from '../helpers/utils';
 import { defaultTestConfig, deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { Address } from 'hardhat-deploy/dist/types';
@@ -178,6 +178,7 @@ describe('Ronin Validator Set: candidate test', () => {
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount.add(i),
             }
@@ -214,6 +215,7 @@ describe('Ronin Validator Set: candidate test', () => {
             whitelistedCandidates[i].consensusAddr.address,
             whitelistedCandidates[i].treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount.add(i),
             }
@@ -252,6 +254,7 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[4].consensusAddr.address,
           validatorCandidates[4].treasuryAddr.address,
           2_00,
+          generateSamplePubkey(),
           {
             value: minValidatorStakingAmount,
           }
@@ -270,6 +273,7 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[5].consensusAddr.address,
           validatorCandidates[5].treasuryAddr.address,
           2_00,
+          generateSamplePubkey(),
           {
             value: minValidatorStakingAmount,
           }
@@ -286,6 +290,7 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[5].consensusAddr.address,
           validatorCandidates[0].treasuryAddr.address,
           2_00,
+          generateSamplePubkey(),
           {
             value: minValidatorStakingAmount,
           }
@@ -302,6 +307,7 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[5].consensusAddr.address,
           validatorCandidates[5].treasuryAddr.address,
           maxCommissionRate + 1,
+          generateSamplePubkey(),
           {
             value: minValidatorStakingAmount,
           }
@@ -336,6 +342,7 @@ describe('Ronin Validator Set: candidate test', () => {
           validatorCandidates[5].consensusAddr.address,
           validatorCandidates[5].treasuryAddr.address,
           minCommissionRate - 1,
+          generateSamplePubkey(),
           {
             value: minValidatorStakingAmount,
           }
