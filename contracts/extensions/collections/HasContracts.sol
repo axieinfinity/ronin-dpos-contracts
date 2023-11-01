@@ -20,10 +20,8 @@ abstract contract HasContracts is HasProxyAdmin, IHasContracts, IdentityGuard {
    * @param contractType The contract type that allowed to call
    */
   modifier onlyContract(ContractType contractType) virtual {
-    console2.log("enter onlyContract", address(this));
     _requireContract(contractType);
     _;
-    console2.log("passed onlyContract", address(this));
   }
 
   /**

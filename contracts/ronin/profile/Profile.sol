@@ -49,10 +49,6 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    */
   function getConsensus2Id(TConsensus consensus) external view returns (address id) {
     id = _consensus2Id[consensus];
-    if (id == address(0x0)) {
-      console2.log("consensus", TConsensus.unwrap(consensus));
-      revert("error adad");
-    }
   }
 
   /**
@@ -63,11 +59,6 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     unchecked {
       for (uint i; i < consensusList.length; ++i) {
         idList[i] = _consensus2Id[consensusList[i]];
-
-        if (idList[i] == address(0x0)) {
-          console2.log("consensus[i]", TConsensus.unwrap(consensusList[i]));
-          revert("error adad");
-        }
       }
     }
   }
@@ -117,10 +108,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    */
   function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
-    if (
-      msg.sender != _profile.admin ||
-      !IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isCandidateAdmin(_profile.consensus, msg.sender)
-    ) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
+    _requireCandidateAdmin(_profile);
     _profile.consensus = newConsensusAddr;
 
     emit ProfileAddressChanged(id, RoleAccess.CONSENSUS);
@@ -131,10 +119,17 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    */
   function changePubkey(address id, bytes memory pubkey) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
-    if (msg.sender != _profile.admin) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
+    _requireCandidateAdmin(_profile);
     _checkNonDuplicatedPubkey(pubkey);
     _setPubkey(_profile, pubkey);
 
     emit PubkeyChanged(id, pubkey);
+  }
+
+  function _requireCandidateAdmin(CandidateProfile storage sProfile) internal view {
+    if (
+      msg.sender != sProfile.admin ||
+      !IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isCandidateAdmin(sProfile.consensus, msg.sender)
+    ) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
   }
 }

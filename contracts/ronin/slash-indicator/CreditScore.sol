@@ -46,13 +46,9 @@ abstract contract CreditScore is
     address[] calldata validatorIds,
     uint256 period
   ) external override onlyContract(ContractType.VALIDATOR) {
-    console2.log("hello 1");
     IRoninValidatorSet validatorContract = IRoninValidatorSet(msg.sender);
-    console2.log("hello 2");
     uint256 periodStartAtBlock = validatorContract.currentPeriodStartAtBlock();
-    console2.log("hello 3");
     bool[] memory jaileds = validatorContract.checkManyJailedById(validatorIds);
-    console2.log("hello 4");
     bool[] memory maintaineds = IMaintenance(getContract(ContractType.MAINTENANCE)).checkManyMaintainedInBlockRangeById(
       validatorIds,
       periodStartAtBlock,
@@ -60,7 +56,6 @@ abstract contract CreditScore is
     );
     uint256[] memory updatedCreditScores = new uint256[](validatorIds.length);
 
-    console2.log("5");
     for (uint i = 0; i < validatorIds.length; ) {
       address vId = validatorIds[i];
 

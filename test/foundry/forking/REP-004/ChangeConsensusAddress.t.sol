@@ -11,6 +11,7 @@ import { HasContracts } from "@ronin/contracts/extensions/collections/HasContrac
 import { CandidateManager } from "@ronin/contracts/ronin/validator/CandidateManager.sol";
 import { SlashIndicator } from "@ronin/contracts/ronin/slash-indicator/SlashIndicator.sol";
 import { RoninValidatorSet } from "@ronin/contracts/ronin/validator/RoninValidatorSet.sol";
+import { Maintenance } from "@ronin/contracts/ronin/Maintenance.sol";
 import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 
 contract ChangeConsensusAddressForkTest is Test {
@@ -20,6 +21,7 @@ contract ChangeConsensusAddressForkTest is Test {
   RoninValidatorSet internal _validator;
   Staking internal _staking;
   Profile internal _profile;
+  Maintenance internal _maintenance;
   SlashIndicator internal _slashIndicator;
 
   function setUp() external {
@@ -32,15 +34,19 @@ contract ChangeConsensusAddressForkTest is Test {
     _profile = Profile(0x3b67c8D22a91572a6AB18acC9F70787Af04A4043);
     _staking = Staking(payable(0x9C245671791834daf3885533D24dce516B763B28));
     _slashIndicator = SlashIndicator(0xF7837778b6E180Df6696C8Fa986d62f8b6186752);
+    _maintenance = Maintenance(0x4016C80D97DDCbe4286140446759a3f0c1d20584);
     _validator = RoninValidatorSet(payable(0x54B3AC74a90E64E8dDE60671b6fE8F8DDf18eC9d));
 
     vm.label(address(_profile), "Profile");
     vm.label(address(_staking), "Staking");
     vm.label(address(_validator), "Validator");
+    vm.label(address(_maintenance), "Maintenance");
     vm.label(address(_slashIndicator), "SlashIndicator");
   }
 
   function test_AfterUpgraded_ChangeConsensusAddress() external {
+    _upgradeMaintenance();
+    _upgradeSlashIndicator();
     _upgradeProfile();
     _upgradeStaking();
     _upgradeValidator();
@@ -59,6 +65,7 @@ contract ChangeConsensusAddressForkTest is Test {
   }
 
   function test_AfterUpgraded_applyValidatorCandidate() external {
+    _upgradeSlashIndicator();
     _upgradeProfile();
     _upgradeStaking();
     _upgradeValidator();
@@ -71,6 +78,7 @@ contract ChangeConsensusAddressForkTest is Test {
   }
 
   function test_RevertWhen_AfterUpgraded_ReapplyValidatorCandidate() external {
+    _upgradeMaintenance();
     _upgradeSlashIndicator();
     _upgradeProfile();
     _upgradeStaking();
@@ -91,11 +99,17 @@ contract ChangeConsensusAddressForkTest is Test {
     _profile.initializeV3();
   }
 
+  function _upgradeMaintenance() internal {
+    Maintenance logic = new Maintenance();
+    vm.prank(_getProxyAdmin(address(_maintenance)));
+    TransparentUpgradeableProxyV2(payable(address(_maintenance))).upgradeTo(address(logic));
+  }
+
   function _upgradeSlashIndicator() internal {
     SlashIndicator logic = new SlashIndicator();
     vm.prank(_getProxyAdmin(address(_slashIndicator)));
     TransparentUpgradeableProxyV2(payable(address(_slashIndicator))).upgradeTo(address(logic));
-    // _profile.initializeV3();ƒ
+    // _profile.initializeV3();
   }
 
   function _upgradeStaking() internal {
