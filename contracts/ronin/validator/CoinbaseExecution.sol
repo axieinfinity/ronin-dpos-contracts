@@ -128,11 +128,13 @@ abstract contract CoinbaseExecution is
       _tryRecycleLockedFundsFromEmergencyExits();
       _recycleDeprecatedRewards();
       ISlashIndicator _slashIndicatorContract = ISlashIndicator(getContract(ContractType.SLASH_INDICATOR));
-      _slashIndicatorContract.execUpdateCreditScores(_currentValidators, _lastPeriod);
+      console2.log("loading _slashIndicatorContract", address(_slashIndicatorContract));
+      console2.log("calling _slashIndicatorContract", address(_slashIndicatorContract));
+      //_slashIndicatorContract.execUpdateCreditScores(_currentValidators, _lastPeriod);
       (_currentValidators, _revokedCandidates) = _syncValidatorSet(_newPeriod);
-      if (_revokedCandidates.length > 0) {
-        _slashIndicatorContract.execResetCreditScores(_revokedCandidates);
-      }
+      // if (_revokedCandidates.length > 0) {
+      //   _slashIndicatorContract.execResetCreditScores(_revokedCandidates);
+      // }
       _currentPeriodStartAtBlock = block.number + 1;
     }
     _revampRoles(_newPeriod, _nextEpoch, _currentValidators);
@@ -389,10 +391,14 @@ abstract contract CoinbaseExecution is
    *
    */
   function _revampRoles(uint256 _newPeriod, uint256 _nextEpoch, address[] memory _currentValidators) private {
+    console2.log("maintenanceAddr", address(getContract(ContractType.MAINTENANCE)));
+    console2.log("code-size", address(getContract(ContractType.MAINTENANCE)).code.length);
     bool[] memory _maintainedList = IMaintenance(getContract(ContractType.MAINTENANCE)).checkManyMaintainedById(
       _currentValidators,
       block.number + 1
     );
+
+    console2.log("entering for loop");
 
     for (uint _i; _i < _currentValidators.length; ) {
       address validatorId = _currentValidators[_i];

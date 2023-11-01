@@ -5,6 +5,7 @@ import { HasProxyAdmin } from "./HasProxyAdmin.sol";
 import "../../interfaces/collections/IHasContracts.sol";
 import { IdentityGuard } from "../../utils/IdentityGuard.sol";
 import { ErrUnexpectedInternalCall } from "../../utils/CommonErrors.sol";
+import { console2 } from "forge-std/console2.sol";
 
 /**
  * @title HasContracts
@@ -19,8 +20,10 @@ abstract contract HasContracts is HasProxyAdmin, IHasContracts, IdentityGuard {
    * @param contractType The contract type that allowed to call
    */
   modifier onlyContract(ContractType contractType) virtual {
+    console2.log("enter onlyContract", address(this));
     _requireContract(contractType);
     _;
+    console2.log("passed onlyContract", address(this));
   }
 
   /**

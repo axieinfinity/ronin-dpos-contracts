@@ -6,6 +6,7 @@ import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/staking/IStaking.sol";
 import "../../interfaces/IProfile.sol";
 import "./ProfileXComponents.sol";
+import "forge-std/console2.sol";
 import { ErrUnauthorized, RoleAccess } from "../../utils/CommonErrors.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 
@@ -24,6 +25,18 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     _setContract(ContractType.STAKING, stakingContract);
   }
 
+  function initializeV3() external reinitializer(3) {
+    address[] memory validatorCandidates = IRoninValidatorSet(getContract(ContractType.VALIDATOR))
+      .getValidatorCandidates();
+    TConsensus[] memory consensuses;
+    assembly ("memory-safe") {
+      consensuses := validatorCandidates
+    }
+    for (uint256 i; i < validatorCandidates.length; ++i) {
+      _consensus2Id[consensuses[i]] = validatorCandidates[i];
+    }
+  }
+
   /**
    * @inheritdoc IProfile
    */
@@ -35,7 +48,11 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    * @inheritdoc IProfile
    */
   function getConsensus2Id(TConsensus consensus) external view returns (address id) {
-    return _consensus2Id[consensus];
+    id = _consensus2Id[consensus];
+    if (id == address(0x0)) {
+      console2.log("consensus", TConsensus.unwrap(consensus));
+      revert("error adad");
+    }
   }
 
   /**
@@ -46,6 +63,11 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     unchecked {
       for (uint i; i < consensusList.length; ++i) {
         idList[i] = _consensus2Id[consensusList[i]];
+
+        if (idList[i] == address(0x0)) {
+          console2.log("consensus[i]", TConsensus.unwrap(consensusList[i]));
+          revert("error adad");
+        }
       }
     }
   }
@@ -95,7 +117,10 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    */
   function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
-
+    if (
+      msg.sender != _profile.admin ||
+      !IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isCandidateAdmin(_profile.consensus, msg.sender)
+    ) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
     _profile.consensus = newConsensusAddr;
 
     emit ProfileAddressChanged(id, RoleAccess.CONSENSUS);
