@@ -18,11 +18,20 @@ contract ChangeConsensusAddressForkTest is Test {
   string constant RONIN_TEST_RPC = "https://saigon-archive.roninchain.com/rpc";
   bytes32 constant ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
-  RoninValidatorSet internal _validator;
-  Staking internal _staking;
   Profile internal _profile;
+  Staking internal _staking;
   Maintenance internal _maintenance;
+  RoninValidatorSet internal _validator;
   SlashIndicator internal _slashIndicator;
+
+  modifier upgrade() {
+    _upgradeProfile();
+    _upgradeStaking();
+    _upgradeValidator();
+    _upgradeMaintenance();
+    _upgradeSlashIndicator();
+    _;
+  }
 
   function setUp() external {
     vm.createSelectFork(RONIN_TEST_RPC, 21710591);
@@ -44,32 +53,50 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.label(address(_slashIndicator), "SlashIndicator");
   }
 
-  function test_AfterUpgraded_ChangeConsensusAddress() external {
-    _upgradeMaintenance();
-    _upgradeSlashIndicator();
-    _upgradeProfile();
-    _upgradeStaking();
-    _upgradeValidator();
-
+  function test_AfterUpgraded_ChangeConsensusAddress() external upgrade {
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
     address validatorCandidate = validatorCandidates[0];
     address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).admin;
-    TConsensus newConsensus = TConsensus.wrap(makeAddr("new-consensus"));
+    TConsensus newConsensus = TConsensus.wrap(makeAddr("new-consensus-0"));
+    
     vm.prank(candidateAdmin);
     _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
 
     _fastForwardToNextDay();
     _wrapUpEpoch();
-    // _fastForwardToNextDay();
-    // _wrapUpEpoch();
+
+    validatorCandidate = validatorCandidates[1];
+    candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).admin;
+    newConsensus = TConsensus.wrap(makeAddr("new-consensus-1"));
+    vm.prank(candidateAdmin);
+    _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
+
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
   }
 
-  function test_AfterUpgraded_applyValidatorCandidate() external {
-    _upgradeSlashIndicator();
-    _upgradeProfile();
-    _upgradeStaking();
-    _upgradeValidator();
+  function testFail_RevertWhen_AfterUpgraded_DifferentAdmins_ShareSameConsensusAddr() external upgrade {
+    address[] memory validatorCandidates = _validator.getValidatorCandidates();
+    address validatorCandidate = validatorCandidates[0];
+    address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).admin;
+    TConsensus newConsensus = TConsensus.wrap(makeAddr("same-consensus"));
+    vm.prank(candidateAdmin);
+    _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
 
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
+
+    validatorCandidate = validatorCandidates[1];
+    candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).admin;
+    newConsensus = TConsensus.wrap(makeAddr("same-consensus"));
+    vm.prank(candidateAdmin);
+    _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
+
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
+  }
+
+  function test_AfterUpgraded_applyValidatorCandidate() external upgrade {
     _applyValidatorCandidate("candidate-admin-0", "consensus-0");
     _applyValidatorCandidate("candidate-admin-1", "consensus-1");
 
@@ -77,15 +104,26 @@ contract ChangeConsensusAddressForkTest is Test {
     _wrapUpEpoch();
   }
 
-  function test_RevertWhen_AfterUpgraded_ReapplyValidatorCandidate() external {
-    _upgradeMaintenance();
-    _upgradeSlashIndicator();
-    _upgradeProfile();
-    _upgradeStaking();
-    _upgradeValidator();
+  function test_AfterUpgraded_applyValidatorCandidateByPeriod() external upgrade {
+    _applyValidatorCandidate("candidate-admin-0", "consensus-0");
+
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
+
+    _applyValidatorCandidate("candidate-admin-1", "consensus-1");
+  }
+
+  function testFail_RevertWhen_AfterUpgraded_ReapplyValidatorCandidateByPeriod() external upgrade {
+    _applyValidatorCandidate("candidate-admin", "consensus");
+
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
 
     _applyValidatorCandidate("candidate-admin", "consensus");
-    vm.expectRevert();
+  }
+
+  function testFail_RevertWhen_AfterUpgraded_ReapplyValidatorCandidate() external upgrade {
+    _applyValidatorCandidate("candidate-admin", "consensus");
     _applyValidatorCandidate("candidate-admin", "consensus");
   }
 
@@ -109,7 +147,6 @@ contract ChangeConsensusAddressForkTest is Test {
     SlashIndicator logic = new SlashIndicator();
     vm.prank(_getProxyAdmin(address(_slashIndicator)));
     TransparentUpgradeableProxyV2(payable(address(_slashIndicator))).upgradeTo(address(logic));
-    // _profile.initializeV3();
   }
 
   function _upgradeStaking() internal {
@@ -172,6 +209,7 @@ contract ChangeConsensusAddressForkTest is Test {
   function _applyValidatorCandidate(string memory candidateAdminLabel, string memory consensusLabel) internal {
     address candidateAdmin = makeAddr(candidateAdminLabel);
     TConsensus consensusAddr = TConsensus.wrap(makeAddr(consensusLabel));
+    bytes memory pubKey = bytes(candidateAdminLabel);
 
     uint256 amount = _staking.minValidatorStakingAmount();
     vm.deal(candidateAdmin, amount);
@@ -181,7 +219,7 @@ contract ChangeConsensusAddressForkTest is Test {
       consensusAddr,
       payable(candidateAdmin),
       2500,
-      hex"3523523590"
+      pubKey
     );
   }
 }
