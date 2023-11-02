@@ -52,6 +52,12 @@ interface IProfile {
   /// @dev Getter to query full `profile` from `id` address.
   function getId2Profile(address id) external view returns (CandidateProfile memory profile);
 
+  function getConsensus2Profile(TConsensus consensus) external view returns (CandidateProfile memory);
+
+  function getManyConsensus2Profiles(
+    TConsensus[] calldata consensusAddrs
+  ) external view returns (CandidateProfile[] memory profiles);
+
   /// @dev Getter to backward query from `consensus` address to `id` address.
   function getConsensus2Id(TConsensus consensus) external view returns (address id);
 

@@ -6,8 +6,8 @@ import { TConsensus } from "../../udvts/Types.sol";
 
 interface ICandidateManager {
   struct ValidatorCandidate {
-    // Admin of the candidate
-    address __shadowedAdmin;
+    // [Cached value] The admin address of the candidate, this storage always has zero-value. The fetched data is cached from Profile contract at runtime.
+    address __cachedAdmin;
     // Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
     TConsensus __shadowedConsensus;
     // Address that receives mining reward of the validator
