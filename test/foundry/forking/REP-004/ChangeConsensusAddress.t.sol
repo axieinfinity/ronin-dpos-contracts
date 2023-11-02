@@ -90,7 +90,7 @@ contract ChangeConsensusAddressForkTest is Test {
 
     vm.startPrank(candidateAdmin);
     _profile.requestChangeConsensusAddr(validatorCandidate, TConsensus.wrap(newConsensus));
-    _profile.requestChangeAdminAddress(newConsensus, newAdmin);
+    _profile.requestChangeAdminAddress(validatorCandidate, newAdmin);
     vm.stopPrank();
 
     // store snapshot state
@@ -101,14 +101,14 @@ contract ChangeConsensusAddressForkTest is Test {
     _wrapUpEpoch();
 
     ICandidateManager.ValidatorCandidate memory wrapUpInfo = _validator.getCandidateInfo(
-      TConsensus.wrap(validatorCandidate)
+      TConsensus.wrap(newConsensus)
     );
     ICandidateManager.ValidatorCandidate[] memory wrapUpInfos = _validator.getCandidateInfos();
 
     // revert to state before wrap up
     vm.revertTo(snapshotId);
     ICandidateManager.ValidatorCandidate memory nonWrapUpInfo = _validator.getCandidateInfo(
-      TConsensus.wrap(validatorCandidate)
+      TConsensus.wrap(newConsensus)
     );
     ICandidateManager.ValidatorCandidate[] memory nonWrapUpInfos = _validator.getCandidateInfos();
 
