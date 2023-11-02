@@ -6,8 +6,8 @@ import { TConsensus } from "../../udvts/Types.sol";
 
 interface ICandidateManager {
   struct ValidatorCandidate {
-    // [Cached value] The admin address of the candidate, this storage always has zero-value. The fetched data is cached from Profile contract at runtime.
-    address __cachedAdmin;
+    // @custom shadowed-storage The address of the candidate admin. This storage slot is always kept in sync with the admin in `Profile-CandidateProfile`.
+    address __shadowedAdmin;
     // Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
     TConsensus __shadowedConsensus;
     // Address that receives mining reward of the validator
@@ -142,6 +142,15 @@ interface ICandidateManager {
    *
    */
   function execRequestUpdateCommissionRate(address _consensusAddr, uint256 _effectiveTimestamp, uint256 _rate) external;
+
+  /**
+   * @dev Fallback function of `Profile-requestChangeAdminAddress`.
+   * This updates the shadow storage slot of admin for candidate id `id` to `newAdmin`.
+   *
+   * Requirements:
+   * - The caller must be the Profile contract.
+   */
+  function execChangeAdminAddress(address id, address newAdmin) external;
 
   /**
    * @dev Returns whether the address is a validator (candidate).

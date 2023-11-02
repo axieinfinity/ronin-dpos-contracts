@@ -43,23 +43,6 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     return _id2Profile[id];
   }
 
-  function getManyConsensus2Profiles(
-    TConsensus[] calldata consensusAddrs
-  ) external view returns (CandidateProfile[] memory profiles) {
-    profiles = new CandidateProfile[](consensusAddrs.length);
-    for (uint i; i < profiles.length; ) {
-      profiles[i] = _id2Profile[_consensus2Id[consensusAddrs[i]]];
-
-      unchecked {
-        ++i;
-      }
-    }
-  }
-
-  function getConsensus2Profile(TConsensus consensus) external view returns (CandidateProfile memory) {
-    return _id2Profile[_consensus2Id[consensus]];
-  }
-
   /**
    * @inheritdoc IProfile
    */
@@ -92,8 +75,11 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    * @inheritdoc IProfile
    *
    * @dev Side-effects on other contracts:
-   * - Update `PoolDetail` in {BaseStaking.sol}.
-   * - Update `_adminOfActivePoolMapping` in {BaseStaking.sol}.
+   * - Update Staking contract:
+   *    + Update (id => PoolDetail) mapping in {BaseStaking.sol}.
+   *    + Update `_adminOfActivePoolMapping` in {BaseStaking.sol}.
+   * - Update Validator contract:
+   *    + Update (id => ValidatorCandidate) mapping
    */
   function requestChangeAdminAddress(address id, address newAdminAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
@@ -102,7 +88,9 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     _setAdmin(_profile, newAdminAddr);
 
     IStaking stakingContract = IStaking(getContract(ContractType.STAKING));
+    IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     stakingContract.execChangeAdminAddress(id, newAdminAddr);
+    validatorContract.execChangeAdminAddress(id, newAdminAddr);
 
     emit ProfileAddressChanged(id, RoleAccess.ADMIN);
   }

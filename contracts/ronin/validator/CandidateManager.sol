@@ -83,21 +83,21 @@ abstract contract CandidateManager is
     if (_isValidatorCandidateById(id)) revert ErrExistentCandidate();
     if (commissionRate > _MAX_PERCENTAGE) revert ErrInvalidCommissionRate();
 
-    // for (uint i; i < length; ) {
-    //   ValidatorCandidate storage existentInfo = _candidateInfo[_cids[i]];
-    //   if (candidateAdmin == existentInfo.__shadowedAdmin) revert ErrExistentCandidateAdmin(candidateAdmin);
-    //   if (treasuryAddr == existentInfo.__shadowedTreasury) revert ErrExistentTreasury(treasuryAddr);
+    for (uint i; i < length; ) {
+      ValidatorCandidate storage existentInfo = _candidateInfo[_cids[i]];
+      if (candidateAdmin == existentInfo.__shadowedAdmin) revert ErrExistentCandidateAdmin(candidateAdmin);
+      if (treasuryAddr == existentInfo.__shadowedTreasury) revert ErrExistentTreasury(treasuryAddr);
 
-    //   unchecked {
-    //     ++i;
-    //   }
-    // }
+      unchecked {
+        ++i;
+      }
+    }
 
     _candidateIndex[id] = ~length;
     _cids.push(id);
 
     ValidatorCandidate storage _info = _candidateInfo[id];
-    // _info.__shadowedAdmin = candidateAdmin;
+    _info.__shadowedAdmin = candidateAdmin;
     _info.__shadowedConsensus = TConsensus.wrap(id);
     _info.__shadowedTreasury = treasuryAddr;
     _info.commissionRate = commissionRate;
@@ -144,12 +144,18 @@ abstract contract CandidateManager is
     address id,
     TConsensus newConsensusAddr
   ) external onlyContract(ContractType.PROFILE) {
-    // TODO:
     // Sync Consensus Address mapping
+    _candidateInfo[id].__shadowedConsensus = newConsensusAddr;
+
+    // TODO:
     // Sync Bridge Address mapping
     // Sync Jail mapping
     // Sync Pending reward mapping
     // Sync Schedule mapping
+  }
+
+  function execChangeAdminAddress(address id, address newAdmi) external onlyContract(ContractType.PROFILE) {
+    _candidateInfo[id].__shadowedAdmin = newAdmin;
   }
 
   /**
@@ -166,16 +172,13 @@ abstract contract CandidateManager is
   /**
    * @inheritdoc ICandidateManager
    */
-  function getCandidateInfos() external view override returns (ValidatorCandidate[] memory list) {
-    uint256 length = _cids.length;
-    list = new ValidatorCandidate[](length);
-    IProfile.CandidateProfile[] memory profiles = new IProfile.CandidateProfile[](length);
-    for (uint i; i < list.length; ) {
-      list[i] = _candidateInfo[_cids[i]];
-      list[i].__cachedAdmin = profiles[i].admin;
+  function getCandidateInfos() external view override returns (ValidatorCandidate[] memory _list) {
+    _list = new ValidatorCandidate[](_cids.length);
+    for (uint _i; _i < _list.length; ) {
+      _list[_i] = _candidateInfo[_cids[_i]];
 
       unchecked {
-        ++i;
+        ++_i;
       }
     }
   }
@@ -183,12 +186,10 @@ abstract contract CandidateManager is
   /**
    * @inheritdoc ICandidateManager
    */
-  function getCandidateInfo(TConsensus consensus) external view override returns (ValidatorCandidate memory candidate) {
-    address cid = _convertC2P(consensus);
-    if (!_isValidatorCandidateById(cid)) revert ErrNonExistentCandidate();
-    IProfile.CandidateProfile memory validatorProfile = _getId2Profile(cid);
-    candidate = _candidateInfo[cid];
-    candidate.__cachedAdmin = validatorProfile.admin;
+  function getCandidateInfo(TConsensus consensus) external view override returns (ValidatorCandidate memory) {
+    address validatorId = _convertC2P(consensus);
+    if (!_isValidatorCandidateById(validatorId)) revert ErrNonExistentCandidate();
+    return _candidateInfo[validatorId];
   }
 
   /**
@@ -287,12 +288,11 @@ abstract contract CandidateManager is
    * @inheritdoc ICandidateManager
    */
   function isCandidateAdmin(TConsensus consensusAddr, address admin) external view override returns (bool) {
-    address cid = _convertC2P(consensusAddr);
-    return _isCandidateAdminById(cid, admin);
+    return _isCandidateAdminById(_convertC2P(consensusAddr), admin);
   }
 
   function _isCandidateAdminById(address candidateId, address admin) internal view returns (bool) {
-    return _isValidatorCandidateById(candidateId) && (_getId2Profile(candidateId).admin == admin);
+    return _candidateInfo[candidateId].__shadowedAdmin == admin;
   }
 
   /**
@@ -362,16 +362,6 @@ abstract contract CandidateManager is
 
   function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address) {
     return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
-  }
-
-  function _getManyConsensus2Profiles(
-    TConsensus[] memory consensusAddrs
-  ) internal view virtual returns (IProfile.CandidateProfile[] memory profiles) {
-    return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Profiles(consensusAddrs);
-  }
-
-  function _getId2Profile(address cid) internal view virtual returns (IProfile.CandidateProfile memory) {
-    return IProfile(getContract(ContractType.PROFILE)).getId2Profile(cid);
   }
 
   function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory) {
