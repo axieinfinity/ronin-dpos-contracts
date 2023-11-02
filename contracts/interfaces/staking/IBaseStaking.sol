@@ -6,10 +6,10 @@ import { TPoolId, TConsensus } from "../../udvts/Types.sol";
 
 interface IBaseStaking {
   struct PoolDetail {
-    // [Non-volatile] Address of the pool, initially is the consensus address of the validator
+    // [Non-volatile] Address of the pool, permanently set to the first consensus address of the candidate.
     address pid;
     // Pool admin address
-    address __shadowedAdmin;
+    address __shadowedPoolAdmin;
     // Self-staking amount
     uint256 stakingAmount;
     // Total number of RON staking for the pool

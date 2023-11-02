@@ -80,7 +80,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     });
 
     PoolDetail storage _pool = _poolDetail[poolId];
-    _pool.__shadowedAdmin = poolAdmin;
+    _pool.__shadowedPoolAdmin = poolAdmin;
     _pool.pid = poolId;
     _adminOfActivePoolMapping[poolAdmin] = poolId;
 
@@ -124,21 +124,21 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       address poolId = poolIds[i];
       PoolDetail storage _pool = _poolDetail[poolId];
       // Deactivate the pool admin in the active mapping.
-      delete _adminOfActivePoolMapping[_pool.__shadowedAdmin];
+      delete _adminOfActivePoolMapping[_pool.__shadowedPoolAdmin];
 
       // Deduct and transfer the self staking amount to the pool admin.
       uint256 deductingAmount = _pool.stakingAmount;
       if (deductingAmount > 0) {
         _deductStakingAmount(_pool, deductingAmount);
-        if (!_unsafeSendRONLimitGas(payable(_pool.__shadowedAdmin), deductingAmount, DEFAULT_ADDITION_GAS)) {
-          emit StakingAmountTransferFailed(_pool.pid, _pool.__shadowedAdmin, deductingAmount, address(this).balance);
+        if (!_unsafeSendRONLimitGas(payable(_pool.__shadowedPoolAdmin), deductingAmount, DEFAULT_ADDITION_GAS)) {
+          emit StakingAmountTransferFailed(_pool.pid, _pool.__shadowedPoolAdmin, deductingAmount, address(this).balance);
         }
       }
 
       // Settle the unclaimed reward and transfer to the pool admin.
-      uint256 lastRewardAmount = _claimReward(poolId, _pool.__shadowedAdmin, newPeriod);
+      uint256 lastRewardAmount = _claimReward(poolId, _pool.__shadowedPoolAdmin, newPeriod);
       if (lastRewardAmount > 0) {
-        _unsafeSendRONLimitGas(payable(_pool.__shadowedAdmin), lastRewardAmount, DEFAULT_ADDITION_GAS);
+        _unsafeSendRONLimitGas(payable(_pool.__shadowedPoolAdmin), lastRewardAmount, DEFAULT_ADDITION_GAS);
       }
 
       unchecked {

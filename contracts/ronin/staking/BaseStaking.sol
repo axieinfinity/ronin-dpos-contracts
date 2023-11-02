@@ -29,7 +29,7 @@ abstract contract BaseStaking is
   /// @dev The number of seconds that a candidate must wait to be revoked and take the self-staking amount back.
   uint256 internal _waitingSecsToRevoke;
 
-  /// @dev Mapping from admin address of an active pool => pool id.
+  /// @dev Mapping from "admin address of an active pool" => "pool id".
   mapping(address => address) internal _adminOfActivePoolMapping;
   /**
    * @dev This empty reserved space is put in place to allow future versions to add new
@@ -62,11 +62,11 @@ abstract contract BaseStaking is
   }
 
   function _requirePoolAdmin(PoolDetail storage _pool, address requester) private view {
-    if (_pool.__shadowedAdmin != requester) revert ErrOnlyPoolAdminAllowed();
+    if (_pool.__shadowedPoolAdmin != requester) revert ErrOnlyPoolAdminAllowed();
   }
 
   function _anyExceptPoolAdmin(PoolDetail storage _pool, address delegator) private view {
-    if (_pool.__shadowedAdmin == delegator) revert ErrPoolAdminForbidden();
+    if (_pool.__shadowedPoolAdmin == delegator) revert ErrPoolAdminForbidden();
   }
 
   function _poolOfConsensusIsActive(TConsensus consensusAddr) private view {
@@ -108,7 +108,7 @@ abstract contract BaseStaking is
     address poolId
   ) internal view returns (address admin, uint256 stakingAmount, uint256 stakingTotal) {
     PoolDetail storage _pool = _poolDetail[poolId];
-    return (_pool.__shadowedAdmin, _pool.stakingAmount, _pool.stakingTotal);
+    return (_pool.__shadowedPoolAdmin, _pool.stakingAmount, _pool.stakingTotal);
   }
 
   /**
