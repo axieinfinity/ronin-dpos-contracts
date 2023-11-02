@@ -79,18 +79,20 @@ contract ChangeConsensusAddressForkTest is Test {
     _wrapUpEpoch();
   }
 
-  function testFork_AfterUpgrade_WrapUpEpochAndNonWrapUpEpoch_ChangeAdmin() external upgrade {
+  function testFork_AfterUpgrade_WrapUpEpochAndNonWrapUpEpoch_ChangeAdmin_ChangeConsensus_ChangeTreasury() external upgrade {
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
-    address validatorCandidate = validatorCandidates[0];
-    address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).__shadowedAdmin;
+    address cid = validatorCandidates[0];
+    address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(cid)).__shadowedAdmin;
 
     // change validator admin
     address newAdmin = makeAddr("new-admin");
     address newConsensus = makeAddr("new-consensus");
+    address payable newTreasury = payable(makeAddr("new-treasury"));
 
     vm.startPrank(candidateAdmin);
-    _profile.requestChangeConsensusAddr(validatorCandidate, TConsensus.wrap(newConsensus));
-    _profile.requestChangeAdminAddress(validatorCandidate, newAdmin);
+    _profile.requestChangeConsensusAddr(cid, TConsensus.wrap(newConsensus));
+    _profile.requestChangeTreasuryAddr(cid, newTreasury);
+    _profile.requestChangeAdminAddress(cid, newAdmin);
     vm.stopPrank();
 
     // store snapshot state
@@ -100,9 +102,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _fastForwardToNextDay();
     _wrapUpEpoch();
 
-    ICandidateManager.ValidatorCandidate memory wrapUpInfo = _validator.getCandidateInfo(
-      TConsensus.wrap(newConsensus)
-    );
+    ICandidateManager.ValidatorCandidate memory wrapUpInfo = _validator.getCandidateInfo(TConsensus.wrap(newConsensus));
     ICandidateManager.ValidatorCandidate[] memory wrapUpInfos = _validator.getCandidateInfos();
 
     // revert to state before wrap up
@@ -113,11 +113,20 @@ contract ChangeConsensusAddressForkTest is Test {
     ICandidateManager.ValidatorCandidate[] memory nonWrapUpInfos = _validator.getCandidateInfos();
 
     assertEq(wrapUpInfo.__shadowedAdmin, nonWrapUpInfo.__shadowedAdmin);
+    assertEq(wrapUpInfo.__shadowedAdmin, newAdmin);
     assertEq(TConsensus.unwrap(wrapUpInfo.__shadowedConsensus), TConsensus.unwrap(nonWrapUpInfo.__shadowedConsensus));
+    assertEq(TConsensus.unwrap(wrapUpInfo.__shadowedConsensus), newConsensus);
     assertEq(wrapUpInfo.__shadowedTreasury, nonWrapUpInfo.__shadowedTreasury);
+    assertEq(wrapUpInfo.__shadowedTreasury, newTreasury);
     assertEq(wrapUpInfo.commissionRate, nonWrapUpInfo.commissionRate);
     assertEq(wrapUpInfo.revokingTimestamp, nonWrapUpInfo.revokingTimestamp);
     assertEq(wrapUpInfo.topupDeadline, nonWrapUpInfo.topupDeadline);
+
+    IProfile.CandidateProfile memory mProfile = _profile.getId2Profile(cid);
+    assertEq(mProfile.id, cid);
+    assertEq(TConsensus.unwrap( mProfile.consensus), newConsensus);
+    assertEq(mProfile.admin, newAdmin);
+    assertEq(mProfile.treasury, newTreasury);
 
     assertEq(wrapUpInfos.length, nonWrapUpInfos.length);
     for (uint256 i; i < wrapUpInfos.length; ++i) {
