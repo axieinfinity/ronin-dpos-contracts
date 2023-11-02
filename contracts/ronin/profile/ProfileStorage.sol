@@ -39,7 +39,7 @@ abstract contract ProfileStorage is IProfile, HasContracts {
 
   function _setConsensus(CandidateProfile storage _profile, TConsensus consensus) internal {
     delete _consensus2Id[_profile.consensus];
-    _consensus2Id[newProfile.consensus] = newProfile.id;
+    _consensus2Id[consensus] = _profile.id;
 
     _profile.consensus = consensus;
     _registry[uint256(uint160(TConsensus.unwrap(consensus)))] = true;

@@ -191,7 +191,7 @@ contract UnattachBridgeForkTest is RoninTest {
       consensusAddr,
       payable(candidateAdmin),
       commissionRate,
-      hex"3523523590"
+      abi.encodePacked(candidateAdmin, consensusAddr)
     );
   }
 
