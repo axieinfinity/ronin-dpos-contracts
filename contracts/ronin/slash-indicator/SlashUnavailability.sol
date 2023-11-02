@@ -65,32 +65,32 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
     }
 
     IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
-    uint256 _period = _validatorContract.currentPeriod();
-    uint256 _count;
+    uint256 period = _validatorContract.currentPeriod();
+    uint256 count;
     unchecked {
-      _count = ++_unavailabilityIndicator[validatorId][_period];
+      count = ++_unavailabilityIndicator[validatorId][period];
     }
-    uint256 _newJailedUntilBlock = Math.addIfNonZero(block.number, _jailDurationForUnavailabilityTier2Threshold);
+    uint256 newJailedUntilBlock = Math.addIfNonZero(block.number, _jailDurationForUnavailabilityTier2Threshold);
 
-    if (_count == _unavailabilityTier2Threshold) {
-      emit Slashed(validatorId, SlashType.UNAVAILABILITY_TIER_2, _period);
+    if (count == _unavailabilityTier2Threshold) {
+      emit Slashed(validatorId, SlashType.UNAVAILABILITY_TIER_2, period);
       _validatorContract.execSlash(
         validatorId,
-        _newJailedUntilBlock,
+        newJailedUntilBlock,
         _slashAmountForUnavailabilityTier2Threshold,
         false
       );
-    } else if (_count == _unavailabilityTier1Threshold) {
-      bool _tier1SecondTime = _checkBailedOutAtPeriodById(validatorId, _period);
-      if (!_tier1SecondTime) {
-        emit Slashed(validatorId, SlashType.UNAVAILABILITY_TIER_1, _period);
+    } else if (count == _unavailabilityTier1Threshold) {
+      bool tier1SecondTime = _checkBailedOutAtPeriodById(validatorId, period);
+      if (!tier1SecondTime) {
+        emit Slashed(validatorId, SlashType.UNAVAILABILITY_TIER_1, period);
         _validatorContract.execSlash(validatorId, 0, 0, false);
       } else {
         /// Handles tier-3
-        emit Slashed(validatorId, SlashType.UNAVAILABILITY_TIER_3, _period);
+        emit Slashed(validatorId, SlashType.UNAVAILABILITY_TIER_3, period);
         _validatorContract.execSlash(
           validatorId,
-          _newJailedUntilBlock,
+          newJailedUntilBlock,
           _slashAmountForUnavailabilityTier2Threshold,
           true
         );
