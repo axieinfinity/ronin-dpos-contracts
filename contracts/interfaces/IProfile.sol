@@ -77,18 +77,25 @@ interface IProfile {
   function execApplyValidatorCandidate(address admin, address id, address treasury, bytes calldata pubkey) external;
 
   /**
-   * @dev Updated immediately without waiting time.
+   * @dev Updated the treasury address of candidate id `id` immediately without waiting time.
    *
    * Emit an {ProfileAddressChanged}.
    */
   function requestChangeAdminAddress(address id, address newAdminAddr) external;
 
   /**
-   * @dev Updated immediately without waiting time. (???)
+   * @dev Updated the treasury address of candidate id `id` immediately without waiting time.
    *
    * Emit an {ProfileAddressChanged}.
    */
   function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external;
+
+  /**
+   * @dev Updated the treasury address of candidate id `id` immediately without waiting time.
+   *
+   * Emit an {ProfileAddressChanged}.
+   */
+  function requestChangeTreasuryAddr(address id, address payable newTreasury) external;
 
   /**
    * @notice The candidate admin changes the public key.

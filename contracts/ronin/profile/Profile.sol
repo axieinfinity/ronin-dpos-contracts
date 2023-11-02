@@ -122,7 +122,29 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     _checkNonZeroAndNonDuplicated(RoleAccess.CONSENSUS, TConsensus.unwrap(newConsensusAddr));
     _setConsensus(_profile, newConsensusAddr);
 
+    IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
+    validatorContract.execChangeConsensusAddress(id, newConsensusAddr);
+
     emit ProfileAddressChanged(id, RoleAccess.CONSENSUS);
+  }
+
+  /**
+   * @inheritdoc IProfile
+   *
+   * @dev Side-effects on other contracts:
+   * - Update Validator contract:
+   *    + Update (id => ValidatorCandidate) mapping
+   */
+  function requestChangeTreasuryAddr(address id, address payable newTreasury) external {
+    CandidateProfile storage _profile = _getId2ProfileHelper(id);
+    _requireCandidateAdmin(_profile);
+    _checkNonZeroAndNonDuplicated(RoleAccess.TREASURY, newTreasury);
+    _setTreasury(_profile, newTreasury);
+
+    IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
+    validatorContract.execChangeTreasuryAddress(id, newTreasury);
+
+    emit ProfileAddressChanged(id, RoleAccess.TREASURY);
   }
 
   /**

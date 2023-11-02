@@ -145,12 +145,31 @@ interface ICandidateManager {
 
   /**
    * @dev Fallback function of `Profile-requestChangeAdminAddress`.
-   * This updates the shadow storage slot of admin for candidate id `id` to `newAdmin`.
+   * This updates the shadow storage slot of "shadowedAdmin" for candidate id `id` to `newAdmin`.
    *
    * Requirements:
    * - The caller must be the Profile contract.
    */
   function execChangeAdminAddress(address id, address newAdmin) external;
+
+  /**
+   * @dev Fallback function of `Profile-requestChangeConsensusAddress`.
+   * This updates the shadow storage slot of "shadowedConsensus" for candidate id `id` to `newAdmin`.
+   *
+   * Requirements:
+   * - The caller must be the Profile contract.
+   */
+  function execChangeConsensusAddress(address id, TConsensus newConsensus) external;
+
+  /**
+   * @dev Fallback function of `Profile-requestChangeTreasuryAddress`.
+   * This updates the shadow storage slot of "shadowedTreasury" for candidate id `id` to `newAdmin`.
+   *
+   * Requirements:
+   * - The caller must be the Profile contract.
+   */
+
+  function execChangeTreasuryAddress(address id, address payable newTreasury) external;
 
   /**
    * @dev Returns whether the address is a validator (candidate).

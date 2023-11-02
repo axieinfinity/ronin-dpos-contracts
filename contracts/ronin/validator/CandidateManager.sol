@@ -143,19 +143,22 @@ abstract contract CandidateManager is
   function execChangeConsensusAddress(
     address id,
     TConsensus newConsensusAddr
-  ) external onlyContract(ContractType.PROFILE) {
+  ) external override onlyContract(ContractType.PROFILE) {
     // Sync Consensus Address mapping
     _candidateInfo[id].__shadowedConsensus = newConsensusAddr;
 
     // TODO:
-    // Sync Bridge Address mapping
     // Sync Jail mapping
     // Sync Pending reward mapping
     // Sync Schedule mapping
   }
 
-  function execChangeAdminAddress(address id, address newAdmi) external onlyContract(ContractType.PROFILE) {
+  function execChangeAdminAddress(address id, address newAdmin) external onlyContract(ContractType.PROFILE) {
     _candidateInfo[id].__shadowedAdmin = newAdmin;
+  }
+
+  function execChangeTreasuryAddress(address id, address payable newTreasury) external onlyContract(ContractType.PROFILE) {
+    _candidateInfo[id].__shadowedTreasury = newTreasury;
   }
 
   /**
