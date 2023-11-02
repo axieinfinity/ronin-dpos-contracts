@@ -113,7 +113,6 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     _requireCandidateAdmin(_profile);
     _checkNonZeroAndNonDuplicated(RoleAccess.CONSENSUS, TConsensus.unwrap(newConsensusAddr));
     _setConsensus(_profile, newConsensusAddr);
-    _consensus2Id[newConsensusAddr] = id;
 
     emit ProfileAddressChanged(id, RoleAccess.CONSENSUS);
   }
