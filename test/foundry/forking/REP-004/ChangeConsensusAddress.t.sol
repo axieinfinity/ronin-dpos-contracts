@@ -38,8 +38,6 @@ contract ChangeConsensusAddressForkTest is Test {
   }
 
   function setUp() external {
-    vm.createSelectFork(RONIN_TEST_RPC, 21710591);
-
     MockPrecompile mockPrecompile = new MockPrecompile();
     vm.etch(address(0x68), address(mockPrecompile).code);
     vm.makePersistent(address(0x68));
@@ -55,9 +53,11 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.label(address(_validator), "Validator");
     vm.label(address(_maintenance), "Maintenance");
     vm.label(address(_slashIndicator), "SlashIndicator");
+
+    vm.createSelectFork(RONIN_TEST_RPC, 21710591);
   }
 
-  function test_AfterUpgraded_ChangeConsensusAddress() external upgrade {
+  function testFork_AfterUpgraded_ChangeConsensusAddress() external upgrade {
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
     address validatorCandidate = validatorCandidates[0];
     address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).admin;
@@ -79,7 +79,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _wrapUpEpoch();
   }
 
-  function test_ShareSameSameReward_BeforeAndAfterUpgrade() external {
+  function testFork_ShareSameSameReward_BeforeAndAfterUpgrade() external {
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
     address validatorCandidate = validatorCandidates[0];
     address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).admin;
@@ -88,6 +88,7 @@ contract ChangeConsensusAddressForkTest is Test {
     console2.log("before-upgrade:recipient", recipient);
     uint256 balanceBefore = recipient.balance;
     console2.log("before-upgrade:balanceBefore", balanceBefore);
+    uint256 snapshotId = vm.snapshot();
 
     _fastForwardToNextDay();
     _wrapUpEpoch();
@@ -97,6 +98,7 @@ contract ChangeConsensusAddressForkTest is Test {
     uint256 beforeUpgradeReward = balanceAfter - balanceBefore;
     console2.log("before-upgrade:reward", beforeUpgradeReward);
 
+    vm.revertTo(snapshotId);
     _upgradeContracts();
     TConsensus newConsensus = TConsensus.wrap(makeAddr("consensus"));
     vm.prank(candidateAdmin);
@@ -121,7 +123,7 @@ contract ChangeConsensusAddressForkTest is Test {
     assertEq(afterUpgradedReward, beforeUpgradeReward, "afterUpgradedReward != beforeUpgradeReward");
   }
 
-  function testFail_RevertWhen_AfterUpgraded_DifferentAdmins_ShareSameConsensusAddr() external upgrade {
+  function testFailFork_RevertWhen_AfterUpgraded_DifferentAdmins_ShareSameConsensusAddr() external upgrade {
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
     address validatorCandidate = validatorCandidates[0];
     address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).admin;
@@ -142,7 +144,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _wrapUpEpoch();
   }
 
-  function test_AfterUpgraded_applyValidatorCandidate() external upgrade {
+  function testFork_AfterUpgraded_applyValidatorCandidate() external upgrade {
     _applyValidatorCandidate("candidate-admin-0", "consensus-0");
     _applyValidatorCandidate("candidate-admin-1", "consensus-1");
 
@@ -150,7 +152,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _wrapUpEpoch();
   }
 
-  function test_AfterUpgraded_applyValidatorCandidateByPeriod() external upgrade {
+  function testFork_AfterUpgraded_applyValidatorCandidateByPeriod() external upgrade {
     _applyValidatorCandidate("candidate-admin-0", "consensus-0");
 
     _fastForwardToNextDay();
@@ -159,7 +161,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _applyValidatorCandidate("candidate-admin-1", "consensus-1");
   }
 
-  function testFail_RevertWhen_AfterUpgraded_ReapplyValidatorCandidateByPeriod() external upgrade {
+  function testFailFork_RevertWhen_AfterUpgraded_ReapplyValidatorCandidateByPeriod() external upgrade {
     _applyValidatorCandidate("candidate-admin", "consensus");
 
     _fastForwardToNextDay();
@@ -168,7 +170,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _applyValidatorCandidate("candidate-admin", "consensus");
   }
 
-  function testFail_RevertWhen_AfterUpgraded_ReapplyValidatorCandidate() external upgrade {
+  function testFailFork_RevertWhen_AfterUpgraded_ReapplyValidatorCandidate() external upgrade {
     _applyValidatorCandidate("candidate-admin", "consensus");
     _applyValidatorCandidate("candidate-admin", "consensus");
   }
