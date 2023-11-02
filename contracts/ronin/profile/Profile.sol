@@ -110,6 +110,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
     _requireCandidateAdmin(_profile);
     _profile.consensus = newConsensusAddr;
+    _consensus2Id[newConsensusAddr] = id;
 
     emit ProfileAddressChanged(id, RoleAccess.CONSENSUS);
   }

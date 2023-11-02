@@ -25,12 +25,16 @@ contract ChangeConsensusAddressForkTest is Test {
   SlashIndicator internal _slashIndicator;
 
   modifier upgrade() {
+    _upgradeContracts();
+    _;
+  }
+
+  function _upgradeContracts() internal {
     _upgradeProfile();
     _upgradeStaking();
     _upgradeValidator();
     _upgradeMaintenance();
     _upgradeSlashIndicator();
-    _;
   }
 
   function setUp() external {
@@ -58,7 +62,7 @@ contract ChangeConsensusAddressForkTest is Test {
     address validatorCandidate = validatorCandidates[0];
     address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).admin;
     TConsensus newConsensus = TConsensus.wrap(makeAddr("new-consensus-0"));
-    
+
     vm.prank(candidateAdmin);
     _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
 
@@ -73,6 +77,48 @@ contract ChangeConsensusAddressForkTest is Test {
 
     _fastForwardToNextDay();
     _wrapUpEpoch();
+  }
+
+  function test_ShareSameSameReward_BeforeAndAfterUpgrade() external {
+    address[] memory validatorCandidates = _validator.getValidatorCandidates();
+    address validatorCandidate = validatorCandidates[0];
+    address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).admin;
+    //address recipient = candidateAdmin;
+    address recipient = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).treasuryAddr;
+    console2.log("before-upgrade:recipient", recipient);
+    uint256 balanceBefore = recipient.balance;
+    console2.log("before-upgrade:balanceBefore", balanceBefore);
+
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
+
+    uint256 balanceAfter = recipient.balance;
+    console2.log("before-upgrade:balanceAfter", balanceAfter);
+    uint256 beforeUpgradeReward = balanceAfter - balanceBefore;
+    console2.log("before-upgrade:reward", beforeUpgradeReward);
+
+    _upgradeContracts();
+    TConsensus newConsensus = TConsensus.wrap(makeAddr("consensus"));
+    vm.prank(candidateAdmin);
+    _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
+
+    console2.log("new-consensus", TConsensus.unwrap(newConsensus));
+
+    recipient = _validator.getCandidateInfo(newConsensus).treasuryAddr;
+    console2.log("after-upgrade:recipient", recipient);
+
+    balanceBefore = recipient.balance;
+    console2.log("after-upgrade:balanceBefore", balanceBefore);
+
+    _fastForwardToNextDay();
+    _wrapUpEpoch();
+
+    balanceAfter = recipient.balance;
+    console2.log("after-upgrade:balanceAfter", balanceBefore);
+    uint256 afterUpgradedReward = balanceAfter - balanceBefore;
+    console2.log("after-upgrade:reward", afterUpgradedReward);
+
+    assertEq(afterUpgradedReward, beforeUpgradeReward, "afterUpgradedReward != beforeUpgradeReward");
   }
 
   function testFail_RevertWhen_AfterUpgraded_DifferentAdmins_ShareSameConsensusAddr() external upgrade {
