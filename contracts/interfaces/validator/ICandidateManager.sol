@@ -6,12 +6,12 @@ import { TConsensus } from "../../udvts/Types.sol";
 
 interface ICandidateManager {
   struct ValidatorCandidate {
-    // Admin of the candidate
-    address admin;
+    // @custom shadowed-storage The address of the candidate admin. This storage slot is always kept in sync with the admin in `Profile-CandidateProfile`.
+    address __shadowedAdmin;
     // Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
-    address consensusAddr;
+    TConsensus __shadowedConsensus;
     // Address that receives mining reward of the validator
-    address payable treasuryAddr;
+    address payable __shadowedTreasury;
     // Address of the bridge operator corresponding to the candidate
     address ______deprecatedbridgeOperatorAddr;
     // The percentage of reward that validators can be received, the rest goes to the delegators.
@@ -37,9 +37,9 @@ interface ICandidateManager {
   /// @dev Emitted when the validator candidate is granted.
   event CandidateGranted(address indexed consensusAddr, address indexed treasuryAddr, address indexed admin);
   /// @dev Emitted when the revoking timestamp of a candidate is updated.
-  event CandidateRevokingTimestampUpdated(address indexed consensusAddr, uint256 revokingTimestamp);
+  event CandidateRevokingTimestampUpdated(address indexed cid, uint256 revokingTimestamp);
   /// @dev Emitted when the topup deadline of a candidate is updated.
-  event CandidateTopupDeadlineUpdated(address indexed consensusAddr, uint256 topupDeadline);
+  event CandidateTopupDeadlineUpdated(address indexed cid, uint256 topupDeadline);
   /// @dev Emitted when the validator candidate is revoked.
   event CandidatesRevoked(address[] consensusAddrs);
 
@@ -113,10 +113,10 @@ interface ICandidateManager {
    *
    */
   function execApplyValidatorCandidate(
-    address _admin,
-    address _consensusAddr,
-    address payable _treasuryAddr,
-    uint256 _commissionRate
+    address admin,
+    address id,
+    address payable treasuryAddr,
+    uint256 commissionRate
   ) external;
 
   /**
@@ -142,6 +142,34 @@ interface ICandidateManager {
    *
    */
   function execRequestUpdateCommissionRate(address _consensusAddr, uint256 _effectiveTimestamp, uint256 _rate) external;
+
+  /**
+   * @dev Fallback function of `Profile-requestChangeAdminAddress`.
+   * This updates the shadow storage slot of "shadowedAdmin" for candidate id `id` to `newAdmin`.
+   *
+   * Requirements:
+   * - The caller must be the Profile contract.
+   */
+  function execChangeAdminAddress(address id, address newAdmin) external;
+
+  /**
+   * @dev Fallback function of `Profile-requestChangeConsensusAddress`.
+   * This updates the shadow storage slot of "shadowedConsensus" for candidate id `id` to `newAdmin`.
+   *
+   * Requirements:
+   * - The caller must be the Profile contract.
+   */
+  function execChangeConsensusAddress(address id, TConsensus newConsensus) external;
+
+  /**
+   * @dev Fallback function of `Profile-requestChangeTreasuryAddress`.
+   * This updates the shadow storage slot of "shadowedTreasury" for candidate id `id` to `newAdmin`.
+   *
+   * Requirements:
+   * - The caller must be the Profile contract.
+   */
+
+  function execChangeTreasuryAddress(address id, address payable newTreasury) external;
 
   /**
    * @dev Returns whether the address is a validator (candidate).

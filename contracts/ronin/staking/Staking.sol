@@ -93,10 +93,10 @@ contract Staking is IStaking, StakingProfile, Initializable {
     _pool.stakingAmount -= actualDeductingAmount_;
     _changeDelegatingAmount(
       _pool,
-      _pool.admin,
+      _pool.__shadowedPoolAdmin,
       _pool.stakingAmount,
       Math.subNonNegative(_pool.stakingTotal, actualDeductingAmount_)
     );
-    emit Unstaked(_pool.id, actualDeductingAmount_);
+    emit Unstaked(_pool.pid, actualDeductingAmount_);
   }
 }

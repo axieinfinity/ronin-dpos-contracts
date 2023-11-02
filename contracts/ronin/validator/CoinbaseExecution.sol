@@ -189,7 +189,7 @@ abstract contract CoinbaseExecution is
 
     for (uint _i; _i < _currentValidators.length; ) {
       _consensusAddr = _currentValidators[_i];
-      _treasury = _candidateInfo[_consensusAddr].treasuryAddr;
+      _treasury = _candidateInfo[_consensusAddr].__shadowedTreasury;
 
       if (!_jailed(_consensusAddr) && !_miningRewardDeprecatedById(_consensusAddr, _lastPeriod)) {
         _totalDelegatingReward += _delegatingReward[_consensusAddr];
@@ -317,12 +317,12 @@ abstract contract CoinbaseExecution is
     uint256 _newPeriod
   ) private returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates) {
     _unsastifiedCandidates = _syncCandidateSet(_newPeriod);
-    uint256[] memory _weights = IStaking(getContract(ContractType.STAKING)).getManyStakingTotalsById(_candidates);
+    uint256[] memory _weights = IStaking(getContract(ContractType.STAKING)).getManyStakingTotalsById(_cids);
     uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
-      .getConsensusWeights(_candidates);
+      .getConsensusWeights(_cids);
     uint256 _newValidatorCount;
     (_newValidators, _newValidatorCount) = _pcPickValidatorSet(
-      _candidates,
+      _cids,
       _weights,
       _trustedWeights,
       _maxValidatorNumber,

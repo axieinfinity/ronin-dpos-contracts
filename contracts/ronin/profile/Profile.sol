@@ -75,9 +75,12 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
   /**
    * @inheritdoc IProfile
    *
-   * @dev Interactions: // TODO: remove following part when cleaning up code
-   * - Update `PoolDetail` in {BaseStaking.sol}.
-   * - Update `_adminOfActivePoolMapping` in {BaseStaking.sol}.
+   * @dev Side-effects on other contracts:
+   * - Update Staking contract:
+   *    + Update (id => PoolDetail) mapping in {BaseStaking.sol}.
+   *    + Update `_adminOfActivePoolMapping` in {BaseStaking.sol}.
+   * - Update Validator contract:
+   *    + Update (id => ValidatorCandidate) mapping
    */
   function requestChangeAdminAddress(address id, address newAdminAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
@@ -86,7 +89,9 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     _setAdmin(_profile, newAdminAddr);
 
     IStaking stakingContract = IStaking(getContract(ContractType.STAKING));
+    IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     stakingContract.execChangeAdminAddress(id, newAdminAddr);
+    validatorContract.execChangeAdminAddress(id, newAdminAddr);
 
     emit ProfileAddressChanged(id, RoleAccess.ADMIN);
   }
@@ -94,9 +99,9 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
   /**
    * @inheritdoc IProfile
    *
-   * @dev Interactions: // TODO: remove following part when cleaning up code
+   * @dev Side-effects on other contracts:
    * - Update in Staking contract for Consensus address mapping:
-   *   + [x] Keep the same previous pool address. // CHECKED, NO NEED ANY CHANGES
+   *   + [x] Keep the same previous pool address.
    *   +
    * - Update in Validator contract for:
    *   + [x] Consensus Address mapping
@@ -104,6 +109,10 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    *   + [x] Jail mapping
    *   + [x] Pending reward mapping
    *   + [x] Schedule mapping
+   * - Update in Slashing contract for:
+   *   + [x] Handling slash indicator
+   *   + [x] Handling slash fast finality
+   *   + [x] Handling slash double sign
    * - Update in Proposal contract for:
    *   + Refund of emergency exit mapping
    *   + ...
@@ -114,7 +123,29 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     _checkNonZeroAndNonDuplicated(RoleAccess.CONSENSUS, TConsensus.unwrap(newConsensusAddr));
     _setConsensus(_profile, newConsensusAddr);
 
+    IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
+    validatorContract.execChangeConsensusAddress(id, newConsensusAddr);
+
     emit ProfileAddressChanged(id, RoleAccess.CONSENSUS);
+  }
+
+  /**
+   * @inheritdoc IProfile
+   *
+   * @dev Side-effects on other contracts:
+   * - Update Validator contract:
+   *    + Update (id => ValidatorCandidate) mapping
+   */
+  function requestChangeTreasuryAddr(address id, address payable newTreasury) external {
+    CandidateProfile storage _profile = _getId2ProfileHelper(id);
+    _requireCandidateAdmin(_profile);
+    _checkNonZeroAndNonDuplicated(RoleAccess.TREASURY, newTreasury);
+    _setTreasury(_profile, newTreasury);
+
+    IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
+    validatorContract.execChangeTreasuryAddress(id, newTreasury);
+
+    emit ProfileAddressChanged(id, RoleAccess.TREASURY);
   }
 
   /**
