@@ -80,11 +80,13 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    * - Update `_adminOfActivePoolMapping` in {BaseStaking.sol}.
    */
   function requestChangeAdminAddress(address id, address newAdminAddr) external {
+    CandidateProfile storage _profile = _getId2ProfileHelper(id);
+    _requireCandidateAdmin(_profile);
+    _checkNonZeroAndNonDuplicated(RoleAccess.ADMIN, newAdminAddr);
+    _setAdmin(_profile, newAdminAddr);
+
     IStaking stakingContract = IStaking(getContract(ContractType.STAKING));
     stakingContract.execChangeAdminAddress(id, newAdminAddr);
-
-    CandidateProfile storage _profile = _getId2ProfileHelper(id);
-    _profile.admin = newAdminAddr;
 
     emit ProfileAddressChanged(id, RoleAccess.ADMIN);
   }
@@ -109,7 +111,8 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
   function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
     _requireCandidateAdmin(_profile);
-    _profile.consensus = newConsensusAddr;
+    _checkNonZeroAndNonDuplicated(RoleAccess.CONSENSUS, TConsensus.unwrap(newConsensusAddr));
+    _setConsensus(_profile, newConsensusAddr);
     _consensus2Id[newConsensusAddr] = id;
 
     emit ProfileAddressChanged(id, RoleAccess.CONSENSUS);
