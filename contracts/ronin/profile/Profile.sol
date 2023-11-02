@@ -24,6 +24,18 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     _setContract(ContractType.STAKING, stakingContract);
   }
 
+  function initializeV3() external reinitializer(3) {
+    address[] memory validatorCandidates = IRoninValidatorSet(getContract(ContractType.VALIDATOR))
+      .getValidatorCandidates();
+    TConsensus[] memory consensuses;
+    assembly ("memory-safe") {
+      consensuses := validatorCandidates
+    }
+    for (uint256 i; i < validatorCandidates.length; ++i) {
+      _consensus2Id[consensuses[i]] = validatorCandidates[i];
+    }
+  }
+
   /**
    * @inheritdoc IProfile
    */
@@ -35,7 +47,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    * @inheritdoc IProfile
    */
   function getConsensus2Id(TConsensus consensus) external view returns (address id) {
-    return _consensus2Id[consensus];
+    id = _consensus2Id[consensus];
   }
 
   /**
@@ -67,11 +79,13 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    * - Update `_adminOfActivePoolMapping` in {BaseStaking.sol}.
    */
   function requestChangeAdminAddress(address id, address newAdminAddr) external {
+    CandidateProfile storage _profile = _getId2ProfileHelper(id);
+    _requireCandidateAdmin(_profile);
+    _checkNonZeroAndNonDuplicated(RoleAccess.ADMIN, newAdminAddr);
+    _setAdmin(_profile, newAdminAddr);
+
     IStaking stakingContract = IStaking(getContract(ContractType.STAKING));
     stakingContract.execChangeAdminAddress(id, newAdminAddr);
-
-    CandidateProfile storage _profile = _getId2ProfileHelper(id);
-    _profile.admin = newAdminAddr;
 
     emit ProfileAddressChanged(id, RoleAccess.ADMIN);
   }
@@ -95,8 +109,9 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    */
   function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
-
-    _profile.consensus = newConsensusAddr;
+    _requireCandidateAdmin(_profile);
+    _checkNonZeroAndNonDuplicated(RoleAccess.CONSENSUS, TConsensus.unwrap(newConsensusAddr));
+    _setConsensus(_profile, newConsensusAddr);
 
     emit ProfileAddressChanged(id, RoleAccess.CONSENSUS);
   }
@@ -106,10 +121,17 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    */
   function changePubkey(address id, bytes memory pubkey) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
-    if (msg.sender != _profile.admin) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
+    _requireCandidateAdmin(_profile);
     _checkNonDuplicatedPubkey(pubkey);
     _setPubkey(_profile, pubkey);
 
     emit PubkeyChanged(id, pubkey);
+  }
+
+  function _requireCandidateAdmin(CandidateProfile storage sProfile) internal view {
+    if (
+      msg.sender != sProfile.admin ||
+      !IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isCandidateAdmin(sProfile.consensus, msg.sender)
+    ) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
   }
 }

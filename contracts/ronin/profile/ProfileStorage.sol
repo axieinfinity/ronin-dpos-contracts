@@ -27,8 +27,6 @@ abstract contract ProfileStorage is IProfile, HasContracts {
    * @dev Add a profile from memory to storage.
    */
   function _addNewProfile(CandidateProfile storage _profile, CandidateProfile memory newProfile) internal {
-    _consensus2Id[newProfile.consensus] = newProfile.id;
-
     _profile.id = newProfile.id;
 
     _setConsensus(_profile, newProfile.consensus);
@@ -41,6 +39,9 @@ abstract contract ProfileStorage is IProfile, HasContracts {
   }
 
   function _setConsensus(CandidateProfile storage _profile, TConsensus consensus) internal {
+    delete _consensus2Id[_profile.consensus];
+    _consensus2Id[consensus] = _profile.id;
+
     _profile.consensus = consensus;
     _registry[uint256(uint160(TConsensus.unwrap(consensus)))] = true;
   }
