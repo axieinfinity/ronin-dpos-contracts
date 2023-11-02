@@ -151,7 +151,12 @@ contract SlashIndicator is
 
   function _convertC2P(
     TConsensus consensusAddr
-  ) internal view override(CreditScore, SlashBridgeVoting, SlashDoubleSign, SlashUnavailability) returns (address) {
+  )
+    internal
+    view
+    override(CreditScore, SlashBridgeVoting, SlashDoubleSign, SlashUnavailability, SlashFastFinality)
+    returns (address)
+  {
     return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
   }
 

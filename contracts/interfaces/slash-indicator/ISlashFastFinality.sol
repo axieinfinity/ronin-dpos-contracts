@@ -3,6 +3,7 @@
 pragma solidity ^0.8.9;
 
 import "./IBaseSlash.sol";
+import { TConsensus } from "../../udvts/Types.sol";
 
 interface ISlashFastFinality is IBaseSlash {
   /**
@@ -20,7 +21,7 @@ interface ISlashFastFinality is IBaseSlash {
    * Emits the event `Slashed` if the fast finality evidence of the two headers valid.
    */
   function slashFastFinality(
-    address consensusAddr,
+    TConsensus consensusAddr,
     bytes calldata voterPublicKey,
     uint256 targetBlockNumber,
     bytes32[2] calldata targetBlockHash,
