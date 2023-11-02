@@ -18,8 +18,8 @@ abstract contract StakingProfile is CandidateStaking, DelegatorStaking, IStaking
   ) external override onlyContract(ContractType.PROFILE) {
     PoolDetail storage _pool = _poolDetail[poolAddr];
 
-    _adminOfActivePoolMapping[_pool.admin] = address(0);
-    _pool.admin = newAdminAddr;
+    _adminOfActivePoolMapping[_pool.__shadowedAdmin] = address(0);
+    _pool.__shadowedAdmin = newAdminAddr;
     _adminOfActivePoolMapping[newAdminAddr] = poolAddr;
   }
 }

@@ -80,8 +80,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     });
 
     PoolDetail storage _pool = _poolDetail[poolId];
-    _pool.admin = poolAdmin;
-    _pool.id = poolId;
+    _pool.__shadowedAdmin = poolAdmin;
+    _pool.pid = poolId;
     _adminOfActivePoolMapping[poolAdmin] = poolId;
 
     _stake(_poolDetail[poolId], poolAdmin, amount);
@@ -124,21 +124,21 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       address poolId = poolIds[i];
       PoolDetail storage _pool = _poolDetail[poolId];
       // Deactivate the pool admin in the active mapping.
-      delete _adminOfActivePoolMapping[_pool.admin];
+      delete _adminOfActivePoolMapping[_pool.__shadowedAdmin];
 
       // Deduct and transfer the self staking amount to the pool admin.
       uint256 deductingAmount = _pool.stakingAmount;
       if (deductingAmount > 0) {
         _deductStakingAmount(_pool, deductingAmount);
-        if (!_unsafeSendRONLimitGas(payable(_pool.admin), deductingAmount, DEFAULT_ADDITION_GAS)) {
-          emit StakingAmountTransferFailed(_pool.id, _pool.admin, deductingAmount, address(this).balance);
+        if (!_unsafeSendRONLimitGas(payable(_pool.__shadowedAdmin), deductingAmount, DEFAULT_ADDITION_GAS)) {
+          emit StakingAmountTransferFailed(_pool.pid, _pool.__shadowedAdmin, deductingAmount, address(this).balance);
         }
       }
 
       // Settle the unclaimed reward and transfer to the pool admin.
-      uint256 lastRewardAmount = _claimReward(poolId, _pool.admin, newPeriod);
+      uint256 lastRewardAmount = _claimReward(poolId, _pool.__shadowedAdmin, newPeriod);
       if (lastRewardAmount > 0) {
-        _unsafeSendRONLimitGas(payable(_pool.admin), lastRewardAmount, DEFAULT_ADDITION_GAS);
+        _unsafeSendRONLimitGas(payable(_pool.__shadowedAdmin), lastRewardAmount, DEFAULT_ADDITION_GAS);
       }
 
       unchecked {
@@ -261,7 +261,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     _pool.stakingAmount += amount;
     _changeDelegatingAmount(_pool, requester, _pool.stakingAmount, _pool.stakingTotal + amount);
     _pool.lastDelegatingTimestamp[requester] = block.timestamp;
-    emit Staked(_pool.id, amount);
+    emit Staked(_pool.pid, amount);
   }
 
   /**
@@ -279,7 +279,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
 
     _pool.stakingAmount -= amount;
     _changeDelegatingAmount(_pool, requester, _pool.stakingAmount, _pool.stakingTotal - amount);
-    emit Unstaked(_pool.id, amount);
+    emit Unstaked(_pool.pid, amount);
   }
 
   /**

@@ -7,11 +7,11 @@ import { TConsensus } from "../../udvts/Types.sol";
 interface ICandidateManager {
   struct ValidatorCandidate {
     // Admin of the candidate
-    address admin;
+    address __shadowedAdmin;
     // Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
-    address consensusAddr;
+    TConsensus __shadowedConsensus;
     // Address that receives mining reward of the validator
-    address payable treasuryAddr;
+    address payable __shadowedTreasury;
     // Address of the bridge operator corresponding to the candidate
     address ______deprecatedbridgeOperatorAddr;
     // The percentage of reward that validators can be received, the rest goes to the delegators.
@@ -37,9 +37,9 @@ interface ICandidateManager {
   /// @dev Emitted when the validator candidate is granted.
   event CandidateGranted(address indexed consensusAddr, address indexed treasuryAddr, address indexed admin);
   /// @dev Emitted when the revoking timestamp of a candidate is updated.
-  event CandidateRevokingTimestampUpdated(address indexed consensusAddr, uint256 revokingTimestamp);
+  event CandidateRevokingTimestampUpdated(address indexed cid, uint256 revokingTimestamp);
   /// @dev Emitted when the topup deadline of a candidate is updated.
-  event CandidateTopupDeadlineUpdated(address indexed consensusAddr, uint256 topupDeadline);
+  event CandidateTopupDeadlineUpdated(address indexed cid, uint256 topupDeadline);
   /// @dev Emitted when the validator candidate is revoked.
   event CandidatesRevoked(address[] consensusAddrs);
 
@@ -113,10 +113,10 @@ interface ICandidateManager {
    *
    */
   function execApplyValidatorCandidate(
-    address _admin,
-    address _consensusAddr,
-    address payable _treasuryAddr,
-    uint256 _commissionRate
+    address admin,
+    address id,
+    address payable treasuryAddr,
+    uint256 commissionRate
   ) external;
 
   /**

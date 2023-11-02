@@ -26,31 +26,28 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   /**
    * @inheritdoc IEmergencyExit
    */
-  function execEmergencyExit(
-    address _consensusAddr,
-    uint256 _secLeftToRevoke
-  ) external onlyContract(ContractType.STAKING) {
-    EmergencyExitInfo storage _info = _exitInfo[_consensusAddr];
+  function execEmergencyExit(address cid, uint256 secLeftToRevoke) external onlyContract(ContractType.STAKING) {
+    EmergencyExitInfo storage _info = _exitInfo[cid];
     if (_info.recyclingAt != 0) revert ErrAlreadyRequestedEmergencyExit();
 
-    uint256 _revokingTimestamp = block.timestamp + _secLeftToRevoke;
-    _setRevokingTimestamp(_candidateInfo[_consensusAddr], _revokingTimestamp);
-    _emergencyExitJailedTimestamp[_consensusAddr] = _revokingTimestamp;
+    uint256 revokingTimestamp = block.timestamp + secLeftToRevoke;
+    _setRevokingTimestamp(_candidateInfo[cid], revokingTimestamp);
+    _emergencyExitJailedTimestamp[cid] = revokingTimestamp;
 
-    uint256 _deductedAmount = IStaking(msg.sender).execDeductStakingAmount(_consensusAddr, _emergencyExitLockedAmount);
-    if (_deductedAmount > 0) {
-      uint256 _recyclingAt = block.timestamp + _emergencyExpiryDuration;
-      _lockedConsensusList.push(_consensusAddr);
-      _info.lockedAmount = _deductedAmount;
-      _info.recyclingAt = _recyclingAt;
+    uint256 deductedAmount = IStaking(msg.sender).execDeductStakingAmount(cid, _emergencyExitLockedAmount);
+    if (deductedAmount > 0) {
+      uint256 recyclingAt = block.timestamp + _emergencyExpiryDuration;
+      _lockedConsensusList.push(cid);
+      _info.lockedAmount = deductedAmount;
+      _info.recyclingAt = recyclingAt;
       IRoninGovernanceAdmin(_getAdmin()).createEmergencyExitPoll(
-        _consensusAddr,
-        _candidateInfo[_consensusAddr].treasuryAddr,
+        cid,
+        _candidateInfo[cid].__shadowedTreasury,
         block.timestamp,
-        _recyclingAt
+        recyclingAt
       );
     }
-    emit EmergencyExitRequested(_consensusAddr, _deductedAmount);
+    emit EmergencyExitRequested(cid, deductedAmount);
   }
 
   /**

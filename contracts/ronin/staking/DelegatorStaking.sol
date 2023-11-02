@@ -126,7 +126,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
   ) internal anyExceptPoolAdmin(_pool, delegator) {
     _changeDelegatingAmount(_pool, delegator, _pool.delegatingAmount[delegator] + amount, _pool.stakingTotal + amount);
     _pool.lastDelegatingTimestamp[delegator] = block.timestamp;
-    emit Delegated(delegator, _pool.id, amount);
+    emit Delegated(delegator, _pool.pid, amount);
   }
 
   /**
@@ -159,7 +159,7 @@ abstract contract DelegatorStaking is BaseStaking, IDelegatorStaking {
     ) revert ErrUndelegateTooEarly();
 
     _changeDelegatingAmount(_pool, delegator, _pool.delegatingAmount[delegator] - amount, _pool.stakingTotal - amount);
-    emit Undelegated(delegator, _pool.id, amount);
+    emit Undelegated(delegator, _pool.pid, amount);
   }
 
   /**

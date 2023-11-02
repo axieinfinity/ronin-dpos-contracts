@@ -74,7 +74,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
   /**
    * @inheritdoc IProfile
    *
-   * @dev Interactions: // TODO: remove following part when cleaning up code
+   * @dev Side-effects on other contracts:
    * - Update `PoolDetail` in {BaseStaking.sol}.
    * - Update `_adminOfActivePoolMapping` in {BaseStaking.sol}.
    */
@@ -93,9 +93,9 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
   /**
    * @inheritdoc IProfile
    *
-   * @dev Interactions: // TODO: remove following part when cleaning up code
+   * @dev Side-effects on other contracts:
    * - Update in Staking contract for Consensus address mapping:
-   *   + [x] Keep the same previous pool address. // CHECKED, NO NEED ANY CHANGES
+   *   + [x] Keep the same previous pool address.
    *   +
    * - Update in Validator contract for:
    *   + [x] Consensus Address mapping
@@ -103,6 +103,10 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    *   + [x] Jail mapping
    *   + [x] Pending reward mapping
    *   + [x] Schedule mapping
+   * - Update in Slashing contract for:
+   *   + [x] Handling slash indicator
+   *   + [x] Handling slash fast finality
+   *   + [x] Handling slash double sign
    * - Update in Proposal contract for:
    *   + Refund of emergency exit mapping
    *   + ...

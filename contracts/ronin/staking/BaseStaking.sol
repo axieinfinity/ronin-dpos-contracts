@@ -21,7 +21,7 @@ abstract contract BaseStaking is
   IBaseStaking,
   HasValidatorDeprecated
 {
-  /// @dev Mapping from pool address => staking pool detail
+  /// @dev Mapping from pool address (i.e. validator id) => staking pool detail
   mapping(address => PoolDetail) internal _poolDetail;
 
   /// @dev The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.
@@ -62,11 +62,11 @@ abstract contract BaseStaking is
   }
 
   function _requirePoolAdmin(PoolDetail storage _pool, address requester) private view {
-    if (_pool.admin != requester) revert ErrOnlyPoolAdminAllowed();
+    if (_pool.__shadowedAdmin != requester) revert ErrOnlyPoolAdminAllowed();
   }
 
   function _anyExceptPoolAdmin(PoolDetail storage _pool, address delegator) private view {
-    if (_pool.admin == delegator) revert ErrPoolAdminForbidden();
+    if (_pool.__shadowedAdmin == delegator) revert ErrPoolAdminForbidden();
   }
 
   function _poolOfConsensusIsActive(TConsensus consensusAddr) private view {
@@ -108,7 +108,7 @@ abstract contract BaseStaking is
     address poolId
   ) internal view returns (address admin, uint256 stakingAmount, uint256 stakingTotal) {
     PoolDetail storage _pool = _poolDetail[poolId];
-    return (_pool.admin, _pool.stakingAmount, _pool.stakingTotal);
+    return (_pool.__shadowedAdmin, _pool.stakingAmount, _pool.stakingTotal);
   }
 
   /**
@@ -298,7 +298,7 @@ abstract contract BaseStaking is
     uint256 newDelegatingAmount,
     uint256 newStakingTotal
   ) internal {
-    _syncUserReward(_pool.id, delegator, newDelegatingAmount);
+    _syncUserReward(_pool.pid, delegator, newDelegatingAmount);
     _pool.stakingTotal = newStakingTotal;
     _pool.delegatingAmount[delegator] = newDelegatingAmount;
   }
