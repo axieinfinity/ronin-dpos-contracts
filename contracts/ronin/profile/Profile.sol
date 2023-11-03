@@ -3,6 +3,7 @@
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/validator/ICandidateManager.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
+import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/staking/IStaking.sol";
 import "../../interfaces/IProfile.sol";
 import "./ProfileXComponents.sol";
@@ -24,7 +25,9 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     _setContract(ContractType.STAKING, stakingContract);
   }
 
-  function initializeV3() external reinitializer(3) {
+  function initializeV3(address trustedOrgContract) external reinitializer(3) {
+    _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, trustedOrgContract);
+
     address[] memory validatorCandidates = IRoninValidatorSet(getContract(ContractType.VALIDATOR))
       .getValidatorCandidates();
     TConsensus[] memory consensuses;
@@ -76,10 +79,10 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    *
    * @dev Side-effects on other contracts:
    * - Update Staking contract:
-   *    + Update (id => PoolDetail) mapping in {BaseStaking.sol}.
-   *    + Update `_adminOfActivePoolMapping` in {BaseStaking.sol}.
+   *    + [x] Update (id => PoolDetail) mapping in {BaseStaking.sol}.
+   *    + [x] Update `_adminOfActivePoolMapping` in {BaseStaking.sol}.
    * - Update Validator contract:
-   *    + Update (id => ValidatorCandidate) mapping
+   *    + [x] Update (id => ValidatorCandidate) mapping
    */
   function requestChangeAdminAddress(address id, address newAdminAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
@@ -88,8 +91,9 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     _setAdmin(_profile, newAdminAddr);
 
     IStaking stakingContract = IStaking(getContract(ContractType.STAKING));
-    IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     stakingContract.execChangeAdminAddress(id, newAdminAddr);
+
+    IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     validatorContract.execChangeAdminAddress(id, newAdminAddr);
 
     emit ProfileAddressChanged(id, RoleAccess.ADMIN);
@@ -101,7 +105,6 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    * @dev Side-effects on other contracts:
    * - Update in Staking contract for Consensus address mapping:
    *   + [x] Keep the same previous pool address.
-   *   +
    * - Update in Validator contract for:
    *   + [x] Consensus Address mapping
    *   + [x] Bridge Address mapping
@@ -113,17 +116,30 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    *   + [x] Handling slash fast finality
    *   + [x] Handling slash double sign
    * - Update in Proposal contract for:
-   *   + Refund of emergency exit mapping
-   *   + ...
+   *   + [ ] Refund of emergency exit mapping
+   *   + [ ] ...
+   * - Update Trusted Org contracts:
+   *   + [x] Remove and delete weight of the old consensus
+   *   + [x] Replace and add weight for the new consensus
    */
   function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
     _requireCandidateAdmin(_profile);
     _checkNonZeroAndNonDuplicated(RoleAccess.CONSENSUS, TConsensus.unwrap(newConsensusAddr));
+
+    TConsensus oldConsensusAddr = _profile.consensus;
     _setConsensus(_profile, newConsensusAddr);
 
     IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     validatorContract.execChangeConsensusAddress(id, newConsensusAddr);
+
+    IRoninTrustedOrganization trustedOrgContract = IRoninTrustedOrganization(
+      getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)
+    );
+    trustedOrgContract.execChangeConsensusAddressForTrustedOrg({
+      oldConsensusAddr: oldConsensusAddr,
+      newConsensusAddr: newConsensusAddr
+    });
 
     emit ProfileAddressChanged(id, RoleAccess.CONSENSUS);
   }
@@ -133,7 +149,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    *
    * @dev Side-effects on other contracts:
    * - Update Validator contract:
-   *    + Update (id => ValidatorCandidate) mapping
+   *    + [x] Update (id => ValidatorCandidate) mapping
    */
   function requestChangeTreasuryAddr(address id, address payable newTreasury) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);

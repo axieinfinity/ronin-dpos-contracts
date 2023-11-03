@@ -140,6 +140,9 @@ abstract contract CandidateManager is
     emit CommissionRateUpdateScheduled(cid, effectiveTimestamp, commissionRate);
   }
 
+  /**
+   * @inheritdoc ICandidateManager
+   */
   function execChangeConsensusAddress(
     address cid,
     TConsensus newConsensusAddr
@@ -151,15 +154,18 @@ abstract contract CandidateManager is
     // Sync Jail mapping
     // Sync Pending reward mapping
     // Sync Schedule mapping
-
-    // TODO: Handle
-    // Sync RoninTrustedOrg
   }
 
+  /**
+   * @inheritdoc ICandidateManager
+   */
   function execChangeAdminAddress(address cid, address newAdmin) external onlyContract(ContractType.PROFILE) {
     _candidateInfo[cid].__shadowedAdmin = newAdmin;
   }
 
+  /**
+   * @inheritdoc ICandidateManager
+   */
   function execChangeTreasuryAddress(
     address cid,
     address payable newTreasury
