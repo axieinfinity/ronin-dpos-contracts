@@ -57,6 +57,81 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.createSelectFork(RONIN_TEST_RPC, 21710591);
   }
 
+  function testFork_NotReceiveReward_BeforeAndAfterUpgraded_execEmergencyExit() external {
+    // TODO(TuDo): bug fix please Bao-chan
+    address[] memory validatorCandidates = _validator.getValidatorCandidates();
+    address validatorCandidate = validatorCandidates[2];
+    address recipient = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).__shadowedTreasury;
+
+    uint256 snapshotId = vm.snapshot();
+
+    (address admin, , ) = _staking.getPoolDetail(TConsensus.wrap(validatorCandidate));
+    console2.log("before-upgrade-admin", admin);
+    vm.prank(admin);
+    _staking.requestEmergencyExit(TConsensus.wrap(validatorCandidate));
+
+    uint256 adminBalanceBefore = admin.balance;
+    console2.log("before-upgrade:adminBalanceBefore", adminBalanceBefore);
+
+    vm.warp(block.timestamp + 7 days);
+    _bulkWrapUpEpoch(1);
+
+    uint256 adminBalanceAfter = admin.balance;
+    console2.log("before-upgrade:adminBalanceAfter", adminBalanceAfter);
+
+    assertFalse(_validator.isValidatorCandidate(TConsensus.wrap(validatorCandidate)));
+    console2.log("before-upgrade:recipient", recipient);
+    uint256 balanceBefore = recipient.balance;
+    console2.log("before-upgrade:balanceBefore", balanceBefore);
+
+    _bulkSubmitBlockReward(1);
+    _bulkWrapUpEpoch(1);
+
+    uint256 balanceAfter = recipient.balance;
+    console2.log("before-upgrade:balanceAfter", balanceAfter);
+    uint256 rewardBeforeUpgrade = balanceAfter - balanceBefore;
+    uint256 beforeUpgradeAdminStakingAmount = adminBalanceAfter - adminBalanceBefore;
+    console2.log("before-upgrade:adminStakingAmount", beforeUpgradeAdminStakingAmount);
+    console2.log("before-upgrade:reward", rewardBeforeUpgrade);
+
+    assertEq(rewardBeforeUpgrade, 0);
+
+    vm.revertTo(snapshotId);
+    _upgradeContracts();
+
+    (admin, , ) = _staking.getPoolDetail(TConsensus.wrap(validatorCandidate));
+    console2.log("after-upgrade-admin", admin);
+    vm.prank(admin);
+    _staking.requestEmergencyExit(TConsensus.wrap(validatorCandidate));
+
+    adminBalanceBefore = admin.balance;
+    console2.log("after-upgrade:adminBalanceBefore", adminBalanceBefore);
+
+    vm.warp(block.timestamp + 7 days);
+    _bulkWrapUpEpoch(1);
+
+    adminBalanceAfter = admin.balance;
+    console2.log("after-upgrade:adminBalanceAfter", adminBalanceAfter);
+
+    uint256 afterUpgradeAdminStakingAmount = adminBalanceAfter - adminBalanceBefore;
+    console2.log("after-upgrade:adminStakingAmount", afterUpgradeAdminStakingAmount);
+    assertFalse(_validator.isValidatorCandidate(TConsensus.wrap(validatorCandidate)));
+    console2.log("after-upgrade:recipient", recipient);
+    balanceBefore = recipient.balance;
+    console2.log("after-upgrade:balanceBefore", balanceBefore);
+
+    _bulkSubmitBlockReward(1);
+    _bulkWrapUpEpoch(1);
+
+    balanceAfter = recipient.balance;
+    console2.log("after-upgrade:balanceAfter", balanceAfter);
+    uint256 rewardAfterUpgrade = balanceAfter - balanceBefore;
+    console2.log("after-upgrade:reward", rewardAfterUpgrade);
+
+    assertEq(rewardAfterUpgrade, 0);
+    assertEq(beforeUpgradeAdminStakingAmount, afterUpgradeAdminStakingAmount);
+  }
+
   function testFork_AfterUpgraded_RevertWhen_ReapplySameAddress_Renounce() external upgrade {
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
     address validatorCandidate = validatorCandidates[2];
@@ -67,6 +142,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _staking.requestRenounce(TConsensus.wrap(validatorCandidate));
 
     vm.warp(block.timestamp + 7 days);
+    _bulkSubmitBlockReward(1);
     _bulkWrapUpEpoch(1);
 
     assertFalse(_validator.isValidatorCandidate(TConsensus.wrap(validatorCandidate)));
@@ -120,8 +196,7 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.prank(candidateAdmin);
     _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
 
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
+    _bulkWrapUpEpoch(1);
 
     validatorCandidate = validatorCandidates[1];
     candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).__shadowedAdmin;
@@ -129,8 +204,7 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.prank(candidateAdmin);
     _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
 
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
+    _bulkWrapUpEpoch(1);
   }
 
   function testFork_AfterUpgrade_WrapUpEpochAndNonWrapUpEpoch_ChangeAdmin_ChangeConsensus_ChangeTreasury()
@@ -156,8 +230,7 @@ contract ChangeConsensusAddressForkTest is Test {
     uint256 snapshotId = vm.snapshot();
 
     // wrap up epoch
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
+    _bulkWrapUpEpoch(1);
 
     ICandidateManager.ValidatorCandidate memory wrapUpInfo = _validator.getCandidateInfo(TConsensus.wrap(newConsensus));
     ICandidateManager.ValidatorCandidate[] memory wrapUpInfos = _validator.getCandidateInfos();
@@ -206,8 +279,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _bulkSubmitBlockReward(1);
     _bulkSlashIndicator(validatorCandidate, 50);
 
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
+    _bulkWrapUpEpoch(1);
 
     uint256 balanceAfter = recipient.balance;
     console2.log("before-upgrade:balanceAfter", balanceAfter);
@@ -232,8 +304,7 @@ contract ChangeConsensusAddressForkTest is Test {
     balanceBefore = recipient.balance;
     console2.log("after-upgrade:balanceBefore", balanceBefore);
 
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
+    _bulkWrapUpEpoch(1);
 
     balanceAfter = recipient.balance;
     console2.log("after-upgrade:balanceAfter", balanceBefore);
@@ -329,8 +400,7 @@ contract ChangeConsensusAddressForkTest is Test {
     uint256 snapshotId = vm.snapshot();
 
     _bulkSubmitBlockReward(1);
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
+    _bulkWrapUpEpoch(1);
 
     uint256 balanceAfter = recipient.balance;
     console2.log("before-upgrade:balanceAfter", balanceAfter);
@@ -352,8 +422,7 @@ contract ChangeConsensusAddressForkTest is Test {
     console2.log("after-upgrade:balanceBefore", balanceBefore);
 
     _bulkSubmitBlockReward(1);
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
+    _bulkWrapUpEpoch(1);
 
     balanceAfter = recipient.balance;
     console2.log("after-upgrade:balanceAfter", balanceBefore);
@@ -371,8 +440,7 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.prank(candidateAdmin);
     _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
 
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
+    _bulkWrapUpEpoch(1);
 
     validatorCandidate = validatorCandidates[1];
     candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).__shadowedAdmin;
@@ -380,33 +448,24 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.prank(candidateAdmin);
     _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
 
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
+    _bulkWrapUpEpoch(1);
   }
 
   function testFork_AfterUpgraded_applyValidatorCandidate() external upgrade {
     _applyValidatorCandidate("candidate-admin-0", "consensus-0");
     _applyValidatorCandidate("candidate-admin-1", "consensus-1");
-
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
+    _bulkWrapUpEpoch(1);
   }
 
   function testFork_AfterUpgraded_applyValidatorCandidateByPeriod() external upgrade {
     _applyValidatorCandidate("candidate-admin-0", "consensus-0");
-
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
-
+    _bulkWrapUpEpoch(1);
     _applyValidatorCandidate("candidate-admin-1", "consensus-1");
   }
 
   function testFailFork_RevertWhen_AfterUpgraded_ReapplyValidatorCandidateByPeriod() external upgrade {
     _applyValidatorCandidate("candidate-admin", "consensus");
-
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
-
+    _bulkWrapUpEpoch(1);
     _applyValidatorCandidate("candidate-admin", "consensus");
   }
 
