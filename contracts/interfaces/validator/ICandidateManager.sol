@@ -11,31 +11,25 @@ interface ICandidateManager {
      * @custom shadowed-storage This storage slot is always kept in sync with {Profile-CandidateProfile}.admin.
      */
     address __shadowedAdmin;
-
     /**
      * @dev Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
      * @custom shadowed-storage This storage slot is always kept in sync with {Profile-CandidateProfile}.consensus.
      */
     TConsensus __shadowedConsensus;
-
     /**
      * @dev Address that receives mining reward of the validator
      * @custom shadowed-storage This storage slot is always kept in sync with {Profile-CandidateProfile}.treasury.
      */
     address payable __shadowedTreasury;
-
     /// @dev Address of the bridge operator corresponding to the candidate
     address ____deprecatedBridgeOperatorAddr;
-
     /**
      * @dev The percentage of reward that validators can be received, the rest goes to the delegators.
      * Values in range [0; 100_00] stands for 0-100%
      */
     uint256 commissionRate;
-
     /// @dev The timestamp that scheduled to revoke the candidate (no schedule=0)
     uint256 revokingTimestamp;
-
     /// @dev The deadline that the candidate must top up staking amount to keep it larger than or equal to the threshold (no deadline=0)
     uint256 topupDeadline;
   }
@@ -72,7 +66,7 @@ interface ICandidateManager {
   /// @dev Error of querying for non-existent candidate.
   error ErrNonExistentCandidate();
   /// @dev Error of candidate admin already exists.
-  error ErrExistentCandidateAdmin(address _candidateAdminAddr);
+  error ErrExistentCandidateAdmin(address candidateAdminAddr);
   /// @dev Error of treasury already exists.
   error ErrExistentTreasury(address _treasuryAddr);
   /// @dev Error of invalid commission rate.
@@ -137,7 +131,7 @@ interface ICandidateManager {
   ) external;
 
   /**
-   * @dev Requests to revoke a validator candidate in next `_secsLeft` seconds.
+   * @dev Requests to revoke a validator candidate in next `secsLeft` seconds.
    *
    * Requirements:
    * - The method caller is staking contract.
@@ -145,20 +139,20 @@ interface ICandidateManager {
    * Emits the event `CandidateRevokingTimestampUpdated`.
    *
    */
-  function execRequestRenounceCandidate(address, uint256 _secsLeft) external;
+  function execRequestRenounceCandidate(address, uint256 secsLeft) external;
 
   /**
    * @dev Fallback function of `CandidateStaking-requestUpdateCommissionRate`.
    *
    * Requirements:
    * - The method caller is the staking contract.
-   * - The `_effectiveTimestamp` must be the beginning of a UTC day, and at least from 7 days onwards
-   * - The `_rate` must be in range of [0_00; 100_00].
+   * - The `effectiveTimestamp` must be the beginning of a UTC day, and at least from 7 days onwards
+   * - The `rate` must be in range of [0_00; 100_00].
    *
    * Emits the event `CommissionRateUpdateScheduled`.
    *
    */
-  function execRequestUpdateCommissionRate(address _consensusAddr, uint256 _effectiveTimestamp, uint256 _rate) external;
+  function execRequestUpdateCommissionRate(address cid, uint256 effectiveTimestamp, uint256 rate) external;
 
   /**
    * @dev Fallback function of `Profile-requestChangeAdminAddress`.
@@ -167,7 +161,7 @@ interface ICandidateManager {
    * Requirements:
    * - The caller must be the Profile contract.
    */
-  function execChangeAdminAddress(address id, address newAdmin) external;
+  function execChangeAdminAddress(address cid, address newAdmin) external;
 
   /**
    * @dev Fallback function of `Profile-requestChangeConsensusAddress`.
@@ -176,7 +170,7 @@ interface ICandidateManager {
    * Requirements:
    * - The caller must be the Profile contract.
    */
-  function execChangeConsensusAddress(address id, TConsensus newConsensus) external;
+  function execChangeConsensusAddress(address cid, TConsensus newConsensus) external;
 
   /**
    * @dev Fallback function of `Profile-requestChangeTreasuryAddress`.
@@ -186,7 +180,7 @@ interface ICandidateManager {
    * - The caller must be the Profile contract.
    */
 
-  function execChangeTreasuryAddress(address id, address payable newTreasury) external;
+  function execChangeTreasuryAddress(address cid, address payable newTreasury) external;
 
   /**
    * @dev Returns whether the address is a validator (candidate).
@@ -206,15 +200,15 @@ interface ICandidateManager {
   /**
    * @dev Returns the info of a candidate.
    */
-  function getCandidateInfo(TConsensus candidate) external view returns (ValidatorCandidate memory);
+  function getCandidateInfo(TConsensus consensus) external view returns (ValidatorCandidate memory);
 
   /**
    * @dev Returns whether the address is the candidate admin.
    */
-  function isCandidateAdmin(TConsensus candidateConsensus, address admin) external view returns (bool);
+  function isCandidateAdmin(TConsensus consensus, address admin) external view returns (bool);
 
   /**
    * @dev Returns the schedule of changing commission rate of a candidate address.
    */
-  function getCommissionChangeSchedule(address _candidate) external view returns (CommissionSchedule memory);
+  function getCommissionChangeSchedule(TConsensus consensus) external view returns (CommissionSchedule memory);
 }

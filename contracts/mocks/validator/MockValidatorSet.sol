@@ -64,7 +64,7 @@ contract MockValidatorSet is
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
 
   function execSlash(
-    address validatorAddr,
+    address cid,
     uint256 newJailedUntil,
     uint256 slashAmount,
     bool cannotBailout
@@ -143,7 +143,7 @@ contract MockValidatorSet is
 
   function setEmergencyExpiryDuration(uint256 _emergencyExpiryDuration) external override {}
 
-  function getEmergencyExitInfo(address _consensusAddr) external view override returns (EmergencyExitInfo memory) {}
+  function getEmergencyExitInfo(TConsensus consensus) external view override returns (EmergencyExitInfo memory) {}
 
   function execEmergencyExit(address, uint256) external {}
 

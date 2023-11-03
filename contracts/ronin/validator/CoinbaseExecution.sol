@@ -85,7 +85,7 @@ abstract contract CoinbaseExecution is
     uint256 rewardProducingBlock = reward - rewardFastFinality; // reward for producing blocks
     uint256 cutOffReward;
 
-    // Add fast finality reward to total reward for current epoch, then split it later in the {wrapupEpoch} method.
+    // Add fast finality reward to total reward for current epoch, then split it later in the {wrapUpEpoch} method.
     _totalFastFinalityReward += rewardFastFinality;
 
     if (_miningRewardBailoutCutOffAtPeriod[msg.sender][period]) {
@@ -108,58 +108,59 @@ abstract contract CoinbaseExecution is
    * @inheritdoc ICoinbaseExecution
    */
   function wrapUpEpoch() external payable virtual override onlyCoinbase whenEpochEnding oncePerEpoch {
-    uint256 _newPeriod = _computePeriod(block.timestamp);
-    bool _periodEnding = _isPeriodEnding(_newPeriod);
+    uint256 newPeriod = _computePeriod(block.timestamp);
+    bool periodEnding = _isPeriodEnding(newPeriod);
 
-    address[] memory _currentValidators = getValidators();
-    address[] memory _revokedCandidates;
-    uint256 _epoch = epochOf(block.number);
-    uint256 _nextEpoch = _epoch + 1;
-    uint256 _lastPeriod = currentPeriod();
+    address[] memory currValidatorIds = getValidators();
+    address[] memory revokedCandidateIds;
+    uint256 epoch = epochOf(block.number);
+    uint256 nextEpoch = epoch + 1;
+    uint256 lastPeriod = currentPeriod();
 
-    _syncFastFinalityReward(_epoch, _currentValidators);
+    _syncFastFinalityReward(epoch, currValidatorIds);
 
-    if (_periodEnding) {
+    if (periodEnding) {
       (
-        uint256 _totalDelegatingReward,
-        uint256[] memory _delegatingRewards
-      ) = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(_lastPeriod, _currentValidators);
-      _settleAndTransferDelegatingRewards(_lastPeriod, _currentValidators, _totalDelegatingReward, _delegatingRewards);
+        uint256 totalDelegatingReward,
+        uint256[] memory delegatingRewards
+      ) = _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(lastPeriod, currValidatorIds);
+      _settleAndTransferDelegatingRewards(lastPeriod, currValidatorIds, totalDelegatingReward, delegatingRewards);
       _tryRecycleLockedFundsFromEmergencyExits();
       _recycleDeprecatedRewards();
-      ISlashIndicator _slashIndicatorContract = ISlashIndicator(getContract(ContractType.SLASH_INDICATOR));
-      _slashIndicatorContract.execUpdateCreditScores(_currentValidators, _lastPeriod);
-      (_currentValidators, _revokedCandidates) = _syncValidatorSet(_newPeriod);
-      if (_revokedCandidates.length > 0) {
-        _slashIndicatorContract.execResetCreditScores(_revokedCandidates);
+
+      ISlashIndicator slashIndicatorContract = ISlashIndicator(getContract(ContractType.SLASH_INDICATOR));
+      slashIndicatorContract.execUpdateCreditScores(currValidatorIds, lastPeriod);
+      (currValidatorIds, revokedCandidateIds) = _syncValidatorSet(newPeriod);
+      if (revokedCandidateIds.length > 0) {
+        slashIndicatorContract.execResetCreditScores(revokedCandidateIds);
       }
       _currentPeriodStartAtBlock = block.number + 1;
     }
-    _revampRoles(_newPeriod, _nextEpoch, _currentValidators);
-    emit WrappedUpEpoch(_lastPeriod, _epoch, _periodEnding);
-    _periodOf[_nextEpoch] = _newPeriod;
-    _lastUpdatedPeriod = _newPeriod;
+    _revampRoles(newPeriod, nextEpoch, currValidatorIds);
+    emit WrappedUpEpoch(lastPeriod, epoch, periodEnding);
+    _periodOf[nextEpoch] = newPeriod;
+    _lastUpdatedPeriod = newPeriod;
   }
 
   /**
-   * @dev This method calculate and update reward of each `validators` accordingly thier fast finality voting performance
+   * @dev This method calculate and update reward of each `validators` accordingly their fast finality voting performance
    * in the `epoch`. The leftover reward is added to the {_totalDeprecatedReward} and is recycled later to the
    * {StakingVesting} contract.
    *
    * Requirements:
    * - This method is only called once each epoch.
    */
-  function _syncFastFinalityReward(uint256 epoch, address[] memory validators) private {
+  function _syncFastFinalityReward(uint256 epoch, address[] memory validatorIds) private {
     uint256[] memory voteCounts = IFastFinalityTracking(getContract(ContractType.FAST_FINALITY_TRACKING))
-      .getManyFinalityVoteCounts(epoch, validators);
-    uint256 divisor = _numberOfBlocksInEpoch * validators.length;
+      .getManyFinalityVoteCounts(epoch, validatorIds);
+    uint256 divisor = _numberOfBlocksInEpoch * validatorIds.length;
     uint256 iReward;
     uint256 totalReward = _totalFastFinalityReward;
     uint256 totalDispensedReward = 0;
 
-    for (uint i; i < validators.length; ) {
+    for (uint i; i < validatorIds.length; ) {
       iReward = (totalReward * voteCounts[i]) / divisor;
-      _fastFinalityReward[validators[i]] += iReward;
+      _fastFinalityReward[validatorIds[i]] += iReward;
       totalDispensedReward += iReward;
       unchecked {
         ++i;
@@ -174,38 +175,35 @@ abstract contract CoinbaseExecution is
    * @dev This loops over all current validators to:
    * - Update delegating reward for and calculate total delegating rewards to be sent to the staking contract,
    * - Distribute the reward of block producers and bridge operators to their treasury addresses,
-   * - Update the total deprecated reward if the two previous conditions do not sastify.
+   * - Update the total deprecated reward if the two previous conditions do not satisfy.
    *
    * Note: This method should be called once in the end of each period.
    *
    */
   function _distributeRewardToTreasuriesAndCalculateTotalDelegatingReward(
-    uint256 _lastPeriod,
-    address[] memory _currentValidators
-  ) private returns (uint256 _totalDelegatingReward, uint256[] memory _delegatingRewards) {
-    address _consensusAddr;
-    address payable _treasury;
-    _delegatingRewards = new uint256[](_currentValidators.length);
+    uint256 lastPeriod,
+    address[] memory currValidatorIds
+  ) private returns (uint256 totalDelegatingReward, uint256[] memory delegatingRewards) {
+    address vId; // validator id
+    address payable treasury;
+    delegatingRewards = new uint256[](currValidatorIds.length);
 
-    for (uint _i; _i < _currentValidators.length; ) {
-      _consensusAddr = _currentValidators[_i];
-      _treasury = _candidateInfo[_consensusAddr].__shadowedTreasury;
+    for (uint _i; _i < currValidatorIds.length; ) {
+      vId = currValidatorIds[_i];
+      treasury = _candidateInfo[vId].__shadowedTreasury;
 
-      if (!_isJailedById(_consensusAddr) && !_miningRewardDeprecatedById(_consensusAddr, _lastPeriod)) {
-        _totalDelegatingReward += _delegatingReward[_consensusAddr];
-        _delegatingRewards[_i] = _delegatingReward[_consensusAddr];
-        _distributeMiningReward(_consensusAddr, _treasury);
-        _distributeFastFinalityReward(_consensusAddr, _treasury);
+      if (!_isJailedById(vId) && !_miningRewardDeprecatedById(vId, lastPeriod)) {
+        totalDelegatingReward += _delegatingReward[vId];
+        delegatingRewards[_i] = _delegatingReward[vId];
+        _distributeMiningReward(vId, treasury);
+        _distributeFastFinalityReward(vId, treasury);
       } else {
-        _totalDeprecatedReward +=
-          _miningReward[_consensusAddr] +
-          _delegatingReward[_consensusAddr] +
-          _fastFinalityReward[_consensusAddr];
+        _totalDeprecatedReward += _miningReward[vId] + _delegatingReward[vId] + _fastFinalityReward[vId];
       }
 
-      delete _delegatingReward[_consensusAddr];
-      delete _miningReward[_consensusAddr];
-      delete _fastFinalityReward[_consensusAddr];
+      delete _delegatingReward[vId];
+      delete _miningReward[vId];
+      delete _fastFinalityReward[vId];
 
       unchecked {
         ++_i;
@@ -222,32 +220,32 @@ abstract contract CoinbaseExecution is
    * Note: This method should be called once in the end of each period.
    *
    */
-  function _distributeMiningReward(address _consensusAddr, address payable _treasury) private {
-    uint256 _amount = _miningReward[_consensusAddr];
-    if (_amount > 0) {
-      if (_unsafeSendRONLimitGas(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
-        emit MiningRewardDistributed(_consensusAddr, _treasury, _amount);
+  function _distributeMiningReward(address cid, address payable treasury) private {
+    uint256 amount = _miningReward[cid];
+    if (amount > 0) {
+      if (_unsafeSendRONLimitGas(treasury, amount, DEFAULT_ADDITION_GAS)) {
+        emit MiningRewardDistributed(cid, treasury, amount);
         return;
       }
 
-      emit MiningRewardDistributionFailed(_consensusAddr, _treasury, _amount, address(this).balance);
+      emit MiningRewardDistributionFailed(cid, treasury, amount, address(this).balance);
     }
   }
 
-  function _distributeFastFinalityReward(address _consensusAddr, address payable _treasury) private {
-    uint256 _amount = _fastFinalityReward[_consensusAddr];
-    if (_amount > 0) {
-      if (_unsafeSendRONLimitGas(_treasury, _amount, DEFAULT_ADDITION_GAS)) {
-        emit FastFinalityRewardDistributed(_consensusAddr, _treasury, _amount);
+  function _distributeFastFinalityReward(address consensusAddr, address payable treasury) private {
+    uint256 amount = _fastFinalityReward[consensusAddr];
+    if (amount > 0) {
+      if (_unsafeSendRONLimitGas(treasury, amount, DEFAULT_ADDITION_GAS)) {
+        emit FastFinalityRewardDistributed(consensusAddr, treasury, amount);
         return;
       }
 
-      emit FastFinalityRewardDistributionFailed(_consensusAddr, _treasury, _amount, address(this).balance);
+      emit FastFinalityRewardDistributionFailed(consensusAddr, treasury, amount, address(this).balance);
     }
   }
 
   /**
-   * @dev Helper function to settle rewards for delegators of `_currentValidators` at the end of each period,
+   * @dev Helper function to settle rewards for delegators of `currValidatorIds` at the end of each period,
    * then transfer the rewards from this contract to the staking contract, in order to finalize a period.
    *
    * Emits the `StakingRewardDistributed` once the reward is distributed successfully.
@@ -257,23 +255,23 @@ abstract contract CoinbaseExecution is
    *
    */
   function _settleAndTransferDelegatingRewards(
-    uint256 _period,
-    address[] memory _currentValidators,
-    uint256 _totalDelegatingReward,
-    uint256[] memory _delegatingRewards
+    uint256 period,
+    address[] memory currValidatorIds,
+    uint256 totalDelegatingReward,
+    uint256[] memory delegatingRewards
   ) private {
     IStaking _staking = IStaking(getContract(ContractType.STAKING));
-    if (_totalDelegatingReward > 0) {
-      if (_unsafeSendRON(payable(address(_staking)), _totalDelegatingReward)) {
-        _staking.execRecordRewards(_currentValidators, _delegatingRewards, _period);
-        emit StakingRewardDistributed(_totalDelegatingReward, _currentValidators, _delegatingRewards);
+    if (totalDelegatingReward > 0) {
+      if (_unsafeSendRON(payable(address(_staking)), totalDelegatingReward)) {
+        _staking.execRecordRewards(currValidatorIds, delegatingRewards, period);
+        emit StakingRewardDistributed(totalDelegatingReward, currValidatorIds, delegatingRewards);
         return;
       }
 
       emit StakingRewardDistributionFailed(
-        _totalDelegatingReward,
-        _currentValidators,
-        _delegatingRewards,
+        totalDelegatingReward,
+        currValidatorIds,
+        delegatingRewards,
         address(this).balance
       );
     }
@@ -286,21 +284,21 @@ abstract contract CoinbaseExecution is
    * Note: This method should be called once in the end of each period.
    */
   function _recycleDeprecatedRewards() private {
-    uint256 _withdrawAmount = _totalDeprecatedReward;
+    uint256 withdrawAmount = _totalDeprecatedReward;
 
-    if (_withdrawAmount != 0) {
-      address _withdrawTarget = getContract(ContractType.STAKING_VESTING);
+    if (withdrawAmount != 0) {
+      address withdrawTarget = getContract(ContractType.STAKING_VESTING);
 
       delete _totalDeprecatedReward;
 
-      (bool _success, ) = _withdrawTarget.call{ value: _withdrawAmount }(
+      (bool _success, ) = withdrawTarget.call{ value: withdrawAmount }(
         abi.encodeWithSelector(IStakingVesting.receiveRON.selector)
       );
 
       if (_success) {
-        emit DeprecatedRewardRecycled(_withdrawTarget, _withdrawAmount);
+        emit DeprecatedRewardRecycled(withdrawTarget, withdrawAmount);
       } else {
-        emit DeprecatedRewardRecycleFailed(_withdrawTarget, _withdrawAmount, address(this).balance);
+        emit DeprecatedRewardRecycleFailed(withdrawTarget, withdrawAmount, address(this).balance);
       }
     }
   }
@@ -314,21 +312,21 @@ abstract contract CoinbaseExecution is
    *
    */
   function _syncValidatorSet(
-    uint256 _newPeriod
-  ) private returns (address[] memory _newValidators, address[] memory _unsastifiedCandidates) {
-    _unsastifiedCandidates = _syncCandidateSet(_newPeriod);
-    uint256[] memory _weights = IStaking(getContract(ContractType.STAKING)).getManyStakingTotalsById(_cids);
-    uint256[] memory _trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
-      .getConsensusWeights(_cids);
-    uint256 _newValidatorCount;
-    (_newValidators, _newValidatorCount) = _pcPickValidatorSet(
-      _cids,
-      _weights,
-      _trustedWeights,
+    uint256 newPeriod
+  ) private returns (address[] memory newValidatorIds, address[] memory unsatisfiedCandidates) {
+    unsatisfiedCandidates = _syncCandidateSet(newPeriod);
+    uint256[] memory weights = IStaking(getContract(ContractType.STAKING)).getManyStakingTotalsById(_candidateIds);
+    uint256[] memory trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
+      .getConsensusWeights(_candidateIds);
+    uint256 newValidatorCount;
+    (newValidatorIds, newValidatorCount) = _pcPickValidatorSet(
+      _candidateIds,
+      weights,
+      trustedWeights,
       _maxValidatorNumber,
       _maxPrioritizedValidatorNumber
     );
-    _setNewValidatorSet(_newValidators, _newValidatorCount, _newPeriod);
+    _setNewValidatorSet(newValidatorIds, newValidatorCount, newPeriod);
   }
 
   /**
@@ -388,14 +386,14 @@ abstract contract CoinbaseExecution is
    * Emits the `BridgeOperatorSetUpdated` event.
    *
    */
-  function _revampRoles(uint256 _newPeriod, uint256 _nextEpoch, address[] memory _currentValidators) private {
+  function _revampRoles(uint256 _newPeriod, uint256 _nextEpoch, address[] memory currValidatorIds) private {
     bool[] memory _maintainedList = IMaintenance(getContract(ContractType.MAINTENANCE)).checkManyMaintainedById(
-      _currentValidators,
+      currValidatorIds,
       block.number + 1
     );
 
-    for (uint _i; _i < _currentValidators.length; ) {
-      address validatorId = _currentValidators[_i];
+    for (uint _i; _i < currValidatorIds.length; ) {
+      address validatorId = currValidatorIds[_i];
       bool emergencyExitRequested = block.timestamp <= _emergencyExitJailedTimestamp[validatorId];
       bool isProducerBefore = _isBlockProducerById(validatorId);
       bool isProducerAfter = !(_isJailedAtBlockById(validatorId, block.number + 1) ||

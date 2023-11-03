@@ -129,10 +129,10 @@ contract SlashIndicator is
   }
 
   function _checkBailedOutAtPeriodById(
-    address consensus,
+    address cid,
     uint256 period
   ) internal view override(CreditScore, SlashUnavailability) returns (bool) {
-    return CreditScore._checkBailedOutAtPeriodById(consensus, period);
+    return CreditScore._checkBailedOutAtPeriodById(cid, period);
   }
 
   /**

@@ -21,7 +21,7 @@ abstract contract CandidateManager is
   uint256 private _maxValidatorCandidate;
 
   /// @dev The array of candidate ids
-  address[] internal _cids;
+  address[] internal _candidateIds;
   /// @dev Mapping from candidate id => bitwise negation of validator index in `_candidates`
   mapping(address => uint256) internal _candidateIndex;
   /// @dev Mapping from candidate id => their info
@@ -74,17 +74,17 @@ abstract contract CandidateManager is
    */
   function execApplyValidatorCandidate(
     address candidateAdmin,
-    address id,
+    address cid,
     address payable treasuryAddr,
     uint256 commissionRate
   ) external override onlyContract(ContractType.STAKING) {
-    uint256 length = _cids.length;
+    uint256 length = _candidateIds.length;
     if (length >= maxValidatorCandidate()) revert ErrExceedsMaxNumberOfCandidate();
-    if (_isValidatorCandidateById(id)) revert ErrExistentCandidate();
+    if (_isValidatorCandidateById(cid)) revert ErrExistentCandidate();
     if (commissionRate > _MAX_PERCENTAGE) revert ErrInvalidCommissionRate();
 
     for (uint i; i < length; ) {
-      ValidatorCandidate storage existentInfo = _candidateInfo[_cids[i]];
+      ValidatorCandidate storage existentInfo = _candidateInfo[_candidateIds[i]];
       if (candidateAdmin == existentInfo.__shadowedAdmin) revert ErrExistentCandidateAdmin(candidateAdmin);
       if (treasuryAddr == existentInfo.__shadowedTreasury) revert ErrExistentTreasury(treasuryAddr);
 
@@ -93,27 +93,27 @@ abstract contract CandidateManager is
       }
     }
 
-    _candidateIndex[id] = ~length;
-    _cids.push(id);
+    _candidateIndex[cid] = ~length;
+    _candidateIds.push(cid);
 
-    ValidatorCandidate storage _info = _candidateInfo[id];
+    ValidatorCandidate storage _info = _candidateInfo[cid];
     _info.__shadowedAdmin = candidateAdmin;
-    _info.__shadowedConsensus = TConsensus.wrap(id);
+    _info.__shadowedConsensus = TConsensus.wrap(cid);
     _info.__shadowedTreasury = treasuryAddr;
     _info.commissionRate = commissionRate;
-    emit CandidateGranted(id, treasuryAddr, candidateAdmin);
+    emit CandidateGranted(cid, treasuryAddr, candidateAdmin);
   }
 
   /**
    * @inheritdoc ICandidateManager
    */
   function execRequestRenounceCandidate(
-    address id,
+    address cid,
     uint256 secsLeft
   ) external override onlyContract(ContractType.STAKING) {
-    if (_isTrustedOrg(id)) revert ErrTrustedOrgCannotRenounce();
+    if (_isTrustedOrg(cid)) revert ErrTrustedOrgCannotRenounce();
 
-    ValidatorCandidate storage _info = _candidateInfo[id];
+    ValidatorCandidate storage _info = _candidateInfo[cid];
     if (_info.revokingTimestamp != 0) revert ErrAlreadyRequestedRevokingCandidate();
     _setRevokingTimestamp(_info, block.timestamp + secsLeft);
   }
@@ -122,43 +122,49 @@ abstract contract CandidateManager is
    * @inheritdoc ICandidateManager
    */
   function execRequestUpdateCommissionRate(
-    address id,
+    address cid,
     uint256 effectiveDaysOnwards,
     uint256 commissionRate
   ) external override onlyContract(ContractType.STAKING) {
-    if (_candidateCommissionChangeSchedule[id].effectiveTimestamp != 0) {
+    if (_candidateCommissionChangeSchedule[cid].effectiveTimestamp != 0) {
       revert ErrAlreadyRequestedUpdatingCommissionRate();
     }
     if (commissionRate > _MAX_PERCENTAGE) revert ErrInvalidCommissionRate();
     if (effectiveDaysOnwards < _minEffectiveDaysOnwards) revert ErrInvalidEffectiveDaysOnwards();
 
-    CommissionSchedule storage _schedule = _candidateCommissionChangeSchedule[id];
-    uint256 _effectiveTimestamp = ((block.timestamp / PERIOD_DURATION) + effectiveDaysOnwards) * PERIOD_DURATION;
-    _schedule.effectiveTimestamp = _effectiveTimestamp;
+    CommissionSchedule storage _schedule = _candidateCommissionChangeSchedule[cid];
+    uint256 effectiveTimestamp = ((block.timestamp / PERIOD_DURATION) + effectiveDaysOnwards) * PERIOD_DURATION;
+    _schedule.effectiveTimestamp = effectiveTimestamp;
     _schedule.commissionRate = commissionRate;
 
-    emit CommissionRateUpdateScheduled(id, _effectiveTimestamp, commissionRate);
+    emit CommissionRateUpdateScheduled(cid, effectiveTimestamp, commissionRate);
   }
 
   function execChangeConsensusAddress(
-    address id,
+    address cid,
     TConsensus newConsensusAddr
   ) external override onlyContract(ContractType.PROFILE) {
     // Sync Consensus Address mapping
-    _candidateInfo[id].__shadowedConsensus = newConsensusAddr;
+    _candidateInfo[cid].__shadowedConsensus = newConsensusAddr;
 
-    // TODO:
+    // TODO: Seem has been handled with
     // Sync Jail mapping
     // Sync Pending reward mapping
     // Sync Schedule mapping
+
+    // TODO: Handle
+    // Sync RoninTrustedOrg
   }
 
-  function execChangeAdminAddress(address id, address newAdmin) external onlyContract(ContractType.PROFILE) {
-    _candidateInfo[id].__shadowedAdmin = newAdmin;
+  function execChangeAdminAddress(address cid, address newAdmin) external onlyContract(ContractType.PROFILE) {
+    _candidateInfo[cid].__shadowedAdmin = newAdmin;
   }
 
-  function execChangeTreasuryAddress(address id, address payable newTreasury) external onlyContract(ContractType.PROFILE) {
-    _candidateInfo[id].__shadowedTreasury = newTreasury;
+  function execChangeTreasuryAddress(
+    address cid,
+    address payable newTreasury
+  ) external onlyContract(ContractType.PROFILE) {
+    _candidateInfo[cid].__shadowedTreasury = newTreasury;
   }
 
   /**
@@ -168,20 +174,20 @@ abstract contract CandidateManager is
     return _isValidatorCandidateById(__css2cid(consensus));
   }
 
-  function _isValidatorCandidateById(address candidateId) internal view returns (bool) {
-    return _candidateIndex[candidateId] != 0;
+  function _isValidatorCandidateById(address cid) internal view returns (bool) {
+    return _candidateIndex[cid] != 0;
   }
 
   /**
    * @inheritdoc ICandidateManager
    */
-  function getCandidateInfos() external view override returns (ValidatorCandidate[] memory _list) {
-    _list = new ValidatorCandidate[](_cids.length);
-    for (uint _i; _i < _list.length; ) {
-      _list[_i] = _candidateInfo[_cids[_i]];
+  function getCandidateInfos() external view override returns (ValidatorCandidate[] memory list) {
+    list = new ValidatorCandidate[](_candidateIds.length);
+    for (uint i; i < list.length; ) {
+      list[i] = _candidateInfo[_candidateIds[i]];
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }
@@ -199,14 +205,16 @@ abstract contract CandidateManager is
    * @inheritdoc ICandidateManager
    */
   function getValidatorCandidates() public view override returns (address[] memory) {
-    return _cids;
+    return _candidateIds;
   }
 
   /**
    * @inheritdoc ICandidateManager
    */
-  function getCommissionChangeSchedule(address _candidate) external view override returns (CommissionSchedule memory) {
-    return _candidateCommissionChangeSchedule[_candidate];
+  function getCommissionChangeSchedule(
+    TConsensus consensus
+  ) external view override returns (CommissionSchedule memory) {
+    return _candidateCommissionChangeSchedule[__css2cid(consensus)];
   }
 
   /**
@@ -220,9 +228,9 @@ abstract contract CandidateManager is
     IStaking _staking = IStaking(getContract(ContractType.STAKING));
     uint256 _waitingSecsToRevoke = _staking.waitingSecsToRevoke();
     uint256 _minStakingAmount = _staking.minValidatorStakingAmount();
-    uint256[] memory _selfStakings = _staking.getManySelfStakingsById(_cids);
+    uint256[] memory _selfStakings = _staking.getManySelfStakingsById(_candidateIds);
 
-    uint256 _length = _cids.length;
+    uint256 _length = _candidateIds.length;
     uint256 _unsatisfiedCount;
     _unsatisfiedCandidates = new address[](_length);
 
@@ -231,7 +239,7 @@ abstract contract CandidateManager is
       address cid;
       ValidatorCandidate storage _info;
       while (_i < _length) {
-        cid = _cids[_i];
+        cid = _candidateIds[_i];
         _info = _candidateInfo[cid];
 
         // Checks for under-balance status of candidates
@@ -325,8 +333,8 @@ abstract contract CandidateManager is
    * @dev Removes the candidate.
    */
   function _removeCandidate(address _addr) internal virtual {
-    uint256 _idx = _candidateIndex[_addr];
-    if (_idx == 0) {
+    uint256 idx = _candidateIndex[_addr];
+    if (idx == 0) {
       return;
     }
 
@@ -334,13 +342,13 @@ abstract contract CandidateManager is
     delete _candidateIndex[_addr];
     delete _candidateCommissionChangeSchedule[_addr];
 
-    address _lastCandidate = _cids[_cids.length - 1];
-    if (_lastCandidate != _addr) {
-      _candidateIndex[_lastCandidate] = _idx;
-      _cids[~_idx] = _lastCandidate;
+    address lastCid = _candidateIds[_candidateIds.length - 1];
+    if (lastCid != _addr) {
+      _candidateIndex[lastCid] = idx;
+      _candidateIds[~idx] = lastCid;
     }
 
-    _cids.pop();
+    _candidateIds.pop();
   }
 
   /**
