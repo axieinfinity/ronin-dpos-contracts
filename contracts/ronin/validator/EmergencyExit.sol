@@ -6,9 +6,9 @@ import "../../extensions/RONTransferHelper.sol";
 import "../../interfaces/IRoninGovernanceAdmin.sol";
 import "../../interfaces/validator/IEmergencyExit.sol";
 import "./storage-fragments/CommonStorage.sol";
-import "./CandidateManager.sol";
+import "./CandidateManagerCallback.sol";
 
-abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateManager, CommonStorage {
+abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateManagerCallback, CommonStorage {
   /**
    * @inheritdoc IEmergencyExit
    */

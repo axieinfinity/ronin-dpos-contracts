@@ -9,6 +9,7 @@ import "../../interfaces/IStakingVesting.sol";
 import "../../interfaces/IMaintenance.sol";
 import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/IFastFinalityTracking.sol";
+import "../../interfaces/staking/IStaking.sol";
 import "../../interfaces/slash-indicator/ISlashIndicator.sol";
 import "../../interfaces/validator/ICoinbaseExecution.sol";
 import "../../libraries/EnumFlags.sol";
@@ -17,7 +18,6 @@ import { HasStakingVestingDeprecated, HasBridgeTrackingDeprecated, HasMaintenanc
 import "../../precompile-usages/PCUSortValidators.sol";
 import "../../precompile-usages/PCUPickValidatorSet.sol";
 import "./storage-fragments/CommonStorage.sol";
-import "./CandidateManager.sol";
 import { EmergencyExit } from "./EmergencyExit.sol";
 import { TPoolId } from "../../udvts/Types.sol";
 import { ErrCallerMustBeCoinbase } from "../../utils/CommonErrors.sol";

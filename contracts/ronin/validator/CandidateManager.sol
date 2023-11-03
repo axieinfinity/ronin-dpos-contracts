@@ -143,39 +143,6 @@ abstract contract CandidateManager is
   /**
    * @inheritdoc ICandidateManager
    */
-  function execChangeConsensusAddress(
-    address cid,
-    TConsensus newConsensusAddr
-  ) external override onlyContract(ContractType.PROFILE) {
-    // Sync Consensus Address mapping
-    _candidateInfo[cid].__shadowedConsensus = newConsensusAddr;
-
-    // TODO: Seem has been handled with
-    // Sync Jail mapping
-    // Sync Pending reward mapping
-    // Sync Schedule mapping
-  }
-
-  /**
-   * @inheritdoc ICandidateManager
-   */
-  function execChangeAdminAddress(address cid, address newAdmin) external onlyContract(ContractType.PROFILE) {
-    _candidateInfo[cid].__shadowedAdmin = newAdmin;
-  }
-
-  /**
-   * @inheritdoc ICandidateManager
-   */
-  function execChangeTreasuryAddress(
-    address cid,
-    address payable newTreasury
-  ) external onlyContract(ContractType.PROFILE) {
-    _candidateInfo[cid].__shadowedTreasury = newTreasury;
-  }
-
-  /**
-   * @inheritdoc ICandidateManager
-   */
   function isValidatorCandidate(TConsensus consensus) external view override returns (bool) {
     return _isValidatorCandidateById(__css2cid(consensus));
   }

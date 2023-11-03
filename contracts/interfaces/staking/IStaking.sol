@@ -3,11 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "./IBaseStaking.sol";
-import "./IStakingProfile.sol";
+import "./IStakingCallback.sol";
 import "./ICandidateStaking.sol";
 import "./IDelegatorStaking.sol";
 
-interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorStaking, IStakingProfile {
+interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorStaking, IStakingCallback {
   /**
    * @dev Records the amount of rewards `_rewards` for the pools `_consensusAddrs`.
    *
