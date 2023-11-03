@@ -41,10 +41,8 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
   /**
    * @inheritdoc ICommonInfo
    */
-  function getEmergencyExitInfo(
-    address _consensusAddr
-  ) external view override returns (EmergencyExitInfo memory _info) {
-    _info = _exitInfo[_consensusAddr];
+  function getEmergencyExitInfo(TConsensus consensus) external view override returns (EmergencyExitInfo memory _info) {
+    _info = _exitInfo[__css2cid(consensus)];
     if (_info.recyclingAt == 0) revert NonExistentRecyclingInfo();
   }
 
@@ -71,11 +69,13 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
     return TimingStorage.currentPeriod();
   }
 
-  function _convertC2P(
+  /// @dev See {RoninValidatorSet-__css2cid}
+  function __css2cid(
     TConsensus consensusAddr
   ) internal view virtual override(JailingStorage, ValidatorInfoStorageV2) returns (address);
 
-  function _convertManyC2P(
+  /// @dev See {RoninValidatorSet-__css2cidBatch}
+  function __css2cidBatch(
     TConsensus[] memory consensusAddrs
   ) internal view virtual override(JailingStorage, ValidatorInfoStorageV2) returns (address[] memory);
 }

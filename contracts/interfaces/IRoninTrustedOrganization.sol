@@ -3,6 +3,7 @@
 pragma solidity ^0.8.9;
 
 import "./IQuorum.sol";
+import "../udvts/Types.sol";
 
 interface IRoninTrustedOrganization is IQuorum {
   /**
@@ -58,6 +59,8 @@ interface IRoninTrustedOrganization is IQuorum {
   event TrustedOrganizationsUpdated(TrustedOrganization[] orgs);
   /// @dev Emitted when the trusted organization is removed.
   event TrustedOrganizationsRemoved(address[] orgs);
+  /// @dev Emitted when the consensus address of a trusted organization is changed.
+  event ConsensusAddressOfTrustedOrgChanged(TrustedOrganization orgAfterChanged, address oldConsensus);
 
   /**
    * @dev Adds a list of addresses into the trusted organization.
@@ -95,6 +98,16 @@ interface IRoninTrustedOrganization is IQuorum {
    * @param _consensusAddrs The list of consensus addresses linked to corresponding trusted organization that to be removed.
    */
   function removeTrustedOrganizations(address[] calldata _consensusAddrs) external;
+
+  /**
+   * @dev Fallback function of `Profile-requestChangeConsensusAddress`.
+   *
+   * Requirements:
+   * - The caller must be the Profile contract.
+   *
+   * Emits the event `ConsensusAddressOfTrustedOrgChanged` once an organization is removed.
+   */
+  function execChangeConsensusAddressForTrustedOrg(TConsensus oldConsensusAddr, TConsensus newConsensusAddr) external;
 
   /**
    * @dev Returns total weights.

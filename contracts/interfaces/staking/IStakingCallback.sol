@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 import { TPoolId } from "../../udvts/Types.sol";
 
-interface IStakingProfile {
+interface IStakingCallback {
   /**
    * @dev Requirements:
    * - Only Profile contract can call this method.

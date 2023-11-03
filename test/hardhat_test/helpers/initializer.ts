@@ -13,6 +13,8 @@ import {
   Staking__factory,
   Profile,
   Profile__factory,
+  RoninTrustedOrganization,
+  RoninTrustedOrganization__factory,
 } from '../../../src/types';
 import { StakingVestingArguments } from '../../../src/utils';
 import { defaultTestConfig } from './fixture';
@@ -23,6 +25,7 @@ let validatorContract: RoninValidatorSet | undefined;
 let slashContract: SlashIndicator | undefined;
 let stakingVestingContract: StakingVesting | undefined;
 let profileContract: Profile | undefined;
+let roninTrustedOrgContract: RoninTrustedOrganization | undefined;
 
 export interface InitializeTestSuiteInput {
   deployer: SignerWithAddress;
@@ -34,6 +37,7 @@ export interface InitializeTestSuiteInput {
   stakingContractAddress?: Address;
   validatorContractAddress?: Address;
   stakingVestingAddress?: Address;
+  roninTrustedOrganizationAddress?: Address;
 }
 
 interface InitREP2Input {
@@ -55,6 +59,7 @@ interface InitREP3Input {
 interface InitREP4Input {
   profileContract?: Profile;
   stakingContract?: Staking;
+  roninTrustedOrgContract?: RoninTrustedOrganization;
 }
 
 export const initializeTestSuite = async (input: InitializeTestSuiteInput) => {
@@ -80,6 +85,10 @@ export const initializeTestSuite = async (input: InitializeTestSuiteInput) => {
     : undefined;
 
   profileContract = input.profileAddress ? Profile__factory.connect(input.profileAddress!, input.deployer) : undefined;
+
+  roninTrustedOrgContract = input.roninTrustedOrganizationAddress
+    ? RoninTrustedOrganization__factory.connect(input.roninTrustedOrganizationAddress!, input.deployer)
+    : undefined;
 
   await upgradeRep2({
     fastFinalityTrackingAddress: input.fastFinalityTrackingAddress,
@@ -137,5 +146,10 @@ const upgradeRep3 = async (input: InitREP3Input) => {
 const upgradeRep4 = async (input: InitREP4Input) => {
   if (input.profileContract) {
     await input.profileContract.initializeV2(input.stakingContract?.address!);
+    await input.profileContract.initializeV3(input.roninTrustedOrgContract?.address!);
+  }
+
+  if (input.roninTrustedOrgContract) {
+    await input.roninTrustedOrgContract.initializeV2(input.profileContract?.address!);
   }
 };

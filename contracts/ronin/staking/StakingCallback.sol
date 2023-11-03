@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 
 import "../../interfaces/IProfile.sol";
-import "../../interfaces/staking/IStakingProfile.sol";
+import "../../interfaces/staking/IStakingCallback.sol";
 import "./CandidateStaking.sol";
 import "./DelegatorStaking.sol";
 
 pragma solidity ^0.8.9;
 
-abstract contract StakingProfile is CandidateStaking, DelegatorStaking, IStakingProfile {
+abstract contract StakingCallback is CandidateStaking, DelegatorStaking, IStakingCallback {
   /**
    * @dev Requirements:
    * - Only Profile contract can call this method.

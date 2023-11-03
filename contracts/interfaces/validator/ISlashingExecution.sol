@@ -5,7 +5,7 @@ pragma solidity ^0.8.9;
 interface ISlashingExecution {
   /// @dev Emitted when the validator is punished.
   event ValidatorPunished(
-    address indexed consensusAddr,
+    address indexed cid,
     uint256 indexed period,
     uint256 jailedUntil,
     uint256 deductedStakingAmount,
@@ -13,7 +13,7 @@ interface ISlashingExecution {
     bool bridgeOperatorRewardDeprecated
   );
   /// @dev Emitted when the validator get out of jail by bailout.
-  event ValidatorUnjailed(address indexed validator, uint256 period);
+  event ValidatorUnjailed(address indexed cid, uint256 period);
 
   /// @dev Error of cannot bailout due to high tier slash.
   error ErrCannotBailout(address validator);
@@ -27,7 +27,7 @@ interface ISlashingExecution {
    * Emits the event `ValidatorPunished`.
    *
    */
-  function execSlash(address validatorAddr, uint256 newJailedUntil, uint256 slashAmount, bool cannotBailout) external;
+  function execSlash(address cid, uint256 newJailedUntil, uint256 slashAmount, bool cannotBailout) external;
 
   /**
    * @dev Finalize the bailout request from slash indicator contract.
@@ -38,5 +38,5 @@ interface ISlashingExecution {
    * Emits the event `ValidatorUnjailed`.
    *
    */
-  function execBailOut(address _validatorAddr, uint256 _period) external;
+  function execBailOut(address cid, uint256 period) external;
 }

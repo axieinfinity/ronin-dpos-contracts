@@ -5,9 +5,12 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../libraries/AddressArrayUtils.sol";
 import "../interfaces/IRoninTrustedOrganization.sol";
+import "../interfaces/IProfile.sol";
 import "../extensions/collections/HasProxyAdmin.sol";
+import "../extensions/collections/HasContracts.sol";
+import "../udvts/Types.sol";
 
-contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, Initializable {
+contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, HasContracts, Initializable {
   uint256 internal _num;
   uint256 internal _denom;
   uint256 internal _totalWeight;
@@ -42,6 +45,10 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
       _addTrustedOrganizations(_trustedOrgs);
     }
     _setThreshold(__num, __denom);
+  }
+
+  function initializeV2(address profileContract) external onlyAdmin reinitializer(2) {
+    _setContract(ContractType.PROFILE, profileContract);
   }
 
   /**
@@ -280,6 +287,26 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   }
 
   /**
+   * @inheritdoc IRoninTrustedOrganization
+   */
+  function execChangeConsensusAddressForTrustedOrg(
+    TConsensus oldConsensusAddr,
+    TConsensus newConsensusAddr
+  ) external override onlyContract(ContractType.PROFILE) {
+    address oldAddr = TConsensus.unwrap(oldConsensusAddr);
+    address newAddr = TConsensus.unwrap(newConsensusAddr);
+
+    uint256 index = _findTrustedOrgIndexByConsensus(oldAddr);
+    _consensusList[index] = newAddr;
+    _consensusWeight[newAddr] = _consensusWeight[oldAddr];
+    _addedBlock[newAddr] = block.number;
+
+    _deleteConsensusInMappings(oldAddr);
+
+    emit ConsensusAddressOfTrustedOrgChanged(getTrustedOrganizationAt(index), oldAddr);
+  }
+
+  /**
    * @dev Adds a list of trusted organizations.
    */
   function _addTrustedOrganizations(TrustedOrganization[] calldata _list) internal virtual {
@@ -299,7 +326,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
    * Requirements:
    * - The weight is larger than 0.
    * - The consensus address is not added.
-   * - The govenor address is not added.
+   * - The governor address is not added.
    * - The bridge voter address is not added.
    *
    */
@@ -374,43 +401,46 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, I
   }
 
   /**
-   * @dev Removes a trusted organization.
+   * @dev Removes a trusted organization by consensus address.
    *
    * Requirements:
    * - The consensus address is added.
    *
    */
-  function _removeTrustedOrganization(address _addr) internal virtual {
-    uint256 _weight = _consensusWeight[_addr];
-    if (_weight == 0) revert ErrConsensusAddressIsNotAdded(_addr);
+  function _removeTrustedOrganization(address addr) internal virtual {
+    uint256 weight = _consensusWeight[addr];
+    if (weight == 0) revert ErrConsensusAddressIsNotAdded(addr);
 
-    uint256 _index;
-    uint256 _count = _consensusList.length;
-    for (uint256 _i = 0; _i < _count; ) {
-      if (_consensusList[_i] == _addr) {
-        _index = _i;
-        break;
-      }
+    uint256 index = _findTrustedOrgIndexByConsensus(addr);
 
-      unchecked {
-        ++_i;
-      }
-    }
+    _totalWeight -= weight;
+    _deleteConsensusInMappings(addr);
 
-    _totalWeight -= _weight;
-
-    delete _addedBlock[_addr];
-    delete _consensusWeight[_addr];
-    _consensusList[_index] = _consensusList[_count - 1];
+    uint256 count = _consensusList.length;
+    _consensusList[index] = _consensusList[count - 1];
     _consensusList.pop();
 
-    delete _governorWeight[_governorList[_index]];
-    _governorList[_index] = _governorList[_count - 1];
+    delete _governorWeight[_governorList[index]];
+    _governorList[index] = _governorList[count - 1];
     _governorList.pop();
 
-    delete _bridgeVoterWeight[_bridgeVoterList[_index]];
-    _bridgeVoterList[_index] = _bridgeVoterList[_count - 1];
+    delete _bridgeVoterWeight[_bridgeVoterList[index]];
+    _bridgeVoterList[index] = _bridgeVoterList[count - 1];
     _bridgeVoterList.pop();
+  }
+
+  function _findTrustedOrgIndexByConsensus(address addr) private view returns (uint256 index) {
+    uint256 count = _consensusList.length;
+    for (uint256 i = 0; i < count; i++) {
+      if (_consensusList[i] == addr) {
+        return i;
+      }
+    }
+  }
+
+  function _deleteConsensusInMappings(address addr) private {
+    delete _addedBlock[addr];
+    delete _consensusWeight[addr];
   }
 
   /**

@@ -97,7 +97,7 @@ abstract contract CreditScore is
    * @inheritdoc ICreditScore
    */
   function bailOut(TConsensus consensusAddr) external override {
-    address validatorId = _convertC2P(consensusAddr);
+    address validatorId = __css2cid(consensusAddr);
     IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     if (!validatorContract.isValidatorCandidate(consensusAddr))
       revert ErrUnauthorized(msg.sig, RoleAccess.VALIDATOR_CANDIDATE);
@@ -161,7 +161,7 @@ abstract contract CreditScore is
    * @inheritdoc ICreditScore
    */
   function getCreditScore(TConsensus consensusAddr) external view override returns (uint256) {
-    return _creditScore[_convertC2P(consensusAddr)];
+    return _creditScore[__css2cid(consensusAddr)];
   }
 
   /**
@@ -170,7 +170,7 @@ abstract contract CreditScore is
   function getManyCreditScores(
     TConsensus[] calldata consensusAddrs
   ) public view override returns (uint256[] memory resultList) {
-    address[] memory validatorIds = _convertManyC2P(consensusAddrs);
+    address[] memory validatorIds = __css2cidBatch(consensusAddrs);
     resultList = new uint256[](validatorIds.length);
 
     for (uint i = 0; i < resultList.length; ) {
@@ -186,7 +186,7 @@ abstract contract CreditScore is
    * @inheritdoc ICreditScore
    */
   function checkBailedOutAtPeriod(TConsensus consensus, uint256 period) external view override returns (bool) {
-    return _checkBailedOutAtPeriodById(_convertC2P(consensus), period);
+    return _checkBailedOutAtPeriodById(__css2cid(consensus), period);
   }
 
   function _checkBailedOutAtPeriodById(address validatorId, uint256 period) internal view virtual returns (bool) {
@@ -198,9 +198,9 @@ abstract contract CreditScore is
    */
   function _setUnavailabilityIndicator(address _validator, uint256 period, uint256 _indicator) internal virtual;
 
-  function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address);
+  function __css2cid(TConsensus consensusAddr) internal view virtual returns (address);
 
-  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
 
   /**
    * @dev See `ICreditScore-setCreditScoreConfigs`.

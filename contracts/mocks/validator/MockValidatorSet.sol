@@ -3,12 +3,12 @@
 pragma solidity ^0.8.9;
 
 import "../../interfaces/validator/IRoninValidatorSet.sol";
-import "../../ronin/validator/CandidateManager.sol";
+import "../../ronin/validator/CandidateManagerCallback.sol";
 import { HasStakingVestingDeprecated, HasSlashIndicatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
 contract MockValidatorSet is
   IRoninValidatorSet,
-  CandidateManager,
+  CandidateManagerCallback,
   HasStakingVestingDeprecated,
   HasSlashIndicatorDeprecated
 {
@@ -63,12 +63,7 @@ contract MockValidatorSet is
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
 
-  function execSlash(
-    address validatorAddr,
-    uint256 newJailedUntil,
-    uint256 slashAmount,
-    bool cannotBailout
-  ) external override {}
+  function execSlash(address cid, uint256 newJailedUntil, uint256 slashAmount, bool cannotBailout) external override {}
 
   function execBailOut(address, uint256) external override {}
 
@@ -122,12 +117,12 @@ contract MockValidatorSet is
 
   function totalDeprecatedReward() external view override returns (uint256) {}
 
-  function _convertC2P(TConsensus consensusAddr) internal view override returns (address) {
-    return super._convertC2P(consensusAddr);
+  function __css2cid(TConsensus consensusAddr) internal view override returns (address) {
+    return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
   }
 
-  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view override returns (address[] memory) {
-    return super._convertManyC2P(consensusAddrs);
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view override returns (address[] memory) {
+    return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
   }
 
   function execReleaseLockedFundForEmergencyExitRequest(
@@ -143,7 +138,7 @@ contract MockValidatorSet is
 
   function setEmergencyExpiryDuration(uint256 _emergencyExpiryDuration) external override {}
 
-  function getEmergencyExitInfo(address _consensusAddr) external view override returns (EmergencyExitInfo memory) {}
+  function getEmergencyExitInfo(TConsensus consensus) external view override returns (EmergencyExitInfo memory) {}
 
   function execEmergencyExit(address, uint256) external {}
 

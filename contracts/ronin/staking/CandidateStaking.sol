@@ -99,11 +99,11 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     external
     override
     poolOfConsensusIsActive(consensusAddr)
-    onlyPoolAdmin(_poolDetail[_convertC2P(consensusAddr)], msg.sender)
+    onlyPoolAdmin(_poolDetail[__css2cid(consensusAddr)], msg.sender)
   {
     if (commissionRate > _maxCommissionRate || commissionRate < _minCommissionRate) revert ErrInvalidCommissionRate();
     IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execRequestUpdateCommissionRate(
-      _convertC2P(consensusAddr),
+      __css2cid(consensusAddr),
       effectiveDaysOnwards,
       commissionRate
     );
@@ -131,7 +131,12 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       if (deductingAmount > 0) {
         _deductStakingAmount(_pool, deductingAmount);
         if (!_unsafeSendRONLimitGas(payable(_pool.__shadowedPoolAdmin), deductingAmount, DEFAULT_ADDITION_GAS)) {
-          emit StakingAmountTransferFailed(_pool.pid, _pool.__shadowedPoolAdmin, deductingAmount, address(this).balance);
+          emit StakingAmountTransferFailed(
+            _pool.pid,
+            _pool.__shadowedPoolAdmin,
+            deductingAmount,
+            address(this).balance
+          );
         }
       }
 
@@ -155,7 +160,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   function stake(
     TConsensus consensusAddr
   ) external payable override noEmptyValue poolOfConsensusIsActive(consensusAddr) {
-    address poolId = _convertC2P(consensusAddr);
+    address poolId = __css2cid(consensusAddr);
     _stake(_poolDetail[poolId], msg.sender, msg.value);
   }
 
@@ -168,7 +173,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
   ) external override nonReentrant poolOfConsensusIsActive(consensusAddr) {
     if (amount == 0) revert ErrUnstakeZeroAmount();
     address requester = msg.sender;
-    address poolId = _convertC2P(consensusAddr);
+    address poolId = __css2cid(consensusAddr);
     PoolDetail storage _pool = _poolDetail[poolId];
     uint256 remainAmount = _pool.stakingAmount - amount;
     if (remainAmount < _minValidatorStakingAmount) revert ErrStakingAmountLeft();
@@ -186,10 +191,10 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     external
     override
     poolOfConsensusIsActive(consensusAddr)
-    onlyPoolAdmin(_poolDetail[_convertC2P(consensusAddr)], msg.sender)
+    onlyPoolAdmin(_poolDetail[__css2cid(consensusAddr)], msg.sender)
   {
     IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execRequestRenounceCandidate(
-      _convertC2P(consensusAddr),
+      __css2cid(consensusAddr),
       _waitingSecsToRevoke
     );
   }
@@ -203,10 +208,10 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     external
     override
     poolOfConsensusIsActive(consensusAddr)
-    onlyPoolAdmin(_poolDetail[_convertC2P(consensusAddr)], msg.sender)
+    onlyPoolAdmin(_poolDetail[__css2cid(consensusAddr)], msg.sender)
   {
     IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execEmergencyExit(
-      _convertC2P(consensusAddr),
+      __css2cid(consensusAddr),
       _waitingSecsToRevoke
     );
   }
@@ -239,12 +244,12 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       if (AddressArrayUtils.hasDuplicate(diffAddrs)) revert AddressArrayUtils.ErrDuplicated(msg.sig);
     }
 
-    IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execApplyValidatorCandidate(
-      candidateAdmin,
-      poolId,
-      treasuryAddr,
-      commissionRate
-    );
+    IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execApplyValidatorCandidate({
+      candidateAdmin: candidateAdmin,
+      cid: poolId,
+      treasuryAddr: treasuryAddr,
+      commissionRate: commissionRate
+    });
 
     IProfile profileContract = IProfile(getContract(ContractType.PROFILE));
     profileContract.execApplyValidatorCandidate(candidateAdmin, poolId, treasuryAddr, pubkey);

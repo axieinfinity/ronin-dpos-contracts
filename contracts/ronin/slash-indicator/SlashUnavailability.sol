@@ -58,7 +58,7 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
   function slashUnavailability(TConsensus consensusAddr) external override oncePerBlock {
     if (msg.sender != block.coinbase) revert ErrUnauthorized(msg.sig, RoleAccess.COINBASE);
 
-    address validatorId = _convertC2P(consensusAddr);
+    address validatorId = __css2cid(consensusAddr);
     if (!_shouldSlash(consensusAddr, validatorId)) {
       // Should return instead of throwing error since this is a part of system transaction.
       return;
@@ -143,7 +143,7 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
   function currentUnavailabilityIndicator(TConsensus consensus) external view override returns (uint256) {
     return
       _getUnavailabilityIndicatorById(
-        _convertC2P(consensus),
+        __css2cid(consensus),
         IRoninValidatorSet(getContract(ContractType.VALIDATOR)).currentPeriod()
       );
   }
@@ -155,7 +155,7 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
     TConsensus consensus,
     uint256 period
   ) external view virtual override returns (uint256) {
-    return _getUnavailabilityIndicatorById(_convertC2P(consensus), period);
+    return _getUnavailabilityIndicatorById(__css2cid(consensus), period);
   }
 
   function _getUnavailabilityIndicatorById(
@@ -205,5 +205,5 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
    */
   function _checkBailedOutAtPeriodById(address validatorId, uint256 period) internal view virtual returns (bool);
 
-  function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address);
+  function __css2cid(TConsensus consensusAddr) internal view virtual returns (address);
 }

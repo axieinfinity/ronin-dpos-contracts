@@ -41,9 +41,9 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidato
       revert ErrEvidenceAlreadySubmitted();
     }
 
-    address validatorId = _convertC2P(consensusAddr);
+    address validatorId = __css2cid(consensusAddr);
 
-    // TODO: Edge case: non-validator who never apply for the candidate role, nor have a profile.
+    // NOTE: Edge case: non-validator who never apply for the candidate role, nor have a profile.
     // Must be slashed by the consensus address, since the validatorId will be address(0).
     if (validatorId == address(0)) {
       validatorId = TConsensus.unwrap(consensusAddr);
@@ -105,5 +105,5 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidato
    */
   function _shouldSlash(TConsensus consensus, address validatorId) internal view virtual returns (bool);
 
-  function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address);
+  function __css2cid(TConsensus consensusAddr) internal view virtual returns (address);
 }
