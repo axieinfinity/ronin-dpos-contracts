@@ -63,7 +63,7 @@ abstract contract SlashFastFinality is ISlashFastFinality, HasContracts, PCUVali
       uint256 period = validatorContract.currentPeriod();
       emit Slashed(validatorId, SlashType.FAST_FINALITY, period);
       validatorContract.execSlash({
-        validatorAddr: validatorId,
+        cid: validatorId,
         newJailedUntil: _fastFinalityJailUntilBlock,
         slashAmount: _slashFastFinalityAmount,
         cannotBailout: true

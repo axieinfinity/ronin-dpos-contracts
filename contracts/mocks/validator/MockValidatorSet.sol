@@ -63,12 +63,7 @@ contract MockValidatorSet is
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
 
-  function execSlash(
-    address cid,
-    uint256 newJailedUntil,
-    uint256 slashAmount,
-    bool cannotBailout
-  ) external override {}
+  function execSlash(address cid, uint256 newJailedUntil, uint256 slashAmount, bool cannotBailout) external override {}
 
   function execBailOut(address, uint256) external override {}
 
@@ -123,11 +118,11 @@ contract MockValidatorSet is
   function totalDeprecatedReward() external view override returns (uint256) {}
 
   function __css2cid(TConsensus consensusAddr) internal view override returns (address) {
-    return super.__css2cid(consensusAddr);
+    return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
   }
 
   function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view override returns (address[] memory) {
-    return super.__css2cidBatch(consensusAddrs);
+    return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
   }
 
   function execReleaseLockedFundForEmergencyExitRequest(

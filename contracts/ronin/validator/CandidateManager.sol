@@ -371,11 +371,9 @@ abstract contract CandidateManager is
    */
   function _isTrustedOrg(address _consensusAddr) internal virtual returns (bool);
 
-  function __css2cid(TConsensus consensusAddr) internal view virtual returns (address) {
-    return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
-  }
+  /// @dev See {RoninValidatorSet-__css2cid}
+  function __css2cid(TConsensus consensusAddr) internal view virtual returns (address);
 
-  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory) {
-    return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
-  }
+  /// @dev See {RoninValidatorSet-__css2cidBatch}
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
 }

@@ -145,7 +145,9 @@ abstract contract JailingStorage is IJailingInfo {
     return _miningRewardDeprecatedAtPeriod[validatorId][period];
   }
 
+  /// @dev See {RoninValidatorSet-__css2cid}
   function __css2cid(TConsensus consensusAddr) internal view virtual returns (address);
 
+  /// @dev See {RoninValidatorSet-__css2cidBatch}
   function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
 }

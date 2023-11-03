@@ -155,17 +155,15 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     super._removeCandidate(cid);
   }
 
+  /// @dev See {RoninValidatorSet-__css2cid}
   function __css2cid(
     TConsensus consensusAddr
-  ) internal view virtual override(CandidateManager, CommonStorage) returns (address) {
-    return CandidateManager.__css2cid(consensusAddr);
-  }
+  ) internal view virtual override(CandidateManager, CommonStorage) returns (address);
 
+  /// @dev See {RoninValidatorSet-__css2cidBatch}
   function __css2cidBatch(
     TConsensus[] memory consensusAddrs
-  ) internal view virtual override(CandidateManager, CommonStorage) returns (address[] memory) {
-    return CandidateManager.__css2cidBatch(consensusAddrs);
-  }
+  ) internal view virtual override(CandidateManager, CommonStorage) returns (address[] memory);
 
   /**
    * @dev See `setEmergencyExitLockedAmount.
