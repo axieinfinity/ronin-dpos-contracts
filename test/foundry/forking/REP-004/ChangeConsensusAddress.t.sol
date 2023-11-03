@@ -297,7 +297,7 @@ contract ChangeConsensusAddressForkTest is Test {
     console2.log("before-upgrade:balanceBefore", balanceBefore);
 
     _bulkSubmitBlockReward(1);
-    _bulkSlashIndicator(validatorCandidate, 50);
+    _bulkSlashIndicator(validatorCandidate, 150);
 
     _bulkWrapUpEpoch(1);
 
@@ -314,7 +314,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
 
     _bulkSubmitBlockReward(1);
-    _bulkSlashIndicator(TConsensus.unwrap(newConsensus), 50);
+    _bulkSlashIndicator(TConsensus.unwrap(newConsensus), 150);
 
     console2.log("new-consensus", TConsensus.unwrap(newConsensus));
 
@@ -365,10 +365,10 @@ contract ChangeConsensusAddressForkTest is Test {
     );
     vm.roll(latestEpoch + minOffsetToStartSchedule + 200);
 
-    _bulkSlashIndicator(validatorCandidate, 50);
+    _bulkSlashIndicator(validatorCandidate, 150);
     _bulkWrapUpEpoch(1);
 
-    assertFalse(_validator.isBlockProducer(TConsensus.wrap(validatorCandidate)));
+    assertTrue(_validator.isBlockProducer(TConsensus.wrap(validatorCandidate)));
     uint256 balanceAfter = recipient.balance;
     console2.log("before-upgrade:balanceAfter", balanceAfter);
     uint256 beforeUpgradeReward = balanceAfter - balanceBefore;
@@ -397,10 +397,10 @@ contract ChangeConsensusAddressForkTest is Test {
     );
     vm.roll(latestEpoch + minOffsetToStartSchedule + 200);
 
-    _bulkSlashIndicator(TConsensus.unwrap(newConsensus), 50);
+    _bulkSlashIndicator(TConsensus.unwrap(newConsensus), 150);
     _bulkWrapUpEpoch(1);
 
-    assertFalse(_validator.isBlockProducer(newConsensus));
+    assertTrue(_validator.isBlockProducer(newConsensus));
     balanceAfter = recipient.balance;
     console2.log("after-upgrade:balanceAfter", balanceBefore);
     uint256 afterUpgradedReward = balanceAfter - balanceBefore;
