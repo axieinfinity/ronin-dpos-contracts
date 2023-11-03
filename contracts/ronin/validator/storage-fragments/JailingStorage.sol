@@ -6,18 +6,18 @@ import "../../../interfaces/validator/info-fragments/IJailingInfo.sol";
 import "./TimingStorage.sol";
 
 abstract contract JailingStorage is IJailingInfo {
-  /// @dev Mapping from consensus address => period number => block producer has no pending reward.
+  /// @dev Mapping from candidate id => period number => block producer has no pending reward.
   mapping(address => mapping(uint256 => bool)) internal _miningRewardDeprecatedAtPeriod;
-  /// @dev Mapping from consensus address => period number => whether the block producer get cut off reward, due to bailout.
+  /// @dev Mapping from candidate id => period number => whether the block producer get cut off reward, due to bailout.
   mapping(address => mapping(uint256 => bool)) internal _miningRewardBailoutCutOffAtPeriod;
-  /// @dev Mapping from consensus address => period number => block operator has no pending reward.
+  /// @dev Mapping from candidate id => period number => block operator has no pending reward.
   mapping(address => mapping(uint256 => bool)) internal ______deprecatedBridgeRewardDeprecatedAtPeriod;
 
-  /// @dev Mapping from consensus address => the last block that the block producer is jailed.
+  /// @dev Mapping from candidate id => the last block that the block producer is jailed.
   mapping(address => uint256) internal _blockProducerJailedBlock;
-  /// @dev Mapping from consensus address => the last timestamp that the bridge operator is jailed.
+  /// @dev Mapping from candidate id => the last timestamp that the bridge operator is jailed.
   mapping(address => uint256) internal _emergencyExitJailedTimestamp;
-  /// @dev Mapping from consensus address => the last block that the block producer cannot bailout.
+  /// @dev Mapping from candidate id => the last block that the block producer cannot bailout.
   mapping(address => uint256) internal _cannotBailoutUntilBlock;
 
   /**
@@ -31,7 +31,7 @@ abstract contract JailingStorage is IJailingInfo {
    */
   function checkJailed(TConsensus consensus) external view override returns (bool) {
     address candidateId = _convertC2P(consensus);
-    return _jailedAtBlock(candidateId, block.number);
+    return _isJailedAtBlockById(candidateId, block.number);
   }
 
   /**
@@ -39,7 +39,7 @@ abstract contract JailingStorage is IJailingInfo {
    */
   function checkJailedAtBlock(TConsensus addr, uint256 blockNum) external view override returns (bool) {
     address candidateId = _convertC2P(addr);
-    return _jailedAtBlock(candidateId, blockNum);
+    return _isJailedAtBlockById(candidateId, blockNum);
   }
 
   /**
@@ -89,7 +89,7 @@ abstract contract JailingStorage is IJailingInfo {
   function _checkManyJailedById(address[] memory candidateIds) internal view returns (bool[] memory result) {
     result = new bool[](candidateIds.length);
     for (uint256 i; i < candidateIds.length; ) {
-      result[i] = _jailed(candidateIds[i]);
+      result[i] = _isJailedById(candidateIds[i]);
 
       unchecked {
         ++i;
@@ -128,22 +128,22 @@ abstract contract JailingStorage is IJailingInfo {
   /**
    * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) during the current period.
    */
-  function _jailed(address _validatorAddr) internal view returns (bool) {
-    return _jailedAtBlock(_validatorAddr, block.number);
+  function _isJailedById(address validatorId) internal view returns (bool) {
+    return _isJailedAtBlockById(validatorId, block.number);
   }
 
   /**
    * @dev Returns whether the reward of the validator is put in jail (cannot join the set of validators) at a specific block.
    */
-  function _jailedAtBlock(address _validatorAddr, uint256 _blockNum) internal view returns (bool) {
-    return _blockNum <= _blockProducerJailedBlock[_validatorAddr];
+  function _isJailedAtBlockById(address validatorId, uint256 blockNum) internal view returns (bool) {
+    return blockNum <= _blockProducerJailedBlock[validatorId];
   }
 
   /**
    * @dev Returns whether the block producer has no pending reward in that period.
    */
-  function _miningRewardDeprecatedById(address _validatorAddr, uint256 _period) internal view returns (bool) {
-    return _miningRewardDeprecatedAtPeriod[_validatorAddr][_period];
+  function _miningRewardDeprecatedById(address validatorId, uint256 period) internal view returns (bool) {
+    return _miningRewardDeprecatedAtPeriod[validatorId][period];
   }
 
   function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address);

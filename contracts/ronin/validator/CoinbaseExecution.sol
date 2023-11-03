@@ -63,7 +63,7 @@ abstract contract CoinbaseExecution is
     address id = _convertC2P(TConsensus.wrap(msg.sender));
 
     bool requestForBlockProducer = _isBlockProducerById(id) &&
-      !_jailed(id) &&
+      !_isJailedById(id) &&
       !_miningRewardDeprecatedById(id, currentPeriod());
 
     (, uint256 blockProducerBonus, , uint256 fastFinalityRewardPercentage) = IStakingVesting(
@@ -191,7 +191,7 @@ abstract contract CoinbaseExecution is
       _consensusAddr = _currentValidators[_i];
       _treasury = _candidateInfo[_consensusAddr].__shadowedTreasury;
 
-      if (!_jailed(_consensusAddr) && !_miningRewardDeprecatedById(_consensusAddr, _lastPeriod)) {
+      if (!_isJailedById(_consensusAddr) && !_miningRewardDeprecatedById(_consensusAddr, _lastPeriod)) {
         _totalDelegatingReward += _delegatingReward[_consensusAddr];
         _delegatingRewards[_i] = _delegatingReward[_consensusAddr];
         _distributeMiningReward(_consensusAddr, _treasury);
@@ -398,7 +398,7 @@ abstract contract CoinbaseExecution is
       address validatorId = _currentValidators[_i];
       bool emergencyExitRequested = block.timestamp <= _emergencyExitJailedTimestamp[validatorId];
       bool isProducerBefore = _isBlockProducerById(validatorId);
-      bool isProducerAfter = !(_jailedAtBlock(validatorId, block.number + 1) ||
+      bool isProducerAfter = !(_isJailedAtBlockById(validatorId, block.number + 1) ||
         _maintainedList[_i] ||
         emergencyExitRequested);
 
