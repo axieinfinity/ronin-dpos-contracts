@@ -4,15 +4,15 @@ pragma solidity ^0.8.0;
 import { Test } from "forge-std/Test.sol";
 import { console2 } from "forge-std/console2.sol";
 import { TConsensus } from "@ronin/contracts/udvts/Types.sol";
-import { IBaseStaking, Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
+import { Maintenance } from "@ronin/contracts/ronin/Maintenance.sol";
 import { MockPrecompile } from "@ronin/contracts/mocks/MockPrecompile.sol";
 import { IProfile, Profile } from "@ronin/contracts/ronin/profile/Profile.sol";
+import { IBaseStaking, Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
 import { HasContracts } from "@ronin/contracts/extensions/collections/HasContracts.sol";
 import { CandidateManager } from "@ronin/contracts/ronin/validator/CandidateManager.sol";
-import { ICandidateManager, RoninValidatorSet } from "@ronin/contracts/ronin/validator/RoninValidatorSet.sol";
-import { Maintenance } from "@ronin/contracts/ronin/Maintenance.sol";
 import { SlashIndicator } from "@ronin/contracts/ronin/slash-indicator/SlashIndicator.sol";
 import { RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";
+import { ICandidateManager, RoninValidatorSet } from "@ronin/contracts/ronin/validator/RoninValidatorSet.sol";
 import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 
 contract ChangeConsensusAddressForkTest is Test {
