@@ -124,8 +124,8 @@ interface ICandidateManager {
    *
    */
   function execApplyValidatorCandidate(
-    address admin,
-    address id,
+    address candidateAdmin,
+    address cid,
     address payable treasuryAddr,
     uint256 commissionRate
   ) external;

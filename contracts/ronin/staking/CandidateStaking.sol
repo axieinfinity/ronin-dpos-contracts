@@ -8,6 +8,7 @@ import "../../libraries/AddressArrayUtils.sol";
 import "../../interfaces/staking/ICandidateStaking.sol";
 import "../../interfaces/IProfile.sol";
 import "./BaseStaking.sol";
+import "forge-std/console2.sol";
 
 abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConfigConsumer, PercentageConsumer {
   /// @dev The minimum threshold for being a validator candidate.
@@ -63,6 +64,8 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     bytes calldata pubkey
   ) external payable override nonReentrant {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
+    console2.log("max", _maxCommissionRate);
+    console2.log("min", _minCommissionRate);
     if (commissionRate > _maxCommissionRate || commissionRate < _minCommissionRate) revert ErrInvalidCommissionRate();
 
     uint256 amount = msg.value;
@@ -131,7 +134,12 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       if (deductingAmount > 0) {
         _deductStakingAmount(_pool, deductingAmount);
         if (!_unsafeSendRONLimitGas(payable(_pool.__shadowedPoolAdmin), deductingAmount, DEFAULT_ADDITION_GAS)) {
-          emit StakingAmountTransferFailed(_pool.pid, _pool.__shadowedPoolAdmin, deductingAmount, address(this).balance);
+          emit StakingAmountTransferFailed(
+            _pool.pid,
+            _pool.__shadowedPoolAdmin,
+            deductingAmount,
+            address(this).balance
+          );
         }
       }
 
@@ -239,12 +247,12 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
       if (AddressArrayUtils.hasDuplicate(diffAddrs)) revert AddressArrayUtils.ErrDuplicated(msg.sig);
     }
 
-    IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execApplyValidatorCandidate(
-      candidateAdmin,
-      poolId,
-      treasuryAddr,
-      commissionRate
-    );
+    IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execApplyValidatorCandidate({
+      candidateAdmin: candidateAdmin,
+      cid: poolId,
+      treasuryAddr: treasuryAddr,
+      commissionRate: commissionRate
+    });
 
     IProfile profileContract = IProfile(getContract(ContractType.PROFILE));
     profileContract.execApplyValidatorCandidate(candidateAdmin, poolId, treasuryAddr, pubkey);
