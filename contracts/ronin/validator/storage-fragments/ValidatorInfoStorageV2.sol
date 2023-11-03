@@ -76,7 +76,7 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
    * @inheritdoc IValidatorInfoV2
    */
   function isBlockProducer(TConsensus consensusAddr) public view override returns (bool) {
-    return _isBlockProducerById(_convertC2P(consensusAddr));
+    return _isBlockProducerById(__css2cid(consensusAddr));
   }
 
   function _isBlockProducerById(address id) internal view returns (bool) {
@@ -141,7 +141,7 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
     emit MaxPrioritizedValidatorNumberUpdated(_number);
   }
 
-  function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address);
+  function __css2cid(TConsensus consensusAddr) internal view virtual returns (address);
 
-  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
 }

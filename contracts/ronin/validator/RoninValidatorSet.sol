@@ -87,15 +87,15 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     }
   }
 
-  function _convertC2P(
+  function __css2cid(
     TConsensus consensusAddr
   ) internal view override(EmergencyExit, CommonStorage) returns (address) {
-    return super._convertC2P(consensusAddr);
+    return super.__css2cid(consensusAddr);
   }
 
-  function _convertManyC2P(
+  function __css2cidBatch(
     TConsensus[] memory consensusAddrs
   ) internal view override(EmergencyExit, CommonStorage) returns (address[] memory) {
-    return super._convertManyC2P(consensusAddrs);
+    return super.__css2cidBatch(consensusAddrs);
   }
 }

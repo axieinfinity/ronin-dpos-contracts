@@ -98,7 +98,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
    * @inheritdoc IValidatorInfo
    */
   function isBlockProducer(TConsensus consensusAddr) public view override returns (bool) {
-    return _isBlockProducerById(_convertC2P(consensusAddr));
+    return _isBlockProducerById(__css2cid(consensusAddr));
   }
 
   function _isBlockProducerById(address id) internal view returns (bool) {
@@ -154,7 +154,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
     TConsensus[] memory consensusAddrs
   ) public view override returns (address[] memory bridgeOperatorList) {
     bridgeOperatorList = new address[](consensusAddrs.length);
-    address[] memory validatorIds = _convertManyC2P(consensusAddrs);
+    address[] memory validatorIds = __css2cidBatch(consensusAddrs);
     for (uint i; i < bridgeOperatorList.length; ) {
       bridgeOperatorList[i] = _bridgeOperatorOfCandidateId(validatorIds[i]);
       unchecked {
@@ -185,7 +185,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
    * @inheritdoc IValidatorInfo
    */
   function isOperatingBridge(TConsensus consensus) external view override returns (bool) {
-    return _isOperatingBridgeById(_convertC2P(consensus));
+    return _isOperatingBridgeById(__css2cid(consensus));
   }
 
   function _isOperatingBridgeById(address validatorId) internal view returns (bool) {
@@ -255,7 +255,7 @@ abstract contract ValidatorInfoStorage is IValidatorInfo, HasContracts, HasTrust
     emit MaxPrioritizedValidatorNumberUpdated(_number);
   }
 
-  function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address);
+  function __css2cid(TConsensus consensusAddr) internal view virtual returns (address);
 
-  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
 }

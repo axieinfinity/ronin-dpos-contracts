@@ -134,7 +134,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    */
   function schedule(TConsensus consensusAddr, uint256 startedAtBlock, uint256 endedAtBlock) external override {
     IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
-    address candidateId = _convertC2P(consensusAddr);
+    address candidateId = __css2cid(consensusAddr);
 
     if (!validatorContract.isBlockProducer(consensusAddr)) revert ErrUnauthorized(msg.sig, RoleAccess.BLOCK_PRODUCER);
     if (!validatorContract.isCandidateAdmin(consensusAddr, msg.sender))
@@ -171,7 +171,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
       revert ErrUnauthorized(msg.sig, RoleAccess.CANDIDATE_ADMIN);
     }
 
-    address candidateId = _convertC2P(consensusAddr);
+    address candidateId = __css2cid(consensusAddr);
 
     if (!_checkScheduledById(candidateId)) revert ErrUnexistedSchedule();
     if (_checkMaintainedById(candidateId, block.number)) revert ErrAlreadyOnMaintenance();
@@ -187,7 +187,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    * @inheritdoc IMaintenance
    */
   function getSchedule(TConsensus consensusAddr) external view override returns (Schedule memory) {
-    return _schedule[_convertC2P(consensusAddr)];
+    return _schedule[__css2cid(consensusAddr)];
   }
 
   /**
@@ -197,7 +197,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     TConsensus[] calldata addrList,
     uint256 atBlock
   ) external view override returns (bool[] memory) {
-    address[] memory idList = _convertManyC2P(addrList);
+    address[] memory idList = __css2cidBatch(addrList);
     return _checkManyMaintainedById(idList, atBlock);
   }
 
@@ -230,7 +230,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     uint256 fromBlock,
     uint256 toBlock
   ) external view override returns (bool[] memory) {
-    address[] memory idList = _convertManyC2P(addrList);
+    address[] memory idList = __css2cidBatch(addrList);
     return _checkManyMaintainedInBlockRangeById(idList, fromBlock, toBlock);
   }
 
@@ -275,7 +275,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    * @inheritdoc IMaintenance
    */
   function checkMaintained(TConsensus consensusAddr, uint256 atBlock) external view override returns (bool) {
-    return _checkMaintainedById(_convertC2P(consensusAddr), atBlock);
+    return _checkMaintainedById(__css2cid(consensusAddr), atBlock);
   }
 
   function checkMaintainedById(address candidateId, uint256 atBlock) external view override returns (bool) {
@@ -295,14 +295,14 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     uint256 fromBlock,
     uint256 toBlock
   ) public view override returns (bool) {
-    return _maintainingInBlockRange(_convertC2P(consensusAddr), fromBlock, toBlock);
+    return _maintainingInBlockRange(__css2cid(consensusAddr), fromBlock, toBlock);
   }
 
   /**
    * @inheritdoc IMaintenance
    */
   function checkScheduled(TConsensus consensusAddr) external view override returns (bool) {
-    return _checkScheduledById(_convertC2P(consensusAddr));
+    return _checkScheduledById(__css2cid(consensusAddr));
   }
 
   function _checkScheduledById(address candidateId) internal view returns (bool) {
@@ -313,7 +313,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    * @inheritdoc IMaintenance
    */
   function checkCooldownEnded(TConsensus consensusAddr) external view override returns (bool) {
-    return _checkCooldownEndedById(_convertC2P(consensusAddr));
+    return _checkCooldownEndedById(__css2cid(consensusAddr));
   }
 
   function _checkCooldownEndedById(address candidateId) internal view returns (bool) {
@@ -370,11 +370,11 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     return Math.twoRangeOverlap(fromBlock, toBlock, s.from, s.to);
   }
 
-  function _convertC2P(TConsensus consensusAddr) internal view returns (address) {
+  function __css2cid(TConsensus consensusAddr) internal view returns (address) {
     return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
   }
 
-  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view returns (address[] memory) {
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view returns (address[] memory) {
     return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
   }
 }

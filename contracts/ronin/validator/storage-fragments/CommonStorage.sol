@@ -71,11 +71,11 @@ abstract contract CommonStorage is ICommonInfo, TimingStorage, JailingStorage, V
     return TimingStorage.currentPeriod();
   }
 
-  function _convertC2P(
+  function __css2cid(
     TConsensus consensusAddr
   ) internal view virtual override(JailingStorage, ValidatorInfoStorageV2) returns (address);
 
-  function _convertManyC2P(
+  function __css2cidBatch(
     TConsensus[] memory consensusAddrs
   ) internal view virtual override(JailingStorage, ValidatorInfoStorageV2) returns (address[] memory);
 }

@@ -60,7 +60,7 @@ abstract contract CoinbaseExecution is
    * @inheritdoc ICoinbaseExecution
    */
   function submitBlockReward() external payable override onlyCoinbase {
-    address id = _convertC2P(TConsensus.wrap(msg.sender));
+    address id = __css2cid(TConsensus.wrap(msg.sender));
 
     bool requestForBlockProducer = _isBlockProducerById(id) &&
       !_isJailedById(id) &&

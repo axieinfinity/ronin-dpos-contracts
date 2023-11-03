@@ -71,7 +71,7 @@ abstract contract BaseStaking is
 
   function _poolOfConsensusIsActive(TConsensus consensusAddr) private view {
     if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isValidatorCandidate(consensusAddr))
-      revert ErrInactivePool(consensusAddr, _convertC2P(consensusAddr));
+      revert ErrInactivePool(consensusAddr, __css2cid(consensusAddr));
   }
 
   /**
@@ -94,7 +94,7 @@ abstract contract BaseStaking is
   function getPoolDetail(
     TConsensus consensusAddr
   ) external view returns (address admin, uint256 stakingAmount, uint256 stakingTotal) {
-    address poolId = _convertC2P(consensusAddr);
+    address poolId = __css2cid(consensusAddr);
     return _getPoolDetailById(poolId);
   }
 
@@ -117,7 +117,7 @@ abstract contract BaseStaking is
   function getManySelfStakings(
     TConsensus[] calldata consensusAddrs
   ) external view returns (uint256[] memory selfStakings_) {
-    address[] memory poolIds = _convertManyC2P(consensusAddrs);
+    address[] memory poolIds = __css2cidBatch(consensusAddrs);
     return _getManySelfStakingsById(poolIds);
   }
 
@@ -146,7 +146,7 @@ abstract contract BaseStaking is
    * @inheritdoc IRewardPool
    */
   function getStakingTotal(TConsensus consensusAddr) external view override returns (uint256) {
-    address poolId = _convertC2P(consensusAddr);
+    address poolId = __css2cid(consensusAddr);
     return _getStakingTotal(poolId);
   }
 
@@ -156,7 +156,7 @@ abstract contract BaseStaking is
   function getManyStakingTotals(
     TConsensus[] calldata consensusAddrs
   ) external view override returns (uint256[] memory stakingAmounts_) {
-    address[] memory poolIds = _convertManyC2P(consensusAddrs);
+    address[] memory poolIds = __css2cidBatch(consensusAddrs);
     return _getManyStakingTotalsById(poolIds);
   }
 
@@ -190,7 +190,7 @@ abstract contract BaseStaking is
    * @inheritdoc IRewardPool
    */
   function getStakingAmount(TConsensus consensusAddr, address user) external view override returns (uint256) {
-    address poolId = _convertC2P(consensusAddr);
+    address poolId = __css2cid(consensusAddr);
     return _getStakingAmount(poolId, user);
   }
 
@@ -201,7 +201,7 @@ abstract contract BaseStaking is
     TConsensus[] calldata consensusAddrs,
     address[] calldata userList
   ) external view override returns (uint256[] memory stakingAmounts) {
-    address[] memory poolIds = _convertManyC2P(consensusAddrs);
+    address[] memory poolIds = __css2cidBatch(consensusAddrs);
     return _getManyStakingAmountsById(poolIds, userList);
   }
 
@@ -231,11 +231,11 @@ abstract contract BaseStaking is
     return _poolDetail[poolId].delegatingAmount[user];
   }
 
-  function _convertC2P(TConsensus consensusAddr) internal view returns (address) {
+  function __css2cid(TConsensus consensusAddr) internal view returns (address) {
     return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
   }
 
-  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view returns (address[] memory) {
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view returns (address[] memory) {
     return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
   }
 
@@ -301,9 +301,5 @@ abstract contract BaseStaking is
     _syncUserReward(_pool.pid, delegator, newDelegatingAmount);
     _pool.stakingTotal = newStakingTotal;
     _pool.delegatingAmount[delegator] = newDelegatingAmount;
-  }
-
-  function _profileContract() internal view returns (IProfile) {
-    return IProfile(getContract(ContractType.PROFILE));
   }
 }

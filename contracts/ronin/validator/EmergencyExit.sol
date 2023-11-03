@@ -158,16 +158,16 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     super._removeCandidate(_consensusAddr);
   }
 
-  function _convertC2P(
+  function __css2cid(
     TConsensus consensusAddr
   ) internal view virtual override(CandidateManager, CommonStorage) returns (address) {
-    return CandidateManager._convertC2P(consensusAddr);
+    return CandidateManager.__css2cid(consensusAddr);
   }
 
-  function _convertManyC2P(
+  function __css2cidBatch(
     TConsensus[] memory consensusAddrs
   ) internal view virtual override(CandidateManager, CommonStorage) returns (address[] memory) {
-    return CandidateManager._convertManyC2P(consensusAddrs);
+    return CandidateManager.__css2cidBatch(consensusAddrs);
   }
 
   /**

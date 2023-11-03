@@ -122,12 +122,12 @@ contract MockValidatorSet is
 
   function totalDeprecatedReward() external view override returns (uint256) {}
 
-  function _convertC2P(TConsensus consensusAddr) internal view override returns (address) {
-    return super._convertC2P(consensusAddr);
+  function __css2cid(TConsensus consensusAddr) internal view override returns (address) {
+    return super.__css2cid(consensusAddr);
   }
 
-  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view override returns (address[] memory) {
-    return super._convertManyC2P(consensusAddrs);
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view override returns (address[] memory) {
+    return super.__css2cidBatch(consensusAddrs);
   }
 
   function execReleaseLockedFundForEmergencyExitRequest(

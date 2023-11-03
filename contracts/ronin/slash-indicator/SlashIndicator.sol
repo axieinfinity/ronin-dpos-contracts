@@ -149,7 +149,7 @@ contract SlashIndicator is
       !IMaintenance(getContract(ContractType.MAINTENANCE)).checkMaintainedById(validatorId, block.number);
   }
 
-  function _convertC2P(
+  function __css2cid(
     TConsensus consensusAddr
   )
     internal
@@ -160,7 +160,7 @@ contract SlashIndicator is
     return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
   }
 
-  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view override returns (address[] memory) {
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view override returns (address[] memory) {
     return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
   }
 }

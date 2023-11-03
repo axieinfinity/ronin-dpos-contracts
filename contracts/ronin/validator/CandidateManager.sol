@@ -165,7 +165,7 @@ abstract contract CandidateManager is
    * @inheritdoc ICandidateManager
    */
   function isValidatorCandidate(TConsensus consensus) external view override returns (bool) {
-    return _isValidatorCandidateById(_convertC2P(consensus));
+    return _isValidatorCandidateById(__css2cid(consensus));
   }
 
   function _isValidatorCandidateById(address candidateId) internal view returns (bool) {
@@ -190,7 +190,7 @@ abstract contract CandidateManager is
    * @inheritdoc ICandidateManager
    */
   function getCandidateInfo(TConsensus consensus) external view override returns (ValidatorCandidate memory) {
-    address validatorId = _convertC2P(consensus);
+    address validatorId = __css2cid(consensus);
     if (!_isValidatorCandidateById(validatorId)) revert ErrNonExistentCandidate();
     return _candidateInfo[validatorId];
   }
@@ -291,7 +291,7 @@ abstract contract CandidateManager is
    * @inheritdoc ICandidateManager
    */
   function isCandidateAdmin(TConsensus consensusAddr, address admin) external view override returns (bool) {
-    return _isCandidateAdminById(_convertC2P(consensusAddr), admin);
+    return _isCandidateAdminById(__css2cid(consensusAddr), admin);
   }
 
   function _isCandidateAdminById(address candidateId, address admin) internal view returns (bool) {
@@ -347,7 +347,7 @@ abstract contract CandidateManager is
    * @dev Sets timestamp to revoke a candidate.
    */
   function _setRevokingTimestamp(ValidatorCandidate storage _candidate, uint256 timestamp) internal {
-    address cid = _convertC2P(_candidate.__shadowedConsensus);
+    address cid = __css2cid(_candidate.__shadowedConsensus);
     if (!_isValidatorCandidateById(cid)) revert ErrNonExistentCandidate();
     _candidate.revokingTimestamp = timestamp;
     emit CandidateRevokingTimestampUpdated(cid, timestamp);
@@ -363,11 +363,11 @@ abstract contract CandidateManager is
    */
   function _isTrustedOrg(address _consensusAddr) internal virtual returns (bool);
 
-  function _convertC2P(TConsensus consensusAddr) internal view virtual returns (address) {
+  function __css2cid(TConsensus consensusAddr) internal view virtual returns (address) {
     return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
   }
 
-  function _convertManyC2P(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory) {
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory) {
     return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
   }
 }
