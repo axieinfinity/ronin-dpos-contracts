@@ -54,11 +54,8 @@ interface ICandidateManager {
   /// @dev Emitted when the validator candidate is revoked.
   event CandidatesRevoked(address[] consensusAddrs);
 
-  /// @dev Emitted when a schedule for updating commission rate is set.
-  event CommissionRateUpdateScheduled(address indexed consensusAddr, uint256 effectiveTimestamp, uint256 rate);
   /// @dev Emitted when the commission rate of a validator is updated.
   event CommissionRateUpdated(address indexed consensusAddr, uint256 rate);
-
   /// @dev Error of exceeding maximum number of candidates.
   error ErrExceedsMaxNumberOfCandidate();
   /// @dev Error of querying for already existent candidate.
@@ -71,16 +68,8 @@ interface ICandidateManager {
   error ErrExistentTreasury(address _treasuryAddr);
   /// @dev Error of invalid commission rate.
   error ErrInvalidCommissionRate();
-  /// @dev Error of invalid effective days onwards.
-  error ErrInvalidEffectiveDaysOnwards();
-  /// @dev Error of invalid min effective days onwards.
+    /// @dev Error of invalid min effective days onwards.
   error ErrInvalidMinEffectiveDaysOnwards();
-  /// @dev Error of already requested revoking candidate before.
-  error ErrAlreadyRequestedRevokingCandidate();
-  /// @dev Error of commission change schedule exists.
-  error ErrAlreadyRequestedUpdatingCommissionRate();
-  /// @dev Error of trusted org cannot renounce.
-  error ErrTrustedOrgCannotRenounce();
 
   /**
    * @dev Returns the maximum number of validator candidate.
@@ -113,46 +102,6 @@ interface ICandidateManager {
    *
    */
   function setMinEffectiveDaysOnwards(uint256 _numOfDays) external;
-
-  /**
-   * @dev Grants a validator candidate.
-   *
-   * Requirements:
-   * - The method caller is staking contract.
-   *
-   * Emits the event `CandidateGranted`.
-   *
-   */
-  function execApplyValidatorCandidate(
-    address candidateAdmin,
-    address cid,
-    address payable treasuryAddr,
-    uint256 commissionRate
-  ) external;
-
-  /**
-   * @dev Requests to revoke a validator candidate in next `secsLeft` seconds.
-   *
-   * Requirements:
-   * - The method caller is staking contract.
-   *
-   * Emits the event `CandidateRevokingTimestampUpdated`.
-   *
-   */
-  function execRequestRenounceCandidate(address, uint256 secsLeft) external;
-
-  /**
-   * @dev Fallback function of `CandidateStaking-requestUpdateCommissionRate`.
-   *
-   * Requirements:
-   * - The method caller is the staking contract.
-   * - The `effectiveTimestamp` must be the beginning of a UTC day, and at least from 7 days onwards
-   * - The `rate` must be in range of [0_00; 100_00].
-   *
-   * Emits the event `CommissionRateUpdateScheduled`.
-   *
-   */
-  function execRequestUpdateCommissionRate(address cid, uint256 effectiveTimestamp, uint256 rate) external;
 
   /**
    * @dev Returns whether the address is a validator (candidate).
