@@ -146,7 +146,7 @@ contract ChangeConsensusAddressForkTest is Test {
     uint256 balanceBefore = recipient.balance;
     console2.log("before-upgrade:balanceBefore", balanceBefore);
 
-    _bulkSlashIndicator(validatorCandidate, 150);
+    _bulkSlashIndicator(validatorCandidate, 50);
 
     _fastForwardToNextDay();
     _wrapUpEpoch();
@@ -155,6 +155,7 @@ contract ChangeConsensusAddressForkTest is Test {
     console2.log("before-upgrade:balanceAfter", balanceAfter);
     uint256 beforeUpgradeReward = balanceAfter - balanceBefore;
     console2.log("before-upgrade:reward", beforeUpgradeReward);
+    assertFalse(_validator.isBlockProducer(TConsensus.wrap(validatorCandidate)));
 
     vm.revertTo(snapshotId);
     _upgradeContracts();
@@ -162,7 +163,7 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.prank(candidateAdmin);
     _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
 
-    _bulkSlashIndicator(TConsensus.unwrap(newConsensus), 150);
+    _bulkSlashIndicator(TConsensus.unwrap(newConsensus), 50);
 
     console2.log("new-consensus", TConsensus.unwrap(newConsensus));
 
@@ -180,6 +181,7 @@ contract ChangeConsensusAddressForkTest is Test {
     uint256 afterUpgradedReward = balanceAfter - balanceBefore;
     console2.log("after-upgrade:reward", afterUpgradedReward);
 
+    assertFalse(_validator.isBlockProducer(newConsensus));
     assertEq(afterUpgradedReward, beforeUpgradeReward, "afterUpgradedReward != beforeUpgradeReward");
   }
 
@@ -193,36 +195,98 @@ contract ChangeConsensusAddressForkTest is Test {
   }
 
   function testFork_Maintenance_BeforeAndAfterUpgrade() external {
+    // upgrade maintenance
+    vm.prank(_getProxyAdmin(address(_maintenance)));
+    TransparentUpgradeableProxyV2(payable(address(_maintenance))).upgradeTo(0x84d6e16a767A85D34964f26094BB46b0b7a4c8Ab);
+
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
     address validatorCandidate = validatorCandidates[0];
     address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).__shadowedAdmin;
-    //address recipient = candidateAdmin;
-    // address recipient = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).__shadowedTreasury
-    // console2.log("before-upgrade:recipient", recipient);
-    // uint256 balanceBefore = recipient.balance;
-    // console2.log("before-upgrade:balanceBefore", balanceBefore);
+
+    // check balance before wrapup epoch
+    address recipient = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).__shadowedTreasury;
+    console2.log("before-upgrade:recipient", recipient);
+    uint256 balanceBefore = recipient.balance;
+    console2.log("before-upgrade:balanceBefore", balanceBefore);
+
+    // save snapshot state before wrapup
     uint256 snapshotId = vm.snapshot();
 
-    (, uint256 nextPeriodBlock) = _getNextPeriodBlockInfo();
-    this.schedule(candidateAdmin, validatorCandidate, nextPeriodBlock);
+    bulkSubmitBlockReward(1);
 
-    _fastForwardToNextDay();
-    _wrapUpEpoch();
+    uint256 minOffsetToStartSchedule = _maintenance.minOffsetToStartSchedule();
+    uint256 latestEpoch = _validator.getLastUpdatedBlock() + 200;
+    this.schedule(
+      candidateAdmin,
+      validatorCandidate,
+      latestEpoch + 1 + minOffsetToStartSchedule,
+      latestEpoch + minOffsetToStartSchedule + _maintenance.minMaintenanceDurationInBlock()
+    );
+    vm.roll(latestEpoch + minOffsetToStartSchedule + 200);
 
-    // uint256 balanceAfter = recipient.balance;
-    // console2.log("before-upgrade:balanceAfter", balanceAfter);
-    // uint256 beforeUpgradeReward = balanceAfter - balanceBefore;
-    // console2.log("before-upgrade:reward", beforeUpgradeReward);
+    _bulkSlashIndicator(validatorCandidate, 50);
+    _bulkWrapUpEpoch(1);
+
+    assertFalse(_validator.isBlockProducer(TConsensus.wrap(validatorCandidate)));
+    uint256 balanceAfter = recipient.balance;
+    console2.log("before-upgrade:balanceAfter", balanceAfter);
+    uint256 beforeUpgradeReward = balanceAfter - balanceBefore;
+    console2.log("before-upgrade:reward", beforeUpgradeReward);
+
+    // revert to previous state
+    vm.revertTo(snapshotId);
+    _upgradeContracts();
+    // change consensus address
+    TConsensus newConsensus = TConsensus.wrap(makeAddr("consensus"));
+    vm.prank(candidateAdmin);
+    _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
+
+    recipient = _validator.getCandidateInfo(newConsensus).__shadowedTreasury;
+    console2.log("after-upgrade:recipient", recipient);
+    balanceBefore = recipient.balance;
+    console2.log("after-upgrade:balanceBefore", balanceBefore);
+
+    bulkSubmitBlockReward(1);
+
+    this.schedule(
+      candidateAdmin,
+      TConsensus.unwrap(newConsensus),
+      latestEpoch + 1 + minOffsetToStartSchedule,
+      latestEpoch + minOffsetToStartSchedule + _maintenance.minMaintenanceDurationInBlock()
+    );
+    vm.roll(latestEpoch + minOffsetToStartSchedule + 200);
+
+    _bulkSlashIndicator(TConsensus.unwrap(newConsensus), 50);
+    _bulkWrapUpEpoch(1);
+
+    assertFalse(_validator.isBlockProducer(newConsensus));
+    balanceAfter = recipient.balance;
+    console2.log("after-upgrade:balanceAfter", balanceBefore);
+    uint256 afterUpgradedReward = balanceAfter - balanceBefore;
+    console2.log("after-upgrade:reward", afterUpgradedReward);
+    assertEq(afterUpgradedReward, beforeUpgradeReward, "afterUpgradedReward != beforeUpgradeReward");
+  }
+
+  function bulkSubmitBlockReward(uint256 times) internal {
+    for (uint256 i; i < times; ++i) {
+      vm.roll(block.number + 1);
+      vm.deal(block.coinbase, 1000 ether);
+      vm.prank(block.coinbase);
+      _validator.submitBlockReward{ value: 1000 ether }();
+    }
   }
 
   function testFork_schedule() external {
+    vm.prank(_getProxyAdmin(address(_maintenance)));
+    TransparentUpgradeableProxyV2(payable(address(_maintenance))).upgradeTo(0x84d6e16a767A85D34964f26094BB46b0b7a4c8Ab);
+
     vm.prank(0x29E8428cA857feA6C419a7193d475f8b06712126);
     _maintenance.schedule(TConsensus.wrap(0xCaba9D9424D6bAD99CE352A943F59279B533417a), 21710591, 21710599);
   }
 
-  function schedule(address admin, address consensus, uint256 endedAtBlock) external {
+  function schedule(address admin, address consensus, uint256 startAtBlock, uint256 endedAtBlock) external {
     vm.prank(admin);
-    _maintenance.schedule(TConsensus.wrap(consensus), block.number, endedAtBlock);
+    _maintenance.schedule(TConsensus.wrap(consensus), startAtBlock, endedAtBlock);
   }
 
   function _bulkWrapUpEpoch(uint256 times) internal {
@@ -341,7 +405,10 @@ contract ChangeConsensusAddressForkTest is Test {
   function _upgradeMaintenance() internal {
     Maintenance logic = new Maintenance();
     vm.prank(_getProxyAdmin(address(_maintenance)));
-    TransparentUpgradeableProxyV2(payable(address(_maintenance))).upgradeTo(address(logic));
+    TransparentUpgradeableProxyV2(payable(address(_maintenance))).upgradeToAndCall(
+      address(logic),
+      abi.encodeCall(Maintenance.initializeV3, (address(_profile)))
+    );
   }
 
   function _upgradeSlashIndicator() internal {
@@ -391,19 +458,6 @@ contract ChangeConsensusAddressForkTest is Test {
     // fast forward to next day
     vm.warp(nextDayTimestamp);
     vm.roll(epochEndingBlockNumber);
-  }
-
-  function _getNextPeriodBlockInfo() internal returns (uint256 timestamp, uint256 blockNumber) {
-    vm.warp(block.timestamp + 3 seconds);
-    vm.roll(block.number + 1);
-
-    uint256 numberOfBlocksInEpoch = _validator.numberOfBlocksInEpoch();
-
-    blockNumber = block.number + (numberOfBlocksInEpoch - 1) - (block.number % numberOfBlocksInEpoch);
-    timestamp = block.timestamp + 1 days;
-
-    vm.warp(block.timestamp - 3 seconds);
-    vm.roll(block.number - 1);
   }
 
   function _applyValidatorCandidate(string memory candidateAdminLabel, string memory consensusLabel) internal {
