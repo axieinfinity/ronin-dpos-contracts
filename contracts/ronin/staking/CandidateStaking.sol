@@ -8,7 +8,6 @@ import "../../libraries/AddressArrayUtils.sol";
 import "../../interfaces/staking/ICandidateStaking.sol";
 import "../../interfaces/IProfile.sol";
 import "./BaseStaking.sol";
-import "forge-std/console2.sol";
 
 abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConfigConsumer, PercentageConsumer {
   /// @dev The minimum threshold for being a validator candidate.
@@ -64,8 +63,6 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     bytes calldata pubkey
   ) external payable override nonReentrant {
     if (isAdminOfActivePool(msg.sender)) revert ErrAdminOfAnyActivePoolForbidden(msg.sender);
-    console2.log("max", _maxCommissionRate);
-    console2.log("min", _minCommissionRate);
     if (commissionRate > _maxCommissionRate || commissionRate < _minCommissionRate) revert ErrInvalidCommissionRate();
 
     uint256 amount = msg.value;
