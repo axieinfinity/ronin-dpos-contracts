@@ -12,6 +12,7 @@ import { CandidateManager } from "@ronin/contracts/ronin/validator/CandidateMana
 import { ICandidateManager, RoninValidatorSet } from "@ronin/contracts/ronin/validator/RoninValidatorSet.sol";
 import { Maintenance } from "@ronin/contracts/ronin/Maintenance.sol";
 import { SlashIndicator } from "@ronin/contracts/ronin/slash-indicator/SlashIndicator.sol";
+import { RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";
 import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 
 contract ChangeConsensusAddressForkTest is Test {
@@ -23,6 +24,7 @@ contract ChangeConsensusAddressForkTest is Test {
   Maintenance internal _maintenance;
   RoninValidatorSet internal _validator;
   SlashIndicator internal _slashIndicator;
+  RoninTrustedOrganization internal _roninTO;
 
   modifier upgrade() {
     _upgradeContracts();
@@ -43,9 +45,10 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.makePersistent(address(0x68));
 
     _profile = Profile(0x3b67c8D22a91572a6AB18acC9F70787Af04A4043);
+    _maintenance = Maintenance(0x4016C80D97DDCbe4286140446759a3f0c1d20584);
     _staking = Staking(payable(0x9C245671791834daf3885533D24dce516B763B28));
     _slashIndicator = SlashIndicator(0xF7837778b6E180Df6696C8Fa986d62f8b6186752);
-    _maintenance = Maintenance(0x4016C80D97DDCbe4286140446759a3f0c1d20584);
+    _roninTO = RoninTrustedOrganization(0x7507dc433a98E1fE105d69f19f3B40E4315A4F32);
     _validator = RoninValidatorSet(payable(0x54B3AC74a90E64E8dDE60671b6fE8F8DDf18eC9d));
 
     vm.label(address(_profile), "Profile");
@@ -55,6 +58,23 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.label(address(_slashIndicator), "SlashIndicator");
 
     vm.createSelectFork(RONIN_TEST_RPC, 21710591);
+  }
+
+  function testFork_AsTrustedOrg_AfterUpgraded_AfterChangeConsensus_execEmergencyExit() external upgrade {
+    address trustedOrg = _roninTO.getAllTrustedOrganizations()[0].consensusAddr;
+    console2.log("trustedOrgConsensus", trustedOrg);
+    address admin = _validator.getCandidateInfo(TConsensus.wrap(trustedOrg)).__shadowedAdmin;
+
+    TConsensus newConsensus = TConsensus.wrap(makeAddr("new-consensus"));
+    vm.prank(admin);
+    _profile.requestChangeConsensusAddr(trustedOrg, newConsensus);
+
+    (address poolAdmin, , ) = _staking.getPoolDetail(newConsensus);
+    console2.log("poolAdmin", poolAdmin);
+
+    vm.expectRevert();
+    vm.prank(poolAdmin);
+    _staking.requestEmergencyExit(newConsensus);
   }
 
   function testFork_NotReceiveReward_BeforeAndAfterUpgraded_execEmergencyExit() external {
