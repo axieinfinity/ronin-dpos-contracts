@@ -37,6 +37,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _upgradeValidator();
     _upgradeMaintenance();
     _upgradeSlashIndicator();
+    _upgradeRoninTO();
   }
 
   function setUp() external {
@@ -531,7 +532,7 @@ contract ChangeConsensusAddressForkTest is Test {
       address(logic),
       abi.encodeCall(Profile.initializeV2, address(_staking))
     );
-    _profile.initializeV3();
+    _profile.initializeV3(address(_roninTO));
   }
 
   function _upgradeMaintenance() internal {
@@ -540,6 +541,15 @@ contract ChangeConsensusAddressForkTest is Test {
     TransparentUpgradeableProxyV2(payable(address(_maintenance))).upgradeToAndCall(
       address(logic),
       abi.encodeCall(Maintenance.initializeV3, (address(_profile)))
+    );
+  }
+
+  function _upgradeRoninTO() internal {
+    RoninTrustedOrganization logic = new RoninTrustedOrganization();
+    vm.prank(_getProxyAdmin(address(_roninTO)));
+    TransparentUpgradeableProxyV2(payable(address(_roninTO))).upgradeToAndCall(
+      address(logic),
+      abi.encodeCall(RoninTrustedOrganization.initializeV2, (address(_profile)))
     );
   }
 
@@ -604,7 +614,7 @@ contract ChangeConsensusAddressForkTest is Test {
       candidateAdmin,
       consensusAddr,
       payable(candidateAdmin),
-      2500,
+      15_00,
       pubKey
     );
   }
