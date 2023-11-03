@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import { Test } from "forge-std/Test.sol";
 import { console2 } from "forge-std/console2.sol";
 import { TConsensus } from "@ronin/contracts/udvts/Types.sol";
-import { Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
+import { IBaseStaking, Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
 import { MockPrecompile } from "@ronin/contracts/mocks/MockPrecompile.sol";
 import { IProfile, Profile } from "@ronin/contracts/ronin/profile/Profile.sol";
 import { HasContracts } from "@ronin/contracts/extensions/collections/HasContracts.sol";
@@ -57,6 +57,60 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.createSelectFork(RONIN_TEST_RPC, 21710591);
   }
 
+  function testFork_AfterUpgraded_RevertWhen_ReapplySameAddress_Renounce() external upgrade {
+    address[] memory validatorCandidates = _validator.getValidatorCandidates();
+    address validatorCandidate = validatorCandidates[2];
+    address recipient = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).__shadowedTreasury;
+
+    (address admin, , ) = _staking.getPoolDetail(TConsensus.wrap(validatorCandidate));
+    vm.prank(admin);
+    _staking.requestRenounce(TConsensus.wrap(validatorCandidate));
+
+    vm.warp(block.timestamp + 7 days);
+    _bulkWrapUpEpoch(1);
+
+    assertFalse(_validator.isValidatorCandidate(TConsensus.wrap(validatorCandidate)));
+
+    // re-apply same admin
+    uint256 amount = _staking.minValidatorStakingAmount();
+    vm.deal(admin, amount);
+    vm.expectRevert();
+    vm.prank(admin);
+    _staking.applyValidatorCandidate{ value: amount }(
+      admin,
+      TConsensus.wrap(makeAddr("new-consensus")),
+      payable(admin),
+      2500,
+      "new-consensus"
+    );
+    // re-apply same consensus
+    address newAdmin = makeAddr("new-admin");
+    vm.deal(newAdmin, amount);
+    vm.expectRevert();
+    vm.prank(newAdmin);
+    _staking.applyValidatorCandidate{ value: amount }(
+      newAdmin,
+      TConsensus.wrap(validatorCandidate),
+      payable(newAdmin),
+      2500,
+      "new-admin"
+    );
+
+    console2.log("recipient", recipient);
+    uint256 balanceBefore = recipient.balance;
+    console2.log("balanceBefore", balanceBefore);
+
+    _bulkSubmitBlockReward(1);
+    _bulkWrapUpEpoch(1);
+
+    uint256 balanceAfter = recipient.balance;
+    console2.log("balanceAfter", balanceAfter);
+    uint256 reward = balanceAfter - balanceBefore;
+    console2.log("reward", reward);
+
+    assertEq(reward, 0);
+  }
+
   function testFork_AfterUpgraded_ChangeConsensusAddress() external upgrade {
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
     address validatorCandidate = validatorCandidates[0];
@@ -79,7 +133,10 @@ contract ChangeConsensusAddressForkTest is Test {
     _wrapUpEpoch();
   }
 
-  function testFork_AfterUpgrade_WrapUpEpochAndNonWrapUpEpoch_ChangeAdmin_ChangeConsensus_ChangeTreasury() external upgrade {
+  function testFork_AfterUpgrade_WrapUpEpochAndNonWrapUpEpoch_ChangeAdmin_ChangeConsensus_ChangeTreasury()
+    external
+    upgrade
+  {
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
     address cid = validatorCandidates[0];
     address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(cid)).__shadowedAdmin;
@@ -124,7 +181,7 @@ contract ChangeConsensusAddressForkTest is Test {
 
     IProfile.CandidateProfile memory mProfile = _profile.getId2Profile(cid);
     assertEq(mProfile.id, cid);
-    assertEq(TConsensus.unwrap( mProfile.consensus), newConsensus);
+    assertEq(TConsensus.unwrap(mProfile.consensus), newConsensus);
     assertEq(mProfile.admin, newAdmin);
     assertEq(mProfile.treasury, newTreasury);
 
@@ -146,6 +203,7 @@ contract ChangeConsensusAddressForkTest is Test {
     uint256 balanceBefore = recipient.balance;
     console2.log("before-upgrade:balanceBefore", balanceBefore);
 
+    _bulkSubmitBlockReward(1);
     _bulkSlashIndicator(validatorCandidate, 50);
 
     _fastForwardToNextDay();
@@ -163,6 +221,7 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.prank(candidateAdmin);
     _profile.requestChangeConsensusAddr(validatorCandidate, newConsensus);
 
+    _bulkSubmitBlockReward(1);
     _bulkSlashIndicator(TConsensus.unwrap(newConsensus), 50);
 
     console2.log("new-consensus", TConsensus.unwrap(newConsensus));
@@ -185,15 +244,6 @@ contract ChangeConsensusAddressForkTest is Test {
     assertEq(afterUpgradedReward, beforeUpgradeReward, "afterUpgradedReward != beforeUpgradeReward");
   }
 
-  function _bulkSlashIndicator(address consensus, uint256 times) internal {
-    vm.startPrank(block.coinbase);
-    for (uint256 i; i < times; ++i) {
-      _slashIndicator.slashUnavailability(TConsensus.wrap(consensus));
-      vm.roll(block.number + i + 1);
-    }
-    vm.stopPrank();
-  }
-
   function testFork_Maintenance_BeforeAndAfterUpgrade() external {
     // upgrade maintenance
     vm.prank(_getProxyAdmin(address(_maintenance)));
@@ -212,7 +262,7 @@ contract ChangeConsensusAddressForkTest is Test {
     // save snapshot state before wrapup
     uint256 snapshotId = vm.snapshot();
 
-    bulkSubmitBlockReward(1);
+    _bulkSubmitBlockReward(1);
 
     uint256 minOffsetToStartSchedule = _maintenance.minOffsetToStartSchedule();
     uint256 latestEpoch = _validator.getLastUpdatedBlock() + 200;
@@ -246,7 +296,7 @@ contract ChangeConsensusAddressForkTest is Test {
     balanceBefore = recipient.balance;
     console2.log("after-upgrade:balanceBefore", balanceBefore);
 
-    bulkSubmitBlockReward(1);
+    _bulkSubmitBlockReward(1);
 
     this.schedule(
       candidateAdmin,
@@ -267,35 +317,6 @@ contract ChangeConsensusAddressForkTest is Test {
     assertEq(afterUpgradedReward, beforeUpgradeReward, "afterUpgradedReward != beforeUpgradeReward");
   }
 
-  function bulkSubmitBlockReward(uint256 times) internal {
-    for (uint256 i; i < times; ++i) {
-      vm.roll(block.number + 1);
-      vm.deal(block.coinbase, 1000 ether);
-      vm.prank(block.coinbase);
-      _validator.submitBlockReward{ value: 1000 ether }();
-    }
-  }
-
-  function testFork_schedule() external {
-    vm.prank(_getProxyAdmin(address(_maintenance)));
-    TransparentUpgradeableProxyV2(payable(address(_maintenance))).upgradeTo(0x84d6e16a767A85D34964f26094BB46b0b7a4c8Ab);
-
-    vm.prank(0x29E8428cA857feA6C419a7193d475f8b06712126);
-    _maintenance.schedule(TConsensus.wrap(0xCaba9D9424D6bAD99CE352A943F59279B533417a), 21710591, 21710599);
-  }
-
-  function schedule(address admin, address consensus, uint256 startAtBlock, uint256 endedAtBlock) external {
-    vm.prank(admin);
-    _maintenance.schedule(TConsensus.wrap(consensus), startAtBlock, endedAtBlock);
-  }
-
-  function _bulkWrapUpEpoch(uint256 times) internal {
-    for (uint256 i; i < times; ++i) {
-      _fastForwardToNextDay();
-      _wrapUpEpoch();
-    }
-  }
-
   function testFork_ShareSameSameReward_BeforeAndAfterUpgrade() external {
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
     address validatorCandidate = validatorCandidates[0];
@@ -307,6 +328,7 @@ contract ChangeConsensusAddressForkTest is Test {
     console2.log("before-upgrade:balanceBefore", balanceBefore);
     uint256 snapshotId = vm.snapshot();
 
+    _bulkSubmitBlockReward(1);
     _fastForwardToNextDay();
     _wrapUpEpoch();
 
@@ -329,6 +351,7 @@ contract ChangeConsensusAddressForkTest is Test {
     balanceBefore = recipient.balance;
     console2.log("after-upgrade:balanceBefore", balanceBefore);
 
+    _bulkSubmitBlockReward(1);
     _fastForwardToNextDay();
     _wrapUpEpoch();
 
@@ -390,6 +413,36 @@ contract ChangeConsensusAddressForkTest is Test {
   function testFailFork_RevertWhen_AfterUpgraded_ReapplyValidatorCandidate() external upgrade {
     _applyValidatorCandidate("candidate-admin", "consensus");
     _applyValidatorCandidate("candidate-admin", "consensus");
+  }
+
+  function schedule(address admin, address consensus, uint256 startAtBlock, uint256 endedAtBlock) external {
+    vm.prank(admin);
+    _maintenance.schedule(TConsensus.wrap(consensus), startAtBlock, endedAtBlock);
+  }
+
+  function _bulkWrapUpEpoch(uint256 times) internal {
+    for (uint256 i; i < times; ++i) {
+      _fastForwardToNextDay();
+      _wrapUpEpoch();
+    }
+  }
+
+  function _bulkSlashIndicator(address consensus, uint256 times) internal {
+    vm.startPrank(block.coinbase);
+    for (uint256 i; i < times; ++i) {
+      _slashIndicator.slashUnavailability(TConsensus.wrap(consensus));
+      vm.roll(block.number + i + 1);
+    }
+    vm.stopPrank();
+  }
+
+  function _bulkSubmitBlockReward(uint256 times) internal {
+    for (uint256 i; i < times; ++i) {
+      vm.roll(block.number + 1);
+      vm.deal(block.coinbase, 1000 ether);
+      vm.prank(block.coinbase);
+      _validator.submitBlockReward{ value: 1000 ether }();
+    }
   }
 
   function _upgradeProfile() internal {
