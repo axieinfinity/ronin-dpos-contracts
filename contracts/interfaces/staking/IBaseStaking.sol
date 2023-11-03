@@ -6,17 +6,28 @@ import { TPoolId, TConsensus } from "../../udvts/Types.sol";
 
 interface IBaseStaking {
   struct PoolDetail {
-    // [Non-volatile] Address of the pool, permanently set to the first consensus address of the candidate.
+    /**
+     * @dev Address of the pool.
+     * @custom non-volatile-storage Permanently set to the first consensus address of the candidate.
+     */
     address pid;
-    // Pool admin address
+
+    /**
+     * @dev The address of the pool admin.
+     * @custom shadowed-storage This storage slot is always kept in sync with the admin in `Profile-CandidateProfile`.
+     */
     address __shadowedPoolAdmin;
-    // Self-staking amount
+
+    /// @dev Self-staking amount
     uint256 stakingAmount;
-    // Total number of RON staking for the pool
+
+    /// @dev Total number of RON staking for the pool
     uint256 stakingTotal;
-    // Mapping from delegator => delegating amount
+
+    /// @dev Mapping from delegator => delegating amount
     mapping(address => uint256) delegatingAmount;
-    // Mapping from delegator => the last timestamp that delegator staked
+
+    /// @dev Mapping from delegator => the last timestamp that delegator staked
     mapping(address => uint256) lastDelegatingTimestamp;
   }
 

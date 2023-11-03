@@ -6,27 +6,44 @@ import { TConsensus } from "../../udvts/Types.sol";
 
 interface ICandidateManager {
   struct ValidatorCandidate {
-    // @custom shadowed-storage The address of the candidate admin. This storage slot is always kept in sync with the admin in `Profile-CandidateProfile`.
+    /**
+     * @dev The address of the candidate admin.
+     * @custom shadowed-storage This storage slot is always kept in sync with {Profile-CandidateProfile}.admin.
+     */
     address __shadowedAdmin;
-    // Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
+
+    /**
+     * @dev Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
+     * @custom shadowed-storage This storage slot is always kept in sync with {Profile-CandidateProfile}.consensus.
+     */
     TConsensus __shadowedConsensus;
-    // Address that receives mining reward of the validator
+
+    /**
+     * @dev Address that receives mining reward of the validator
+     * @custom shadowed-storage This storage slot is always kept in sync with {Profile-CandidateProfile}.treasury.
+     */
     address payable __shadowedTreasury;
-    // Address of the bridge operator corresponding to the candidate
-    address ______deprecatedbridgeOperatorAddr;
-    // The percentage of reward that validators can be received, the rest goes to the delegators.
-    // Values in range [0; 100_00] stands for 0-100%
+
+    /// @dev Address of the bridge operator corresponding to the candidate
+    address ____deprecatedBridgeOperatorAddr;
+
+    /**
+     * @dev The percentage of reward that validators can be received, the rest goes to the delegators.
+     * Values in range [0; 100_00] stands for 0-100%
+     */
     uint256 commissionRate;
-    // The timestamp that scheduled to revoke the candidate (no schedule=0)
+
+    /// @dev The timestamp that scheduled to revoke the candidate (no schedule=0)
     uint256 revokingTimestamp;
-    // The deadline that the candidate must top up staking amount to keep it larger than or equal to the threshold (no deadline=0)
+
+    /// @dev The deadline that the candidate must top up staking amount to keep it larger than or equal to the threshold (no deadline=0)
     uint256 topupDeadline;
   }
 
   struct CommissionSchedule {
-    // The timestamp that the commission schedule gets affected (no schedule=0).
+    /// @dev The timestamp that the commission schedule gets affected (no schedule=0).
     uint256 effectiveTimestamp;
-    // The new commission rate. Value is in range [0; 100_00], stands for 0-100%
+    /// @dev The new commission rate. Value is in range [0; 100_00], stands for 0-100%
     uint256 commissionRate;
   }
 
