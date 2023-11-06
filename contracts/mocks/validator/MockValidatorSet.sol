@@ -146,5 +146,5 @@ contract MockValidatorSet is
 
   function _emergencyExitLockedFundReleased(address _consensusAddr) internal virtual override returns (bool) {}
 
-  function _isTrustedOrg(address _consensusAddr) internal virtual override returns (bool) {}
+  function _isTrustedOrg(address validatorId) internal virtual override returns (bool) {}
 }

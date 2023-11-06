@@ -29,6 +29,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
   function initializeV3(address trustedOrgContract) external reinitializer(3) {
     _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, trustedOrgContract);
 
+    // TODO(bao): handle renounced validators
     address[] memory validatorCandidates = IRoninValidatorSet(getContract(ContractType.VALIDATOR))
       .getValidatorCandidates();
     TConsensus[] memory consensuses;
@@ -45,6 +46,18 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    */
   function getId2Profile(address id) external view returns (CandidateProfile memory) {
     return _id2Profile[id];
+  }
+
+  /**
+   * @inheritdoc IProfile
+   */
+  function getManyId2Consensus(address[] calldata idList) external view returns (TConsensus[] memory consensusList) {
+    consensusList = new TConsensus[](idList.length);
+    unchecked {
+      for (uint i; i < idList.length; ++i) {
+        consensusList[i] = _id2Profile[idList[i]].consensus;
+      }
+    }
   }
 
   /**

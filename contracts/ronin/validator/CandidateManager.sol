@@ -269,9 +269,9 @@ abstract contract CandidateManager is
   function _emergencyExitLockedFundReleased(address _consensusAddr) internal virtual returns (bool);
 
   /**
-   * @dev Returns whether the consensus address is a trusted org or not.
+   * @dev Returns whether the validator id is a trusted org or not.
    */
-  function _isTrustedOrg(address _consensusAddr) internal virtual returns (bool);
+  function _isTrustedOrg(address validatorId) internal virtual returns (bool);
 
   /// @dev See {RoninValidatorSet-__css2cid}
   function __css2cid(TConsensus consensusAddr) internal view virtual returns (address);

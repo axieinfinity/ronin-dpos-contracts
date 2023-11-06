@@ -31,7 +31,7 @@ abstract contract ProfileStorage is IProfile, HasContracts {
     _setConsensus(_profile, newProfile.consensus);
     _setAdmin(_profile, newProfile.admin);
     _setTreasury(_profile, newProfile.treasury);
-    _setGovernor(_profile, newProfile.governor);
+    _setGovernor(_profile, newProfile.__reservedGovernor);
     _setPubkey(_profile, newProfile.pubkey);
 
     emit ProfileAdded(newProfile.id);
@@ -59,7 +59,7 @@ abstract contract ProfileStorage is IProfile, HasContracts {
    * @dev Allow to registry a profile without governor address since not all validators are governing validators.
    */
   function _setGovernor(CandidateProfile storage _profile, address governor) internal {
-    _profile.governor = governor;
+    _profile.__reservedGovernor = governor;
     if (governor != address(0)) {
       _registry[uint256(uint160(governor))] = true;
     }

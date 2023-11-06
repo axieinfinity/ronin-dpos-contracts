@@ -22,7 +22,7 @@ interface IProfile {
     /// @dev Treasury address.
     address payable treasury;
     /// @dev Address to voting proposal.
-    address governor;
+    address __reservedGovernor;
     /// @dev Public key for fast finality.
     bytes pubkey;
   }
@@ -51,6 +51,9 @@ interface IProfile {
 
   /// @dev Getter to query full `profile` from `id` address.
   function getId2Profile(address id) external view returns (CandidateProfile memory profile);
+
+  /// @dev Getter to batch query from `id` to `consensus`, return address(0) if the profile not exist.
+  function getManyId2Consensus(address[] calldata idList) external view returns (TConsensus[] memory consensusList);
 
   /// @dev Getter to backward query from `consensus` address to `id` address.
   function getConsensus2Id(TConsensus consensus) external view returns (address id);

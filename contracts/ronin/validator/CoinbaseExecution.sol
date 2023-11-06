@@ -317,7 +317,7 @@ abstract contract CoinbaseExecution is
     unsatisfiedCandidates = _syncCandidateSet(newPeriod);
     uint256[] memory weights = IStaking(getContract(ContractType.STAKING)).getManyStakingTotalsById(_candidateIds);
     uint256[] memory trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
-      .getConsensusWeights(_candidateIds);
+      .getManyConsensusWeightsById(_candidateIds);
     uint256 newValidatorCount;
     (newValidatorIds, newValidatorCount) = _pcPickValidatorSet(
       _candidateIds,
@@ -416,10 +416,10 @@ abstract contract CoinbaseExecution is
   /**
    * @dev Override `CandidateManager-_isTrustedOrg`.
    */
-  function _isTrustedOrg(address _consensusAddr) internal view override returns (bool) {
+  function _isTrustedOrg(address validatorId) internal view override returns (bool) {
     return
-      IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).getConsensusWeight(
-        _consensusAddr
+      IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).getConsensusWeightById(
+        validatorId
       ) > 0;
   }
 }
