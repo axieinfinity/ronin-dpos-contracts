@@ -213,19 +213,6 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function sumBridgeVoterWeight(address[] calldata _list) external view returns (uint256 _res) {
-    for (uint _i = 0; _i < _list.length; ) {
-      _res += _bridgeVoterWeight[_list[_i]];
-
-      unchecked {
-        ++_i;
-      }
-    }
-  }
-
-  /**
-   * @inheritdoc IRoninTrustedOrganization
-   */
   function countTrustedOrganization() external view override returns (uint256) {
     return _consensusList.length;
   }
@@ -245,6 +232,17 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
 
       unchecked {
         ++_i;
+      }
+    }
+  }
+
+  /**
+   * @inheritdoc IRoninTrustedOrganization
+   */
+  function getTrustedOrganization(TConsensus _consensusAddr) external view returns (TrustedOrganization memory) {
+    for (uint i = 0; i < _consensusList.length; ++i) {
+      if (_consensusList[i] == _consensusAddr) {
+        return getTrustedOrganizationAt(i);
       }
     }
   }
