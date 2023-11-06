@@ -192,6 +192,7 @@ describe('[Integration] Configuration check', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      roninTrustedOrganizationAddress,
     });
   });
 
@@ -251,6 +252,7 @@ describe('[Integration] Configuration check', () => {
         BigNumber.from
       )
     );
+    expect(await roninTrustedOrganizationContract.getContract(ContractType.PROFILE)).to.eq(profileContract.address);
   });
 
   it('Should the SlashIndicatorContract contract set configs correctly', async () => {
@@ -261,22 +263,6 @@ describe('[Integration] Configuration check', () => {
       roninTrustedOrganizationContract.address
     );
     expect(await slashContract.getContract(ContractType.GOVERNANCE_ADMIN)).to.eq(roninGovernanceAdminContract.address);
-    await compareBigNumbers(
-      await slashContract.getBridgeOperatorSlashingConfigs(),
-      [
-        config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier1,
-        config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier2,
-        config.slashIndicatorArguments?.bridgeOperatorSlashing?.jailDurationForMissingVotesRatioTier2,
-        config.slashIndicatorArguments?.bridgeOperatorSlashing?.skipBridgeOperatorSlashingThreshold,
-      ].map(BigNumber.from)
-    );
-    await compareBigNumbers(
-      await slashContract.getBridgeVotingSlashingConfigs(),
-      [
-        config.slashIndicatorArguments?.bridgeVotingSlashing?.bridgeVotingThreshold,
-        config.slashIndicatorArguments?.bridgeVotingSlashing?.bridgeVotingSlashAmount,
-      ].map(BigNumber.from)
-    );
     await compareBigNumbers(
       await slashContract.getDoubleSignSlashingConfigs(),
       [

@@ -64,6 +64,7 @@ describe('[Integration] Submit Block Reward', () => {
       roninGovernanceAdminAddress,
       profileAddress,
       fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress
     } = await deployTestSuite('ActionSubmitReward')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -98,6 +99,7 @@ describe('[Integration] Submit Block Reward', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      roninTrustedOrganizationAddress
     });
 
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);

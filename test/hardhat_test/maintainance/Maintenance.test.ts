@@ -75,6 +75,7 @@ describe('Maintenance test', () => {
       roninGovernanceAdminAddress,
       profileAddress,
       fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress,
     } = await deployTestSuite('Maintenance')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -126,6 +127,7 @@ describe('Maintenance test', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      roninTrustedOrganizationAddress,
     });
 
     const mockValidatorLogic = await new MockRoninValidatorSetOverridePrecompile__factory(deployer).deploy();

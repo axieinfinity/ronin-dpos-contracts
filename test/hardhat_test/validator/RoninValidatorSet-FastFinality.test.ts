@@ -79,6 +79,7 @@ describe('Ronin Validator Set: Fast Finality test', () => {
       stakingVestingContractAddress,
       profileAddress,
       fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress,
     } = await deployTestSuite('RoninValidatorSet-FastFinality')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
@@ -145,6 +146,7 @@ describe('Ronin Validator Set: Fast Finality test', () => {
       stakingVestingArgs: {
         fastFinalityRewardPercent,
       },
+      roninTrustedOrganizationAddress,
     });
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();

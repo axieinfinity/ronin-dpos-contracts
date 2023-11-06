@@ -97,6 +97,7 @@ describe('Ronin Validator Set: candidate test', () => {
       stakingVestingContractAddress,
       profileAddress,
       fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress
     } = await deployTestSuite('RoninValidatorSet-Candidate')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
@@ -138,6 +139,7 @@ describe('Ronin Validator Set: candidate test', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      roninTrustedOrganizationAddress,
       maintenanceContractAddress: undefined,
     });
 
