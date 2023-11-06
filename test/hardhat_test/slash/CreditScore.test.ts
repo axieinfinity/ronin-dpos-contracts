@@ -162,7 +162,7 @@ describe('Credit score and bail out test', () => {
       maintenanceContractAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-      roninTrustedOrganizationAddress
+      roninTrustedOrganizationAddress,
     } = await deployTestSuite('CreditScore')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -229,7 +229,7 @@ describe('Credit score and bail out test', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
-      roninTrustedOrganizationAddress
+      roninTrustedOrganizationAddress,
     });
 
     for (let i = 0; i < maxValidatorNumber; i++) {
@@ -262,6 +262,14 @@ describe('Credit score and bail out test', () => {
   });
 
   describe('Counting credit score after each period', async () => {
+    before(async () => {
+      snapshotId = await network.provider.send('evm_snapshot');
+    });
+
+    after(async () => {
+      await network.provider.send('evm_revert', [snapshotId]);
+    });
+
     it('Should the score updated correctly, case: max score (N), in jail (N), unavailability (N)', async () => {
       await endPeriodAndWrapUpAndResetIndicators();
       localScoreController.increaseAtWithUpperbound(0, maxCreditScore, gainCreditScore);
@@ -308,19 +316,6 @@ describe('Credit score and bail out test', () => {
 
       localScoreController.resetAt(0);
       await validateScoreAt(0);
-
-      await stakingContract
-        .connect(validatorCandidates[0].poolAdmin)
-        .applyValidatorCandidate(
-          validatorCandidates[0].candidateAdmin.address,
-          validatorCandidates[0].consensusAddr.address,
-          validatorCandidates[0].treasuryAddr.address,
-          100_00,
-          generateSamplePubkey(),
-          { value: minValidatorStakingAmount.mul(2) }
-        );
-
-      await endPeriodAndWrapUpAndResetIndicators();
     });
   });
 

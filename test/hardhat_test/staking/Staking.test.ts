@@ -38,6 +38,9 @@ let profileContract: Profile;
 let signers: SignerWithAddress[];
 let validatorCandidates: ValidatorCandidateAddressSet[];
 
+let snapshotId: string;
+let snapshotId2: string;
+
 const ONE_DAY = 60 * 60 * 24;
 
 const minValidatorStakingAmount = BigNumber.from(2_000_000);
@@ -350,6 +353,7 @@ describe('Staking test', () => {
     });
 
     it('Should be able to request renounce using pool admin', async () => {
+      snapshotId = await network.provider.send('evm_snapshot');
       await stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address);
     });
 
@@ -373,8 +377,8 @@ describe('Staking test', () => {
       expect(_poolDetail.stakingAmount).eq(0);
     });
 
-    it('Should the exited pool admin and consensus address rejoin as a candidate', async () => {
-      const tx = await stakingContract
+    it('Should the exited pool admin and consensus address cannot rejoin as a candidate', async () => {
+      const reApplyTx = stakingContract
         .connect(poolAddrSet.poolAdmin)
         .applyValidatorCandidate(
           poolAddrSet.candidateAdmin.address,
@@ -384,19 +388,12 @@ describe('Staking test', () => {
           generateSamplePubkey(),
           { value: minValidatorStakingAmount.mul(2) }
         );
-      await expect(tx)
-        .emit(stakingContract, 'PoolApproved')
-        .withArgs(poolAddrSet.consensusAddr.address, poolAddrSet.poolAdmin.address);
-      expect(
-        await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, poolAddrSet.candidateAdmin.address)
-      ).eq(minValidatorStakingAmount.mul(2));
-
-      expect(await stakingContract.getStakingTotal(poolAddrSet.consensusAddr.address)).gte(
-        minValidatorStakingAmount.mul(2)
-      ); // previous delegated amount still exist
+      await expect(reApplyTx).revertedWithCustomError(profileContract, 'ErrExistentProfile');
     });
 
     it('Should the a pool admin who is active cannot propose a new pool / cannot propose validator', async () => {
+      await network.provider.send('evm_revert', [snapshotId]);
+
       await expect(
         stakingContract
           .connect(poolAddrSet.poolAdmin)
@@ -412,6 +409,7 @@ describe('Staking test', () => {
         .revertedWithCustomError(stakingContract, 'ErrAdminOfAnyActivePoolForbidden')
         .withArgs(poolAddrSet.poolAdmin.address);
 
+      snapshotId2 = await network.provider.send('evm_snapshot');
       await stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address);
       await network.provider.send('evm_increaseTime', [waitingSecsToRevoke]);
       await validatorContract.wrapUpEpoch();
@@ -523,26 +521,9 @@ describe('Staking test', () => {
       );
     });
 
-    it('[Validator Candidate] Should an ex-candidate to rejoin Staking contract', async () => {
-      await stakingContract
-        .connect(poolAddrSet.poolAdmin)
-        .applyValidatorCandidate(
-          poolAddrSet.candidateAdmin.address,
-          poolAddrSet.consensusAddr.address,
-          poolAddrSet.treasuryAddr.address,
-          2 /* 0.02% */,
-          generateSamplePubkey(),
-          { value: minValidatorStakingAmount }
-        );
-      expect(await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address)).deep.equal([
-        poolAddrSet.poolAdmin.address,
-        minValidatorStakingAmount,
-        minValidatorStakingAmount.add(8),
-      ]);
-      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, deployer.address)).eq(8);
-    });
-
     it('Should be able to delegate/undelegate for the rejoined candidate', async () => {
+      await network.provider.send('evm_revert', [snapshotId2]);
+
       await stakingContract.delegate(poolAddrSet.consensusAddr.address, { value: 2 });
       expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, deployer.address)).eq(10);
 
@@ -567,6 +548,7 @@ describe('Staking test', () => {
     });
 
     it('Should be able to delegate for a renouncing candidate', async () => {
+      // await network.provider.send('evm_revert', [snapshotId2]);
       await stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address);
       await stakingContract.connect(userA).delegate(poolAddrSet.consensusAddr.address, { value: 2 });
       expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, userA.address)).eq(2);

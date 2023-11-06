@@ -13,6 +13,8 @@ import {
   MockRoninValidatorSetExtended,
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
+  Profile__factory,
+  Profile,
 } from '../../../src/types';
 
 import { EpochController, expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
@@ -35,6 +37,7 @@ import { initializeTestSuite } from '../helpers/initializer';
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: MockRoninValidatorSetExtended;
+let profileContract: Profile;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 
@@ -68,7 +71,7 @@ describe('[Integration] Slash validators', () => {
       roninGovernanceAdminAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-      roninTrustedOrganizationAddress
+      roninTrustedOrganizationAddress,
     } = await deployTestSuite('ActionSlashValidators')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -104,6 +107,7 @@ describe('[Integration] Slash validators', () => {
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
+    profileContract = Profile__factory.connect(profileAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
@@ -119,7 +123,7 @@ describe('[Integration] Slash validators', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
-      roninTrustedOrganizationAddress
+      roninTrustedOrganizationAddress,
     });
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
@@ -591,9 +595,9 @@ describe('[Integration] Slash validators', () => {
           }
         });
 
-        it('Should the kicked validator be able to re-join as a candidate', async () => {
+        it('Should the kicked validator cannot be able to re-join as a candidate', async () => {
           for (let slashee of slashees) {
-            let applyCandidateTx = await stakingContract
+            let reApplyTx = stakingContract
               .connect(slashee.poolAdmin)
               .applyValidatorCandidate(
                 slashee.candidateAdmin.address,
@@ -606,12 +610,7 @@ describe('[Integration] Slash validators', () => {
                 }
               );
 
-            await CandidateManagerExpects.emitCandidateGrantedEvent(
-              applyCandidateTx!,
-              slashee.consensusAddr.address,
-              slashee.treasuryAddr.address,
-              slashee.candidateAdmin.address
-            );
+            await expect(reApplyTx).revertedWithCustomError(profileContract, 'ErrExistentProfile');
           }
         });
       });
