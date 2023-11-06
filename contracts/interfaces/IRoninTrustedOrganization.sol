@@ -124,11 +124,6 @@ interface IRoninTrustedOrganization is IQuorum {
   function getGovernorWeight(address governor) external view returns (uint256);
 
   /**
-   * @dev Returns the weight of a bridge voter.
-   */
-  function getBridgeVoterWeight(address _addr) external view returns (uint256);
-
-  /**
    * @dev Returns the weights of a list of consensus addresses.
    */
   function getConsensusWeights(TConsensus[] calldata list) external view returns (uint256[] memory);
@@ -142,11 +137,6 @@ interface IRoninTrustedOrganization is IQuorum {
    * @dev Returns the weights of a list of governor addresses.
    */
   function getGovernorWeights(address[] calldata list) external view returns (uint256[] memory);
-
-  /**
-   * @dev Returns the weights of a list of bridge voter addresses.
-   */
-  function getBridgeVoterWeights(address[] calldata _list) external view returns (uint256[] memory);
 
   /**
    * @dev Returns total weights of the consensus list.
