@@ -17,12 +17,6 @@ interface IRoninTrustedOrganization is IQuorum {
   error ErrQueryForNonExistentConsensusAddress();
 
   /**
-   * @dev Error indicating that a bridge voter has already been added.
-   * @param voter The address of the bridge voter that is already added.
-   */
-  error ErrBridgeVoterIsAlreadyAdded(address voter);
-
-  /**
    * @dev Error indicating that a governor address has already been added.
    * @param addr The address of the governor that is already added.
    */
@@ -32,21 +26,21 @@ interface IRoninTrustedOrganization is IQuorum {
    * @dev Error indicating that a consensus address is not added.
    * @param addr The address of the consensus contract that is not added.
    */
-  error ErrConsensusAddressIsNotAdded(address addr);
+  error ErrConsensusAddressIsNotAdded(TConsensus addr);
 
   /**
    * @dev Error indicating that a consensus address is already added.
    * @param addr The address of the consensus contract that is already added.
    */
-  error ErrConsensusAddressIsAlreadyAdded(address addr);
+  error ErrConsensusAddressIsAlreadyAdded(TConsensus addr);
 
   struct TrustedOrganization {
     // Address of the validator that produces block, e.g. block.coinbase. This is so-called validator address.
-    address consensusAddr;
+    TConsensus consensusAddr;
     // Address to voting proposal
     address governor;
     // Address to voting bridge operators
-    address bridgeVoter;
+    address __deprecatedBridgeVoter;
     // Its Weight
     uint256 weight;
     // The block that the organization was added
@@ -58,9 +52,9 @@ interface IRoninTrustedOrganization is IQuorum {
   /// @dev Emitted when the trusted organization is updated.
   event TrustedOrganizationsUpdated(TrustedOrganization[] orgs);
   /// @dev Emitted when the trusted organization is removed.
-  event TrustedOrganizationsRemoved(address[] orgs);
+  event TrustedOrganizationsRemoved(TConsensus[] orgs);
   /// @dev Emitted when the consensus address of a trusted organization is changed.
-  event ConsensusAddressOfTrustedOrgChanged(TrustedOrganization orgAfterChanged, address oldConsensus);
+  event ConsensusAddressOfTrustedOrgChanged(TrustedOrganization orgAfterChanged, TConsensus oldConsensus);
 
   /**
    * @dev Adds a list of addresses into the trusted organization.
@@ -85,7 +79,7 @@ interface IRoninTrustedOrganization is IQuorum {
    * Emits the `TrustedOrganizationUpdated` event.
    *
    */
-  function updateTrustedOrganizations(TrustedOrganization[] calldata _list) external;
+  function updateTrustedOrganizations(TrustedOrganization[] calldata list) external;
 
   /**
    * @dev Removes a list of addresses from the trusted organization.
@@ -95,9 +89,9 @@ interface IRoninTrustedOrganization is IQuorum {
    *
    * Emits the event `TrustedOrganizationRemoved` once an organization is removed.
    *
-   * @param _consensusAddrs The list of consensus addresses linked to corresponding trusted organization that to be removed.
+   * @param consensusAddrs The list of consensus addresses linked to corresponding trusted organization that to be removed.
    */
-  function removeTrustedOrganizations(address[] calldata _consensusAddrs) external;
+  function removeTrustedOrganizations(TConsensus[] calldata consensusAddrs) external;
 
   /**
    * @dev Fallback function of `Profile-requestChangeConsensusAddress`.
@@ -117,12 +111,17 @@ interface IRoninTrustedOrganization is IQuorum {
   /**
    * @dev Returns the weight of a consensus.
    */
-  function getConsensusWeight(address _consensusAddr) external view returns (uint256);
+  function getConsensusWeight(TConsensus consensusAddr) external view returns (uint256);
+
+  /**
+   * @dev Returns the weight of a consensus.
+   */
+  function getConsensusWeightById(address cid) external view returns (uint256);
 
   /**
    * @dev Returns the weight of a governor.
    */
-  function getGovernorWeight(address _governor) external view returns (uint256);
+  function getGovernorWeight(address governor) external view returns (uint256);
 
   /**
    * @dev Returns the weight of a bridge voter.
@@ -132,12 +131,17 @@ interface IRoninTrustedOrganization is IQuorum {
   /**
    * @dev Returns the weights of a list of consensus addresses.
    */
-  function getConsensusWeights(address[] calldata _list) external view returns (uint256[] memory);
+  function getConsensusWeights(TConsensus[] calldata list) external view returns (uint256[] memory);
+
+  /**
+   * @dev Returns the weights of a list of consensus addresses.
+   */
+  function getManyConsensusWeightsById(address[] calldata cids) external view returns (uint256[] memory);
 
   /**
    * @dev Returns the weights of a list of governor addresses.
    */
-  function getGovernorWeights(address[] calldata _list) external view returns (uint256[] memory);
+  function getGovernorWeights(address[] calldata list) external view returns (uint256[] memory);
 
   /**
    * @dev Returns the weights of a list of bridge voter addresses.
@@ -147,22 +151,17 @@ interface IRoninTrustedOrganization is IQuorum {
   /**
    * @dev Returns total weights of the consensus list.
    */
-  function sumConsensusWeight(address[] calldata _list) external view returns (uint256 _res);
+  function sumConsensusWeight(TConsensus[] calldata list) external view returns (uint256 _res);
 
   /**
    * @dev Returns total weights of the governor list.
    */
-  function sumGovernorWeight(address[] calldata _list) external view returns (uint256 _res);
-
-  /**
-   * @dev Returns total weights of the bridge voter list.
-   */
-  function sumBridgeVoterWeight(address[] calldata _list) external view returns (uint256 _res);
+  function sumGovernorWeight(address[] calldata list) external view returns (uint256 _res);
 
   /**
    * @dev Returns the trusted organization at `_index`.
    */
-  function getTrustedOrganizationAt(uint256 _index) external view returns (TrustedOrganization memory);
+  function getTrustedOrganizationAt(uint256 index) external view returns (TrustedOrganization memory);
 
   /**
    * @dev Returns the number of trusted organizations.
@@ -179,5 +178,5 @@ interface IRoninTrustedOrganization is IQuorum {
    *
    * Reverts once the consensus address is non-existent.
    */
-  function getTrustedOrganization(address _consensusAddr) external view returns (TrustedOrganization memory);
+  function getTrustedOrganization(TConsensus consensusAddr) external view returns (TrustedOrganization memory);
 }
