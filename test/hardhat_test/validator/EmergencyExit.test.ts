@@ -85,6 +85,7 @@ describe('Emergency Exit test', () => {
       stakingVestingContractAddress,
       profileAddress,
       fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress
     } = await deployTestSuite('EmergencyExit')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
@@ -122,6 +123,7 @@ describe('Emergency Exit test', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      roninTrustedOrganizationAddress,
       maintenanceContractAddress: undefined,
     });
 

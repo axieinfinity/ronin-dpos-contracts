@@ -99,6 +99,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       stakingVestingContractAddress,
       profileAddress,
       fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress
     } = await deployTestSuite('RoninValidatorSet-Coinbase')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
@@ -142,6 +143,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      roninTrustedOrganizationAddress,
       maintenanceContractAddress: undefined,
     });
 

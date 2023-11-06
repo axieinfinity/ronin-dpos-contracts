@@ -37,17 +37,17 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
    * @dev Initializes the contract storage.
    */
   function initialize(
-    TrustedOrganization[] calldata _trustedOrgs,
-    uint256 __num,
-    uint256 __denom
+    TrustedOrganization[] calldata trustedOrgs,
+    uint256 num,
+    uint256 denom
   ) external initializer {
-    if (_trustedOrgs.length > 0) {
-      _addTrustedOrganizations(_trustedOrgs);
+    if (trustedOrgs.length > 0) {
+      _addTrustedOrganizations(trustedOrgs);
     }
-    _setThreshold(__num, __denom);
+    _setThreshold(num, denom);
   }
 
-  function initializeV2(address profileContract) external onlyAdmin reinitializer(2) {
+  function initializeV2(address profileContract) external reinitializer(2) {
     _setContract(ContractType.PROFILE, profileContract);
   }
 

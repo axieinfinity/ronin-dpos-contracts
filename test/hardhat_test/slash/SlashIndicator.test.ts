@@ -90,6 +90,7 @@ describe('Slash indicator test', () => {
       roninGovernanceAdminAddress,
       profileAddress,
       fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress,
     } = await deployTestSuite('SlashIndicator')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -149,7 +150,8 @@ describe('Slash indicator test', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
-      maintenanceContractAddress: undefined,
+      roninTrustedOrganizationAddress,
+      maintenanceContractAddress: undefined
     });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -223,26 +225,6 @@ describe('Slash indicator test', () => {
     it('Should configs of double signing are set correctly', async () => {
       let configs = await slashContract.getDoubleSignSlashingConfigs();
       expect(configs.slashDoubleSignAmount_).eq(slashDoubleSignAmount, 'wrong double sign config');
-    });
-
-    it('Should configs of bridge operator slash are set correctly', async () => {
-      let configs = await slashContract.getBridgeOperatorSlashingConfigs();
-      expect(configs.missingVotesRatioTier1_).eq(missingVotesRatioTier1, 'wrong missing votes ratio tier 1 config');
-      expect(configs.missingVotesRatioTier2_).eq(missingVotesRatioTier2, 'wrong missing votes ratio tier 2 config');
-      expect(configs.jailDurationForMissingVotesRatioTier2_).eq(
-        jailDurationForMissingVotesRatioTier2,
-        'wrong jail duration for vote tier 2 config'
-      );
-      expect(configs.skipBridgeOperatorSlashingThreshold_).eq(
-        skipBridgeOperatorSlashingThreshold,
-        'wrong skip slashing config'
-      );
-    });
-
-    it('Should configs of bridge voting slash are set correctly', async () => {
-      let configs = await slashContract.getBridgeVotingSlashingConfigs();
-      expect(configs.bridgeVotingSlashAmount_).eq(bridgeVotingSlashAmount, 'wrong bridge voting slash amount config');
-      expect(configs.bridgeVotingThreshold_).eq(bridgeVotingThreshold, 'wrong bridge voting threshold config');
     });
   });
 

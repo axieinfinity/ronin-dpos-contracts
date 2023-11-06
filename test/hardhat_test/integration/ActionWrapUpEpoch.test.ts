@@ -64,6 +64,7 @@ describe('[Integration] Wrap up epoch', () => {
       roninGovernanceAdminAddress,
       profileAddress,
       fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress,
     } = await deployTestSuite('ActionWrapUpEpoch')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -108,6 +109,7 @@ describe('[Integration] Wrap up epoch', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      roninTrustedOrganizationAddress,
     });
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();

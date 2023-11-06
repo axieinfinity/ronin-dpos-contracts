@@ -117,6 +117,7 @@ describe('[Integration] Bridge Tracking test', () => {
       bridgeRewardAddress,
       profileAddress,
       fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress,
     } = await deployTestSuite('ActionBridgeTracking')({
       bridgeContract: bridgeProxy.address,
       roninTrustedOrganizationArguments: {
@@ -179,6 +180,7 @@ describe('[Integration] Bridge Tracking test', () => {
       profileAddress,
       stakingContractAddress,
       validatorContractAddress,
+      roninTrustedOrganizationAddress,
     });
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();

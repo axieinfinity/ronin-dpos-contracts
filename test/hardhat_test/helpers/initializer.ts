@@ -109,6 +109,7 @@ export const initializeTestSuite = async (input: InitializeTestSuiteInput) => {
   await upgradeRep4({
     profileContract,
     stakingContract,
+    roninTrustedOrgContract
   });
 };
 

@@ -68,6 +68,7 @@ describe('[Integration] Slash validators', () => {
       roninGovernanceAdminAddress,
       profileAddress,
       fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress
     } = await deployTestSuite('ActionSlashValidators')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -118,6 +119,7 @@ describe('[Integration] Slash validators', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      roninTrustedOrganizationAddress
     });
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();

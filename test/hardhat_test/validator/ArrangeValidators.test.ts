@@ -145,6 +145,7 @@ describe('Arrange validators', () => {
       slashContractAddress,
       validatorContractAddress,
       stakingContractAddress,
+      roninTrustedOrganizationAddress,
       maintenanceContractAddress: undefined,
     });
 

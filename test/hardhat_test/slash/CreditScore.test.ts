@@ -162,6 +162,7 @@ describe('Credit score and bail out test', () => {
       maintenanceContractAddress,
       profileAddress,
       fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress
     } = await deployTestSuite('CreditScore')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
@@ -228,6 +229,7 @@ describe('Credit score and bail out test', () => {
       slashContractAddress,
       stakingContractAddress,
       validatorContractAddress,
+      roninTrustedOrganizationAddress
     });
 
     for (let i = 0; i < maxValidatorNumber; i++) {
