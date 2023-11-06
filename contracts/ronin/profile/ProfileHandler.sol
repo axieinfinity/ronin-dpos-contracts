@@ -14,7 +14,7 @@ abstract contract ProfileHandler is ProfileStorage {
     _checkNonZeroAndNonDuplicated(RoleAccess.CONSENSUS, TConsensus.unwrap(profile.consensus));
     _checkNonZeroAndNonDuplicated(RoleAccess.CANDIDATE_ADMIN, profile.admin);
     _checkNonZeroAndNonDuplicated(RoleAccess.TREASURY, profile.treasury);
-    _checkNonDuplicated(RoleAccess.TREASURY, profile.governor);
+    _checkNonDuplicated(RoleAccess.TREASURY, profile.__reservedGovernor);
     _checkNonDuplicatedPubkey(profile.pubkey);
   }
 

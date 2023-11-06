@@ -26,7 +26,7 @@ abstract contract ProfileXComponents is IProfile, ProfileHandler {
       consensus: TConsensus.wrap(id),
       admin: admin,
       treasury: payable(treasury),
-      governor: address(0),
+      __reservedGovernor: address(0),
       pubkey: pubkey
     });
     _checkDuplicatedInRegistry(profile);

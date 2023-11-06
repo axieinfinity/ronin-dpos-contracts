@@ -21,7 +21,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
   /// @dev Mapping from governor address => weight
   mapping(address => uint256) internal _governorWeight;
   /// @dev Mapping from bridge voter address => weight
-  mapping(address => uint256) internal _bridgeVoterWeight;
+  mapping(address => uint256) internal __deprecatedBridgeVoterWeight;
 
   /// @dev Mapping from consensus address => added block
   mapping(TConsensus => uint256) internal _addedBlock;
@@ -31,7 +31,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
   /// @dev Governors array
   address[] internal _governorList;
   /// @dev Bridge voters array
-  address[] internal _bridgeVoterList;
+  address[] internal __deprecatedBridgeVoterList;
 
   /**
    * @dev Initializes the contract storage.
