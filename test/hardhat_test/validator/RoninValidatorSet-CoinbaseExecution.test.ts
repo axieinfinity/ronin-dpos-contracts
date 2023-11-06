@@ -99,7 +99,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       stakingVestingContractAddress,
       profileAddress,
       fastFinalityTrackingAddress,
-      roninTrustedOrganizationAddress
+      roninTrustedOrganizationAddress,
     } = await deployTestSuite('RoninValidatorSet-Coinbase')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
@@ -670,6 +670,10 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
         let tx: ContractTransaction;
         const balance = await treasury.getBalance();
         await slashIndicator.slashMisdemeanor(consensusAddr.address);
+        // for (let i = 0; i < 50; i++) {
+        //   await slashIndicator.connect(validatorCandidates[2].consensusAddr).slashUnavailability(consensusAddr.address);
+        // }
+
         tx = await roninValidatorSet.connect(consensusAddr).submitBlockReward({ value: 100 });
         await expect(tx)
           .to.emit(roninValidatorSet, 'BlockRewardDeprecated')

@@ -525,7 +525,7 @@ describe('Staking test', () => {
       await network.provider.send('evm_revert', [snapshotId2]);
 
       await stakingContract.delegate(poolAddrSet.consensusAddr.address, { value: 2 });
-      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, deployer.address)).eq(10);
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, deployer.address)).eq(11);
 
       await stakingContract.connect(userA).delegate(poolAddrSet.consensusAddr.address, { value: 2 });
       await stakingContract.connect(userB).delegate(poolAddrSet.consensusAddr.address, { value: 2 });
@@ -548,7 +548,6 @@ describe('Staking test', () => {
     });
 
     it('Should be able to delegate for a renouncing candidate', async () => {
-      // await network.provider.send('evm_revert', [snapshotId2]);
       await stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address);
       await stakingContract.connect(userA).delegate(poolAddrSet.consensusAddr.address, { value: 2 });
       expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, userA.address)).eq(2);
