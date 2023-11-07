@@ -96,7 +96,7 @@ describe('[Integration] Slash validators', () => {
           {
             consensusAddr: trustedOrgs[0].consensusAddr.address,
             governor: trustedOrgs[0].governor.address,
-            __deprecatedBridgeVoter: trustedOrgs[0]__deprecatedBridgeVoter.address,
+            __deprecatedBridgeVoter: trustedOrgs[0].__deprecatedBridgeVoter.address,
             weight: 100,
             addedBlock: 0,
           },
