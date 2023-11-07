@@ -231,7 +231,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
       consensus = _consensusList[_i];
       list[_i].consensusAddr = consensus;
       list[_i].governor = _governorList[_i];
-      list[_i].__deprecatedBridgeVoter = __deprecatedBridgeVoterList[_i];
+      list[_i].__deprecatedBridgeVoter = address(0);
       list[_i].weight = _consensusWeight[consensus];
 
       unchecked {
@@ -260,7 +260,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
       TrustedOrganization(
         consensus,
         _governorList[_idx],
-        __deprecatedBridgeVoterList[_idx],
+        address(0),
         _consensusWeight[consensus],
         _addedBlock[consensus]
       );
