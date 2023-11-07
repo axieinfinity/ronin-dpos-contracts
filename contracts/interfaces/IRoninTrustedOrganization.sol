@@ -131,7 +131,7 @@ interface IRoninTrustedOrganization is IQuorum {
   /**
    * @dev Returns the weights of a list of consensus addresses.
    */
-  function getManyConsensusWeightsById(address[] calldata cids) external view returns (uint256[] memory);
+  function getConsensusWeightsById(address[] calldata cids) external view returns (uint256[] memory);
 
   /**
    * @dev Returns the weights of a list of governor addresses.
