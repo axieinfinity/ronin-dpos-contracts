@@ -12,9 +12,12 @@ import { IBaseStaking, Staking } from "@ronin/contracts/ronin/staking/Staking.so
 import { HasContracts } from "@ronin/contracts/extensions/collections/HasContracts.sol";
 import { CandidateManager } from "@ronin/contracts/ronin/validator/CandidateManager.sol";
 import { SlashIndicator } from "@ronin/contracts/ronin/slash-indicator/SlashIndicator.sol";
-import { RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";
+import { IRoninTrustedOrganization, RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";
 import { ICandidateManager, RoninValidatorSet } from "@ronin/contracts/ronin/validator/RoninValidatorSet.sol";
 import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
+import { RoninGovernanceAdmin } from "@ronin/contracts/ronin/RoninGovernanceAdmin.sol";
+import { EmergencyExitBallot } from "@ronin/contracts/libraries/EmergencyExitBallot.sol";
+import { ContractType } from "@ronin/contracts/utils/ContractType.sol";
 
 contract ChangeConsensusAddressForkTest is Test {
   string constant RONIN_TEST_RPC = "https://saigon-archive.roninchain.com/rpc";
@@ -24,6 +27,7 @@ contract ChangeConsensusAddressForkTest is Test {
   Staking internal _staking;
   Maintenance internal _maintenance;
   RoninValidatorSet internal _validator;
+  RoninGovernanceAdmin internal _roninGA;
   SlashIndicator internal _slashIndicator;
   RoninTrustedOrganization internal _roninTO;
 
@@ -52,6 +56,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _slashIndicator = SlashIndicator(0xF7837778b6E180Df6696C8Fa986d62f8b6186752);
     _roninTO = RoninTrustedOrganization(0x7507dc433a98E1fE105d69f19f3B40E4315A4F32);
     _validator = RoninValidatorSet(payable(0x54B3AC74a90E64E8dDE60671b6fE8F8DDf18eC9d));
+    _roninGA = RoninGovernanceAdmin(0x53Ea388CB72081A3a397114a43741e7987815896);
 
     vm.label(address(_profile), "Profile");
     vm.label(address(_staking), "Staking");
@@ -60,6 +65,67 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.label(address(_slashIndicator), "SlashIndicator");
 
     vm.createSelectFork(RONIN_TEST_RPC, 21710591);
+  }
+
+  function testFork_AfterUpgraded_WithdrawableFund_execEmergencyExit() external upgrade {
+    _upgradeRoninGA();
+    IRoninTrustedOrganization.TrustedOrganization[] memory trustedOrgs = _roninTO.getAllTrustedOrganizations();
+    address[] memory validatorCandidates = _validator.getValidatorCandidates();
+    address validatorCandidate = validatorCandidates[2];
+
+    (address admin, , ) = _staking.getPoolDetail(TConsensus.wrap(validatorCandidate));
+    console2.log("admin", admin);
+
+    address newAdmin = makeAddr("new-admin");
+    address payable newTreasury = payable(makeAddr("new-treasury"));
+    TConsensus newConsensusAddr = TConsensus.wrap(makeAddr("new-consensus"));
+
+    vm.startPrank(admin);
+    _staking.requestEmergencyExit(TConsensus.wrap(validatorCandidate));
+    _profile.requestChangeConsensusAddr(validatorCandidate, newConsensusAddr);
+    _profile.requestChangeTreasuryAddr(validatorCandidate, newTreasury);
+    _profile.requestChangeAdminAddress(validatorCandidate, newAdmin);
+    vm.stopPrank();
+
+    uint256 timestamp = block.timestamp;
+    bytes32 voteHash = EmergencyExitBallot.hash(
+      TConsensus.unwrap(newConsensusAddr),
+      newTreasury,
+      timestamp,
+      timestamp + 5 minutes
+    );
+
+    vm.prank(address(_validator));
+    _roninGA.createEmergencyExitPoll(
+      TConsensus.unwrap(newConsensusAddr),
+      newTreasury,
+      timestamp,
+      timestamp + 5 minutes
+    );
+
+    console2.log("recipient", newTreasury);
+    uint256 balanceBefore = newTreasury.balance;
+    console2.log("balanceBefore", balanceBefore);
+
+    for (uint256 i; i < trustedOrgs.length; ++i) {
+      if (trustedOrgs[i].governor != validatorCandidate) {
+        vm.prank(trustedOrgs[i].governor);
+        _roninGA.voteEmergencyExit(
+          voteHash,
+          TConsensus.unwrap(newConsensusAddr),
+          newTreasury,
+          timestamp,
+          timestamp + 5 minutes
+        );
+      }
+    }
+
+    uint256 balanceAfter = newTreasury.balance;
+    console2.log("balanceAfter", balanceAfter);
+    uint256 fundReceived = balanceAfter - balanceBefore;
+    console2.log("fundReceived", fundReceived);
+
+    assertTrue(fundReceived != 0);
   }
 
   function testFork_AsTrustedOrg_AfterUpgraded_AfterChangeConsensus_requestRenounce() external upgrade {
@@ -96,7 +162,6 @@ contract ChangeConsensusAddressForkTest is Test {
   }
 
   function testFork_NotReceiveReward_BeforeAndAfterUpgraded_execEmergencyExit() external {
-    // TODO(TuDo): bug fix please Bao-chan
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
     address validatorCandidate = validatorCandidates[2];
     address recipient = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).__shadowedTreasury;
@@ -549,6 +614,21 @@ contract ChangeConsensusAddressForkTest is Test {
       abi.encodeCall(Profile.initializeV2, address(_staking))
     );
     _profile.initializeV3(address(_roninTO));
+  }
+
+  function _upgradeRoninGA() internal {
+    RoninGovernanceAdmin logic = new RoninGovernanceAdmin(
+      block.chainid,
+      address(_roninTO),
+      address(_validator),
+      type(uint256).max
+    );
+    vm.etch(address(_roninGA), address(logic).code);
+
+    vm.startPrank(address(_roninGA));
+    _roninGA.setContract(ContractType.VALIDATOR, address(_validator));
+    _roninGA.setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, address(_roninTO));
+    vm.stopPrank();
   }
 
   function _upgradeMaintenance() internal {
