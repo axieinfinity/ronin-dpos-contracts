@@ -6,7 +6,8 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 library EmergencyExitBallot {
   // keccak256("EmergencyExitBallot(address validatorId,address recipientAfterUnlockedFund,uint256 requestedAt,uint256 expiredAt)");
   bytes32 private constant EMERGENCY_EXIT_BALLOT_TYPEHASH =
-    0x64e34629e995f7ed2919b1f05a7ad1f274a24512f6d0d8b5b057427f7adf6518;
+    // 0x64e34629e995f7ed2919b1f05a7ad1f274a24512f6d0d8b5b057427f7adf6518;
+    0x697acba4deaf1a718d8c2d93e42860488cb7812696f28ca10eed17bac41e7027;
 
   /**
    * @dev Returns hash of the ballot.

@@ -140,7 +140,7 @@ contract MockValidatorSet is
 
   function getEmergencyExitInfo(TConsensus consensus) external view override returns (EmergencyExitInfo memory) {}
 
-  function execEmergencyExit(address, uint256) external {}
+  function execRequestEmergencyExit(address, uint256) external {}
 
   function isOperatingBridge(TConsensus) external view returns (bool) {}
 

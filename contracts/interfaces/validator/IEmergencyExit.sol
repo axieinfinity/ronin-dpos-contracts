@@ -26,6 +26,10 @@ interface IEmergencyExit {
 
   /// @dev Error of already requested emergency exit before.
   error ErrAlreadyRequestedEmergencyExit();
+  /// @dev Error thrown when the info of releasing locked fund not exist.
+  error ErrLockedFundReleaseInfoNotFound(address cid);
+  /// @dev Error thrown when the the locked fund of emergency exit might be recycled.
+  error ErrLockedFundMightBeRecycled(address cid);
 
   /**
    * @dev Returns the amount of RON to lock from a consensus address.
@@ -78,5 +82,5 @@ interface IEmergencyExit {
    * - The method caller is staking contract.
    *
    */
-  function execEmergencyExit(address validatorId, uint256 secLeftToRevoke) external;
+  function execRequestEmergencyExit(address validatorId, uint256 secLeftToRevoke) external;
 }
