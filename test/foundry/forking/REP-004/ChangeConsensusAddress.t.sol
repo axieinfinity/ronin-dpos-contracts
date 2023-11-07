@@ -68,10 +68,15 @@ contract ChangeConsensusAddressForkTest is Test {
   }
 
   function testFork_AfterUpgraded_WithdrawableFund_execEmergencyExit() external upgrade {
-    _upgradeRoninGA();
+    // TODO(bao): @TuDo1403 please enhance this test
+
+    _cheatSetRoninGACode();
     IRoninTrustedOrganization.TrustedOrganization[] memory trustedOrgs = _roninTO.getAllTrustedOrganizations();
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
     address validatorCandidate = validatorCandidates[2];
+    ICandidateManager.ValidatorCandidate memory oldCandidate = _validator.getCandidateInfo(
+      TConsensus.wrap(validatorCandidate)
+    );
 
     (address admin, , ) = _staking.getPoolDetail(TConsensus.wrap(validatorCandidate));
     console2.log("admin", admin);
@@ -80,31 +85,27 @@ contract ChangeConsensusAddressForkTest is Test {
     address payable newTreasury = payable(makeAddr("new-treasury"));
     TConsensus newConsensusAddr = TConsensus.wrap(makeAddr("new-consensus"));
 
+    uint256 proposalRequestAt = block.timestamp;
+    uint256 proposalExpiredAt = proposalRequestAt + _validator.emergencyExpiryDuration();
     vm.startPrank(admin);
+    // TODO(bao): vm.expectEmit(_roninGA_);
+    // TODO(bao): emit EmergencyExitPollCreated
     _staking.requestEmergencyExit(TConsensus.wrap(validatorCandidate));
     _profile.requestChangeConsensusAddr(validatorCandidate, newConsensusAddr);
     _profile.requestChangeTreasuryAddr(validatorCandidate, newTreasury);
     _profile.requestChangeAdminAddress(validatorCandidate, newAdmin);
     vm.stopPrank();
 
-    uint256 timestamp = block.timestamp;
     bytes32 voteHash = EmergencyExitBallot.hash(
-      TConsensus.unwrap(newConsensusAddr),
-      newTreasury,
-      timestamp,
-      timestamp + 5 minutes
+      TConsensus.unwrap(oldCandidate.__shadowedConsensus),
+      oldCandidate.__shadowedTreasury,
+      proposalRequestAt,
+      proposalExpiredAt
     );
 
-    vm.prank(address(_validator));
-    _roninGA.createEmergencyExitPoll(
-      TConsensus.unwrap(newConsensusAddr),
-      newTreasury,
-      timestamp,
-      timestamp + 5 minutes
-    );
-
-    console2.log("recipient", newTreasury);
-    uint256 balanceBefore = newTreasury.balance;
+    // NOTE: locked fund refunded to the old treasury
+    console2.log("recipient", oldCandidate.__shadowedTreasury);
+    uint256 balanceBefore = oldCandidate.__shadowedTreasury.balance;
     console2.log("balanceBefore", balanceBefore);
 
     for (uint256 i; i < trustedOrgs.length; ++i) {
@@ -112,15 +113,15 @@ contract ChangeConsensusAddressForkTest is Test {
         vm.prank(trustedOrgs[i].governor);
         _roninGA.voteEmergencyExit(
           voteHash,
-          TConsensus.unwrap(newConsensusAddr),
-          newTreasury,
-          timestamp,
-          timestamp + 5 minutes
+          TConsensus.unwrap(oldCandidate.__shadowedConsensus),
+          oldCandidate.__shadowedTreasury,
+          proposalRequestAt,
+          proposalExpiredAt
         );
       }
     }
 
-    uint256 balanceAfter = newTreasury.balance;
+    uint256 balanceAfter = oldCandidate.__shadowedTreasury.balance;
     console2.log("balanceAfter", balanceAfter);
     uint256 fundReceived = balanceAfter - balanceBefore;
     console2.log("fundReceived", fundReceived);
@@ -616,7 +617,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _profile.initializeV3(address(_roninTO));
   }
 
-  function _upgradeRoninGA() internal {
+  function _cheatSetRoninGACode() internal {
     RoninGovernanceAdmin logic = new RoninGovernanceAdmin(
       block.chainid,
       address(_roninTO),
