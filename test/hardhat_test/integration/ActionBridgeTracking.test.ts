@@ -124,7 +124,7 @@ describe('[Integration] Bridge Tracking test', () => {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          bridgeVoter: v.bridgeVoter.address,
+          __deprecatedBridgeVoter: v__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),

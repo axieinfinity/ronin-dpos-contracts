@@ -100,7 +100,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
         orgs.map((_) => ({
           consensusAddr: _.consensus,
           governor: _.governor,
-          bridgeVoter: _.bridge,
+          __deprecatedBridgeVoter: _.bridge,
           weight: 100,
           addedBlock: 0,
         })),

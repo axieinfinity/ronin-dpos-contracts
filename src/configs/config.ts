@@ -260,7 +260,7 @@ const defaultRoninTrustedOrganizationConf: RoninTrustedOrganizationArguments = {
   trustedOrganizations: ['0x93b8eed0a1e082ae2f478fd7f8c14b1fc0261bb1'].map((addr) => ({
     consensusAddr: addr,
     governor: addr,
-    bridgeVoter: addr,
+    __deprecatedBridgeVoter: addr,
     weight: 100,
     addedBlock: 0,
   })),
