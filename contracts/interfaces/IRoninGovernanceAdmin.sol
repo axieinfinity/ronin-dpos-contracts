@@ -6,18 +6,18 @@ import "../utils/CommonErrors.sol";
 interface IRoninGovernanceAdmin {
   /// @dev Emitted when an emergency exit poll is created.
   event EmergencyExitPollCreated(
-    bytes32 _voteHash,
-    address _consensusAddr,
-    address _recipientAfterUnlockedFund,
-    uint256 _requestedAt,
-    uint256 _expiredAt
+    bytes32 voteHash,
+    address validatorId,
+    address recipientAfterUnlockedFund,
+    uint256 requestedAt,
+    uint256 expiredAt
   );
   /// @dev Emitted when an emergency exit poll is approved.
-  event EmergencyExitPollApproved(bytes32 _voteHash);
+  event EmergencyExitPollApproved(bytes32 voteHash);
   /// @dev Emitted when an emergency exit poll is expired.
-  event EmergencyExitPollExpired(bytes32 _voteHash);
+  event EmergencyExitPollExpired(bytes32 voteHash);
   /// @dev Emitted when an emergency exit poll is voted.
-  event EmergencyExitPollVoted(bytes32 indexed _voteHash, address indexed _voter);
+  event EmergencyExitPollVoted(bytes32 indexed voteHash, address indexed voter);
 
   /**
    * @dev Create a vote to agree that an emergency exit is valid and should return the locked funds back.a
@@ -27,9 +27,9 @@ interface IRoninGovernanceAdmin {
    *
    */
   function createEmergencyExitPoll(
-    address _consensusAddr,
-    address _recipientAfterUnlockedFund,
-    uint256 _requestedAt,
-    uint256 _expiredAt
+    address validatorId,
+    address recipientAfterUnlockedFund,
+    uint256 requestedAt,
+    uint256 expiredAt
   ) external;
 }

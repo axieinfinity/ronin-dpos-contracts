@@ -232,15 +232,15 @@ abstract contract CoinbaseExecution is
     }
   }
 
-  function _distributeFastFinalityReward(address consensusAddr, address payable treasury) private {
-    uint256 amount = _fastFinalityReward[consensusAddr];
+  function _distributeFastFinalityReward(address cid, address payable treasury) private {
+    uint256 amount = _fastFinalityReward[cid];
     if (amount > 0) {
       if (_unsafeSendRONLimitGas(treasury, amount, DEFAULT_ADDITION_GAS)) {
-        emit FastFinalityRewardDistributed(consensusAddr, treasury, amount);
+        emit FastFinalityRewardDistributed(cid, treasury, amount);
         return;
       }
 
-      emit FastFinalityRewardDistributionFailed(consensusAddr, treasury, amount, address(this).balance);
+      emit FastFinalityRewardDistributionFailed(cid, treasury, amount, address(this).balance);
     }
   }
 

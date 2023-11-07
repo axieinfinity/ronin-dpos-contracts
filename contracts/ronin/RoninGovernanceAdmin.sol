@@ -168,16 +168,16 @@ contract RoninGovernanceAdmin is
    * @inheritdoc IRoninGovernanceAdmin
    */
   function createEmergencyExitPoll(
-    address _consensusAddr,
-    address _recipientAfterUnlockedFund,
-    uint256 _requestedAt,
-    uint256 _expiredAt
+    address validatorId,
+    address recipientAfterUnlockedFund,
+    uint256 requestedAt,
+    uint256 expiredAt
   ) external onlyContract(ContractType.VALIDATOR) {
-    bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
-    IsolatedGovernance.Vote storage _v = _emergencyExitPoll[_hash];
+    bytes32 ballotHash = EmergencyExitBallot.hash(validatorId, recipientAfterUnlockedFund, requestedAt, expiredAt);
+    IsolatedGovernance.Vote storage _v = _emergencyExitPoll[ballotHash];
     _v.createdAt = block.timestamp;
-    _v.expiredAt = _expiredAt;
-    emit EmergencyExitPollCreated(_hash, _consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
+    _v.expiredAt = expiredAt;
+    emit EmergencyExitPollCreated(ballotHash, validatorId, recipientAfterUnlockedFund, requestedAt, expiredAt);
   }
 
   /**
@@ -190,15 +190,15 @@ contract RoninGovernanceAdmin is
    *
    */
   function voteEmergencyExit(
-    bytes32 _voteHash,
-    address _consensusAddr,
-    address _recipientAfterUnlockedFund,
-    uint256 _requestedAt,
-    uint256 _expiredAt
+    bytes32 voteHash,
+    address validatorId,
+    address recipientAfterUnlockedFund,
+    uint256 requestedAt,
+    uint256 expiredAt
   ) external onlyGovernor {
     address _voter = msg.sender;
-    bytes32 _hash = EmergencyExitBallot.hash(_consensusAddr, _recipientAfterUnlockedFund, _requestedAt, _expiredAt);
-    if (_voteHash != _hash) revert ErrInvalidVoteHash();
+    bytes32 _hash = EmergencyExitBallot.hash(validatorId, recipientAfterUnlockedFund, requestedAt, expiredAt);
+    if (voteHash != _hash) revert ErrInvalidVoteHash();
 
     IsolatedGovernance.Vote storage _v = _emergencyExitPoll[_hash];
     if (_v.createdAt == 0) revert ErrQueryForNonExistentVote();
@@ -210,7 +210,7 @@ contract RoninGovernanceAdmin is
     address[] memory _voters = _v.filterByHash(_hash);
     VoteStatus _stt = _v.syncVoteStatus(_getMinimumVoteWeight(), _sumGovernorWeight(_voters), _hash);
     if (_stt == VoteStatus.Approved) {
-      _execReleaseLockedFundForEmergencyExitRequest(_consensusAddr, _recipientAfterUnlockedFund);
+      _execReleaseLockedFundForEmergencyExitRequest(validatorId, recipientAfterUnlockedFund);
       emit EmergencyExitPollApproved(_hash);
       _v.status = VoteStatus.Executed;
     } else if (_stt == VoteStatus.Expired) {
@@ -237,13 +237,13 @@ contract RoninGovernanceAdmin is
   /**
    * @dev Returns the total weight of a list address of governors.
    */
-  function _sumGovernorWeight(address[] memory _governors) internal view virtual returns (uint256) {
+  function _sumGovernorWeight(address[] memory governors) internal view virtual returns (uint256) {
     bytes4 _selector = IRoninTrustedOrganization.sumGovernorWeight.selector;
     (bool _success, bytes memory _returndata) = getContract(ContractType.RONIN_TRUSTED_ORGANIZATION).staticcall(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
-        abi.encodeWithSelector(_selector, _governors)
+        abi.encodeWithSelector(_selector, governors)
       )
     );
 
@@ -252,18 +252,18 @@ contract RoninGovernanceAdmin is
   }
 
   /**
-   * @dev Trigger function from validator contract to unlock fund for emeregency exit request.
+   * @dev Trigger function from validator contract to unlock fund for emergency exit request.
    */
   function _execReleaseLockedFundForEmergencyExitRequest(
-    address _consensusAddr,
-    address _recipientAfterUnlockedFund
+    address validatorId,
+    address recipientAfterUnlockedFund
   ) internal virtual {
     bytes4 _selector = IEmergencyExit.execReleaseLockedFundForEmergencyExitRequest.selector;
     (bool _success, bytes memory _returndata) = getContract(ContractType.VALIDATOR).call(
       abi.encodeWithSelector(
         // TransparentUpgradeableProxyV2.functionDelegateCall.selector,
         0x4bb5274a,
-        abi.encodeWithSelector(_selector, _consensusAddr, _recipientAfterUnlockedFund)
+        abi.encodeWithSelector(_selector, validatorId, recipientAfterUnlockedFund)
       )
     );
     _success.handleRevert(_selector, _returndata);
