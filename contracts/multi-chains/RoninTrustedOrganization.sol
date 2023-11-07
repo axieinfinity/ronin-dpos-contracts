@@ -45,6 +45,10 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
 
   function initializeV2(address profileContract) external reinitializer(2) {
     _setContract(ContractType.PROFILE, profileContract);
+    for (uint i; i < __deprecatedBridgeVoterList.length; ++i) {
+      delete __deprecatedBridgeVoterWeight[__deprecatedBridgeVoterList[i]];
+    }
+    delete __deprecatedBridgeVoterList;
   }
 
   /**
