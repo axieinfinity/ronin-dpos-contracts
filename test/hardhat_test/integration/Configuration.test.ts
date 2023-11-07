@@ -30,7 +30,7 @@ import {
   BridgeSlash__factory,
 } from '../../../src/types';
 import { deployTestSuite, DeployTestSuiteInput } from '../helpers/fixture';
-import { MAX_UINT255, randomAddress } from '../../../src/utils';
+import { DEFAULT_ADDRESS, MAX_UINT255, randomAddress } from '../../../src/utils';
 import {
   createManyTrustedOrganizationAddressSets,
   TrustedOrganizationAddressSet,
@@ -230,10 +230,10 @@ describe('[Integration] Configuration check', () => {
   it('Should the RoninTrustedOrganization contract set configs correctly', async () => {
     expect(
       (await roninTrustedOrganizationContract.getAllTrustedOrganizations()).map(
-        ({ consensusAddr, governor, bridgeVoter, weight }) => ({
+        ({ consensusAddr, governor, __deprecatedBridgeVoter, weight }) => ({
           consensusAddr,
           governor,
-          bridgeVoter,
+          __deprecatedBridgeVoter,
           weight,
           addedBlock: undefined,
         })
@@ -242,7 +242,7 @@ describe('[Integration] Configuration check', () => {
       trustedOrgs.map((v) => ({
         consensusAddr: v.consensusAddr.address,
         governor: v.governor.address,
-        __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
+        __deprecatedBridgeVoter: DEFAULT_ADDRESS,
         weight: BigNumber.from(100),
         addedBlock: undefined,
       }))
