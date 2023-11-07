@@ -367,36 +367,23 @@ contract ChangeConsensusAddressForkTest is Test {
     console2.log("before-upgrade:recipient", recipient);
     uint256 balanceBefore = recipient.balance;
     console2.log("before-upgrade:balanceBefore", balanceBefore);
-    // uint256 minOffsetToStartSchedule = _maintenance.minOffsetToStartSchedule();
+    uint256 minOffsetToStartSchedule = _maintenance.minOffsetToStartSchedule();
 
-    // // save snapshot state before wrapup
+    // save snapshot state before wrapup
     uint256 snapshotId = vm.snapshot();
 
-    // _bulkSubmitBlockReward(1);
-    // uint256 latestEpoch = _validator.getLastUpdatedBlock() + 200;
-    // uint256 startMaintenanceBlock = latestEpoch + 1 + minOffsetToStartSchedule;
-    // uint256 endMaintenanceBlock = latestEpoch + minOffsetToStartSchedule + _maintenance.minMaintenanceDurationInBlock();
-    // this.schedule(candidateAdmin, validatorCandidate, startMaintenanceBlock, endMaintenanceBlock);
-    // vm.roll(latestEpoch + minOffsetToStartSchedule + 200);
-
-    // _bulkSlashIndicator(validatorCandidate, 150);
-    // _bulkWrapUpEpoch(1);
-
-    uint256 minOffsetToStartSchedule = _maintenance.minOffsetToStartSchedule();
+    _bulkSubmitBlockReward(1);
     uint256 latestEpoch = _validator.getLastUpdatedBlock() + 200;
-    this.schedule(
-      candidateAdmin,
-      validatorCandidate,
-      latestEpoch + 1 + minOffsetToStartSchedule,
-      latestEpoch + minOffsetToStartSchedule + _maintenance.minMaintenanceDurationInBlock()
-    );
+    uint256 startMaintenanceBlock = latestEpoch + 1 + minOffsetToStartSchedule;
+    uint256 endMaintenanceBlock = latestEpoch + minOffsetToStartSchedule + _maintenance.minMaintenanceDurationInBlock();
+    this.schedule(candidateAdmin, validatorCandidate, startMaintenanceBlock, endMaintenanceBlock);
     vm.roll(latestEpoch + minOffsetToStartSchedule + 200);
 
     _bulkSlashIndicator(validatorCandidate, 150);
     _bulkWrapUpEpoch(1);
 
     // assertFalse(_maintenance.checkMaintained(TConsensus.wrap(validatorCandidate), block.number + 1));
-    assertFalse(_validator.isBlockProducer(TConsensus.wrap(validatorCandidate)));
+    assertTrue(_validator.isBlockProducer(TConsensus.wrap(validatorCandidate)));
     uint256 balanceAfter = recipient.balance;
     console2.log("before-upgrade:balanceAfter", balanceAfter);
     uint256 beforeUpgradeReward = balanceAfter - balanceBefore;
@@ -419,9 +406,9 @@ contract ChangeConsensusAddressForkTest is Test {
     console2.log("after-upgrade:balanceBefore", balanceBefore);
 
     _bulkSubmitBlockReward(1);
-     latestEpoch = _validator.getLastUpdatedBlock() + 200;
-    uint256 startMaintenanceBlock = latestEpoch + 1 + minOffsetToStartSchedule;
-    uint256 endMaintenanceBlock = latestEpoch + minOffsetToStartSchedule + _maintenance.minMaintenanceDurationInBlock();
+    latestEpoch = _validator.getLastUpdatedBlock() + 200;
+    startMaintenanceBlock = latestEpoch + 1 + minOffsetToStartSchedule;
+    endMaintenanceBlock = latestEpoch + minOffsetToStartSchedule + _maintenance.minMaintenanceDurationInBlock();
 
     this.schedule(candidateAdmin, TConsensus.unwrap(newConsensus), startMaintenanceBlock, endMaintenanceBlock);
     vm.roll(latestEpoch + minOffsetToStartSchedule + 200);
@@ -430,7 +417,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _bulkWrapUpEpoch(1);
 
     assertFalse(_maintenance.checkMaintained(TConsensus.wrap(validatorCandidate), block.number + 1));
-    assertFalse(_validator.isBlockProducer(newConsensus));
+    assertTrue(_validator.isBlockProducer(newConsensus));
     balanceAfter = recipient.balance;
     console2.log("after-upgrade:balanceAfter", balanceBefore);
     uint256 afterUpgradedReward = balanceAfter - balanceBefore;
