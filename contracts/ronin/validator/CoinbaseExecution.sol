@@ -400,6 +400,12 @@ abstract contract CoinbaseExecution is
         _maintainedList[_i] ||
         emergencyExitRequested);
 
+      console2.log(
+        validatorId,
+        _isJailedAtBlockById(validatorId, block.number + 1),
+        _maintainedList[_i],
+        emergencyExitRequested
+      );
       if (!isProducerBefore && isProducerAfter) {
         _validatorMap[validatorId] = _validatorMap[validatorId].addFlag(EnumFlags.ValidatorFlag.BlockProducer);
       } else if (isProducerBefore && !isProducerAfter) {

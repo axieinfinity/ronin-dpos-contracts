@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import { Test } from "forge-std/Test.sol";
 import { console2 } from "forge-std/console2.sol";
+import { StdStyle } from "forge-std/StdStyle.sol";
 import { TConsensus } from "@ronin/contracts/udvts/Types.sol";
 import { Maintenance } from "@ronin/contracts/ronin/Maintenance.sol";
 import { MockPrecompile } from "@ronin/contracts/mocks/MockPrecompile.sol";
@@ -366,11 +367,20 @@ contract ChangeConsensusAddressForkTest is Test {
     console2.log("before-upgrade:recipient", recipient);
     uint256 balanceBefore = recipient.balance;
     console2.log("before-upgrade:balanceBefore", balanceBefore);
+    // uint256 minOffsetToStartSchedule = _maintenance.minOffsetToStartSchedule();
 
-    // save snapshot state before wrapup
+    // // save snapshot state before wrapup
     uint256 snapshotId = vm.snapshot();
 
-    _bulkSubmitBlockReward(1);
+    // _bulkSubmitBlockReward(1);
+    // uint256 latestEpoch = _validator.getLastUpdatedBlock() + 200;
+    // uint256 startMaintenanceBlock = latestEpoch + 1 + minOffsetToStartSchedule;
+    // uint256 endMaintenanceBlock = latestEpoch + minOffsetToStartSchedule + _maintenance.minMaintenanceDurationInBlock();
+    // this.schedule(candidateAdmin, validatorCandidate, startMaintenanceBlock, endMaintenanceBlock);
+    // vm.roll(latestEpoch + minOffsetToStartSchedule + 200);
+
+    // _bulkSlashIndicator(validatorCandidate, 150);
+    // _bulkWrapUpEpoch(1);
 
     uint256 minOffsetToStartSchedule = _maintenance.minOffsetToStartSchedule();
     uint256 latestEpoch = _validator.getLastUpdatedBlock() + 200;
@@ -385,13 +395,17 @@ contract ChangeConsensusAddressForkTest is Test {
     _bulkSlashIndicator(validatorCandidate, 150);
     _bulkWrapUpEpoch(1);
 
-    assertTrue(_validator.isBlockProducer(TConsensus.wrap(validatorCandidate)));
+    // assertFalse(_maintenance.checkMaintained(TConsensus.wrap(validatorCandidate), block.number + 1));
+    assertFalse(_validator.isBlockProducer(TConsensus.wrap(validatorCandidate)));
     uint256 balanceAfter = recipient.balance;
     console2.log("before-upgrade:balanceAfter", balanceAfter);
     uint256 beforeUpgradeReward = balanceAfter - balanceBefore;
     console2.log("before-upgrade:reward", beforeUpgradeReward);
 
     // revert to previous state
+    console2.log(
+      StdStyle.blue("==============================================================================================")
+    );
     vm.revertTo(snapshotId);
     _upgradeContracts();
     // change consensus address
@@ -405,19 +419,18 @@ contract ChangeConsensusAddressForkTest is Test {
     console2.log("after-upgrade:balanceBefore", balanceBefore);
 
     _bulkSubmitBlockReward(1);
+     latestEpoch = _validator.getLastUpdatedBlock() + 200;
+    uint256 startMaintenanceBlock = latestEpoch + 1 + minOffsetToStartSchedule;
+    uint256 endMaintenanceBlock = latestEpoch + minOffsetToStartSchedule + _maintenance.minMaintenanceDurationInBlock();
 
-    this.schedule(
-      candidateAdmin,
-      TConsensus.unwrap(newConsensus),
-      latestEpoch + 1 + minOffsetToStartSchedule,
-      latestEpoch + minOffsetToStartSchedule + _maintenance.minMaintenanceDurationInBlock()
-    );
+    this.schedule(candidateAdmin, TConsensus.unwrap(newConsensus), startMaintenanceBlock, endMaintenanceBlock);
     vm.roll(latestEpoch + minOffsetToStartSchedule + 200);
 
     _bulkSlashIndicator(TConsensus.unwrap(newConsensus), 150);
     _bulkWrapUpEpoch(1);
 
-    assertTrue(_validator.isBlockProducer(newConsensus));
+    assertFalse(_maintenance.checkMaintained(TConsensus.wrap(validatorCandidate), block.number + 1));
+    assertFalse(_validator.isBlockProducer(newConsensus));
     balanceAfter = recipient.balance;
     console2.log("after-upgrade:balanceAfter", balanceBefore);
     uint256 afterUpgradedReward = balanceAfter - balanceBefore;
@@ -527,7 +540,7 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.startPrank(block.coinbase);
     for (uint256 i; i < times; ++i) {
       _slashIndicator.slashUnavailability(TConsensus.wrap(consensus));
-      vm.roll(block.number + i + 1);
+      vm.roll(block.number + 1);
     }
     vm.stopPrank();
   }
