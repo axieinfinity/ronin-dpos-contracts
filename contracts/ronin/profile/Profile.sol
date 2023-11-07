@@ -163,6 +163,10 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    * @dev Side-effects on other contracts:
    * - Update Validator contract:
    *    + [x] Update (id => ValidatorCandidate) mapping
+   * - Update governance admin:
+   *    + [-] Update recipient in the EmergencyExitBallot to the newTreasury.
+   *          Cannot impl since we cannot cancel the previous the ballot and
+   *          create a new ballot on behalf of the validator contract.
    */
   function requestChangeTreasuryAddr(address id, address payable newTreasury) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);

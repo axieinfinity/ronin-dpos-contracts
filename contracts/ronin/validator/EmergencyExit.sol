@@ -53,15 +53,15 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
   /**
    * @inheritdoc IEmergencyExit
    */
-  function setEmergencyExitLockedAmount(uint256 _emergencyExitLockedAmount) external onlyAdmin {
-    _setEmergencyExitLockedAmount(_emergencyExitLockedAmount);
+  function setEmergencyExitLockedAmount(uint256 amount) external onlyAdmin {
+    _setEmergencyExitLockedAmount(amount);
   }
 
   /**
    * @inheritdoc IEmergencyExit
    */
-  function setEmergencyExpiryDuration(uint256 _emergencyExpiryDuration) external onlyAdmin {
-    _setEmergencyExpiryDuration(_emergencyExpiryDuration);
+  function setEmergencyExpiryDuration(uint256 duration) external onlyAdmin {
+    _setEmergencyExpiryDuration(duration);
   }
 
   /**
