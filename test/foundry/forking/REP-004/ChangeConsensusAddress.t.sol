@@ -70,9 +70,12 @@ contract ChangeConsensusAddressForkTest is Test {
   }
 
   function testFork_AfterUpgraded_AddNewTrustedOrgBefore_ApplyValidatorCandidateAfter() external upgrade {
+    // add trusted org
+    address consensus = makeAddr("consensus");
+    address governor = makeAddr("governor");
     IRoninTrustedOrganization.TrustedOrganization memory newTrustedOrg = IRoninTrustedOrganization.TrustedOrganization(
-      TConsensus.wrap(makeAddr("new-consensus")),
-      makeAddr("new-governor"),
+      TConsensus.wrap(consensus),
+      governor,
       address(0x0),
       1000,
       0
@@ -84,7 +87,38 @@ contract ChangeConsensusAddressForkTest is Test {
     TransparentUpgradeableProxyV2(payable(address(_roninTO))).functionDelegateCall(
       abi.encodeCall(RoninTrustedOrganization.addTrustedOrganizations, trustedOrgs)
     );
-    _applyValidatorCandidate("candidate-admin", "new-consensus");
+
+    // apply validator candidate
+    _applyValidatorCandidate("candidate-admin", "consensus");
+
+    address newAdmin = makeAddr("new-admin");
+    address admin = makeAddr("candidate-admin");
+    address newTreasury = makeAddr("new-treasury");
+    address newConsensus = makeAddr("new-consensus");
+    vm.startPrank(admin);
+    _profile.requestChangeConsensusAddr(consensus, TConsensus.wrap(newConsensus));
+    _profile.requestChangeTreasuryAddr(consensus, payable(newTreasury));
+    _profile.requestChangeAdminAddress(consensus, newAdmin);
+    vm.stopPrank();
+
+    // change new governor
+    address newGovernor = makeAddr("new-governor");
+    trustedOrgs[0].governor = newGovernor;
+    trustedOrgs[0].consensusAddr = TConsensus.wrap(newConsensus);
+    vm.prank(_getProxyAdmin(address(_roninTO)));
+    TransparentUpgradeableProxyV2(payable(address(_roninTO))).functionDelegateCall(
+      abi.encodeCall(RoninTrustedOrganization.updateTrustedOrganizations, trustedOrgs)
+    );
+
+    IProfile.CandidateProfile memory profile = _profile.getId2Profile(consensus);
+    IRoninTrustedOrganization.TrustedOrganization memory trustedOrg = _roninTO.getTrustedOrganization(TConsensus.wrap(newConsensus));
+
+    // assert eq to updated address
+    assertEq(trustedOrg.governor, newGovernor);
+    assertEq(TConsensus.unwrap(trustedOrg.consensusAddr), newConsensus);
+    assertEq(profile.id, consensus);
+    assertEq(profile.treasury, payable(newTreasury));
+    assertEq(TConsensus.unwrap(profile.consensus), newConsensus);
   }
 
   function testFork_AfterUpgraded_ApplyValidatorCandidateBefore_AddNewTrustedOrgAfter() external upgrade {
