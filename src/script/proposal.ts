@@ -12,8 +12,8 @@ const globalProposalTypeHash = '0x1463f426c05aff2c1a7a0957a71c9898bc8b4714254053
 const ballotTypeHash = '0xd900570327c4c0df8dd6bdd522b7da7e39145dd049d2fd4602276adcd511e3c2';
 // keccak256("BridgeOperatorsBallot(uint256 period,uint256 epoch,address[] operators)");
 const bridgeOperatorsBallotTypeHash = '0xd679a49e9e099fa9ed83a5446aaec83e746b03ec6723d6f5efb29d37d7f0b78a';
-// keccak256("EmergencyExitBallot(address validatorId,address recipientAfterUnlockedFund,uint256 requestedAt,uint256 expiredAt)");
-const emergencyExitBallotTypehash = '0x64e34629e995f7ed2919b1f05a7ad1f274a24512f6d0d8b5b057427f7adf6518';
+// keccak256("EmergencyExitBallot(address consensusAddress,address recipientAfterUnlockedFund,uint256 requestedAt,uint256 expiredAt)");
+const emergencyExitBallotTypehash = '0x697acba4deaf1a718d8c2d93e42860488cb7812696f28ca10eed17bac41e7027';
 
 export enum VoteType {
   For = 0,
