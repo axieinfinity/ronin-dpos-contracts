@@ -14,10 +14,12 @@ import { HasContracts } from "@ronin/contracts/extensions/collections/HasContrac
 import { CandidateManager } from "@ronin/contracts/ronin/validator/CandidateManager.sol";
 import { EmergencyExitBallot } from "@ronin/contracts/libraries/EmergencyExitBallot.sol";
 import { SlashIndicator } from "@ronin/contracts/ronin/slash-indicator/SlashIndicator.sol";
-import { ICandidateManager, RoninValidatorSet } from "@ronin/contracts/ronin/validator/RoninValidatorSet.sol";
-import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
+import { ICandidateManagerCallback, ICandidateManager, RoninValidatorSet } from "@ronin/contracts/ronin/validator/RoninValidatorSet.sol";
+import { TransparentUpgradeableProxy, TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
 import { IRoninGovernanceAdmin, RoninGovernanceAdmin } from "@ronin/contracts/ronin/RoninGovernanceAdmin.sol";
 import { IRoninTrustedOrganization, RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";
+import { Proposal } from "@ronin/contracts/libraries/Proposal.sol";
+import { Ballot } from "@ronin/contracts/libraries/Ballot.sol";
 
 contract ChangeConsensusAddressForkTest is Test {
   string constant RONIN_TEST_RPC = "https://saigon-archive.roninchain.com/rpc";
@@ -69,6 +71,94 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.createSelectFork(RONIN_TEST_RPC, 21710591);
   }
 
+  function testFork_AfterUpgraded_AddNewTrustedOrg_CanVoteProposal() external upgrade {
+    _cheatSetRoninGACode();
+    // add trusted org
+    address consensus = makeAddr("consensus");
+    address governor = makeAddr("governor");
+    IRoninTrustedOrganization.TrustedOrganization memory newTrustedOrg = IRoninTrustedOrganization.TrustedOrganization(
+      TConsensus.wrap(consensus),
+      governor,
+      address(0x0),
+      1000,
+      0
+    );
+    _addTrustedOrg(newTrustedOrg);
+
+    address newLogic = address(new RoninValidatorSet());
+    address[] memory targets = new address[](1);
+    targets[0] = address(_validator);
+    uint256[] memory values = new uint256[](1);
+    bytes[] memory calldatas = new bytes[](1);
+    calldatas[0] = abi.encodeCall(TransparentUpgradeableProxy.upgradeTo, newLogic);
+    uint256[] memory gasAmounts = new uint256[](1);
+    gasAmounts[0] = 1_000_000;
+    Ballot.VoteType support = Ballot.VoteType.For;
+
+    vm.startPrank(governor);
+    _roninGA.proposeProposalForCurrentNetwork(
+      block.timestamp + 5 minutes,
+      targets,
+      values,
+      calldatas,
+      gasAmounts,
+      support
+    );
+    vm.stopPrank();
+  }
+
+  function testFork_RevertWhen_AfterUpgraded_ApplyValidatorCandidateC1_AddNewTrustedOrgC1_ChangeC1ToC2_RenounceC2()
+    external
+    upgrade
+  {
+    // apply validator candidate
+    _applyValidatorCandidate("candidate-admin", "c1");
+
+    // add trusted org
+    address consensus = makeAddr("c1");
+    address governor = makeAddr("governor");
+    IRoninTrustedOrganization.TrustedOrganization memory newTrustedOrg = IRoninTrustedOrganization.TrustedOrganization(
+      TConsensus.wrap(consensus),
+      governor,
+      address(0x0),
+      1000,
+      0
+    );
+    _addTrustedOrg(newTrustedOrg);
+
+    address newConsensus = makeAddr("c2");
+    address admin = makeAddr("candidate-admin");
+    vm.startPrank(admin);
+    _profile.requestChangeConsensusAddr(consensus, TConsensus.wrap(newConsensus));
+    vm.expectRevert(ICandidateManagerCallback.ErrTrustedOrgCannotRenounce.selector);
+    _staking.requestRenounce(TConsensus.wrap(newConsensus));
+    vm.stopPrank();
+  }
+
+  function testFailFork_AfterUpgraded_AsTrustedOrg_AfterRenouncedAndRemovedFromTO_ReAddAsTrustedOrg() external upgrade {
+    address[] memory validatorCandidates = _validator.getValidatorCandidates();
+    address validatorCandidate = validatorCandidates[2];
+
+    (address admin, , ) = _staking.getPoolDetail(TConsensus.wrap(validatorCandidate));
+    vm.prank(admin);
+    _staking.requestRenounce(TConsensus.wrap(validatorCandidate));
+
+    vm.warp(block.timestamp + 7 days);
+    _bulkSubmitBlockReward(1);
+    _bulkWrapUpEpoch(1);
+
+    assertFalse(_validator.isValidatorCandidate(TConsensus.wrap(validatorCandidate)));
+
+    IRoninTrustedOrganization.TrustedOrganization memory newTrustedOrg = IRoninTrustedOrganization.TrustedOrganization(
+      TConsensus.wrap(validatorCandidate),
+      makeAddr("governor"),
+      address(0x0),
+      1000,
+      0
+    );
+    _addTrustedOrg(newTrustedOrg);
+  }
+
   function testFork_AfterUpgraded_AddNewTrustedOrgBefore_ApplyValidatorCandidateAfter() external upgrade {
     // add trusted org
     address consensus = makeAddr("consensus");
@@ -80,13 +170,7 @@ contract ChangeConsensusAddressForkTest is Test {
       1000,
       0
     );
-    IRoninTrustedOrganization.TrustedOrganization[]
-      memory trustedOrgs = new IRoninTrustedOrganization.TrustedOrganization[](1);
-    trustedOrgs[0] = newTrustedOrg;
-    vm.prank(_getProxyAdmin(address(_roninTO)));
-    TransparentUpgradeableProxyV2(payable(address(_roninTO))).functionDelegateCall(
-      abi.encodeCall(RoninTrustedOrganization.addTrustedOrganizations, trustedOrgs)
-    );
+    IRoninTrustedOrganization.TrustedOrganization[] memory trustedOrgs = _addTrustedOrg(newTrustedOrg);
 
     // apply validator candidate
     _applyValidatorCandidate("candidate-admin", "consensus");
@@ -116,12 +200,21 @@ contract ChangeConsensusAddressForkTest is Test {
     );
 
     // assert eq to updated address
+    // 1.
     assertEq(trustedOrg.governor, newGovernor);
     assertEq(TConsensus.unwrap(trustedOrg.consensusAddr), newConsensus);
     assertEq(profile.id, consensus);
     assertEq(profile.treasury, payable(newTreasury));
     assertEq(profile.__reservedGovernor, address(0x0));
     assertEq(TConsensus.unwrap(profile.consensus), newConsensus);
+
+    // 2.
+    TConsensus[] memory consensuses = new TConsensus[](1);
+    address[] memory ids = new address[](1);
+    consensuses[0] = TConsensus.wrap(newConsensus);
+    ids[0] = consensus;
+    assertEq(_roninTO.getConsensusWeight(consensuses[0]), _roninTO.getConsensusWeights(consensuses)[0]);
+    assertEq(_roninTO.getConsensusWeightById(ids[0]), _roninTO.getManyConsensusWeightsById(ids)[0]);
   }
 
   function testFork_AfterUpgraded_ApplyValidatorCandidateBefore_AddNewTrustedOrgAfter() external upgrade {
@@ -138,13 +231,7 @@ contract ChangeConsensusAddressForkTest is Test {
       1000,
       0
     );
-    IRoninTrustedOrganization.TrustedOrganization[]
-      memory trustedOrgs = new IRoninTrustedOrganization.TrustedOrganization[](1);
-    trustedOrgs[0] = newTrustedOrg;
-    vm.prank(_getProxyAdmin(address(_roninTO)));
-    TransparentUpgradeableProxyV2(payable(address(_roninTO))).functionDelegateCall(
-      abi.encodeCall(RoninTrustedOrganization.addTrustedOrganizations, trustedOrgs)
-    );
+    IRoninTrustedOrganization.TrustedOrganization[] memory trustedOrgs = _addTrustedOrg(newTrustedOrg);
 
     address newAdmin = makeAddr("new-admin");
     address admin = makeAddr("candidate-admin");
@@ -177,6 +264,14 @@ contract ChangeConsensusAddressForkTest is Test {
     assertEq(profile.treasury, payable(newTreasury));
     assertEq(profile.__reservedGovernor, address(0x0));
     assertEq(TConsensus.unwrap(profile.consensus), newConsensus);
+
+    // 2.
+    TConsensus[] memory consensuses = new TConsensus[](1);
+    address[] memory ids = new address[](1);
+    consensuses[0] = TConsensus.wrap(newConsensus);
+    ids[0] = consensus;
+    assertEq(_roninTO.getConsensusWeight(consensuses[0]), _roninTO.getConsensusWeights(consensuses)[0]);
+    assertEq(_roninTO.getConsensusWeightById(ids[0]), _roninTO.getManyConsensusWeightsById(ids)[0]);
   }
 
   function testFork_AfterUpgraded_WithdrawableFund_execEmergencyExit() external upgrade {
@@ -814,6 +909,17 @@ contract ChangeConsensusAddressForkTest is Test {
     // fast forward to next day
     vm.warp(nextDayTimestamp);
     vm.roll(epochEndingBlockNumber);
+  }
+
+  function _addTrustedOrg(
+    IRoninTrustedOrganization.TrustedOrganization memory trustedOrg
+  ) internal returns (IRoninTrustedOrganization.TrustedOrganization[] memory trustedOrgs) {
+    trustedOrgs = new IRoninTrustedOrganization.TrustedOrganization[](1);
+    trustedOrgs[0] = trustedOrg;
+    vm.prank(_getProxyAdmin(address(_roninTO)));
+    TransparentUpgradeableProxyV2(payable(address(_roninTO))).functionDelegateCall(
+      abi.encodeCall(RoninTrustedOrganization.addTrustedOrganizations, trustedOrgs)
+    );
   }
 
   function _applyValidatorCandidate(string memory candidateAdminLabel, string memory consensusLabel) internal {
