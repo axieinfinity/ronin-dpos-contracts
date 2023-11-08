@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.22;
 
 import { Test } from "forge-std/Test.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdStyle } from "forge-std/StdStyle.sol";
 import { TConsensus } from "@ronin/contracts/udvts/Types.sol";
 import { Maintenance } from "@ronin/contracts/ronin/Maintenance.sol";
+import { ContractType } from "@ronin/contracts/utils/ContractType.sol";
 import { MockPrecompile } from "@ronin/contracts/mocks/MockPrecompile.sol";
 import { IProfile, Profile } from "@ronin/contracts/ronin/profile/Profile.sol";
 import { IBaseStaking, Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
 import { HasContracts } from "@ronin/contracts/extensions/collections/HasContracts.sol";
 import { CandidateManager } from "@ronin/contracts/ronin/validator/CandidateManager.sol";
+import { EmergencyExitBallot } from "@ronin/contracts/libraries/EmergencyExitBallot.sol";
 import { SlashIndicator } from "@ronin/contracts/ronin/slash-indicator/SlashIndicator.sol";
-import { IRoninTrustedOrganization, RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";
 import { ICandidateManager, RoninValidatorSet } from "@ronin/contracts/ronin/validator/RoninValidatorSet.sol";
 import { TransparentUpgradeableProxyV2 } from "@ronin/contracts/extensions/TransparentUpgradeableProxyV2.sol";
-import { RoninGovernanceAdmin } from "@ronin/contracts/ronin/RoninGovernanceAdmin.sol";
-import { EmergencyExitBallot } from "@ronin/contracts/libraries/EmergencyExitBallot.sol";
-import { ContractType } from "@ronin/contracts/utils/ContractType.sol";
+import { IRoninGovernanceAdmin, RoninGovernanceAdmin } from "@ronin/contracts/ronin/RoninGovernanceAdmin.sol";
+import { IRoninTrustedOrganization, RoninTrustedOrganization } from "@ronin/contracts/multi-chains/RoninTrustedOrganization.sol";
 
 contract ChangeConsensusAddressForkTest is Test {
   string constant RONIN_TEST_RPC = "https://saigon-archive.roninchain.com/rpc";
@@ -53,23 +53,62 @@ contract ChangeConsensusAddressForkTest is Test {
     _profile = Profile(0x3b67c8D22a91572a6AB18acC9F70787Af04A4043);
     _maintenance = Maintenance(0x4016C80D97DDCbe4286140446759a3f0c1d20584);
     _staking = Staking(payable(0x9C245671791834daf3885533D24dce516B763B28));
+    _roninGA = RoninGovernanceAdmin(0x53Ea388CB72081A3a397114a43741e7987815896);
     _slashIndicator = SlashIndicator(0xF7837778b6E180Df6696C8Fa986d62f8b6186752);
     _roninTO = RoninTrustedOrganization(0x7507dc433a98E1fE105d69f19f3B40E4315A4F32);
     _validator = RoninValidatorSet(payable(0x54B3AC74a90E64E8dDE60671b6fE8F8DDf18eC9d));
-    _roninGA = RoninGovernanceAdmin(0x53Ea388CB72081A3a397114a43741e7987815896);
 
     vm.label(address(_profile), "Profile");
     vm.label(address(_staking), "Staking");
     vm.label(address(_validator), "Validator");
     vm.label(address(_maintenance), "Maintenance");
+    vm.label(address(_roninGA), "GovernanceAdmin");
+    vm.label(address(_roninTO), "TrustedOrganizations");
     vm.label(address(_slashIndicator), "SlashIndicator");
 
     vm.createSelectFork(RONIN_TEST_RPC, 21710591);
   }
 
+  function testFailFork_AfterUpgraded_AddNewTrustedOrgBefore_ApplyValidatorCandidateAfter() external upgrade {
+    IRoninTrustedOrganization.TrustedOrganization memory newTrustedOrg = IRoninTrustedOrganization.TrustedOrganization(
+      TConsensus.wrap(makeAddr("new-consensus")),
+      makeAddr("new-governor"),
+      address(0x0),
+      1000,
+      0
+    );
+    IRoninTrustedOrganization.TrustedOrganization[]
+      memory trustedOrgs = new IRoninTrustedOrganization.TrustedOrganization[](1);
+    trustedOrgs[0] = newTrustedOrg;
+    vm.prank(_getProxyAdmin(address(_roninTO)));
+    TransparentUpgradeableProxyV2(payable(address(_roninTO))).functionDelegateCall(
+      abi.encodeCall(RoninTrustedOrganization.addTrustedOrganizations, trustedOrgs)
+    );
+    _roninTO.addTrustedOrganizations(trustedOrgs);
+    _applyValidatorCandidate("new-governor", "new-consensus");
+  }
+
+  function testFailFork_AfterUpgraded_ApplyValidatorCandidateBefore_AddNewTrustedOrgAfter() external upgrade {
+    _applyValidatorCandidate("new-governor", "new-consensus");
+    IRoninTrustedOrganization.TrustedOrganization memory newTrustedOrg = IRoninTrustedOrganization.TrustedOrganization(
+      TConsensus.wrap(makeAddr("new-consensus")),
+      makeAddr("new-governor"),
+      address(0x0),
+      1000,
+      0
+    );
+    IRoninTrustedOrganization.TrustedOrganization[]
+      memory trustedOrgs = new IRoninTrustedOrganization.TrustedOrganization[](1);
+    trustedOrgs[0] = newTrustedOrg;
+    vm.prank(_getProxyAdmin(address(_roninTO)));
+    TransparentUpgradeableProxyV2(payable(address(_roninTO))).functionDelegateCall(
+      abi.encodeCall(RoninTrustedOrganization.addTrustedOrganizations, trustedOrgs)
+    );
+    _roninTO.addTrustedOrganizations(trustedOrgs);
+  }
+
   function testFork_AfterUpgraded_WithdrawableFund_execEmergencyExit() external upgrade {
     // TODO(bao): @TuDo1403 please enhance this test
-
     _cheatSetRoninGACode();
     IRoninTrustedOrganization.TrustedOrganization[] memory trustedOrgs = _roninTO.getAllTrustedOrganizations();
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
@@ -87,21 +126,27 @@ contract ChangeConsensusAddressForkTest is Test {
 
     uint256 proposalRequestAt = block.timestamp;
     uint256 proposalExpiredAt = proposalRequestAt + _validator.emergencyExpiryDuration();
-    vm.startPrank(admin);
-    // TODO(bao): vm.expectEmit(_roninGA_);
-    // TODO(bao): emit EmergencyExitPollCreated
-    _staking.requestEmergencyExit(TConsensus.wrap(validatorCandidate));
-    _profile.requestChangeConsensusAddr(validatorCandidate, newConsensusAddr);
-    _profile.requestChangeTreasuryAddr(validatorCandidate, newTreasury);
-    _profile.requestChangeAdminAddress(validatorCandidate, newAdmin);
-    vm.stopPrank();
-
     bytes32 voteHash = EmergencyExitBallot.hash(
       TConsensus.unwrap(oldCandidate.__shadowedConsensus),
       oldCandidate.__shadowedTreasury,
       proposalRequestAt,
       proposalExpiredAt
     );
+
+    vm.startPrank(admin);
+    vm.expectEmit(address(_roninGA));
+    emit IRoninGovernanceAdmin.EmergencyExitPollCreated(
+      voteHash,
+      TConsensus.unwrap(oldCandidate.__shadowedConsensus),
+      oldCandidate.__shadowedTreasury,
+      proposalRequestAt,
+      proposalExpiredAt
+    );
+    _staking.requestEmergencyExit(TConsensus.wrap(validatorCandidate));
+    _profile.requestChangeConsensusAddr(validatorCandidate, newConsensusAddr);
+    _profile.requestChangeTreasuryAddr(validatorCandidate, newTreasury);
+    _profile.requestChangeAdminAddress(validatorCandidate, newAdmin);
+    vm.stopPrank();
 
     // NOTE: locked fund refunded to the old treasury
     console2.log("recipient", oldCandidate.__shadowedTreasury);
@@ -311,7 +356,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _bulkWrapUpEpoch(1);
   }
 
-  function testFork_AfterUpgrade_WrapUpEpochAndNonWrapUpEpoch_ChangeAdmin_ChangeConsensus_ChangeTreasury()
+  function testFork_AfterUpgraded_WrapUpEpochAndNonWrapUpEpoch_ChangeAdmin_ChangeConsensus_ChangeTreasury()
     external
     upgrade
   {
@@ -449,7 +494,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _bulkWrapUpEpoch(1);
 
     // assertFalse(_maintenance.checkMaintained(TConsensus.wrap(validatorCandidate), block.number + 1));
-    assertTrue(_validator.isBlockProducer(TConsensus.wrap(validatorCandidate)));
+    assertFalse(_validator.isBlockProducer(TConsensus.wrap(validatorCandidate)));
     uint256 balanceAfter = recipient.balance;
     console2.log("before-upgrade:balanceAfter", balanceAfter);
     uint256 beforeUpgradeReward = balanceAfter - balanceBefore;
@@ -483,7 +528,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _bulkWrapUpEpoch(1);
 
     assertFalse(_maintenance.checkMaintained(TConsensus.wrap(validatorCandidate), block.number + 1));
-    assertTrue(_validator.isBlockProducer(newConsensus));
+    assertFalse(_validator.isBlockProducer(newConsensus));
     balanceAfter = recipient.balance;
     console2.log("after-upgrade:balanceAfter", balanceBefore);
     uint256 afterUpgradedReward = balanceAfter - balanceBefore;
