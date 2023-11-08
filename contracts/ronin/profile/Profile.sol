@@ -100,7 +100,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
   function requestChangeAdminAddress(address id, address newAdminAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
     _requireCandidateAdmin(_profile);
-    _checkNonZeroAndNonDuplicated(RoleAccess.ADMIN, newAdminAddr);
+    _requireNonZeroAndNonDuplicated(RoleAccess.ADMIN, newAdminAddr);
     _setAdmin(_profile, newAdminAddr);
 
     IStaking stakingContract = IStaking(getContract(ContractType.STAKING));
@@ -129,8 +129,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
    *   + [x] Handling slash fast finality
    *   + [x] Handling slash double sign
    * - Update in Proposal contract for:
-   *   + [ ] Refund of emergency exit mapping
-   *   + [ ] ...
+   *   + [-] Preserve the consensus address and recipient target of locked amount of emergency exit
    * - Update Trusted Org contracts:
    *   + [x] Remove and delete weight of the old consensus
    *   + [x] Replace and add weight for the new consensus
@@ -138,7 +137,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
   function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
     _requireCandidateAdmin(_profile);
-    _checkNonZeroAndNonDuplicated(RoleAccess.CONSENSUS, TConsensus.unwrap(newConsensusAddr));
+    _requireNonZeroAndNonDuplicated(RoleAccess.CONSENSUS, TConsensus.unwrap(newConsensusAddr));
 
     TConsensus oldConsensusAddr = _profile.consensus;
     _setConsensus(_profile, newConsensusAddr);
@@ -171,7 +170,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
   function requestChangeTreasuryAddr(address id, address payable newTreasury) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
     _requireCandidateAdmin(_profile);
-    _checkNonZeroAndNonDuplicated(RoleAccess.TREASURY, newTreasury);
+    _requireNonZeroAndNonDuplicated(RoleAccess.TREASURY, newTreasury);
     _setTreasury(_profile, newTreasury);
 
     IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
@@ -186,7 +185,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
   function changePubkey(address id, bytes memory pubkey) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
     _requireCandidateAdmin(_profile);
-    _checkNonDuplicatedPubkey(pubkey);
+    _requireNonDuplicatedPubkey(pubkey);
     _setPubkey(_profile, pubkey);
 
     emit PubkeyChanged(id, pubkey);

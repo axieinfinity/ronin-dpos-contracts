@@ -10,28 +10,36 @@ abstract contract ProfileHandler is ProfileStorage {
   /**
    * @dev Checks each element in the new profile and reverts if there is duplication with any existing profile.
    */
-  function _checkDuplicatedInRegistry(CandidateProfile memory profile) internal view {
-    _checkNonZeroAndNonDuplicated(RoleAccess.CONSENSUS, TConsensus.unwrap(profile.consensus));
-    _checkNonZeroAndNonDuplicated(RoleAccess.CANDIDATE_ADMIN, profile.admin);
-    _checkNonZeroAndNonDuplicated(RoleAccess.TREASURY, profile.treasury);
-    _checkNonDuplicated(RoleAccess.TREASURY, profile.__reservedGovernor);
-    _checkNonDuplicatedPubkey(profile.pubkey);
+  function _requireNonDuplicatedInRegistry(CandidateProfile memory profile) internal view {
+    _requireNonZeroAndNonDuplicated(RoleAccess.CONSENSUS, TConsensus.unwrap(profile.consensus));
+    _requireNonZeroAndNonDuplicated(RoleAccess.CANDIDATE_ADMIN, profile.admin);
+    _requireNonZeroAndNonDuplicated(RoleAccess.TREASURY, profile.treasury);
+    _requireNonDuplicated(RoleAccess.TREASURY, profile.__reservedGovernor);
+    _requireNonDuplicatedPubkey(profile.pubkey);
   }
 
-  function _checkNonZeroAndNonDuplicated(RoleAccess addressType, address addr) internal view {
+  function _requireNonZeroAndNonDuplicated(RoleAccess addressType, address addr) internal view {
     if (addr == address(0)) revert ErrZeroAddress(addressType);
-    _checkNonDuplicated(addressType, addr);
+    _requireNonDuplicated(addressType, addr);
   }
 
-  function _checkNonDuplicated(RoleAccess addressType, address addr) internal view {
-    if (_registry[uint256(uint160(addr))]) {
+  function _requireNonDuplicated(RoleAccess addressType, address addr) internal view {
+    if (_checkNonDuplicatedAddr(addr)) {
       revert ErrDuplicatedInfo(addressType, uint256(uint160(addr)));
     }
   }
 
-  function _checkNonDuplicatedPubkey(bytes memory pubkey) internal view {
-    if (_registry[_hashPubkey(pubkey)]) {
+  function _checkNonDuplicatedAddr(address addr) internal view returns (bool) {
+    return _registry[uint256(uint160(addr))];
+  }
+
+  function _requireNonDuplicatedPubkey(bytes memory pubkey) internal view {
+    if (_checkNonDuplicatedPubkey(pubkey)) {
       revert ErrDuplicatedPubkey(pubkey);
     }
+  }
+
+  function _checkNonDuplicatedPubkey(bytes memory pubkey) internal view returns (bool) {
+    return _registry[_hashPubkey(pubkey)];
   }
 }
