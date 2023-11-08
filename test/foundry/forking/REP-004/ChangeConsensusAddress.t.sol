@@ -69,7 +69,7 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.createSelectFork(RONIN_TEST_RPC, 21710591);
   }
 
-  function testFailFork_AfterUpgraded_AddNewTrustedOrgBefore_ApplyValidatorCandidateAfter() external upgrade {
+  function testFork_AfterUpgraded_AddNewTrustedOrgBefore_ApplyValidatorCandidateAfter() external upgrade {
     IRoninTrustedOrganization.TrustedOrganization memory newTrustedOrg = IRoninTrustedOrganization.TrustedOrganization(
       TConsensus.wrap(makeAddr("new-consensus")),
       makeAddr("new-governor"),
@@ -84,12 +84,11 @@ contract ChangeConsensusAddressForkTest is Test {
     TransparentUpgradeableProxyV2(payable(address(_roninTO))).functionDelegateCall(
       abi.encodeCall(RoninTrustedOrganization.addTrustedOrganizations, trustedOrgs)
     );
-    _roninTO.addTrustedOrganizations(trustedOrgs);
-    _applyValidatorCandidate("new-governor", "new-consensus");
+    _applyValidatorCandidate("candidate-admin", "new-consensus");
   }
 
-  function testFailFork_AfterUpgraded_ApplyValidatorCandidateBefore_AddNewTrustedOrgAfter() external upgrade {
-    _applyValidatorCandidate("new-governor", "new-consensus");
+  function testFork_AfterUpgraded_ApplyValidatorCandidateBefore_AddNewTrustedOrgAfter() external upgrade {
+    _applyValidatorCandidate("candidate-admin", "new-consensus");
     IRoninTrustedOrganization.TrustedOrganization memory newTrustedOrg = IRoninTrustedOrganization.TrustedOrganization(
       TConsensus.wrap(makeAddr("new-consensus")),
       makeAddr("new-governor"),
@@ -104,7 +103,6 @@ contract ChangeConsensusAddressForkTest is Test {
     TransparentUpgradeableProxyV2(payable(address(_roninTO))).functionDelegateCall(
       abi.encodeCall(RoninTrustedOrganization.addTrustedOrganizations, trustedOrgs)
     );
-    _roninTO.addTrustedOrganizations(trustedOrgs);
   }
 
   function testFork_AfterUpgraded_WithdrawableFund_execEmergencyExit() external upgrade {
