@@ -97,7 +97,7 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
     data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
       instance.ProfileLogic!.address,
       new Profile__factory().interface.encodeFunctionData('initializeV2', [
-        instance.StakingLogic!.address,
+        instance.StakingProxy!.address,
         instance.RoninTrustedOrganizationProxy?.address,
       ]),
     ]),
@@ -113,7 +113,7 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
     ]),
   });
 
-  // bump `RoninValidatorSet` to V4
+  // upgrade `RoninValidatorSet` and bump to V4
   segments.push({
     ...defaultSegment,
     target: instance.RoninValidatorSetProxy!.address,
@@ -140,7 +140,7 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
     data: proxyInterface.encodeFunctionData('upgradeTo', [instance.SlashIndicatorLogic!.address]),
   });
 
-  // upgrade `RoninTrustedOrganization`
+  // upgrade `RoninTrustedOrganization` and bump to V2
   segments.push({
     ...defaultSegment,
     target: instance.RoninTrustedOrganizationProxy!.address,
