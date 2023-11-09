@@ -92,6 +92,7 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   // upgrade `Profile` and bump to V2
   segments.push({
     ...defaultSegment,
+    gasAmount: 15_000_000,
     target: instance.ProfileProxy!.address,
     data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
       instance.ProfileLogic!.address,
