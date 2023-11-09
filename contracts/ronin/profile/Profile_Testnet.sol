@@ -8,14 +8,13 @@ contract Profile_Testnet is Profile {
   function __migrationRenouncedCandidates() internal override onlyInitializing {
     if (block.chainid != 2021) return;
 
-    uint length;
     CandidateProfile storage _profile;
 
     address[74] memory lConsensus = __consensuses();
     address[74] memory lAdmin = __admins();
     address[74] memory lTreasury = __treasuries();
 
-    for (uint i; i < length; ++i) {
+    for (uint i; i < lConsensus.length; ++i) {
       address id = lConsensus[i];
 
       _profile = _id2Profile[id];
