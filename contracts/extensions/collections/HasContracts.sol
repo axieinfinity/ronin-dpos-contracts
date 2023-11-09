@@ -5,7 +5,6 @@ import { HasProxyAdmin } from "./HasProxyAdmin.sol";
 import "../../interfaces/collections/IHasContracts.sol";
 import { IdentityGuard } from "../../utils/IdentityGuard.sol";
 import { ErrUnexpectedInternalCall } from "../../utils/CommonErrors.sol";
-import { console2 } from "forge-std/console2.sol";
 
 /**
  * @title HasContracts

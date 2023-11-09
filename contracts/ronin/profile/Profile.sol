@@ -7,7 +7,6 @@ import "../../interfaces/IRoninTrustedOrganization.sol";
 import "../../interfaces/staking/IStaking.sol";
 import "../../interfaces/IProfile.sol";
 import "./ProfileXComponents.sol";
-import "forge-std/console2.sol";
 import { ErrUnauthorized, RoleAccess } from "../../utils/CommonErrors.sol";
 import { ContractType } from "../../utils/ContractType.sol";
 

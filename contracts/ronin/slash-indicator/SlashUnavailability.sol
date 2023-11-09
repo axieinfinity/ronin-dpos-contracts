@@ -64,8 +64,6 @@ abstract contract SlashUnavailability is ISlashUnavailability, HasContracts, Has
       return;
     }
 
-    console2.log("do slash", TConsensus.unwrap(consensusAddr), validatorId);
-
     IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     uint256 period = _validatorContract.currentPeriod();
     uint256 count;

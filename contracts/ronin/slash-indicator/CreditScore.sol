@@ -8,7 +8,6 @@ import "../../interfaces/slash-indicator/ICreditScore.sol";
 import "../../extensions/collections/HasContracts.sol";
 import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../libraries/Math.sol";
-import "forge-std/console2.sol";
 import { HasValidatorDeprecated, HasMaintenanceDeprecated } from "../../utils/DeprecatedSlots.sol";
 import { ErrUnauthorized, RoleAccess } from "../../utils/CommonErrors.sol";
 
