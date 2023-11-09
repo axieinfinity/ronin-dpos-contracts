@@ -29,7 +29,7 @@ abstract contract ProfileXComponents is IProfile, ProfileHandler {
       __reservedGovernor: address(0),
       pubkey: pubkey
     });
-    _checkDuplicatedInRegistry(profile);
+    _requireNonDuplicatedInRegistry(profile);
     _addNewProfile(_profile, profile);
   }
 }

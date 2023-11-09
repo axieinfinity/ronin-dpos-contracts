@@ -210,7 +210,7 @@ abstract contract CandidateStaking is BaseStaking, ICandidateStaking, GlobalConf
     poolOfConsensusIsActive(consensusAddr)
     onlyPoolAdmin(_poolDetail[__css2cid(consensusAddr)], msg.sender)
   {
-    IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execEmergencyExit(
+    IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execRequestEmergencyExit(
       __css2cid(consensusAddr),
       _waitingSecsToRevoke
     );

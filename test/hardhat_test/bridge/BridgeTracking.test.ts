@@ -16,6 +16,7 @@ import {
   RoninBridgeManager__factory,
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
+  RoninTrustedOrganization__factory,
   Staking,
   Staking__factory,
 } from '../../../src/types';
@@ -92,12 +93,13 @@ describe('Bridge Tracking test', () => {
       bridgeRewardAddress,
       profileAddress,
       fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress,
     } = await deployTestSuite('BridgeTracking')({
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          __deprecatedBridgeVoter: v__deprecatedBridgeVoter.address,
+          __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
@@ -158,12 +160,19 @@ describe('Bridge Tracking test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await governanceAdminInterface.functionDelegateCalls(
-      [stakingContract.address, roninValidatorSet.address, roninValidatorSet.address, profileAddress],
+      [
+        stakingContract.address,
+        roninValidatorSet.address,
+        roninValidatorSet.address,
+        profileAddress,
+        roninTrustedOrganizationAddress,
+      ],
       [
         stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
         roninValidatorSet.interface.encodeFunctionData('initializeV3', [fastFinalityTrackingAddress]),
         roninValidatorSet.interface.encodeFunctionData('initializeV4', [profileAddress]),
         new Profile__factory().interface.encodeFunctionData('initializeV2', [stakingContractAddress]),
+        new RoninTrustedOrganization__factory().interface.encodeFunctionData('initializeV2', [profileAddress]),
       ]
     );
 

@@ -317,7 +317,7 @@ abstract contract CoinbaseExecution is
     unsatisfiedCandidates = _syncCandidateSet(newPeriod);
     uint256[] memory weights = IStaking(getContract(ContractType.STAKING)).getManyStakingTotalsById(_candidateIds);
     uint256[] memory trustedWeights = IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION))
-      .getManyConsensusWeightsById(_candidateIds);
+      .getConsensusWeightsById(_candidateIds);
     uint256 newValidatorCount;
     (newValidatorIds, newValidatorCount) = _pcPickValidatorSet(
       _candidateIds,

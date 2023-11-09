@@ -162,7 +162,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function getManyConsensusWeightsById(address[] calldata cids) external view returns (uint256[] memory) {
+  function getConsensusWeightsById(address[] calldata cids) external view returns (uint256[] memory) {
     TConsensus[] memory consensusList = __cid2cssBatch(cids);
     return _getManyConsensusWeightsByConsensus(consensusList);
   }
