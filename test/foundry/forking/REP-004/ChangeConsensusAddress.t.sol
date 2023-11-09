@@ -25,6 +25,7 @@ import { Ballot } from "@ronin/contracts/libraries/Ballot.sol";
 
 contract ChangeConsensusAddressForkTest is Test {
   string constant RONIN_TEST_RPC = "https://saigon-archive.roninchain.com/rpc";
+  string constant RONIN_MAIN_RPC = "https://api-archived.roninchain.com/rpc";
   bytes32 constant ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
   Profile internal _profile;
@@ -54,8 +55,8 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.etch(address(0x68), address(mockPrecompile).code);
     vm.makePersistent(address(0x68));
 
-    vm.createSelectFork(RONIN_TEST_RPC, 21710591);
-    // vm.createSelectFork(RONIN_MAIN_RPC, 29225255);
+    // vm.createSelectFork(RONIN_TEST_RPC, 21710591);
+    vm.createSelectFork(RONIN_MAIN_RPC, 29225255);
 
     if (block.chainid == 2021) {
       _profile = Profile(0x3b67c8D22a91572a6AB18acC9F70787Af04A4043);
@@ -84,8 +85,6 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.label(address(_roninGA), "GovernanceAdmin");
     vm.label(address(_roninTO), "TrustedOrganizations");
     vm.label(address(_slashIndicator), "SlashIndicator");
-
-    vm.createSelectFork(RONIN_TEST_RPC, 21710591);
   }
 
   function testFork_AfterUpgraded_AddNewTrustedOrg_CanVoteProposal() external upgrade {
