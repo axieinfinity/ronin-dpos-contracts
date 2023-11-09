@@ -8,6 +8,8 @@ import { Maintenance } from "@ronin/contracts/ronin/Maintenance.sol";
 import { ContractType } from "@ronin/contracts/utils/ContractType.sol";
 import { MockPrecompile } from "@ronin/contracts/mocks/MockPrecompile.sol";
 import { IProfile, Profile } from "@ronin/contracts/ronin/profile/Profile.sol";
+import { Profile_Testnet } from "@ronin/contracts/ronin/profile/Profile_Testnet.sol";
+import { Profile_Mainnet } from "@ronin/contracts/ronin/profile/Profile_Mainnet.sol";
 import { IBaseStaking, Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
 import { HasContracts } from "@ronin/contracts/extensions/collections/HasContracts.sol";
 import { CandidateManager } from "@ronin/contracts/ronin/validator/CandidateManager.sol";
@@ -52,8 +54,8 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.etch(address(0x68), address(mockPrecompile).code);
     vm.makePersistent(address(0x68));
 
-    // vm.createSelectFork(RONIN_TEST_RPC, 21710591);
-    vm.createSelectFork(RONIN_MAIN_RPC, 29225255);
+    vm.createSelectFork(RONIN_TEST_RPC, 21710591);
+    // vm.createSelectFork(RONIN_MAIN_RPC, 29225255);
 
     if (block.chainid == 2021) {
       _profile = Profile(0x3b67c8D22a91572a6AB18acC9F70787Af04A4043);
@@ -786,13 +788,20 @@ contract ChangeConsensusAddressForkTest is Test {
   }
 
   function _upgradeProfile() internal {
-    Profile logic = new Profile();
+    Profile logic;
+
+    if (block.chainid == 2020) {
+      logic = new Profile_Mainnet();
+    }
+    if (block.chainid == 2021) {
+      logic = new Profile_Testnet();
+    }
+
     vm.prank(_getProxyAdmin(address(_profile)));
     TransparentUpgradeableProxyV2(payable(address(_profile))).upgradeToAndCall(
       address(logic),
-      abi.encodeCall(Profile.initializeV2, address(_staking))
+      abi.encodeCall(Profile.initializeV2, (address(_staking), address(_roninTO)))
     );
-    _profile.initializeV3(address(_roninTO));
   }
 
   function _cheatSetRoninGACode() internal {
