@@ -160,6 +160,8 @@ contract ChangeConsensusAddressForkTest is Test {
   }
 
   function testFork_AfterUpgraded_AddNewTrustedOrgBefore_ApplyValidatorCandidateAfter() external upgrade {
+    uint256 newWeight = 1000;
+
     // add trusted org
     address consensus = makeAddr("consensus");
     address governor = makeAddr("governor");
@@ -167,7 +169,7 @@ contract ChangeConsensusAddressForkTest is Test {
       TConsensus.wrap(consensus),
       governor,
       address(0x0),
-      1000,
+      newWeight,
       0
     );
     IRoninTrustedOrganization.TrustedOrganization[] memory trustedOrgs = _addTrustedOrg(newTrustedOrg);
@@ -209,15 +211,13 @@ contract ChangeConsensusAddressForkTest is Test {
     assertEq(TConsensus.unwrap(profile.consensus), newConsensus);
 
     // 2.
-    TConsensus[] memory consensuses = new TConsensus[](1);
-    address[] memory ids = new address[](1);
-    consensuses[0] = TConsensus.wrap(newConsensus);
-    ids[0] = consensus;
-    assertEq(_roninTO.getConsensusWeight(consensuses[0]), _roninTO.getConsensusWeights(consensuses)[0]);
-    assertEq(_roninTO.getConsensusWeightById(ids[0]), _roninTO.getManyConsensusWeightsById(ids)[0]);
+    __assertWeight(TConsensus.wrap(newConsensus), consensus, newWeight);
+    __assertWeight(TConsensus.wrap(consensus), consensus, 0);
   }
 
   function testFork_AfterUpgraded_ApplyValidatorCandidateBefore_AddNewTrustedOrgAfter() external upgrade {
+    uint256 newWeight = 1000;
+
     // apply validator candidate
     _applyValidatorCandidate("candidate-admin", "consensus");
 
@@ -228,7 +228,7 @@ contract ChangeConsensusAddressForkTest is Test {
       TConsensus.wrap(consensus),
       governor,
       address(0x0),
-      1000,
+      newWeight,
       0
     );
     IRoninTrustedOrganization.TrustedOrganization[] memory trustedOrgs = _addTrustedOrg(newTrustedOrg);
@@ -266,12 +266,27 @@ contract ChangeConsensusAddressForkTest is Test {
     assertEq(TConsensus.unwrap(profile.consensus), newConsensus);
 
     // 2.
+    __assertWeight(TConsensus.wrap(newConsensus), consensus, newWeight);
+    __assertWeight(TConsensus.wrap(consensus), consensus, 0);
+  }
+
+  function __assertWeight(TConsensus consensus, address id, uint256 weight) private {
     TConsensus[] memory consensuses = new TConsensus[](1);
     address[] memory ids = new address[](1);
-    consensuses[0] = TConsensus.wrap(newConsensus);
-    ids[0] = consensus;
-    assertEq(_roninTO.getConsensusWeight(consensuses[0]), _roninTO.getConsensusWeights(consensuses)[0]);
-    assertEq(_roninTO.getConsensusWeightById(ids[0]), _roninTO.getManyConsensusWeightsById(ids)[0]);
+
+    consensuses[0] = consensus;
+    ids[0] = id;
+
+    if (weight == 0) {
+      assertEq(_roninTO.getConsensusWeight(consensuses[0]), weight);
+      assertEq(_roninTO.getConsensusWeight(consensuses[0]), _roninTO.getConsensusWeight(consensuses[0]));
+    } else {
+      assertEq(_roninTO.getConsensusWeight(consensuses[0]), weight);
+      assertEq(_roninTO.getConsensusWeight(consensuses[0]), _roninTO.getConsensusWeights(consensuses)[0]);
+      assertEq(_roninTO.getConsensusWeights(consensuses)[0], _roninTO.getConsensusWeightById(ids[0]));
+      assertEq(_roninTO.getConsensusWeightById(ids[0]), _roninTO.getManyConsensusWeightsById(ids)[0]);
+      assertEq(_roninTO.getManyConsensusWeightsById(ids)[0], _roninTO.getConsensusWeight(consensuses[0]));
+    }
   }
 
   function testFork_AfterUpgraded_WithdrawableFund_execEmergencyExit() external upgrade {
