@@ -109,7 +109,7 @@ export const initializeTestSuite = async (input: InitializeTestSuiteInput) => {
   await upgradeRep4({
     profileContract,
     stakingContract,
-    roninTrustedOrgContract
+    roninTrustedOrgContract,
   });
 };
 
@@ -146,8 +146,7 @@ const upgradeRep3 = async (input: InitREP3Input) => {
 
 const upgradeRep4 = async (input: InitREP4Input) => {
   if (input.profileContract) {
-    await input.profileContract.initializeV2(input.stakingContract?.address!);
-    await input.profileContract.initializeV3(input.roninTrustedOrgContract?.address!);
+    await input.profileContract.initializeV2(input.stakingContract?.address!, input.roninTrustedOrgContract?.address!);
   }
 
   if (input.roninTrustedOrgContract) {

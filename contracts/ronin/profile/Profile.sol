@@ -22,14 +22,10 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     _setContract(ContractType.VALIDATOR, validatorContract);
   }
 
-  function initializeV2(address stakingContract) external reinitializer(2) {
+  function initializeV2(address stakingContract, address trustedOrgContract) external reinitializer(2) {
     _setContract(ContractType.STAKING, stakingContract);
-  }
-
-  function initializeV3(address trustedOrgContract) external reinitializer(3) {
     _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, trustedOrgContract);
 
-    // TODO(bao): handle renounced validators
     address[] memory validatorCandidates = IRoninValidatorSet(getContract(ContractType.VALIDATOR))
       .getValidatorCandidates();
     TConsensus[] memory consensuses;
@@ -39,7 +35,14 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     for (uint256 i; i < validatorCandidates.length; ++i) {
       _consensus2Id[consensuses[i]] = validatorCandidates[i];
     }
+
+    __migrationRenouncedCandidates();
   }
+
+  /**
+   * @dev Add addresses of renounced candidates into registry. Only called during {initializeV2}F.
+   */
+  function __migrationRenouncedCandidates() internal virtual {}
 
   /**
    * @inheritdoc IProfile
