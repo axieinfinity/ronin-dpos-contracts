@@ -95,7 +95,10 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
     target: instance.ProfileProxy!.address,
     data: proxyInterface.encodeFunctionData('upgradeToAndCall', [
       instance.ProfileLogic!.address,
-      new Profile__factory().interface.encodeFunctionData('initializeV2', [instance.StakingLogic!.address]),
+      new Profile__factory().interface.encodeFunctionData('initializeV2', [
+        instance.StakingLogic!.address,
+        instance.RoninTrustedOrganizationProxy?.address,
+      ]),
     ]),
   });
 
