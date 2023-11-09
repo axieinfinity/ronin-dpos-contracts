@@ -4,17 +4,10 @@ import { VoteType } from '../../script/proposal';
 import { roninchainNetworks, stakingVestingConfig } from '../../configs/config';
 import { network } from 'hardhat';
 import {
-  BridgeReward__factory,
-  BridgeSlash__factory,
-  BridgeTracking__factory,
   Maintenance__factory,
   Profile__factory,
-  RoninGatewayV3__factory,
-  RoninGovernanceAdmin__factory,
   RoninTrustedOrganization__factory,
   RoninValidatorSet__factory,
-  SlashIndicator__factory,
-  StakingVesting__factory,
   Staking__factory,
 } from '../../types';
 import { ProposalDetailStruct } from '../../types/GovernanceAdmin';
@@ -37,13 +30,9 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     SlashIndicatorProxy: await deployments.get('SlashIndicatorProxy'),
     MaintenanceProxy: await deployments.get('MaintenanceProxy'),
     RoninTrustedOrganizationProxy: await deployments.get('RoninTrustedOrganizationProxy'),
-    BridgeTrackingProxy: await deployments.get('BridgeTrackingProxy'),
     StakingVestingProxy: await deployments.get('StakingVestingProxy'),
     FastFinalityTrackingProxy: await deployments.get('FastFinalityTrackingProxy'),
     RoninBridgeManager: await deployments.get('RoninBridgeManager'),
-    RoninGatewayV3Proxy: await deployments.get('RoninGatewayV3Proxy'),
-    BridgeSlashProxy: await deployments.get('BridgeSlashProxy'),
-    BridgeRewardProxy: await deployments.get('BridgeRewardProxy'),
 
     RoninValidatorSetLogic: await deployments.get('RoninValidatorSetLogic'),
     ProfileLogic: await deployments.get('ProfileLogic'),
@@ -51,10 +40,8 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
     SlashIndicatorLogic: await deployments.get('SlashIndicatorLogic'),
     MaintenanceLogic: await deployments.get('MaintenanceLogic'),
     RoninTrustedOrganizationLogic: await deployments.get('RoninTrustedOrganizationLogic'),
-    BridgeTrackingLogic: await deployments.get('BridgeTrackingLogic'),
     StakingVestingLogic: await deployments.get('StakingVestingLogic'),
     FastFinalityTrackingLogic: await deployments.get('FastFinalityTrackingLogic'),
-    RoninGatewayV3Logic: await deployments.get('RoninGatewayV3Logic'),
   };
 
   //      Upgrade DPoS Contracts
@@ -63,7 +50,7 @@ const deploy = async ({ getNamedAccounts, deployments, ethers }: HardhatRuntimeE
 
   console.log(proposalSegments);
 
-  return;
+  // return;
 
   //////////////////////////////////////////
   //          Propose the proposal
@@ -155,7 +142,7 @@ async function upgradeDPoSContractSetProposalPart(instance: Instance): Promise<P
   return segments;
 }
 
-// yarn hardhat deploy --tags 230231109__ProposalOnRoninChain__V0_7_0 --network ronin-mainnet
+// yarn hardhat deploy --tags 230231109__ProposalOnRoninChain__V0_7_0 --network ronin-testnet
 deploy.tags = ['230231109__ProposalOnRoninChain__V0_7_0'];
 
 export default deploy;
