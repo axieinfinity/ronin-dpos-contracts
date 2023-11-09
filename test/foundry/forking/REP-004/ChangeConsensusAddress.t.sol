@@ -135,7 +135,7 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.stopPrank();
   }
 
-  function testFailFork_AfterUpgraded_AsTrustedOrg_AfterRenouncedAndRemovedFromTO_ReAddAsTrustedOrg() external upgrade {
+  function testFork_AfterUpgraded_AsTrustedOrg_AfterRenouncedAndRemovedFromTO_ReAddAsTrustedOrg() external upgrade {
     address[] memory validatorCandidates = _validator.getValidatorCandidates();
     address validatorCandidate = validatorCandidates[2];
 
