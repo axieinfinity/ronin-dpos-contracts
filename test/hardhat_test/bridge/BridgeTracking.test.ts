@@ -171,7 +171,10 @@ describe('Bridge Tracking test', () => {
         stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
         roninValidatorSet.interface.encodeFunctionData('initializeV3', [fastFinalityTrackingAddress]),
         roninValidatorSet.interface.encodeFunctionData('initializeV4', [profileAddress]),
-        new Profile__factory().interface.encodeFunctionData('initializeV2', [stakingContractAddress]),
+        new Profile__factory().interface.encodeFunctionData('initializeV2', [
+          stakingContractAddress,
+          roninTrustedOrganizationAddress,
+        ]),
         new RoninTrustedOrganization__factory().interface.encodeFunctionData('initializeV2', [profileAddress]),
       ]
     );

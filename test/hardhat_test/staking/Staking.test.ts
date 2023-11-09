@@ -19,6 +19,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { generateSamplePubkey, getLastBlockTimestamp } from '../helpers/utils';
+import { DEFAULT_ADDRESS } from '../../../src/utils';
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -102,7 +103,7 @@ describe('Staking test', () => {
       .connect(proxyAdmin)
       .functionDelegateCall(logicContract.interface.encodeFunctionData('initializeV3', [profileContract.address]));
 
-    await profileContract.initializeV2(stakingContractAddr);
+    await profileContract.initializeV2(stakingContractAddr, DEFAULT_ADDRESS);
 
     stakingContract = Staking__factory.connect(stakingProxyContract.address, deployer);
     expect(validatorContractAddr.toLowerCase()).eq(
