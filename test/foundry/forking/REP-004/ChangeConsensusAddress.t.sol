@@ -861,11 +861,18 @@ contract ChangeConsensusAddressForkTest is Test {
       logic = new Profile_Testnet();
     }
 
+    uint gl1 = gasleft();
+    console2.log("gasleft 1", gl1);
+
     vm.prank(_getProxyAdmin(address(_profile)));
     TransparentUpgradeableProxyV2(payable(address(_profile))).upgradeToAndCall(
       address(logic),
       abi.encodeCall(Profile.initializeV2, (address(_staking), address(_roninTO)))
     );
+
+    uint gl2 = gasleft();
+    console2.log("gasleft 2", gl2);
+    console2.log("consume", gl1 - gl2);
   }
 
   function _cheatSetRoninGACode() internal {
