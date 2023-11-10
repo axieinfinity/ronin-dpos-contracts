@@ -55,7 +55,7 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.etch(address(0x68), address(mockPrecompile).code);
     vm.makePersistent(address(0x68));
 
-    vm.createSelectFork(RONIN_TEST_RPC, 21710591);
+    vm.createSelectFork(RONIN_TEST_RPC, 21901973);
     // vm.createSelectFork(RONIN_MAIN_RPC, 29225255);
 
     if (block.chainid == 2021) {
@@ -675,14 +675,6 @@ contract ChangeConsensusAddressForkTest is Test {
   }
 
   function testFork_Maintenance_BeforeAndAfterUpgrade() external {
-    if (block.chainid == 2021) {
-      // upgrade maintenance
-      vm.prank(_getProxyAdmin(address(_maintenance)));
-      TransparentUpgradeableProxyV2(payable(address(_maintenance))).upgradeTo(
-        0x84d6e16a767A85D34964f26094BB46b0b7a4c8Ab
-      );
-    }
-
     IRoninTrustedOrganization.TrustedOrganization memory trustedOrg = _roninTO.getTrustedOrganizationAt(0);
     address validatorCandidate = TConsensus.unwrap(trustedOrg.consensusAddr);
     address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).__shadowedAdmin;
