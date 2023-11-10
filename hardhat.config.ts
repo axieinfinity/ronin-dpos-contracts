@@ -122,6 +122,7 @@ const config: HardhatUserConfig = {
             // and we want all generated code to be deterministic
             // https://docs.soliditylang.org/en/v0.8.17/metadata.html
             bytecodeHash: 'none',
+            useLiteralContent: true,
           },
         },
       },
