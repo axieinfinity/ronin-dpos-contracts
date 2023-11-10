@@ -55,8 +55,8 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.etch(address(0x68), address(mockPrecompile).code);
     vm.makePersistent(address(0x68));
 
-    // vm.createSelectFork(RONIN_TEST_RPC, 21710591);
-    vm.createSelectFork(RONIN_MAIN_RPC, 29225255);
+    vm.createSelectFork(RONIN_TEST_RPC, 21710591);
+    // vm.createSelectFork(RONIN_MAIN_RPC, 29225255);
 
     if (block.chainid == 2021) {
       _profile = Profile(0x3b67c8D22a91572a6AB18acC9F70787Af04A4043);
@@ -151,22 +151,35 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.stopPrank();
   }
 
+  /**
+   * R4-P-09
+   */
   function testFork_AfterUpgraded_AsTrustedOrg_AfterRenouncedAndRemovedFromTO_ReAddAsTrustedOrg() external upgrade {
-    address[] memory validatorCandidates = _validator.getValidatorCandidates();
-    address validatorCandidate = validatorCandidates[2];
+    // address[] memory validatorCids = _validator.getValidatorCandidates();
+    // TConsensus standardConsensus;
+    // address standardId;
+    // for (uint i; i < validatorCids.length; i++) {
+    //   if (_roninTO.getConsensusWeightById(validatorCids[i]) == 0) {
+    //     standardId = validatorCids[i];
+    //     standardConsensus = _profile.getId2Profile(standardId).consensus;
+    //     break;
+    //   }
+    // }
 
-    (address admin, , ) = _staking.getPoolDetail(TConsensus.wrap(validatorCandidate));
+    (, TConsensus standardConsensus) = _pickOneStandardCandidate();
+
+    (address admin, , ) = _staking.getPoolDetail(standardConsensus);
     vm.prank(admin);
-    _staking.requestRenounce(TConsensus.wrap(validatorCandidate));
+    _staking.requestRenounce(standardConsensus);
 
     vm.warp(block.timestamp + 7 days);
     _bulkSubmitBlockReward(1);
     _bulkWrapUpEpoch(1);
 
-    assertFalse(_validator.isValidatorCandidate(TConsensus.wrap(validatorCandidate)));
+    assertFalse(_validator.isValidatorCandidate(standardConsensus));
 
     IRoninTrustedOrganization.TrustedOrganization memory newTrustedOrg = IRoninTrustedOrganization.TrustedOrganization(
-      TConsensus.wrap(validatorCandidate),
+      standardConsensus,
       makeAddr("governor"),
       address(0x0),
       1000,
@@ -480,19 +493,18 @@ contract ChangeConsensusAddressForkTest is Test {
   }
 
   function testFork_AfterUpgraded_RevertWhen_ReapplySameAddress_Renounce() external upgrade {
-    address[] memory validatorCandidates = _validator.getValidatorCandidates();
-    address validatorCandidate = validatorCandidates[2];
-    address recipient = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).__shadowedTreasury;
+    (, TConsensus standardConsensus) = _pickOneStandardCandidate();
+    address recipient = _validator.getCandidateInfo(standardConsensus).__shadowedTreasury;
 
-    (address admin, , ) = _staking.getPoolDetail(TConsensus.wrap(validatorCandidate));
+    (address admin, , ) = _staking.getPoolDetail(standardConsensus);
     vm.prank(admin);
-    _staking.requestRenounce(TConsensus.wrap(validatorCandidate));
+    _staking.requestRenounce(standardConsensus);
 
     vm.warp(block.timestamp + 7 days);
     _bulkSubmitBlockReward(1);
     _bulkWrapUpEpoch(1);
 
-    assertFalse(_validator.isValidatorCandidate(TConsensus.wrap(validatorCandidate)));
+    assertFalse(_validator.isValidatorCandidate(standardConsensus));
 
     // re-apply same admin
     uint256 amount = _staking.minValidatorStakingAmount();
@@ -513,7 +525,7 @@ contract ChangeConsensusAddressForkTest is Test {
     vm.prank(newAdmin);
     _staking.applyValidatorCandidate{ value: amount }(
       newAdmin,
-      TConsensus.wrap(validatorCandidate),
+      standardConsensus,
       payable(newAdmin),
       2500,
       "new-admin"
@@ -663,12 +675,16 @@ contract ChangeConsensusAddressForkTest is Test {
   }
 
   function testFork_Maintenance_BeforeAndAfterUpgrade() external {
-    // upgrade maintenance
-    vm.prank(_getProxyAdmin(address(_maintenance)));
-    TransparentUpgradeableProxyV2(payable(address(_maintenance))).upgradeTo(0x84d6e16a767A85D34964f26094BB46b0b7a4c8Ab);
+    if (block.chainid == 2021) {
+      // upgrade maintenance
+      vm.prank(_getProxyAdmin(address(_maintenance)));
+      TransparentUpgradeableProxyV2(payable(address(_maintenance))).upgradeTo(
+        0x84d6e16a767A85D34964f26094BB46b0b7a4c8Ab
+      );
+    }
 
-    address[] memory validatorCandidates = _validator.getValidatorCandidates();
-    address validatorCandidate = validatorCandidates[0];
+    IRoninTrustedOrganization.TrustedOrganization memory trustedOrg = _roninTO.getTrustedOrganizationAt(0);
+    address validatorCandidate = TConsensus.unwrap(trustedOrg.consensusAddr);
     address candidateAdmin = _validator.getCandidateInfo(TConsensus.wrap(validatorCandidate)).__shadowedAdmin;
 
     // check balance before wrapup epoch
@@ -982,5 +998,16 @@ contract ChangeConsensusAddressForkTest is Test {
       15_00,
       pubKey
     );
+  }
+
+  function _pickOneStandardCandidate() internal view returns (address standardId, TConsensus standardConsensus) {
+    address[] memory validatorCids = _validator.getValidatorCandidates();
+    for (uint i; i < validatorCids.length; i++) {
+      if (_roninTO.getConsensusWeightById(validatorCids[i]) == 0) {
+        standardId = validatorCids[i];
+        standardConsensus = _profile.getId2Profile(standardId).consensus;
+        break;
+      }
+    }
   }
 }
