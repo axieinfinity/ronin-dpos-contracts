@@ -103,7 +103,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
   function requestChangeAdminAddress(address id, address newAdminAddr) external {
     CandidateProfile storage _profile = _getId2ProfileHelper(id);
     _requireCandidateAdmin(_profile);
-    _requireNonZeroAndNonDuplicated(RoleAccess.ADMIN, newAdminAddr);
+    _requireNonZeroAndNonDuplicated(RoleAccess.CANDIDATE_ADMIN, newAdminAddr);
     _setAdmin(_profile, newAdminAddr);
 
     IStaking stakingContract = IStaking(getContract(ContractType.STAKING));
@@ -112,7 +112,7 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
     validatorContract.execChangeAdminAddress(id, newAdminAddr);
 
-    emit ProfileAddressChanged(id, RoleAccess.ADMIN);
+    emit ProfileAddressChanged(id, RoleAccess.CANDIDATE_ADMIN);
   }
 
   /**
@@ -198,6 +198,6 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     if (
       msg.sender != sProfile.admin ||
       !IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isCandidateAdmin(sProfile.consensus, msg.sender)
-    ) revert ErrUnauthorized(msg.sig, RoleAccess.ADMIN);
+    ) revert ErrUnauthorized(msg.sig, RoleAccess.CANDIDATE_ADMIN);
   }
 }
