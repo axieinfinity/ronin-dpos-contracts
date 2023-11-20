@@ -273,7 +273,9 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
     TConsensus oldAddr,
     TConsensus newAddr
   ) external override onlyContract(ContractType.PROFILE) {
-    uint256 index = _findTrustedOrgIndexByConsensus(oldAddr);
+    (bool found, uint256 index) = _findTrustedOrgIndexByConsensus(oldAddr);
+    if (!found) return;
+
     _consensusList[index] = newAddr;
     _consensusWeight[newAddr] = _consensusWeight[oldAddr];
     _addedBlock[newAddr] = block.number;
@@ -378,7 +380,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
     uint256 weight = _consensusWeight[addr];
     if (weight == 0) revert ErrConsensusAddressIsNotAdded(addr);
 
-    uint256 index = _findTrustedOrgIndexByConsensus(addr);
+    (, uint256 index) = _findTrustedOrgIndexByConsensus(addr);
 
     _totalWeight -= weight;
     _deleteConsensusInMappings(addr);
@@ -392,11 +394,11 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
     _governorList.pop();
   }
 
-  function _findTrustedOrgIndexByConsensus(TConsensus addr) private view returns (uint256 index) {
+  function _findTrustedOrgIndexByConsensus(TConsensus addr) private view returns (bool found, uint256 index) {
     uint256 count = _consensusList.length;
     for (uint256 i = 0; i < count; i++) {
       if (_consensusList[i] == addr) {
-        return i;
+        return (true, i);
       }
     }
   }
