@@ -68,7 +68,7 @@ interface ICandidateManager {
   error ErrExistentTreasury(address _treasuryAddr);
   /// @dev Error of invalid commission rate.
   error ErrInvalidCommissionRate();
-    /// @dev Error of invalid min effective days onwards.
+  /// @dev Error of invalid min effective days onwards.
   error ErrInvalidMinEffectiveDaysOnwards();
 
   /**
@@ -109,9 +109,14 @@ interface ICandidateManager {
   function isValidatorCandidate(TConsensus consensus) external view returns (bool);
 
   /**
-   * @dev Returns the validator candidate.
+   * @dev Returns the list validator candidates.
    */
-  function getValidatorCandidates() external view returns (address[] memory);
+  function getValidatorCandidates() external view returns (TConsensus[] memory);
+
+  /**
+   * @dev Returns the list of validator candidate ids.
+   */
+  function getValidatorCandidateIds() external view returns (address[] memory);
 
   /**
    * @dev Returns all candidate info.

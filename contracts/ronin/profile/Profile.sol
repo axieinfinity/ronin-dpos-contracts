@@ -25,21 +25,20 @@ contract Profile is IProfile, ProfileXComponents, Initializable {
     _setContract(ContractType.STAKING, stakingContract);
     _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, trustedOrgContract);
 
-    address[] memory validatorCandidates = IRoninValidatorSet(getContract(ContractType.VALIDATOR))
+    TConsensus[] memory validatorCandidates = IRoninValidatorSet(getContract(ContractType.VALIDATOR))
       .getValidatorCandidates();
-    TConsensus[] memory consensuses;
-    assembly ("memory-safe") {
-      consensuses := validatorCandidates
-    }
+
     for (uint256 i; i < validatorCandidates.length; ++i) {
-      _consensus2Id[consensuses[i]] = validatorCandidates[i];
+      TConsensus consensus = validatorCandidates[i];
+      address id = TConsensus.unwrap(consensus);
+      _consensus2Id[consensus] = id;
     }
 
     __migrationRenouncedCandidates();
   }
 
   /**
-   * @dev Add addresses of renounced candidates into registry. Only called during {initializeV2}F.
+   * @dev Add addresses of renounced candidates into registry. Only called during {initializeV2}.
    */
   function __migrationRenouncedCandidates() internal virtual {}
 

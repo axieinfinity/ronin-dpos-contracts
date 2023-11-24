@@ -106,7 +106,14 @@ abstract contract CandidateManager is
   /**
    * @inheritdoc ICandidateManager
    */
-  function getValidatorCandidates() public view override returns (address[] memory) {
+  function getValidatorCandidates() external view override returns (TConsensus[] memory) {
+    return IProfile(getContract(ContractType.PROFILE)).getManyId2Consensus(_candidateIds);
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
+  function getValidatorCandidateIds() public view override returns (address[] memory) {
     return _candidateIds;
   }
 
