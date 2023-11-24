@@ -107,7 +107,7 @@ abstract contract CandidateManager is
    * @inheritdoc ICandidateManager
    */
   function getValidatorCandidates() external view override returns (TConsensus[] memory) {
-    return IProfile(getContract(ContractType.PROFILE)).getManyId2Consensus(_candidateIds);
+    return __cid2cssBatch(getValidatorCandidateIds());
   }
 
   /**
@@ -285,4 +285,7 @@ abstract contract CandidateManager is
 
   /// @dev See {RoninValidatorSet-__css2cidBatch}
   function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
+
+  /// @dev See {RoninValidatorSet-__cid2cssBatch}
+  function __cid2cssBatch(address[] memory cids) internal view virtual returns (TConsensus[] memory);
 }

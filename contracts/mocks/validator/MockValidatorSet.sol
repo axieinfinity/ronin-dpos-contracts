@@ -59,7 +59,9 @@ contract MockValidatorSet is
 
   function epochOf(uint256 _block) external view override returns (uint256) {}
 
-  function getValidators() external view override returns (address[] memory) {}
+  function getValidators() external view override returns (TConsensus[] memory) {}
+
+  function getValidatorIds() external view override returns (address[] memory) {}
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
 
@@ -84,7 +86,9 @@ contract MockValidatorSet is
     return _numberOfBlocksInEpoch;
   }
 
-  function getBlockProducers() external view override returns (address[] memory) {}
+  function getBlockProducers() external view override returns (TConsensus[] memory) {}
+
+  function getBlockProducerIds() external view override returns (address[] memory) {}
 
   function isBlockProducer(TConsensus) external pure override returns (bool) {
     return true;
@@ -123,6 +127,10 @@ contract MockValidatorSet is
 
   function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view override returns (address[] memory) {
     return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
+  }
+
+  function __cid2cssBatch(address[] memory cids) internal view override returns (TConsensus[] memory) {
+    return IProfile(getContract(ContractType.PROFILE)).getManyId2Consensus(cids);
   }
 
   function execReleaseLockedFundForEmergencyExitRequest(

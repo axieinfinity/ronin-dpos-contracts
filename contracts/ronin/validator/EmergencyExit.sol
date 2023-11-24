@@ -165,6 +165,11 @@ abstract contract EmergencyExit is IEmergencyExit, RONTransferHelper, CandidateM
     TConsensus[] memory consensusAddrs
   ) internal view virtual override(CandidateManager, CommonStorage) returns (address[] memory);
 
+  /// @dev See {RoninValidatorSet-__cid2cssBatch}
+  function __cid2cssBatch(
+    address[] memory cids
+  ) internal view virtual override(CandidateManager, ValidatorInfoStorageV2) returns (TConsensus[] memory);
+
   /**
    * @dev See `setEmergencyExitLockedAmount.
    */

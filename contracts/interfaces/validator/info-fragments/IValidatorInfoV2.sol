@@ -26,12 +26,22 @@ interface IValidatorInfoV2 {
   /**
    * @dev Returns the current validator list.
    */
-  function getValidators() external view returns (address[] memory _validatorList);
+  function getValidators() external view returns (TConsensus[] memory validatorList);
+
+  /**
+   * @dev Returns the ids of current validator list.
+   */
+  function getValidatorIds() external view returns (address[] memory cids);
 
   /**
    * @dev Returns the current block producer list.
    */
-  function getBlockProducers() external view returns (address[] memory);
+  function getBlockProducers() external view returns (TConsensus[] memory consensusList);
+
+  /**
+   * @dev Returns the ids current block producer list.
+   */
+  function getBlockProducerIds() external view returns (address[] memory cids);
 
   /**
    * @dev Returns whether the address is block producer or not.
