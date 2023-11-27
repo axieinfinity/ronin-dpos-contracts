@@ -88,7 +88,7 @@ export const BridgeOperatorsBallotTypes = {
 
 export const EmergencyExitBallotTypes = {
   EmergencyExitBallot: [
-    { name: 'consensusAddress', type: 'address' },
+    { name: 'validatorId', type: 'address' },
     { name: 'recipientAfterUnlockedFund', type: 'address' },
     { name: 'requestedAt', type: 'uint256' },
     { name: 'expiredAt', type: 'uint256' },
@@ -193,7 +193,7 @@ export const getBOsBallotHash = (period: BigNumberish, epoch: BigNumberish, oper
   );
 
 export const getEmergencyExitBallotHash = (
-  consensusAddress: Address,
+  validatorId: Address,
   recipientAfterUnlockedFund: Address,
   requestedAt: BigNumberish,
   expiredAt: BigNumberish
@@ -201,7 +201,7 @@ export const getEmergencyExitBallotHash = (
   keccak256(
     AbiCoder.prototype.encode(emergencyExitBallotParamTypes, [
       emergencyExitBallotTypehash,
-      consensusAddress,
+      validatorId,
       recipientAfterUnlockedFund,
       requestedAt,
       expiredAt,

@@ -30,24 +30,32 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidato
    * @inheritdoc ISlashDoubleSign
    */
   function slashDoubleSign(
-    address _consensusAddr,
-    bytes calldata _header1,
-    bytes calldata _header2
+    TConsensus consensusAddr,
+    bytes calldata header1,
+    bytes calldata header2
   ) external override onlyAdmin {
-    bytes32 _header1Checksum = keccak256(_header1);
-    bytes32 _header2Checksum = keccak256(_header2);
+    bytes32 header1Checksum = keccak256(header1);
+    bytes32 header2Checksum = keccak256(header2);
 
-    if (_submittedEvidence[_header1Checksum] || _submittedEvidence[_header2Checksum]) {
+    if (_submittedEvidence[header1Checksum] || _submittedEvidence[header2Checksum]) {
       revert ErrEvidenceAlreadySubmitted();
     }
 
-    if (_pcValidateEvidence(_consensusAddr, _header1, _header2)) {
-      IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
-      uint256 _period = _validatorContract.currentPeriod();
-      _submittedEvidence[_header1Checksum] = true;
-      _submittedEvidence[_header2Checksum] = true;
-      emit Slashed(_consensusAddr, SlashType.DOUBLE_SIGNING, _period);
-      _validatorContract.execSlash(_consensusAddr, _doubleSigningJailUntilBlock, _slashDoubleSignAmount, true);
+    address validatorId = __css2cid(consensusAddr);
+
+    // NOTE: Edge case: non-validator who never apply for the candidate role, nor have a profile.
+    // Must be slashed by the consensus address, since the validatorId will be address(0).
+    if (validatorId == address(0)) {
+      validatorId = TConsensus.unwrap(consensusAddr);
+    }
+
+    if (_pcValidateEvidence(validatorId, header1, header2)) {
+      IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
+      uint256 period = validatorContract.currentPeriod();
+      _submittedEvidence[header1Checksum] = true;
+      _submittedEvidence[header2Checksum] = true;
+      emit Slashed(validatorId, SlashType.DOUBLE_SIGNING, period);
+      validatorContract.execSlash(validatorId, _doubleSigningJailUntilBlock, _slashDoubleSignAmount, true);
     }
   }
 
@@ -95,5 +103,7 @@ abstract contract SlashDoubleSign is ISlashDoubleSign, HasContracts, HasValidato
   /**
    * @dev Returns whether the account `_addr` should be slashed or not.
    */
-  function _shouldSlash(address _addr) internal view virtual returns (bool);
+  function _shouldSlash(TConsensus consensus, address validatorId) internal view virtual returns (bool);
+
+  function __css2cid(TConsensus consensusAddr) internal view virtual returns (address);
 }

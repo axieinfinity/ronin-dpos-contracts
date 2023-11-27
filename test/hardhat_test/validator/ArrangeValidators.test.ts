@@ -14,12 +14,13 @@ import {
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
 } from '../../../src/types';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import {
   createManyTrustedOrganizationAddressSets,
   TrustedOrganizationAddressSet,
 } from '../helpers/address-set-types/trusted-org-set-type';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let validatorContract: MockRoninValidatorSetExtended;
 let slashIndicator: MockSlashIndicatorExtended;
@@ -48,7 +49,7 @@ const setPriorityStatus = async (addrs: Address[], statuses: boolean[]): Promise
       addingTrustedOrgs.map(() => roninTrustedOrganization.address),
       addingTrustedOrgs.map((v) =>
         roninTrustedOrganization.interface.encodeFunctionData('addTrustedOrganizations', [
-          [{ consensusAddr: v, governor: v, bridgeVoter: v, weight: 100, addedBlock: 0 }],
+          [{ consensusAddr: v, governor: v, __deprecatedBridgeVoter: v, weight: 100, addedBlock: 0 }],
         ])
       )
     );
@@ -102,7 +103,10 @@ describe('Arrange validators', () => {
       validatorContractAddress,
       roninTrustedOrganizationAddress,
       roninGovernanceAdminAddress,
-    } = await initTest('ArrangeValidators')({
+      fastFinalityTrackingAddress,
+      profileAddress,
+      stakingContractAddress,
+    } = await deployTestSuite('ArrangeValidators')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
           slashAmountForUnavailabilityTier2Threshold,
@@ -117,7 +121,7 @@ describe('Arrange validators', () => {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          bridgeVoter: v.bridgeVoter.address,
+          __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
@@ -133,6 +137,17 @@ describe('Arrange validators', () => {
       undefined,
       ...trustedOrgs.map((_) => _.governor)
     );
+
+    await initializeTestSuite({
+      deployer,
+      profileAddress,
+      fastFinalityTrackingAddress,
+      slashContractAddress,
+      validatorContractAddress,
+      stakingContractAddress,
+      roninTrustedOrganizationAddress,
+      maintenanceContractAddress: undefined,
+    });
 
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();

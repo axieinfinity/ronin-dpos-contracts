@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IMaintenance.sol";
+import "../interfaces/IProfile.sol";
 import "../interfaces/validator/IRoninValidatorSet.sol";
 import "../extensions/collections/HasContracts.sol";
 import "../libraries/Math.sol";
@@ -13,21 +14,21 @@ import { ErrUnauthorized, RoleAccess } from "../utils/CommonErrors.sol";
 contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Initializable {
   using Math for uint256;
 
-  /// @dev Mapping from consensus address => maintenance schedule.
+  /// @dev Mapping from candidate id => maintenance schedule.
   mapping(address => Schedule) internal _schedule;
 
   /// @dev The min duration to maintenance in blocks.
-  uint256 public minMaintenanceDurationInBlock;
+  uint256 internal _minMaintenanceDurationInBlock;
   /// @dev The max duration to maintenance in blocks.
-  uint256 public maxMaintenanceDurationInBlock;
+  uint256 internal _maxMaintenanceDurationInBlock;
   /// @dev The offset to the min block number that the schedule can start.
-  uint256 public minOffsetToStartSchedule;
+  uint256 internal _minOffsetToStartSchedule;
   /// @dev The offset to the max block number that the schedule can start.
-  uint256 public maxOffsetToStartSchedule;
+  uint256 internal _maxOffsetToStartSchedule;
   /// @dev The max number of scheduled maintenances.
-  uint256 public maxSchedule;
+  uint256 internal _maxSchedule;
   /// @dev The cooldown time to request new schedule.
-  uint256 public cooldownSecsToMaintain;
+  uint256 internal _cooldownSecsToMaintain;
 
   constructor() {
     _disableInitializers();
@@ -37,22 +38,22 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    * @dev Initializes the contract storage.
    */
   function initialize(
-    address __validatorContract,
-    uint256 _minMaintenanceDurationInBlock,
-    uint256 _maxMaintenanceDurationInBlock,
-    uint256 _minOffsetToStartSchedule,
-    uint256 _maxOffsetToStartSchedule,
-    uint256 _maxSchedules,
-    uint256 _cooldownSecsToMaintain
+    address validatorContract,
+    uint256 minMaintenanceDurationInBlock_,
+    uint256 maxMaintenanceDurationInBlock_,
+    uint256 minOffsetToStartSchedule_,
+    uint256 maxOffsetToStartSchedule_,
+    uint256 maxSchedule_,
+    uint256 cooldownSecsToMaintain_
   ) external initializer {
-    _setContract(ContractType.VALIDATOR, __validatorContract);
+    _setContract(ContractType.VALIDATOR, validatorContract);
     _setMaintenanceConfig(
-      _minMaintenanceDurationInBlock,
-      _maxMaintenanceDurationInBlock,
-      _minOffsetToStartSchedule,
-      _maxOffsetToStartSchedule,
-      _maxSchedules,
-      _cooldownSecsToMaintain
+      minMaintenanceDurationInBlock_,
+      maxMaintenanceDurationInBlock_,
+      minOffsetToStartSchedule_,
+      maxOffsetToStartSchedule_,
+      maxSchedule_,
+      cooldownSecsToMaintain_
     );
   }
 
@@ -61,97 +62,162 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     delete ______deprecatedValidator;
   }
 
+  function initializeV3(address profileContract_) external reinitializer(3) {
+    _setContract(ContractType.PROFILE, profileContract_);
+  }
+
+  /**
+   * @inheritdoc IMaintenance
+   */
+  function minMaintenanceDurationInBlock() external view returns (uint256) {
+    return _minMaintenanceDurationInBlock;
+  }
+
+  /**
+   * @inheritdoc IMaintenance
+   */
+  function maxMaintenanceDurationInBlock() external view returns (uint256) {
+    return _maxMaintenanceDurationInBlock;
+  }
+
+  /**
+   * @inheritdoc IMaintenance
+   */
+  function minOffsetToStartSchedule() external view returns (uint256) {
+    return _minOffsetToStartSchedule;
+  }
+
+  /**
+   * @inheritdoc IMaintenance
+   */
+  function maxOffsetToStartSchedule() external view returns (uint256) {
+    return _maxOffsetToStartSchedule;
+  }
+
+  /**
+   * @inheritdoc IMaintenance
+   */
+  function maxSchedule() external view returns (uint256) {
+    return _maxSchedule;
+  }
+
+  /**
+   * @inheritdoc IMaintenance
+   */
+  function cooldownSecsToMaintain() external view returns (uint256) {
+    return _cooldownSecsToMaintain;
+  }
+
   /**
    * @inheritdoc IMaintenance
    */
   function setMaintenanceConfig(
-    uint256 _minMaintenanceDurationInBlock,
-    uint256 _maxMaintenanceDurationInBlock,
-    uint256 _minOffsetToStartSchedule,
-    uint256 _maxOffsetToStartSchedule,
-    uint256 _maxSchedules,
-    uint256 _cooldownSecsToMaintain
+    uint256 minMaintenanceDurationInBlock_,
+    uint256 maxMaintenanceDurationInBlock_,
+    uint256 minOffsetToStartSchedule_,
+    uint256 maxOffsetToStartSchedule_,
+    uint256 maxSchedule_,
+    uint256 cooldownSecsToMaintain_
   ) external onlyAdmin {
     _setMaintenanceConfig(
-      _minMaintenanceDurationInBlock,
-      _maxMaintenanceDurationInBlock,
-      _minOffsetToStartSchedule,
-      _maxOffsetToStartSchedule,
-      _maxSchedules,
-      _cooldownSecsToMaintain
+      minMaintenanceDurationInBlock_,
+      maxMaintenanceDurationInBlock_,
+      minOffsetToStartSchedule_,
+      maxOffsetToStartSchedule_,
+      maxSchedule_,
+      cooldownSecsToMaintain_
     );
   }
 
   /**
    * @inheritdoc IMaintenance
    */
-  function schedule(address _consensusAddr, uint256 _startedAtBlock, uint256 _endedAtBlock) external override {
-    IRoninValidatorSet _validator = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
+  function schedule(TConsensus consensusAddr, uint256 startedAtBlock, uint256 endedAtBlock) external override {
+    IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
+    address candidateId = __css2cid(consensusAddr);
 
-    if (!_validator.isBlockProducer(_consensusAddr)) revert ErrUnauthorized(msg.sig, RoleAccess.BLOCK_PRODUCER);
-    if (!_validator.isCandidateAdmin(_consensusAddr, msg.sender))
+    if (!validatorContract.isBlockProducer(consensusAddr)) revert ErrUnauthorized(msg.sig, RoleAccess.BLOCK_PRODUCER);
+    if (!validatorContract.isCandidateAdmin(consensusAddr, msg.sender))
       revert ErrUnauthorized(msg.sig, RoleAccess.CANDIDATE_ADMIN);
-    if (checkScheduled(_consensusAddr)) revert ErrAlreadyScheduled();
-    if (!checkCooldownEnded(_consensusAddr)) revert ErrCooldownTimeNotYetEnded();
-    if (totalSchedule() >= maxSchedule) revert ErrTotalOfSchedulesExceeded();
-    if (!_startedAtBlock.inRange(block.number + minOffsetToStartSchedule, block.number + maxOffsetToStartSchedule)) {
+    if (_checkScheduledById(candidateId)) revert ErrAlreadyScheduled();
+    if (!_checkCooldownEndedById(candidateId)) revert ErrCooldownTimeNotYetEnded();
+    if (totalSchedule() >= _maxSchedule) revert ErrTotalOfSchedulesExceeded();
+    if (!startedAtBlock.inRange(block.number + _minOffsetToStartSchedule, block.number + _maxOffsetToStartSchedule)) {
       revert ErrStartBlockOutOfRange();
     }
-    if (_startedAtBlock >= _endedAtBlock) revert ErrStartBlockOutOfRange();
+    if (startedAtBlock >= endedAtBlock) revert ErrStartBlockOutOfRange();
 
-    uint256 _maintenanceElapsed = _endedAtBlock - _startedAtBlock + 1;
+    uint256 maintenanceElapsed = endedAtBlock - startedAtBlock + 1;
 
-    if (!_maintenanceElapsed.inRange(minMaintenanceDurationInBlock, maxMaintenanceDurationInBlock)) {
+    if (!maintenanceElapsed.inRange(_minMaintenanceDurationInBlock, _maxMaintenanceDurationInBlock)) {
       revert ErrInvalidMaintenanceDuration();
     }
-    if (!_validator.epochEndingAt(_startedAtBlock - 1)) revert ErrStartBlockOutOfRange();
-    if (!_validator.epochEndingAt(_endedAtBlock)) revert ErrEndBlockOutOfRange();
+    if (!validatorContract.epochEndingAt(startedAtBlock - 1)) revert ErrStartBlockOutOfRange();
+    if (!validatorContract.epochEndingAt(endedAtBlock)) revert ErrEndBlockOutOfRange();
 
-    Schedule storage _sSchedule = _schedule[_consensusAddr];
-    _sSchedule.from = _startedAtBlock;
-    _sSchedule.to = _endedAtBlock;
+    Schedule storage _sSchedule = _schedule[candidateId];
+    _sSchedule.from = startedAtBlock;
+    _sSchedule.to = endedAtBlock;
     _sSchedule.lastUpdatedBlock = block.number;
     _sSchedule.requestTimestamp = block.timestamp;
-    emit MaintenanceScheduled(_consensusAddr, _sSchedule);
+    emit MaintenanceScheduled(consensusAddr, _sSchedule);
   }
 
   /**
    * @inheritdoc IMaintenance
    */
-  function cancelSchedule(address _consensusAddr) external override {
-    if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isCandidateAdmin(_consensusAddr, msg.sender)) {
+  function cancelSchedule(TConsensus consensusAddr) external override {
+    if (!IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isCandidateAdmin(consensusAddr, msg.sender)) {
       revert ErrUnauthorized(msg.sig, RoleAccess.CANDIDATE_ADMIN);
     }
-    if (!checkScheduled(_consensusAddr)) revert ErrUnexistedSchedule();
-    if (checkMaintained(_consensusAddr, block.number)) revert ErrAlreadyOnMaintenance();
 
-    Schedule storage _sSchedule = _schedule[_consensusAddr];
+    address candidateId = __css2cid(consensusAddr);
+
+    if (!_checkScheduledById(candidateId)) revert ErrUnexistedSchedule();
+    if (_checkMaintainedById(candidateId, block.number)) revert ErrAlreadyOnMaintenance();
+
+    Schedule storage _sSchedule = _schedule[candidateId];
     delete _sSchedule.from;
     delete _sSchedule.to;
     _sSchedule.lastUpdatedBlock = block.number;
-    emit MaintenanceScheduleCancelled(_consensusAddr);
+    emit MaintenanceScheduleCancelled(consensusAddr);
   }
 
   /**
    * @inheritdoc IMaintenance
    */
-  function getSchedule(address _consensusAddr) external view override returns (Schedule memory) {
-    return _schedule[_consensusAddr];
+  function getSchedule(TConsensus consensusAddr) external view override returns (Schedule memory) {
+    return _schedule[__css2cid(consensusAddr)];
   }
 
   /**
    * @inheritdoc IMaintenance
    */
   function checkManyMaintained(
-    address[] calldata _addrList,
-    uint256 _block
-  ) external view override returns (bool[] memory _resList) {
-    _resList = new bool[](_addrList.length);
-    for (uint _i = 0; _i < _addrList.length; ) {
-      _resList[_i] = checkMaintained(_addrList[_i], _block);
+    TConsensus[] calldata addrList,
+    uint256 atBlock
+  ) external view override returns (bool[] memory) {
+    address[] memory idList = __css2cidBatch(addrList);
+    return _checkManyMaintainedById(idList, atBlock);
+  }
+
+  function checkManyMaintainedById(
+    address[] calldata idList,
+    uint256 atBlock
+  ) external view override returns (bool[] memory) {
+    return _checkManyMaintainedById(idList, atBlock);
+  }
+
+  function _checkManyMaintainedById(
+    address[] memory idList,
+    uint256 atBlock
+  ) internal view returns (bool[] memory resList) {
+    resList = new bool[](idList.length);
+    for (uint i = 0; i < idList.length; ) {
+      resList[i] = _checkMaintainedById(idList[i], atBlock);
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }
@@ -160,16 +226,33 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    * @inheritdoc IMaintenance
    */
   function checkManyMaintainedInBlockRange(
-    address[] calldata _addrList,
-    uint256 _fromBlock,
-    uint256 _toBlock
-  ) external view override returns (bool[] memory _resList) {
-    _resList = new bool[](_addrList.length);
-    for (uint _i = 0; _i < _addrList.length; ) {
-      _resList[_i] = _maintainingInBlockRange(_addrList[_i], _fromBlock, _toBlock);
+    TConsensus[] calldata addrList,
+    uint256 fromBlock,
+    uint256 toBlock
+  ) external view override returns (bool[] memory) {
+    address[] memory idList = __css2cidBatch(addrList);
+    return _checkManyMaintainedInBlockRangeById(idList, fromBlock, toBlock);
+  }
+
+  function checkManyMaintainedInBlockRangeById(
+    address[] calldata idList,
+    uint256 fromBlock,
+    uint256 toBlock
+  ) external view override returns (bool[] memory) {
+    return _checkManyMaintainedInBlockRangeById(idList, fromBlock, toBlock);
+  }
+
+  function _checkManyMaintainedInBlockRangeById(
+    address[] memory idList,
+    uint256 fromBlock,
+    uint256 toBlock
+  ) internal view returns (bool[] memory resList) {
+    resList = new bool[](idList.length);
+    for (uint i = 0; i < idList.length; ) {
+      resList[i] = _maintainingInBlockRange(idList[i], fromBlock, toBlock);
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }
@@ -177,12 +260,12 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
   /**
    * @inheritdoc IMaintenance
    */
-  function totalSchedule() public view override returns (uint256 _count) {
-    address[] memory _validators = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
+  function totalSchedule() public view override returns (uint256 count) {
+    address[] memory validatorIds = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
     unchecked {
-      for (uint _i = 0; _i < _validators.length; _i++) {
-        if (checkScheduled(_validators[_i])) {
-          _count++;
+      for (uint i = 0; i < validatorIds.length; i++) {
+        if (_checkScheduledById(validatorIds[i])) {
+          count++;
         }
       }
     }
@@ -191,34 +274,50 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
   /**
    * @inheritdoc IMaintenance
    */
-  function checkMaintained(address _consensusAddr, uint256 _block) public view override returns (bool) {
-    Schedule storage _s = _schedule[_consensusAddr];
-    return _s.from <= _block && _block <= _s.to;
+  function checkMaintained(TConsensus consensusAddr, uint256 atBlock) external view override returns (bool) {
+    return _checkMaintainedById(__css2cid(consensusAddr), atBlock);
+  }
+
+  function checkMaintainedById(address candidateId, uint256 atBlock) external view override returns (bool) {
+    return _checkMaintainedById(candidateId, atBlock);
+  }
+
+  function _checkMaintainedById(address candidateId, uint256 atBlock) internal view returns (bool) {
+    Schedule storage _s = _schedule[candidateId];
+    return _s.from <= atBlock && atBlock <= _s.to;
   }
 
   /**
    * @inheritdoc IMaintenance
    */
   function checkMaintainedInBlockRange(
-    address _consensusAddr,
-    uint256 _fromBlock,
-    uint256 _toBlock
+    TConsensus consensusAddr,
+    uint256 fromBlock,
+    uint256 toBlock
   ) public view override returns (bool) {
-    return _maintainingInBlockRange(_consensusAddr, _fromBlock, _toBlock);
+    return _maintainingInBlockRange(__css2cid(consensusAddr), fromBlock, toBlock);
   }
 
   /**
    * @inheritdoc IMaintenance
    */
-  function checkScheduled(address _consensusAddr) public view override returns (bool) {
-    return block.number <= _schedule[_consensusAddr].to;
+  function checkScheduled(TConsensus consensusAddr) external view override returns (bool) {
+    return _checkScheduledById(__css2cid(consensusAddr));
+  }
+
+  function _checkScheduledById(address candidateId) internal view returns (bool) {
+    return block.number <= _schedule[candidateId].to;
   }
 
   /**
    * @inheritdoc IMaintenance
    */
-  function checkCooldownEnded(address _consensusAddr) public view override returns (bool) {
-    return block.timestamp > _schedule[_consensusAddr].requestTimestamp + cooldownSecsToMaintain;
+  function checkCooldownEnded(TConsensus consensusAddr) external view override returns (bool) {
+    return _checkCooldownEndedById(__css2cid(consensusAddr));
+  }
+
+  function _checkCooldownEndedById(address candidateId) internal view returns (bool) {
+    return block.timestamp > _schedule[candidateId].requestTimestamp + _cooldownSecsToMaintain;
   }
 
   /**
@@ -231,29 +330,29 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    *
    */
   function _setMaintenanceConfig(
-    uint256 _minMaintenanceDurationInBlock,
-    uint256 _maxMaintenanceDurationInBlock,
-    uint256 _minOffsetToStartSchedule,
-    uint256 _maxOffsetToStartSchedule,
-    uint256 _maxSchedule,
-    uint256 _cooldownSecsToMaintain
+    uint256 minMaintenanceDurationInBlock_,
+    uint256 maxMaintenanceDurationInBlock_,
+    uint256 minOffsetToStartSchedule_,
+    uint256 maxOffsetToStartSchedule_,
+    uint256 maxSchedule_,
+    uint256 cooldownSecsToMaintain_
   ) internal {
-    if (_minMaintenanceDurationInBlock >= _maxMaintenanceDurationInBlock) revert ErrInvalidMaintenanceDurationConfig();
-    if (_minOffsetToStartSchedule >= _maxOffsetToStartSchedule) revert ErrInvalidOffsetToStartScheduleConfigs();
+    if (minMaintenanceDurationInBlock_ >= maxMaintenanceDurationInBlock_) revert ErrInvalidMaintenanceDurationConfig();
+    if (minOffsetToStartSchedule_ >= maxOffsetToStartSchedule_) revert ErrInvalidOffsetToStartScheduleConfigs();
 
-    minMaintenanceDurationInBlock = _minMaintenanceDurationInBlock;
-    maxMaintenanceDurationInBlock = _maxMaintenanceDurationInBlock;
-    minOffsetToStartSchedule = _minOffsetToStartSchedule;
-    maxOffsetToStartSchedule = _maxOffsetToStartSchedule;
-    maxSchedule = _maxSchedule;
-    cooldownSecsToMaintain = _cooldownSecsToMaintain;
+    _minMaintenanceDurationInBlock = minMaintenanceDurationInBlock_;
+    _maxMaintenanceDurationInBlock = maxMaintenanceDurationInBlock_;
+    _minOffsetToStartSchedule = minOffsetToStartSchedule_;
+    _maxOffsetToStartSchedule = maxOffsetToStartSchedule_;
+    _maxSchedule = maxSchedule_;
+    _cooldownSecsToMaintain = cooldownSecsToMaintain_;
     emit MaintenanceConfigUpdated(
-      _minMaintenanceDurationInBlock,
-      _maxMaintenanceDurationInBlock,
-      _minOffsetToStartSchedule,
-      _maxOffsetToStartSchedule,
-      _maxSchedule,
-      _cooldownSecsToMaintain
+      minMaintenanceDurationInBlock_,
+      maxMaintenanceDurationInBlock_,
+      minOffsetToStartSchedule_,
+      maxOffsetToStartSchedule_,
+      maxSchedule_,
+      cooldownSecsToMaintain_
     );
   }
 
@@ -263,11 +362,19 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    * Note: This method should be called at the end of the period.
    */
   function _maintainingInBlockRange(
-    address _consensusAddr,
-    uint256 _fromBlock,
-    uint256 _toBlock
+    address candidateId,
+    uint256 fromBlock,
+    uint256 toBlock
   ) private view returns (bool) {
-    Schedule storage _s = _schedule[_consensusAddr];
-    return Math.twoRangeOverlap(_fromBlock, _toBlock, _s.from, _s.to);
+    Schedule storage s = _schedule[candidateId];
+    return Math.twoRangeOverlap(fromBlock, toBlock, s.from, s.to);
+  }
+
+  function __css2cid(TConsensus consensusAddr) internal view returns (address) {
+    return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
+  }
+
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view returns (address[] memory) {
+    return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
   }
 }

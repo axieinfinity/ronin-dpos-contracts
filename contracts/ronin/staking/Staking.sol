@@ -6,10 +6,9 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../libraries/Math.sol";
 import "../../interfaces/staking/IStaking.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
-import "./CandidateStaking.sol";
-import "./DelegatorStaking.sol";
+import "./StakingCallback.sol";
 
-contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable {
+contract Staking is IStaking, StakingCallback, Initializable {
   constructor() {
     _disableInitializers();
   }
@@ -35,59 +34,43 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
     _setWaitingSecsToRevoke(__waitingSecsToRevoke);
   }
 
+  /**
+   * @dev Initializes the contract storage V2.
+   */
   function initializeV2() external reinitializer(2) {
     _setContract(ContractType.VALIDATOR, ______deprecatedValidator);
     delete ______deprecatedValidator;
   }
 
   /**
-   * @dev This method only work on testnet, to hotfix the applied validator candidate that is failed.
-   * TODO: Should remove this method before deploying it on mainnet.
+   * @dev Initializes the contract storage V3.
    */
-  function tmp_re_applyValidatorCandidate(
-    address _candidateAdmin,
-    address _consensusAddr,
-    address payable _treasuryAddr,
-    uint256 _commissionRate
-  ) external {
-    require(block.chainid == 2021, "E1");
-    require(msg.sender == 0x57832A94810E18c84a5A5E2c4dD67D012ade574F, "E2");
-
-    IRoninValidatorSet(getContract(ContractType.VALIDATOR)).execApplyValidatorCandidate(
-      _candidateAdmin,
-      _consensusAddr,
-      _treasuryAddr,
-      _commissionRate
-    );
+  function initializeV3(address __profileContract) external reinitializer(3) {
+    _setContract(ContractType.PROFILE, __profileContract);
   }
 
   /**
    * @inheritdoc IStaking
    */
   function execRecordRewards(
-    address[] calldata _consensusAddrs,
-    uint256[] calldata _rewards,
-    uint256 _period
+    address[] calldata poolIds,
+    uint256[] calldata rewards,
+    uint256 period
   ) external payable override onlyContract(ContractType.VALIDATOR) {
-    _recordRewards(_consensusAddrs, _rewards, _period);
+    _recordRewards(poolIds, rewards, period);
   }
 
   /**
    * @inheritdoc IStaking
    */
   function execDeductStakingAmount(
-    address _consensusAddr,
-    uint256 _amount
-  ) external override onlyContract(ContractType.VALIDATOR) returns (uint256 _actualDeductingAmount) {
-    _actualDeductingAmount = _deductStakingAmount(_stakingPool[_consensusAddr], _amount);
-    address payable _validatorContractAddr = payable(msg.sender);
-    if (!_unsafeSendRON(_validatorContractAddr, _actualDeductingAmount)) {
-      emit StakingAmountDeductFailed(
-        _consensusAddr,
-        _validatorContractAddr,
-        _actualDeductingAmount,
-        address(this).balance
-      );
+    address poolId,
+    uint256 amount
+  ) external override onlyContract(ContractType.VALIDATOR) returns (uint256 actualDeductingAmount_) {
+    actualDeductingAmount_ = _deductStakingAmount(_poolDetail[poolId], amount);
+    address payable validatorContractAddr = payable(msg.sender);
+    if (!_unsafeSendRON(validatorContractAddr, actualDeductingAmount_)) {
+      emit StakingAmountDeductFailed(poolId, validatorContractAddr, actualDeductingAmount_, address(this).balance);
     }
   }
 
@@ -103,17 +86,17 @@ contract Staking is IStaking, CandidateStaking, DelegatorStaking, Initializable 
    */
   function _deductStakingAmount(
     PoolDetail storage _pool,
-    uint256 _amount
-  ) internal override returns (uint256 _actualDeductingAmount) {
-    _actualDeductingAmount = Math.min(_pool.stakingAmount, _amount);
+    uint256 amount
+  ) internal override returns (uint256 actualDeductingAmount_) {
+    actualDeductingAmount_ = Math.min(_pool.stakingAmount, amount);
 
-    _pool.stakingAmount -= _actualDeductingAmount;
+    _pool.stakingAmount -= actualDeductingAmount_;
     _changeDelegatingAmount(
       _pool,
-      _pool.admin,
+      _pool.__shadowedPoolAdmin,
       _pool.stakingAmount,
-      Math.subNonNegative(_pool.stakingTotal, _actualDeductingAmount)
+      Math.subNonNegative(_pool.stakingTotal, actualDeductingAmount_)
     );
-    emit Unstaked(_pool.addr, _actualDeductingAmount);
+    emit Unstaked(_pool.pid, actualDeductingAmount_);
   }
 }

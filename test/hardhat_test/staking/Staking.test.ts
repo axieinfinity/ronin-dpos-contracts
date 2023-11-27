@@ -4,6 +4,8 @@ import { BigNumber, ContractTransaction } from 'ethers';
 import { ethers, network } from 'hardhat';
 
 import {
+  Profile,
+  Profile__factory,
   Staking,
   Staking__factory,
   TransparentUpgradeableProxyV2,
@@ -16,7 +18,8 @@ import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
-import { getLastBlockTimestamp } from '../helpers/utils';
+import { generateSamplePubkey, getLastBlockTimestamp } from '../helpers/utils';
+import { DEFAULT_ADDRESS } from '../../../src/utils';
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
@@ -29,11 +32,15 @@ let otherPoolAddrSet: ValidatorCandidateAddressSet;
 let anotherActivePoolSet: ValidatorCandidateAddressSet;
 let sparePoolAddrSet: ValidatorCandidateAddressSet;
 
-let proxyContract: TransparentUpgradeableProxyV2;
+let stakingProxyContract: TransparentUpgradeableProxyV2;
 let validatorContract: MockValidatorSet;
 let stakingContract: Staking;
+let profileContract: Profile;
 let signers: SignerWithAddress[];
 let validatorCandidates: ValidatorCandidateAddressSet[];
+
+let snapshotId: string;
+let snapshotId2: string;
 
 const ONE_DAY = 60 * 60 * 24;
 
@@ -55,19 +62,31 @@ describe('Staking test', () => {
 
     const stakingVestingContract = await new StakingVesting__factory(deployer).deploy();
     const nonce = await deployer.getTransactionCount();
-    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 2 });
+    const validatorContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 2 });
+    const stakingContractAddr = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonce + 4 });
+
+    const profileLogicContract = await new Profile__factory(deployer).deploy();
+    const profileContractProxy = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
+      profileLogicContract.address,
+      proxyAdmin.address,
+      profileLogicContract.interface.encodeFunctionData('initialize', [validatorContractAddr])
+    );
+    profileContract = Profile__factory.connect(profileContractProxy.address, deployer);
+
     validatorContract = await new MockValidatorSet__factory(deployer).deploy(
       stakingContractAddr,
       ethers.constants.AddressZero,
       stakingVestingContract.address,
+      profileContract.address,
       maxValidatorCandidate,
       numberOfBlocksInEpoch,
       minEffectiveDaysOnwards
     );
     await validatorContract.deployed();
+
     const logicContract = await new Staking__factory(deployer).deploy();
     await logicContract.deployed();
-    proxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
+    stakingProxyContract = await new TransparentUpgradeableProxyV2__factory(deployer).deploy(
       logicContract.address,
       proxyAdmin.address,
       logicContract.interface.encodeFunctionData('initialize', [
@@ -78,15 +97,35 @@ describe('Staking test', () => {
         waitingSecsToRevoke,
       ])
     );
-    await proxyContract.deployed();
-    stakingContract = Staking__factory.connect(proxyContract.address, deployer);
-    expect(stakingContractAddr.toLowerCase()).eq(stakingContract.address.toLowerCase());
+    await stakingProxyContract.deployed();
+
+    await stakingProxyContract
+      .connect(proxyAdmin)
+      .functionDelegateCall(logicContract.interface.encodeFunctionData('initializeV3', [profileContract.address]));
+
+    await profileContract.initializeV2(stakingContractAddr, DEFAULT_ADDRESS);
+
+    stakingContract = Staking__factory.connect(stakingProxyContract.address, deployer);
+    expect(validatorContractAddr.toLowerCase()).eq(
+      validatorContract.address.toLowerCase(),
+      'wrong validator contract address'
+    );
+    expect(stakingContractAddr.toLowerCase()).eq(
+      stakingContract.address.toLowerCase(),
+      'wrong staking contract address'
+    );
   });
 
   describe('Validator candidate test', () => {
     it('Should not be able to propose validator with insufficient amount', async () => {
       await expect(
-        stakingContract.applyValidatorCandidate(userA.address, userA.address, userA.address, 1)
+        stakingContract.applyValidatorCandidate(
+          userA.address,
+          userA.address,
+          userA.address,
+          1,
+          generateSamplePubkey(userA.address, userA.address)
+        )
       ).revertedWithCustomError(stakingContract, 'ErrInsufficientStakingAmount');
     });
 
@@ -99,8 +138,9 @@ describe('Staking test', () => {
           candidate.candidateAdmin.address,
           candidate.consensusAddr.address,
           candidate.consensusAddr.address,
-          1,
-          /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
+          1 /* 0.01% */,
+          generateSamplePubkey(),
+          { value: minValidatorStakingAmount.mul(2) }
         );
       await expect(tx).revertedWithCustomError(stakingContract, 'ErrThreeInteractionAddrsNotEqual');
     });
@@ -114,8 +154,9 @@ describe('Staking test', () => {
             candidate.candidateAdmin.address,
             candidate.consensusAddr.address,
             candidate.treasuryAddr.address,
-            1,
-            /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
+            1 /* 0.01% */,
+            generateSamplePubkey(),
+            { value: minValidatorStakingAmount.mul(2) }
           );
         await expect(tx)
           .emit(stakingContract, 'PoolApproved')
@@ -137,6 +178,7 @@ describe('Staking test', () => {
             poolAddrSet.consensusAddr.address,
             sparePoolAddrSet.treasuryAddr.address,
             0,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount,
             }
@@ -248,7 +290,7 @@ describe('Staking test', () => {
         minCommissionRate,
         maxCommissionRate,
       ]);
-      await proxyContract.connect(proxyAdmin).functionDelegateCall(data);
+      await stakingProxyContract.connect(proxyAdmin).functionDelegateCall(data);
 
       await expect(
         stakingContract
@@ -263,7 +305,7 @@ describe('Staking test', () => {
         defaultMinCommissionRate,
         maxCommissionRate,
       ]);
-      await proxyContract.connect(proxyAdmin).functionDelegateCall(data);
+      await stakingProxyContract.connect(proxyAdmin).functionDelegateCall(data);
     });
 
     it('Should the pool admin not be able to request updating the commission rate exceeding max rate', async () => {
@@ -312,6 +354,7 @@ describe('Staking test', () => {
     });
 
     it('Should be able to request renounce using pool admin', async () => {
+      snapshotId = await network.provider.send('evm_snapshot');
       await stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address);
     });
 
@@ -332,32 +375,26 @@ describe('Staking test', () => {
 
       await expect(() => validatorContract.wrapUpEpoch()).changeEtherBalance(poolAddrSet.poolAdmin, stakingAmount);
       let _poolDetail = await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address);
-      expect(_poolDetail._stakingAmount).eq(0);
+      expect(_poolDetail.stakingAmount).eq(0);
     });
 
-    it('Should the exited pool admin and consensus address rejoin as a candidate', async () => {
-      const tx = await stakingContract
+    it('Should the exited pool admin and consensus address cannot rejoin as a candidate', async () => {
+      const reApplyTx = stakingContract
         .connect(poolAddrSet.poolAdmin)
         .applyValidatorCandidate(
           poolAddrSet.candidateAdmin.address,
           poolAddrSet.consensusAddr.address,
           poolAddrSet.treasuryAddr.address,
-          1,
-          /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
+          1 /* 0.01% */,
+          generateSamplePubkey(),
+          { value: minValidatorStakingAmount.mul(2) }
         );
-      await expect(tx)
-        .emit(stakingContract, 'PoolApproved')
-        .withArgs(poolAddrSet.consensusAddr.address, poolAddrSet.poolAdmin.address);
-      expect(
-        await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, poolAddrSet.candidateAdmin.address)
-      ).eq(minValidatorStakingAmount.mul(2));
-
-      expect(await stakingContract.getStakingTotal(poolAddrSet.consensusAddr.address)).gte(
-        minValidatorStakingAmount.mul(2)
-      ); // previous delegated amount still exist
+      await expect(reApplyTx).revertedWithCustomError(profileContract, 'ErrExistentProfile');
     });
 
     it('Should the a pool admin who is active cannot propose a new pool / cannot propose validator', async () => {
+      await network.provider.send('evm_revert', [snapshotId]);
+
       await expect(
         stakingContract
           .connect(poolAddrSet.poolAdmin)
@@ -365,13 +402,15 @@ describe('Staking test', () => {
             poolAddrSet.candidateAdmin.address,
             poolAddrSet.consensusAddr.address,
             poolAddrSet.treasuryAddr.address,
-            1,
-            /* 0.01% */ { value: minValidatorStakingAmount.mul(2) }
+            1 /* 0.01% */,
+            generateSamplePubkey(),
+            { value: minValidatorStakingAmount.mul(2) }
           )
       )
         .revertedWithCustomError(stakingContract, 'ErrAdminOfAnyActivePoolForbidden')
         .withArgs(poolAddrSet.poolAdmin.address);
 
+      snapshotId2 = await network.provider.send('evm_snapshot');
       await stakingContract.connect(poolAddrSet.poolAdmin).requestRenounce(poolAddrSet.consensusAddr.address);
       await network.provider.send('evm_increaseTime', [waitingSecsToRevoke]);
       await validatorContract.wrapUpEpoch();
@@ -393,7 +432,7 @@ describe('Staking test', () => {
     it('Should not be able to delegate to a deprecated pool', async () => {
       await expect(stakingContract.delegate(poolAddrSet.consensusAddr.address, { value: 1 }))
         .revertedWithCustomError(stakingContract, 'ErrInactivePool')
-        .withArgs(poolAddrSet.consensusAddr.address);
+        .withArgs(poolAddrSet.consensusAddr.address, poolAddrSet.consensusAddr.address);
     });
 
     it('Should not be able to delegate with empty value', async () => {
@@ -483,27 +522,11 @@ describe('Staking test', () => {
       );
     });
 
-    it('[Validator Candidate] Should an ex-candidate to rejoin Staking contract', async () => {
-      await stakingContract
-        .connect(poolAddrSet.poolAdmin)
-        .applyValidatorCandidate(
-          poolAddrSet.candidateAdmin.address,
-          poolAddrSet.consensusAddr.address,
-          poolAddrSet.treasuryAddr.address,
-          2,
-          /* 0.02% */ { value: minValidatorStakingAmount }
-        );
-      expect(await stakingContract.getPoolDetail(poolAddrSet.consensusAddr.address)).deep.equal([
-        poolAddrSet.poolAdmin.address,
-        minValidatorStakingAmount,
-        minValidatorStakingAmount.add(8),
-      ]);
-      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, deployer.address)).eq(8);
-    });
-
     it('Should be able to delegate/undelegate for the rejoined candidate', async () => {
+      await network.provider.send('evm_revert', [snapshotId2]);
+
       await stakingContract.delegate(poolAddrSet.consensusAddr.address, { value: 2 });
-      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, deployer.address)).eq(10);
+      expect(await stakingContract.getStakingAmount(poolAddrSet.consensusAddr.address, deployer.address)).eq(11);
 
       await stakingContract.connect(userA).delegate(poolAddrSet.consensusAddr.address, { value: 2 });
       await stakingContract.connect(userB).delegate(poolAddrSet.consensusAddr.address, { value: 2 });

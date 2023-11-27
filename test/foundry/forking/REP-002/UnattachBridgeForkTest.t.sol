@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../RoninTest.t.sol";
 
+import { TConsensus } from "@ronin/contracts/udvts/Types.sol";
 import { RoninValidatorSetTimedMigrator } from "@ronin/contracts/ronin/validator/migrations/RoninValidatorSetTimedMigrator.sol";
 import { ContractType } from "@ronin/contracts/utils/ContractType.sol";
 import { Staking } from "@ronin/contracts/ronin/staking/Staking.sol";
@@ -177,7 +178,7 @@ contract UnattachBridgeForkTest is RoninTest {
 
   function _applyValidatorCandidate(uint256 seed) internal onWhichFork(_roninFork) {
     address candidateAdmin = vm.addr(seed + 1);
-    address consensusAddr = vm.addr(seed + 2);
+    TConsensus consensusAddr = TConsensus.wrap(vm.addr(seed + 2));
 
     (uint256 min, uint256 max) = Staking(payable(_stakingProxy)).getCommissionRateRange();
     uint256 commissionRate = (min + max) / 2;
@@ -189,7 +190,8 @@ contract UnattachBridgeForkTest is RoninTest {
       candidateAdmin,
       consensusAddr,
       payable(candidateAdmin),
-      commissionRate
+      commissionRate,
+      abi.encodePacked(candidateAdmin, consensusAddr)
     );
   }
 

@@ -26,7 +26,7 @@ import {
   createManyTrustedOrganizationAddressSets,
   TrustedOrganizationAddressSet,
 } from '../helpers/address-set-types/trusted-org-set-type';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { getLastBlockTimestamp, compareAddrs, mineDummyBlock } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
@@ -61,13 +61,13 @@ describe('Governance Admin test', () => {
     );
     bridgeContract = MockBridge__factory.connect(proxy.address, deployer);
 
-    const { roninGovernanceAdminAddress, stakingContractAddress } = await initTest('RoninGovernanceAdminTest')({
+    const { roninGovernanceAdminAddress, stakingContractAddress } = await deployTestSuite('RoninGovernanceAdminTest')({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          bridgeVoter: v.bridgeVoter.address,
+          __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),

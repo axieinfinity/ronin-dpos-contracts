@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, network } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber } from 'ethers';
 
@@ -20,6 +20,8 @@ import {
   RoninGovernanceAdmin,
   BridgeTracking__factory,
   BridgeTracking,
+  Profile,
+  Profile__factory,
   RoninBridgeManager,
   RoninBridgeManager__factory,
   BridgeReward,
@@ -27,13 +29,15 @@ import {
   BridgeSlash,
   BridgeSlash__factory,
 } from '../../../src/types';
-import { initTest, InitTestInput } from '../helpers/fixture';
-import { MAX_UINT255, randomAddress } from '../../../src/utils';
+import { deployTestSuite, DeployTestSuiteInput } from '../helpers/fixture';
+import { DEFAULT_ADDRESS, MAX_UINT255, randomAddress } from '../../../src/utils';
 import {
   createManyTrustedOrganizationAddressSets,
   TrustedOrganizationAddressSet,
 } from '../helpers/address-set-types/trusted-org-set-type';
 import { ContractType, compareBigNumbers } from '../helpers/utils';
+import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let stakingVestingContract: StakingVesting;
 let maintenanceContract: Maintenance;
@@ -41,18 +45,20 @@ let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: RoninValidatorSet;
 let roninTrustedOrganizationContract: RoninTrustedOrganization;
-let roninGovernanceAdminContract: RoninGovernanceAdmin;
 let bridgeTrackingContract: BridgeTracking;
+let profileContract: Profile;
+let roninGovernanceAdminContract: RoninGovernanceAdmin;
 let bridgeManagerContract: RoninBridgeManager;
 let bridgeRewardContract: BridgeReward;
 let bridgeSlashContract: BridgeSlash;
+let governanceAdminInterface: GovernanceAdminInterface;
 
 let coinbase: SignerWithAddress;
 let deployer: SignerWithAddress;
 let signers: SignerWithAddress[];
 let trustedOrgs: TrustedOrganizationAddressSet[];
 
-const config: InitTestInput = {
+const config: DeployTestSuiteInput = {
   bridgeContract: randomAddress(),
   startedAtBlock: Math.floor(Math.random() * 1_000_000),
 
@@ -135,7 +141,7 @@ describe('[Integration] Configuration check', () => {
     config.roninTrustedOrganizationArguments!.trustedOrganizations = trustedOrgs.map((v) => ({
       consensusAddr: v.consensusAddr.address,
       governor: v.governor.address,
-      bridgeVoter: v.bridgeVoter.address,
+      __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
       weight: 100,
       addedBlock: 0,
     }));
@@ -148,10 +154,12 @@ describe('[Integration] Configuration check', () => {
       roninTrustedOrganizationAddress,
       roninGovernanceAdminAddress,
       bridgeTrackingAddress,
+      profileAddress,
       bridgeRewardAddress,
       bridgeSlashAddress,
       roninBridgeManagerAddress,
-    } = await initTest('Configuration')(config);
+      fastFinalityTrackingAddress,
+    } = await deployTestSuite('Configuration')(config);
 
     roninGovernanceAdminContract = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     maintenanceContract = Maintenance__factory.connect(maintenanceContractAddress, deployer);
@@ -164,9 +172,28 @@ describe('[Integration] Configuration check', () => {
     stakingVestingContract = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);
     validatorContract = RoninValidatorSet__factory.connect(validatorContractAddress, deployer);
     bridgeTrackingContract = BridgeTracking__factory.connect(bridgeTrackingAddress, deployer);
+    profileContract = Profile__factory.connect(profileAddress, deployer);
     bridgeRewardContract = BridgeReward__factory.connect(bridgeRewardAddress, deployer);
     bridgeSlashContract = BridgeSlash__factory.connect(bridgeSlashAddress, deployer);
     bridgeManagerContract = RoninBridgeManager__factory.connect(roninBridgeManagerAddress, deployer);
+
+    governanceAdminInterface = new GovernanceAdminInterface(
+      roninGovernanceAdminContract,
+      network.config.chainId!,
+      undefined,
+      ...trustedOrgs.map((_) => _.governor)
+    );
+
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      maintenanceContractAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninTrustedOrganizationAddress,
+    });
   });
 
   it('Should the RoninGovernanceAdmin contract set configs correctly', async () => {
@@ -203,10 +230,10 @@ describe('[Integration] Configuration check', () => {
   it('Should the RoninTrustedOrganization contract set configs correctly', async () => {
     expect(
       (await roninTrustedOrganizationContract.getAllTrustedOrganizations()).map(
-        ({ consensusAddr, governor, bridgeVoter, weight }) => ({
+        ({ consensusAddr, governor, __deprecatedBridgeVoter, weight }) => ({
           consensusAddr,
           governor,
-          bridgeVoter,
+          __deprecatedBridgeVoter,
           weight,
           addedBlock: undefined,
         })
@@ -215,7 +242,7 @@ describe('[Integration] Configuration check', () => {
       trustedOrgs.map((v) => ({
         consensusAddr: v.consensusAddr.address,
         governor: v.governor.address,
-        bridgeVoter: v.bridgeVoter.address,
+        __deprecatedBridgeVoter: DEFAULT_ADDRESS,
         weight: BigNumber.from(100),
         addedBlock: undefined,
       }))
@@ -225,31 +252,17 @@ describe('[Integration] Configuration check', () => {
         BigNumber.from
       )
     );
+    expect(await roninTrustedOrganizationContract.getContract(ContractType.PROFILE)).to.eq(profileContract.address);
   });
 
   it('Should the SlashIndicatorContract contract set configs correctly', async () => {
     expect(await slashContract.getContract(ContractType.VALIDATOR)).to.eq(validatorContract.address);
     expect(await slashContract.getContract(ContractType.MAINTENANCE)).to.eq(maintenanceContract.address);
+    expect(await slashContract.getContract(ContractType.PROFILE)).to.eq(profileContract.address);
     expect(await slashContract.getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).to.eq(
       roninTrustedOrganizationContract.address
     );
     expect(await slashContract.getContract(ContractType.GOVERNANCE_ADMIN)).to.eq(roninGovernanceAdminContract.address);
-    await compareBigNumbers(
-      await slashContract.getBridgeOperatorSlashingConfigs(),
-      [
-        config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier1,
-        config.slashIndicatorArguments?.bridgeOperatorSlashing?.missingVotesRatioTier2,
-        config.slashIndicatorArguments?.bridgeOperatorSlashing?.jailDurationForMissingVotesRatioTier2,
-        config.slashIndicatorArguments?.bridgeOperatorSlashing?.skipBridgeOperatorSlashingThreshold,
-      ].map(BigNumber.from)
-    );
-    await compareBigNumbers(
-      await slashContract.getBridgeVotingSlashingConfigs(),
-      [
-        config.slashIndicatorArguments?.bridgeVotingSlashing?.bridgeVotingThreshold,
-        config.slashIndicatorArguments?.bridgeVotingSlashing?.bridgeVotingSlashAmount,
-      ].map(BigNumber.from)
-    );
     await compareBigNumbers(
       await slashContract.getDoubleSignSlashingConfigs(),
       [
@@ -280,6 +293,7 @@ describe('[Integration] Configuration check', () => {
 
   it('Should the StakingContract contract set configs correctly', async () => {
     expect(await stakingContract.getContract(ContractType.VALIDATOR)).to.eq(validatorContract.address);
+    expect(await stakingContract.getContract(ContractType.PROFILE)).to.eq(profileContract.address);
     expect(await stakingContract.minValidatorStakingAmount()).to.eq(config.stakingArguments?.minValidatorStakingAmount);
     expect(await stakingContract.cooldownSecsToUndelegate()).to.eq(config.stakingArguments?.cooldownSecsToUndelegate);
     expect(await stakingContract.waitingSecsToRevoke()).to.eq(config.stakingArguments?.waitingSecsToRevoke);
@@ -309,6 +323,7 @@ describe('[Integration] Configuration check', () => {
     expect(await validatorContract.getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).to.eq(
       roninTrustedOrganizationContract.address
     );
+    expect(await validatorContract.getContract(ContractType.PROFILE)).to.eq(profileContract.address);
     expect(await validatorContract.maxValidatorNumber()).to.eq(config.roninValidatorSetArguments?.maxValidatorNumber);
     expect(await validatorContract.maxValidatorCandidate()).to.eq(
       config.roninValidatorSetArguments?.maxValidatorCandidate
@@ -339,5 +354,9 @@ describe('[Integration] Configuration check', () => {
   it('Should the BridgeSlash contract set configs correctly', async () => {
     expect(await bridgeSlashContract.getContract(ContractType.BRIDGE_MANAGER)).to.eq(bridgeManagerContract.address);
     expect(await bridgeSlashContract.getContract(ContractType.BRIDGE_TRACKING)).to.eq(bridgeTrackingContract.address);
+  });
+
+  it('Should the Profile contract set configs correctly', async () => {
+    expect(await profileContract.getContract(ContractType.STAKING)).to.eq(stakingContract.address);
   });
 });

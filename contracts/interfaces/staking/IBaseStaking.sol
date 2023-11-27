@@ -2,19 +2,32 @@
 
 pragma solidity ^0.8.9;
 
+import { TPoolId, TConsensus } from "../../udvts/Types.sol";
+
 interface IBaseStaking {
   struct PoolDetail {
-    // Address of the pool i.e. consensus address of the validator
-    address addr;
-    // Pool admin address
-    address admin;
-    // Self-staking amount
+    /**
+     * @dev Address of the pool.
+     * @custom non-volatile-storage Permanently set to the first consensus address of the candidate.
+     */
+    address pid;
+
+    /**
+     * @dev The address of the pool admin.
+     * @custom shadowed-storage This storage slot is always kept in sync with the admin in `Profile-CandidateProfile`.
+     */
+    address __shadowedPoolAdmin;
+
+    /// @dev Self-staking amount
     uint256 stakingAmount;
-    // Total number of RON staking for the pool
+
+    /// @dev Total number of RON staking for the pool
     uint256 stakingTotal;
-    // Mapping from delegator => delegating amount
+
+    /// @dev Mapping from delegator => delegating amount
     mapping(address => uint256) delegatingAmount;
-    // Mapping from delegator => the last timestamp that delegator staked
+
+    /// @dev Mapping from delegator => the last timestamp that delegator staked
     mapping(address => uint256) lastDelegatingTimestamp;
   }
 
@@ -34,29 +47,40 @@ interface IBaseStaking {
   /// @dev Error of admin of any active pool cannot delegate.
   error ErrAdminOfAnyActivePoolForbidden(address admin);
   /// @dev Error of querying inactive pool.
-  error ErrInactivePool(address poolAddr);
+  error ErrInactivePool(TConsensus consensusAddr, address poolAddr);
   /// @dev Error of length of input arrays are not of the same.
   error ErrInvalidArrays();
 
   /**
-   * @dev Returns whether the `_poolAdminAddr` is currently active.
+   * @dev Returns whether the `admin` is currently active.
    */
-  function isAdminOfActivePool(address _poolAdminAddr) external view returns (bool);
+  function isAdminOfActivePool(address admin) external view returns (bool);
 
   /**
    * @dev Returns the consensus address corresponding to the pool admin.
    */
-  function getPoolAddressOf(address _poolAdminAddr) external view returns (address);
+  function getPoolAddressOf(address admin) external view returns (address);
 
   /**
-   * @dev Returns the staking pool detail.
+   * @dev Returns the staking pool details.
    */
-  function getPoolDetail(address) external view returns (address _admin, uint256 _stakingAmount, uint256 _stakingTotal);
+  function getPoolDetail(
+    TConsensus consensusAddr
+  ) external view returns (address admin, uint256 stakingAmount, uint256 stakingTotal);
+
+  function getPoolDetailById(
+    address poolId
+  ) external view returns (address admin, uint256 stakingAmount, uint256 stakingTotal);
 
   /**
    * @dev Returns the self-staking amounts of the pools.
    */
-  function getManySelfStakings(address[] calldata) external view returns (uint256[] memory);
+  function getManySelfStakings(TConsensus[] calldata consensusAddrs) external view returns (uint256[] memory);
+
+  /**
+   * @dev Returns the self-staking amounts of the pools.
+   */
+  function getManySelfStakingsById(address[] calldata poolIds) external view returns (uint256[] memory);
 
   /**
    * @dev Returns The cooldown time in seconds to undelegate from the last timestamp (s)he delegated.
@@ -77,7 +101,7 @@ interface IBaseStaking {
    * Emits the event `CooldownSecsToUndelegateUpdated`.
    *
    */
-  function setCooldownSecsToUndelegate(uint256 _cooldownSecs) external;
+  function setCooldownSecsToUndelegate(uint256 cooldownSecs) external;
 
   /**
    * @dev Sets the number of seconds that a candidate must wait to be revoked.
@@ -88,5 +112,5 @@ interface IBaseStaking {
    * Emits the event `WaitingSecsToRevokeUpdated`.
    *
    */
-  function setWaitingSecsToRevoke(uint256 _secs) external;
+  function setWaitingSecsToRevoke(uint256 secs) external;
 }

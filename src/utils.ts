@@ -69,6 +69,7 @@ export interface GeneralConfig {
     stakingContract?: AddressExtended;
     validatorContract?: AddressExtended;
     roninTrustedOrganizationContract?: AddressExtended;
+    profileContract?: AddressExtended;
     bridgeTrackingContract?: AddressExtended;
     bridgeManagerContract?: AddressExtended;
     bridgeSlashContract?: AddressExtended;

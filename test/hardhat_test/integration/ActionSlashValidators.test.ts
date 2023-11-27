@@ -13,13 +13,15 @@ import {
   MockRoninValidatorSetExtended,
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
+  Profile__factory,
+  Profile,
 } from '../../../src/types';
 
 import { EpochController, expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { expects as CandidateManagerExpects } from '../helpers/candidate-manager';
-import { mineBatchTxs } from '../helpers/utils';
+import { generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
 import { SlashType } from '../../../src/script/slash-indicator';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import {
   createManyTrustedOrganizationAddressSets,
@@ -30,10 +32,12 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { DEFAULT_ADDRESS } from '../../../src/utils';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
 let validatorContract: MockRoninValidatorSetExtended;
+let profileContract: Profile;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 
@@ -60,42 +64,50 @@ describe('[Integration] Slash validators', () => {
 
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
 
-    const { slashContractAddress, stakingContractAddress, validatorContractAddress, roninGovernanceAdminAddress, fastFinalityTrackingAddress } =
-      await initTest('ActionSlashValidators')({
-        slashIndicatorArguments: {
-          unavailabilitySlashing: {
-            unavailabilityTier1Threshold,
-            unavailabilityTier2Threshold,
-            slashAmountForUnavailabilityTier2Threshold,
-            jailDurationForUnavailabilityTier2Threshold,
+    const {
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninGovernanceAdminAddress,
+      profileAddress,
+      fastFinalityTrackingAddress,
+      roninTrustedOrganizationAddress,
+    } = await deployTestSuite('ActionSlashValidators')({
+      slashIndicatorArguments: {
+        unavailabilitySlashing: {
+          unavailabilityTier1Threshold,
+          unavailabilityTier2Threshold,
+          slashAmountForUnavailabilityTier2Threshold,
+          jailDurationForUnavailabilityTier2Threshold,
+        },
+        doubleSignSlashing: {
+          slashDoubleSignAmount,
+        },
+      },
+      roninValidatorSetArguments: {
+        maxValidatorNumber,
+      },
+      stakingArguments: {
+        minValidatorStakingAmount,
+        waitingSecsToRevoke,
+      },
+      roninTrustedOrganizationArguments: {
+        trustedOrganizations: [
+          {
+            consensusAddr: trustedOrgs[0].consensusAddr.address,
+            governor: trustedOrgs[0].governor.address,
+            __deprecatedBridgeVoter: trustedOrgs[0].__deprecatedBridgeVoter.address,
+            weight: 100,
+            addedBlock: 0,
           },
-          doubleSignSlashing: {
-            slashDoubleSignAmount,
-          },
-        },
-        roninValidatorSetArguments: {
-          maxValidatorNumber,
-        },
-        stakingArguments: {
-          minValidatorStakingAmount,
-          waitingSecsToRevoke,
-        },
-        roninTrustedOrganizationArguments: {
-          trustedOrganizations: [
-            {
-              consensusAddr: trustedOrgs[0].consensusAddr.address,
-              governor: trustedOrgs[0].governor.address,
-              bridgeVoter: trustedOrgs[0].bridgeVoter.address,
-              weight: 100,
-              addedBlock: 0,
-            },
-          ],
-        },
-      });
+        ],
+      },
+    });
 
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
     validatorContract = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
+    profileContract = Profile__factory.connect(profileAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
@@ -104,11 +116,20 @@ describe('[Integration] Slash validators', () => {
       trustedOrgs[0].governor
     );
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninTrustedOrganizationAddress,
+    });
+
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
     await validatorContract.initEpoch();
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
 
     await EpochController.setTimestampToPeriodEnding();
     await network.provider.send('hardhat_setCoinbase', [coinbase.address]);
@@ -122,13 +143,44 @@ describe('[Integration] Slash validators', () => {
     let expectingValidatorSet: Address[] = [];
     let expectingBlockProducerSet: Address[] = [];
     let period: BigNumberish;
+    let slasheeIdx: number;
+    let slashee: ValidatorCandidateAddressSet;
+    let slasheeInitStakingAmount: BigNumber;
+    let wrapUpEpochTx: ContractTransaction;
 
     before(async () => {
       period = await validatorContract.currentPeriod();
-      await validatorContract.addValidators([1, 2, 3].map((i) => validatorCandidates[i].consensusAddr.address));
+      slasheeIdx = 1;
+      slashee = validatorCandidates[slasheeIdx];
+      slasheeInitStakingAmount = minValidatorStakingAmount
+        .add(slashAmountForUnavailabilityTier2Threshold.mul(10))
+        .add(100);
+      await stakingContract
+        .connect(slashee.poolAdmin)
+        .applyValidatorCandidate(
+          slashee.candidateAdmin.address,
+          slashee.consensusAddr.address,
+          slashee.treasuryAddr.address,
+          2_00,
+          generateSamplePubkey(),
+          {
+            value: slasheeInitStakingAmount,
+          }
+        );
+
+      await EpochController.setTimestampToPeriodEnding();
+      await mineBatchTxs(async () => {
+        await validatorContract.connect(coinbase).endEpoch();
+        wrapUpEpochTx = await validatorContract.connect(coinbase).wrapUpEpoch();
+      });
+
+      period = await validatorContract.currentPeriod();
+      expectingValidatorSet.push(slashee.consensusAddr.address);
+      expectingBlockProducerSet.push(slashee.consensusAddr.address);
+      await RoninValidatorSetExpects.emitValidatorSetUpdatedEvent(wrapUpEpochTx!, period, expectingValidatorSet);
     });
 
-    describe('Slash misdemeanor validator', async () => {
+    describe('Slash tier-1 validator', async () => {
       it('Should the ValidatorSet contract emit event', async () => {
         let slasheeIdx = 1;
         let slashee = validatorCandidates[slasheeIdx].consensusAddr;
@@ -165,6 +217,7 @@ describe('[Integration] Slash validators', () => {
             slashee.consensusAddr.address,
             slashee.treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: slasheeInitStakingAmount,
             }
@@ -220,6 +273,7 @@ describe('[Integration] Slash validators', () => {
         // ]);
 
         expect(await validatorContract.getJailUntils(expectingValidatorSet)).deep.equal([
+          BigNumber.from(0),
           BigNumber.from(blockNumber).add(jailDurationForUnavailabilityTier2Threshold),
         ]);
       });
@@ -312,6 +366,7 @@ describe('[Integration] Slash validators', () => {
               slashees[i].consensusAddr.address,
               slashees[i].treasuryAddr.address,
               2_00,
+              generateSamplePubkey(),
               {
                 value: slasheeInitStakingAmount.add(slashees.length - i),
               }
@@ -536,30 +591,26 @@ describe('[Integration] Slash validators', () => {
             });
             await expect(topUpTx)
               .revertedWithCustomError(stakingContract, 'ErrInactivePool')
-              .withArgs(slashee.consensusAddr.address);
+              .withArgs(slashee.consensusAddr.address, slashee.consensusAddr.address);
           }
         });
 
-        it('Should the kicked validator be able to re-join as a candidate', async () => {
+        it('Should the kicked validator cannot be able to re-join as a candidate', async () => {
           for (let slashee of slashees) {
-            let applyCandidateTx = await stakingContract
+            let reApplyTx = stakingContract
               .connect(slashee.poolAdmin)
               .applyValidatorCandidate(
                 slashee.candidateAdmin.address,
                 slashee.consensusAddr.address,
                 slashee.treasuryAddr.address,
                 2_00,
+                generateSamplePubkey(),
                 {
                   value: slasheeInitStakingAmount,
                 }
               );
 
-            await CandidateManagerExpects.emitCandidateGrantedEvent(
-              applyCandidateTx!,
-              slashee.consensusAddr.address,
-              slashee.treasuryAddr.address,
-              slashee.candidateAdmin.address
-            );
+            await expect(reApplyTx).revertedWithCustomError(profileContract, 'ErrExistentProfile');
           }
         });
       });

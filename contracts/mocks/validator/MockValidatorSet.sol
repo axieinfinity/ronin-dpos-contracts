@@ -3,12 +3,12 @@
 pragma solidity ^0.8.9;
 
 import "../../interfaces/validator/IRoninValidatorSet.sol";
-import "../../ronin/validator/CandidateManager.sol";
+import "../../ronin/validator/CandidateManagerCallback.sol";
 import { HasStakingVestingDeprecated, HasSlashIndicatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
 contract MockValidatorSet is
   IRoninValidatorSet,
-  CandidateManager,
+  CandidateManagerCallback,
   HasStakingVestingDeprecated,
   HasSlashIndicatorDeprecated
 {
@@ -18,16 +18,18 @@ contract MockValidatorSet is
   mapping(uint256 => bool) internal _periodSlashed;
 
   constructor(
-    address __stakingContract,
+    address _stakingContract,
     address _slashIndicatorContract,
     address _stakingVestingContract,
+    address _profileContract,
     uint256 __maxValidatorCandidate,
     uint256 __numberOfBlocksInEpoch,
     uint256 __minEffectiveDaysOnwards
   ) {
-    _setContract(ContractType.STAKING, __stakingContract);
+    _setContract(ContractType.STAKING, _stakingContract);
     _setContract(ContractType.SLASH_INDICATOR, _slashIndicatorContract);
     _setContract(ContractType.STAKING_VESTING, _stakingVestingContract);
+    _setContract(ContractType.PROFILE, _profileContract);
     _setMaxValidatorCandidate(__maxValidatorCandidate);
     _numberOfBlocksInEpoch = __numberOfBlocksInEpoch;
     _minEffectiveDaysOnwards = __minEffectiveDaysOnwards;
@@ -42,14 +44,16 @@ contract MockValidatorSet is
 
   function getLastUpdatedBlock() external view override returns (uint256) {}
 
-  function checkManyJailed(address[] calldata) external view override returns (bool[] memory) {}
+  function checkManyJailed(TConsensus[] calldata) external view override returns (bool[] memory) {}
 
-  function checkMiningRewardDeprecatedAtPeriod(address, uint256 _period) external view override returns (bool) {}
+  function checkManyJailedById(address[] calldata candidateIds) external view returns (bool[] memory) {}
 
-  function checkMiningRewardDeprecated(address) external view override returns (bool) {}
+  function checkMiningRewardDeprecated(TConsensus) external view override returns (bool) {}
+
+  function checkMiningRewardDeprecatedAtPeriod(TConsensus, uint256 period) external view override returns (bool) {}
 
   function checkBridgeRewardDeprecatedAtPeriod(
-    address _consensusAddr,
+    TConsensus _consensusAddr,
     uint256 _period
   ) external view returns (bool _result) {}
 
@@ -59,12 +63,7 @@ contract MockValidatorSet is
 
   function epochEndingAt(uint256 _block) external view override returns (bool) {}
 
-  function execSlash(
-    address validatorAddr,
-    uint256 newJailedUntil,
-    uint256 slashAmount,
-    bool cannotBailout
-  ) external override {}
+  function execSlash(address cid, uint256 newJailedUntil, uint256 slashAmount, bool cannotBailout) external override {}
 
   function execBailOut(address, uint256) external override {}
 
@@ -87,7 +86,7 @@ contract MockValidatorSet is
 
   function getBlockProducers() external view override returns (address[] memory) {}
 
-  function isBlockProducer(address) external pure override returns (bool) {
+  function isBlockProducer(TConsensus) external pure override returns (bool) {
     return true;
   }
 
@@ -103,23 +102,31 @@ contract MockValidatorSet is
     return block.timestamp / 86400;
   }
 
-  function checkJailed(address) external view override returns (bool) {}
+  function checkJailed(TConsensus) external view override returns (bool) {}
 
-  function getJailedTimeLeft(address) external view override returns (bool, uint256, uint256) {}
+  function getJailedTimeLeft(TConsensus) external view override returns (bool, uint256, uint256) {}
 
   function currentPeriodStartAtBlock() external view override returns (uint256) {}
 
-  function checkJailedAtBlock(address _addr, uint256 _blockNum) external view override returns (bool) {}
+  function checkJailedAtBlock(TConsensus _addr, uint256 _blockNum) external view override returns (bool) {}
 
   function getJailedTimeLeftAtBlock(
-    address _addr,
+    TConsensus _addr,
     uint256 _blockNum
   ) external view override returns (bool isJailed_, uint256 blockLeft_, uint256 epochLeft_) {}
 
   function totalDeprecatedReward() external view override returns (uint256) {}
 
+  function __css2cid(TConsensus consensusAddr) internal view override returns (address) {
+    return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
+  }
+
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view override returns (address[] memory) {
+    return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
+  }
+
   function execReleaseLockedFundForEmergencyExitRequest(
-    address _consensusAddr,
+    address _candidateId,
     address payable _recipient
   ) external override {}
 
@@ -131,13 +138,13 @@ contract MockValidatorSet is
 
   function setEmergencyExpiryDuration(uint256 _emergencyExpiryDuration) external override {}
 
-  function getEmergencyExitInfo(address _consensusAddr) external view override returns (EmergencyExitInfo memory) {}
+  function getEmergencyExitInfo(TConsensus consensus) external view override returns (EmergencyExitInfo memory) {}
 
-  function execEmergencyExit(address, uint256) external {}
+  function execRequestEmergencyExit(address, uint256) external {}
 
-  function isOperatingBridge(address) external view returns (bool) {}
+  function isOperatingBridge(TConsensus) external view returns (bool) {}
 
   function _emergencyExitLockedFundReleased(address _consensusAddr) internal virtual override returns (bool) {}
 
-  function _isTrustedOrg(address _consensusAddr) internal virtual override returns (bool) {}
+  function _isTrustedOrg(address validatorId) internal virtual override returns (bool) {}
 }

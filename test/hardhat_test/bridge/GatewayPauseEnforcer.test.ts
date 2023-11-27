@@ -34,7 +34,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { createManyOperatorTuples, OperatorTuple } from '../helpers/address-set-types/operator-tuple-type';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { ContractType, mineBatchTxs } from '../helpers/utils';
 
 let deployer: SignerWithAddress;
@@ -135,14 +135,15 @@ describe('Gateway Pause Enforcer test', () => {
       roninTrustedOrganizationAddress,
       validatorContractAddress,
       roninBridgeManagerAddress,
+      profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('RoninGatewayV3-PauseEnforcer')({
+    } = await deployTestSuite('RoninGatewayV3-PauseEnforcer')({
       bridgeContract: bridgeContract.address,
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          bridgeVoter: v.bridgeVoter.address,
+          __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
@@ -180,8 +181,15 @@ describe('Gateway Pause Enforcer test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
+    await governanceAdminInterface.functionDelegateCalls(
+      [stakingContract.address, roninValidatorSet.address, roninValidatorSet.address],
+      [
+        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        roninValidatorSet.interface.encodeFunctionData('initializeV3', [fastFinalityTrackingAddress]),
+        roninValidatorSet.interface.encodeFunctionData('initializeV4', [profileAddress]),
+      ]
+    );
     await roninValidatorSet.initEpoch();
-    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     await TransparentUpgradeableProxyV2__factory.connect(proxy.address, deployer).changeAdmin(governanceAdmin.address);
     await governanceAdminInterface.functionDelegateCalls(

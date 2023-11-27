@@ -13,8 +13,8 @@ import {
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
 } from '../../../src/types';
-import { ContractType, mineBatchTxs } from '../helpers/utils';
-import { initTest } from '../helpers/fixture';
+import { ContractType, generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { EpochController } from '../helpers/ronin-validator-set';
 import { BlockRewardDeprecatedType } from '../../../src/script/ronin-validator-set';
@@ -26,6 +26,7 @@ import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
@@ -61,8 +62,10 @@ describe('[Integration] Submit Block Reward', () => {
       stakingContractAddress,
       validatorContractAddress,
       roninGovernanceAdminAddress,
+      profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('ActionSubmitReward')({
+      roninTrustedOrganizationAddress
+    } = await deployTestSuite('ActionSubmitReward')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
           unavailabilityTier2Threshold,
@@ -82,11 +85,21 @@ describe('[Integration] Submit Block Reward', () => {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          bridgeVoter: v.bridgeVoter.address,
+          __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
       },
+    });
+
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninTrustedOrganizationAddress
     });
 
     slashContract = SlashIndicator__factory.connect(slashContractAddress, deployer);
@@ -104,7 +117,6 @@ describe('[Integration] Submit Block Reward', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
     await validatorContract.initEpoch();
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
   });
 
   describe('Configuration check', async () => {
@@ -142,6 +154,7 @@ describe('[Integration] Submit Block Reward', () => {
           validator.consensusAddr.address,
           validator.treasuryAddr.address,
           2_00,
+          generateSamplePubkey(),
           {
             value: initStakingAmount,
           }
@@ -193,6 +206,7 @@ describe('[Integration] Submit Block Reward', () => {
           validator.consensusAddr.address,
           validator.treasuryAddr.address,
           2_00,
+          generateSamplePubkey(),
           {
             value: initStakingAmount,
           }

@@ -3,13 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "../../../libraries/EnumFlags.sol";
+import { TConsensus } from "../../../udvts/Types.sol";
 
 interface IValidatorInfoV2 {
-  /**
-   * @dev Error thrown when an invalid maximum prioritized validator number is provided.
-   */
+  /// @dev Error thrown when an invalid maximum prioritized validator number is provided.
   error ErrInvalidMaxPrioritizedValidatorNumber();
-
   /// @dev Emitted when the number of max validator is updated.
   event MaxValidatorNumberUpdated(uint256);
   /// @dev Emitted when the number of reserved slots for prioritized validators is updated.
@@ -38,7 +36,7 @@ interface IValidatorInfoV2 {
   /**
    * @dev Returns whether the address is block producer or not.
    */
-  function isBlockProducer(address _addr) external view returns (bool);
+  function isBlockProducer(TConsensus consensusAddr) external view returns (bool);
 
   /**
    * @dev Returns total numbers of the block producers.

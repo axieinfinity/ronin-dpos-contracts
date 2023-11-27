@@ -96,7 +96,7 @@ const ethereum: NetworkUserConfig = {
 };
 
 const compilerConfig: SolcUserConfig = {
-  version: '0.8.17',
+  version: '0.8.19',
   settings: {
     optimizer: {
       enabled: true,
@@ -110,7 +110,7 @@ const config: HardhatUserConfig = {
     compilers: [compilerConfig],
     overrides: {
       'contracts/ronin/validator/RoninValidatorSet.sol': {
-        version: '0.8.17',
+        version: '0.8.19',
         settings: {
           optimizer: {
             enabled: true,
@@ -122,6 +122,7 @@ const config: HardhatUserConfig = {
             // and we want all generated code to be deterministic
             // https://docs.soliditylang.org/en/v0.8.17/metadata.html
             bytecodeHash: 'none',
+            useLiteralContent: true,
           },
         },
       },

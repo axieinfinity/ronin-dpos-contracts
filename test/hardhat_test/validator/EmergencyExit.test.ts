@@ -16,8 +16,8 @@ import {
   StakingVesting,
 } from '../../../src/types';
 import * as RoninValidatorSet from '../helpers/ronin-validator-set';
-import { mineBatchTxs } from '../helpers/utils';
-import { initTest } from '../helpers/fixture';
+import { generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { Address } from 'hardhat-deploy/dist/types';
 import {
@@ -29,6 +29,7 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { getEmergencyExitBallotHash } from '../../../src/script/proposal';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let stakingVesting: StakingVesting;
@@ -82,8 +83,10 @@ describe('Emergency Exit test', () => {
       stakingContractAddress,
       roninGovernanceAdminAddress,
       stakingVestingContractAddress,
+      profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('EmergencyExit')({
+      roninTrustedOrganizationAddress
+    } = await deployTestSuite('EmergencyExit')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
           slashDoubleSignAmount,
@@ -106,11 +109,22 @@ describe('Emergency Exit test', () => {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          bridgeVoter: v.bridgeVoter.address,
+          __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
       },
+    });
+
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninTrustedOrganizationAddress,
+      maintenanceContractAddress: undefined,
     });
 
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
@@ -129,7 +143,6 @@ describe('Emergency Exit test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await roninValidatorSet.initEpoch();
-    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
@@ -146,6 +159,7 @@ describe('Emergency Exit test', () => {
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
           2_00,
+          generateSamplePubkey(),
           {
             value: stakedAmount[i],
           }
