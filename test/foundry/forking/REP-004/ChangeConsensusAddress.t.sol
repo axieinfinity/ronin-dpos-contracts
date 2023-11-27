@@ -557,6 +557,7 @@ contract ChangeConsensusAddressForkTest is Test {
     _bulkWrapUpEpoch(1);
 
     validatorCandidate = validatorCandidates[1];
+    cid = TConsensus.unwrap(validatorCandidate);
     candidateAdmin = _validator.getCandidateInfo(validatorCandidate).__shadowedAdmin;
     newConsensus = TConsensus.wrap(makeAddr("new-consensus-1"));
     vm.prank(candidateAdmin);
