@@ -249,7 +249,6 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
         return getTrustedOrganizationAt(i);
       }
     }
-    revert ErrQueryForNonExistentConsensusAddress();
   }
 
   /**
