@@ -6,6 +6,8 @@ import "../../../libraries/EnumFlags.sol";
 import { HasTrustedOrgDeprecated } from "../../../utils/DeprecatedSlots.sol";
 import "../../../extensions/collections/HasContracts.sol";
 import "../../../interfaces/validator/info-fragments/IValidatorInfoV2.sol";
+import "../../../interfaces/IProfile.sol";
+import { TConsensus } from "../../../udvts/Types.sol";
 
 abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasTrustedOrgDeprecated {
   using EnumFlags for EnumFlags.ValidatorFlag;
@@ -14,10 +16,10 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
   uint256 internal _maxValidatorNumber;
 
   /// @dev The total of validators
-  uint256 public validatorCount;
-  /// @dev Mapping from validator index => validator address
-  mapping(uint256 => address) internal _validators;
-  /// @dev Mapping from address => flag indicating the validator ability: producing block, operating bridge
+  uint256 internal _validatorCount;
+  /// @dev Mapping from validator index => validator id address
+  mapping(uint256 => address) internal _validatorIds;
+  /// @dev Mapping from validator id => flag indicating the validator ability: producing block, operating bridge
   mapping(address => EnumFlags.ValidatorFlag) internal _validatorMap;
   /// @dev The number of slot that is reserved for prioritized validators
   uint256 internal _maxPrioritizedValidatorNumber;
@@ -28,17 +30,22 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
    */
   uint256[50] private ______gap;
 
+  function validatorCount() external view returns (uint256) {
+    return _validatorCount;
+  }
+
   /**
    * @inheritdoc IValidatorInfoV2
    */
-  function getValidators() public view override returns (address[] memory _validatorList) {
-    _validatorList = new address[](validatorCount);
-    for (uint _i; _i < _validatorList.length; ) {
-      address _validator = _validators[_i];
-      _validatorList[_i] = _validator;
+  function getValidators() public view override returns (address[] memory validatorList_) {
+    validatorList_ = new address[](_validatorCount);
+    address iValidator;
+    for (uint i; i < validatorList_.length; ) {
+      iValidator = _validatorIds[i];
+      validatorList_[i] = iValidator;
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }
@@ -46,39 +53,44 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
   /**
    * @inheritdoc IValidatorInfoV2
    */
-  function getBlockProducers() public view override returns (address[] memory _result) {
-    _result = new address[](validatorCount);
-    uint256 _count = 0;
-    for (uint _i; _i < _result.length; ) {
-      if (isBlockProducer(_validators[_i])) {
-        _result[_count++] = _validators[_i];
+  function getBlockProducers() public view override returns (address[] memory result) {
+    result = new address[](_validatorCount);
+    uint256 count = 0;
+    for (uint i; i < result.length; ) {
+      address validatorId = _validatorIds[i];
+      if (_isBlockProducerById(validatorId)) {
+        result[count++] = validatorId;
       }
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
 
     assembly {
-      mstore(_result, _count)
+      mstore(result, count)
     }
   }
 
   /**
    * @inheritdoc IValidatorInfoV2
    */
-  function isBlockProducer(address _addr) public view override returns (bool) {
-    return _validatorMap[_addr].hasFlag(EnumFlags.ValidatorFlag.BlockProducer);
+  function isBlockProducer(TConsensus consensusAddr) public view override returns (bool) {
+    return _isBlockProducerById(__css2cid(consensusAddr));
+  }
+
+  function _isBlockProducerById(address id) internal view returns (bool) {
+    return _validatorMap[id].hasFlag(EnumFlags.ValidatorFlag.BlockProducer);
   }
 
   /**
    * @inheritdoc IValidatorInfoV2
    */
-  function totalBlockProducer() external view returns (uint256 _total) {
+  function totalBlockProducer() external view returns (uint256 total) {
     unchecked {
-      for (uint _i; _i < validatorCount; _i++) {
-        if (isBlockProducer(_validators[_i])) {
-          _total++;
+      for (uint i; i < _validatorCount; i++) {
+        if (_isBlockProducerById(_validatorIds[i])) {
+          total++;
         }
       }
     }
@@ -128,4 +140,10 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
     _maxPrioritizedValidatorNumber = _number;
     emit MaxPrioritizedValidatorNumberUpdated(_number);
   }
+
+  /// @dev See {RoninValidatorSet-__css2cid}
+  function __css2cid(TConsensus consensusAddr) internal view virtual returns (address);
+
+  /// @dev See {RoninValidatorSet-__css2cidBatch}
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
 }

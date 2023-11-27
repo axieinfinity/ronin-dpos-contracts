@@ -23,7 +23,7 @@ contract StakingVesting is
   /// @dev The block bonus for the bridge operator whenever a new block is mined.
   uint256 internal _bridgeOperatorBonusPerBlock;
   /// @dev The last block number that the staking vesting sent.
-  uint256 public lastBlockSendingBonus;
+  uint256 internal _lastBlockSendingBonus;
   /// @dev The percentage that extracted from reward of block producer for fast finality.
   uint256 internal _fastFinalityRewardPercentage;
 
@@ -35,13 +35,13 @@ contract StakingVesting is
    * @dev Initializes the contract storage.
    */
   function initialize(
-    address __validatorContract,
-    uint256 __blockProducerBonusPerBlock,
-    uint256 __bridgeOperatorBonusPerBlock
+    address validatorContract,
+    uint256 blockProducerBonusPerBlock,
+    uint256 bridgeOperatorBonusPerBlock
   ) external payable initializer {
-    _setContract(ContractType.VALIDATOR, __validatorContract);
-    _setBlockProducerBonusPerBlock(__blockProducerBonusPerBlock);
-    _setBridgeOperatorBonusPerBlock(__bridgeOperatorBonusPerBlock);
+    _setContract(ContractType.VALIDATOR, validatorContract);
+    _setBlockProducerBonusPerBlock(blockProducerBonusPerBlock);
+    _setBridgeOperatorBonusPerBlock(bridgeOperatorBonusPerBlock);
   }
 
   function initializeV2() external reinitializer(2) {
@@ -75,6 +75,13 @@ contract StakingVesting is
   /**
    * @inheritdoc IStakingVesting
    */
+  function lastBlockSendingBonus() external view returns (uint256) {
+    return _lastBlockSendingBonus;
+  }
+
+  /**
+   * @inheritdoc IStakingVesting
+   */
   function fastFinalityRewardPercentage() external view override returns (uint256) {
     return _fastFinalityRewardPercentage;
   }
@@ -91,9 +98,9 @@ contract StakingVesting is
     onlyContract(ContractType.VALIDATOR)
     returns (bool success, uint256 blockProducerBonus, uint256 bridgeOperatorBonus, uint256 fastFinalityRewardPercent)
   {
-    if (block.number <= lastBlockSendingBonus) revert ErrBonusAlreadySent();
+    if (block.number <= _lastBlockSendingBonus) revert ErrBonusAlreadySent();
 
-    lastBlockSendingBonus = block.number;
+    _lastBlockSendingBonus = block.number;
 
     blockProducerBonus = forBlockProducer ? blockProducerBlockBonus(block.number) : 0;
     bridgeOperatorBonus = forBridgeOperator ? bridgeOperatorBlockBonus(block.number) : 0;
@@ -124,15 +131,15 @@ contract StakingVesting is
   /**
    * @inheritdoc IStakingVesting
    */
-  function setBlockProducerBonusPerBlock(uint256 _amount) external override onlyAdmin {
-    _setBlockProducerBonusPerBlock(_amount);
+  function setBlockProducerBonusPerBlock(uint256 amount) external override onlyAdmin {
+    _setBlockProducerBonusPerBlock(amount);
   }
 
   /**
    * @inheritdoc IStakingVesting
    */
-  function setBridgeOperatorBonusPerBlock(uint256 _amount) external override onlyAdmin {
-    _setBridgeOperatorBonusPerBlock(_amount);
+  function setBridgeOperatorBonusPerBlock(uint256 amount) external override onlyAdmin {
+    _setBridgeOperatorBonusPerBlock(amount);
   }
 
   /**
@@ -149,9 +156,9 @@ contract StakingVesting is
    * Emits the event `BlockProducerBonusPerBlockUpdated`.
    *
    */
-  function _setBlockProducerBonusPerBlock(uint256 _amount) internal {
-    _blockProducerBonusPerBlock = _amount;
-    emit BlockProducerBonusPerBlockUpdated(_amount);
+  function _setBlockProducerBonusPerBlock(uint256 amount) internal {
+    _blockProducerBonusPerBlock = amount;
+    emit BlockProducerBonusPerBlockUpdated(amount);
   }
 
   /**
@@ -160,9 +167,9 @@ contract StakingVesting is
    * Emits the event `BridgeOperatorBonusPerBlockUpdated`.
    *
    */
-  function _setBridgeOperatorBonusPerBlock(uint256 _amount) internal {
-    _bridgeOperatorBonusPerBlock = _amount;
-    emit BridgeOperatorBonusPerBlockUpdated(_amount);
+  function _setBridgeOperatorBonusPerBlock(uint256 amount) internal {
+    _bridgeOperatorBonusPerBlock = amount;
+    emit BridgeOperatorBonusPerBlockUpdated(amount);
   }
 
   /**

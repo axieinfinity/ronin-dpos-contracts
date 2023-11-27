@@ -18,7 +18,7 @@ abstract contract CreditScore is
   HasMaintenanceDeprecated,
   PercentageConsumer
 {
-  /// @dev Mapping from validator address => period index => whether bailed out before
+  /// @dev Mapping from validator id => period index => whether bailed out before
   mapping(address => mapping(uint256 => bool)) internal _checkBailedOutAtPeriod;
   /// @dev Mapping from validator address => credit score
   mapping(address => uint256) internal _creditScore;
@@ -41,85 +41,86 @@ abstract contract CreditScore is
   /**
    * @inheritdoc ICreditScore
    */
-  function updateCreditScores(
-    address[] calldata _validators,
-    uint256 _period
+  function execUpdateCreditScores(
+    address[] calldata validatorIds,
+    uint256 period
   ) external override onlyContract(ContractType.VALIDATOR) {
-    IRoninValidatorSet _validatorContract = IRoninValidatorSet(msg.sender);
-    uint256 _periodStartAtBlock = _validatorContract.currentPeriodStartAtBlock();
+    IRoninValidatorSet validatorContract = IRoninValidatorSet(msg.sender);
+    uint256 periodStartAtBlock = validatorContract.currentPeriodStartAtBlock();
 
-    bool[] memory _jaileds = _validatorContract.checkManyJailed(_validators);
-    bool[] memory _maintaineds = IMaintenance(getContract(ContractType.MAINTENANCE)).checkManyMaintainedInBlockRange(
-      _validators,
-      _periodStartAtBlock,
+    bool[] memory jaileds = validatorContract.checkManyJailedById(validatorIds);
+    bool[] memory maintaineds = IMaintenance(getContract(ContractType.MAINTENANCE)).checkManyMaintainedInBlockRangeById(
+      validatorIds,
+      periodStartAtBlock,
       block.number
     );
-    uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
+    uint256[] memory updatedCreditScores = new uint256[](validatorIds.length);
 
-    for (uint _i = 0; _i < _validators.length; ) {
-      address _validator = _validators[_i];
+    for (uint i = 0; i < validatorIds.length; ) {
+      address vId = validatorIds[i];
 
-      uint256 _indicator = getUnavailabilityIndicator(_validator, _period);
-      bool _isJailedInPeriod = _jaileds[_i];
-      bool _isMaintainingInPeriod = _maintaineds[_i];
+      uint256 indicator = _getUnavailabilityIndicatorById(vId, period);
+      bool isJailedInPeriod = jaileds[i];
+      bool isMaintainingInPeriod = maintaineds[i];
 
-      uint256 _actualGain = (_isJailedInPeriod || _isMaintainingInPeriod)
+      uint256 _actualGain = (isJailedInPeriod || isMaintainingInPeriod)
         ? 0
-        : Math.subNonNegative(_gainCreditScore, _indicator);
+        : Math.subNonNegative(_gainCreditScore, indicator);
 
-      _creditScore[_validator] = Math.addWithUpperbound(_creditScore[_validator], _actualGain, _maxCreditScore);
-      _updatedCreditScores[_i] = _creditScore[_validator];
+      _creditScore[vId] = Math.addWithUpperbound(_creditScore[vId], _actualGain, _maxCreditScore);
+      updatedCreditScores[i] = _creditScore[vId];
       unchecked {
-        ++_i;
+        ++i;
       }
     }
 
-    emit CreditScoresUpdated(_validators, _updatedCreditScores);
+    emit CreditScoresUpdated(validatorIds, updatedCreditScores);
   }
 
   function execResetCreditScores(
-    address[] calldata _validators
+    address[] calldata validatorIds
   ) external override onlyContract(ContractType.VALIDATOR) {
-    uint256[] memory _updatedCreditScores = new uint256[](_validators.length);
-    for (uint _i = 0; _i < _validators.length; ) {
-      address _validator = _validators[_i];
+    uint256[] memory updatedCreditScores = new uint256[](validatorIds.length);
+    for (uint i = 0; i < validatorIds.length; ) {
+      address _validator = validatorIds[i];
       delete _creditScore[_validator];
-      delete _updatedCreditScores[_i];
+      delete updatedCreditScores[i];
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
-    emit CreditScoresUpdated(_validators, _updatedCreditScores);
+    emit CreditScoresUpdated(validatorIds, updatedCreditScores);
   }
 
   /**
    * @inheritdoc ICreditScore
    */
-  function bailOut(address _consensusAddr) external override {
-    IRoninValidatorSet _validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
-    if (!_validatorContract.isValidatorCandidate(_consensusAddr))
+  function bailOut(TConsensus consensusAddr) external override {
+    address validatorId = __css2cid(consensusAddr);
+    IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
+    if (!validatorContract.isValidatorCandidate(consensusAddr))
       revert ErrUnauthorized(msg.sig, RoleAccess.VALIDATOR_CANDIDATE);
 
-    if (!_validatorContract.isCandidateAdmin(_consensusAddr, msg.sender))
+    if (!validatorContract.isCandidateAdmin(consensusAddr, msg.sender))
       revert ErrUnauthorized(msg.sig, RoleAccess.CANDIDATE_ADMIN);
 
-    (bool _isJailed, , uint256 _jailedEpochLeft) = _validatorContract.getJailedTimeLeft(_consensusAddr);
-    if (!_isJailed) revert ErrCallerMustBeJailedInTheCurrentPeriod();
+    (bool isJailed, , uint256 jailedEpochLeft) = validatorContract.getJailedTimeLeft(consensusAddr);
+    if (!isJailed) revert ErrCallerMustBeJailedInTheCurrentPeriod();
 
-    uint256 _period = _validatorContract.currentPeriod();
-    if (_checkBailedOutAtPeriod[_consensusAddr][_period]) revert ErrValidatorHasBailedOutPreviously();
+    uint256 period = validatorContract.currentPeriod();
+    if (_checkBailedOutAtPeriod[validatorId][period]) revert ErrValidatorHasBailedOutPreviously();
 
-    uint256 _score = _creditScore[_consensusAddr];
-    uint256 _cost = _jailedEpochLeft * _bailOutCostMultiplier;
-    if (_score < _cost) revert ErrInsufficientCreditScoreToBailOut();
+    uint256 score = _creditScore[validatorId];
+    uint256 cost = jailedEpochLeft * _bailOutCostMultiplier;
+    if (score < cost) revert ErrInsufficientCreditScoreToBailOut();
 
-    _validatorContract.execBailOut(_consensusAddr, _period);
+    validatorContract.execBailOut(validatorId, period);
 
-    _creditScore[_consensusAddr] -= _cost;
-    _setUnavailabilityIndicator(_consensusAddr, _period, 0);
-    _checkBailedOutAtPeriod[_consensusAddr][_period] = true;
-    emit BailedOut(_consensusAddr, _period, _cost);
+    _creditScore[validatorId] -= cost;
+    _setUnavailabilityIndicator(validatorId, period, 0);
+    _checkBailedOutAtPeriod[validatorId][period] = true;
+    emit BailedOut(consensusAddr, period, cost);
   }
 
   /**
@@ -137,7 +138,7 @@ abstract contract CreditScore is
   /**
    * @dev See `ISlashUnavailability`
    */
-  function getUnavailabilityIndicator(address _validator, uint256 _period) public view virtual returns (uint256);
+  function _getUnavailabilityIndicatorById(address validator, uint256 period) internal view virtual returns (uint256);
 
   /**
    * @inheritdoc ICreditScore
@@ -159,23 +160,24 @@ abstract contract CreditScore is
   /**
    * @inheritdoc ICreditScore
    */
-  function getCreditScore(address _validator) external view override returns (uint256) {
-    return _creditScore[_validator];
+  function getCreditScore(TConsensus consensusAddr) external view override returns (uint256) {
+    return _creditScore[__css2cid(consensusAddr)];
   }
 
   /**
    * @inheritdoc ICreditScore
    */
   function getManyCreditScores(
-    address[] calldata _validators
-  ) public view override returns (uint256[] memory _resultList) {
-    _resultList = new uint256[](_validators.length);
+    TConsensus[] calldata consensusAddrs
+  ) public view override returns (uint256[] memory resultList) {
+    address[] memory validatorIds = __css2cidBatch(consensusAddrs);
+    resultList = new uint256[](validatorIds.length);
 
-    for (uint _i = 0; _i < _resultList.length; ) {
-      _resultList[_i] = _creditScore[_validators[_i]];
+    for (uint i = 0; i < resultList.length; ) {
+      resultList[i] = _creditScore[validatorIds[i]];
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
   }
@@ -183,14 +185,22 @@ abstract contract CreditScore is
   /**
    * @inheritdoc ICreditScore
    */
-  function checkBailedOutAtPeriod(address _validator, uint256 _period) public view virtual override returns (bool) {
-    return _checkBailedOutAtPeriod[_validator][_period];
+  function checkBailedOutAtPeriod(TConsensus consensus, uint256 period) external view override returns (bool) {
+    return _checkBailedOutAtPeriodById(__css2cid(consensus), period);
+  }
+
+  function _checkBailedOutAtPeriodById(address validatorId, uint256 period) internal view virtual returns (bool) {
+    return _checkBailedOutAtPeriod[validatorId][period];
   }
 
   /**
    * @dev See `SlashUnavailability`.
    */
-  function _setUnavailabilityIndicator(address _validator, uint256 _period, uint256 _indicator) internal virtual;
+  function _setUnavailabilityIndicator(address _validator, uint256 period, uint256 _indicator) internal virtual;
+
+  function __css2cid(TConsensus consensusAddr) internal view virtual returns (address);
+
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
 
   /**
    * @dev See `ICreditScore-setCreditScoreConfigs`.

@@ -14,7 +14,7 @@ import {
   Staking__factory,
 } from '../../../src/types';
 import { SlashType } from '../../../src/script/slash-indicator';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
 import { IndicatorController } from '../helpers/slash';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
@@ -26,11 +26,12 @@ import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
-import { getLastBlockTimestamp } from '../helpers/utils';
+import { generateSamplePubkey, getLastBlockTimestamp } from '../helpers/utils';
 import { ProposalDetailStruct } from '../../../src/types/GovernanceAdmin';
 import { getProposalHash, VoteType } from '../../../src/script/proposal';
 import { expects as GovernanceAdminExpects } from '../helpers/governance-admin';
 import { Encoder } from '../helpers/encoder';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let slashContract: MockSlashIndicatorExtended;
 let mockSlashLogic: MockSlashIndicatorExtended;
@@ -87,8 +88,10 @@ describe('Slash indicator test', () => {
       stakingContractAddress,
       validatorContractAddress,
       roninGovernanceAdminAddress,
+      profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('SlashIndicator')({
+      roninTrustedOrganizationAddress,
+    } = await deployTestSuite('SlashIndicator')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
           unavailabilityTier1Threshold,
@@ -125,7 +128,7 @@ describe('Slash indicator test', () => {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          bridgeVoter: v.bridgeVoter.address,
+          __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
@@ -138,6 +141,17 @@ describe('Slash indicator test', () => {
         denominator: 100,
         members: [],
       },
+    });
+
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninTrustedOrganizationAddress,
+      maintenanceContractAddress: undefined
     });
 
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
@@ -154,7 +168,6 @@ describe('Slash indicator test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetOverridePrecompile__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
 
     mockSlashLogic = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashLogic.deployed();
@@ -169,6 +182,7 @@ describe('Slash indicator test', () => {
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
           1,
+          generateSamplePubkey(),
           { value: minValidatorStakingAmount.mul(2).add(maxValidatorNumber).sub(i) }
         );
     }
@@ -211,26 +225,6 @@ describe('Slash indicator test', () => {
     it('Should configs of double signing are set correctly', async () => {
       let configs = await slashContract.getDoubleSignSlashingConfigs();
       expect(configs.slashDoubleSignAmount_).eq(slashDoubleSignAmount, 'wrong double sign config');
-    });
-
-    it('Should configs of bridge operator slash are set correctly', async () => {
-      let configs = await slashContract.getBridgeOperatorSlashingConfigs();
-      expect(configs.missingVotesRatioTier1_).eq(missingVotesRatioTier1, 'wrong missing votes ratio tier 1 config');
-      expect(configs.missingVotesRatioTier2_).eq(missingVotesRatioTier2, 'wrong missing votes ratio tier 2 config');
-      expect(configs.jailDurationForMissingVotesRatioTier2_).eq(
-        jailDurationForMissingVotesRatioTier2,
-        'wrong jail duration for vote tier 2 config'
-      );
-      expect(configs.skipBridgeOperatorSlashingThreshold_).eq(
-        skipBridgeOperatorSlashingThreshold,
-        'wrong skip slashing config'
-      );
-    });
-
-    it('Should configs of bridge voting slash are set correctly', async () => {
-      let configs = await slashContract.getBridgeVotingSlashingConfigs();
-      expect(configs.bridgeVotingSlashAmount_).eq(bridgeVotingSlashAmount, 'wrong bridge voting slash amount config');
-      expect(configs.bridgeVotingThreshold_).eq(bridgeVotingThreshold, 'wrong bridge voting threshold config');
     });
   });
 

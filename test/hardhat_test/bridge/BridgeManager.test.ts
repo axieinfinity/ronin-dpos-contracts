@@ -35,7 +35,7 @@ import {
   createManyTrustedOrganizationAddressSets,
   TrustedOrganizationAddressSet,
 } from '../helpers/address-set-types/trusted-org-set-type';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { getLastBlockTimestamp, compareAddrs, ContractType, mineDummyBlock } from '../helpers/utils';
 import { BridgeManagerInterface } from '../../../src/script/bridge-admin-interface';
 import { OperatorTuple, createManyOperatorTuples } from '../helpers/address-set-types/operator-tuple-type';
@@ -99,7 +99,7 @@ describe('Bridge Manager test', async () => {
       mainchainBridgeManagerAddress,
       bridgeSlashAddress,
       bridgeRewardAddress,
-    } = await initTest('BridgeManager')({
+    } = await deployTestSuite('BridgeManager')({
       bridgeContract: bridgeContract.address,
       bridgeManagerArguments: {
         numerator: bridgeAdminNumerator,

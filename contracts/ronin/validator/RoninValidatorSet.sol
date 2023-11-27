@@ -73,6 +73,10 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     _setContract(ContractType.FAST_FINALITY_TRACKING, fastFinalityTrackingContract);
   }
 
+  function initializeV4(address profileContract) external reinitializer(4) {
+    _setContract(ContractType.PROFILE, profileContract);
+  }
+
   /**
    * @dev Only receives RON from staking vesting contract (for topping up bonus), and from staking contract (for transferring
    * deducting amount on slashing).
@@ -81,5 +85,21 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
     if (msg.sender != getContract(ContractType.STAKING_VESTING) && msg.sender != getContract(ContractType.STAKING)) {
       revert ErrUnauthorizedReceiveRON();
     }
+  }
+
+  /**
+   * @dev Convert consensus address to corresponding id from the Profile contract.
+   */
+  function __css2cid(TConsensus consensusAddr) internal view override(EmergencyExit, CommonStorage) returns (address) {
+    return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
+  }
+
+  /**
+   * @dev Convert many consensus addresses to corresponding ids from the Profile contract.
+   */
+  function __css2cidBatch(
+    TConsensus[] memory consensusAddrs
+  ) internal view override(EmergencyExit, CommonStorage) returns (address[] memory) {
+    return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
   }
 }

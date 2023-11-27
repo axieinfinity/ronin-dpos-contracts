@@ -15,8 +15,8 @@ import {
 } from '../../../src/types';
 import { expects as StakingExpects } from '../helpers/staking';
 import { EpochController, expects as ValidatorSetExpects } from '../helpers/ronin-validator-set';
-import { ContractType, mineBatchTxs } from '../helpers/utils';
-import { initTest } from '../helpers/fixture';
+import { ContractType, generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { Address } from 'hardhat-deploy/dist/types';
 import {
@@ -27,6 +27,7 @@ import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let slashContract: SlashIndicator;
 let stakingContract: Staking;
@@ -61,8 +62,10 @@ describe('[Integration] Wrap up epoch', () => {
       stakingContractAddress,
       validatorContractAddress,
       roninGovernanceAdminAddress,
+      profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('ActionWrapUpEpoch')({
+      roninTrustedOrganizationAddress,
+    } = await deployTestSuite('ActionWrapUpEpoch')({
       slashIndicatorArguments: {
         unavailabilitySlashing: {
           unavailabilityTier2Threshold,
@@ -79,7 +82,7 @@ describe('[Integration] Wrap up epoch', () => {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          bridgeVoter: v.bridgeVoter.address,
+          __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
@@ -99,11 +102,20 @@ describe('[Integration] Wrap up epoch', () => {
       ...trustedOrgs.map((_) => _.governor)
     );
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninTrustedOrganizationAddress,
+    });
+
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
     await validatorContract.initEpoch();
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
   });
 
   after(async () => {
@@ -153,6 +165,7 @@ describe('[Integration] Wrap up epoch', () => {
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount.mul(2).add(i),
             }
@@ -261,6 +274,7 @@ describe('[Integration] Wrap up epoch', () => {
             validators[i].consensusAddr.address,
             validators[i].treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount.mul(3).add(i),
             }

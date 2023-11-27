@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 
 import "../../interfaces/staking/IRewardPool.sol";
 import "../../libraries/Math.sol";
+import { TPoolId } from "../../udvts/Types.sol";
 
 /**
  * @title RewardCalculation contract
@@ -26,51 +27,52 @@ abstract contract RewardCalculation is IRewardPool {
   /**
    * @inheritdoc IRewardPool
    */
-  function getReward(address _poolAddr, address _user) external view returns (uint256) {
-    return _getReward(_poolAddr, _user, _currentPeriod(), getStakingAmount(_poolAddr, _user));
+  function getReward(TConsensus consensusAddr, address user) external view returns (uint256) {
+    address poolId = TConsensus.unwrap(consensusAddr);
+    return _getReward(poolId, user, _currentPeriod(), _getStakingAmount(poolId, user));
   }
 
   /**
-   * @inheritdoc IRewardPool
+   * @dev See {IRewardPool-getStakingAmount}
    */
-  function getStakingAmount(address _poolAddr, address _user) public view virtual returns (uint256);
+  function _getStakingAmount(address poolId, address user) internal view virtual returns (uint256);
 
   /**
-   * @inheritdoc IRewardPool
+   * @dev See {IRewardPool-getStakingTotal}
    */
-  function getStakingTotal(address _poolAddr) public view virtual returns (uint256);
+  function _getStakingTotal(address poolId) internal view virtual returns (uint256);
 
   /**
    * @dev Returns the reward amount that user claimable.
    */
   function _getReward(
-    address _poolAddr,
-    address _user,
-    uint256 _latestPeriod,
-    uint256 _latestStakingAmount
+    address poolId,
+    address user,
+    uint256 latestPeriod,
+    uint256 latestStakingAmount
   ) internal view returns (uint256) {
-    UserRewardFields storage _reward = _userReward[_poolAddr][_user];
+    UserRewardFields storage _reward = _userReward[poolId][user];
 
-    if (_reward.lastPeriod == _latestPeriod) {
+    if (_reward.lastPeriod == latestPeriod) {
       return _reward.debited;
     }
 
-    uint256 _aRps;
-    uint256 _lastPeriodReward;
-    PoolFields storage _pool = _stakingPool[_poolAddr];
-    PeriodWrapper storage _wrappedArps = _accumulatedRps[_poolAddr][_reward.lastPeriod];
+    uint256 aRps;
+    uint256 lastPeriodReward;
+    PoolFields storage _pool = _stakingPool[poolId];
+    PeriodWrapper storage _wrappedArps = _accumulatedRps[poolId][_reward.lastPeriod];
 
     if (_wrappedArps.lastPeriod > 0) {
       // Calculates the last period reward if the aRps at the period is set
-      _aRps = _wrappedArps.inner;
-      _lastPeriodReward = _reward.lowestAmount * (_aRps - _reward.aRps);
+      aRps = _wrappedArps.inner;
+      lastPeriodReward = _reward.lowestAmount * (aRps - _reward.aRps);
     } else {
       // Fallbacks to the previous aRps in case the aRps is not set
-      _aRps = _reward.aRps;
+      aRps = _reward.aRps;
     }
 
-    uint256 _newPeriodsReward = _latestStakingAmount * (_pool.aRps - _aRps);
-    return _reward.debited + (_lastPeriodReward + _newPeriodsReward) / 1e18;
+    uint256 newPeriodsReward = latestStakingAmount * (_pool.aRps - aRps);
+    return _reward.debited + (lastPeriodReward + newPeriodsReward) / 1e18;
   }
 
   /**
@@ -82,31 +84,31 @@ abstract contract RewardCalculation is IRewardPool {
    * Note: The method should be called whenever the user's staking amount changes.
    *
    */
-  function _syncUserReward(address _poolAddr, address _user, uint256 _newStakingAmount) internal {
-    uint256 _period = _currentPeriod();
-    PoolFields storage _pool = _stakingPool[_poolAddr];
-    uint256 _lastShares = _pool.shares.inner;
+  function _syncUserReward(address poolId, address user, uint256 newStakingAmount) internal {
+    uint256 period = _currentPeriod();
+    PoolFields storage _pool = _stakingPool[poolId];
+    uint256 lastShares = _pool.shares.inner;
 
     // Updates the pool shares if it is outdated
-    if (_pool.shares.lastPeriod < _period) {
-      _pool.shares = PeriodWrapper(getStakingTotal(_poolAddr), _period);
+    if (_pool.shares.lastPeriod < period) {
+      _pool.shares = PeriodWrapper(_getStakingTotal(poolId), period);
     }
 
-    UserRewardFields storage _reward = _userReward[_poolAddr][_user];
-    uint256 _currentStakingAmount = getStakingAmount(_poolAddr, _user);
-    uint256 _debited = _getReward(_poolAddr, _user, _period, _currentStakingAmount);
+    UserRewardFields storage _reward = _userReward[poolId][user];
+    uint256 currentStakingAmount = _getStakingAmount(poolId, user);
+    uint256 debited = _getReward(poolId, user, period, currentStakingAmount);
 
-    if (_reward.debited != _debited) {
-      _reward.debited = _debited;
-      emit UserRewardUpdated(_poolAddr, _user, _debited);
+    if (_reward.debited != debited) {
+      _reward.debited = debited;
+      emit UserRewardUpdated(poolId, user, debited);
     }
 
-    _syncMinStakingAmount(_pool, _reward, _period, _newStakingAmount, _currentStakingAmount);
+    _syncMinStakingAmount(_pool, _reward, period, newStakingAmount, currentStakingAmount);
     _reward.aRps = _pool.aRps;
-    _reward.lastPeriod = _period;
+    _reward.lastPeriod = period;
 
-    if (_pool.shares.inner != _lastShares) {
-      emit PoolSharesUpdated(_period, _poolAddr, _pool.shares.inner);
+    if (_pool.shares.inner != lastShares) {
+      emit PoolSharesUpdated(period, poolId, _pool.shares.inner);
     }
   }
 
@@ -116,27 +118,27 @@ abstract contract RewardCalculation is IRewardPool {
   function _syncMinStakingAmount(
     PoolFields storage _pool,
     UserRewardFields storage _reward,
-    uint256 _latestPeriod,
-    uint256 _newStakingAmount,
-    uint256 _currentStakingAmount
+    uint256 latestPeriod,
+    uint256 newStakingAmount,
+    uint256 currentStakingAmount
   ) internal {
-    if (_reward.lastPeriod < _latestPeriod) {
-      _reward.lowestAmount = _currentStakingAmount;
+    if (_reward.lastPeriod < latestPeriod) {
+      _reward.lowestAmount = currentStakingAmount;
     }
 
-    uint256 _lowestAmount = Math.min(_reward.lowestAmount, _newStakingAmount);
-    uint256 _diffAmount = _reward.lowestAmount - _lowestAmount;
-    if (_diffAmount > 0) {
-      _reward.lowestAmount = _lowestAmount;
-      if (_pool.shares.inner < _diffAmount) revert ErrInvalidPoolShare();
-      _pool.shares.inner -= _diffAmount;
+    uint256 lowestAmount = Math.min(_reward.lowestAmount, newStakingAmount);
+    uint256 diffAmount = _reward.lowestAmount - lowestAmount;
+    if (diffAmount > 0) {
+      _reward.lowestAmount = lowestAmount;
+      if (_pool.shares.inner < diffAmount) revert ErrInvalidPoolShare();
+      _pool.shares.inner -= diffAmount;
     }
   }
 
   /**
    * @dev Claims the settled reward for a specific user.
    *
-   * @param _lastPeriod Must be in two possible value: `_currentPeriod` in normal calculation, or
+   * @param lastPeriod Must be in two possible value: `_currentPeriod` in normal calculation, or
    * `_currentPeriod + 1` in case of calculating the reward for revoked validators.
    *
    * Emits the `RewardClaimed` event and the `UserRewardUpdated` event.
@@ -144,21 +146,21 @@ abstract contract RewardCalculation is IRewardPool {
    * Note: This method should be called before transferring rewards for the user.
    *
    */
-  function _claimReward(address _poolAddr, address _user, uint256 _lastPeriod) internal returns (uint256 _amount) {
-    uint256 _currentStakingAmount = getStakingAmount(_poolAddr, _user);
-    _amount = _getReward(_poolAddr, _user, _lastPeriod, _currentStakingAmount);
-    emit RewardClaimed(_poolAddr, _user, _amount);
+  function _claimReward(address poolId, address user, uint256 lastPeriod) internal returns (uint256 amount) {
+    uint256 currentStakingAmount = _getStakingAmount(poolId, user);
+    amount = _getReward(poolId, user, lastPeriod, currentStakingAmount);
+    emit RewardClaimed(poolId, user, amount);
 
-    UserRewardFields storage _reward = _userReward[_poolAddr][_user];
+    UserRewardFields storage _reward = _userReward[poolId][user];
     _reward.debited = 0;
-    _syncMinStakingAmount(_stakingPool[_poolAddr], _reward, _lastPeriod, _currentStakingAmount, _currentStakingAmount);
-    _reward.lastPeriod = _lastPeriod;
-    _reward.aRps = _stakingPool[_poolAddr].aRps;
-    emit UserRewardUpdated(_poolAddr, _user, 0);
+    _syncMinStakingAmount(_stakingPool[poolId], _reward, lastPeriod, currentStakingAmount, currentStakingAmount);
+    _reward.lastPeriod = lastPeriod;
+    _reward.aRps = _stakingPool[poolId].aRps;
+    emit UserRewardUpdated(poolId, user, 0);
   }
 
   /**
-   * @dev Records the amount of rewards `_rewards` for the pools `_poolAddrs`.
+   * @dev Records the amount of rewards `_rewards` for the pools `poolIds`.
    *
    * Emits the event `PoolsUpdated` once the contract recorded the rewards successfully.
    * Emits the event `PoolsUpdateFailed` once the input array lengths are not equal.
@@ -167,56 +169,56 @@ abstract contract RewardCalculation is IRewardPool {
    * Note: This method should be called once at the period ending.
    *
    */
-  function _recordRewards(address[] memory _poolAddrs, uint256[] calldata _rewards, uint256 _period) internal {
-    if (_poolAddrs.length != _rewards.length) {
-      emit PoolsUpdateFailed(_period, _poolAddrs, _rewards);
+  function _recordRewards(address[] memory poolIds, uint256[] calldata rewards, uint256 period) internal {
+    if (poolIds.length != rewards.length) {
+      emit PoolsUpdateFailed(period, poolIds, rewards);
       return;
     }
 
-    uint256 _rps;
-    uint256 _count;
-    address _poolAddr;
-    uint256 _stakingTotal;
-    uint256[] memory _aRps = new uint256[](_poolAddrs.length);
-    uint256[] memory _shares = new uint256[](_poolAddrs.length);
-    address[] memory _conflicted = new address[](_poolAddrs.length);
+    uint256 rps;
+    uint256 count;
+    address poolId;
+    uint256 stakingTotal;
+    uint256[] memory aRps = new uint256[](poolIds.length);
+    uint256[] memory shares = new uint256[](poolIds.length);
+    address[] memory conflicted = new address[](poolIds.length);
 
-    for (uint _i = 0; _i < _poolAddrs.length; _i++) {
-      _poolAddr = _poolAddrs[_i];
-      PoolFields storage _pool = _stakingPool[_poolAddr];
-      _stakingTotal = getStakingTotal(_poolAddr);
+    for (uint i = 0; i < poolIds.length; i++) {
+      poolId = poolIds[i];
+      PoolFields storage _pool = _stakingPool[poolId];
+      stakingTotal = _getStakingTotal(poolId);
 
-      if (_accumulatedRps[_poolAddr][_period].lastPeriod == _period) {
+      if (_accumulatedRps[poolId][period].lastPeriod == period) {
         unchecked {
-          _conflicted[_count++] = _poolAddr;
+          conflicted[count++] = poolId;
         }
         continue;
       }
 
       // Updates the pool shares if it is outdated
-      if (_pool.shares.lastPeriod < _period) {
-        _pool.shares = PeriodWrapper(_stakingTotal, _period);
+      if (_pool.shares.lastPeriod < period) {
+        _pool.shares = PeriodWrapper(stakingTotal, period);
       }
 
       // The rps is 0 if no one stakes for the pool
-      _rps = _pool.shares.inner == 0 ? 0 : (_rewards[_i] * 1e18) / _pool.shares.inner;
-      _aRps[_i - _count] = _pool.aRps += _rps;
-      _accumulatedRps[_poolAddr][_period] = PeriodWrapper(_pool.aRps, _period);
-      _pool.shares.inner = _stakingTotal;
-      _shares[_i - _count] = _pool.shares.inner;
-      _poolAddrs[_i - _count] = _poolAddr;
+      rps = _pool.shares.inner == 0 ? 0 : (rewards[i] * 1e18) / _pool.shares.inner;
+      aRps[i - count] = _pool.aRps += rps;
+      _accumulatedRps[poolId][period] = PeriodWrapper(_pool.aRps, period);
+      _pool.shares.inner = stakingTotal;
+      shares[i - count] = _pool.shares.inner;
+      poolIds[i - count] = poolId;
     }
 
-    if (_count > 0) {
+    if (count > 0) {
       assembly {
-        mstore(_conflicted, _count)
-        mstore(_poolAddrs, sub(mload(_poolAddrs), _count))
+        mstore(conflicted, count)
+        mstore(poolIds, sub(mload(poolIds), count))
       }
-      emit PoolsUpdateConflicted(_period, _conflicted);
+      emit PoolsUpdateConflicted(period, conflicted);
     }
 
-    if (_poolAddrs.length > 0) {
-      emit PoolsUpdated(_period, _poolAddrs, _aRps, _shares);
+    if (poolIds.length > 0) {
+      emit PoolsUpdated(period, poolIds, aRps, shares);
     }
   }
 

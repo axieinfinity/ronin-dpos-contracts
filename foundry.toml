@@ -13,7 +13,7 @@ libs = [
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 
-solc = '0.8.21'
+solc = '0.8.22'
 extra_output = ["devdoc", "userdoc", "storagelayout"]
 evm_version = 'istanbul'
 cache_path = 'cache_foundry'

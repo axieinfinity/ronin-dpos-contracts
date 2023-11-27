@@ -31,14 +31,14 @@ interface IStakingVesting {
   event FastFinalityRewardPercentageUpdated(uint256);
 
   /**
-   * @dev Returns the bonus amount for the block producer at `_block`.
+   * @dev Returns the bonus amount for the block producer at `blockNum`.
    */
-  function blockProducerBlockBonus(uint256 _block) external view returns (uint256);
+  function blockProducerBlockBonus(uint256 blockNum) external view returns (uint256);
 
   /**
-   * @dev Returns the bonus amount for the bridge validator at `_block`.
+   * @dev Returns the bonus amount for the bridge validator at `blockNum`.
    */
-  function bridgeOperatorBlockBonus(uint256 _block) external view returns (uint256);
+  function bridgeOperatorBlockBonus(uint256 blockNum) external view returns (uint256);
 
   /**
    * @dev Returns the percentage of fast finality reward.
@@ -98,7 +98,7 @@ interface IStakingVesting {
    * - The method caller is admin.
    *
    */
-  function setBlockProducerBonusPerBlock(uint256 _amount) external;
+  function setBlockProducerBonusPerBlock(uint256 amount) external;
 
   /**
    * @dev Sets the bonus amount per block for bridge operator.

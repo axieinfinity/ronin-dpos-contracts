@@ -31,12 +31,13 @@ import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
-import { ContractType, mineBatchTxs } from '../helpers/utils';
+import { ContractType, generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
 import { BridgeManagerInterface } from '../../../src/script/bridge-admin-interface';
 import { TargetOption } from '../../../src/script/proposal';
 import { OperatorTuple, createManyOperatorTuples } from '../helpers/address-set-types/operator-tuple-type';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
@@ -114,14 +115,16 @@ describe('[Integration] Bridge Tracking test', () => {
       roninBridgeManagerAddress,
       bridgeSlashAddress,
       bridgeRewardAddress,
+      profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('ActionBridgeTracking')({
+      roninTrustedOrganizationAddress,
+    } = await deployTestSuite('ActionBridgeTracking')({
       bridgeContract: bridgeProxy.address,
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          bridgeVoter: v.bridgeVoter.address,
+          __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
@@ -171,11 +174,19 @@ describe('[Integration] Bridge Tracking test', () => {
       ...trustedOrgs.map((_) => _.governor)
     );
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninTrustedOrganizationAddress,
+    });
+
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await roninValidatorSet.initEpoch();
-    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     await TransparentUpgradeableProxyV2__factory.connect(bridgeContract.address, deployer).changeAdmin(
       bridgeManager.address
@@ -213,6 +224,7 @@ describe('[Integration] Bridge Tracking test', () => {
           candidates[i].consensusAddr.address,
           candidates[i].treasuryAddr.address,
           1,
+          generateSamplePubkey(),
           { value: minValidatorStakingAmount + candidates.length - i }
         );
     }

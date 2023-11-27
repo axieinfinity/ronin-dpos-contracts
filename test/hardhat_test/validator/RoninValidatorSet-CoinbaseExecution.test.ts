@@ -14,13 +14,15 @@ import {
   RoninGovernanceAdmin,
   StakingVesting__factory,
   StakingVesting,
+  Profile,
+  Profile__factory,
 } from '../../../src/types';
 import { EpochController } from '../helpers/ronin-validator-set';
 import { expects as RoninValidatorSetExpects } from '../helpers/ronin-validator-set';
 import { expects as CandidateManagerExpects } from '../helpers/candidate-manager';
 import { expects as StakingVestingExpects } from '../helpers/staking-vesting';
-import { getLastBlockTimestamp, mineBatchTxs } from '../helpers/utils';
-import { initTest } from '../helpers/fixture';
+import { ContractType, generateSamplePubkey, getLastBlockTimestamp, mineBatchTxs } from '../helpers/utils';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import { BlockRewardDeprecatedType } from '../../../src/script/ronin-validator-set';
 import { Address } from 'hardhat-deploy/dist/types';
@@ -35,11 +37,13 @@ import {
 import { SlashType } from '../../../src/script/slash-indicator';
 import { ProposalDetailStruct } from '../../../src/types/GovernanceAdmin';
 import { VoteType } from '../../../src/script/proposal';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let roninValidatorSet: MockRoninValidatorSetExtended;
 let stakingVesting: StakingVesting;
 let stakingContract: Staking;
 let slashIndicator: MockSlashIndicatorExtended;
+let profileContract: Profile;
 let governanceAdmin: RoninGovernanceAdmin;
 let governanceAdminInterface: GovernanceAdminInterface;
 
@@ -93,8 +97,10 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       stakingContractAddress,
       roninGovernanceAdminAddress,
       stakingVestingContractAddress,
+      profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('RoninValidatorSet-Coinbase')({
+      roninTrustedOrganizationAddress,
+    } = await deployTestSuite('RoninValidatorSet-Coinbase')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
           slashDoubleSignAmount,
@@ -120,7 +126,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          bridgeVoter: v.bridgeVoter.address,
+          __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
@@ -130,10 +136,22 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       },
     });
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      roninTrustedOrganizationAddress,
+      maintenanceContractAddress: undefined,
+    });
+
     roninValidatorSet = MockRoninValidatorSetExtended__factory.connect(validatorContractAddress, deployer);
     stakingVesting = StakingVesting__factory.connect(stakingVestingContractAddress, deployer);
     slashIndicator = MockSlashIndicatorExtended__factory.connect(slashContractAddress, deployer);
     stakingContract = Staking__factory.connect(stakingContractAddress, deployer);
+    profileContract = Profile__factory.connect(profileAddress, deployer);
     governanceAdmin = RoninGovernanceAdmin__factory.connect(roninGovernanceAdminAddress, deployer);
     governanceAdminInterface = new GovernanceAdminInterface(
       governanceAdmin,
@@ -146,7 +164,6 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
     await roninValidatorSet.initEpoch();
-    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
@@ -155,6 +172,24 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
 
   after(async () => {
     await network.provider.send('hardhat_setCoinbase', [ethers.constants.AddressZero]);
+  });
+
+  describe('Configuration checks', async () => {
+    it('Should the StakingContract contract set configs correctly', async () => {
+      expect(await stakingContract.getContract(ContractType.VALIDATOR)).to.eq(roninValidatorSet.address);
+      expect(await stakingContract.getContract(ContractType.PROFILE)).to.eq(profileContract.address);
+    });
+
+    it('Should the ValidatorSetContract contract set configs correctly', async () => {
+      expect(await roninValidatorSet.getContract(ContractType.SLASH_INDICATOR)).to.eq(slashIndicator.address);
+      expect(await roninValidatorSet.getContract(ContractType.STAKING)).to.eq(stakingContract.address);
+      expect(await roninValidatorSet.getContract(ContractType.PROFILE)).to.eq(profileContract.address);
+    });
+
+    it('Should the SlashIndicatorContract contract set configs correctly', async () => {
+      expect(await slashIndicator.getContract(ContractType.VALIDATOR)).to.eq(roninValidatorSet.address);
+      expect(await slashIndicator.getContract(ContractType.PROFILE)).to.eq(profileContract.address);
+    });
   });
 
   describe('Wrapping up epoch sanity check', async () => {
@@ -198,6 +233,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount.add(i * dummyStakingMultiplier),
             }
@@ -257,9 +293,16 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
     it('Should be able to wrap up epoch at the end of period and pick top `maxValidatorNumber` to be validators', async () => {
       await stakingContract
         .connect(poolAdmin)
-        .applyValidatorCandidate(candidateAdmin.address, consensusAddr.address, treasury.address, 1_00 /* 1% */, {
-          value: minValidatorStakingAmount.mul(100),
-        });
+        .applyValidatorCandidate(
+          candidateAdmin.address,
+          consensusAddr.address,
+          treasury.address,
+          1_00 /* 1% */,
+          generateSamplePubkey(),
+          {
+            value: minValidatorStakingAmount.mul(100),
+          }
+        );
       for (let i = 4; i < localValidatorCandidatesLength; i++) {
         await stakingContract
           .connect(validatorCandidates[i].poolAdmin)
@@ -268,6 +311,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
             validatorCandidates[i].consensusAddr.address,
             validatorCandidates[i].treasuryAddr.address,
             2_00,
+            generateSamplePubkey(),
             {
               value: minValidatorStakingAmount.add(i * dummyStakingMultiplier),
             }
@@ -626,6 +670,10 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
         let tx: ContractTransaction;
         const balance = await treasury.getBalance();
         await slashIndicator.slashMisdemeanor(consensusAddr.address);
+        // for (let i = 0; i < 50; i++) {
+        //   await slashIndicator.connect(validatorCandidates[2].consensusAddr).slashUnavailability(consensusAddr.address);
+        // }
+
         tx = await roninValidatorSet.connect(consensusAddr).submitBlockReward({ value: 100 });
         await expect(tx)
           .to.emit(roninValidatorSet, 'BlockRewardDeprecated')
@@ -694,6 +742,7 @@ describe('Ronin Validator Set: Coinbase execution test', () => {
       /// ---
 
       let slashTx;
+
       await expect(
         async () =>
           (slashTx = await governanceAdmin

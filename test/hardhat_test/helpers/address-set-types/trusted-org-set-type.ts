@@ -5,7 +5,7 @@ import { checkArraysHaveSameSize } from '../utils';
 export type TrustedOrganizationAddressSet = {
   consensusAddr: SignerWithAddress;
   governor: SignerWithAddress;
-  bridgeVoter: SignerWithAddress;
+  __deprecatedBridgeVoter: SignerWithAddress;
 };
 
 export function createTrustedOrganizationAddressSet(
@@ -15,11 +15,13 @@ export function createTrustedOrganizationAddressSet(
     return;
   }
 
-  return {
+  let ret: TrustedOrganizationAddressSet = {
     consensusAddr: addrs[0],
     governor: addrs[1],
-    bridgeVoter: addrs[2],
+    __deprecatedBridgeVoter: addrs[2],
   };
+
+  return ret;
 }
 
 export function createManyTrustedOrganizationAddressSets(signers: SignerWithAddress[]): TrustedOrganizationAddressSet[];
@@ -59,6 +61,6 @@ export function createManyTrustedOrganizationAddressSets(
   return consensusAddrs.map((v, i) => ({
     consensusAddr: v,
     governor: governors![i],
-    bridgeVoter: bridgeVoters![i],
+    __deprecatedBridgeVoter: bridgeVoters![i],
   }));
 }

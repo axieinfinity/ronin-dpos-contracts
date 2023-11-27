@@ -25,20 +25,20 @@ contract Forwarder is AccessControlEnumerable {
   /**
    * @dev Initializes the forwarder with an initial target address and a contract admin.
    */
-  constructor(address[] memory _targets, address _admin, address _moderator) payable {
-    for (uint _i = 0; _i < _targets.length; ) {
-      _setupRole(TARGET_ROLE, _targets[_i]);
+  constructor(address[] memory targets, address admin, address moderator) payable {
+    for (uint i = 0; i < targets.length; ) {
+      _setupRole(TARGET_ROLE, targets[i]);
 
       unchecked {
-        ++_i;
+        ++i;
       }
     }
-    _setupRole(DEFAULT_ADMIN_ROLE, _admin);
-    _setupRole(MODERATOR_ROLE, _moderator);
+    _setupRole(DEFAULT_ADMIN_ROLE, admin);
+    _setupRole(MODERATOR_ROLE, moderator);
   }
 
-  modifier validTarget(address _target) {
-    _checkRole(TARGET_ROLE, _target);
+  modifier validTarget(address target) {
+    _checkRole(TARGET_ROLE, target);
     _;
   }
 
@@ -61,12 +61,12 @@ contract Forwarder is AccessControlEnumerable {
    * - Only user with {MODERATOR_ROLE} can call this method.
    */
   function functionCall(
-    address _target,
-    bytes memory _data,
-    uint256 _val
-  ) external payable validTarget(_target) onlyRole(MODERATOR_ROLE) {
-    if (_val > address(this).balance) revert ErrInvalidForwardValue();
-    _call(_target, _data, _val);
+    address target,
+    bytes memory data,
+    uint256 val
+  ) external payable validTarget(target) onlyRole(MODERATOR_ROLE) {
+    if (val > address(this).balance) revert ErrInvalidForwardValue();
+    _call(target, data, val);
   }
 
   /**
@@ -74,8 +74,8 @@ contract Forwarder is AccessControlEnumerable {
    *
    * This function does not return to its internal call site, it will return directly to the external caller.
    */
-  function _call(address _target, bytes memory _data, uint256 _value) internal {
-    (bool _success, bytes memory _res) = _target.call{ value: _value }(_data);
-    _success.handleRevert(bytes4(_data), _res);
+  function _call(address target, bytes memory data, uint256 value) internal {
+    (bool success, bytes memory res) = target.call{ value: value }(data);
+    success.handleRevert(bytes4(data), res);
   }
 }

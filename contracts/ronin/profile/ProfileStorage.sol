@@ -2,20 +2,26 @@
 
 pragma solidity ^0.8.9;
 
+import "../../udvts/Types.sol";
 import "../../extensions/collections/HasContracts.sol";
 import { IProfile } from "../../interfaces/IProfile.sol";
 
 abstract contract ProfileStorage is IProfile, HasContracts {
   /// @dev Mapping from id address => candidate profile.
   mapping(address => CandidateProfile) internal _id2Profile;
+
   /**
    * @dev Mapping from any address or keccak256(pubkey) => whether it is already registered.
    * This registry can only be toggled to `true` and NOT vice versa. All registered values
    * cannot be reused.
    */
   mapping(uint256 => bool) internal _registry;
+
+  /// @dev Mapping from consensus address => id address.
+  mapping(TConsensus => address) internal _consensus2Id;
+
   /// @dev Upgradeable gap.
-  bytes32[49] __gap;
+  bytes32[48] __gap;
 
   /**
    * @dev Add a profile from memory to storage.
@@ -26,15 +32,18 @@ abstract contract ProfileStorage is IProfile, HasContracts {
     _setConsensus(_profile, newProfile.consensus);
     _setAdmin(_profile, newProfile.admin);
     _setTreasury(_profile, newProfile.treasury);
-    _setGovernor(_profile, newProfile.governor);
+    _setGovernor(_profile, newProfile.__reservedGovernor);
     _setPubkey(_profile, newProfile.pubkey);
 
     emit ProfileAdded(newProfile.id);
   }
 
-  function _setConsensus(CandidateProfile storage _profile, address consensus) internal {
+  function _setConsensus(CandidateProfile storage _profile, TConsensus consensus) internal {
+    delete _consensus2Id[_profile.consensus];
+    _consensus2Id[consensus] = _profile.id;
+
     _profile.consensus = consensus;
-    _registry[uint256(uint160(consensus))] = true;
+    _registry[uint256(uint160(TConsensus.unwrap(consensus)))] = true;
   }
 
   function _setAdmin(CandidateProfile storage _profile, address admin) internal {
@@ -51,7 +60,7 @@ abstract contract ProfileStorage is IProfile, HasContracts {
    * @dev Allow to registry a profile without governor address since not all validators are governing validators.
    */
   function _setGovernor(CandidateProfile storage _profile, address governor) internal {
-    _profile.governor = governor;
+    _profile.__reservedGovernor = governor;
     if (governor != address(0)) {
       _registry[uint256(uint160(governor))] = true;
     }

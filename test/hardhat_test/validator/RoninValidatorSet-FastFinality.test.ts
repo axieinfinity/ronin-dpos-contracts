@@ -18,7 +18,7 @@ import {
   FastFinalityTracking,
 } from '../../../src/types';
 import { EpochController } from '../helpers/ronin-validator-set';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import {
   createManyTrustedOrganizationAddressSets,
@@ -29,7 +29,8 @@ import {
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { mineBatchTxs } from '../helpers/utils';
+import { generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
+import { initializeTestSuite } from '../helpers/initializer';
 
 let validatorContract: MockRoninValidatorSetExtended;
 let stakingVesting: StakingVesting;
@@ -76,8 +77,10 @@ describe('Ronin Validator Set: Fast Finality test', () => {
       stakingContractAddress,
       roninGovernanceAdminAddress,
       stakingVestingContractAddress,
+      profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('RoninValidatorSet-FastFinality')({
+      roninTrustedOrganizationAddress,
+    } = await deployTestSuite('RoninValidatorSet-FastFinality')({
       slashIndicatorArguments: {
         doubleSignSlashing: {
           slashDoubleSignAmount,
@@ -105,7 +108,7 @@ describe('Ronin Validator Set: Fast Finality test', () => {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          bridgeVoter: v.bridgeVoter.address,
+          __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
@@ -131,6 +134,21 @@ describe('Ronin Validator Set: Fast Finality test', () => {
       ...trustedOrgs.map((_) => _.governor)
     );
 
+    await initializeTestSuite({
+      deployer,
+      fastFinalityTrackingAddress,
+      profileAddress,
+      slashContractAddress,
+      stakingContractAddress,
+      validatorContractAddress,
+      maintenanceContractAddress: undefined,
+      stakingVestingAddress: stakingVestingContractAddress,
+      stakingVestingArgs: {
+        fastFinalityRewardPercent,
+      },
+      roninTrustedOrganizationAddress,
+    });
+
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(validatorContract.address, mockValidatorLogic.address);
@@ -139,9 +157,6 @@ describe('Ronin Validator Set: Fast Finality test', () => {
     const mockSlashIndicator = await new MockSlashIndicatorExtended__factory(deployer).deploy();
     await mockSlashIndicator.deployed();
     await governanceAdminInterface.upgrade(slashIndicator.address, mockSlashIndicator.address);
-
-    await validatorContract.initializeV3(fastFinalityTrackingAddress);
-    await stakingVesting.initializeV3(fastFinalityRewardPercent);
 
     validatorCandidates = validatorCandidates.slice(0, maxValidatorNumber);
     for (let i = 0; i < maxValidatorNumber; i++) {
@@ -152,6 +167,7 @@ describe('Ronin Validator Set: Fast Finality test', () => {
           validatorCandidates[i].consensusAddr.address,
           validatorCandidates[i].treasuryAddr.address,
           100_00,
+          generateSamplePubkey(),
           { value: minValidatorStakingAmount.mul(2).add(maxValidatorNumber).sub(i) }
         );
     }

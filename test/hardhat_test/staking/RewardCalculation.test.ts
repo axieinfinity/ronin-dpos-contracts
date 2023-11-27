@@ -67,9 +67,7 @@ describe('Reward Calculation test', () => {
         await stakingContract.decreaseReward(500);
         aRps = MASK.mul(500 / 50);
         tx = await stakingContract.endPeriod(); // period = 1
-        await expect(tx)
-          .emit(stakingContract, 'PoolsUpdated')
-          .withArgs(period++, [poolAddr], [aRps], [100]);
+        await expect(tx).emit(stakingContract, 'PoolsUpdated').withArgs(period++, [poolAddr], [aRps], [100]);
         expect(await stakingContract.getReward(poolAddr, userA.address)).eq(500);
       });
     });
@@ -163,9 +161,7 @@ describe('Reward Calculation test', () => {
         aRps = aRps.add(MASK.mul(1000 / 500));
         await stakingContract.increaseReward(1000);
         tx = await stakingContract.endPeriod(); // period 4
-        await expect(tx)
-          .emit(stakingContract, 'PoolsUpdated')
-          .withArgs(period++, [poolAddr], [aRps], [500]);
+        await expect(tx).emit(stakingContract, 'PoolsUpdated').withArgs(period++, [poolAddr], [aRps], [500]);
 
         expect(await stakingContract.getReward(poolAddr, userA.address)).eq(1600); // 3/5 of 1000 + 1000 from the last period
         expect(await stakingContract.getReward(poolAddr, userB.address)).eq(400); // 2/5 of 1000
@@ -217,26 +213,18 @@ describe('Reward Calculation test', () => {
         aRps = aRps.add(0);
         await stakingContract.increaseReward(1000);
         tx = await stakingContract.endPeriod(); // period 7
-        await expect(tx)
-          .emit(stakingContract, 'PoolsUpdated')
-          .withArgs(period++, [poolAddr], [aRps], [0]);
+        await expect(tx).emit(stakingContract, 'PoolsUpdated').withArgs(period++, [poolAddr], [aRps], [0]);
         expect(await stakingContract.getReward(poolAddr, userA.address)).eq(3100);
         expect(await stakingContract.getReward(poolAddr, userB.address)).eq(900);
       });
 
       it('The rewards should be still when the pool has no reward for multi periods', async () => {
         tx = await stakingContract.endPeriod(); // period 8
-        await expect(tx)
-          .emit(stakingContract, 'PoolsUpdated')
-          .withArgs(period++, [poolAddr], [aRps], [0]);
+        await expect(tx).emit(stakingContract, 'PoolsUpdated').withArgs(period++, [poolAddr], [aRps], [0]);
         tx = await stakingContract.endPeriod(); // period 9
-        await expect(tx)
-          .emit(stakingContract, 'PoolsUpdated')
-          .withArgs(period++, [poolAddr], [aRps], [0]);
+        await expect(tx).emit(stakingContract, 'PoolsUpdated').withArgs(period++, [poolAddr], [aRps], [0]);
         tx = await stakingContract.endPeriod(); // period 10
-        await expect(tx)
-          .emit(stakingContract, 'PoolsUpdated')
-          .withArgs(period++, [poolAddr], [aRps], [0]);
+        await expect(tx).emit(stakingContract, 'PoolsUpdated').withArgs(period++, [poolAddr], [aRps], [0]);
         expect(await stakingContract.getReward(poolAddr, userA.address)).eq(3100);
         expect(await stakingContract.getReward(poolAddr, userB.address)).eq(900);
       });

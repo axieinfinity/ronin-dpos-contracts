@@ -4,6 +4,8 @@ pragma solidity ^0.8.9;
 
 import "../../interfaces/consumers/PeriodWrapperConsumer.sol";
 
+import { TPoolId, TConsensus } from "../../udvts/Types.sol";
+
 interface IRewardPool is PeriodWrapperConsumer {
   struct UserRewardFields {
     // Recorded reward amount.
@@ -43,28 +45,37 @@ interface IRewardPool is PeriodWrapperConsumer {
   /**
    * @dev Returns the reward amount that user claimable.
    */
-  function getReward(address _poolAddr, address _user) external view returns (uint256);
+  function getReward(TConsensus consensusAddr, address user) external view returns (uint256);
 
   /**
    * @dev Returns the staking amount of an user.
    */
-  function getStakingAmount(address _poolAddr, address _user) external view returns (uint256);
+  function getStakingAmount(TConsensus consensusAddr, address user) external view returns (uint256);
 
   /**
    * @dev Returns the staking amounts of the users.
    */
   function getManyStakingAmounts(
-    address[] calldata _poolAddrs,
-    address[] calldata _userList
+    TConsensus[] calldata consensusAddrs,
+    address[] calldata userList
+  ) external view returns (uint256[] memory);
+
+  function getManyStakingAmountsById(
+    address[] calldata poolIds,
+    address[] calldata userList
   ) external view returns (uint256[] memory);
 
   /**
    * @dev Returns the total staking amount of all users for a pool.
    */
-  function getStakingTotal(address _poolAddr) external view returns (uint256);
+  function getStakingTotal(TConsensus consensusAddr) external view returns (uint256);
 
   /**
    * @dev Returns the total staking amounts of all users for the pools `_poolAddrs`.
    */
-  function getManyStakingTotals(address[] calldata _poolAddrs) external view returns (uint256[] memory);
+  function getManyStakingTotals(TConsensus[] calldata consensusAddrs) external view returns (uint256[] memory);
+
+  function getManyStakingTotalsById(
+    address[] calldata poolIds
+  ) external view returns (uint256[] memory stakingAmounts_);
 }

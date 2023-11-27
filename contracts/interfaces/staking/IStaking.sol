@@ -3,10 +3,11 @@
 pragma solidity ^0.8.9;
 
 import "./IBaseStaking.sol";
+import "./IStakingCallback.sol";
 import "./ICandidateStaking.sol";
 import "./IDelegatorStaking.sol";
 
-interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorStaking {
+interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorStaking, IStakingCallback {
   /**
    * @dev Records the amount of rewards `_rewards` for the pools `_consensusAddrs`.
    *
@@ -20,11 +21,7 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
    * Note: This method should be called once at the period ending.
    *
    */
-  function execRecordRewards(
-    address[] calldata _consensusAddrs,
-    uint256[] calldata _rewards,
-    uint256 _period
-  ) external payable;
+  function execRecordRewards(address[] calldata poolIds, uint256[] calldata rewards, uint256 period) external payable;
 
   /**
    * @dev Deducts from staking amount of the validator `_consensusAddr` for `_amount`.
@@ -35,8 +32,5 @@ interface IStaking is IRewardPool, IBaseStaking, ICandidateStaking, IDelegatorSt
    * Emits the event `Unstaked`.
    *
    */
-  function execDeductStakingAmount(
-    address _consensusAddr,
-    uint256 _amount
-  ) external returns (uint256 _actualDeductingAmount);
+  function execDeductStakingAmount(address poolId, uint256 amount) external returns (uint256 actualDeductingAmount);
 }

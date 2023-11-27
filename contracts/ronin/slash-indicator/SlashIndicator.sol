@@ -6,10 +6,11 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/slash-indicator/ISlashIndicator.sol";
 import "../../interfaces/validator/IRoninValidatorSet.sol";
 import "../../interfaces/IMaintenance.sol";
+import "../../interfaces/IProfile.sol";
+import "./DeprecatedSlashBridgeOperator.sol";
+import "./DeprecatedSlashBridgeVoting.sol";
 import "./SlashDoubleSign.sol";
 import "./SlashFastFinality.sol";
-import "./SlashBridgeVoting.sol";
-import "./SlashBridgeOperator.sol";
 import "./SlashUnavailability.sol";
 import "./CreditScore.sol";
 
@@ -17,8 +18,8 @@ contract SlashIndicator is
   ISlashIndicator,
   SlashDoubleSign,
   SlashFastFinality,
-  SlashBridgeVoting,
-  SlashBridgeOperator,
+  DeprecatedSlashBridgeVoting,
+  DeprecatedSlashBridgeOperator,
   SlashUnavailability,
   CreditScore,
   Initializable
@@ -35,14 +36,8 @@ contract SlashIndicator is
     address __maintenanceContract,
     address __roninTrustedOrganizationContract,
     address __roninGovernanceAdminContract,
-    // _bridgeOperatorSlashingConfigs[0]: _missingVotesRatioTier1
-    // _bridgeOperatorSlashingConfigs[1]: _missingVotesRatioTier2
-    // _bridgeOperatorSlashingConfigs[2]: _jailDurationForMissingVotesRatioTier2
-    // _bridgeOperatorSlashingConfigs[3]: _skipBridgeOperatorSlashingThreshold
-    uint256[4] calldata _bridgeOperatorSlashingConfigs,
-    // _bridgeVotingSlashingConfigs[0]: _bridgeVotingThreshold
-    // _bridgeVotingSlashingConfigs[1]: _bridgeVotingSlashAmount
-    uint256[2] calldata _bridgeVotingSlashingConfigs,
+    uint256[4] calldata /* _bridgeOperatorSlashingConfigs */,
+    uint256[2] calldata /* _bridgeVotingSlashingConfigs */,
     // _doubleSignSlashingConfigs[0]: _slashDoubleSignAmount
     // _doubleSignSlashingConfigs[1]: _doubleSigningJailUntilBlock
     // _doubleSignSlashingConfigs[2]: _doubleSigningOffsetLimitBlock
@@ -63,13 +58,6 @@ contract SlashIndicator is
     _setContract(ContractType.GOVERNANCE_ADMIN, __roninGovernanceAdminContract);
     _setContract(ContractType.RONIN_TRUSTED_ORGANIZATION, __roninTrustedOrganizationContract);
 
-    _setBridgeOperatorSlashingConfigs(
-      _bridgeOperatorSlashingConfigs[0],
-      _bridgeOperatorSlashingConfigs[1],
-      _bridgeOperatorSlashingConfigs[2],
-      _bridgeOperatorSlashingConfigs[3]
-    );
-    _setBridgeVotingSlashingConfigs(_bridgeVotingSlashingConfigs[0], _bridgeVotingSlashingConfigs[1]);
     _setDoubleSignSlashingConfigs(
       _doubleSignSlashingConfigs[0],
       _doubleSignSlashingConfigs[1],
@@ -110,40 +98,51 @@ contract SlashIndicator is
    * @dev Helper for CreditScore contract to reset the indicator of the validator after bailing out.
    */
   function _setUnavailabilityIndicator(
-    address _validator,
-    uint256 _period,
-    uint256 _indicator
+    address validator,
+    uint256 period,
+    uint256 indicator
   ) internal override(CreditScore, SlashUnavailability) {
-    SlashUnavailability._setUnavailabilityIndicator(_validator, _period, _indicator);
+    SlashUnavailability._setUnavailabilityIndicator(validator, period, indicator);
   }
 
   /**
    * @dev Helper for CreditScore contract to query indicator of the validator.
    */
-  function getUnavailabilityIndicator(
-    address _validator,
-    uint256 _period
-  ) public view override(CreditScore, ISlashUnavailability, SlashUnavailability) returns (uint256) {
-    return SlashUnavailability.getUnavailabilityIndicator(_validator, _period);
+  function _getUnavailabilityIndicatorById(
+    address validatorId,
+    uint256 period
+  ) internal view override(CreditScore, SlashUnavailability) returns (uint256) {
+    return SlashUnavailability._getUnavailabilityIndicatorById(validatorId, period);
   }
 
-  /**
-   * @inheritdoc ICreditScore
-   */
-  function checkBailedOutAtPeriod(
-    address _validator,
-    uint256 _period
-  ) public view override(CreditScore, ICreditScore, SlashUnavailability) returns (bool) {
-    return CreditScore.checkBailedOutAtPeriod(_validator, _period);
+  function _checkBailedOutAtPeriodById(
+    address cid,
+    uint256 period
+  ) internal view override(CreditScore, SlashUnavailability) returns (bool) {
+    return CreditScore._checkBailedOutAtPeriodById(cid, period);
   }
 
   /**
    * @dev Sanity check the address to be slashed
    */
-  function _shouldSlash(address _addr) internal view override(SlashDoubleSign, SlashUnavailability) returns (bool) {
+  function _shouldSlash(
+    TConsensus consensus,
+    address validatorId
+  ) internal view override(SlashDoubleSign, SlashUnavailability) returns (bool) {
     return
-      (msg.sender != _addr) &&
-      IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isBlockProducer(_addr) &&
-      !IMaintenance(getContract(ContractType.MAINTENANCE)).checkMaintained(_addr, block.number);
+      (msg.sender != TConsensus.unwrap(consensus)) &&
+      (msg.sender != validatorId) &&
+      IRoninValidatorSet(getContract(ContractType.VALIDATOR)).isBlockProducer(consensus) &&
+      !IMaintenance(getContract(ContractType.MAINTENANCE)).checkMaintainedById(validatorId, block.number);
+  }
+
+  function __css2cid(
+    TConsensus consensusAddr
+  ) internal view override(CreditScore, SlashDoubleSign, SlashUnavailability, SlashFastFinality) returns (address) {
+    return IProfile(getContract(ContractType.PROFILE)).getConsensus2Id(consensusAddr);
+  }
+
+  function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view override returns (address[] memory) {
+    return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
   }
 }

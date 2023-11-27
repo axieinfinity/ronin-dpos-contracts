@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.9;
 
+import { TPoolId, TConsensus } from "../udvts/Types.sol";
 import "../utils/RoleAccess.sol";
 
 interface IProfile {
@@ -15,13 +16,13 @@ interface IProfile {
      */
     address id;
     /// @dev Consensus address.
-    address consensus;
+    TConsensus consensus;
     /// @dev Pool admin address.
     address admin;
     /// @dev Treasury address.
     address payable treasury;
     /// @dev Address to voting proposal.
-    address governor;
+    address __reservedGovernor;
     /// @dev Public key for fast finality.
     bytes pubkey;
   }
@@ -51,6 +52,15 @@ interface IProfile {
   /// @dev Getter to query full `profile` from `id` address.
   function getId2Profile(address id) external view returns (CandidateProfile memory profile);
 
+  /// @dev Getter to batch query from `id` to `consensus`, return address(0) if the profile not exist.
+  function getManyId2Consensus(address[] calldata idList) external view returns (TConsensus[] memory consensusList);
+
+  /// @dev Getter to backward query from `consensus` address to `id` address.
+  function getConsensus2Id(TConsensus consensus) external view returns (address id);
+
+  /// @dev Getter to backward batch query from `consensus` address to `id` address.
+  function getManyConsensus2Id(TConsensus[] memory consensus) external view returns (address[] memory);
+
   /**
    * @notice Add a new profile.
    *
@@ -61,14 +71,34 @@ interface IProfile {
   function addNewProfile(CandidateProfile memory profile) external;
 
   /**
-   * @notice The candidate admin registers a new profile.
+   * @dev Cross-contract function to add/update new profile of a validator candidate when they
+   * applying for candidate role.
    *
-   * @dev Requirements:
-   * - The profile must not be existent before.
-   * - Only user with candidate admin role can call this method.
+   * Requirements:
+   * - Only `stakingContract` can call this method.
    */
+  function execApplyValidatorCandidate(address admin, address id, address treasury, bytes calldata pubkey) external;
 
-  function registerProfile(CandidateProfile memory profile) external;
+  /**
+   * @dev Updated the treasury address of candidate id `id` immediately without waiting time.
+   *
+   * Emit an {ProfileAddressChanged}.
+   */
+  function requestChangeAdminAddress(address id, address newAdminAddr) external;
+
+  /**
+   * @dev Updated the treasury address of candidate id `id` immediately without waiting time.
+   *
+   * Emit an {ProfileAddressChanged}.
+   */
+  function requestChangeConsensusAddr(address id, TConsensus newConsensusAddr) external;
+
+  /**
+   * @dev Updated the treasury address of candidate id `id` immediately without waiting time.
+   *
+   * Emit an {ProfileAddressChanged}.
+   */
+  function requestChangeTreasuryAddr(address id, address payable newTreasury) external;
 
   /**
    * @notice The candidate admin changes the public key.

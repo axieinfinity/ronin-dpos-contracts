@@ -33,15 +33,16 @@ abstract contract SlashFastFinality is ISlashFastFinality, HasContracts, PCUVali
    * @inheritdoc ISlashFastFinality
    */
   function slashFastFinality(
-    address consensusAddr,
+    TConsensus consensusAddr,
     bytes calldata voterPublicKey,
     uint256 targetBlockNumber,
     bytes32[2] calldata targetBlockHash,
     bytes[][2] calldata listOfPublicKey,
     bytes[2] calldata aggregatedSignature
   ) external override onlyGoverningValidator {
+    address validatorId = __css2cid(consensusAddr);
     IProfile profileContract = IProfile(getContract(ContractType.PROFILE));
-    bytes memory expectingPubKey = (profileContract.getId2Profile(consensusAddr)).pubkey;
+    bytes memory expectingPubKey = (profileContract.getId2Profile(validatorId)).pubkey;
     if (keccak256(voterPublicKey) != keccak256(expectingPubKey)) revert ErrInvalidArguments(msg.sig);
 
     bytes32 evidenceHash = keccak256(abi.encodePacked(consensusAddr, targetBlockNumber));
@@ -60,9 +61,9 @@ abstract contract SlashFastFinality is ISlashFastFinality, HasContracts, PCUVali
 
       IRoninValidatorSet validatorContract = IRoninValidatorSet(getContract(ContractType.VALIDATOR));
       uint256 period = validatorContract.currentPeriod();
-      emit Slashed(consensusAddr, SlashType.FAST_FINALITY, period);
+      emit Slashed(validatorId, SlashType.FAST_FINALITY, period);
       validatorContract.execSlash({
-        validatorAddr: consensusAddr,
+        cid: validatorId,
         newJailedUntil: _fastFinalityJailUntilBlock,
         slashAmount: _slashFastFinalityAmount,
         cannotBailout: true
@@ -104,4 +105,6 @@ abstract contract SlashFastFinality is ISlashFastFinality, HasContracts, PCUVali
   function _getGovernorWeight(address addr) internal view returns (uint256) {
     return IRoninTrustedOrganization(getContract(ContractType.RONIN_TRUSTED_ORGANIZATION)).getGovernorWeight(addr);
   }
+
+  function __css2cid(TConsensus consensusAddr) internal view virtual returns (address);
 }

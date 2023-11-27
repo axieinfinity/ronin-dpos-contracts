@@ -5,17 +5,18 @@ import { ethers, network } from 'hardhat';
 
 import { GovernanceAdminInterface } from '../../../src/script/governance-admin-interface';
 import {
-  BridgeManager__factory,
   BridgeTracking,
   BridgeTracking__factory,
   MockGatewayForTracking,
   MockGatewayForTracking__factory,
   MockRoninValidatorSetExtended,
   MockRoninValidatorSetExtended__factory,
+  Profile__factory,
   RoninBridgeManager,
   RoninBridgeManager__factory,
   RoninGovernanceAdmin,
   RoninGovernanceAdmin__factory,
+  RoninTrustedOrganization__factory,
   Staking,
   Staking__factory,
 } from '../../../src/types';
@@ -28,15 +29,16 @@ import {
   createManyValidatorCandidateAddressSets,
   ValidatorCandidateAddressSet,
 } from '../helpers/address-set-types/validator-candidate-set-type';
-import { initTest } from '../helpers/fixture';
+import { deployTestSuite } from '../helpers/fixture';
 import { EpochController } from '../helpers/ronin-validator-set';
-import { ContractType, mineBatchTxs } from '../helpers/utils';
+import { ContractType, generateSamplePubkey, mineBatchTxs } from '../helpers/utils';
 import {
   OperatorTuple,
   createManyOperatorTuples,
   createOperatorTuple,
 } from '../helpers/address-set-types/operator-tuple-type';
 import { BridgeManagerInterface } from '../../../src/script/bridge-admin-interface';
+import { keccak256 } from 'ethers/lib/utils';
 
 let deployer: SignerWithAddress;
 let coinbase: SignerWithAddress;
@@ -89,13 +91,15 @@ describe('Bridge Tracking test', () => {
       roninBridgeManagerAddress,
       bridgeSlashAddress,
       bridgeRewardAddress,
+      profileAddress,
       fastFinalityTrackingAddress,
-    } = await initTest('BridgeTracking')({
+      roninTrustedOrganizationAddress,
+    } = await deployTestSuite('BridgeTracking')({
       roninTrustedOrganizationArguments: {
         trustedOrganizations: trustedOrgs.map((v) => ({
           consensusAddr: v.consensusAddr.address,
           governor: v.governor.address,
-          bridgeVoter: v.bridgeVoter.address,
+          __deprecatedBridgeVoter: v.__deprecatedBridgeVoter.address,
           weight: 100,
           addedBlock: 0,
         })),
@@ -155,8 +159,27 @@ describe('Bridge Tracking test', () => {
     const mockValidatorLogic = await new MockRoninValidatorSetExtended__factory(deployer).deploy();
     await mockValidatorLogic.deployed();
     await governanceAdminInterface.upgrade(roninValidatorSet.address, mockValidatorLogic.address);
+    await governanceAdminInterface.functionDelegateCalls(
+      [
+        stakingContract.address,
+        roninValidatorSet.address,
+        roninValidatorSet.address,
+        profileAddress,
+        roninTrustedOrganizationAddress,
+      ],
+      [
+        stakingContract.interface.encodeFunctionData('initializeV3', [profileAddress]),
+        roninValidatorSet.interface.encodeFunctionData('initializeV3', [fastFinalityTrackingAddress]),
+        roninValidatorSet.interface.encodeFunctionData('initializeV4', [profileAddress]),
+        new Profile__factory().interface.encodeFunctionData('initializeV2', [
+          stakingContractAddress,
+          roninTrustedOrganizationAddress,
+        ]),
+        new RoninTrustedOrganization__factory().interface.encodeFunctionData('initializeV2', [profileAddress]),
+      ]
+    );
+
     await roninValidatorSet.initEpoch();
-    await roninValidatorSet.initializeV3(fastFinalityTrackingAddress);
 
     // Applies candidates and double check the bridge operators
     for (let i = 0; i < candidates.length; i++) {
@@ -167,6 +190,7 @@ describe('Bridge Tracking test', () => {
           candidates[i].consensusAddr.address,
           candidates[i].treasuryAddr.address,
           1,
+          generateSamplePubkey(candidates[i].consensusAddr.address, candidates[i].candidateAdmin.address),
           { value: minValidatorStakingAmount + candidates.length - i }
         );
     }
