@@ -243,7 +243,7 @@ contract RoninTrustedOrganization is IRoninTrustedOrganization, HasProxyAdmin, H
   /**
    * @inheritdoc IRoninTrustedOrganization
    */
-  function getTrustedOrganization(TConsensus _consensusAddr) external view returns (TrustedOrganization memory trustedOrg) {
+  function getTrustedOrganization(TConsensus _consensusAddr) external view returns (TrustedOrganization memory) {
     for (uint i = 0; i < _consensusList.length; ++i) {
       if (_consensusList[i] == _consensusAddr) {
         return getTrustedOrganizationAt(i);

@@ -47,6 +47,7 @@ abstract contract CreditScore is
   ) external override onlyContract(ContractType.VALIDATOR) {
     IRoninValidatorSet validatorContract = IRoninValidatorSet(msg.sender);
     uint256 periodStartAtBlock = validatorContract.currentPeriodStartAtBlock();
+
     bool[] memory jaileds = validatorContract.checkManyJailedById(validatorIds);
     bool[] memory maintaineds = IMaintenance(getContract(ContractType.MAINTENANCE)).checkManyMaintainedInBlockRangeById(
       validatorIds,

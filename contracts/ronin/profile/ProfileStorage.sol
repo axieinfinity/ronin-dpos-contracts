@@ -9,6 +9,7 @@ import { IProfile } from "../../interfaces/IProfile.sol";
 abstract contract ProfileStorage is IProfile, HasContracts {
   /// @dev Mapping from id address => candidate profile.
   mapping(address => CandidateProfile) internal _id2Profile;
+
   /**
    * @dev Mapping from any address or keccak256(pubkey) => whether it is already registered.
    * This registry can only be toggled to `true` and NOT vice versa. All registered values
