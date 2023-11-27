@@ -24,22 +24,22 @@ abstract contract ProfileHandler is ProfileStorage {
   }
 
   function _requireNonDuplicated(RoleAccess addressType, address addr) internal view {
-    if (_checkNonDuplicatedAddr(addr)) {
+    if (_isRegisteredAddr(addr)) {
       revert ErrDuplicatedInfo(addressType, uint256(uint160(addr)));
     }
   }
 
-  function _checkNonDuplicatedAddr(address addr) internal view returns (bool) {
+  function _isRegisteredAddr(address addr) internal view returns (bool) {
     return _registry[uint256(uint160(addr))];
   }
 
   function _requireNonDuplicatedPubkey(bytes memory pubkey) internal view {
-    if (_checkNonDuplicatedPubkey(pubkey)) {
+    if (_isRegisteredPubkey(pubkey)) {
       revert ErrDuplicatedPubkey(pubkey);
     }
   }
 
-  function _checkNonDuplicatedPubkey(bytes memory pubkey) internal view returns (bool) {
+  function _isRegisteredPubkey(bytes memory pubkey) internal view returns (bool) {
     return _registry[_hashPubkey(pubkey)];
   }
 }
