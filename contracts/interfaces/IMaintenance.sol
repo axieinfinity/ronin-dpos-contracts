@@ -63,9 +63,9 @@ interface IMaintenance {
   }
 
   /// @dev Emitted when a maintenance is scheduled.
-  event MaintenanceScheduled(TConsensus indexed consensusAddr, Schedule);
+  event MaintenanceScheduled(address indexed cid, Schedule);
   /// @dev Emitted when a schedule of maintenance is cancelled.
-  event MaintenanceScheduleCancelled(TConsensus indexed consensusAddr);
+  event MaintenanceScheduleCancelled(address indexed cid);
   /// @dev Emitted when the maintenance config is updated.
   event MaintenanceConfigUpdated(
     uint256 minMaintenanceDurationInBlock,

@@ -160,7 +160,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     _sSchedule.to = endedAtBlock;
     _sSchedule.lastUpdatedBlock = block.number;
     _sSchedule.requestTimestamp = block.timestamp;
-    emit MaintenanceScheduled(consensusAddr, _sSchedule);
+    emit MaintenanceScheduled(candidateId, _sSchedule);
   }
 
   /**
@@ -180,7 +180,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     delete _sSchedule.from;
     delete _sSchedule.to;
     _sSchedule.lastUpdatedBlock = block.number;
-    emit MaintenanceScheduleCancelled(consensusAddr);
+    emit MaintenanceScheduleCancelled(candidateId);
   }
 
   /**

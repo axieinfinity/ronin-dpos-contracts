@@ -39,7 +39,7 @@ interface ICreditScore {
   /// @dev Emitted the credit score of validators is updated.
   event CreditScoresUpdated(address[] validators, uint256[] creditScores);
   /// @dev Emitted when a validator bailed out of jail.
-  event BailedOut(TConsensus indexed consensus, uint256 period, uint256 usedCreditScore);
+  event BailedOut(address indexed cid, uint256 period, uint256 usedCreditScore);
 
   /**
    * @dev Updates the credit score for the validators.

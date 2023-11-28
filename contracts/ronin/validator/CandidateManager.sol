@@ -166,7 +166,7 @@ abstract contract CandidateManager is
           emit CandidateTopupDeadlineUpdated(cid, 0);
         }
 
-        // Removes unsastisfied candidates
+        // Removes unsatisfied candidates
         bool _revokingActivated = (_info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp) ||
           _emergencyExitLockedFundReleased(cid);
         bool _topupDeadlineMissed = _info.topupDeadline != 0 && _info.topupDeadline <= block.timestamp;
