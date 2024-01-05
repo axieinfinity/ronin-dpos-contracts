@@ -2,11 +2,17 @@
 
 pragma solidity ^0.8.9;
 
+import "../../extensions/consumers/PercentageConsumer.sol";
 import "../../extensions/collections/HasProxyAdmin.sol";
 import "../../extensions/collections/HasContracts.sol";
 import { HasValidatorDeprecated } from "../../utils/DeprecatedSlots.sol";
 
-abstract contract DeprecatedSlashBridgeOperator is HasProxyAdmin, HasContracts, HasValidatorDeprecated {
+abstract contract DeprecatedSlashBridgeOperator is
+  HasProxyAdmin,
+  HasContracts,
+  HasValidatorDeprecated,
+  PercentageConsumer
+{
   /**
    * @dev The bridge operators will be deprecated reward if (s)he missed more than the ratio.
    * Values 0-10,000 map to 0%-100%.
