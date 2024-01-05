@@ -46,16 +46,16 @@ interface ICandidateManager {
   /// @dev Emitted when the min offset to the effective date of commission rate change is updated.
   event MinEffectiveDaysOnwardsUpdated(uint256 numOfDays);
   /// @dev Emitted when the validator candidate is granted.
-  event CandidateGranted(address indexed consensusAddr, address indexed treasuryAddr, address indexed admin);
+  event CandidateGranted(address indexed cid, address indexed treasuryAddr, address indexed admin);
   /// @dev Emitted when the revoking timestamp of a candidate is updated.
   event CandidateRevokingTimestampUpdated(address indexed cid, uint256 revokingTimestamp);
   /// @dev Emitted when the topup deadline of a candidate is updated.
   event CandidateTopupDeadlineUpdated(address indexed cid, uint256 topupDeadline);
   /// @dev Emitted when the validator candidate is revoked.
-  event CandidatesRevoked(address[] consensusAddrs);
+  event CandidatesRevoked(address[] cids);
 
   /// @dev Emitted when the commission rate of a validator is updated.
-  event CommissionRateUpdated(address indexed consensusAddr, uint256 rate);
+  event CommissionRateUpdated(address indexed cid, uint256 rate);
   /// @dev Error of exceeding maximum number of candidates.
   error ErrExceedsMaxNumberOfCandidate();
   /// @dev Error of querying for already existent candidate.
@@ -65,10 +65,10 @@ interface ICandidateManager {
   /// @dev Error of candidate admin already exists.
   error ErrExistentCandidateAdmin(address candidateAdminAddr);
   /// @dev Error of treasury already exists.
-  error ErrExistentTreasury(address _treasuryAddr);
+  error ErrExistentTreasury(address treasuryAddr);
   /// @dev Error of invalid commission rate.
   error ErrInvalidCommissionRate();
-    /// @dev Error of invalid min effective days onwards.
+  /// @dev Error of invalid min effective days onwards.
   error ErrInvalidMinEffectiveDaysOnwards();
 
   /**
@@ -109,9 +109,14 @@ interface ICandidateManager {
   function isValidatorCandidate(TConsensus consensus) external view returns (bool);
 
   /**
-   * @dev Returns the validator candidate.
+   * @dev Returns the list validator candidates.
    */
-  function getValidatorCandidates() external view returns (address[] memory);
+  function getValidatorCandidates() external view returns (TConsensus[] memory);
+
+  /**
+   * @dev Returns the list of validator candidate ids.
+   */
+  function getValidatorCandidateIds() external view returns (address[] memory);
 
   /**
    * @dev Returns all candidate info.

@@ -12,26 +12,26 @@ interface ICoinbaseExecution is ISlashingExecution {
   }
 
   /// @dev Emitted when the validator set is updated
-  event ValidatorSetUpdated(uint256 indexed period, address[] consensusAddrs);
+  event ValidatorSetUpdated(uint256 indexed period, address[] cids);
   /// @dev Emitted when the bridge operator set is updated, to mirror the in-jail and maintaining status of the validator.
-  event BlockProducerSetUpdated(uint256 indexed period, uint256 indexed epoch, address[] consensusAddrs);
+  event BlockProducerSetUpdated(uint256 indexed period, uint256 indexed epoch, address[] cids);
   /// @dev Emitted when the bridge operator set is updated.
   event BridgeOperatorSetUpdated(uint256 indexed period, uint256 indexed epoch, address[] bridgeOperators);
 
   /// @dev Emitted when the reward of the block producer is deprecated.
   event BlockRewardDeprecated(
-    address indexed coinbaseAddr,
+    address indexed cid,
     uint256 rewardAmount,
     BlockRewardDeprecatedType deprecatedType
   );
   /// @dev Emitted when the block reward is submitted.
-  event BlockRewardSubmitted(address indexed coinbaseAddr, uint256 submittedAmount, uint256 bonusAmount);
+  event BlockRewardSubmitted(address indexed cid, uint256 submittedAmount, uint256 bonusAmount);
 
   /// @dev Emitted when the block producer reward is distributed.
-  event MiningRewardDistributed(address indexed consensusAddr, address indexed recipient, uint256 amount);
+  event MiningRewardDistributed(address indexed cid, address indexed recipient, uint256 amount);
   /// @dev Emitted when the contract fails when distributing the block producer reward.
   event MiningRewardDistributionFailed(
-    address indexed consensusAddr,
+    address indexed cid,
     address indexed recipient,
     uint256 amount,
     uint256 contractBalance
@@ -39,14 +39,14 @@ interface ICoinbaseExecution is ISlashingExecution {
 
   /// @dev Emitted when the bridge operator reward is distributed.
   event BridgeOperatorRewardDistributed(
-    address indexed consensusAddr,
+    address indexed cid,
     address indexed bridgeOperator,
     address indexed recipientAddr,
     uint256 amount
   );
   /// @dev Emitted when the contract fails when distributing the bridge operator reward.
   event BridgeOperatorRewardDistributionFailed(
-    address indexed consensusAddr,
+    address indexed cid,
     address indexed bridgeOperator,
     address indexed recipient,
     uint256 amount,
@@ -54,10 +54,10 @@ interface ICoinbaseExecution is ISlashingExecution {
   );
 
   /// @dev Emitted when the fast finality reward is distributed.
-  event FastFinalityRewardDistributed(address indexed consensusAddr, address indexed recipient, uint256 amount);
+  event FastFinalityRewardDistributed(address indexed cid, address indexed recipient, uint256 amount);
   /// @dev Emitted when the contract fails when distributing the fast finality reward.
   event FastFinalityRewardDistributionFailed(
-    address indexed consensusAddr,
+    address indexed cid,
     address indexed recipient,
     uint256 amount,
     uint256 contractBalance

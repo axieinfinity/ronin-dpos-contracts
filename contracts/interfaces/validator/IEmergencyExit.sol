@@ -4,16 +4,16 @@ pragma solidity ^0.8.9;
 
 interface IEmergencyExit {
   /// @dev Emitted when the fund is locked from an emergency exit request
-  event EmergencyExitRequested(address indexed consensusAddr, uint256 lockedAmount);
+  event EmergencyExitRequested(address indexed cid, uint256 lockedAmount);
   /// @dev Emitted when the fund that locked from an emergency exit request is transferred to the recipient.
   event EmergencyExitLockedFundReleased(
-    address indexed consensusAddr,
+    address indexed cid,
     address indexed recipient,
     uint256 unlockedAmount
   );
   /// @dev Emitted when the fund that locked from an emergency exit request is failed to transferred back.
   event EmergencyExitLockedFundReleasingFailed(
-    address indexed consensusAddr,
+    address indexed cid,
     address indexed recipient,
     uint256 unlockedAmount,
     uint256 contractBalance

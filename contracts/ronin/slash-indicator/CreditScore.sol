@@ -120,7 +120,7 @@ abstract contract CreditScore is
     _creditScore[validatorId] -= cost;
     _setUnavailabilityIndicator(validatorId, period, 0);
     _checkBailedOutAtPeriod[validatorId][period] = true;
-    emit BailedOut(consensusAddr, period, cost);
+    emit BailedOut(validatorId, period, cost);
   }
 
   /**

@@ -111,7 +111,7 @@ abstract contract CoinbaseExecution is
     uint256 newPeriod = _computePeriod(block.timestamp);
     bool periodEnding = _isPeriodEnding(newPeriod);
 
-    address[] memory currValidatorIds = getValidators();
+    address[] memory currValidatorIds = getValidatorIds();
     address[] memory revokedCandidateIds;
     uint256 epoch = epochOf(block.number);
     uint256 nextEpoch = epoch + 1;
@@ -410,7 +410,7 @@ abstract contract CoinbaseExecution is
         ++_i;
       }
     }
-    emit BlockProducerSetUpdated(_newPeriod, _nextEpoch, getBlockProducers());
+    emit BlockProducerSetUpdated(_newPeriod, _nextEpoch, getBlockProducerIds());
   }
 
   /**

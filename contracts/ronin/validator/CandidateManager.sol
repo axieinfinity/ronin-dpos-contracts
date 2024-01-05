@@ -106,7 +106,14 @@ abstract contract CandidateManager is
   /**
    * @inheritdoc ICandidateManager
    */
-  function getValidatorCandidates() public view override returns (address[] memory) {
+  function getValidatorCandidates() external view override returns (TConsensus[] memory) {
+    return __cid2cssBatch(getValidatorCandidateIds());
+  }
+
+  /**
+   * @inheritdoc ICandidateManager
+   */
+  function getValidatorCandidateIds() public view override returns (address[] memory) {
     return _candidateIds;
   }
 
@@ -159,7 +166,7 @@ abstract contract CandidateManager is
           emit CandidateTopupDeadlineUpdated(cid, 0);
         }
 
-        // Removes unsastisfied candidates
+        // Removes unsatisfied candidates
         bool _revokingActivated = (_info.revokingTimestamp != 0 && _info.revokingTimestamp <= block.timestamp) ||
           _emergencyExitLockedFundReleased(cid);
         bool _topupDeadlineMissed = _info.topupDeadline != 0 && _info.topupDeadline <= block.timestamp;
@@ -278,4 +285,7 @@ abstract contract CandidateManager is
 
   /// @dev See {RoninValidatorSet-__css2cidBatch}
   function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
+
+  /// @dev See {RoninValidatorSet-__cid2cssBatch}
+  function __cid2cssBatch(address[] memory cids) internal view virtual returns (TConsensus[] memory);
 }

@@ -37,12 +37,19 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
   /**
    * @inheritdoc IValidatorInfoV2
    */
-  function getValidators() public view override returns (address[] memory validatorList_) {
-    validatorList_ = new address[](_validatorCount);
+  function getValidators() public view override returns (TConsensus[] memory consensusList) {
+    return __cid2cssBatch(getValidatorIds());
+  }
+
+  /**
+   * @inheritdoc IValidatorInfoV2
+   */
+  function getValidatorIds() public view override returns (address[] memory cids) {
+    cids = new address[](_validatorCount);
     address iValidator;
-    for (uint i; i < validatorList_.length; ) {
+    for (uint i; i < cids.length; ) {
       iValidator = _validatorIds[i];
-      validatorList_[i] = iValidator;
+      cids[i] = iValidator;
 
       unchecked {
         ++i;
@@ -53,13 +60,20 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
   /**
    * @inheritdoc IValidatorInfoV2
    */
-  function getBlockProducers() public view override returns (address[] memory result) {
-    result = new address[](_validatorCount);
+  function getBlockProducers() public view override returns (TConsensus[] memory consensusList) {
+    return __cid2cssBatch(getBlockProducerIds());
+  }
+
+  /**
+   * @inheritdoc IValidatorInfoV2
+   */
+  function getBlockProducerIds() public view override returns (address[] memory cids) {
+    cids = new address[](_validatorCount);
     uint256 count = 0;
-    for (uint i; i < result.length; ) {
+    for (uint i; i < cids.length; ) {
       address validatorId = _validatorIds[i];
       if (_isBlockProducerById(validatorId)) {
-        result[count++] = validatorId;
+        cids[count++] = validatorId;
       }
 
       unchecked {
@@ -68,7 +82,7 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
     }
 
     assembly {
-      mstore(result, count)
+      mstore(cids, count)
     }
   }
 
@@ -146,4 +160,7 @@ abstract contract ValidatorInfoStorageV2 is IValidatorInfoV2, HasContracts, HasT
 
   /// @dev See {RoninValidatorSet-__css2cidBatch}
   function __css2cidBatch(TConsensus[] memory consensusAddrs) internal view virtual returns (address[] memory);
+
+  /// @dev See {RoninValidatorSet-__cid2cssBatch}
+  function __cid2cssBatch(address[] memory cids) internal view virtual returns (TConsensus[] memory);
 }

@@ -160,7 +160,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     _sSchedule.to = endedAtBlock;
     _sSchedule.lastUpdatedBlock = block.number;
     _sSchedule.requestTimestamp = block.timestamp;
-    emit MaintenanceScheduled(consensusAddr, _sSchedule);
+    emit MaintenanceScheduled(candidateId, _sSchedule);
   }
 
   /**
@@ -180,7 +180,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
     delete _sSchedule.from;
     delete _sSchedule.to;
     _sSchedule.lastUpdatedBlock = block.number;
-    emit MaintenanceScheduleCancelled(consensusAddr);
+    emit MaintenanceScheduleCancelled(candidateId);
   }
 
   /**
@@ -261,7 +261,7 @@ contract Maintenance is IMaintenance, HasContracts, HasValidatorDeprecated, Init
    * @inheritdoc IMaintenance
    */
   function totalSchedule() public view override returns (uint256 count) {
-    address[] memory validatorIds = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidators();
+    address[] memory validatorIds = IRoninValidatorSet(getContract(ContractType.VALIDATOR)).getValidatorIds();
     unchecked {
       for (uint i = 0; i < validatorIds.length; i++) {
         if (_checkScheduledById(validatorIds[i])) {

@@ -102,4 +102,13 @@ contract RoninValidatorSet is Initializable, CoinbaseExecution, SlashingExecutio
   ) internal view override(EmergencyExit, CommonStorage) returns (address[] memory) {
     return IProfile(getContract(ContractType.PROFILE)).getManyConsensus2Id(consensusAddrs);
   }
+
+  /**
+   * @dev Convert many id to corresponding consensus addresses from the Profile contract.
+   */
+  function __cid2cssBatch(
+    address[] memory cids
+  ) internal view override(EmergencyExit, ValidatorInfoStorageV2) returns (TConsensus[] memory) {
+    return IProfile(getContract(ContractType.PROFILE)).getManyId2Consensus(cids);
+  }
 }

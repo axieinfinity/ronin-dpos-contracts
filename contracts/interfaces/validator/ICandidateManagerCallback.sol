@@ -6,7 +6,7 @@ import { TConsensus } from "../../udvts/Types.sol";
 
 interface ICandidateManagerCallback {
   /// @dev Emitted when a schedule for updating commission rate is set.
-  event CommissionRateUpdateScheduled(address indexed consensusAddr, uint256 effectiveTimestamp, uint256 rate);
+  event CommissionRateUpdateScheduled(address indexed cid, uint256 effectiveTimestamp, uint256 rate);
   /// @dev Error of already requested revoking candidate before.
   error ErrAlreadyRequestedRevokingCandidate();
   /// @dev Error of commission change schedule exists.
@@ -41,7 +41,7 @@ interface ICandidateManagerCallback {
    * Emits the event `CandidateRevokingTimestampUpdated`.
    *
    */
-  function execRequestRenounceCandidate(address, uint256 secsLeft) external;
+  function execRequestRenounceCandidate(address cid, uint256 secsLeft) external;
 
   /**
    * @dev Fallback function of `CandidateStaking-requestUpdateCommissionRate`.
